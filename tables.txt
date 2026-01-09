@@ -1,0 +1,148 @@
+Database tables
+
+-- Enable UUID generation (usually already enabled in Supabase)
+create extension if not exists "pgcrypto";
+
+-- 0) Create enum type if it doesn't exist yet
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'boat_type') then
+    create type boat_type as enum ('sailboat', 'motorboat');
+  end if;
+end$$;
+
+-- 1) Simple enum for registration status
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'registration_status') then
+    create type registration_status as enum ('pending', 'approved', 'declined');
+  end if;
+end$$;
+
+-- 1) Simple enum for profile type
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'profile_type') then
+    create type profile_type as enum ('owner', 'crew');
+  end if;
+end$$;
+
+
+-- 2) profiles: one row per user, extends auth.users
+create table if not exists public.profiles (
+  id          uuid not null references auth.users(id) primary key,
+  role        profile_type not null default 'crew',
+  username    text,
+  full_name   text,
+  experience  text,          -- free text for now
+  certifications text,       -- free text or JSON later
+  phone       text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create unique index if not exists profiles_user_id_key on public.profiles (id);
+
+-- enable sec
+alter table profiles enable row level security;
+
+-- setup basic policies
+create policy "Public profiles are viewable by all"
+on profiles for select
+using (true);
+
+create policy "Users can insert their own profile"
+on profiles for insert
+with check (auth.uid() = id);
+
+create policy "Users can update own profile"
+on profiles for update
+using (auth.uid() = id);
+
+
+-- 3) boats
+create table if not exists public.boats (
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid not null references auth.users (id) on delete cascade,
+  name        text not null,
+  type        boat_type not null default 'sailboat',
+  make        text,
+  model       text,
+  capacity    int,
+  home_port   text,
+  loa_m       numeric,
+  beam_m      numeric,
+  displcmt_m  numeric,
+  link_to_specs text,
+  images      text[] default '{}',  -- store image URLs from Supabase Storage
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+create index if not exists boats_owner_id_idx on public.boats (owner_id);
+alter table boats enable row level security;
+
+-- basic policies
+create policy "Boats are accessible to all"
+on boats for select
+using(true);
+
+-- owners can insert their boats
+create policy "Owners can insert their boats"
+on boats for insert
+with check (auth.uid() = owner_id);
+
+create policy "Owners can update their boat details"
+on boats for update
+using(auth.uid() = owner_id);
+
+create policy "Onwers can delete their boats"
+on boats for delete
+using(auth.uid() = owner_id);
+
+-- 4) journeys
+create table if not exists public.journeys (
+  id           uuid primary key default gen_random_uuid(),
+  boat_id      uuid not null references public.boats (id) on delete cascade,
+  name         text not null,
+  start_date   date,
+  end_date     date,
+  description  text,
+  is_public    boolean not null default true,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index if not exists journeys_boat_id_idx on public.journeys (boat_id);
+
+-- 5) legs
+create table if not exists public.legs (
+  id           uuid primary key default gen_random_uuid(),
+  journey_id   uuid not null references public.journeys (id) on delete cascade,
+  name         text not null,
+  start_port   text,
+  end_port     text,
+  start_date   timestamptz,
+  end_date     timestamptz,
+  crew_needed  int,
+  skills       text[] default '{}',  -- simple array of skill tags
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index if not exists legs_journey_id_idx on public.legs (journey_id);
+
+-- 6) registrations
+create table if not exists public.registrations (
+  id           uuid primary key default gen_random_uuid(),
+  leg_id       uuid not null references public.legs (id) on delete cascade,
+  user_id      uuid not null references auth.users (id) on delete cascade,
+  status       registration_status not null default 'pending',
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+create index if not exists registrations_leg_id_idx on public.registrations (leg_id);
+create index if not exists registrations_user_id_idx on public.registrations (user_id);
+create unique index if not exists registrations_leg_user_unique
+  on public.registrations (leg_id, user_id);

@@ -1,0 +1,175 @@
+Product Requirements Document (PRD) for find-my-crew Platform1. 
+
+Overview
+
+1.1 Project Description
+
+find-my-crew is a web platform built with NextJS that connects boat owners/skippers with 
+potential crew members. Owners can register their boats, plan and share upcoming 
+journeys divided into legs (segments of the journey), and seek crew for specific legs. 
+Users (potential crew) can browse available journeys, view details, and register 
+interest for specific legs. The platform emphasizes ease of use, security, and 
+real-time updates.
+
+1.2 Target Audience 
+
+Boat Owners/Skippers: Individuals or companies managing boats who need crew for voyages.
+Crew Members: Sailors, adventurers, or enthusiasts looking for opportunities to join 
+boat journeys.
+
+1.3 Goals
+
+Facilitate efficient crew matching for boat journeys.
+Provide a user-friendly interface for managing boats, journeys, and registrations.
+Ensure data security and privacy through Supabase authentication.
+Support scalability for growing user base.
+
+1.4 Assumptions and Constraints
+
+Users have basic internet access and devices (mobile/desktop).
+No initial support for payments or advanced mapping (e.g., integrate Google Maps later 
+if needed).Focus on core MVP; advanced features like messaging or reviews can be added 
+in future iterations.Supabase is mandated for database (PostgreSQL) and authentication.
+
+2. Core Features
+
+The platform will include the following essential features, prioritized for MVP.
+
+2.1 User Authentication and Profiles
+
+Sign Up/Login: Email/password or social login (via Supabase Auth).
+Roles: Differentiate between "Owner/Skipper" and "Crew" during signup 
+(stored in user metadata).Profile Management: Users can edit profiles with details 
+like name, experience, contact info, and certifications 
+(for crew) or boat ownership verification (for owners).
+
+2.2 Boat Management (Owner-Only)
+
+Add/Edit Boat: Form to input boat details (name, type, size, capacity, photos, location).
+Boat Dashboard: List of owned boats with edit/delete options.
+
+2.3 Journey and Leg Management (Owner-Only)
+
+Create Journey: Input journey name, start/end dates, overall route description.
+Add Legs: Break journey into legs 
+(e.g., Leg 1: Port A to Port B, dates, required crew count, skills needed).
+Publish/Share: Make journeys public for crew to view; option to share via links.
+Edit/Delete: Update or remove journeys/legs.
+
+2.4 Journey Discovery (Crew and Public)
+
+Search/Browse: Filter journeys by location, dates, boat type, required skills.
+View Details: Display journey overview, legs, boat info, owner contact (post-registration).
+Register for Leg: Crew users submit interest (with profile info); owners approve/decline.
+
+2.5 Notifications and Interactions
+
+Email Notifications: Via Supabase (or integrate SendGrid if needed) for registrations, 
+approvals, updates. 
+Dashboard: User-specific views (e.g., owner's pending registrations, crew's applied legs).
+
+2.6 Additional MVP Features
+
+Responsive Design: Mobile-friendly UI.
+Basic Analytics: Track views/registrations per journey (stored in DB).
+Data Validation: Ensure inputs like dates are logical (e.g., leg dates within journey).
+
+2.7 Non-Functional Requirements
+
+Performance: Pages load <2s; real-time updates for registrations (using Supabase Realtime).
+Security: Role-based access control (RBAC) via Supabase Row Level Security (RLS).
+Scalability: Supabase handles initial scaling; monitor for upgrades.
+Accessibility: Basic WCAG compliance (e.g., alt text for images).
+
+3. Tech Stack
+
+Frontend: NextJS (v14+) for server-side rendering, routing, and API routes.
+Backend/Database: Supabase (PostgreSQL for data storage, Realtime for live updates).
+Authentication: Supabase Auth (with JWT for session management).
+UI Library: Tailwind CSS for styling; Shadcn/UI or Radix UI for components.
+State Management: React Context or Zustand for simple state; Supabase JS client 
+for data fetching.
+Deployment: Vercel (optimized for NextJS) for hosting; Supabase hosted instance.
+Other Tools:Form handling: React Hook Form.
+Validation: Zod.
+Image Upload: Supabase Storage.
+Testing: Jest for unit tests.
+Environment: Node.js v20+.
+
+4. Step-by-Step Implementation Guide
+
+This guide outlines a phased approach to build the MVP. Assume basic familiarity with NextJS and Git. Total estimated time: 4-6 weeks for a solo developer.
+
+Phase 1: Project Setup (1-2 days)
+
+Initialize NextJS Project: Run npx create-next-app@latest find-my-crew --typescript --tailwind --eslint.
+Install Dependencies: Supabase: npm install @supabase/supabase-js.
+Forms: npm install react-hook-form zod.
+UI: Install Shadcn/UI via npx shadcn-ui@latest init.
+Others: npm install zustand (for state).
+
+Set Up Supabase:Create a Supabase project at supabase.com.
+Get API URL and Anon Key from dashboard.
+Create .env.local with NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.
+Initialize Supabase client in lib/supabase.ts.
+
+Database Schema:In Supabase SQL Editor, create tables:users (auto via Auth, extend with profiles table).
+profiles (id: uuid, user_id: uuid ref auth.users, role: text, name: text, etc.).
+boats (id: uuid, owner_id: uuid, name: text, type: text, capacity: int, etc.).
+journeys (id: uuid, boat_id: uuid, name: text, start_date: date, end_date: date, description: text).
+legs (id: uuid, journey_id: uuid, name: text, start_port: text, end_port: text, start_date: timestamp, end_date: timestamp, crew_needed: int, skills: array<text>).
+registrations (id: uuid, leg_id: uuid, user_id: uuid, status: text default 'pending').
+
+Enable RLS: e.g., For boats, policy: SELECT if authenticated; INSERT/UPDATE if owner_id = auth.uid().
+
+Commit to Git: Initialize repo and push to GitHub.
+
+Phase 2: Authentication and Profiles (3-5 days)
+
+Auth Pages: Create /auth/signup, /auth/login using Supabase Auth methods (signUp, signInWithPassword).
+Session Management: Use Supabase Auth listener in a provider (e.g., SupabaseProvider.tsx) to manage user session.
+Profile Form: Protected route /profile with form to update profile details. Use Supabase upsert for profiles table.
+Role-Based Redirects: After login, redirect based on role (owner to dashboard, crew to browse).
+Test: Manually test sign-up, login, profile edits. Add basic error handling.
+
+Phase 3: Boat Management (4-6 days)
+
+Owner Dashboard: Protected route /owner/dashboard listing boats via Supabase query.
+Add Boat Form: Modal or page /owner/boats/new with fields; upload images to Supabase Storage.
+Edit/Delete: Implement update/delete functions with Supabase client.
+Validation: Use Zod schemas for form validation (e.g., capacity > 0).
+Test: Ensure only owners can access; simulate data entry.
+
+Phase 4: Journey and Leg Management (5-7 days)
+
+Journey Creation: Route /owner/journeys/new; form for journey details, then add legs dynamically (array of leg forms).
+Publish: Set is_public: boolean in journeys table; query only public ones for browsing.
+Realtime Updates: Use Supabase Realtime to subscribe to changes in journeys (e.g., for owner dashboard).
+Edit/Delete: Similar to boats, with cascading deletes for legs.
+Test: Create a sample journey with 2-3 legs; verify dates don't overlap illogically (client-side check).
+
+Phase 5: Journey Discovery and Registration (5-7 days)
+
+Browse Page: Public route /journeys with search filters (use NextJS search params for query string).
+Journey Detail Page: Dynamic route /journeys/[id] showing legs, boat info.
+Register Button: For crew, on each leg; insert into registrations table.
+Owner Approvals: In owner dashboard, list registrations; update status to 'approved'/'declined'.
+Notifications: Use Supabase edge functions or client-side to trigger emails on registration/approval.
+Test: End-to-end: Owner creates journey, crew registers, owner approves.
+
+Phase 6: Polish, Testing, and Deployment (3-5 days)
+
+Responsive UI: Use Tailwind for mobile views; test on devices.
+Error Handling: Global error boundaries; user-friendly messages.
+Unit/Integration Tests: Write tests for auth, forms, queries using Jest.
+Deployment: Push to Vercel; connect Supabase env vars. Set up custom domain if needed.
+Monitoring: Enable Vercel analytics; Supabase logs for DB issues.
+Launch MVP: Seed sample data; invite beta users for feedback.
+
+Post-MVP ConsiderationsAdd mapping integration (e.g., Leaflet for routes).
+In-app messaging between owners and crew.
+Advanced search with full-text indexing in Supabase.
+Analytics dashboard for owners.
+
+This PRD provides a solid foundation. Iterate based on user feedback after MVP launch.
+
