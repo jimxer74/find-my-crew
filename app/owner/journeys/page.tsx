@@ -7,12 +7,15 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { NavigationMenu } from '@/app/components/NavigationMenu';
 import { LogoWithText } from '@/app/components/LogoWithText';
+import { JourneyFormModal } from '@/app/components/JourneyFormModal';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [journeys, setJourneys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingJourneyId, setEditingJourneyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -37,7 +40,7 @@ export default function JourneysPage() {
     if (boatsData && boatsData.length > 0) {
       const boatIds = boatsData.map(b => b.id);
       
-      // Then get all journeys for those boats
+      // Then get all journeys for those boats with boat name
       const { data, error } = await supabase
         .from('journeys')
         .select('*, boats(name)')
@@ -47,8 +50,15 @@ export default function JourneysPage() {
       if (error) {
         console.error('Error loading journeys:', error);
       } else {
-        setJourneys(data || []);
+        // Transform data to flatten boat name
+        const transformedData = (data || []).map((journey: any) => ({
+          ...journey,
+          boat_name: journey.boats?.name || 'Unknown Boat'
+        }));
+        setJourneys(transformedData);
       }
+    } else {
+      setJourneys([]);
     }
     setLoading(false);
   };
@@ -81,30 +91,36 @@ export default function JourneysPage() {
         </div>
 
         <div className="mb-6">
-          <Link
-            href="/owner/journeys/new"
+          <button
+            onClick={() => {
+              setEditingJourneyId(null);
+              setIsModalOpen(true);
+            }}
             className="text-white px-4 py-2 rounded-lg transition-colors font-medium inline-block"
             style={{ backgroundColor: '#2C4969' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
           >
             + Create New Journey
-          </Link>
+          </button>
         </div>
 
-        <div className="grid gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {journeys.length === 0 ? (
             <div className="bg-white rounded-lg shadow p-8 text-center">
               <p className="text-gray-600 mb-4">You haven't created any journeys yet.</p>
-              <Link
-                href="/owner/journeys/new"
+              <button
+                onClick={() => {
+                  setEditingJourneyId(null);
+                  setIsModalOpen(true);
+                }}
                 className="font-medium"
                 style={{ color: '#2C4969' }}
                 onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
                 onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
               >
                 Create your first journey →
-              </Link>
+              </button>
             </div>
           ) : (
             journeys.map((journey) => (
@@ -125,7 +141,7 @@ export default function JourneysPage() {
                 {journey.description && (
                   <p className="text-gray-600 mb-4">{journey.description}</p>
                 )}
-                <div className="mt-4 flex gap-2">
+                <div className="mt-4 flex items-center gap-2">
                   <Link
                     href={`/owner/journeys/${journey.id}`}
                     className="font-medium text-sm"
@@ -136,21 +152,40 @@ export default function JourneysPage() {
                     View Details & Legs
                   </Link>
                   <span className="text-gray-300">|</span>
-                  <Link
-                    href={`/owner/journeys/${journey.id}/edit`}
+                  <button
+                    onClick={() => {
+                      setEditingJourneyId(journey.id);
+                      setIsModalOpen(true);
+                    }}
                     className="font-medium text-sm"
                     style={{ color: '#2C4969' }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
                     onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
                   >
                     Edit
-                  </Link>
+                  </button>
                 </div>
               </div>
             ))
           )}
         </div>
       </main>
+
+      {/* Journey Form Modal */}
+      {user && (
+        <JourneyFormModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingJourneyId(null);
+          }}
+          onSuccess={() => {
+            loadJourneys();
+          }}
+          journeyId={editingJourneyId}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }

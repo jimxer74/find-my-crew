@@ -115,6 +115,44 @@ create table if not exists public.journeys (
 
 create index if not exists journeys_boat_id_idx on public.journeys (boat_id);
 
+-- Enable RLS on journeys
+alter table journeys enable row level security;
+
+-- Journeys policies
+create policy "Journeys are viewable by all"
+on journeys for select
+using (true);
+
+create policy "Owners can insert journeys for their boats"
+on journeys for insert
+with check (
+  exists (
+    select 1 from boats
+    where boats.id = journeys.boat_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can update their own journeys"
+on journeys for update
+using (
+  exists (
+    select 1 from boats
+    where boats.id = journeys.boat_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can delete their own journeys"
+on journeys for delete
+using (
+  exists (
+    select 1 from boats
+    where boats.id = journeys.boat_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
 -- 5) legs
 create table if not exists public.legs (
   id           uuid primary key default gen_random_uuid(),
@@ -122,6 +160,8 @@ create table if not exists public.legs (
   name         text not null,
   start_port   text,
   end_port     text,
+  start_geocode jsonb,  -- Geocode for starting point: {type: 'Point', coordinates: [lng, lat]}
+  end_geocode   jsonb,  -- Geocode for ending point: {type: 'Point', coordinates: [lng, lat]}
   start_date   timestamptz,
   end_date     timestamptz,
   crew_needed  int,
@@ -131,6 +171,47 @@ create table if not exists public.legs (
 );
 
 create index if not exists legs_journey_id_idx on public.legs (journey_id);
+
+-- Enable RLS on legs
+alter table legs enable row level security;
+
+-- Legs policies
+create policy "Legs are viewable by all"
+on legs for select
+using (true);
+
+create policy "Owners can insert legs for their journeys"
+on legs for insert
+with check (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = legs.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can update their own legs"
+on legs for update
+using (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = legs.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can delete their own legs"
+on legs for delete
+using (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = legs.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
 
 -- 6) registrations
 create table if not exists public.registrations (
