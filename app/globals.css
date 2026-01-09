@@ -24,3 +24,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes slowZoom {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.1);
+  }
+}
+
+.homepage-bg-zoom {
+  animation: slowZoom 20s ease-in-out infinite alternate;
+  transform-origin: center center;
+  will-change: transform;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

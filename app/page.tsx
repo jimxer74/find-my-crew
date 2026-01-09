@@ -1,13 +1,22 @@
+'use client';
+
 import React from 'react';
+import Link from 'next/link';
+import { NavigationMenu } from './components/NavigationMenu';
+import { LogoWithText } from './components/LogoWithText';
+import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
+  const { user } = useAuth();
   return (
-    <div 
-      className="min-h-screen relative bg-cover bg-center bg-fixed"
-      style={{
-        backgroundImage: 'url(https://source.unsplash.com/1920x1080/?sailboat,boat)'
-      }}
-    >
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background image with zoom effect */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center homepage-bg-zoom"
+        style={{
+          backgroundImage: 'url(/homepage-2.jpg)',
+        }}
+      />
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
       
@@ -18,15 +27,10 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-blue-600">⚓ Find My Crew</h1>
+              <LogoWithText logoWidth={300} logoHeight={100} />
             </div>
-            <div className="flex items-center gap-4">
-              <button className="text-blue-600 hover:text-blue-700 font-medium">
-                Log In
-              </button>
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                Sign Up
-              </button>
+            <div className="flex items-center">
+              <NavigationMenu />
             </div>
           </div>
         </div>
@@ -44,12 +48,51 @@ export default function Home() {
             we make it easy to find your perfect match.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-lg">
-              Browse Journeys
-            </button>
-            <button className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium text-lg">
-              Post a Journey
-            </button>
+            {user ? (
+              <>
+                <Link
+                  href="/journeys"
+                  className="text-white px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
+                  style={{ backgroundColor: '#2C4969' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
+                >
+                  Browse Journeys
+                </Link>
+                {user && (
+                  <Link
+                    href="/owner/dashboard"
+                    className="border-2 px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
+                    style={{ borderColor: '#2C4969', color: '#2C4969' }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    My Dashboard
+                  </Link>
+                )}
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth/signup"
+                  className="text-white px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
+                  style={{ backgroundColor: '#2C4969' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
+                >
+                  Get Started
+                </Link>
+                <Link
+                  href="/auth/login"
+                  className="border-2 px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
+                  style={{ borderColor: '#2C4969', color: '#2C4969' }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                  Sign In
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </section>
@@ -67,15 +110,15 @@ export default function Home() {
             </p>
             <ul className="space-y-3 text-gray-600">
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Register and manage your boats</span>
               </li>
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Plan journeys and divide into legs</span>
               </li>
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Review and approve crew applications</span>
               </li>
             </ul>
@@ -91,15 +134,15 @@ export default function Home() {
             </p>
             <ul className="space-y-3 text-gray-600">
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Browse available journeys and legs</span>
               </li>
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Filter by location, dates, and skills</span>
               </li>
               <li className="flex items-start">
-                <span className="text-blue-600 mr-2">✓</span>
+                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
                 <span>Apply to join your dream voyage</span>
               </li>
             </ul>
@@ -143,16 +186,22 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-blue-600 rounded-2xl p-12 text-center">
+        <div className="rounded-2xl p-12 text-center" style={{ backgroundColor: '#2C4969' }}>
           <h3 className="text-3xl font-bold text-white mb-4">
             Ready to Start Your Adventure?
           </h3>
           <p className="text-blue-100 mb-8 text-lg max-w-2xl mx-auto">
             Join our community of boat owners and crew members today
           </p>
-          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium text-lg">
-            Get Started
-          </button>
+          <Link
+            href={user ? '/owner/dashboard' : '/auth/signup'}
+            className="bg-white px-8 py-3 rounded-lg transition-colors font-medium text-lg inline-block"
+            style={{ color: '#2C4969' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+          >
+            {user ? 'Go to Dashboard' : 'Get Started'}
+          </Link>
         </div>
       </section>
 
