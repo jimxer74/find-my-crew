@@ -69,11 +69,11 @@ create table if not exists public.boats (
   make        text,
   model       text,
   capacity    int,
-  home_port   text,
-  loa_m       numeric,
-  beam_m      numeric,
-  displcmt_m  numeric,
-  link_to_specs text,
+  home_port   text, 
+  loa_m       numeric, -- length overall in meters
+  beam_m      numeric, -- Beam in meters
+  displcmt_m  numeric, -- Displacement in kg
+  link_to_specs text, -- Link to additional information like sailboatdata.com
   images      text[] default '{}',  -- store image URLs from Supabase Storage
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
@@ -146,3 +146,44 @@ create index if not exists registrations_leg_id_idx on public.registrations (leg
 create index if not exists registrations_user_id_idx on public.registrations (user_id);
 create unique index if not exists registrations_leg_user_unique
   on public.registrations (leg_id, user_id);
+
+-- Storage bucket policies for boat-images
+-- Note: First create the bucket in Supabase Dashboard > Storage > New bucket
+-- Name: boat-images, Public: true
+
+-- Allow authenticated users to upload images to their own folder
+create policy "Authenticated users can upload boat images"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'boat-images' 
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow public to view boat images
+create policy "Public can view boat images"
+on storage.objects for select
+to public
+using (bucket_id = 'boat-images');
+
+-- Allow users to update their own images
+create policy "Users can update their own boat images"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'boat-images' 
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'boat-images' 
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to delete their own images
+create policy "Users can delete their own boat images"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'boat-images' 
+  and (storage.foldername(name))[1] = auth.uid()::text
+);

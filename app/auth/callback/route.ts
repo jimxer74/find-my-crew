@@ -52,7 +52,7 @@ export async function GET(request: Request) {
       }
 
       const redirectPath = profile?.role === 'owner' 
-        ? '/owner/dashboard' 
+        ? '/owner/boats' 
         : '/crew/dashboard';
       
       return NextResponse.redirect(new URL(redirectPath, request.url));

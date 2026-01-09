@@ -61,7 +61,7 @@ export default function Home() {
                 </Link>
                 {user && (
                   <Link
-                    href="/owner/dashboard"
+                    href="/owner/boats"
                     className="border-2 px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
                     style={{ borderColor: '#2C4969', color: '#2C4969' }}
                     onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
@@ -194,7 +194,7 @@ export default function Home() {
             Join our community of boat owners and crew members today
           </p>
           <Link
-            href={user ? '/owner/dashboard' : '/auth/signup'}
+            href={user ? '/owner/boats' : '/auth/signup'}
             className="bg-white px-8 py-3 rounded-lg transition-colors font-medium text-lg inline-block"
             style={{ color: '#2C4969' }}
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}

@@ -172,7 +172,7 @@ export default function ProfilePage() {
       // If this was a new profile, redirect to dashboard after a moment
       if (isNewProfile) {
         setTimeout(() => {
-          router.push(role === 'owner' ? '/owner/dashboard' : '/crew/dashboard');
+          router.push(role === 'owner' ? '/owner/boats' : '/crew/dashboard');
         }, 1500);
       }
     }
@@ -336,7 +336,7 @@ export default function ProfilePage() {
 
             <div className="flex justify-end gap-4 pt-4 border-t">
               <Link
-                href={profile?.role === 'owner' ? '/owner/dashboard' : '/crew/dashboard'}
+                href={profile?.role === 'owner' ? '/owner/boats' : '/crew/dashboard'}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
               >
                 Cancel

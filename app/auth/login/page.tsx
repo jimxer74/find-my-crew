@@ -37,7 +37,7 @@ export default function LoginPage() {
 
         // Redirect based on role
         const redirectPath = profile?.role === 'owner' 
-          ? '/owner/dashboard' 
+          ? '/owner/boats' 
           : '/crew/dashboard';
         
         router.push(redirectPath);

@@ -121,27 +121,74 @@ export function NavigationMenu() {
                   {/* Divider */}
                   <div className="border-t border-gray-200 my-1" />
 
-                  {/* My Dashboard */}
-                  <Link
-                    href={userRole === 'owner' ? '/owner/dashboard' : '/crew/dashboard'}
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-3 text-gray-500"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                  {/* Owner-specific menu items */}
+                  {userRole === 'owner' ? (
+                    <>
+                      {/* My Boats */}
+                      <Link
+                        href="/owner/boats"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-3 text-gray-500"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        <span className="font-medium">My Boats</span>
+                      </Link>
+
+                      {/* My Journeys */}
+                      <Link
+                        href="/owner/journeys"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-3 text-gray-500"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        <span className="font-medium">My Journeys & Legs</span>
+                      </Link>
+                    </>
+                  ) : (
+                    /* Crew Dashboard */
+                    <Link
+                      href="/crew/dashboard"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
                     >
-                      <circle cx="12" cy="12" r="10" />
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                    </svg>
-                    <span className="font-medium">My Dashboard</span>
-                  </Link>
+                      <svg
+                        className="w-5 h-5 mr-3 text-gray-500"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                      </svg>
+                      <span className="font-medium">My Dashboard</span>
+                    </Link>
+                  )}
 
                   {/* Divider */}
                   <div className="border-t border-gray-200 my-1" />

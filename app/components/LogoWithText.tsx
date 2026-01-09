@@ -10,7 +10,6 @@ type LogoWithTextProps = {
   logoWidth?: number;
   logoHeight?: number;
   className?: string;
-  showText?: boolean;
   forceRole?: 'owner' | 'crew' | null;
 };
 
@@ -18,7 +17,6 @@ export function LogoWithText({
   logoWidth = 200, 
   logoHeight = 67, 
   className = 'h-10 w-auto object-contain',
-  showText = true,
   forceRole = null
 }: LogoWithTextProps) {
   const { user } = useAuth();
@@ -43,26 +41,23 @@ export function LogoWithText({
   }, [user, forceRole]);
 
   const displayRole = forceRole || userRole;
-  const shouldShowText = showText && user && displayRole;
+  
+  // Determine logo source based on role
+  let logoSrc = '/logo_find_my_crew.png'; // default logo for non-logged-in users
+  if (user && displayRole) {
+    logoSrc = displayRole === 'owner' ? '/logo_find_my_crew.png' : '/logo_find_my_boat.png';
+  }
 
   return (
-    <Link href="/" className="flex items-center gap-3">
+    <Link href="/">
       <Image
-        src="/logo3.png"
-        alt="Find My Crew"
+        src={logoSrc}
+        alt={displayRole === 'owner' ? 'Find My Crew' : displayRole === 'crew' ? 'Find My Boat' : 'Find My Crew'}
         width={logoWidth}
         height={logoHeight}
-        className={className}
+        className={`${className} rounded-lg`}
         priority
       />
-      {shouldShowText && (
-        <span className="text-lg font-semibold">
-          <span style={{ color: '#1B345E' }}>Find</span>{' '}
-          <span style={{ color: '#2C4969' }}>
-            {displayRole === 'owner' ? 'My Crew' : 'My Boat'}
-          </span>
-        </span>
-      )}
     </Link>
   );
 }
