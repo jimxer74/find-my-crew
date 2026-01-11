@@ -2,39 +2,29 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { NavigationMenu } from './components/NavigationMenu';
-import { LogoWithText } from './components/LogoWithText';
+import Image from 'next/image';
+import { Header } from './components/Header';
 import { useAuth } from './contexts/AuthContext';
 
 export default function Home() {
   const { user } = useAuth();
   return (
-    <div className="min-h-screen relative overflow-hidden">
+    <div className="min-h-screen">
       {/* Background image with zoom effect */}
       <div 
-        className="absolute inset-0 bg-cover bg-center homepage-bg-zoom"
+        className="fixed inset-0 bg-cover bg-center homepage-bg-zoom -z-10"
         style={{
           backgroundImage: 'url(/homepage-2.jpg)',
         }}
       />
       {/* Overlay for better text readability */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"></div>
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] -z-10"></div>
+      
+      {/* Navigation */}
+      <Header />
       
       {/* Content wrapper with relative positioning */}
       <div className="relative z-10">
-        {/* Navigation */}
-        <nav className="border-b border-white/20 bg-white/90 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <LogoWithText />
-            </div>
-            <div className="flex items-center">
-              <NavigationMenu />
-            </div>
-          </div>
-        </div>
-      </nav>
 
       {/* Hero Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
@@ -71,13 +61,13 @@ export default function Home() {
                   href="/auth/signup"
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
                 >
-                  Get Started
+                  Sign up
                 </Link>
                 <Link
                   href="/auth/login"
                   className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                 >
-                  Sign In
+                  Log in
                 </Link>
               </>
             )}
@@ -89,8 +79,15 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
           {/* For Owners */}
-          <div className="bg-card/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
-            <div className="text-5xl mb-4">🚢</div>
+          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
+            <div className="w-16 h-16 mb-4 relative">
+              <Image
+                src="/boat2.png"
+                alt="Boat Owner"
+                fill
+                className="object-contain"
+              />
+            </div>
             <h3 className="text-2xl font-bold text-card-foreground mb-4">For Boat Owners & Skippers</h3>
             <p className="text-muted-foreground mb-6">
               Need crew for your next voyage? Easily post your boat details and journey plans, 
@@ -113,8 +110,15 @@ export default function Home() {
           </div>
 
           {/* For Crew */}
-          <div className="bg-card/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
-            <div className="text-5xl mb-4">⛵</div>
+          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
+            <div className="w-16 h-16 mb-4 relative">
+              <Image
+                src="/seaman2.png"
+                alt="Crew Member"
+                fill
+                className="object-contain"
+              />
+            </div>
             <h3 className="text-2xl font-bold text-card-foreground mb-4">For Crew Members</h3>
             <p className="text-muted-foreground mb-6">
               Looking for sailing opportunities? Browse available journeys, view detailed leg information, 
@@ -185,7 +189,7 @@ export default function Home() {
             href={user ? '/owner/boats' : '/auth/signup'}
             className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg inline-block hover:opacity-90"
           >
-            {user ? 'Go to Dashboard' : 'Get Started'}
+            {user ? 'Go to Dashboard' : 'Sign up'}
           </Link>
         </div>
       </section>

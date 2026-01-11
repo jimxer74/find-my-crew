@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { NavigationMenu } from '@/app/components/NavigationMenu';
-import { LogoWithText } from '@/app/components/LogoWithText';
+import { Header } from '@/app/components/Header';
+import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 
 type Profile = {
   id: string;
@@ -16,6 +16,7 @@ type Profile = {
   experience: string | null;
   certifications: string | null;
   phone: string | null;
+  sailing_experience: 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null;
   created_at: string;
   updated_at: string;
 };
@@ -38,6 +39,7 @@ export default function ProfilePage() {
     experience: '',
     certifications: '',
     phone: '',
+    sailing_experience: null as 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null,
   });
 
   useEffect(() => {
@@ -80,6 +82,7 @@ export default function ProfilePage() {
           experience: '',
           certifications: '',
           phone: '',
+          sailing_experience: null,
         });
 
         // Create a temporary profile object for display
@@ -91,6 +94,7 @@ export default function ProfilePage() {
           experience: null,
           certifications: null,
           phone: null,
+          sailing_experience: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -106,6 +110,7 @@ export default function ProfilePage() {
         experience: data.experience || '',
         certifications: data.certifications || '',
         phone: data.phone || '',
+        sailing_experience: data.sailing_experience || null,
       });
     }
     setLoading(false);
@@ -140,6 +145,7 @@ export default function ProfilePage() {
           experience: formData.experience || null,
           certifications: formData.certifications || null,
           phone: formData.phone || null,
+          sailing_experience: formData.sailing_experience || null,
         });
 
       error = insertError;
@@ -153,6 +159,7 @@ export default function ProfilePage() {
           experience: formData.experience || null,
           certifications: formData.certifications || null,
           phone: formData.phone || null,
+          sailing_experience: formData.sailing_experience || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -195,16 +202,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <LogoWithText />
-            <div className="flex items-center">
-              <NavigationMenu />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -294,6 +292,13 @@ export default function ProfilePage() {
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">Role cannot be changed</p>
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SkillLevelSelector
+                value={formData.sailing_experience}
+                onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
+              />
             </div>
 
             <div>

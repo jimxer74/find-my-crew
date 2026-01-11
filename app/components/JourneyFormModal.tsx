@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 
 type Journey = {
   id?: string;
@@ -10,6 +11,7 @@ type Journey = {
   start_date: string;
   end_date: string;
   description: string;
+  risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   is_public: boolean;
 };
 
@@ -33,6 +35,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     start_date: '',
     end_date: '',
     description: '',
+    risk_level: [],
     is_public: true,
   });
   const [boats, setBoats] = useState<Boat[]>([]);
@@ -54,6 +57,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           start_date: '',
           end_date: '',
           description: '',
+          risk_level: [],
           is_public: true,
         });
         setError(null);
@@ -98,6 +102,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         start_date: data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '',
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
+        risk_level: data.risk_level || [],
         is_public: data.is_public !== undefined ? data.is_public : true,
       });
     }
@@ -117,6 +122,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       start_date: formData.start_date || null,
       end_date: formData.end_date || null,
       description: formData.description || null,
+      risk_level: formData.risk_level || [],
       is_public: formData.is_public,
       updated_at: new Date().toISOString(),
     };
@@ -169,7 +175,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       >
         {/* Modal */}
         <div
-          className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
@@ -200,49 +206,57 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                 )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Boat Selection */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
-                      Boat *
-                    </label>
-                    <select
-                      id="boat_id"
-                      name="boat_id"
-                      required
-                      value={formData.boat_id}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                    >
-                      <option value="">Select a boat</option>
-                      {boats.map((boat) => (
-                        <option key={boat.id} value={boat.id}>
-                          {boat.name}
-                        </option>
-                      ))}
-                    </select>
-                    {boats.length === 0 && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        You need to create a boat first before creating a journey.
-                      </p>
-                    )}
+                  {/* Journey Name */}
+                  <div className="md:col-span-2 md:grid md:grid-cols-3 md:gap-4">
+                    <div className="md:col-span-2">
+                      <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+                        Journey Name *
+                      </label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        required
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                        placeholder="e.g., Mediterranean Adventure 2024"
+                      />
+                    </div>
+
+                    {/* Boat Selection */}
+                    <div className="md:col-span-1">
+                      <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
+                        Boat *
+                      </label>
+                      <select
+                        id="boat_id"
+                        name="boat_id"
+                        required
+                        value={formData.boat_id}
+                        onChange={handleChange}
+                        className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      >
+                        <option value="">Select a boat</option>
+                        {boats.map((boat) => (
+                          <option key={boat.id} value={boat.id}>
+                            {boat.name}
+                          </option>
+                        ))}
+                      </select>
+                      {boats.length === 0 && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You need to create a boat first before creating a journey.
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Journey Name */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-                      Journey Name *
-                    </label>
-                    <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      placeholder="e.g., Mediterranean Adventure 2024"
-                    />
-                  </div>
+                  {/* Risk Level Selection */}
+                  <RiskLevelSelector
+                    value={formData.risk_level}
+                    onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
+                  />
 
                   {/* Start Date */}
                   <div>

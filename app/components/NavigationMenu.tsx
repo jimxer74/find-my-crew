@@ -59,10 +59,10 @@ export function NavigationMenu() {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Hamburger Menu Button */}
+      {/* Hamburger Menu Button - Mobile only */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+        className="md:hidden p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label="Toggle menu"
       >
         <svg
@@ -82,7 +82,72 @@ export function NavigationMenu() {
         </svg>
       </button>
 
-      {/* Overlay Menu */}
+      {/* Desktop Navigation Links - Large screens only */}
+      {!loading && (
+        <div className="hidden md:flex items-center gap-4">
+          {user ? (
+            <>
+              {userRole === 'owner' && (
+                <>
+                  <Link
+                    href="/owner/boats"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    My Boats
+                  </Link>
+                  <Link
+                    href="/owner/journeys"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    My Journeys
+                  </Link>
+                </>
+              )}
+              <Link
+                href="/profile"
+                className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+              >
+                My Profile
+              </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border rounded-md hover:bg-accent transition-colors"
+            aria-label="Log out"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span>Log out</span>
+          </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/auth/login"
+                className="px-4 py-2 text-sm font-medium text-foreground border border-border rounded-md hover:bg-accent transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+              >
+                Sign up
+              </Link>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Mobile Overlay Menu */}
       {isOpen && (
         <>
           {/* Backdrop */}

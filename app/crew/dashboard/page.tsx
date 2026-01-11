@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { NavigationMenu } from '@/app/components/NavigationMenu';
-import { LogoWithText } from '@/app/components/LogoWithText';
+import { Header } from '@/app/components/Header';
 
 export default function CrewDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -28,16 +27,7 @@ export default function CrewDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <LogoWithText />
-            <div className="flex items-center">
-              <NavigationMenu />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
