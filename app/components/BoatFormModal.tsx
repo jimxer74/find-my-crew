@@ -230,18 +230,18 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-card-foreground">
                 {boatId ? 'Edit Boat' : 'Add New Boat'}
               </h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +255,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                     {error}
                   </div>
                 )}
@@ -263,7 +263,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Boat Name */}
                   <div className="md:col-span-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                       Boat Name *
                     </label>
                     <input
@@ -273,14 +273,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., Sea Breeze"
                     />
                   </div>
 
                   {/* Boat Type */}
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="type" className="block text-sm font-medium text-foreground mb-1">
                       Boat Type *
                     </label>
                     <select
@@ -289,7 +289,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       required
                       value={formData.type}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     >
                       <option value="sailboat">Sailboat</option>
                       <option value="motorboat">Motorboat</option>
@@ -298,7 +298,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
 
                   {/* Capacity */}
                   <div>
-                    <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="capacity" className="block text-sm font-medium text-foreground mb-1">
                       Capacity (people)
                     </label>
                     <input
@@ -308,14 +308,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       min="1"
                       value={formData.capacity || ''}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., 6"
                     />
                   </div>
 
                   {/* Make */}
                   <div>
-                    <label htmlFor="make" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="make" className="block text-sm font-medium text-foreground mb-1">
                       Make
                     </label>
                     <input
@@ -324,14 +324,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       name="make"
                       value={formData.make}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., Beneteau"
                     />
                   </div>
 
                   {/* Model */}
                   <div>
-                    <label htmlFor="model" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="model" className="block text-sm font-medium text-foreground mb-1">
                       Model
                     </label>
                     <input
@@ -340,14 +340,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       name="model"
                       value={formData.model}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., Oceanis 40"
                     />
                   </div>
 
                   {/* Home Port */}
                   <div>
-                    <label htmlFor="home_port" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="home_port" className="block text-sm font-medium text-foreground mb-1">
                       Home Port
                     </label>
                     <input
@@ -356,14 +356,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       name="home_port"
                       value={formData.home_port}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., Marina del Rey, CA"
                     />
                   </div>
 
                   {/* Length Overall (LOA) */}
                   <div>
-                    <label htmlFor="loa_m" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="loa_m" className="block text-sm font-medium text-foreground mb-1">
                       Length Overall (m)
                     </label>
                     <input
@@ -374,14 +374,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       min="0"
                       value={formData.loa_m || ''}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., 12.5"
                     />
                   </div>
 
                   {/* Beam */}
                   <div>
-                    <label htmlFor="beam_m" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="beam_m" className="block text-sm font-medium text-foreground mb-1">
                       Beam (m)
                     </label>
                     <input
@@ -392,14 +392,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       min="0"
                       value={formData.beam_m || ''}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., 4.2"
                     />
                   </div>
 
                   {/* Displacement */}
                   <div>
-                    <label htmlFor="displcmt_m" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="displcmt_m" className="block text-sm font-medium text-foreground mb-1">
                       Displacement (kg)
                     </label>
                     <input
@@ -410,14 +410,14 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       min="0"
                       value={formData.displcmt_m || ''}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., 8500"
                     />
                   </div>
 
                   {/* Link to Specs */}
                   <div className="md:col-span-2">
-                    <label htmlFor="link_to_specs" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="link_to_specs" className="block text-sm font-medium text-foreground mb-1">
                       Link to Specifications
                     </label>
                     <input
@@ -426,28 +426,28 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       name="link_to_specs"
                       value={formData.link_to_specs}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="https://sailboatdata.com/..."
                     />
                   </div>
 
                   {/* Image Upload */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-foreground mb-1">
                       Boat Images
                     </label>
                     <div className="space-y-4">
                       {/* Upload Input */}
                       <div className="flex items-center gap-4">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors">
                           <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-10 h-10 mb-3 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
-                            <p className="mb-2 text-sm text-gray-500">
+                            <p className="mb-2 text-sm text-muted-foreground">
                               <span className="font-semibold">Click to upload</span> or drag and drop
                             </p>
-                            <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                            <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 5MB</p>
                           </div>
                           <input
                             type="file"
@@ -468,12 +468,12 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                               <img
                                 src={url}
                                 alt={`Boat image ${index + 1}`}
-                                className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                                className="w-full h-32 object-cover rounded-lg border border-border"
                               />
                               <button
                                 type="button"
                                 onClick={() => removeImage(index)}
-                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                 aria-label="Remove image"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -486,28 +486,25 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       )}
 
                       {uploadingImages && (
-                        <p className="text-sm text-gray-500">Uploading images...</p>
+                        <p className="text-sm text-muted-foreground">Uploading images...</p>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end gap-4 pt-4 border-t mt-6">
+                <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                    className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-4 py-2 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: '#2C4969' }}
-                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1F3449')}
-                    onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#2C4969')}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                   >
                     {loading ? 'Saving...' : boatId ? 'Update Boat' : 'Create Boat'}
                   </button>

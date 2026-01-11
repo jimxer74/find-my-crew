@@ -26,7 +26,7 @@ export function ClientTest() {
   }, []);
 
   return (
-    <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
+    <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
       {JSON.stringify(result, null, 2)}
     </pre>
   );

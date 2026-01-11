@@ -187,18 +187,18 @@ export default function ProfilePage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <LogoWithText forceRole={profile?.role || null} />
+            <LogoWithText />
             <div className="flex items-center">
               <NavigationMenu />
             </div>
@@ -208,10 +208,10 @@ export default function ProfilePage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             {isNewProfile ? 'Complete Your Profile' : 'My Profile'}
           </h1>
-          <p className="text-gray-600">
+          <p className="text-muted-foreground">
             {isNewProfile 
               ? 'Please complete your profile information to get started'
               : profile?.role === 'owner' 
@@ -221,22 +221,22 @@ export default function ProfilePage() {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          <div className="mb-6 bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+          <div className="mb-6 bg-green-500/10 border border-green-500 text-green-700 px-4 py-3 rounded">
             {isNewProfile ? 'Profile created successfully! Redirecting to dashboard...' : 'Profile updated successfully!'}
           </div>
         )}
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-card rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-2">
                   Full Name *
                 </label>
                 <input
@@ -245,13 +245,13 @@ export default function ProfilePage() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
                   Username
                 </label>
                 <input
@@ -260,13 +260,13 @@ export default function ProfilePage() {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="johndoe"
                 />
               </div>
 
               <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
                   Phone Number
                 </label>
                 <input
@@ -275,16 +275,16 @@ export default function ProfilePage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="+1 234 567 8900"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
                   Role
                 </label>
-                <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                <div className="px-3 py-2 bg-muted border border-border rounded-md text-foreground">
                   {(() => {
                     const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
                     const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
@@ -292,12 +292,12 @@ export default function ProfilePage() {
                     return role === 'owner' ? 'Boat Owner/Skipper' : 'Crew Member';
                   })()}
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Role cannot be changed</p>
+                <p className="mt-1 text-xs text-muted-foreground">Role cannot be changed</p>
               </div>
             </div>
 
             <div>
-              <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
                 Experience
               </label>
               <textarea
@@ -306,7 +306,7 @@ export default function ProfilePage() {
                 value={formData.experience}
                 onChange={handleChange}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring"
                 placeholder={
                   profile?.role === 'owner'
                     ? 'Describe your sailing experience, years of ownership, etc.'
@@ -316,7 +316,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label htmlFor="certifications" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="certifications" className="block text-sm font-medium text-foreground mb-2">
                 Certifications & Qualifications
               </label>
               <textarea
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                 value={formData.certifications}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring"
                 placeholder={
                   profile?.role === 'owner'
                     ? 'List any relevant certifications, licenses, or qualifications'
@@ -337,17 +337,14 @@ export default function ProfilePage() {
             <div className="flex justify-end gap-4 pt-4 border-t">
               <Link
                 href={profile?.role === 'owner' ? '/owner/boats' : '/crew/dashboard'}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: '#2C4969' }}
-                onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1F3449')}
-                onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#2C4969')}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
               >
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>

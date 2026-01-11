@@ -27,11 +27,11 @@ export default function CrewDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <LogoWithText forceRole="crew" />
+            <LogoWithText />
             <div className="flex items-center">
               <NavigationMenu />
             </div>
@@ -41,20 +41,17 @@ export default function CrewDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Crew Dashboard</h1>
-          <p className="text-gray-600">Browse available journeys and manage your applications</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Crew Dashboard</h1>
+          <p className="text-muted-foreground">Browse available journeys and manage your applications</p>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          <p className="text-gray-600 mb-4">
+        <div className="bg-card rounded-lg shadow p-8 text-center">
+          <p className="text-muted-foreground mb-4">
             Journey browsing and application features coming soon!
           </p>
           <Link
             href="/"
-            className="font-medium"
-            style={{ color: '#2C4969' }}
-            onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
-            onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
+            className="font-medium text-primary hover:opacity-80"
           >
             ← Back to Home
           </Link>

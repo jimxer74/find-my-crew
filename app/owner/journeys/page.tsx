@@ -65,18 +65,18 @@ export default function JourneysPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white border-b border-gray-200">
+    <div className="min-h-screen bg-background">
+      <nav className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <LogoWithText forceRole="owner" />
+            <LogoWithText />
             <div className="flex items-center">
               <NavigationMenu />
             </div>
@@ -86,8 +86,8 @@ export default function JourneysPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Journeys & Legs</h1>
-          <p className="text-gray-600">Manage your journeys and their legs</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">My Journeys & Legs</h1>
+          <p className="text-muted-foreground">Manage your journeys and their legs</p>
         </div>
 
         <div className="mb-6">
@@ -96,10 +96,7 @@ export default function JourneysPage() {
               setEditingJourneyId(null);
               setIsModalOpen(true);
             }}
-            className="text-white px-4 py-2 rounded-lg transition-colors font-medium inline-block"
-            style={{ backgroundColor: '#2C4969' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg transition-opacity font-medium inline-block hover:opacity-90"
           >
             + Create New Journey
           </button>
@@ -107,60 +104,51 @@ export default function JourneysPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {journeys.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-600 mb-4">You haven't created any journeys yet.</p>
+            <div className="bg-card rounded-lg shadow p-8 text-center">
+              <p className="text-muted-foreground mb-4">You haven't created any journeys yet.</p>
               <button
                 onClick={() => {
                   setEditingJourneyId(null);
                   setIsModalOpen(true);
                 }}
-                className="font-medium"
-                style={{ color: '#2C4969' }}
-                onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
-                onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
+                className="font-medium text-primary hover:opacity-80"
               >
                 Create your first journey →
               </button>
             </div>
           ) : (
             journeys.map((journey) => (
-              <div key={journey.id} className="bg-white rounded-lg shadow p-6">
+              <div key={journey.id} className="bg-card rounded-lg shadow p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{journey.name}</h3>
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <h3 className="text-xl font-semibold text-card-foreground mb-2">{journey.name}</h3>
+                    <div className="text-sm text-muted-foreground space-y-1">
                       {journey.boat_name && <p>Boat: {journey.boat_name}</p>}
                       {journey.start_date && <p>Start: {new Date(journey.start_date).toLocaleDateString()}</p>}
                       {journey.end_date && <p>End: {new Date(journey.end_date).toLocaleDateString()}</p>}
-                      <p className={journey.is_public ? 'text-green-600' : 'text-gray-500'}>
+                      <p className={journey.is_public ? 'text-green-600' : 'text-muted-foreground'}>
                         {journey.is_public ? 'Public' : 'Private'}
                       </p>
                     </div>
                   </div>
                 </div>
                 {journey.description && (
-                  <p className="text-gray-600 mb-4">{journey.description}</p>
+                  <p className="text-muted-foreground mb-4">{journey.description}</p>
                 )}
                 <div className="mt-4 flex items-center gap-2">
                   <Link
                     href={`/owner/journeys/${journey.id}`}
-                    className="font-medium text-sm"
-                    style={{ color: '#2C4969' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
+                    className="font-medium text-sm text-primary hover:opacity-80"
                   >
                     View Details & Legs
                   </Link>
-                  <span className="text-gray-300">|</span>
+                  <span className="text-border">|</span>
                   <button
                     onClick={() => {
                       setEditingJourneyId(journey.id);
                       setIsModalOpen(true);
                     }}
-                    className="font-medium text-sm"
-                    style={{ color: '#2C4969' }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#1F3449'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#2C4969'}
+                    className="font-medium text-sm text-primary hover:opacity-80"
                   >
                     Edit
                   </button>

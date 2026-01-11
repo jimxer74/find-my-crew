@@ -62,11 +62,11 @@ export function NavigationMenu() {
       {/* Hamburger Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label="Toggle menu"
       >
         <svg
-          className="w-6 h-6 text-gray-700"
+          className="w-6 h-6 text-foreground"
           fill="none"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -92,20 +92,20 @@ export function NavigationMenu() {
           />
           
           {/* Menu */}
-          <div className="absolute right-0 top-12 w-64 bg-white rounded-lg shadow-xl z-50 border border-gray-200 overflow-hidden">
+          <div className="absolute right-0 top-12 w-64 bg-card rounded-lg shadow-xl z-50 border border-border overflow-hidden">
             <div className="py-2">
               {loading ? (
-                <div className="px-4 py-3 text-sm text-gray-500">Loading...</div>
+                <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
               ) : user ? (
                 <>
                   {/* My Profile */}
                   <Link
                     href="/profile"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                   >
                     <svg
-                      className="w-5 h-5 mr-3 text-gray-500"
+                      className="w-5 h-5 mr-3 text-muted-foreground"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -128,10 +128,10 @@ export function NavigationMenu() {
                       <Link
                         href="/owner/boats"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
-                          className="w-5 h-5 mr-3 text-gray-500"
+                          className="w-5 h-5 mr-3 text-muted-foreground"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -150,10 +150,10 @@ export function NavigationMenu() {
                       <Link
                         href="/owner/journeys"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
-                          className="w-5 h-5 mr-3 text-gray-500"
+                          className="w-5 h-5 mr-3 text-muted-foreground"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -171,10 +171,10 @@ export function NavigationMenu() {
                     <Link
                       href="/crew/dashboard"
                       onClick={() => setIsOpen(false)}
-                      className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                      className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                     >
                       <svg
-                        className="w-5 h-5 mr-3 text-gray-500"
+                        className="w-5 h-5 mr-3 text-muted-foreground"
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -196,10 +196,10 @@ export function NavigationMenu() {
                   {/* Sign out */}
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors text-left"
+                    className="w-full flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors text-left"
                   >
                     <svg
-                      className="w-5 h-5 mr-3 text-gray-500"
+                      className="w-5 h-5 mr-3 text-muted-foreground"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -218,10 +218,10 @@ export function NavigationMenu() {
                   <Link
                     href="/auth/login"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                    className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                   >
                     <svg
-                      className="w-5 h-5 mr-3 text-gray-500"
+                      className="w-5 h-5 mr-3 text-muted-foreground"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"

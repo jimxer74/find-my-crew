@@ -27,7 +27,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <LogoWithText logoWidth={300} logoHeight={100} />
+              <LogoWithText />
             </div>
             <div className="flex items-center">
               <NavigationMenu />
@@ -52,20 +52,14 @@ export default function Home() {
               <>
                 <Link
                   href="/journeys"
-                  className="text-white px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
-                  style={{ backgroundColor: '#2C4969' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
+                  className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
                 >
                   Browse Journeys
                 </Link>
                 {user && (
                   <Link
                     href="/owner/boats"
-                    className="border-2 px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
-                    style={{ borderColor: '#2C4969', color: '#2C4969' }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                   >
                     My Dashboard
                   </Link>
@@ -75,19 +69,13 @@ export default function Home() {
               <>
                 <Link
                   href="/auth/signup"
-                  className="text-white px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
-                  style={{ backgroundColor: '#2C4969' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1F3449'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2C4969'}
+                  className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
                 >
                   Get Started
                 </Link>
                 <Link
                   href="/auth/login"
-                  className="border-2 px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center"
-                  style={{ borderColor: '#2C4969', color: '#2C4969' }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                 >
                   Sign In
                 </Link>
@@ -101,48 +89,48 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
           {/* For Owners */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/20">
+          <div className="bg-card/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
             <div className="text-5xl mb-4">🚢</div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">For Boat Owners & Skippers</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-2xl font-bold text-card-foreground mb-4">For Boat Owners & Skippers</h3>
+            <p className="text-muted-foreground mb-6">
               Need crew for your next voyage? Easily post your boat details and journey plans, 
               break them into legs, and find qualified crew members ready to join your adventure.
             </p>
-            <ul className="space-y-3 text-gray-600">
+            <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Register and manage your boats</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Plan journeys and divide into legs</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Review and approve crew applications</span>
               </li>
             </ul>
           </div>
 
           {/* For Crew */}
-          <div className="bg-white/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/20">
+          <div className="bg-card/95 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
             <div className="text-5xl mb-4">⛵</div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">For Crew Members</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-2xl font-bold text-card-foreground mb-4">For Crew Members</h3>
+            <p className="text-muted-foreground mb-6">
               Looking for sailing opportunities? Browse available journeys, view detailed leg information, 
               and apply to join voyages that match your skills and interests.
             </p>
-            <ul className="space-y-3 text-gray-600">
+            <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Browse available journeys and legs</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Filter by location, dates, and skills</span>
               </li>
               <li className="flex items-start">
-                <span className="mr-2" style={{ color: '#2C4969' }}>✓</span>
+                <span className="mr-2 text-primary">✓</span>
                 <span>Apply to join your dream voyage</span>
               </li>
             </ul>
@@ -186,19 +174,16 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="rounded-2xl p-12 text-center" style={{ backgroundColor: '#2C4969' }}>
-          <h3 className="text-3xl font-bold text-white mb-4">
+        <div className="rounded-2xl p-12 text-center bg-primary">
+          <h3 className="text-3xl font-bold text-primary-foreground mb-4">
             Ready to Start Your Adventure?
           </h3>
-          <p className="text-blue-100 mb-8 text-lg max-w-2xl mx-auto">
+          <p className="text-primary-foreground/90 mb-8 text-lg max-w-2xl mx-auto">
             Join our community of boat owners and crew members today
           </p>
           <Link
             href={user ? '/owner/boats' : '/auth/signup'}
-            className="bg-white px-8 py-3 rounded-lg transition-colors font-medium text-lg inline-block"
-            style={{ color: '#2C4969' }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#E8F0F7'}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+            className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg inline-block hover:opacity-90"
           >
             {user ? 'Go to Dashboard' : 'Get Started'}
           </Link>
@@ -208,9 +193,9 @@ export default function Home() {
         {/* Footer */}
         <footer className="border-t border-white/20 bg-white/90 backdrop-blur-md mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center text-gray-600">
+          <div className="text-center text-white/80">
             <p className="mb-2">© 2024 Find My Crew. All rights reserved.</p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-white/70">
               Connecting boat owners with crew members worldwide
             </p>
           </div>

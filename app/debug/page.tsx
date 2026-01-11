@@ -10,20 +10,20 @@ export default async function DebugPage() {
     .limit(5);
 
   return (
-    <main className="min-h-screen bg-white text-black p-8 space-y-6">
+    <main className="min-h-screen bg-background text-foreground p-8 space-y-6">
       <section>
         <h1 className="text-2xl font-bold mb-2">Supabase Server Debug</h1>
-        <p className="text-sm text-gray-600 mb-2">
+        <p className="text-sm text-muted-foreground mb-2">
           This is the result of a server-side query to the <code>profiles</code> table.
         </p>
-        <pre className="bg-gray-100 p-4 rounded text-sm overflow-x-auto">
+        <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
           {JSON.stringify({ data, error }, null, 2)}
         </pre>
       </section>
 
       <section>
         <h2 className="text-xl font-semibold mb-2">Supabase Client Debug</h2>
-        <p className="text-sm text-gray-600 mb-2">
+        <p className="text-sm text-muted-foreground mb-2">
           Below is the result of a client-side query using the browser Supabase client.
         </p>
         <ClientTest />

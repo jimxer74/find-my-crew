@@ -169,18 +169,18 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       >
         {/* Modal */}
         <div
-          className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">
+              <h2 className="text-2xl font-bold text-card-foreground">
                 {journeyId ? 'Edit Journey' : 'Create New Journey'}
               </h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
                 aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -194,7 +194,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                  <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                     {error}
                   </div>
                 )}
@@ -202,7 +202,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Boat Selection */}
                   <div className="md:col-span-2">
-                    <label htmlFor="boat_id" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
                       Boat *
                     </label>
                     <select
@@ -211,7 +211,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       required
                       value={formData.boat_id}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     >
                       <option value="">Select a boat</option>
                       {boats.map((boat) => (
@@ -221,7 +221,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       ))}
                     </select>
                     {boats.length === 0 && (
-                      <p className="text-sm text-gray-500 mt-1">
+                      <p className="text-sm text-muted-foreground mt-1">
                         You need to create a boat first before creating a journey.
                       </p>
                     )}
@@ -229,7 +229,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
 
                   {/* Journey Name */}
                   <div className="md:col-span-2">
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                       Journey Name *
                     </label>
                     <input
@@ -239,14 +239,14 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       required
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., Mediterranean Adventure 2024"
                     />
                   </div>
 
                   {/* Start Date */}
                   <div>
-                    <label htmlFor="start_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="start_date" className="block text-sm font-medium text-foreground mb-1">
                       Start Date
                     </label>
                     <input
@@ -255,13 +255,13 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       name="start_date"
                       value={formData.start_date}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     />
                   </div>
 
                   {/* End Date */}
                   <div>
-                    <label htmlFor="end_date" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="end_date" className="block text-sm font-medium text-foreground mb-1">
                       End Date
                     </label>
                     <input
@@ -270,13 +270,13 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       name="end_date"
                       value={formData.end_date}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     />
                   </div>
 
                   {/* Description */}
                   <div className="md:col-span-2">
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
                       Description
                     </label>
                     <textarea
@@ -285,7 +285,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                       rows={4}
                       value={formData.description}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2C4969] focus:border-[#2C4969]"
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="Describe your journey..."
                     />
                   </div>
@@ -298,29 +298,26 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                         name="is_public"
                         checked={formData.is_public}
                         onChange={handleChange}
-                        className="w-4 h-4 text-[#2C4969] border-gray-300 rounded focus:ring-[#2C4969]"
+                        className="w-4 h-4 text-primary border-border rounded focus:ring-ring"
                       />
-                      <span className="ml-2 text-sm text-gray-700">Make this journey public</span>
+                      <span className="ml-2 text-sm text-foreground">Make this journey public</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Form Actions */}
-                <div className="flex justify-end gap-4 pt-4 border-t mt-6">
+                <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 font-medium"
+                    className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading || boats.length === 0}
-                    className="px-4 py-2 text-white rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ backgroundColor: '#2C4969' }}
-                    onMouseEnter={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#1F3449')}
-                    onMouseLeave={(e) => !e.currentTarget.disabled && (e.currentTarget.style.backgroundColor = '#2C4969')}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                   >
                     {loading ? 'Saving...' : journeyId ? 'Update Journey' : 'Create Journey'}
                   </button>
