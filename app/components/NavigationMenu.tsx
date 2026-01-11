@@ -7,7 +7,12 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
-export function NavigationMenu() {
+type NavigationMenuProps = {
+  onOpenLogin?: () => void;
+  onOpenSignup?: () => void;
+};
+
+export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -130,18 +135,18 @@ export function NavigationMenu() {
             </>
           ) : (
             <>
-              <Link
-                href="/auth/login"
+              <button
+                onClick={() => onOpenLogin?.()}
                 className="px-4 py-2 text-sm font-medium text-foreground border border-border rounded-md hover:bg-accent transition-colors"
               >
                 Log in
-              </Link>
-              <Link
-                href="/auth/signup"
+              </button>
+              <button
+                onClick={() => onOpenSignup?.()}
                 className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
               >
                 Sign up
-              </Link>
+              </button>
             </>
           )}
         </div>
@@ -280,10 +285,12 @@ export function NavigationMenu() {
               ) : (
                 <>
                   {/* Sign in */}
-                  <Link
-                    href="/auth/login"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      onOpenLogin?.();
+                    }}
+                    className="w-full flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors text-left"
                   >
                     <svg
                       className="w-5 h-5 mr-3 text-muted-foreground"
@@ -297,7 +304,7 @@ export function NavigationMenu() {
                       <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
                     <span className="font-medium">Sign in</span>
-                  </Link>
+                  </button>
                 </>
               )}
             </div>

@@ -1,13 +1,18 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from './components/Header';
 import { useAuth } from './contexts/AuthContext';
+import { LoginModal } from './components/LoginModal';
+import { SignupModal } from './components/SignupModal';
 
 export default function Home() {
   const { user } = useAuth();
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen">
       {/* Background image with zoom effect */}
@@ -57,18 +62,18 @@ export default function Home() {
               </>
             ) : (
               <>
-                <Link
-                  href="/auth/signup"
+                <button
+                  onClick={() => setIsSignupModalOpen(true)}
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
                 >
                   Sign up
-                </Link>
-                <Link
-                  href="/auth/login"
+                </button>
+                <button
+                  onClick={() => setIsLoginModalOpen(true)}
                   className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                 >
                   Log in
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -185,12 +190,21 @@ export default function Home() {
           <p className="text-primary-foreground/90 mb-8 text-lg max-w-2xl mx-auto">
             Join our community of boat owners and crew members today
           </p>
-          <Link
-            href={user ? '/owner/boats' : '/auth/signup'}
-            className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg inline-block hover:opacity-90"
-          >
-            {user ? 'Go to Dashboard' : 'Sign up'}
-          </Link>
+          {user ? (
+            <Link
+              href="/owner/boats"
+              className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg inline-block hover:opacity-90"
+            >
+              Go to Dashboard
+            </Link>
+          ) : (
+            <button
+              onClick={() => setIsSignupModalOpen(true)}
+              className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg hover:opacity-90"
+            >
+              Sign up
+            </button>
+          )}
         </div>
       </section>
 
@@ -206,6 +220,22 @@ export default function Home() {
         </div>
       </footer>
       </div>
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSwitchToSignup={() => {
+          setIsLoginModalOpen(false);
+          setIsSignupModalOpen(true);
+        }}
+      />
+      <SignupModal
+        isOpen={isSignupModalOpen}
+        onClose={() => setIsSignupModalOpen(false)}
+        onSwitchToLogin={() => {
+          setIsSignupModalOpen(false);
+          setIsLoginModalOpen(true);
+        }}
+      />
     </div>
   );
 }
