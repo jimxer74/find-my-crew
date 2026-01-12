@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -55,6 +55,8 @@ export default function LegsManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPaneOpen, setIsPaneOpen] = useState(true);
   const [legs, setLegs] = useState<Leg[]>([]);
+  const mapRef = useRef<any>(null);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -64,6 +66,7 @@ export default function LegsManagementPage() {
 
     if (user && journeyId) {
       loadJourney();
+      loadLegs();
     }
   }, [user, authLoading, router, journeyId]);
 
@@ -85,9 +88,179 @@ export default function LegsManagementPage() {
     setLoading(false);
   };
 
+  const loadLegs = async () => {
+    if (!user || !journeyId) return;
+
+    const supabase = getSupabaseBrowserClient();
+    const { data, error } = await supabase
+      .from('legs')
+      .select('id, name, waypoints')
+      .eq('journey_id', journeyId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error loading legs:', error);
+    } else if (data) {
+      // Convert database format to component format
+      const convertedLegs: Leg[] = data.map((leg: any) => {
+        const waypoints = leg.waypoints || [];
+        const sortedWaypoints = [...waypoints].sort((a: any, b: any) => a.index - b.index);
+        
+        const startWaypoint = sortedWaypoints.find((w: any) => w.index === 0) || null;
+        const endWaypoint = sortedWaypoints.find((w: any, idx: number, arr: any[]) => 
+          idx === arr.length - 1 && w.index > 0
+        ) || null;
+        const intermediateWaypoints = sortedWaypoints.filter((w: any) => 
+          w.index > 0 && w !== endWaypoint
+        );
+
+        return {
+          id: leg.id,
+          startWaypoint: startWaypoint ? {
+            index: startWaypoint.index,
+            geocode: {
+              type: startWaypoint.geocode.type,
+              coordinates: startWaypoint.geocode.coordinates,
+            },
+            name: startWaypoint.name || '',
+          } : null,
+          endWaypoint: endWaypoint ? {
+            index: endWaypoint.index,
+            geocode: {
+              type: endWaypoint.geocode.type,
+              coordinates: endWaypoint.geocode.coordinates,
+            },
+            name: endWaypoint.name || '',
+          } : null,
+          intermediateWaypoints: intermediateWaypoints.map((w: any) => ({
+            index: w.index,
+            geocode: {
+              type: w.geocode.type,
+              coordinates: w.geocode.coordinates,
+            },
+            name: w.name || '',
+          })),
+        };
+      });
+      
+      setLegs(convertedLegs);
+      
+      // Fit map to show all legs if map is loaded
+      if (convertedLegs.length > 0 && mapRef.current && mapLoaded) {
+        // Use setTimeout to ensure map is fully ready
+        setTimeout(() => {
+          fitMapToLegs(mapRef.current, convertedLegs);
+        }, 200);
+      }
+    }
+  };
+
+  // Effect to fit map when both map and legs are ready (only on initial load)
+  const hasFittedInitialBounds = useRef(false);
+  useEffect(() => {
+    if (mapLoaded && mapRef.current && legs.length > 0 && !hasFittedInitialBounds.current) {
+      // Use setTimeout to ensure everything is ready
+      const timer = setTimeout(() => {
+        fitMapToLegs(mapRef.current, legs);
+        hasFittedInitialBounds.current = true;
+      }, 300);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [mapLoaded, legs.length]);
+
+  const fitMapToLegs = (map: any, legsToFit?: Leg[]) => {
+    const legsToUse = legsToFit || legs;
+    if (!map || legsToUse.length === 0) return;
+
+    // Check if map is fully loaded
+    if (!map.loaded()) {
+      // Wait for map to load
+      map.once('load', () => {
+        fitMapToLegs(map, legsToFit);
+      });
+      return;
+    }
+
+    // Collect all coordinates from all legs
+    const coordinates: [number, number][] = [];
+    
+    legsToUse.forEach(leg => {
+      if (leg.startWaypoint) {
+        coordinates.push(leg.startWaypoint.geocode.coordinates);
+      }
+      if (leg.intermediateWaypoints) {
+        leg.intermediateWaypoints.forEach(wp => {
+          coordinates.push(wp.geocode.coordinates);
+        });
+      }
+      if (leg.endWaypoint) {
+        coordinates.push(leg.endWaypoint.geocode.coordinates);
+      }
+    });
+
+    if (coordinates.length === 0) return;
+
+    // Handle single point case
+    if (coordinates.length === 1) {
+      const [lng, lat] = coordinates[0];
+      map.flyTo({
+        center: [lng, lat],
+        zoom: 10,
+        duration: 1000,
+      });
+      return;
+    }
+
+    // Calculate bounds
+    const lngs = coordinates.map(c => c[0]);
+    const lats = coordinates.map(c => c[1]);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+
+    // Add padding to bounds
+    const padding = 0.1; // 10% padding
+    const lngDiff = maxLng - minLng || 0.01; // Avoid division by zero
+    const latDiff = maxLat - minLat || 0.01;
+    
+    const bounds: [[number, number], [number, number]] = [
+      [minLng - lngDiff * padding, minLat - latDiff * padding],
+      [maxLng + lngDiff * padding, maxLat + latDiff * padding]
+    ];
+
+    // Fit map to bounds
+    try {
+      map.fitBounds(bounds, {
+        padding: 50, // 50px padding on all sides
+        duration: 1000,
+        maxZoom: 12, // Don't zoom in too much
+      });
+    } catch (error) {
+      console.error('Error fitting bounds:', error);
+      // Fallback to center on first waypoint
+      if (coordinates.length > 0) {
+        const [lng, lat] = coordinates[0];
+        map.flyTo({
+          center: [lng, lat],
+          zoom: 8,
+          duration: 1000,
+        });
+      }
+    }
+  };
+
   const handleMapLoad = (map: any) => {
-    // TODO: Add legs markers and routes to the map
-    console.log('Map loaded:', map);
+    mapRef.current = map;
+    setMapLoaded(true);
+    // Fit map to show all legs if legs are already loaded
+    if (legs.length > 0) {
+      // Use setTimeout to ensure map is fully initialized
+      setTimeout(() => {
+        fitMapToLegs(map, legs);
+      }, 200);
+    }
   };
 
   const handleEditSuccess = () => {
@@ -146,7 +319,7 @@ export default function LegsManagementPage() {
     setLegs(updatedLegs);
   };
 
-  const handleEndLeg = (lng: number, lat: number, name: string) => {
+  const handleEndLeg = async (lng: number, lat: number, name: string) => {
     // Find the active leg (one without an end point)
     const activeLegIndex = legs.findIndex(leg => leg.startWaypoint !== null && leg.endWaypoint === null);
     
@@ -172,14 +345,85 @@ export default function LegsManagementPage() {
       name: name,
     };
     
-    // Update the leg with the end waypoint
-    const updatedLegs = [...legs];
-    updatedLegs[activeLegIndex] = {
-      ...activeLeg,
-      endWaypoint: endWaypoint,
-    };
+    // Build all waypoints array for database
+    const allWaypoints = [];
+    if (activeLeg.startWaypoint) {
+      allWaypoints.push(activeLeg.startWaypoint);
+    }
+    if (activeLeg.intermediateWaypoints) {
+      allWaypoints.push(...activeLeg.intermediateWaypoints);
+    }
+    allWaypoints.push(endWaypoint);
     
-    setLegs(updatedLegs);
+    // Create leg name: "Starting point to Ending point"
+    const legName = `${activeLeg.startWaypoint?.name || 'Unknown'} to ${name}`;
+    
+    // Save to database
+    const supabase = getSupabaseBrowserClient();
+    
+    if (activeLeg.id.startsWith('temp-')) {
+      // New leg - insert into database
+      const { data, error } = await supabase
+        .from('legs')
+        .insert({
+          journey_id: journeyId,
+          name: legName,
+          waypoints: allWaypoints,
+        })
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Error saving leg to database:', error);
+        return;
+      }
+      
+      // Update local state with database ID
+      const updatedLegs = [...legs];
+      updatedLegs[activeLegIndex] = {
+        id: data.id,
+        startWaypoint: activeLeg.startWaypoint,
+        endWaypoint: endWaypoint,
+        intermediateWaypoints: activeLeg.intermediateWaypoints,
+      };
+      setLegs(updatedLegs);
+      
+      // Recenter and refocus map to show all legs after ending a leg
+      if (mapRef.current && mapLoaded) {
+        setTimeout(() => {
+          fitMapToLegs(mapRef.current, updatedLegs);
+        }, 200);
+      }
+    } else {
+      // Existing leg - update in database
+      const { error } = await supabase
+        .from('legs')
+        .update({
+          name: legName,
+          waypoints: allWaypoints,
+        })
+        .eq('id', activeLeg.id);
+      
+      if (error) {
+        console.error('Error updating leg in database:', error);
+        return;
+      }
+      
+      // Update local state
+      const updatedLegs = [...legs];
+      updatedLegs[activeLegIndex] = {
+        ...activeLeg,
+        endWaypoint: endWaypoint,
+      };
+      setLegs(updatedLegs);
+      
+      // Recenter and refocus map to show all legs after ending a leg
+      if (mapRef.current && mapLoaded) {
+        setTimeout(() => {
+          fitMapToLegs(mapRef.current, updatedLegs);
+        }, 200);
+      }
+    }
   };
 
   // Get all legs' waypoints for the map
@@ -257,10 +501,10 @@ export default function LegsManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 flex overflow-hidden relative">
+      <main className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Toggle Button */}
         <button
           onClick={() => setIsPaneOpen(!isPaneOpen)}
@@ -364,11 +608,22 @@ export default function LegsManagementPage() {
                           // TODO: Implement edit functionality
                           console.log('Edit leg:', leg.id);
                         }}
-                        onSave={() => {
-                          // TODO: Implement save functionality
-                          console.log('Save leg:', leg.id);
-                        }}
-                        onDelete={() => {
+                        onDelete={async () => {
+                          // Only delete from database if it's not a temporary leg
+                          if (!leg.id.startsWith('temp-')) {
+                            const supabase = getSupabaseBrowserClient();
+                            const { error } = await supabase
+                              .from('legs')
+                              .delete()
+                              .eq('id', leg.id);
+                            
+                            if (error) {
+                              console.error('Error deleting leg from database:', error);
+                              return;
+                            }
+                          }
+                          
+                          // Remove from local state
                           setLegs(legs.filter(l => l.id !== leg.id));
                         }}
                       />

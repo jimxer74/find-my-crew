@@ -13,11 +13,10 @@ type LegCardProps = {
   startWaypoint: Waypoint | null;
   endWaypoint: Waypoint | null;
   onEdit?: () => void;
-  onSave?: () => void;
   onDelete?: () => void;
 };
 
-export function LegCard({ startWaypoint, endWaypoint, onEdit, onSave, onDelete }: LegCardProps) {
+export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCardProps) {
   return (
     <div className="bg-card rounded-lg shadow p-4 mb-4">
       {/* Start and End Points */}
@@ -73,37 +72,6 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onSave, onDelete }
               strokeLinejoin="round"
               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
             />
-          </svg>
-        </button>
-        <button
-          onClick={onSave}
-          className="text-primary hover:opacity-80 transition-opacity p-1 cursor-pointer"
-          aria-label="Save leg"
-          title="Save leg"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-          >
-            {/* Main floppy disk body */}
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M5 6h14a1 1 0 011 1v12a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1z"
-            />
-            {/* Top-right corner clip */}
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 6v-2a1 1 0 00-1-1h-2"
-            />
-            {/* Central rectangle (metal shutter) */}
-            <rect x="8" y="10" width="8" height="6" rx="0.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
-            {/* Horizontal line across the top of the central rectangle */}
-            <line x1="8" y1="11" x2="16" y2="11" stroke="currentColor" strokeWidth="1.5" />
           </svg>
         </button>
         <button
