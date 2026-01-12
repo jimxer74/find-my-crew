@@ -17,6 +17,29 @@ type LegCardProps = {
 };
 
 export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCardProps) {
+  const formatLocationName = (name: string) => {
+    if (!name || name === 'Unknown location') {
+      return <span className="text-xs font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
+    }
+    
+    // Split by comma to separate city and country
+    const parts = name.split(',').map(part => part.trim());
+    
+    if (parts.length >= 2) {
+      const city = parts[0];
+      const country = parts.slice(1).join(', '); // Handle cases with multiple commas
+      return (
+        <span className="text-xs text-card-foreground">
+          <span className="font-semibold">{city}</span>
+          {country && <span className="font-normal">, {country}</span>}
+        </span>
+      );
+    }
+    
+    // If no comma, just show the name in bold
+    return <span className="text-xs font-semibold text-card-foreground">{name}</span>;
+  };
+
   return (
     <div className="bg-card rounded-lg shadow p-4 mb-4">
       {/* Start and End Points */}
@@ -24,8 +47,8 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCar
         {/* Start Point */}
         <div className="flex-1">
           {startWaypoint ? (
-            <h3 className="text-sm font-semibold text-card-foreground">
-              {startWaypoint.name || 'Unknown location'}
+            <h3 className="text-card-foreground">
+              {formatLocationName(startWaypoint.name || 'Unknown location')}
             </h3>
           ) : (
             <div className="text-xs text-muted-foreground">No start point</div>
@@ -40,8 +63,8 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCar
         {/* End Point */}
         <div className="flex-1">
           {endWaypoint ? (
-            <h3 className="text-sm font-semibold text-card-foreground">
-              {endWaypoint.name || 'Unknown location'}
+            <h3 className="text-card-foreground">
+              {formatLocationName(endWaypoint.name || 'Unknown location')}
             </h3>
           ) : (
             <div className="text-xs text-muted-foreground">No end point</div>

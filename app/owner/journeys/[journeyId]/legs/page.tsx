@@ -57,6 +57,7 @@ export default function LegsManagementPage() {
   const [legs, setLegs] = useState<Leg[]>([]);
   const mapRef = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [legToDelete, setLegToDelete] = useState<Leg | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -608,23 +609,9 @@ export default function LegsManagementPage() {
                           // TODO: Implement edit functionality
                           console.log('Edit leg:', leg.id);
                         }}
-                        onDelete={async () => {
-                          // Only delete from database if it's not a temporary leg
-                          if (!leg.id.startsWith('temp-')) {
-                            const supabase = getSupabaseBrowserClient();
-                            const { error } = await supabase
-                              .from('legs')
-                              .delete()
-                              .eq('id', leg.id);
-                            
-                            if (error) {
-                              console.error('Error deleting leg from database:', error);
-                              return;
-                            }
-                          }
-                          
-                          // Remove from local state
-                          setLegs(legs.filter(l => l.id !== leg.id));
+                        onDelete={() => {
+                          // Open delete confirmation dialog
+                          setLegToDelete(leg);
                         }}
                       />
                     ))}
@@ -661,6 +648,62 @@ export default function LegsManagementPage() {
           journeyId={journey.id}
           userId={user.id}
         />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {legToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setLegToDelete(null)}
+        >
+          <div
+            className="bg-card border border-border rounded-lg shadow-xl max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-card-foreground mb-4">
+                Delete Leg
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to permanently delete the leg?
+              </p>
+              <div className="flex gap-3 justify-end pt-4 border-t border-border">
+                <button
+                  onClick={() => setLegToDelete(null)}
+                  className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const leg = legToDelete;
+                    setLegToDelete(null);
+                    
+                    // Only delete from database if it's not a temporary leg
+                    if (!leg.id.startsWith('temp-')) {
+                      const supabase = getSupabaseBrowserClient();
+                      const { error } = await supabase
+                        .from('legs')
+                        .delete()
+                        .eq('id', leg.id);
+                      
+                      if (error) {
+                        console.error('Error deleting leg from database:', error);
+                        return;
+                      }
+                    }
+                    
+                    // Remove from local state
+                    setLegs(legs.filter(l => l.id !== leg.id));
+                  }}
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md font-medium hover:opacity-90 transition-opacity"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
