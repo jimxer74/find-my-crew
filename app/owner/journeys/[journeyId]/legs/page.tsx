@@ -58,6 +58,8 @@ export default function LegsManagementPage() {
   const mapRef = useRef<any>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [legToDelete, setLegToDelete] = useState<Leg | null>(null);
+  const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
+  const legCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -605,6 +607,22 @@ export default function LegsManagementPage() {
                         key={leg.id}
                         startWaypoint={leg.startWaypoint}
                         endWaypoint={leg.endWaypoint}
+                        isSelected={selectedLegId === leg.id}
+                        cardRef={(el) => {
+                          if (el) {
+                            legCardRefs.current.set(leg.id, el);
+                          } else {
+                            legCardRefs.current.delete(leg.id);
+                          }
+                        }}
+                        onClick={() => {
+                          setSelectedLegId(leg.id);
+                          // Scroll to the leg card
+                          const cardElement = legCardRefs.current.get(leg.id);
+                          if (cardElement) {
+                            cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                          }
+                        }}
                         onEdit={() => {
                           // TODO: Implement edit functionality
                           console.log('Edit leg:', leg.id);
@@ -634,6 +652,15 @@ export default function LegsManagementPage() {
             hasActiveLegWithoutEnd={legs.some(leg => leg.startWaypoint !== null && leg.endWaypoint === null)}
             activeLegWaypoints={getActiveLegWaypoints()}
             allLegsWaypoints={getAllLegsWaypoints()}
+            selectedLegId={selectedLegId}
+            onLegClick={(legId) => {
+              setSelectedLegId(legId);
+              // Scroll to the leg card
+              const cardElement = legCardRefs.current.get(legId);
+              if (cardElement) {
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }}
             className="absolute inset-0"
           />
         </div>

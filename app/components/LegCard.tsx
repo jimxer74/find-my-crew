@@ -14,9 +14,12 @@ type LegCardProps = {
   endWaypoint: Waypoint | null;
   onEdit?: () => void;
   onDelete?: () => void;
+  onClick?: () => void;
+  isSelected?: boolean;
+  cardRef?: (el: HTMLDivElement | null) => void;
 };
 
-export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCardProps) {
+export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete, onClick, isSelected = false, cardRef }: LegCardProps) {
   const formatLocationName = (name: string) => {
     if (!name || name === 'Unknown location') {
       return <span className="text-xs font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
@@ -41,7 +44,13 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCar
   };
 
   return (
-    <div className="bg-card rounded-lg shadow p-4 mb-4">
+    <div
+      ref={cardRef || undefined}
+      onClick={onClick}
+      className={`bg-card rounded-lg shadow p-4 mb-4 cursor-pointer transition-all ${
+        isSelected ? 'ring-2 ring-primary border-2 border-primary' : ''
+      }`}
+    >
       {/* Start and End Points */}
       <div className="flex items-center justify-between mb-4">
         {/* Start Point */}
@@ -78,7 +87,10 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCar
       {/* Action Buttons */}
       <div className="flex items-center justify-center gap-3">
         <button
-          onClick={onEdit}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.();
+          }}
           className="text-primary hover:opacity-80 transition-opacity p-1 cursor-pointer"
           aria-label="Edit leg"
           title="Edit leg"
@@ -98,7 +110,10 @@ export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete }: LegCar
           </svg>
         </button>
         <button
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete?.();
+          }}
           className="text-primary hover:opacity-80 transition-opacity p-1 cursor-pointer"
           aria-label="Delete leg"
           title="Delete leg"

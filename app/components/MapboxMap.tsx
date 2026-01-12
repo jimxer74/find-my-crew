@@ -30,6 +30,8 @@ type MapboxMapProps = {
   activeLegWaypoints?: Waypoint[]; // Waypoints for the active leg (for determining color)
   allLegsWaypoints?: LegWaypoints[]; // All legs' waypoints for drawing all route lines
   onDeleteLeg?: (legId: string) => void; // Callback to delete markers for a leg
+  selectedLegId?: string | null; // ID of the currently selected leg
+  onLegClick?: (legId: string) => void; // Callback when a leg route or marker is clicked
   className?: string;
 };
 
@@ -49,6 +51,8 @@ export function MapboxMap({
   hasActiveLegWithoutEnd = false,
   activeLegWaypoints = [],
   allLegsWaypoints = [],
+  selectedLegId = null,
+  onLegClick,
   className = '',
 }: MapboxMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -58,6 +62,8 @@ export function MapboxMap({
   const legEndMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map()); // Map legId to end marker
   const legWaypointMarkersRef = useRef<Map<string, mapboxgl.Marker[]>>(new Map()); // Map legId to array of waypoint markers
   const routeSourcesRef = useRef<Map<string, string>>(new Map()); // Map legId to sourceId
+  const routeLayerListenersRef = useRef<Set<string>>(new Set()); // Track which layers have listeners
+  const routeLineClickedRef = useRef(false); // Flag to track if route line was clicked
   const mapInitializedRef = useRef(false);
   const currentLegIdRef = useRef<string | null>(null); // Track the current leg being created
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -145,6 +151,23 @@ export function MapboxMap({
     // Handle map click
     const handleMapClick = async (e: mapboxgl.MapMouseEvent) => {
       if (!map.current) return;
+
+      // Check if a route line was clicked (using flag set by route line click handler)
+      if (routeLineClickedRef.current) {
+        return;
+      }
+
+      // Also check if the click was on a route line layer by querying features
+      const clickedFeatures = map.current.queryRenderedFeatures(e.point);
+      const clickedRouteLine = clickedFeatures.some(feature => {
+        const layerId = feature.layer?.id || '';
+        return layerId.startsWith('route-line-layer-');
+      });
+      
+      // If a route line was clicked, don't open the dialog
+      if (clickedRouteLine) {
+        return;
+      }
 
       const { lng, lat } = e.lngLat;
       setIsLoadingLocation(true);
@@ -245,6 +268,7 @@ export function MapboxMap({
           }
         });
         routeSourcesRef.current.clear();
+        routeLayerListenersRef.current.clear();
         // Remove the map
         map.current.remove();
         map.current = null;
@@ -265,16 +289,28 @@ export function MapboxMap({
   const addPermanentWaypointMarker = (lng: number, lat: number, legId: string) => {
     if (!map.current) return;
 
-    // Create a gray waypoint marker (permanent, for intermediate waypoints)
+    // Determine color based on selection
+    const isSelected = selectedLegId === legId;
+    const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+
+    // Create a waypoint marker (permanent, for intermediate waypoints)
     const el = document.createElement('div');
     el.className = 'waypoint-marker-permanent';
     el.style.width = '16px';
     el.style.height = '16px';
     el.style.borderRadius = '50%';
-    el.style.backgroundColor = '#6b7280'; // gray-500
+    el.style.backgroundColor = backgroundColor;
     el.style.border = '2px solid white';
     el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
     el.style.cursor = 'pointer';
+
+    // Add click handler to marker
+    if (onLegClick) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onLegClick(legId);
+      });
+    }
 
     // Create and add marker to map
     const marker = new mapboxgl.Marker({
@@ -303,16 +339,39 @@ export function MapboxMap({
       legEndMarkersRef.current.delete(legId);
     }
 
-    // Create a red, larger marker element for leg end
+    // Determine color based on selection
+    const isSelected = selectedLegId === legId;
+    const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+
     const el = document.createElement('div');
     el.className = 'leg-end-marker';
     el.style.width = '24px';
     el.style.height = '24px';
     el.style.borderRadius = '50%';
-    el.style.backgroundColor = '#ef4444'; // red-500
+    el.style.backgroundColor = backgroundColor;
     el.style.border = '3px solid white';
     el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
     el.style.cursor = 'pointer';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    
+    // Add "E" text
+    const text = document.createElement('span');
+    text.textContent = 'E';
+    text.style.color = 'white';
+    text.style.fontSize = '12px';
+    text.style.fontWeight = 'bold';
+    text.style.lineHeight = '1';
+    el.appendChild(text);
+
+    // Add click handler to marker
+    if (onLegClick) {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        onLegClick(legId);
+      });
+    }
 
     // Create and add permanent marker to map
     const marker = new mapboxgl.Marker({
@@ -374,6 +433,7 @@ export function MapboxMap({
         });
 
         // Create layer for this leg's route line
+        const isSelected = selectedLegId === legId;
         map.current?.addLayer({
           id: layerId,
           type: 'line',
@@ -383,11 +443,42 @@ export function MapboxMap({
             'line-cap': 'round',
           },
           paint: {
-            'line-color': isComplete ? '#22c55e' : '#6b7280', // green-500 if complete, gray-500 if incomplete
-            'line-width': 3,
+            'line-color': isSelected ? '#22c55e' : '#6b7280', // green if selected, gray otherwise
+            'line-width': isSelected ? 4 : 3, // Slightly thicker when selected
             'line-opacity': 0.8,
           },
         });
+        
+        // Make route line clickable (only add listeners once per layer)
+        if (onLegClick && map.current && !routeLayerListenersRef.current.has(layerId)) {
+          const handleClick = (e: any) => {
+            // Set flag to prevent map click handler from opening dialog
+            routeLineClickedRef.current = true;
+            // Reset flag after a short delay
+            setTimeout(() => {
+              routeLineClickedRef.current = false;
+            }, 100);
+            onLegClick(legId);
+          };
+          
+          const handleMouseEnter = () => {
+            if (map.current) {
+              map.current.getCanvas().style.cursor = 'pointer';
+            }
+          };
+          
+          const handleMouseLeave = () => {
+            if (map.current) {
+              map.current.getCanvas().style.cursor = 'default';
+            }
+          };
+          
+          map.current.on('click', layerId, handleClick);
+          map.current.on('mouseenter', layerId, handleMouseEnter);
+          map.current.on('mouseleave', layerId, handleMouseLeave);
+          
+          routeLayerListenersRef.current.add(layerId);
+        }
 
         routeSourcesRef.current.set(legId, sourceId);
       } else {
@@ -401,11 +492,12 @@ export function MapboxMap({
           },
         });
 
-        // Update line color based on completion status
+        // Update line color and width based on selection
+        const isSelected = selectedLegId === legId;
         const layer = map.current?.getLayer(layerId);
         if (layer) {
-          const lineColor = isComplete ? '#22c55e' : '#6b7280';
-          map.current?.setPaintProperty(layerId, 'line-color', lineColor);
+          map.current?.setPaintProperty(layerId, 'line-color', isSelected ? '#22c55e' : '#6b7280');
+          map.current?.setPaintProperty(layerId, 'line-width', isSelected ? 4 : 3);
         }
       }
     });
@@ -414,6 +506,7 @@ export function MapboxMap({
     routeSourcesRef.current.forEach((sourceId: string, legId: string) => {
       if (!existingSourceIds.has(sourceId)) {
         const layerId = `route-line-layer-${legId}`;
+        // Remove layer (event listeners are automatically cleaned up when layer is removed)
         if (map.current?.getLayer(layerId)) {
           map.current.removeLayer(layerId);
         }
@@ -421,9 +514,10 @@ export function MapboxMap({
           map.current.removeSource(sourceId);
         }
         routeSourcesRef.current.delete(legId);
+        routeLayerListenersRef.current.delete(layerId);
       }
     });
-  }, [allLegsWaypoints, mapLoaded]);
+  }, [allLegsWaypoints, mapLoaded, selectedLegId, onLegClick]);
 
   // Function to remove all markers for a specific leg
   const removeLegMarkers = (legId: string) => {
@@ -465,41 +559,83 @@ export function MapboxMap({
       
       if (waypoints.length === 0) return;
       
-      // Ensure start marker exists
-      const startWaypoint = waypoints[0];
-      if (startWaypoint && startWaypoint.geocode && startWaypoint.geocode.coordinates) {
-        const [lng, lat] = startWaypoint.geocode.coordinates;
-        if (!legStartMarkersRef.current.has(legId)) {
-          // Create start marker
-          const el = document.createElement('div');
-          el.className = 'leg-start-marker';
-          el.style.width = '24px';
-          el.style.height = '24px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#22c55e'; // green-500
-          el.style.border = '3px solid white';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-          el.style.cursor = 'pointer';
+        // Ensure start marker exists
+        const startWaypoint = waypoints[0];
+        if (startWaypoint && startWaypoint.geocode && startWaypoint.geocode.coordinates) {
+          const [lng, lat] = startWaypoint.geocode.coordinates;
+          const existingStartMarker = legStartMarkersRef.current.get(legId);
           
-          const marker = new mapboxgl.Marker({
-            element: el,
-            anchor: 'center',
-          }).setLngLat([lng, lat]);
+          // Determine color based on selection
+          const isSelected = selectedLegId === legId;
+          const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
           
-          if (map.current) {
-            marker.addTo(map.current);
-            legStartMarkersRef.current.set(legId, marker);
+          if (!existingStartMarker) {
+            // Create start marker with "S" label
+            const el = document.createElement('div');
+            el.className = 'leg-start-marker';
+            el.style.width = '24px';
+            el.style.height = '24px';
+            el.style.borderRadius = '50%';
+            el.style.backgroundColor = backgroundColor;
+            el.style.border = '3px solid white';
+            el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
+            el.style.cursor = 'pointer';
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            
+            // Add "S" text
+            const text = document.createElement('span');
+            text.textContent = 'S';
+            text.style.color = 'white';
+            text.style.fontSize = '12px';
+            text.style.fontWeight = 'bold';
+            text.style.lineHeight = '1';
+            el.appendChild(text);
+            
+            // Add click handler to marker
+            if (onLegClick) {
+              el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onLegClick(legId);
+              });
+            }
+            
+            const marker = new mapboxgl.Marker({
+              element: el,
+              anchor: 'center',
+            }).setLngLat([lng, lat]);
+            
+            if (map.current) {
+              marker.addTo(map.current);
+              legStartMarkersRef.current.set(legId, marker);
+            }
+          } else {
+            // Update existing marker color
+            const markerEl = existingStartMarker.getElement();
+            if (markerEl) {
+              markerEl.style.backgroundColor = backgroundColor;
+            }
           }
         }
-      }
       
       // Ensure end marker exists if leg is complete
       if (isComplete && waypoints.length > 1 && map.current) {
         const endWaypoint = waypoints[waypoints.length - 1];
         if (endWaypoint && endWaypoint.geocode && endWaypoint.geocode.coordinates) {
           const [lng, lat] = endWaypoint.geocode.coordinates;
-          if (!legEndMarkersRef.current.has(legId)) {
+          const existingEndMarker = legEndMarkersRef.current.get(legId);
+          
+          if (!existingEndMarker) {
             addEndMarker(lng, lat, legId);
+          } else {
+            // Update existing marker color based on selection
+            const isSelected = selectedLegId === legId;
+            const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
+            const markerEl = existingEndMarker.getElement();
+            if (markerEl) {
+              markerEl.style.backgroundColor = backgroundColor;
+            }
           }
         }
       }
@@ -514,12 +650,20 @@ export function MapboxMap({
           if (waypoint && waypoint.geocode && waypoint.geocode.coordinates) {
             const [lng, lat] = waypoint.geocode.coordinates;
             // Check if marker already exists at this position (simple check)
-            const exists = existingWaypoints.some(marker => {
+            const existingMarker = existingWaypoints.find(marker => {
               const pos = marker.getLngLat();
               return Math.abs(pos.lng - lng) < 0.0001 && Math.abs(pos.lat - lat) < 0.0001;
             });
             
-            if (!exists && index >= existingWaypoints.length) {
+            if (existingMarker) {
+              // Update existing marker color based on selection
+              const isSelected = selectedLegId === legId;
+              const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
+              const markerEl = existingMarker.getElement();
+              if (markerEl) {
+                markerEl.style.backgroundColor = backgroundColor;
+              }
+            } else if (index >= existingWaypoints.length) {
               addPermanentWaypointMarker(lng, lat, legId);
             }
           }
@@ -543,7 +687,7 @@ export function MapboxMap({
         removeLegMarkers(legId);
       }
     });
-  }, [allLegsWaypoints, mapLoaded]);
+  }, [allLegsWaypoints, mapLoaded, selectedLegId, onLegClick]);
 
   const handleStartNewLeg = (lng: number, lat: number, legId: string) => {
     if (!map.current) {
@@ -567,16 +711,40 @@ export function MapboxMap({
         existingStartMarker.remove();
       }
       
-      // Create a new green marker element with the correct size from the start
+      // Determine color based on selection
+      const isSelected = selectedLegId === legId;
+      const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+      
+      // Create a new marker element with the correct size from the start
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
       el.style.width = '24px';
       el.style.height = '24px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = '#22c55e'; // green-500
+      el.style.backgroundColor = backgroundColor;
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      
+      // Add "S" text
+      const text = document.createElement('span');
+      text.textContent = 'S';
+      text.style.color = 'white';
+      text.style.fontSize = '12px';
+      text.style.fontWeight = 'bold';
+      text.style.lineHeight = '1';
+      el.appendChild(text);
+      
+      // Add click handler to marker
+      if (onLegClick) {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onLegClick(legId);
+        });
+      }
 
       // Create new marker at the EXACT same position as the temporary one
       const newMarker = new mapboxgl.Marker({
@@ -588,20 +756,44 @@ export function MapboxMap({
       if (map.current) {
         newMarker.addTo(map.current);
         legStartMarkersRef.current.set(legId, newMarker);
-        console.log('Replaced temporary marker with green start marker at', currentLngLat);
+        console.log('Replaced temporary marker with start marker at', currentLngLat);
       }
     } else {
-      console.warn('No temporary marker found, creating new green marker');
-      // If no temporary marker exists, create a new green marker
+      console.warn('No temporary marker found, creating new gray marker');
+      // If no temporary marker exists, create a new marker with "S" label
+      // Determine color based on selection
+      const isSelected = selectedLegId === legId;
+      const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+      
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
       el.style.width = '24px';
       el.style.height = '24px';
       el.style.borderRadius = '50%';
-      el.style.backgroundColor = '#22c55e'; // green-500
+      el.style.backgroundColor = backgroundColor;
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      
+      // Add "S" text
+      const text = document.createElement('span');
+      text.textContent = 'S';
+      text.style.color = 'white';
+      text.style.fontSize = '12px';
+      text.style.fontWeight = 'bold';
+      text.style.lineHeight = '1';
+      el.appendChild(text);
+      
+      // Add click handler to marker
+      if (onLegClick) {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onLegClick(legId);
+        });
+      }
 
       // Create and add permanent marker to map with exact coordinates
       const marker = new mapboxgl.Marker({
@@ -613,7 +805,7 @@ export function MapboxMap({
       if (map.current) {
         marker.addTo(map.current);
         legStartMarkersRef.current.set(legId, marker);
-        console.log('Created new green marker at', lng, lat);
+        console.log('Created new gray marker at', lng, lat);
       }
     }
   };
