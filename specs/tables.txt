@@ -187,8 +187,7 @@ create table if not exists public.legs (
   name         text not null,
   start_port   text,
   end_port     text,
-  start_geocode jsonb,  -- Geocode for starting point: {type: 'Point', coordinates: [lng, lat]}
-  end_geocode   jsonb,  -- Geocode for ending point: {type: 'Point', coordinates: [lng, lat]}
+  waypoints    jsonb default '[]',  -- Array of waypoints: [{"index": 0, "geocode": {"type": "Point", "coordinates": [lng, lat]}}, ...]
   start_date   timestamptz,
   end_date     timestamptz,
   crew_needed  int,
@@ -198,6 +197,7 @@ create table if not exists public.legs (
 );
 
 create index if not exists legs_journey_id_idx on public.legs (journey_id);
+create index if not exists legs_waypoints_idx on public.legs using gin (waypoints);
 
 -- Enable RLS on legs
 alter table legs enable row level security;
