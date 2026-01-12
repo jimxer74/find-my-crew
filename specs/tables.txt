@@ -35,6 +35,14 @@ begin
   end if;
 end$$;
 
+-- 1) Simple enum for journey state
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'journey_state') then
+    create type journey_state as enum ('In planning', 'Published', 'Archived');
+  end if;
+end$$;
+
 
 -- 2) profiles: one row per user, extends auth.users
 create table if not exists public.profiles (
@@ -118,20 +126,29 @@ create table if not exists public.journeys (
   end_date     date,
   description  text,
   risk_level   risk_level[] default '{}',
-  is_public    boolean not null default true,
+  state        journey_state not null default 'In planning',
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
 
 create index if not exists journeys_boat_id_idx on public.journeys (boat_id);
+create index if not exists journeys_state_idx on public.journeys (state);
 
 -- Enable RLS on journeys
 alter table journeys enable row level security;
 
 -- Journeys policies
-create policy "Journeys are viewable by all"
+-- Only published journeys are viewable by everyone, owners can see all their journeys
+create policy "Published journeys are viewable by all"
 on journeys for select
-using (true);
+using (
+  state = 'Published'::journey_state
+  or exists (
+    select 1 from boats
+    where boats.id = journeys.boat_id
+    and boats.owner_id = auth.uid()
+  )
+);
 
 create policy "Owners can insert journeys for their boats"
 on journeys for insert

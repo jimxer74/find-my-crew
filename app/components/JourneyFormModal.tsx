@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 
+type JourneyState = 'In planning' | 'Published' | 'Archived';
+
 type Journey = {
   id?: string;
   boat_id: string;
@@ -12,7 +14,7 @@ type Journey = {
   end_date: string;
   description: string;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
-  is_public: boolean;
+  state: JourneyState;
 };
 
 type Boat = {
@@ -36,7 +38,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     end_date: '',
     description: '',
     risk_level: [],
-    is_public: true,
+    state: 'In planning',
   });
   const [boats, setBoats] = useState<Boat[]>([]);
   const [loading, setLoading] = useState(false);
@@ -58,7 +60,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           end_date: '',
           description: '',
           risk_level: [],
-          is_public: true,
+          state: 'In planning',
         });
         setError(null);
       }
@@ -103,7 +105,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
         risk_level: data.risk_level || [],
-        is_public: data.is_public !== undefined ? data.is_public : true,
+        state: data.state || 'In planning',
       });
     }
     setIsLoadingJourney(false);
@@ -123,7 +125,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       end_date: formData.end_date || null,
       description: formData.description || null,
       risk_level: formData.risk_level || [],
-      is_public: formData.is_public,
+      state: formData.state,
       updated_at: new Date().toISOString(),
     };
 
@@ -160,7 +162,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === 'checkbox' ? checked : type === 'radio' ? value : value,
     }));
   };
 
@@ -304,18 +306,49 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                     />
                   </div>
 
-                  {/* Is Public */}
+                  {/* Journey State */}
                   <div className="md:col-span-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        name="is_public"
-                        checked={formData.is_public}
-                        onChange={handleChange}
-                        className="w-4 h-4 text-primary border-border rounded focus:ring-ring"
-                      />
-                      <span className="ml-2 text-sm text-foreground">Make this journey public</span>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Journey State *
                     </label>
+                    <div className="space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="state"
+                          value="In planning"
+                          checked={formData.state === 'In planning'}
+                          onChange={handleChange}
+                          className="w-4 h-4 text-primary border-border focus:ring-ring"
+                        />
+                        <span className="ml-2 text-sm text-foreground">In planning</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="state"
+                          value="Published"
+                          checked={formData.state === 'Published'}
+                          onChange={handleChange}
+                          className="w-4 h-4 text-primary border-border focus:ring-ring"
+                        />
+                        <span className="ml-2 text-sm text-foreground">Published</span>
+                      </label>
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="state"
+                          value="Archived"
+                          checked={formData.state === 'Archived'}
+                          onChange={handleChange}
+                          className="w-4 h-4 text-primary border-border focus:ring-ring"
+                        />
+                        <span className="ml-2 text-sm text-foreground">Archived</span>
+                      </label>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Published journeys are visible to everyone. In planning and archived journeys are only visible to you.
+                    </p>
                   </div>
                 </div>
 

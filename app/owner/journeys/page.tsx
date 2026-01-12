@@ -127,10 +127,10 @@ export default function JourneysPage() {
                 )}
                 <div className="mt-4 flex items-center gap-2">
                   <Link
-                    href={`/owner/journeys/${journey.id}`}
+                    href={`/owner/journeys/${journey.id}/legs`}
                     className="font-medium text-sm text-primary hover:opacity-80"
                   >
-                    View Details & Legs
+                    View legs
                   </Link>
                   <span className="text-border">|</span>
                   <button
