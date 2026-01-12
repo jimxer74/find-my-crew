@@ -289,9 +289,10 @@ export function MapboxMap({
   const addPermanentWaypointMarker = (lng: number, lat: number, legId: string) => {
     if (!map.current) return;
 
-    // Determine color based on selection
+    // Determine color and z-index based on selection
     const isSelected = selectedLegId === legId;
     const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+    const zIndex = isSelected ? '1000' : '100'; // Higher z-index when selected
 
     // Create a waypoint marker (permanent, for intermediate waypoints)
     const el = document.createElement('div');
@@ -303,6 +304,7 @@ export function MapboxMap({
     el.style.border = '2px solid white';
     el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
     el.style.cursor = 'pointer';
+    el.style.zIndex = zIndex;
 
     // Add click handler to marker
     if (onLegClick) {
@@ -339,9 +341,11 @@ export function MapboxMap({
       legEndMarkersRef.current.delete(legId);
     }
 
-    // Determine color based on selection
+    // Determine color and z-index based on selection
     const isSelected = selectedLegId === legId;
     const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+    // End markers always on top, but even higher when selected
+    const zIndex = isSelected ? '2000' : '1500';
 
     const el = document.createElement('div');
     el.className = 'leg-end-marker';
@@ -355,6 +359,7 @@ export function MapboxMap({
     el.style.display = 'flex';
     el.style.alignItems = 'center';
     el.style.justifyContent = 'center';
+    el.style.zIndex = zIndex;
     
     // Add "E" text
     const text = document.createElement('span');
@@ -565,9 +570,11 @@ export function MapboxMap({
           const [lng, lat] = startWaypoint.geocode.coordinates;
           const existingStartMarker = legStartMarkersRef.current.get(legId);
           
-          // Determine color based on selection
+          // Determine color and z-index based on selection
           const isSelected = selectedLegId === legId;
           const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+          // Start markers always on top, but even higher when selected
+          const zIndex = isSelected ? '2000' : '1500';
           
           if (!existingStartMarker) {
             // Create start marker with "S" label
@@ -580,9 +587,10 @@ export function MapboxMap({
             el.style.border = '3px solid white';
             el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
             el.style.cursor = 'pointer';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.zIndex = zIndex;
             
             // Add "S" text
             const text = document.createElement('span');
@@ -611,10 +619,11 @@ export function MapboxMap({
               legStartMarkersRef.current.set(legId, marker);
             }
           } else {
-            // Update existing marker color
+            // Update existing marker color and z-index
             const markerEl = existingStartMarker.getElement();
             if (markerEl) {
               markerEl.style.backgroundColor = backgroundColor;
+              markerEl.style.zIndex = zIndex;
             }
           }
         }
@@ -629,12 +638,14 @@ export function MapboxMap({
           if (!existingEndMarker) {
             addEndMarker(lng, lat, legId);
           } else {
-            // Update existing marker color based on selection
+            // Update existing marker color and z-index based on selection
             const isSelected = selectedLegId === legId;
             const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
+            const zIndex = isSelected ? '2000' : '1500';
             const markerEl = existingEndMarker.getElement();
             if (markerEl) {
               markerEl.style.backgroundColor = backgroundColor;
+              markerEl.style.zIndex = zIndex;
             }
           }
         }
@@ -656,12 +667,14 @@ export function MapboxMap({
             });
             
             if (existingMarker) {
-              // Update existing marker color based on selection
+              // Update existing marker color and z-index based on selection
               const isSelected = selectedLegId === legId;
               const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
+              const zIndex = isSelected ? '1000' : '100';
               const markerEl = existingMarker.getElement();
               if (markerEl) {
                 markerEl.style.backgroundColor = backgroundColor;
+                markerEl.style.zIndex = zIndex;
               }
             } else if (index >= existingWaypoints.length) {
               addPermanentWaypointMarker(lng, lat, legId);
@@ -711,9 +724,10 @@ export function MapboxMap({
         existingStartMarker.remove();
       }
       
-      // Determine color based on selection
+      // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
       const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+      const zIndex = isSelected ? '2000' : '1500'; // Start markers always on top, but even higher when selected
       
       // Create a new marker element with the correct size from the start
       const el = document.createElement('div');
@@ -725,9 +739,10 @@ export function MapboxMap({
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.zIndex = zIndex;
       
       // Add "S" text
       const text = document.createElement('span');
@@ -761,9 +776,10 @@ export function MapboxMap({
     } else {
       console.warn('No temporary marker found, creating new gray marker');
       // If no temporary marker exists, create a new marker with "S" label
-      // Determine color based on selection
+      // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
       const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
+      const zIndex = isSelected ? '2000' : '1500'; // Start markers always on top, but even higher when selected
       
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
@@ -774,9 +790,10 @@ export function MapboxMap({
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
-      el.style.display = 'flex';
-      el.style.alignItems = 'center';
-      el.style.justifyContent = 'center';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.style.justifyContent = 'center';
+    el.style.zIndex = zIndex;
       
       // Add "S" text
       const text = document.createElement('span');
