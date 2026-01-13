@@ -19,7 +19,7 @@ type LegWaypoints = {
   isComplete: boolean;
 };
 
-type MapboxMapProps = {
+type EditJourneyMapProps = {
   initialCenter?: [number, number]; // [lng, lat]
   initialZoom?: number;
   onMapLoad?: (map: mapboxgl.Map) => void;
@@ -41,7 +41,7 @@ type LocationInfo = {
   name: string;
 };
 
-export function MapboxMap({
+export function EditJourneyMap({
   initialCenter = [-74.5, 40], // Default to New York area
   initialZoom = 2,
   onMapLoad,
@@ -54,7 +54,7 @@ export function MapboxMap({
   selectedLegId = null,
   onLegClick,
   className = '',
-}: MapboxMapProps) {
+}: EditJourneyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
@@ -292,7 +292,7 @@ export function MapboxMap({
     // Determine color and z-index based on selection
     const isSelected = selectedLegId === legId;
     const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
-    const zIndex = isSelected ? '1000' : '100'; // Higher z-index when selected
+    const zIndex = isSelected ? '5' : '1'; // Higher z-index when selected, but always below dialogs
 
     // Create a waypoint marker (permanent, for intermediate waypoints)
     const el = document.createElement('div');
@@ -345,7 +345,7 @@ export function MapboxMap({
     const isSelected = selectedLegId === legId;
     const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
     // End markers always on top, but even higher when selected
-    const zIndex = isSelected ? '2000' : '1500';
+    const zIndex = isSelected ? '10' : '5';
 
     const el = document.createElement('div');
     el.className = 'leg-end-marker';
@@ -573,8 +573,8 @@ export function MapboxMap({
           // Determine color and z-index based on selection
           const isSelected = selectedLegId === legId;
           const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
-          // Start markers always on top, but even higher when selected
-          const zIndex = isSelected ? '2000' : '1500';
+          // Start markers always on top, but even higher when selected, but always below dialogs
+          const zIndex = isSelected ? '10' : '5';
           
           if (!existingStartMarker) {
             // Create start marker with "S" label
@@ -641,7 +641,7 @@ export function MapboxMap({
             // Update existing marker color and z-index based on selection
             const isSelected = selectedLegId === legId;
             const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
-            const zIndex = isSelected ? '2000' : '1500';
+            const zIndex = isSelected ? '10' : '5';
             const markerEl = existingEndMarker.getElement();
             if (markerEl) {
               markerEl.style.backgroundColor = backgroundColor;
@@ -670,7 +670,7 @@ export function MapboxMap({
               // Update existing marker color and z-index based on selection
               const isSelected = selectedLegId === legId;
               const backgroundColor = isSelected ? '#22c55e' : '#6b7280';
-              const zIndex = isSelected ? '1000' : '100';
+              const zIndex = isSelected ? '5' : '1';
               const markerEl = existingMarker.getElement();
               if (markerEl) {
                 markerEl.style.backgroundColor = backgroundColor;
@@ -727,7 +727,7 @@ export function MapboxMap({
       // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
       const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
-      const zIndex = isSelected ? '2000' : '1500'; // Start markers always on top, but even higher when selected
+      const zIndex = isSelected ? '10' : '5'; // Start markers always on top, but even higher when selected, but always below dialogs
       
       // Create a new marker element with the correct size from the start
       const el = document.createElement('div');
@@ -779,7 +779,7 @@ export function MapboxMap({
       // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
       const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
-      const zIndex = isSelected ? '2000' : '1500'; // Start markers always on top, but even higher when selected
+      const zIndex = isSelected ? '10' : '5'; // Start markers always on top, but even higher when selected, but always below dialogs
       
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
@@ -835,7 +835,7 @@ export function MapboxMap({
     >
       {/* Location Modal */}
       {locationInfo && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
           <div
             className="bg-card border border-border rounded-lg shadow-xl max-w-xs w-full mx-4 pointer-events-auto"
             onClick={(e) => e.stopPropagation()}

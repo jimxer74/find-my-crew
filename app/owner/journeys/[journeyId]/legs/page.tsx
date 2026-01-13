@@ -5,7 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
-import { MapboxMap } from '@/app/components/MapboxMap';
+import { EditJourneyMap } from '@/app/components/EditJourneyMap';
 import { JourneyFormModal } from '@/app/components/JourneyFormModal';
 import { LegCard } from '@/app/components/LegCard';
 import { toGeocode } from '@/app/lib/IGeoCode';
@@ -642,7 +642,7 @@ export default function LegsManagementPage() {
 
         {/* Right Side - Map Container */}
         <div className="flex-1 relative">
-          <MapboxMap
+          <EditJourneyMap
             initialCenter={[0, 20]} // Default center (can be updated based on journey/legs data)
             initialZoom={2}
             onMapLoad={handleMapLoad}
