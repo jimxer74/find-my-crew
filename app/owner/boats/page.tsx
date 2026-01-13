@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
-import { BoatFormModal } from '@/app/components/BoatFormModal';
+import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
 
 export default function BoatsPage() {
   const { user, loading: authLoading } = useAuth();

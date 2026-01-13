@@ -7,6 +7,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
 import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
+import { AIGenerateJourneyModal } from '@/app/components/manage/AIGenerateJourneyModal';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();
@@ -14,6 +15,7 @@ export default function JourneysPage() {
   const [journeys, setJourneys] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [editingJourneyId, setEditingJourneyId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -80,7 +82,7 @@ export default function JourneysPage() {
           <p className="text-muted-foreground">Manage your journeys and their legs</p>
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 flex gap-3">
           <button
             onClick={() => {
               setEditingJourneyId(null);
@@ -89,6 +91,14 @@ export default function JourneysPage() {
             className="bg-primary text-primary-foreground px-4 py-2 rounded-lg transition-opacity font-medium inline-block hover:opacity-90"
           >
             + Create New Journey
+          </button>
+          <button
+            onClick={() => {
+              setIsAIModalOpen(true);
+            }}
+            className="bg-secondary text-secondary-foreground px-4 py-2 rounded-lg transition-opacity font-medium inline-block hover:opacity-90 border border-border"
+          >
+            🤖 Generate with AI (Test)
           </button>
         </div>
 
@@ -151,18 +161,30 @@ export default function JourneysPage() {
 
       {/* Journey Form Modal */}
       {user && (
-        <JourneyFormModal
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingJourneyId(null);
-          }}
-          onSuccess={() => {
-            loadJourneys();
-          }}
-          journeyId={editingJourneyId}
-          userId={user.id}
-        />
+        <>
+          <JourneyFormModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setEditingJourneyId(null);
+            }}
+            onSuccess={() => {
+              loadJourneys();
+            }}
+            journeyId={editingJourneyId}
+            userId={user.id}
+          />
+          <AIGenerateJourneyModal
+            isOpen={isAIModalOpen}
+            onClose={() => {
+              setIsAIModalOpen(false);
+            }}
+            onSuccess={() => {
+              loadJourneys();
+            }}
+            userId={user.id}
+          />
+        </>
       )}
     </div>
   );
