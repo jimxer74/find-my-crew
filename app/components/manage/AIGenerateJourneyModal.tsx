@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 
 type Boat = {
   id: string;
@@ -29,19 +30,17 @@ export function AIGenerateJourneyModal({
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedJourney, setGeneratedJourney] = useState<any>(null);
-  const [startSuggestions, setStartSuggestions] = useState<any[]>([]);
-  const [endSuggestions, setEndSuggestions] = useState<any[]>([]);
-  const [showStartSuggestions, setShowStartSuggestions] = useState(false);
-  const [showEndSuggestions, setShowEndSuggestions] = useState(false);
-  const startSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const endSearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const startSessionTokenRef = useRef<string | null>(null);
-  const endSessionTokenRef = useRef<string | null>(null);
 
-  // Load boats when modal opens
+  // Load boats when modal opens and reset form
   useEffect(() => {
     if (isOpen) {
       loadBoats();
+      // Reset form state when modal opens
+      setSelectedBoatId('');
+      setStartLocation({ name: '', lat: 0, lng: 0 });
+      setEndLocation({ name: '', lat: 0, lng: 0 });
+      setGeneratedJourney(null);
+      setError(null);
     }
   }, [isOpen]);
 
@@ -61,31 +60,37 @@ export function AIGenerateJourneyModal({
   };
 
   const handleGenerate = async () => {
+    // Clear any previous errors first
+    setError(null);
+
+    // Validate all fields are filled
     if (!selectedBoatId || !startLocation.name || !endLocation.name) {
       setError('Please fill in all fields');
       return;
     }
 
+    // Validate coordinates are set (user must select from autocomplete suggestions)
+    const hasValidStartCoords = startLocation.lat !== 0 && startLocation.lng !== 0;
+    const hasValidEndCoords = endLocation.lat !== 0 && endLocation.lng !== 0;
+
+    if (!hasValidStartCoords) {
+      setError('Please select a valid start location from the autocomplete suggestions');
+      return;
+    }
+
+    if (!hasValidEndCoords) {
+      setError('Please select a valid end location from the autocomplete suggestions');
+      return;
+    }
+
+    // All validations passed, proceed with generation
     setGenerating(true);
     setError(null);
     setGeneratedJourney(null);
 
-    // Use coordinates from autocomplete if available, otherwise try to geocode
+    // Use coordinates from autocomplete
     let startCoords = { lat: startLocation.lat, lng: startLocation.lng };
     let endCoords = { lat: endLocation.lat, lng: endLocation.lng };
-
-    // If coordinates are not set (0,0), try to geocode the location name
-    if ((startCoords.lat === 0 && startCoords.lng === 0) || !startLocation.name) {
-      setError('Please select a valid start location from the suggestions');
-      setGenerating(false);
-      return;
-    }
-
-    if ((endCoords.lat === 0 && endCoords.lng === 0) || !endLocation.name) {
-      setError('Please select a valid end location from the suggestions');
-      setGenerating(false);
-      return;
-    }
 
     try {
       const response = await fetch('/api/ai/generate-journey', {
@@ -165,12 +170,6 @@ export function AIGenerateJourneyModal({
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
       setGeneratedJourney(null);
-      setStartSuggestions([]);
-      setEndSuggestions([]);
-      setShowStartSuggestions(false);
-      setShowEndSuggestions(false);
-      startSessionTokenRef.current = null;
-      endSessionTokenRef.current = null;
     } catch (err: any) {
       setError(err.message || 'Failed to save journey');
     } finally {
@@ -178,177 +177,6 @@ export function AIGenerateJourneyModal({
     }
   };
 
-  // Generate UUIDv4 for session token
-  const generateSessionToken = (): string => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = (Math.random() * 16) | 0;
-      const v = c === 'x' ? r : (r & 0x3) | 0x8;
-      return v.toString(16);
-    });
-  };
-
-  // Fetch location suggestions from Mapbox Search Box API with debouncing
-  const fetchLocationSuggestions = (query: string, isStart: boolean) => {
-    // Clear existing timeout
-    if (isStart && startSearchTimeoutRef.current) {
-      clearTimeout(startSearchTimeoutRef.current);
-    } else if (!isStart && endSearchTimeoutRef.current) {
-      clearTimeout(endSearchTimeoutRef.current);
-    }
-
-    if (!query || query.length < 2) {
-      if (isStart) {
-        setStartSuggestions([]);
-        setShowStartSuggestions(false);
-        startSessionTokenRef.current = null;
-      } else {
-        setEndSuggestions([]);
-        setShowEndSuggestions(false);
-        endSessionTokenRef.current = null;
-      }
-      return;
-    }
-
-    // Generate session token if not exists
-    if (isStart && !startSessionTokenRef.current) {
-      startSessionTokenRef.current = generateSessionToken();
-    } else if (!isStart && !endSessionTokenRef.current) {
-      endSessionTokenRef.current = generateSessionToken();
-    }
-
-    // Debounce API calls - wait 300ms after user stops typing
-    const timeoutId = setTimeout(async () => {
-      const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-      if (!accessToken) {
-        console.warn('Mapbox access token not configured');
-        return;
-      }
-
-      const sessionToken = isStart 
-        ? startSessionTokenRef.current 
-        : endSessionTokenRef.current;
-
-      if (!sessionToken) {
-        return;
-      }
-
-      try {
-        // Use Mapbox Search Box API /suggest endpoint
-        const response = await fetch(
-          `https://api.mapbox.com/search/searchbox/v1/suggest?` +
-          `q=${encodeURIComponent(query)}&` +
-          `access_token=${accessToken}&` +
-          `session_token=${sessionToken}&` +
-          `types=region, city, country, place&` +
-          `limit=10&` +
-          `language=en`
-        );
-
-        if (!response.ok) {
-          throw new Error('Search Box API error');
-        }
-
-        const data = await response.json();
-        const suggestions = (data.suggestions || [])
-          .map((suggestion: any) => ({
-            mapbox_id: suggestion.mapbox_id,
-            name: suggestion.name || suggestion.full_address || suggestion.place_formatted,
-            full_address: suggestion.full_address,
-            place_formatted: suggestion.place_formatted,
-            feature_type: suggestion.feature_type,
-            context: suggestion.context || {},
-          }))
-          .slice(0, 8); // Take top 8 most relevant
-
-        if (isStart) {
-          setStartSuggestions(suggestions);
-          setShowStartSuggestions(true);
-        } else {
-          setEndSuggestions(suggestions);
-          setShowEndSuggestions(true);
-        }
-      } catch (err) {
-        console.error('Error fetching location suggestions:', err);
-        if (isStart) {
-          setStartSuggestions([]);
-          setShowStartSuggestions(false);
-        } else {
-          setEndSuggestions([]);
-          setShowEndSuggestions(false);
-        }
-      }
-    }, 300);
-
-    // Store timeout reference
-    if (isStart) {
-      startSearchTimeoutRef.current = timeoutId;
-    } else {
-      endSearchTimeoutRef.current = timeoutId;
-    }
-  };
-
-  // Handle location selection from autocomplete - retrieve full details with coordinates
-  const handleLocationSelect = async (suggestion: any, isStart: boolean) => {
-    const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-    if (!accessToken) {
-      console.warn('Mapbox access token not configured');
-      return;
-    }
-
-    const sessionToken = isStart 
-      ? startSessionTokenRef.current 
-      : endSessionTokenRef.current;
-
-    if (!sessionToken || !suggestion.mapbox_id) {
-      return;
-    }
-
-    try {
-      // Use Mapbox Search Box API /retrieve endpoint to get coordinates
-      const response = await fetch(
-        `https://api.mapbox.com/search/searchbox/v1/retrieve/${suggestion.mapbox_id}?` +
-        `access_token=${accessToken}&` +
-        `session_token=${sessionToken}&` +
-        `language=en`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to retrieve location details');
-      }
-
-      const data = await response.json();
-      const feature = data.features?.[0];
-      
-      if (feature && feature.geometry && feature.geometry.coordinates) {
-        const [lng, lat] = feature.geometry.coordinates;
-        const locationName = feature.properties?.full_address || 
-                            feature.properties?.name || 
-                            suggestion.name;
-
-        if (isStart) {
-          setStartLocation({
-            name: locationName,
-            lat: lat,
-            lng: lng,
-          });
-          setShowStartSuggestions(false);
-          setStartSuggestions([]);
-          startSessionTokenRef.current = null; // Reset session token
-        } else {
-          setEndLocation({
-            name: locationName,
-            lat: lat,
-            lng: lng,
-          });
-          setShowEndSuggestions(false);
-          setEndSuggestions([]);
-          endSessionTokenRef.current = null; // Reset session token
-        }
-      }
-    } catch (err) {
-      console.error('Error retrieving location details:', err);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -396,7 +224,10 @@ export function AIGenerateJourneyModal({
                   <select
                     id="boat_id"
                     value={selectedBoatId}
-                    onChange={(e) => setSelectedBoatId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedBoatId(e.target.value);
+                      setError(null); // Clear error when boat is selected
+                    }}
                     className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   >
                     <option value="">Select a boat</option>
@@ -408,91 +239,37 @@ export function AIGenerateJourneyModal({
                   </select>
                 </div>
 
-                <div className="relative">
-                  <label htmlFor="start_location" className="block text-sm font-medium text-foreground mb-1">
-                    Start Location *
-                  </label>
-                  <input
-                    type="text"
-                    id="start_location"
-                    value={startLocation.name}
-                    onChange={(e) => {
-                      setStartLocation({ ...startLocation, name: e.target.value });
-                      fetchLocationSuggestions(e.target.value, true);
-                    }}
-                    onFocus={() => {
-                      if (startSuggestions.length > 0) {
-                        setShowStartSuggestions(true);
-                      }
-                    }}
-                    onBlur={() => {
-                      // Delay hiding suggestions to allow click on suggestion
-                      setTimeout(() => setShowStartSuggestions(false), 200);
-                    }}
-                    placeholder="e.g., Barcelona, Spain"
-                    className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  />
-                  {showStartSuggestions && startSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {startSuggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.mapbox_id || `start-suggestion-${index}`}
-                          type="button"
-                          onClick={() => handleLocationSelect(suggestion, true)}
-                          className="w-full text-left px-4 py-2 hover:bg-accent transition-colors border-b border-border last:border-b-0"
-                        >
-                          <div className="font-medium text-card-foreground">{suggestion.name}</div>
-                          {suggestion.place_formatted && (
-                            <div className="text-sm text-muted-foreground">{suggestion.place_formatted}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <LocationAutocomplete
+                  id="start_location"
+                  label="Start Location"
+                  value={startLocation.name}
+                  onChange={(location) => {
+                    setStartLocation(location);
+                    setError(null); // Clear error when valid location is selected
+                  }}
+                  onInputChange={(value) => {
+                    setStartLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
+                    setError(null); // Clear error when user starts typing
+                  }}
+                  placeholder="e.g., Barcelona, Spain"
+                  required
+                />
 
-                <div className="relative">
-                  <label htmlFor="end_location" className="block text-sm font-medium text-foreground mb-1">
-                    End Location *
-                  </label>
-                  <input
-                    type="text"
-                    id="end_location"
-                    value={endLocation.name}
-                    onChange={(e) => {
-                      setEndLocation({ ...endLocation, name: e.target.value });
-                      fetchLocationSuggestions(e.target.value, false);
-                    }}
-                    onFocus={() => {
-                      if (endSuggestions.length > 0) {
-                        setShowEndSuggestions(true);
-                      }
-                    }}
-                    onBlur={() => {
-                      // Delay hiding suggestions to allow click on suggestion
-                      setTimeout(() => setShowEndSuggestions(false), 200);
-                    }}
-                    placeholder="e.g., Palma, Mallorca"
-                    className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  />
-                  {showEndSuggestions && endSuggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                      {endSuggestions.map((suggestion, index) => (
-                        <button
-                          key={suggestion.mapbox_id || `end-suggestion-${index}`}
-                          type="button"
-                          onClick={() => handleLocationSelect(suggestion, false)}
-                          className="w-full text-left px-4 py-2 hover:bg-accent transition-colors border-b border-border last:border-b-0"
-                        >
-                          <div className="font-medium text-card-foreground">{suggestion.name}</div>
-                          {suggestion.place_formatted && (
-                            <div className="text-sm text-muted-foreground">{suggestion.place_formatted}</div>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <LocationAutocomplete
+                  id="end_location"
+                  label="End Location"
+                  value={endLocation.name}
+                  onChange={(location) => {
+                    setEndLocation(location);
+                    setError(null); // Clear error when valid location is selected
+                  }}
+                  onInputChange={(value) => {
+                    setEndLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
+                    setError(null); // Clear error when user starts typing
+                  }}
+                  placeholder="e.g., Palma, Mallorca"
+                  required
+                />
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
                   <button
