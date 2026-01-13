@@ -153,8 +153,12 @@ export function LegFormModal({
       if (endDate) {
         legData.end_date = new Date(endDate).toISOString();
       }
+      // Set crew_needed: use provided value, or default to boat capacity - 1 (owner/skipper)
       if (crewNeeded !== '') {
         legData.crew_needed = Number(crewNeeded);
+      } else if (boatCapacity && boatCapacity > 0) {
+        // Default: boat capacity - 1 (assuming owner/skipper is always on board)
+        legData.crew_needed = Math.max(0, boatCapacity - 1);
       }
       if (skills.length > 0) {
         legData.skills = skills;

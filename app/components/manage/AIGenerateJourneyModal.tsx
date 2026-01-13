@@ -45,6 +45,7 @@ type Boat = {
   id: string;
   name: string;
   average_speed_knots?: number | null;
+  capacity?: number | null;
 };
 
 type AIGenerateJourneyModalProps = {
@@ -97,7 +98,7 @@ export function AIGenerateJourneyModal({
     const supabase = getSupabaseBrowserClient();
     const { data, error: fetchError } = await supabase
       .from('boats')
-      .select('id, name, average_speed_knots')
+      .select('id, name, average_speed_knots, capacity')
       .eq('owner_id', userId)
       .order('name', { ascending: true });
 
@@ -226,6 +227,13 @@ export function AIGenerateJourneyModal({
 
       if (journeyError) throw journeyError;
 
+      // Get boat capacity for default crew_needed
+      const selectedBoat = boats.find(b => b.id === selectedBoatId);
+      const boatCapacity = selectedBoat?.capacity || null;
+      const defaultCrewNeeded = boatCapacity && boatCapacity > 0 
+        ? Math.max(0, boatCapacity - 1) // Default: capacity - 1 (owner/skipper)
+        : null;
+
       // Create the legs
       for (const leg of generatedJourney.legs) {
         const legInsertData: any = {
@@ -240,6 +248,13 @@ export function AIGenerateJourneyModal({
         }
         if (leg.end_date) {
           legInsertData.end_date = leg.end_date;
+        }
+
+        // Set default crew_needed if not provided by AI
+        if (leg.crew_needed !== undefined && leg.crew_needed !== null) {
+          legInsertData.crew_needed = leg.crew_needed;
+        } else if (defaultCrewNeeded !== null) {
+          legInsertData.crew_needed = defaultCrewNeeded;
         }
 
         const { error: legError } = await supabase
