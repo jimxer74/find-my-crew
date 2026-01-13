@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
-import { JourneyFormModal } from '@/app/components/JourneyFormModal';
+import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();

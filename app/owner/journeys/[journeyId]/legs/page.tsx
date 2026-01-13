@@ -5,9 +5,9 @@ import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
-import { EditJourneyMap } from '@/app/components/EditJourneyMap';
-import { JourneyFormModal } from '@/app/components/JourneyFormModal';
-import { LegCard } from '@/app/components/LegCard';
+import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
+import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
+import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { toGeocode } from '@/app/lib/IGeoCode';
 
 type Journey = {
@@ -603,7 +603,7 @@ export default function LegsManagementPage() {
                 ) : (
                   <div>
                     {legs.map((leg) => (
-                      <LegCard
+                      <EditLegCard
                         key={leg.id}
                         startWaypoint={leg.startWaypoint}
                         endWaypoint={leg.endWaypoint}

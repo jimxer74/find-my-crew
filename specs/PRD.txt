@@ -148,6 +148,15 @@ Realtime Updates: Use Supabase Realtime to subscribe to changes in journeys (e.g
 Edit/Delete: Similar to boats, with cascading deletes for legs.
 Test: Create a sample journey with 2-3 legs; verify dates don't overlap illogically (client-side check).
 
+Extra: AI-generated and proposed Journey
+Funcionality to AI to create a journey and it's legs automatically based on owner's criteria: Boat selection, Whether journey should be loop or one-way, Starting point of the Journey and Ending point of the Journey, starging date and ending date, 
+whether journey is leisurely, e.g. stopping over many interesting places or delivery type with longer passages main point to get to end as soon as possible. Also owner could specicy 
+additional specifications such as: desire to see historical sights, beautiful nature sights, avoid high traffic areas and touristy places.
+
+
+
+
+
 Phase 5: Journey Discovery and Registration (5-7 days)
 
 Browse Page: Public route /journeys with search filters (use NextJS search params for query string).

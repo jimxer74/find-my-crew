@@ -9,7 +9,7 @@ type Waypoint = {
   name?: string;
 };
 
-type LegCardProps = {
+type EditLegCardProps = {
   startWaypoint: Waypoint | null;
   endWaypoint: Waypoint | null;
   onEdit?: () => void;
@@ -19,7 +19,7 @@ type LegCardProps = {
   cardRef?: (el: HTMLDivElement | null) => void;
 };
 
-export function LegCard({ startWaypoint, endWaypoint, onEdit, onDelete, onClick, isSelected = false, cardRef }: LegCardProps) {
+export function EditLegCard({ startWaypoint, endWaypoint, onEdit, onDelete, onClick, isSelected = false, cardRef }: EditLegCardProps) {
   const formatLocationName = (name: string) => {
     if (!name || name === 'Unknown location') {
       return <span className="text-xs font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
