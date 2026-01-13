@@ -17,6 +17,7 @@ type Journey = {
   name: string;
   start_date: string | null;
   end_date: string | null;
+  state?: string;
   is_ai_generated?: boolean;
 };
 
@@ -58,6 +59,7 @@ export default function LegsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [boatSpeed, setBoatSpeed] = useState<number | null>(null);
+  const [boatCapacity, setBoatCapacity] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLegModalOpen, setIsLegModalOpen] = useState(false);
   const [editingLegId, setEditingLegId] = useState<string | null>(null);
@@ -88,7 +90,7 @@ export default function LegsManagementPage() {
     const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from('journeys')
-      .select('id, name, start_date, end_date, boat_id, is_ai_generated, boats(average_speed_knots)')
+      .select('id, name, start_date, end_date, boat_id, state, is_ai_generated, boats(average_speed_knots, capacity)')
       .eq('id', journeyId)
       .single();
 
@@ -96,9 +98,11 @@ export default function LegsManagementPage() {
       console.error('Error loading journey:', error);
     } else {
       setJourney(data);
-      // Extract boat speed
+      // Extract boat speed and capacity
       const speed = (data as any).boats?.average_speed_knots;
+      const capacity = (data as any).boats?.capacity;
       setBoatSpeed(speed || null);
+      setBoatCapacity(capacity || null);
     }
     setLoading(false);
   };
@@ -380,13 +384,20 @@ export default function LegsManagementPage() {
     
     if (activeLeg.id.startsWith('temp-')) {
       // New leg - insert into database
+      const legInsertData: any = {
+        journey_id: journeyId,
+        name: legName,
+        waypoints: allWaypoints,
+      };
+
+      // Set default crew_needed: boat capacity - 1 (assuming owner/skipper is always on board)
+      if (boatCapacity && boatCapacity > 0) {
+        legInsertData.crew_needed = Math.max(0, boatCapacity - 1);
+      }
+
       const { data, error } = await supabase
         .from('legs')
-        .insert({
-          journey_id: journeyId,
-          name: legName,
-          waypoints: allWaypoints,
-        })
+        .insert(legInsertData)
         .select()
         .single();
       
@@ -565,6 +576,39 @@ export default function LegsManagementPage() {
               <div className="p-6 border-b border-border">
                 {journey && (
                   <div className="space-y-3">
+                    {/* Tags at the top */}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      {/* Journey State Tag */}
+                      {journey.state && (() => {
+                        let stateStyle = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                        if (journey.state === 'In planning') {
+                          stateStyle = 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+                        } else if (journey.state === 'Published') {
+                          stateStyle = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+                        } else if (journey.state === 'Archived') {
+                          stateStyle = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                        }
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium border rounded-md ${stateStyle}`}>
+                            {journey.state}
+                          </span>
+                        );
+                      })()}
+                      {/* AI Generated Tag */}
+                      {journey.is_ai_generated && (
+                        <button
+                          onClick={() => setIsDisclaimerModalOpen(true)}
+                          title="AI Generated - Click for disclaimer"
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-md hover:bg-primary/20 transition-colors cursor-pointer"
+                          aria-label="AI Generated - Click for disclaimer"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          AI generated
+                        </button>
+                      )}
+                    </div>
                     <div>
                       <div className="flex items-center gap-2 mb-2">
                         <h2 className="text-lg font-semibold text-card-foreground">
@@ -659,20 +703,6 @@ export default function LegsManagementPage() {
 
         {/* Right Side - Map Container */}
         <div className="flex-1 relative">
-          {/* AI Generated Tag - Bottom Right Corner */}
-          {journey?.is_ai_generated && (
-            <button
-              onClick={() => setIsDisclaimerModalOpen(true)}
-              title="AI Generated - Click for disclaimer"
-              className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-card/95 backdrop-blur-sm text-primary border border-primary/20 rounded-md shadow-lg hover:bg-card hover:border-primary/40 transition-all cursor-pointer"
-              aria-label="AI Generated - Click for disclaimer"
-            >
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-              </svg>
-              AI generated
-            </button>
-          )}
           <EditJourneyMap
             initialCenter={[0, 20]} // Default center (can be updated based on journey/legs data)
             initialZoom={2}

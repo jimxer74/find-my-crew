@@ -283,54 +283,75 @@ export default function JourneysPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {sortedJourneys
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                .map((journey) => (
-                  <div key={journey.id} className="bg-card rounded-lg shadow p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="text-xl font-semibold text-card-foreground">{journey.name}</h3>
-                          {journey.is_ai_generated && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-md">
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                              </svg>
-                              AI generated
-                            </span>
-                          )}
-                        </div>
+                .map((journey) => {
+                  // Determine state tag colors
+                  const getStateTagStyle = (state: string) => {
+                    switch (state) {
+                      case 'In planning':
+                        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+                      case 'Published':
+                        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+                      case 'Archived':
+                        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                      default:
+                        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                    }
+                  };
+
+                  return (
+                    <div key={journey.id} className="bg-card rounded-lg shadow p-6">
+                      {/* Tags at the top */}
+                      <div className="flex items-center gap-2 mb-3 flex-wrap">
+                        {/* Journey State Tag */}
+                        {journey.state && (
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium border rounded-md ${getStateTagStyle(journey.state)}`}>
+                            {journey.state}
+                          </span>
+                        )}
+                        {/* AI Generated Tag */}
+                        {journey.is_ai_generated && (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-md">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                            </svg>
+                            AI generated
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Journey Name */}
+                      <div className="mb-4">
+                        <h3 className="text-xl font-semibold text-card-foreground mb-2">{journey.name}</h3>
                         <div className="text-sm text-muted-foreground space-y-1">
                           {journey.boat_name && <p>Boat: {journey.boat_name}</p>}
                           {journey.start_date && <p>Start: {formatDate(journey.start_date)}</p>}
                           {journey.end_date && <p>End: {formatDate(journey.end_date)}</p>}
-                          <p className={journey.is_public ? 'text-green-600' : 'text-muted-foreground'}>
-                            {journey.is_public ? 'Public' : 'Private'}
-                          </p>
                         </div>
                       </div>
+                      {journey.description && (
+                        <p className="text-muted-foreground mb-4">{journey.description}</p>
+                      )}
+                      <div className="mt-4 flex items-center gap-2">
+                        <Link
+                          href={`/owner/journeys/${journey.id}/legs`}
+                          className="font-medium text-sm text-primary hover:opacity-80"
+                        >
+                          View legs
+                        </Link>
+                        <span className="text-border">|</span>
+                        <button
+                          onClick={() => {
+                            setEditingJourneyId(journey.id);
+                            setIsModalOpen(true);
+                          }}
+                          className="font-medium text-sm text-primary hover:opacity-80"
+                        >
+                          Edit
+                        </button>
+                      </div>
                     </div>
-                    {journey.description && (
-                      <p className="text-muted-foreground mb-4">{journey.description}</p>
-                    )}
-                    <div className="mt-4 flex items-center gap-2">
-                      <Link
-                        href={`/owner/journeys/${journey.id}/legs`}
-                        className="font-medium text-sm text-primary hover:opacity-80"
-                      >
-                        View legs
-                      </Link>
-                      <span className="text-border">|</span>
-                      <button
-                        onClick={() => {
-                          setEditingJourneyId(journey.id);
-                          setIsModalOpen(true);
-                        }}
-                        className="font-medium text-sm text-primary hover:opacity-80"
-                      >
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
             </div>
             <Pagination
               currentPage={currentPage}
