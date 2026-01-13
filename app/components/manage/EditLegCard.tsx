@@ -12,6 +12,9 @@ type Waypoint = {
 type EditLegCardProps = {
   startWaypoint: Waypoint | null;
   endWaypoint: Waypoint | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  boatSpeed?: number | null; // Average speed in knots
   onEdit?: () => void;
   onDelete?: () => void;
   onClick?: () => void;
@@ -19,7 +22,64 @@ type EditLegCardProps = {
   cardRef?: (el: HTMLDivElement | null) => void;
 };
 
-export function EditLegCard({ startWaypoint, endWaypoint, onEdit, onDelete, onClick, isSelected = false, cardRef }: EditLegCardProps) {
+// Calculate distance between two coordinates using Haversine formula (nautical miles)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3440; // Earth's radius in nautical miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Calculate duration in hours based on distance and speed
+function calculateDuration(distanceNM: number, speedKnots: number | null): number | null {
+  if (!speedKnots || speedKnots <= 0) return null;
+  // Account for 70-80% efficiency due to conditions
+  const effectiveSpeed = speedKnots * 0.75;
+  return distanceNM / effectiveSpeed;
+}
+
+// Format duration as human-readable string
+function formatDuration(hours: number | null): string {
+  if (hours === null) return 'N/A';
+  if (hours < 24) {
+    return `${Math.round(hours)}h`;
+  }
+  const days = Math.floor(hours / 24);
+  const remainingHours = Math.round(hours % 24);
+  if (remainingHours === 0) {
+    return `${days}d`;
+  }
+  return `${days}d ${remainingHours}h`;
+}
+
+export function EditLegCard({ 
+  startWaypoint, 
+  endWaypoint, 
+  startDate, 
+  endDate, 
+  boatSpeed,
+  onEdit, 
+  onDelete, 
+  onClick, 
+  isSelected = false, 
+  cardRef 
+}: EditLegCardProps) {
+  // Calculate distance and duration
+  let distanceNM: number | null = null;
+  let durationHours: number | null = null;
+  
+  if (startWaypoint && endWaypoint && startWaypoint.geocode.coordinates && endWaypoint.geocode.coordinates) {
+    const [lng1, lat1] = startWaypoint.geocode.coordinates;
+    const [lng2, lat2] = endWaypoint.geocode.coordinates;
+    distanceNM = calculateDistance(lat1, lng1, lat2, lng2);
+    durationHours = calculateDuration(distanceNM, boatSpeed || null);
+  }
+
   const formatLocationName = (name: string) => {
     if (!name || name === 'Unknown location') {
       return <span className="text-xs font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
@@ -77,6 +137,58 @@ export function EditLegCard({ startWaypoint, endWaypoint, onEdit, onDelete, onCl
             </h3>
           ) : (
             <div className="text-xs text-muted-foreground">No end point</div>
+          )}
+        </div>
+      </div>
+
+      {/* Dates and Duration Section */}
+      <div className="border-t border-border pt-3 mb-3">
+        <div className="grid grid-cols-2 gap-4 mb-2">
+          {/* Start Date */}
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Start Date</div>
+            <div className="text-sm font-medium text-card-foreground">
+              {startDate ? new Date(startDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }) : 'Not set'}
+            </div>
+          </div>
+
+          {/* End Date */}
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">End Date</div>
+            <div className="text-sm font-medium text-card-foreground">
+              {endDate ? new Date(endDate).toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+              }) : 'Not set'}
+            </div>
+          </div>
+        </div>
+
+        {/* Duration and Distance */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-muted-foreground mb-1">Duration</div>
+            <div className="text-sm font-medium text-card-foreground">
+              {durationHours !== null ? formatDuration(durationHours) : 'N/A'}
+              {boatSpeed && distanceNM !== null && (
+                <span className="text-xs text-muted-foreground ml-1">
+                  ({Math.round(distanceNM)}nm @ {boatSpeed}kt)
+                </span>
+              )}
+            </div>
+          </div>
+          {distanceNM !== null && (
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Distance</div>
+              <div className="text-sm font-medium text-card-foreground">
+                {Math.round(distanceNM)} nm
+              </div>
+            </div>
           )}
         </div>
       </div>

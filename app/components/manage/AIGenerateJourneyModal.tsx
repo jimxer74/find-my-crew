@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 
 type Boat = {
   id: string;
   name: string;
+  average_speed_knots?: number | null;
 };
 
 type AIGenerateJourneyModalProps = {
@@ -22,12 +24,15 @@ export function AIGenerateJourneyModal({
   onSuccess, 
   userId 
 }: AIGenerateJourneyModalProps) {
+  const router = useRouter();
   const [boats, setBoats] = useState<Boat[]>([]);
   const [selectedBoatId, setSelectedBoatId] = useState('');
+  const [selectedBoatSpeed, setSelectedBoatSpeed] = useState<number | null>(null);
   const [startLocation, setStartLocation] = useState({ name: '', lat: 0, lng: 0 });
   const [endLocation, setEndLocation] = useState({ name: '', lat: 0, lng: 0 });
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [useSpeedPlanning, setUseSpeedPlanning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,10 +44,12 @@ export function AIGenerateJourneyModal({
       loadBoats();
       // Reset form state when modal opens
       setSelectedBoatId('');
+      setSelectedBoatSpeed(null);
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
       setStartDate('');
       setEndDate('');
+      setUseSpeedPlanning(false);
       setGeneratedJourney(null);
       setError(null);
     }
@@ -52,7 +59,7 @@ export function AIGenerateJourneyModal({
     const supabase = getSupabaseBrowserClient();
     const { data, error: fetchError } = await supabase
       .from('boats')
-      .select('id, name')
+      .select('id, name, average_speed_knots')
       .eq('owner_id', userId)
       .order('name', { ascending: true });
 
@@ -62,6 +69,16 @@ export function AIGenerateJourneyModal({
       setBoats(data || []);
     }
   };
+
+  // Load boat speed when boat is selected
+  useEffect(() => {
+    if (selectedBoatId) {
+      const selectedBoat = boats.find(b => b.id === selectedBoatId);
+      setSelectedBoatSpeed(selectedBoat?.average_speed_knots || null);
+    } else {
+      setSelectedBoatSpeed(null);
+    }
+  }, [selectedBoatId, boats]);
 
   const handleGenerate = async () => {
     // Clear any previous errors first
@@ -116,6 +133,8 @@ export function AIGenerateJourneyModal({
           },
           startDate: startDate || null,
           endDate: endDate || null,
+          useSpeedPlanning: useSpeedPlanning,
+          boatSpeed: selectedBoatSpeed || null,
         }),
       });
 
@@ -143,14 +162,24 @@ export function AIGenerateJourneyModal({
       const supabase = getSupabaseBrowserClient();
 
       // Create the journey
+      const journeyInsertData: any = {
+        boat_id: selectedBoatId,
+        name: generatedJourney.journeyName,
+        description: generatedJourney.description || '',
+        state: 'In planning',
+      };
+
+      // Add dates if provided
+      if (startDate) {
+        journeyInsertData.start_date = startDate;
+      }
+      if (endDate) {
+        journeyInsertData.end_date = endDate;
+      }
+
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
-        .insert({
-          boat_id: selectedBoatId,
-          name: generatedJourney.journeyName,
-          description: generatedJourney.description || '',
-          state: 'In planning',
-        })
+        .insert(journeyInsertData)
         .select()
         .single();
 
@@ -158,25 +187,44 @@ export function AIGenerateJourneyModal({
 
       // Create the legs
       for (const leg of generatedJourney.legs) {
+        const legInsertData: any = {
+          journey_id: journeyData.id,
+          name: leg.name,
+          waypoints: leg.waypoints,
+        };
+
+        // Add leg dates if provided (from speed-based planning)
+        if (leg.start_date) {
+          legInsertData.start_date = leg.start_date;
+        }
+        if (leg.end_date) {
+          legInsertData.end_date = leg.end_date;
+        }
+
         const { error: legError } = await supabase
           .from('legs')
-          .insert({
-            journey_id: journeyData.id,
-            name: leg.name,
-            waypoints: leg.waypoints,
-          });
+          .insert(legInsertData);
 
         if (legError) throw legError;
       }
 
+      // Call onSuccess callback
       onSuccess();
+      
+      // Close the modal
       onClose();
+      
+      // Navigate to the EditJourneyMap page for the newly created journey
+      router.push(`/owner/journeys/${journeyData.id}/legs`);
+      
       // Reset form
       setSelectedBoatId('');
+      setSelectedBoatSpeed(null);
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
       setStartDate('');
       setEndDate('');
+      setUseSpeedPlanning(false);
       setGeneratedJourney(null);
     } catch (err: any) {
       setError(err.message || 'Failed to save journey');
@@ -318,6 +366,37 @@ export function AIGenerateJourneyModal({
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     />
                   </div>
+                </div>
+
+                {/* Use boat average speed planning checkbox */}
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={useSpeedPlanning}
+                      onChange={(e) => {
+                        setUseSpeedPlanning(e.target.checked);
+                        setError(null);
+                      }}
+                      disabled={!selectedBoatSpeed || !startDate || !endDate}
+                      className="rounded border-border"
+                    />
+                    <span className="text-sm text-foreground">
+                      Use boat average speed planning
+                      {selectedBoatSpeed && (
+                        <span className="text-xs text-muted-foreground ml-1">
+                          ({selectedBoatSpeed} knots)
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                  {useSpeedPlanning && (!selectedBoatSpeed || !startDate || !endDate) && (
+                    <p className="text-xs text-muted-foreground mt-1 ml-6">
+                      {!selectedBoatSpeed && 'Boat speed is required. '}
+                      {!startDate && 'Start date is required. '}
+                      {!endDate && 'End date is required.'}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">

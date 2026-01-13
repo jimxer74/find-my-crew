@@ -36,6 +36,8 @@ type Leg = {
     };
     name: string;
   } | null;
+  start_date?: string | null;
+  end_date?: string | null;
   intermediateWaypoints?: {
     index: number;
     geocode: {
@@ -53,6 +55,7 @@ export default function LegsManagementPage() {
   const journeyId = params?.journeyId as string;
   const [loading, setLoading] = useState(true);
   const [journey, setJourney] = useState<Journey | null>(null);
+  const [boatSpeed, setBoatSpeed] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLegModalOpen, setIsLegModalOpen] = useState(false);
   const [editingLegId, setEditingLegId] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export default function LegsManagementPage() {
     const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from('journeys')
-      .select('id, name, start_date, end_date')
+      .select('id, name, start_date, end_date, boat_id, boats(average_speed_knots)')
       .eq('id', journeyId)
       .single();
 
@@ -90,6 +93,9 @@ export default function LegsManagementPage() {
       console.error('Error loading journey:', error);
     } else {
       setJourney(data);
+      // Extract boat speed
+      const speed = (data as any).boats?.average_speed_knots;
+      setBoatSpeed(speed || null);
     }
     setLoading(false);
   };
@@ -100,7 +106,7 @@ export default function LegsManagementPage() {
     const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from('legs')
-      .select('id, name, waypoints')
+      .select('id, name, waypoints, start_date, end_date')
       .eq('journey_id', journeyId)
       .order('created_at', { ascending: true });
 
@@ -138,6 +144,8 @@ export default function LegsManagementPage() {
             },
             name: endWaypoint.name || '',
           } : null,
+          start_date: leg.start_date || null,
+          end_date: leg.end_date || null,
           intermediateWaypoints: intermediateWaypoints.map((w: any) => ({
             index: w.index,
             geocode: {
@@ -610,6 +618,9 @@ export default function LegsManagementPage() {
                         key={leg.id}
                         startWaypoint={leg.startWaypoint}
                         endWaypoint={leg.endWaypoint}
+                        startDate={leg.start_date}
+                        endDate={leg.end_date}
+                        boatSpeed={boatSpeed}
                         isSelected={selectedLegId === leg.id}
                         cardRef={(el) => {
                           if (el) {

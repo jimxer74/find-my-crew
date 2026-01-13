@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { startLocation, endLocation, boatId, startDate, endDate } = body;
+    const { startLocation, endLocation, boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = body;
 
     if (!startLocation || !endLocation) {
       return NextResponse.json(
@@ -51,10 +51,28 @@ export async function POST(request: NextRequest) {
       ? `\nJourney Dates:${startDate ? ` Start: ${startDate}` : ''}${endDate ? ` End: ${endDate}` : ''}`
       : '';
     
+    const speedPlanningInstructions = useSpeedPlanning && boatSpeed && startDate && endDate
+      ? `\n\nSPEED-BASED PLANNING (CRITICAL):
+- The boat's average cruising speed is ${boatSpeed} knots
+- Journey must start on ${startDate} and end by ${endDate}
+- You MUST calculate realistic dates for each leg based on:
+  * Distance between waypoints (calculate using coordinates)
+  * Boat speed (${boatSpeed} knots)
+  * Realistic sailing time (consider weather, rest periods, and safe navigation)
+- For each leg, calculate:
+  * Distance in nautical miles between start and end waypoints
+  * Estimated sailing time = Distance / Speed (account for 70-80% efficiency due to conditions)
+  * Start date: Use journey start date for first leg, or end date of previous leg
+  * End date: Start date + calculated sailing time + buffer for rest/weather
+- Ensure all leg dates fit within the journey timeframe (${startDate} to ${endDate})
+- Leg dates should be sequential and realistic
+- Include start_date and end_date for each leg in the response`
+      : '';
+    
     const prompt = `You are a sailing route planner. Generate a sailing journey with legs between two locations.
 
 Start Location: ${startLocation.name} (approximately ${startLocation.lat}, ${startLocation.lng})
-End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})${dateInfo}
+End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})${dateInfo}${speedPlanningInstructions}
 
 CRITICAL RULES:
 1. Leg START and END waypoints MUST ALWAYS be at:
@@ -87,7 +105,44 @@ CRITICAL RULES:
    - Coordinates must be in [longitude, latitude] format
    - All coordinates must be valid numbers
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format:${useSpeedPlanning && boatSpeed && startDate && endDate ? `
+{
+  "journeyName": "Journey name here",
+  "description": "Brief description of the journey",
+  "legs": [
+    {
+      "name": "Leg name",
+      "start_date": "YYYY-MM-DD",
+      "end_date": "YYYY-MM-DD",
+      "waypoints": [
+        {
+          "index": 0,
+          "name": "Starting port/town/city name",
+          "geocode": {
+            "type": "Point",
+            "coordinates": [longitude, latitude]
+          }
+        },
+        {
+          "index": 1,
+          "name": "Intermediate waypoint name (optional, only if needed)",
+          "geocode": {
+            "type": "Point",
+            "coordinates": [longitude, latitude]
+          }
+        },
+        {
+          "index": 2,
+          "name": "Ending port/town/city name",
+          "geocode": {
+            "type": "Point",
+            "coordinates": [longitude, latitude]
+          }
+        }
+      ]
+    }
+  ]
+}` : `
 {
   "journeyName": "Journey name here",
   "description": "Brief description of the journey",
@@ -122,7 +177,7 @@ Return ONLY valid JSON in this exact format:
       ]
     }
   ]
-}
+}`}
 
 IMPORTANT:
 - First leg's starting waypoint (index 0) name should be "${startLocation.name}" or a specific port/marina in that location
