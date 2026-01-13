@@ -26,6 +26,8 @@ export function AIGenerateJourneyModal({
   const [selectedBoatId, setSelectedBoatId] = useState('');
   const [startLocation, setStartLocation] = useState({ name: '', lat: 0, lng: 0 });
   const [endLocation, setEndLocation] = useState({ name: '', lat: 0, lng: 0 });
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +41,8 @@ export function AIGenerateJourneyModal({
       setSelectedBoatId('');
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
+      setStartDate('');
+      setEndDate('');
       setGeneratedJourney(null);
       setError(null);
     }
@@ -110,6 +114,8 @@ export function AIGenerateJourneyModal({
             lat: endCoords.lat,
             lng: endCoords.lng,
           },
+          startDate: startDate || null,
+          endDate: endDate || null,
         }),
       });
 
@@ -169,6 +175,8 @@ export function AIGenerateJourneyModal({
       setSelectedBoatId('');
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
+      setStartDate('');
+      setEndDate('');
       setGeneratedJourney(null);
     } catch (err: any) {
       setError(err.message || 'Failed to save journey');
@@ -242,37 +250,75 @@ export function AIGenerateJourneyModal({
                   </select>
                 </div>
 
-                <LocationAutocomplete
-                  id="start_location"
-                  label="Start Location"
-                  value={startLocation.name}
-                  onChange={(location) => {
-                    setStartLocation(location);
-                    setError(null); // Clear error when valid location is selected
-                  }}
-                  onInputChange={(value) => {
-                    setStartLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
-                    setError(null); // Clear error when user starts typing
-                  }}
-                  placeholder="e.g., Barcelona, Spain"
-                  required
-                />
+                {/* Start and End Location on same row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <LocationAutocomplete
+                    id="start_location"
+                    label="Start Location"
+                    value={startLocation.name}
+                    onChange={(location) => {
+                      setStartLocation(location);
+                      setError(null); // Clear error when valid location is selected
+                    }}
+                    onInputChange={(value) => {
+                      setStartLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
+                      setError(null); // Clear error when user starts typing
+                    }}
+                    placeholder="e.g., Barcelona, Spain"
+                    required
+                  />
 
-                <LocationAutocomplete
-                  id="end_location"
-                  label="End Location"
-                  value={endLocation.name}
-                  onChange={(location) => {
-                    setEndLocation(location);
-                    setError(null); // Clear error when valid location is selected
-                  }}
-                  onInputChange={(value) => {
-                    setEndLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
-                    setError(null); // Clear error when user starts typing
-                  }}
-                  placeholder="e.g., Palma, Mallorca"
-                  required
-                />
+                  <LocationAutocomplete
+                    id="end_location"
+                    label="End Location"
+                    value={endLocation.name}
+                    onChange={(location) => {
+                      setEndLocation(location);
+                      setError(null); // Clear error when valid location is selected
+                    }}
+                    onInputChange={(value) => {
+                      setEndLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
+                      setError(null); // Clear error when user starts typing
+                    }}
+                    placeholder="e.g., Palma, Mallorca"
+                    required
+                  />
+                </div>
+
+                {/* Start and End Date on same row */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="start_date" className="block text-sm font-medium text-foreground mb-1">
+                      Start Date
+                    </label>
+                    <input
+                      type="date"
+                      id="start_date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value);
+                        setError(null);
+                      }}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="end_date" className="block text-sm font-medium text-foreground mb-1">
+                      End Date
+                    </label>
+                    <input
+                      type="date"
+                      id="end_date"
+                      value={endDate}
+                      onChange={(e) => {
+                        setEndDate(e.target.value);
+                        setError(null);
+                      }}
+                      min={startDate || undefined}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    />
+                  </div>
+                </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
                   <button

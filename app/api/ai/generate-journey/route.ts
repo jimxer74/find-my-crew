@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { startLocation, endLocation, boatId } = body;
+    const { startLocation, endLocation, boatId, startDate, endDate } = body;
 
     if (!startLocation || !endLocation) {
       return NextResponse.json(
@@ -47,10 +47,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a prompt for Gemini
+    const dateInfo = startDate || endDate 
+      ? `\nJourney Dates:${startDate ? ` Start: ${startDate}` : ''}${endDate ? ` End: ${endDate}` : ''}`
+      : '';
+    
     const prompt = `You are a sailing route planner. Generate a sailing journey with legs between two locations.
 
 Start Location: ${startLocation.name} (approximately ${startLocation.lat}, ${startLocation.lng})
-End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})
+End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})${dateInfo}
 
 CRITICAL RULES:
 1. Leg START and END waypoints MUST ALWAYS be at:
