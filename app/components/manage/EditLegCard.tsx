@@ -1,5 +1,7 @@
 'use client';
 
+import { formatDate } from '@/app/lib/dateFormat';
+
 type Waypoint = {
   index: number;
   geocode: {
@@ -141,36 +143,26 @@ export function EditLegCard({
         </div>
       </div>
 
-      {/* Dates and Duration Section */}
-      <div className="border-t border-border pt-3 mb-3">
-        <div className="grid grid-cols-2 gap-4 mb-2">
+      {/* Dates Section */}
+      <div className="mb-3">
+        <div className="grid grid-cols-2 gap-4 pb-3 border-b border-border">
           {/* Start Date */}
           <div>
-            <div className="text-xs text-muted-foreground mb-1">Start Date</div>
             <div className="text-sm font-medium text-card-foreground">
-              {startDate ? new Date(startDate).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              }) : 'Not set'}
+              {formatDate(startDate)}
             </div>
           </div>
 
           {/* End Date */}
           <div>
-            <div className="text-xs text-muted-foreground mb-1">End Date</div>
             <div className="text-sm font-medium text-card-foreground">
-              {endDate ? new Date(endDate).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
-              }) : 'Not set'}
+              {formatDate(endDate)}
             </div>
           </div>
         </div>
 
         {/* Duration and Distance */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pt-3">
           <div>
             <div className="text-xs text-muted-foreground mb-1">Duration</div>
             <div className="text-sm font-medium text-card-foreground">

@@ -10,12 +10,14 @@ import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { LegFormModal } from '@/app/components/manage/LegFormModal';
 import { toGeocode } from '@/app/lib/IGeoCode';
+import { formatDate } from '@/app/lib/dateFormat';
 
 type Journey = {
   id: string;
   name: string;
   start_date: string | null;
   end_date: string | null;
+  is_ai_generated?: boolean;
 };
 
 type Leg = {
@@ -65,6 +67,7 @@ export default function LegsManagementPage() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [legToDelete, setLegToDelete] = useState<Leg | null>(null);
   const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
+  const [isDisclaimerModalOpen, setIsDisclaimerModalOpen] = useState(false);
   const legCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
@@ -85,7 +88,7 @@ export default function LegsManagementPage() {
     const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from('journeys')
-      .select('id, name, start_date, end_date, boat_id, boats(average_speed_knots)')
+      .select('id, name, start_date, end_date, boat_id, is_ai_generated, boats(average_speed_knots)')
       .eq('id', journeyId)
       .single();
 
@@ -592,13 +595,13 @@ export default function LegsManagementPage() {
                         {journey.start_date && (
                           <p>
                             <span className="font-medium">Start:</span>{' '}
-                            {new Date(journey.start_date).toLocaleDateString()}
+                            {formatDate(journey.start_date)}
                           </p>
                         )}
                         {journey.end_date && (
                           <p>
                             <span className="font-medium">End:</span>{' '}
-                            {new Date(journey.end_date).toLocaleDateString()}
+                            {formatDate(journey.end_date)}
                           </p>
                         )}
                       </div>
@@ -656,6 +659,20 @@ export default function LegsManagementPage() {
 
         {/* Right Side - Map Container */}
         <div className="flex-1 relative">
+          {/* AI Generated Tag - Bottom Right Corner */}
+          {journey?.is_ai_generated && (
+            <button
+              onClick={() => setIsDisclaimerModalOpen(true)}
+              title="AI Generated - Click for disclaimer"
+              className="absolute bottom-4 right-4 z-10 inline-flex items-center gap-1 px-3 py-2 text-xs font-medium bg-card/95 backdrop-blur-sm text-primary border border-primary/20 rounded-md shadow-lg hover:bg-card hover:border-primary/40 transition-all cursor-pointer"
+              aria-label="AI Generated - Click for disclaimer"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              AI generated
+            </button>
+          )}
           <EditJourneyMap
             initialCenter={[0, 20]} // Default center (can be updated based on journey/legs data)
             initialZoom={2}
@@ -703,6 +720,60 @@ export default function LegsManagementPage() {
             legId={editingLegId}
           />
         </>
+      )}
+
+      {/* AI Generated Disclaimer Modal */}
+      {isDisclaimerModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setIsDisclaimerModalOpen(false)}
+        >
+          <div
+            className="bg-card rounded-lg shadow-xl max-w-2xl w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-2">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <h2 className="text-2xl font-bold text-card-foreground">AI Generated Journey</h2>
+              </div>
+              <button
+                onClick={() => setIsDisclaimerModalOpen(false)}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                  <p className="font-semibold mb-2">Important Disclaimer</p>
+                  <p>
+                    This journey and legs are generated automatically by AI. Please note that this does not negate the need for proper navigation and passage planning, weather routing and general good seamanship. Always use proper navigation tools, navigation charts and pilotage etc. for planning the passages.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIsDisclaimerModalOpen(false)}
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90"
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Delete Confirmation Dialog */}

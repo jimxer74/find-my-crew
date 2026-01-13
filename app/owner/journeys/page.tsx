@@ -9,6 +9,7 @@ import { Header } from '@/app/components/Header';
 import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { AIGenerateJourneyModal } from '@/app/components/manage/AIGenerateJourneyModal';
 import { Pagination } from '@/app/components/ui/Pagination';
+import { formatDate } from '@/app/lib/dateFormat';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();
@@ -285,12 +286,22 @@ export default function JourneysPage() {
                 .map((journey) => (
                   <div key={journey.id} className="bg-card rounded-lg shadow p-6">
                     <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-xl font-semibold text-card-foreground mb-2">{journey.name}</h3>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="text-xl font-semibold text-card-foreground">{journey.name}</h3>
+                          {journey.is_ai_generated && (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-md">
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                              AI generated
+                            </span>
+                          )}
+                        </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           {journey.boat_name && <p>Boat: {journey.boat_name}</p>}
-                          {journey.start_date && <p>Start: {new Date(journey.start_date).toLocaleDateString()}</p>}
-                          {journey.end_date && <p>End: {new Date(journey.end_date).toLocaleDateString()}</p>}
+                          {journey.start_date && <p>Start: {formatDate(journey.start_date)}</p>}
+                          {journey.end_date && <p>End: {formatDate(journey.end_date)}</p>}
                           <p className={journey.is_public ? 'text-green-600' : 'text-muted-foreground'}>
                             {journey.is_public ? 'Public' : 'Private'}
                           </p>

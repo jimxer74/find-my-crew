@@ -4,6 +4,42 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
+import { formatDate, formatDateShort } from '@/app/lib/dateFormat';
+
+// Calculate distance between two coordinates using Haversine formula (nautical miles)
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3440; // Earth's radius in nautical miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+// Calculate duration in hours based on distance and speed
+function calculateDuration(distanceNM: number, speedKnots: number | null): number | null {
+  if (!speedKnots || speedKnots <= 0) return null;
+  // Account for 70-80% efficiency due to conditions
+  const effectiveSpeed = speedKnots * 0.75;
+  return distanceNM / effectiveSpeed;
+}
+
+// Format duration as human-readable string
+function formatDuration(hours: number | null): string {
+  if (hours === null) return 'N/A';
+  if (hours < 24) {
+    return `${Math.round(hours)}h`;
+  }
+  const days = Math.floor(hours / 24);
+  const remainingHours = Math.round(hours % 24);
+  if (remainingHours === 0) {
+    return `${days}d`;
+  }
+  return `${days}d ${remainingHours}h`;
+}
 
 type Boat = {
   id: string;
@@ -37,6 +73,7 @@ export function AIGenerateJourneyModal({
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedJourney, setGeneratedJourney] = useState<any>(null);
+  const [aiPrompt, setAiPrompt] = useState<string | null>(null);
 
   // Load boats when modal opens and reset form
   useEffect(() => {
@@ -51,6 +88,7 @@ export function AIGenerateJourneyModal({
       setEndDate('');
       setUseSpeedPlanning(false);
       setGeneratedJourney(null);
+      setAiPrompt(null);
       setError(null);
     }
   }, [isOpen]);
@@ -145,6 +183,7 @@ export function AIGenerateJourneyModal({
       }
 
       setGeneratedJourney(result.data);
+      setAiPrompt(result.prompt || null);
     } catch (err: any) {
       setError(err.message || 'Failed to generate journey');
     } finally {
@@ -167,6 +206,8 @@ export function AIGenerateJourneyModal({
         name: generatedJourney.journeyName,
         description: generatedJourney.description || '',
         state: 'In planning',
+        is_ai_generated: true,
+        ai_prompt: aiPrompt || null,
       };
 
       // Add dates if provided
@@ -419,6 +460,21 @@ export function AIGenerateJourneyModal({
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Disclaimer */}
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="flex items-start gap-2">
+                    <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                      <p className="font-semibold mb-1">AI Generated Content Disclaimer</p>
+                      <p>
+                        This journey and legs are generated automatically by AI. Please note that this does not negate the need for proper navigation and passage planning, weather routing and general good seamanship. Always use proper navigation tools, navigation charts and pilotage etc. for planning the passages.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <h3 className="text-lg font-semibold text-card-foreground mb-2">
                     Generated Journey: {generatedJourney.journeyName}
@@ -426,19 +482,108 @@ export function AIGenerateJourneyModal({
                   {generatedJourney.description && (
                     <p className="text-muted-foreground mb-4">{generatedJourney.description}</p>
                   )}
+                  
+                  {/* Journey Dates */}
+                  {(startDate || endDate) && (
+                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                      {startDate && (
+                        <div>
+                          <span className="text-muted-foreground">Start Date: </span>
+                          <span className="font-medium text-card-foreground">
+                            {formatDate(startDate)}
+                          </span>
+                        </div>
+                      )}
+                      {endDate && (
+                        <div>
+                          <span className="text-muted-foreground">End Date: </span>
+                          <span className="font-medium text-card-foreground">
+                            {formatDate(endDate)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <h4 className="font-medium text-card-foreground mb-2">Legs:</h4>
-                  <div className="space-y-2">
-                    {generatedJourney.legs.map((leg: any, idx: number) => (
-                      <div key={idx} className="bg-accent/50 p-3 rounded">
-                        <p className="font-medium">{leg.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {leg.waypoints.length} waypoint{leg.waypoints.length !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {generatedJourney.legs.map((leg: any, idx: number) => {
+                      // Calculate distance and duration for this leg
+                      let distanceNM: number | null = null;
+                      let durationHours: number | null = null;
+                      
+                      if (leg.waypoints && leg.waypoints.length >= 2) {
+                        const startWp = leg.waypoints[0];
+                        const endWp = leg.waypoints[leg.waypoints.length - 1];
+                        
+                        if (startWp?.geocode?.coordinates && endWp?.geocode?.coordinates) {
+                          const [lng1, lat1] = startWp.geocode.coordinates;
+                          const [lng2, lat2] = endWp.geocode.coordinates;
+                          distanceNM = calculateDistance(lat1, lng1, lat2, lng2);
+                          durationHours = calculateDuration(distanceNM, selectedBoatSpeed);
+                        }
+                      }
+
+                      return (
+                        <div key={idx} className="bg-accent/50 p-4 rounded-lg border border-border">
+                          <div className="mb-2">
+                            <p className="font-medium text-card-foreground">{leg.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {leg.waypoints.length} waypoint{leg.waypoints.length !== 1 ? 's' : ''}
+                            </p>
+                          </div>
+                          
+                          {/* Leg Dates */}
+                          {(leg.start_date || leg.end_date) && (
+                            <div className="grid grid-cols-2 gap-3 mb-2 text-xs">
+                              {leg.start_date && (
+                                <div>
+                                  <span className="text-muted-foreground">Start: </span>
+                                  <span className="font-medium text-card-foreground">
+                                    {formatDateShort(leg.start_date)}
+                                  </span>
+                                </div>
+                              )}
+                              {leg.end_date && (
+                                <div>
+                                  <span className="text-muted-foreground">End: </span>
+                                  <span className="font-medium text-card-foreground">
+                                    {formatDateShort(leg.end_date)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Distance and Duration */}
+                          <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-border/50">
+                            {distanceNM !== null && (
+                              <div>
+                                <span className="text-muted-foreground">Distance: </span>
+                                <span className="font-medium text-card-foreground">
+                                  {Math.round(distanceNM)} nm
+                                </span>
+                              </div>
+                            )}
+                            {durationHours !== null && (
+                              <div>
+                                <span className="text-muted-foreground">Duration: </span>
+                                <span className="font-medium text-card-foreground">
+                                  {formatDuration(durationHours)}
+                                  {selectedBoatSpeed && distanceNM !== null && (
+                                    <span className="text-muted-foreground ml-1">
+                                      (@ {selectedBoatSpeed}kt)
+                                    </span>
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

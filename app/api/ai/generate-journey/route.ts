@@ -379,7 +379,11 @@ IMPORTANT:
       coordinates: finalLastWp?.geocode?.coordinates
     });
 
-    return NextResponse.json({ success: true, data: generatedData });
+    return NextResponse.json({ 
+      success: true, 
+      data: generatedData,
+      prompt: prompt // Return the prompt used for AI generation
+    });
   } catch (error: any) {
     console.error('Error generating journey:', error);
     return NextResponse.json(
