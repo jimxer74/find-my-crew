@@ -90,6 +90,7 @@ create table if not exists public.boats (
   loa_m       numeric, -- length overall in meters
   beam_m      numeric, -- Beam in meters
   displcmt_m  numeric, -- Displacement in kg
+  average_speed_knots numeric, -- Average cruising speed in knots
   link_to_specs text, -- Link to additional information like sailboatdata.com
   images      text[] default '{}',  -- store image URLs from Supabase Storage
   created_at  timestamptz not null default now(),

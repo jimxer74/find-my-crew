@@ -115,6 +115,7 @@ export default function BoatsPage() {
                         {boat.make && <p>Make: {boat.make}</p>}
                         {boat.model && <p>Model: {boat.model}</p>}
                         {boat.capacity && <p>Capacity: {boat.capacity} people</p>}
+                        {boat.average_speed_knots && <p>Avg Speed: {boat.average_speed_knots} knots</p>}
                         {boat.home_port && <p>Home Port: {boat.home_port}</p>}
                       </div>
                     </div>

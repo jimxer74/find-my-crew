@@ -14,6 +14,7 @@ type Boat = {
   loa_m: number | null;
   beam_m: number | null;
   displcmt_m: number | null;
+  average_speed_knots: number | null;
   link_to_specs: string;
 };
 
@@ -36,6 +37,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     loa_m: null,
     beam_m: null,
     displcmt_m: null,
+    average_speed_knots: null,
     link_to_specs: '',
   });
   const [loading, setLoading] = useState(false);
@@ -59,6 +61,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         loa_m: null,
         beam_m: null,
         displcmt_m: null,
+        average_speed_knots: null,
         link_to_specs: '',
       });
       setImages([]);
@@ -90,6 +93,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         loa_m: data.loa_m || null,
         beam_m: data.beam_m || null,
         displcmt_m: data.displcmt_m || null,
+        average_speed_knots: data.average_speed_knots || null,
         link_to_specs: data.link_to_specs || '',
       });
       setImages(data.images || []);
@@ -173,6 +177,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       loa_m: formData.loa_m || null,
       beam_m: formData.beam_m || null,
       displcmt_m: formData.displcmt_m || null,
+      average_speed_knots: formData.average_speed_knots || null,
       link_to_specs: formData.link_to_specs || null,
       images: images.length > 0 ? images : null,
       updated_at: new Date().toISOString(),
@@ -213,7 +218,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'capacity' || name === 'loa_m' || name === 'beam_m' || name === 'displcmt_m'
+      [name]: name === 'capacity' || name === 'loa_m' || name === 'beam_m' || name === 'displcmt_m' || name === 'average_speed_knots'
         ? value === '' ? null : Number(value)
         : value,
     }));
@@ -412,6 +417,24 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="e.g., 8500"
+                    />
+                  </div>
+
+                  {/* Average Speed */}
+                  <div>
+                    <label htmlFor="average_speed_knots" className="block text-sm font-medium text-foreground mb-1">
+                      Average Speed (knots)
+                    </label>
+                    <input
+                      type="number"
+                      id="average_speed_knots"
+                      name="average_speed_knots"
+                      step="0.1"
+                      min="0"
+                      value={formData.average_speed_knots || ''}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      placeholder="e.g., 6.5"
                     />
                   </div>
 

@@ -8,6 +8,7 @@ import { Header } from '@/app/components/Header';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
 import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { EditLegCard } from '@/app/components/manage/EditLegCard';
+import { LegFormModal } from '@/app/components/manage/LegFormModal';
 import { toGeocode } from '@/app/lib/IGeoCode';
 
 type Journey = {
@@ -53,6 +54,8 @@ export default function LegsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [journey, setJourney] = useState<Journey | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isLegModalOpen, setIsLegModalOpen] = useState(false);
+  const [editingLegId, setEditingLegId] = useState<string | null>(null);
   const [isPaneOpen, setIsPaneOpen] = useState(true);
   const [legs, setLegs] = useState<Leg[]>([]);
   const mapRef = useRef<any>(null);
@@ -624,8 +627,8 @@ export default function LegsManagementPage() {
                           }
                         }}
                         onEdit={() => {
-                          // TODO: Implement edit functionality
-                          console.log('Edit leg:', leg.id);
+                          setEditingLegId(leg.id);
+                          setIsLegModalOpen(true);
                         }}
                         onDelete={() => {
                           // Open delete confirmation dialog
@@ -668,13 +671,27 @@ export default function LegsManagementPage() {
 
       {/* Journey Edit Modal */}
       {user && journey && (
-        <JourneyFormModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={handleEditSuccess}
-          journeyId={journey.id}
-          userId={user.id}
-        />
+        <>
+          <JourneyFormModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+            onSuccess={handleEditSuccess}
+            journeyId={journey.id}
+            userId={user.id}
+          />
+          <LegFormModal
+            isOpen={isLegModalOpen}
+            onClose={() => {
+              setIsLegModalOpen(false);
+              setEditingLegId(null);
+            }}
+            onSuccess={() => {
+              loadLegs();
+            }}
+            journeyId={journeyId}
+            legId={editingLegId}
+          />
+        </>
       )}
 
       {/* Delete Confirmation Dialog */}
