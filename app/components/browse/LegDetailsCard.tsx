@@ -26,6 +26,7 @@ type LegDetailsCardProps = {
   onNext?: () => void;
   hasPrev?: boolean;
   hasNext?: boolean;
+  onRegister?: () => void; // Register as crew callback
 };
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
@@ -77,12 +78,14 @@ export function LegDetailsCard({
   onNext,
   hasPrev = false,
   hasNext = false,
+  onRegister,
 }: LegDetailsCardProps) {
   const [isMinimized, setIsMinimized] = React.useState(false);
   
   // Debug: Log boat image URL
   console.log('LegDetailsCard - boatImageUrl:', boatImageUrl);
   console.log('LegDetailsCard - boatSpeed:', boatSpeed);
+  console.log('LegDetailsCard - onRegister:', onRegister);
   
   // Calculate distance and duration
   let distanceNM: number | null = null;
@@ -275,6 +278,40 @@ export function LegDetailsCard({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
             </svg>
           </div>
+        )}
+        
+        {/* Register as Crew Button - Top Left */}
+        {onRegister && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRegister();
+            }}
+            className="absolute top-2 left-2 z-30 text-white rounded-lg px-2 py-1.5 flex items-center gap-1.5 shadow-lg transition-colors backdrop-blur-sm"
+            style={{ backgroundColor: '#22276E' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#1a1f56';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#22276E';
+            }}
+            aria-label="Register as crew"
+          >
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+              />
+            </svg>
+            <span className="text-xs font-medium">Register</span>
+          </button>
         )}
         
         {/* Journey Name Overlay - Slightly below center */}

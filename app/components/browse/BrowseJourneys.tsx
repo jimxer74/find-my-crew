@@ -8,6 +8,7 @@ import { formatDateShort } from '@/app/lib/dateFormat';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LegDetailsCard } from './LegDetailsCard';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 type Waypoint = {
   index: number;
@@ -31,6 +32,7 @@ type PublicLeg = {
 };
 
 export function BrowseJourneys() {
+  const { user } = useAuth();
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -42,8 +44,30 @@ export function BrowseJourneys() {
   const [publicLegs, setPublicLegs] = useState<PublicLeg[]>([]);
   const [selectedLegDetails, setSelectedLegDetails] = useState<PublicLeg | null>(null);
   const [journeyLegs, setJourneyLegs] = useState<PublicLeg[]>([]); // All legs in the current journey
+  const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
   
+  // Load user role
+  useEffect(() => {
+    if (user) {
+      const supabase = getSupabaseBrowserClient();
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error loading user role:', error);
+          } else if (data) {
+            setUserRole(data.role);
+          }
+        });
+    } else {
+      setUserRole(null);
+    }
+  }, [user]);
+
   // Debug: Log when selectedLegDetails changes
   useEffect(() => {
     console.log('selectedLegDetails state changed:', selectedLegDetails);
@@ -643,6 +667,48 @@ export function BrowseJourneys() {
       type: 'FeatureCollection',
       features: updatedFeatures,
     });
+  };
+
+  // Handle registration as crew
+  const handleRegister = async () => {
+    if (!user || !selectedLegDetails) {
+      console.error('Cannot register: user or leg details missing');
+      return;
+    }
+
+    if (userRole !== 'crew') {
+      console.log('Only crew members can register');
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    
+    try {
+      const { error } = await supabase
+        .from('registrations')
+        .insert({
+          leg_id: selectedLegDetails.id,
+          user_id: user.id,
+          status: 'Pending approval',
+        });
+
+      if (error) {
+        if (error.code === '23505') {
+          // Unique constraint violation - already registered
+          console.log('Already registered for this leg');
+          alert('You are already registered for this leg');
+        } else {
+          console.error('Error registering:', error);
+          alert('Failed to register. Please try again.');
+        }
+      } else {
+        console.log('Successfully registered for leg:', selectedLegDetails.id);
+        alert('Registration successful! Your request is pending approval.');
+      }
+    } catch (error) {
+      console.error('Error registering:', error);
+      alert('Failed to register. Please try again.');
+    }
   };
 
   // Handle leg start marker click - highlight that leg
@@ -1559,6 +1625,11 @@ export function BrowseJourneys() {
             onNext={handleNextLeg}
             hasPrev={getHasPrev()}
             hasNext={getHasNext()}
+            onRegister={(() => {
+              const shouldShow = user && userRole === 'crew';
+              console.log('Register button visibility:', { user: !!user, userRole, shouldShow });
+              return shouldShow ? handleRegister : undefined;
+            })()}
           />
         </div>
       )}
