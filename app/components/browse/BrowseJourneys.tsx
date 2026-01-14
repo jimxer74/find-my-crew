@@ -59,6 +59,7 @@ export function BrowseJourneys() {
   const journeyEndMarkersSourceId = 'journey-end-markers';
   const legMarkerHandlersSetupRef = useRef(false); // Track if click handlers are set up
   const selectedLegIdRef = useRef<string | null>(null); // Track currently selected leg
+  const routeArrowLayersRef = useRef<Map<string, string>>(new Map()); // Track arrow layers for each leg
 
     // Clear displayed journey route
     const clearDisplayedJourney = () => {
@@ -73,7 +74,7 @@ export function BrowseJourneys() {
       // Hide leg details card
       setSelectedLegDetails(null);
 
-      // Remove journey route lines
+      // Remove journey route lines and arrows
       journeyRouteSourcesRef.current.forEach((sourceId, legId) => {
         const layerId = `journey-route-${legId}`;
         if (map.current?.getLayer(layerId)) {
@@ -82,8 +83,19 @@ export function BrowseJourneys() {
         if (map.current?.getSource(sourceId)) {
           map.current.removeSource(sourceId);
         }
+        
+        // Remove arrow layer if it exists
+        const arrowLayerId = `journey-route-arrow-${legId}`;
+        const arrowSourceId = `journey-route-arrow-source-${legId}`;
+        if (map.current?.getLayer(arrowLayerId)) {
+          map.current.removeLayer(arrowLayerId);
+        }
+        if (map.current?.getSource(arrowSourceId)) {
+          map.current.removeSource(arrowSourceId);
+        }
       });
       journeyRouteSourcesRef.current.clear();
+      routeArrowLayersRef.current.clear();
 
       // Remove end markers
       if (map.current.getSource(journeyEndMarkersSourceId)) {
@@ -464,6 +476,19 @@ export function BrowseJourneys() {
     } else {
       console.log('Layer not found for reset:', layerId);
     }
+    
+    // Remove arrow layer if it exists
+    const arrowLayerId = `journey-route-arrow-${legId}`;
+    const arrowSourceId = `journey-route-arrow-source-${legId}`;
+    if (map.current.getLayer(arrowLayerId)) {
+      console.log('Removing arrow layer:', arrowLayerId);
+      map.current.removeLayer(arrowLayerId);
+    }
+    if (map.current.getSource(arrowSourceId)) {
+      console.log('Removing arrow source:', arrowSourceId);
+      map.current.removeSource(arrowSourceId);
+    }
+    routeArrowLayersRef.current.delete(legId);
   };
 
   // Highlight leg styling (dark blue, solid, thicker)
@@ -476,6 +501,102 @@ export function BrowseJourneys() {
       map.current.setPaintProperty(layerId, 'line-width', 4); // Make it thicker
       // Remove dasharray to make it solid - empty array makes it solid
       (map.current as any).setPaintProperty(layerId, 'line-dasharray', []); // solid line
+      
+      // Add arrow at the end of the route
+      const sourceId = journeyRouteSourcesRef.current.get(legId);
+      if (sourceId) {
+        const source = map.current.getSource(sourceId) as mapboxgl.GeoJSONSource;
+        if (source) {
+          const data = source._data as any;
+          if (data && data.geometry && data.geometry.coordinates) {
+            const coordinates = data.geometry.coordinates;
+            if (coordinates.length > 0) {
+              const lastCoord = coordinates[coordinates.length - 1];
+              const secondLastCoord = coordinates.length > 1 ? coordinates[coordinates.length - 2] : coordinates[0];
+              
+              // Calculate bearing for arrow direction (in degrees, 0 = north, clockwise)
+              const dx = lastCoord[0] - secondLastCoord[0];
+              const dy = lastCoord[1] - secondLastCoord[1];
+              const bearing = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+              
+              const arrowLayerId = `journey-route-arrow-${legId}`;
+              const arrowSourceId = `journey-route-arrow-source-${legId}`;
+              
+              // Remove existing arrow if any
+              if (map.current.getLayer(arrowLayerId)) {
+                map.current.removeLayer(arrowLayerId);
+              }
+              if (map.current.getSource(arrowSourceId)) {
+                map.current.removeSource(arrowSourceId);
+              }
+              
+              // Create filled arrow SVG (pointing upward/north by default)
+              const arrowSvg = `
+                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M 10 0 L 20 20 L 0 20 Z" fill="#22276E" stroke="none"/>
+                </svg>
+              `;
+              
+              // Load arrow icon if not already loaded
+              if (!map.current.hasImage('route-arrow')) {
+                const arrowImage = new Image(20, 20);
+                arrowImage.onload = () => {
+                  if (map.current && !map.current.hasImage('route-arrow')) {
+                    map.current.addImage('route-arrow', arrowImage);
+                  }
+                  addArrowLayer();
+                };
+                arrowImage.onerror = () => {
+                  console.error('Error loading arrow icon');
+                  addArrowLayer();
+                };
+                arrowImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(arrowSvg);
+              } else {
+                addArrowLayer();
+              }
+              
+              function addArrowLayer() {
+                if (!map.current) return;
+                
+                try {
+                  // Add source for arrow
+                  map.current.addSource(arrowSourceId, {
+                    type: 'geojson',
+                    data: {
+                      type: 'Feature',
+                      properties: {},
+                      geometry: {
+                        type: 'Point',
+                        coordinates: lastCoord,
+                      },
+                    },
+                  });
+                  
+                  // Add arrow symbol layer
+                  map.current.addLayer({
+                    id: arrowLayerId,
+                    type: 'symbol',
+                    source: arrowSourceId,
+                    layout: {
+                      'icon-image': 'route-arrow',
+                      'icon-size': 1,
+                      'icon-rotate': bearing, // Rotate arrow to point in direction of travel
+                      'icon-rotation-alignment': 'map',
+                      'icon-anchor': 'top', // Anchor at tip so it aligns with end coordinate
+                      'icon-allow-overlap': true,
+                      'icon-ignore-placement': true,
+                    },
+                  });
+                  
+                  routeArrowLayersRef.current.set(legId, arrowLayerId);
+                } catch (error) {
+                  console.error('Error adding arrow layer:', error);
+                }
+              }
+            }
+          }
+        }
+      }
     } else {
       console.log('Layer not found for highlight:', layerId);
     }
