@@ -1299,11 +1299,6 @@ export function BrowseJourneys() {
       {/* Leg Details Card - Debug */}
       {/* Test div to verify conditional rendering */}
       {selectedLegDetails && (
-        <div className="absolute top-20 left-4 bg-red-500 text-white p-4 z-50">
-          DEBUG: Card should show! selectedLegDetails: {selectedLegDetails.id}
-        </div>
-      )}
-      {selectedLegDetails && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm px-4 pointer-events-auto">
           <LegDetailsCard
             startWaypoint={selectedLegDetails.waypoints?.length > 0 
