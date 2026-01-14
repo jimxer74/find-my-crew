@@ -397,7 +397,7 @@ export function BrowseJourneys() {
             },
             paint: {
               'line-color': '#6b7280',
-              'line-width': 2,
+              'line-width': 4,
               'line-opacity': 0.8,
               'line-dasharray': [2, 2],
             },
@@ -459,6 +459,7 @@ export function BrowseJourneys() {
     if (map.current.getLayer(layerId)) {
       console.log('Resetting leg styling:', legId);
       map.current.setPaintProperty(layerId, 'line-color', '#6b7280');
+      map.current.setPaintProperty(layerId, 'line-width', 4);
       map.current.setPaintProperty(layerId, 'line-dasharray', [2, 2]);
     } else {
       console.log('Layer not found for reset:', layerId);
