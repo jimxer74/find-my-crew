@@ -205,14 +205,18 @@ export function LegDetailsCard({
           )}
           
           {/* Content in the middle */}
-          <div className="flex-1 min-w-0 mx-2">
-            <div className="text-xs text-muted-foreground truncate">
-              {startWaypoint?.name && endWaypoint?.name && (
-                <>
-                  {formatLocationName(startWaypoint.name)} → {formatLocationName(endWaypoint.name)}
-                </>
-              )}
-            </div>
+          <div className="flex-1 min-w-0 mx-2 flex items-center gap-1">
+            {startWaypoint?.name && endWaypoint?.name ? (
+              <>
+                <div className="text-xs text-muted-foreground truncate min-w-0 flex-1">
+                  {formatLocationName(startWaypoint.name)}
+                </div>
+                <span className="text-xs text-muted-foreground flex-shrink-0">→</span>
+                <div className="text-xs text-muted-foreground truncate min-w-0 flex-1">
+                  {formatLocationName(endWaypoint.name)}
+                </div>
+              </>
+            ) : null}
           </div>
           
           {/* Next button on the right */}
