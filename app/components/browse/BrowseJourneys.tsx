@@ -76,6 +76,7 @@ export function BrowseJourneys() {
   const isWithinViewport = (lng: number, lat: number): boolean => {
     if (!map.current) return false;
     const bounds = map.current.getBounds();
+    if (!bounds) return false;
     return bounds.contains([lng, lat]);
   };
 
@@ -83,6 +84,7 @@ export function BrowseJourneys() {
   const hasViewportChanged = (): boolean => {
     if (!map.current) return false;
     const currentBounds = map.current.getBounds();
+    if (!currentBounds) return false;
     const lastBounds = lastViewportBoundsRef.current;
 
     // Always load on first time (no last bounds)
@@ -367,8 +369,7 @@ export function BrowseJourneys() {
 
     const startMarker = new mapboxgl.Marker({ 
       element: startEl, 
-      anchor: 'center',
-      zIndexOffset: 1000 // Ensure it's always on top
+      anchor: 'center'
     })
       .setLngLat([startLng, startLat])
       .addTo(map.current!);
@@ -507,8 +508,7 @@ export function BrowseJourneys() {
 
       const startMarker = new mapboxgl.Marker({ 
         element: startEl, 
-        anchor: 'center',
-        zIndexOffset: 1000 // Ensure it's always on top
+        anchor: 'center'
       })
         .setLngLat([startLng, startLat])
         .addTo(map.current!);
