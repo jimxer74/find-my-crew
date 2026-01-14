@@ -17,6 +17,7 @@ type LegDetailsCardProps = {
   startDate?: string | null;
   endDate?: string | null;
   boatSpeed?: number | null; // Average speed in knots
+  boatImageUrl?: string | null; // Boat image URL
   legName?: string | null;
   journeyName?: string | null;
   onClose?: () => void;
@@ -63,10 +64,15 @@ export function LegDetailsCard({
   startDate, 
   endDate, 
   boatSpeed,
+  boatImageUrl,
   legName,
   journeyName,
   onClose
 }: LegDetailsCardProps) {
+  // Debug: Log boat image URL
+  console.log('LegDetailsCard - boatImageUrl:', boatImageUrl);
+  console.log('LegDetailsCard - boatSpeed:', boatSpeed);
+  
   // Calculate distance and duration
   let distanceNM: number | null = null;
   let durationHours: number | null = null;
@@ -80,7 +86,7 @@ export function LegDetailsCard({
 
   const formatLocationName = (name: string) => {
     if (!name || name === 'Unknown location') {
-      return <span className="text-xs font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
+      return <span className="text-sm font-semibold text-card-foreground">{name || 'Unknown location'}</span>;
     }
     
     // Split by comma to separate city and country
@@ -88,9 +94,9 @@ export function LegDetailsCard({
     
     if (parts.length >= 2) {
       const city = parts[0];
-      const country = parts.slice(1).join(', '); // Handle cases with multiple commas
+      const country = parts.slice(1).join(', ');
       return (
-        <span className="text-xs text-card-foreground">
+        <span className="text-sm text-card-foreground">
           <span className="font-semibold">{city}</span>
           {country && <span className="font-normal">, {country}</span>}
         </span>
@@ -98,20 +104,20 @@ export function LegDetailsCard({
     }
     
     // If no comma, just show the name in bold
-    return <span className="text-xs font-semibold text-card-foreground">{name}</span>;
+    return <span className="text-sm font-semibold text-card-foreground">{name}</span>;
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-lg p-4 max-w-md mx-auto relative">
+    <div className="bg-card rounded-lg shadow-lg overflow-hidden max-w-sm mx-auto relative">
       {/* Close button */}
       {onClose && (
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors p-1"
+          className="absolute top-2 right-2 z-20 text-white bg-black/50 hover:bg-black/70 rounded-full p-1.5 transition-colors backdrop-blur-sm"
           aria-label="Close"
         >
           <svg
-            className="w-5 h-5"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -126,91 +132,107 @@ export function LegDetailsCard({
         </button>
       )}
 
-      {/* Journey and Leg Name */}
-      {(journeyName || legName) && (
-        <div className="mb-3 pb-3 border-b border-border">
-          {journeyName && (
-            <div className="text-sm font-semibold text-card-foreground mb-1">
+      {/* Boat Image Section */}
+      <div className="relative w-full h-48 bg-muted">
+        {boatImageUrl ? (
+          <>
+            {/* Debug info */}
+            {console.log('Rendering boat image with URL:', boatImageUrl)}
+            <img
+              src={boatImageUrl}
+              alt={journeyName || 'Boat'}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                console.error('Error loading boat image:', boatImageUrl, e);
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+              onLoad={() => {
+                console.log('Boat image loaded successfully:', boatImageUrl);
+              }}
+            />
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+            <div className="text-white/70 text-sm">No boat image available</div>
+            <svg className="w-16 h-16 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+          </div>
+        )}
+        
+        {/* Journey Name Overlay - Top */}
+        {journeyName && (
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6">
+            <h2 className="text-xl font-bold text-white drop-shadow-lg">
               {journeyName}
-            </div>
-          )}
-          {legName && (
-            <div className="text-xs text-muted-foreground">
-              {legName}
-            </div>
-          )}
-        </div>
-      )}
+            </h2>
+          </div>
+        )}
 
-      {/* Start and End Points */}
-      <div className="flex items-center justify-between mb-4">
-        {/* Start Point */}
-        <div className="flex-1">
-          {startWaypoint ? (
-            <h3 className="text-card-foreground">
-              {formatLocationName(startWaypoint.name || 'Unknown location')}
-            </h3>
-          ) : (
-            <div className="text-xs text-muted-foreground">No start point</div>
-          )}
-        </div>
-
-        {/* Arrow */}
-        <div className="mx-4 text-foreground">
-          <span className="text-lg">→</span>
-        </div>
-
-        {/* End Point */}
-        <div className="flex-1">
-          {endWaypoint ? (
-            <h3 className="text-card-foreground">
-              {formatLocationName(endWaypoint.name || 'Unknown location')}
-            </h3>
-          ) : (
-            <div className="text-xs text-muted-foreground">No end point</div>
-          )}
+        {/* Duration and Distance Tags - Bottom Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pb-3">
+          <div className="flex gap-2 flex-wrap">
+            {durationHours !== null && (
+              <span className="bg-white/90 backdrop-blur-sm text-card-foreground px-3 py-1 rounded-full text-sm font-medium">
+                {formatDuration(durationHours)}
+              </span>
+            )}
+            {distanceNM !== null && (
+              <span className="bg-white/90 backdrop-blur-sm text-card-foreground px-3 py-1 rounded-full text-sm font-medium">
+                {Math.round(distanceNM)} nm
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Dates Section */}
-      <div className="mb-3">
-        <div className="grid grid-cols-2 gap-4 pb-3 border-b border-border">
-          {/* Start Date */}
-          <div>
-            <div className="text-sm font-medium text-card-foreground">
-              {formatDate(startDate)}
-            </div>
-          </div>
-
-          {/* End Date */}
-          <div>
-            <div className="text-sm font-medium text-card-foreground">
-              {formatDate(endDate)}
-            </div>
-          </div>
-        </div>
-
-        {/* Duration and Distance */}
-        <div className="grid grid-cols-2 gap-4 pt-3">
-          <div>
-            <div className="text-xs text-muted-foreground mb-1">Duration</div>
-            <div className="text-sm font-medium text-card-foreground">
-              {durationHours !== null ? formatDuration(durationHours) : 'N/A'}
-              {boatSpeed && distanceNM !== null && (
-                <span className="text-xs text-muted-foreground ml-1">
-                  ({Math.round(distanceNM)}nm @ {boatSpeed}kt)
-                </span>
+      {/* White Content Section */}
+      <div className="bg-card p-4">
+        <div className="flex items-center">
+          {/* Left Column - Start */}
+          <div className="flex-1 flex flex-col">
+            {/* Start Point */}
+            <div className="mb-2">
+              {startWaypoint ? (
+                <div>
+                  {formatLocationName(startWaypoint.name || 'Unknown location')}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No start point</div>
               )}
             </div>
-          </div>
-          {distanceNM !== null && (
+            {/* Start Date */}
             <div>
-              <div className="text-xs text-muted-foreground mb-1">Distance</div>
               <div className="text-sm font-medium text-card-foreground">
-                {Math.round(distanceNM)} nm
+                {formatDate(startDate)}
               </div>
             </div>
-          )}
+          </div>
+
+          {/* Arrow - Centered Vertically */}
+          <div className="mx-4 text-foreground flex items-center self-center">
+            <span className="text-lg">→</span>
+          </div>
+
+          {/* Right Column - End */}
+          <div className="flex-1 flex flex-col text-right">
+            {/* End Point */}
+            <div className="mb-2">
+              {endWaypoint ? (
+                <div>
+                  {formatLocationName(endWaypoint.name || 'Unknown location')}
+                </div>
+              ) : (
+                <div className="text-sm text-muted-foreground">No end point</div>
+              )}
+            </div>
+            {/* End Date */}
+            <div>
+              <div className="text-sm font-medium text-card-foreground">
+                {formatDate(endDate)}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

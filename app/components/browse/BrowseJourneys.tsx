@@ -27,6 +27,7 @@ type PublicLeg = {
   start_date?: string | null;
   end_date?: string | null;
   boat_speed?: number | null;
+  boat_image_url?: string | null;
 };
 
 export function BrowseJourneys() {
@@ -599,11 +600,58 @@ export function BrowseJourneys() {
     if (legFromPublicLegs) {
       console.log('Using leg from publicLegs:', legFromPublicLegs);
       
-      // boat_speed column doesn't exist in legs table, so always set to null
+      // Fetch boat image and speed from journey -> boat relationship
       let legDetails: PublicLeg = { 
         ...legFromPublicLegs,
-        boat_speed: null 
+        boat_speed: null,
+        boat_image_url: null,
       };
+      
+      // Fetch boat info through journey
+      try {
+        const supabase = getSupabaseBrowserClient();
+        console.log('Fetching boat info for journeyId:', legFromPublicLegs.journeyId);
+        
+        // First get journey with boat_id
+        const { data: journeyData, error: journeyError } = await supabase
+          .from('journeys')
+          .select('boat_id')
+          .eq('id', legFromPublicLegs.journeyId)
+          .single();
+        
+        console.log('Journey data:', journeyData, 'error:', journeyError);
+        
+        if (!journeyError && journeyData && journeyData.boat_id) {
+          const boatId = journeyData.boat_id;
+          console.log('Found boat_id:', boatId);
+          
+          // Get boat speed and images from boats table
+          const { data: boatData, error: boatError } = await supabase
+            .from('boats')
+            .select('average_speed_knots, images')
+            .eq('id', boatId)
+            .single();
+          
+          console.log('Boat data:', boatData, 'error:', boatError);
+          
+          if (!boatError && boatData) {
+            legDetails.boat_speed = boatData.average_speed_knots || null;
+            console.log('Set boat_speed:', legDetails.boat_speed);
+            
+            // Get first image from images array
+            if (boatData.images && Array.isArray(boatData.images) && boatData.images.length > 0) {
+              legDetails.boat_image_url = boatData.images[0];
+              console.log('Set boat_image_url from database:', legDetails.boat_image_url);
+            } else {
+              console.log('No images in boat.images array');
+            }
+          }
+        } else {
+          console.log('No journey data or boat_id found');
+        }
+      } catch (error) {
+        console.error('Exception fetching boat info:', error);
+      }
       
       console.log('=== Setting leg details state ===');
       console.log('Leg details object:', legDetails);
@@ -637,6 +685,50 @@ export function BrowseJourneys() {
             .eq('id', legData.journey_id)
             .single();
           
+          // Fetch boat info
+          let boatSpeed = null;
+          let boatImageUrl = null;
+          
+          try {
+            console.log('Fetching boat info for journeyId (fallback):', legData.journey_id);
+            
+            // Get journey with boat_id
+            const { data: journeyWithBoat, error: journeyError } = await supabase
+              .from('journeys')
+              .select('boat_id')
+              .eq('id', legData.journey_id)
+              .single();
+            
+            console.log('Journey data (fallback):', journeyWithBoat, 'error:', journeyError);
+            
+            if (!journeyError && journeyWithBoat && journeyWithBoat.boat_id) {
+              const boatId = journeyWithBoat.boat_id;
+              
+              // Get boat speed and images from boats table
+              const { data: boatData, error: boatError } = await supabase
+                .from('boats')
+                .select('average_speed_knots, images')
+                .eq('id', boatId)
+                .single();
+              
+              console.log('Boat data (fallback):', boatData, 'error:', boatError);
+              
+              if (!boatError && boatData) {
+                boatSpeed = boatData.average_speed_knots || null;
+                
+                // Get first image from images array
+                if (boatData.images && Array.isArray(boatData.images) && boatData.images.length > 0) {
+                  boatImageUrl = boatData.images[0];
+                  console.log('Set boat_image_url (fallback):', boatImageUrl);
+                } else {
+                  console.log('No images in boat.images array (fallback)');
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching boat info (fallback):', error);
+          }
+          
           const legDetails: PublicLeg = {
             id: legData.id,
             journeyId: legData.journey_id,
@@ -645,7 +737,8 @@ export function BrowseJourneys() {
             waypoints: legData.waypoints || [],
             start_date: legData.start_date,
             end_date: legData.end_date,
-            boat_speed: null,
+            boat_speed: boatSpeed,
+            boat_image_url: boatImageUrl,
           };
           
           console.log('Fetched leg from database:', legDetails);
@@ -1211,7 +1304,7 @@ export function BrowseJourneys() {
         </div>
       )}
       {selectedLegDetails && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-auto">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-sm px-4 pointer-events-auto">
           <LegDetailsCard
             startWaypoint={selectedLegDetails.waypoints?.length > 0 
               ? (selectedLegDetails.waypoints.find(wp => wp.index === 0) || selectedLegDetails.waypoints[0])
@@ -1226,6 +1319,7 @@ export function BrowseJourneys() {
             startDate={selectedLegDetails.start_date}
             endDate={selectedLegDetails.end_date}
             boatSpeed={selectedLegDetails.boat_speed || null}
+            boatImageUrl={selectedLegDetails.boat_image_url || null}
             legName={selectedLegDetails.name}
             journeyName={selectedLegDetails.journeyName}
             onClose={() => {
