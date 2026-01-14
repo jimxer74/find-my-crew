@@ -40,19 +40,29 @@ export function BrowseJourneys() {
   const datePickerRef = useRef<HTMLDivElement>(null);
   
   // Refs for map elements
-  const routeSourcesRef = useRef<Map<string, string>>(new Map());
-  const legMarkersRef = useRef<Map<string, mapboxgl.Marker[]>>(new Map());
   const lastViewportBoundsRef = useRef<mapboxgl.LngLatBounds | null>(null);
   const isLoadingLegsRef = useRef(false);
   const currentLegsRef = useRef<PublicLeg[]>([]); // Track current legs for comparison
+  const legStartWaypointsSourceId = 'leg-start-waypoints-clusters';
+  const displayedJourneyIdRef = useRef<string | null>(null); // Track currently displayed journey
+  const journeyRouteSourcesRef = useRef<Map<string, string>>(new Map()); // Track journey route sources
+  const journeyEndMarkersSourceId = 'journey-end-markers';
+  const legMarkerHandlersSetupRef = useRef(false); // Track if click handlers are set up
+  const selectedLegIdRef = useRef<string | null>(null); // Track currently selected leg
 
-    // Clear all legs from map
-    const clearMapLegs = () => {
+    // Clear displayed journey route
+    const clearDisplayedJourney = () => {
       if (!map.current) return;
 
-      // Remove route lines
-      routeSourcesRef.current.forEach((sourceId, legId) => {
-        const layerId = `route-line-layer-${legId}`;
+      // Reset selected leg styling before clearing
+      if (selectedLegIdRef.current) {
+        resetLegStyling(selectedLegIdRef.current);
+        updateMarkerColor(selectedLegIdRef.current, false);
+      }
+
+      // Remove journey route lines
+      journeyRouteSourcesRef.current.forEach((sourceId, legId) => {
+        const layerId = `journey-route-${legId}`;
         if (map.current?.getLayer(layerId)) {
           map.current.removeLayer(layerId);
         }
@@ -60,13 +70,40 @@ export function BrowseJourneys() {
           map.current.removeSource(sourceId);
         }
       });
-      routeSourcesRef.current.clear();
+      journeyRouteSourcesRef.current.clear();
 
-      // Remove markers
-      legMarkersRef.current.forEach((markers) => {
-        markers.forEach(marker => marker.remove());
-      });
-      legMarkersRef.current.clear();
+      // Remove end markers
+      if (map.current.getSource(journeyEndMarkersSourceId)) {
+        if (map.current.getLayer('journey-end-markers-layer')) {
+          map.current.removeLayer('journey-end-markers-layer');
+        }
+        map.current.removeSource(journeyEndMarkersSourceId);
+      }
+
+      displayedJourneyIdRef.current = null;
+      selectedLegIdRef.current = null; // Reset selected leg when clearing journey
+    };
+
+    // Clear all legs from map
+    const clearMapLegs = () => {
+      if (!map.current) return;
+
+      // Clear displayed journey first
+      clearDisplayedJourney();
+
+      // Remove clustering source and layers
+      if (map.current.getSource(legStartWaypointsSourceId)) {
+        if (map.current.getLayer('leg-clusters')) {
+          map.current.removeLayer('leg-clusters');
+        }
+        if (map.current.getLayer('leg-cluster-count')) {
+          map.current.removeLayer('leg-cluster-count');
+        }
+        if (map.current.getLayer('leg-unclustered-point')) {
+          map.current.removeLayer('leg-unclustered-point');
+        }
+        map.current.removeSource(legStartWaypointsSourceId);
+      }
 
       setPublicLegs([]);
       currentLegsRef.current = []; // Clear ref as well
@@ -111,14 +148,6 @@ export function BrowseJourneys() {
     if (!map.current || isLoadingLegsRef.current) {
       console.log('loadPublicJourneys: Skipping - no map or already loading');
       return;
-    }
-
-    const currentZoom = map.current.getZoom();
-    console.log('loadPublicJourneys: Current zoom:', currentZoom);
-    
-    if (currentZoom <= 3.5) {
-      console.log('loadPublicJourneys: Zoom too low, skipping');
-      return; // Don't load if zoom is too low
     }
 
     // Check if viewport has changed significantly before loading
@@ -217,7 +246,708 @@ export function BrowseJourneys() {
     }
   };
 
-  // Update legs on map - only add/remove what's needed
+  // Load and display full journey route
+  const displayJourneyRoute = async (journeyId: string): Promise<void> => {
+    if (!map.current) {
+      console.error('displayJourneyRoute: map.current is null');
+      return Promise.resolve();
+    }
+
+    console.log('displayJourneyRoute called:', journeyId, 'current:', displayedJourneyIdRef.current);
+
+    // Clear previous journey if displayed
+    if (displayedJourneyIdRef.current && displayedJourneyIdRef.current !== journeyId) {
+      console.log('Clearing previous journey:', displayedJourneyIdRef.current);
+      clearDisplayedJourney();
+      // Wait a bit for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // If clicking the same journey, toggle it off
+    if (displayedJourneyIdRef.current === journeyId) {
+      clearDisplayedJourney();
+      return Promise.resolve();
+    }
+
+    const supabase = getSupabaseBrowserClient();
+
+    try {
+      // Get all legs for this journey
+      const { data: legs, error } = await supabase
+        .from('legs')
+        .select('id, journey_id, name, waypoints')
+        .eq('journey_id', journeyId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading journey legs:', error);
+        return Promise.resolve();
+      }
+
+      if (!legs || legs.length === 0) {
+        console.log('No legs found for journey:', journeyId);
+        displayedJourneyIdRef.current = journeyId; // Set this even if no legs
+        return Promise.resolve();
+      }
+
+      console.log('Displaying', legs.length, 'legs for journey:', journeyId);
+
+      // Track which leg IDs were actually created
+      const createdLegIds: string[] = [];
+
+      // Draw route lines for all legs
+      legs.forEach((leg: any) => {
+        if (!map.current) return;
+        if (!leg.waypoints || leg.waypoints.length < 2) {
+          console.log('Skipping leg (insufficient waypoints):', leg.id, 'waypoints:', leg.waypoints?.length);
+          return;
+        }
+
+        const sortedWaypoints = [...leg.waypoints].sort((a: any, b: any) => a.index - b.index);
+        const coordinates: [number, number][] = sortedWaypoints.map((wp: any) => wp.geocode.coordinates);
+
+        // Add route line
+        const sourceId = `journey-route-${leg.id}`;
+        const layerId = `journey-route-${leg.id}`;
+        
+        // Remove existing source/layer if it exists (to ensure clean state)
+        if (map.current.getLayer(layerId)) {
+          map.current.removeLayer(layerId);
+        }
+        if (map.current.getSource(sourceId)) {
+          map.current.removeSource(sourceId);
+        }
+
+        try {
+          map.current.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: coordinates,
+              },
+            },
+          });
+
+          map.current.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: {
+              'line-join': 'round',
+              'line-cap': 'round',
+            },
+            paint: {
+              'line-color': '#6b7280',
+              'line-width': 2,
+              'line-opacity': 0.8,
+              'line-dasharray': [2, 2],
+            },
+          });
+
+          journeyRouteSourcesRef.current.set(leg.id, sourceId);
+          createdLegIds.push(leg.id);
+          console.log('Added route layer:', layerId, 'for leg:', leg.id);
+        } catch (layerError) {
+          console.error('Error adding layer for leg:', leg.id, layerError);
+        }
+      });
+
+      console.log('Created layers for leg IDs:', createdLegIds);
+      console.log('journeyRouteSourcesRef now contains:', Array.from(journeyRouteSourcesRef.current.keys()));
+
+      // Set displayed journey ID BEFORE waiting for idle
+      displayedJourneyIdRef.current = journeyId;
+
+      // Wait for map to finish rendering all new layers
+      await new Promise<void>((resolve) => {
+        if (!map.current) {
+          resolve();
+          return;
+        }
+        // Wait for map to be idle (all layers rendered)
+        map.current.once('idle', () => {
+          console.log('Map is idle after adding journey routes');
+          resolve();
+        });
+        // Fallback timeout
+        setTimeout(() => {
+          console.log('Timeout waiting for map idle');
+          resolve();
+        }, 1000);
+      });
+
+      // Verify layers exist
+      const verifiedLayers: string[] = [];
+      createdLegIds.forEach(legId => {
+        const layerId = `journey-route-${legId}`;
+        if (map.current?.getLayer(layerId)) {
+          verifiedLayers.push(legId);
+        }
+      });
+      console.log('Verified layers exist:', verifiedLayers);
+
+      console.log('Journey route display complete:', journeyId);
+    } catch (error) {
+      console.error('Error displaying journey route:', error);
+      displayedJourneyIdRef.current = journeyId; // Set this even on error
+    }
+  };
+
+  // Reset leg styling to default (gray, dashed)
+  const resetLegStyling = (legId: string) => {
+    if (!map.current) return;
+    const layerId = `journey-route-${legId}`;
+    if (map.current.getLayer(layerId)) {
+      console.log('Resetting leg styling:', legId);
+      map.current.setPaintProperty(layerId, 'line-color', '#6b7280');
+      map.current.setPaintProperty(layerId, 'line-dasharray', [2, 2]);
+    } else {
+      console.log('Layer not found for reset:', layerId);
+    }
+  };
+
+  // Highlight leg styling (dark blue, solid, thicker)
+  const highlightLegStyling = (legId: string) => {
+    if (!map.current) return;
+    const layerId = `journey-route-${legId}`;
+    if (map.current.getLayer(layerId)) {
+      console.log('Highlighting leg styling:', legId);
+      map.current.setPaintProperty(layerId, 'line-color', '#22276E'); // dark blue
+      map.current.setPaintProperty(layerId, 'line-width', 4); // Make it thicker
+      // Remove dasharray to make it solid - empty array makes it solid
+      (map.current as any).setPaintProperty(layerId, 'line-dasharray', []); // solid line
+    } else {
+      console.log('Layer not found for highlight:', layerId);
+    }
+  };
+
+
+  // Update marker color (green or gray) by updating source data with selected property
+  const updateMarkerColor = (legId: string, isSelected: boolean) => {
+    if (!map.current) return;
+
+    const source = map.current.getSource(legStartWaypointsSourceId) as mapboxgl.GeoJSONSource;
+    if (!source) return;
+
+    // Get current data from the source
+    const currentData = (source as any)._data as any;
+    if (!currentData || !currentData.features) return;
+
+    // Update the feature's selected property
+    const updatedFeatures = currentData.features.map((f: any) => {
+      if (f.properties?.legId === legId) {
+        return {
+          ...f,
+          properties: {
+            ...f.properties,
+            selected: isSelected,
+          },
+        };
+      }
+      // Reset other features
+      if (f.properties?.selected && f.properties?.legId !== legId) {
+        return {
+          ...f,
+          properties: {
+            ...f.properties,
+            selected: false,
+          },
+        };
+      }
+      return f;
+    });
+
+    // Update source data - this will trigger the layer to re-render with new icon based on 'selected' property
+    source.setData({
+      type: 'FeatureCollection',
+      features: updatedFeatures,
+    });
+  };
+
+  // Handle leg start marker click - highlight that leg
+  const handleLegMarkerClick = async (legId: string, journeyId: string) => {
+    console.log('handleLegMarkerClick called with:', { legId, journeyId });
+    
+    if (!map.current) {
+      console.error('handleLegMarkerClick: map.current is null');
+      return;
+    }
+    
+    // Check if map is loaded - but don't block if it's not fully loaded yet
+    // The map can still be functional even if not fully loaded
+    let isMapLoaded = true;
+    try {
+      isMapLoaded = map.current.loaded();
+    } catch (error) {
+      console.warn('Error checking map.loaded(), proceeding anyway:', error);
+      // If we can't check, proceed anyway
+      isMapLoaded = true;
+    }
+    
+    if (!isMapLoaded) {
+      console.warn('handleLegMarkerClick: map is not fully loaded yet, but proceeding');
+      // Don't return - proceed anyway as the map might still be functional
+    }
+
+    console.log('handleLegMarkerClick:', { legId, journeyId, currentSelected: selectedLegIdRef.current, currentJourney: displayedJourneyIdRef.current });
+
+    // If clicking the same leg, toggle it off
+    if (selectedLegIdRef.current === legId) {
+      resetLegStyling(legId);
+      updateMarkerColor(legId, false);
+      selectedLegIdRef.current = null;
+      return;
+    }
+
+    // Reset previous leg styling if another leg was selected
+    if (selectedLegIdRef.current) {
+      console.log('Resetting previous leg:', selectedLegIdRef.current);
+      resetLegStyling(selectedLegIdRef.current);
+      updateMarkerColor(selectedLegIdRef.current, false);
+    }
+
+    // Ensure journey route is displayed
+    const wasDifferentJourney = displayedJourneyIdRef.current !== journeyId;
+    if (wasDifferentJourney) {
+      console.log('Displaying new journey route:', journeyId, 'previous:', displayedJourneyIdRef.current);
+      await displayJourneyRoute(journeyId);
+      console.log('After displayJourneyRoute, displayedJourneyIdRef.current:', displayedJourneyIdRef.current);
+    }
+
+    // Wait a bit more to ensure everything is rendered, especially if switching journeys
+    await new Promise(resolve => setTimeout(resolve, wasDifferentJourney ? 200 : 100));
+
+    // Highlight the clicked leg
+    console.log('Highlighting leg:', legId);
+    const layerId = `journey-route-${legId}`;
+    const availableLegIds = Array.from(journeyRouteSourcesRef.current.keys());
+    console.log('Available leg IDs in journeyRouteSourcesRef:', availableLegIds);
+    console.log('Looking for layer:', layerId);
+    console.log('Current displayed journey:', displayedJourneyIdRef.current);
+    
+    // Always update marker color (even if route doesn't exist)
+    updateMarkerColor(legId, true);
+    selectedLegIdRef.current = legId;
+    
+    // Check if layer exists - retry more times if switching journeys
+    let layerExists = map.current?.getLayer(layerId);
+    let retryCount = 0;
+    const maxRetries = wasDifferentJourney ? 10 : 5; // More retries when switching journeys
+    
+    console.log(`Initial layer check: ${layerExists ? 'FOUND' : 'NOT FOUND'}, will retry up to ${maxRetries} times`);
+    
+    while (!layerExists && retryCount < maxRetries) {
+      // Verify we're still on the correct journey
+      if (displayedJourneyIdRef.current !== journeyId) {
+        console.log('Journey changed during retry, stopping');
+        break;
+      }
+      
+      console.log(`Layer not found, retry ${retryCount + 1}/${maxRetries}`);
+      await new Promise(resolve => setTimeout(resolve, 150));
+      layerExists = map.current?.getLayer(layerId);
+      
+      if (layerExists) {
+        console.log(`Layer found on retry ${retryCount + 1}!`);
+        break;
+      }
+      
+      retryCount++;
+    }
+    
+    if (layerExists) {
+      // Leg has a route - highlight it
+      highlightLegStyling(legId);
+      console.log('Successfully highlighted leg route:', legId);
+    } else {
+      // Leg doesn't have a route layer (might have insufficient waypoints)
+      // Just highlight the marker, which we already did above
+      console.log('Leg has no route layer after all retries, highlighting marker only:', legId);
+      console.log('Available leg IDs with routes:', availableLegIds);
+      console.log('Current displayed journey:', displayedJourneyIdRef.current);
+      console.log('Expected journey:', journeyId);
+      
+      // Still try to highlight route after a longer delay in case it's still loading
+      setTimeout(() => {
+        if (displayedJourneyIdRef.current === journeyId) {
+          const retryLayerExists = map.current?.getLayer(layerId);
+          if (retryLayerExists) {
+            highlightLegStyling(legId);
+            console.log('Successfully highlighted leg route on final retry:', legId);
+          } else {
+            console.log('Final retry failed - layer still not found:', layerId);
+            console.log('All available layers:', map.current?.getStyle().layers?.map(l => l.id).filter(id => id.startsWith('journey-route-')));
+          }
+        }
+      }, 1000);
+    }
+  };
+
+  // Update leg start waypoints clustering source
+  const updateLegStartWaypointsClusters = (legs: PublicLeg[]) => {
+    if (!map.current || !map.current.loaded()) return;
+
+    // Create GeoJSON features for leg start waypoints
+    // Preserve selected state for currently selected leg
+    const currentlySelectedLegId = selectedLegIdRef.current;
+    const features = legs
+      .filter(leg => leg.waypoints.length > 0)
+      .map(leg => {
+        const sortedWaypoints = [...leg.waypoints].sort((a, b) => a.index - b.index);
+        const startWaypoint = sortedWaypoints[0];
+        if (!startWaypoint) return null;
+        
+        const [lng, lat] = startWaypoint.geocode.coordinates;
+        return {
+          type: 'Feature' as const,
+          properties: {
+            legId: leg.id,
+            journeyId: leg.journeyId,
+            legName: leg.name,
+            journeyName: leg.journeyName,
+            selected: leg.id === currentlySelectedLegId, // Preserve selected state
+          },
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [lng, lat],
+          },
+        };
+      })
+      .filter(f => f !== null);
+
+    const geojson = {
+      type: 'FeatureCollection' as const,
+      features: features,
+    };
+
+    // Helper function to add marker layer
+    const addMarkerLayer = () => {
+      if (!map.current) return;
+      
+      // Remove layer if it exists (to ensure clean state)
+      if (map.current.getLayer('leg-unclustered-point')) {
+        map.current.removeLayer('leg-unclustered-point');
+      }
+      
+      // Only add layer if icons are loaded
+      if (!map.current.hasImage('mapbox-marker') || !map.current.hasImage('mapbox-marker-green')) {
+        console.log('addMarkerLayer: Icons not loaded yet, skipping');
+        return;
+      }
+      
+      map.current.addLayer({
+        id: 'leg-unclustered-point',
+        type: 'symbol',
+        source: legStartWaypointsSourceId,
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+          'icon-image': [
+            'case',
+            ['get', 'selected'],
+            'mapbox-marker-green',
+            'mapbox-marker'
+          ],
+          'icon-size': 1,
+          'icon-anchor': 'bottom',
+        },
+      });
+      
+      console.log('addMarkerLayer: Layer added successfully');
+      
+      // Set up click handlers after layer is added (if not already set up)
+      if (!legMarkerHandlersSetupRef.current) {
+        setupLegMarkerClickHandlers();
+      }
+    };
+    
+    // Set up leg marker click handlers
+    const setupLegMarkerClickHandlers = () => {
+      if (!map.current || legMarkerHandlersSetupRef.current) {
+        console.log('setupLegMarkerClickHandlers: Skipping - already set up or no map');
+        return;
+      }
+      
+      console.log('Setting up leg marker click handlers - map.current exists:', !!map.current);
+      console.log('Layer exists:', !!map.current.getLayer('leg-unclustered-point'));
+      
+      // Handle leg start marker clicks - highlight leg
+      map.current.on('click', 'leg-unclustered-point', async (e) => {
+        console.log('=== Leg marker clicked! ===', e);
+        console.log('Click point:', e.point);
+        console.log('LngLat:', e.lngLat);
+        
+        try {
+          const features = map.current!.queryRenderedFeatures(e.point, {
+            layers: ['leg-unclustered-point'],
+          });
+          
+          console.log('Features found:', features.length);
+          if (features.length > 0) {
+            console.log('Feature properties:', features[0].properties);
+            console.log('Full feature:', features[0]);
+          }
+          
+          if (features.length > 0 && features[0].properties) {
+            const legId = features[0].properties.legId;
+            const journeyId = features[0].properties.journeyId;
+            
+            console.log('Extracted:', { legId, journeyId });
+            
+            if (legId && journeyId) {
+              console.log('Calling handleLegMarkerClick with:', { legId, journeyId });
+              await handleLegMarkerClick(legId, journeyId);
+            } else {
+              console.error('Missing legId or journeyId in properties:', features[0].properties);
+            }
+          } else {
+            console.warn('No features or properties found');
+            // Try querying all layers at this point
+            const allFeatures = map.current!.queryRenderedFeatures(e.point);
+            console.log('All features at click point:', allFeatures.length, allFeatures);
+          }
+        } catch (error) {
+          console.error('Error in click handler:', error);
+        }
+      });
+      
+      console.log('Leg marker click handler registered successfully');
+      
+      // Change cursor on hover for leg markers
+      map.current.on('mouseenter', 'leg-unclustered-point', () => {
+        console.log('Mouse entered leg marker');
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      });
+      map.current.on('mouseleave', 'leg-unclustered-point', () => {
+        console.log('Mouse left leg marker');
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+      });
+      
+      legMarkerHandlersSetupRef.current = true;
+      console.log('Leg marker handlers setup complete, flag set to true');
+    };
+
+    // Helper function to load icons and ensure layer exists
+    const ensureIconsAndLayer = () => {
+      if (!map.current) return;
+
+      const grayMarkerSvg = `
+        <svg width="27" height="41" viewBox="0 0 27 41" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.5 0C6.04 0 0 6.04 0 13.5C0 23.58 13.5 41 13.5 41C13.5 41 27 23.58 27 13.5C27 6.04 20.96 0 13.5 0Z" fill="#6b7280"/>
+          <circle cx="13.5" cy="13.5" r="6" fill="#fff"/>
+        </svg>
+      `;
+
+      const greenMarkerSvg = `
+        <svg width="27" height="41" viewBox="0 0 27 41" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13.5 0C6.04 0 0 6.04 0 13.5C0 23.58 13.5 41 13.5 41C13.5 41 27 23.58 27 13.5C27 6.04 20.96 0 13.5 0Z" fill="#22276E"/>
+          <circle cx="13.5" cy="13.5" r="6" fill="#fff"/>
+        </svg>
+      `;
+
+      let iconsLoaded = 0;
+      const totalIcons = 2;
+
+      const checkAndAddLayer = () => {
+        iconsLoaded++;
+        console.log(`checkAndAddLayer: Icons loaded ${iconsLoaded}/${totalIcons}`);
+        if (iconsLoaded >= totalIcons && map.current) {
+          if (map.current.hasImage('mapbox-marker') && map.current.hasImage('mapbox-marker-green')) {
+            console.log('checkAndAddLayer: Both icons loaded, adding layer');
+            addMarkerLayer();
+          } else {
+            console.log('checkAndAddLayer: Icons not found in map:', {
+              hasGray: map.current.hasImage('mapbox-marker'),
+              hasGreen: map.current.hasImage('mapbox-marker-green')
+            });
+          }
+        }
+      };
+
+      // Load gray marker
+      if (!map.current.hasImage('mapbox-marker')) {
+        const grayMarkerImage = new Image(27, 41);
+        grayMarkerImage.onload = () => {
+          if (map.current && !map.current.hasImage('mapbox-marker')) {
+            map.current.addImage('mapbox-marker', grayMarkerImage);
+            console.log('Loaded gray marker icon');
+          }
+          checkAndAddLayer();
+        };
+        grayMarkerImage.onerror = (err) => {
+          console.error('Error loading gray marker:', err);
+          checkAndAddLayer();
+        };
+        grayMarkerImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(grayMarkerSvg);
+      } else {
+        console.log('Gray marker already loaded');
+        checkAndAddLayer();
+      }
+
+      // Load green marker
+      if (!map.current.hasImage('mapbox-marker-green')) {
+        const greenMarkerImage = new Image(27, 41);
+        greenMarkerImage.onload = () => {
+          if (map.current && !map.current.hasImage('mapbox-marker-green')) {
+            map.current.addImage('mapbox-marker-green', greenMarkerImage);
+            console.log('Loaded green marker icon');
+          }
+          checkAndAddLayer();
+        };
+        greenMarkerImage.onerror = (err) => {
+          console.error('Error loading green marker:', err);
+          checkAndAddLayer();
+        };
+        greenMarkerImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(greenMarkerSvg);
+      } else {
+        console.log('Green marker already loaded');
+        checkAndAddLayer();
+      }
+    };
+
+    console.log('updateLegStartWaypointsClusters: Processing', features.length, 'features');
+    
+    // Update or create the clustering source
+    const source = map.current.getSource(legStartWaypointsSourceId) as mapboxgl.GeoJSONSource;
+    if (source) {
+      console.log('updateLegStartWaypointsClusters: Updating existing source');
+      console.log('Preserving selected state for leg:', currentlySelectedLegId);
+      source.setData(geojson);
+      
+      // After updating data, ensure selected marker is still highlighted
+      // Use requestAnimationFrame to ensure the data update is complete
+      if (currentlySelectedLegId) {
+        requestAnimationFrame(() => {
+          // Verify the selected state is preserved, if not re-apply it
+          const currentData = (source as any)._data as any;
+          if (currentData && currentData.features) {
+            const selectedFeature = currentData.features.find((f: any) => f.properties?.legId === currentlySelectedLegId);
+            if (selectedFeature) {
+              if (!selectedFeature.properties.selected) {
+                console.log('Re-applying selected state after source update');
+                updateMarkerColor(currentlySelectedLegId, true);
+              } else {
+                console.log('Selected state preserved correctly');
+              }
+            } else {
+              console.log('Selected leg not found in updated data, may have been filtered out');
+            }
+          }
+        });
+      }
+      // Ensure icons and layer exist even when updating existing source
+      ensureIconsAndLayer();
+    } else {
+      console.log('updateLegStartWaypointsClusters: Creating new source');
+      map.current.addSource(legStartWaypointsSourceId, {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50,
+      });
+
+      // Add cluster circles layer
+      map.current.addLayer({
+        id: 'leg-clusters',
+        type: 'circle',
+        source: legStartWaypointsSourceId,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#6b7280',
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            20,
+            30,
+            40,
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      // Add cluster count labels
+      map.current.addLayer({
+        id: 'leg-cluster-count',
+        type: 'symbol',
+        source: legStartWaypointsSourceId,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#fff',
+        },
+      });
+
+      // Load icons and add marker layer
+      // Use setTimeout to ensure source is fully initialized
+      setTimeout(() => {
+        ensureIconsAndLayer();
+      }, 100);
+    }
+    
+    // Also ensure layer exists after a short delay (in case icons load asynchronously)
+    setTimeout(() => {
+      if (map.current && 
+          map.current.getSource(legStartWaypointsSourceId) &&
+          map.current.hasImage('mapbox-marker') && 
+          map.current.hasImage('mapbox-marker-green') &&
+          !map.current.getLayer('leg-unclustered-point')) {
+        console.log('Delayed: Adding marker layer');
+        addMarkerLayer();
+      }
+    }, 500);
+
+    // Set up event handlers (only once, regardless of source creation)
+    if (!legMarkerHandlersSetupRef.current) {
+      console.log('Setting up leg marker click handlers');
+      
+      // Handle cluster clicks - zoom in
+      map.current.on('click', 'leg-clusters', (e) => {
+        const features = map.current!.queryRenderedFeatures(e.point, {
+          layers: ['leg-clusters'],
+        });
+        if (features.length > 0) {
+          const clusterId = features[0].properties?.cluster_id;
+          const source = map.current!.getSource(legStartWaypointsSourceId) as mapboxgl.GeoJSONSource;
+          source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+            if (err) return;
+            map.current!.easeTo({
+              center: (e.lngLat as any),
+              zoom: zoom as number,
+            });
+          });
+        }
+      });
+
+      // Change cursor on hover for clusters
+      map.current.on('mouseenter', 'leg-clusters', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      });
+      map.current.on('mouseleave', 'leg-clusters', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+      });
+
+      // Note: Leg marker click handlers are set up in addMarkerLayer() 
+      // after the layer is created to ensure the layer exists
+    }
+  };
+
+  // Update legs on map - update clustering
   const updateLegsOnMap = (newLegs: PublicLeg[]) => {
     console.log('updateLegsOnMap: Called with', newLegs.length, 'legs');
     if (!map.current) {
@@ -234,311 +964,15 @@ export function BrowseJourneys() {
       return;
     }
 
-    // Get current leg IDs from ref (more reliable than state)
-    const currentLegIds = new Set(currentLegsRef.current.map(leg => leg.id));
-    const newLegIds = new Set(newLegs.map(leg => leg.id));
-
-    console.log('updateLegsOnMap: Current legs:', currentLegIds.size, 'New legs:', newLegIds.size);
-
-    // Remove legs that are no longer in viewport
-    currentLegIds.forEach(legId => {
-      if (!newLegIds.has(legId)) {
-        console.log('updateLegsOnMap: Removing leg', legId);
-        removeLegFromMap(legId);
-      }
-    });
-
-    // Add legs that are newly in viewport
-    newLegs.forEach((leg) => {
-      if (!currentLegIds.has(leg.id)) {
-        // New leg - add it
-        console.log('updateLegsOnMap: Adding leg', leg.id);
-        addLegToMap(leg);
-      }
-      // If leg already exists, keep it (no need to redraw)
-    });
-
     // Update the ref with new legs
     currentLegsRef.current = newLegs;
-  };
-
-  // Remove a single leg from the map
-  const removeLegFromMap = (legId: string) => {
-    if (!map.current) return;
-
-    // Remove route line
-    const sourceId = routeSourcesRef.current.get(legId);
-    if (sourceId) {
-      const layerId = `route-line-layer-${legId}`;
-      if (map.current.getLayer(layerId)) {
-        map.current.removeLayer(layerId);
-      }
-      if (map.current.getSource(sourceId)) {
-        map.current.removeSource(sourceId);
-      }
-      routeSourcesRef.current.delete(legId);
-    }
-
-    // Remove markers
-    const markers = legMarkersRef.current.get(legId);
-    if (markers) {
-      markers.forEach(marker => marker.remove());
-      legMarkersRef.current.delete(legId);
-    }
-  };
-
-  // Add a single leg to the map
-  const addLegToMap = (leg: PublicLeg) => {
-    if (!map.current || leg.waypoints.length < 2) return;
-
-    // Sort waypoints by index
-    const sortedWaypoints = [...leg.waypoints].sort((a, b) => a.index - b.index);
-    const startWaypoint = sortedWaypoints[0];
-    const endWaypoint = sortedWaypoints[sortedWaypoints.length - 1];
-
-    if (!startWaypoint || !endWaypoint) return;
-
-    // Draw route line using all waypoints
-    const coordinates: [number, number][] = sortedWaypoints.map(wp => wp.geocode.coordinates);
-
-    if (coordinates.length < 2) return;
-
-    const sourceId = `route-line-${leg.id}`;
-    const layerId = `route-line-layer-${leg.id}`;
-
-    // Add source and layer
-    if (!map.current.getSource(sourceId)) {
-      map.current.addSource(sourceId, {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: coordinates,
-          },
-        },
-      });
-
-      // Add layer - grey, thinner, and dotted
-      map.current.addLayer({
-        id: layerId,
-        type: 'line',
-        source: sourceId,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#6b7280', // grey-500
-          'line-width': 1.5, // Even thinner
-          'line-opacity': 0.8,
-          'line-dasharray': [2, 2], // Dotted line
-        },
-      });
-
-      routeSourcesRef.current.set(leg.id, sourceId);
-    }
-
-    // Add markers
-    const markers: mapboxgl.Marker[] = [];
-
-    // Start marker with "S" - always on top
-    const [startLng, startLat] = startWaypoint.geocode.coordinates;
-    const startEl = document.createElement('div');
-    startEl.className = 'leg-start-marker';
-    startEl.style.width = '24px';
-    startEl.style.height = '24px';
-    startEl.style.borderRadius = '50%';
-    startEl.style.backgroundColor = '#6b7280'; // grey-500
-    startEl.style.border = '3px solid white';
-    startEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-    startEl.style.cursor = 'pointer';
-    startEl.style.display = 'flex';
-    startEl.style.alignItems = 'center';
-    startEl.style.justifyContent = 'center';
-    startEl.style.zIndex = '100'; // Always on top
     
-    const startText = document.createElement('span');
-    startText.textContent = 'S';
-    startText.style.color = 'white';
-    startText.style.fontSize = '12px';
-    startText.style.fontWeight = 'bold';
-    startText.style.lineHeight = '1';
-    startEl.appendChild(startText);
-
-    const startMarker = new mapboxgl.Marker({ 
-      element: startEl, 
-      anchor: 'center'
-    })
-      .setLngLat([startLng, startLat])
-      .addTo(map.current!);
-    
-    markers.push(startMarker);
-
-    // End marker - simple gray waypoint (no letter)
-    const [endLng, endLat] = endWaypoint.geocode.coordinates;
-    const endEl = document.createElement('div');
-    endEl.className = 'leg-end-marker';
-    endEl.style.width = '16px';
-    endEl.style.height = '16px';
-    endEl.style.borderRadius = '50%';
-    endEl.style.backgroundColor = '#6b7280'; // grey-500
-    endEl.style.border = '2px solid white';
-    endEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-    endEl.style.cursor = 'pointer';
-
-    const endMarker = new mapboxgl.Marker({ 
-      element: endEl, 
-      anchor: 'center'
-    })
-      .setLngLat([endLng, endLat])
-      .addTo(map.current!);
-    
-    markers.push(endMarker);
-
-    legMarkersRef.current.set(leg.id, markers);
+    // Update clustering
+    updateLegStartWaypointsClusters(newLegs);
   };
 
-  // Draw legs on map (kept for backwards compatibility, but now uses updateLegsOnMap)
-  const drawLegsOnMap = (legs: PublicLeg[]) => {
-    // Clear all first, then add new ones
-    clearMapLegs();
-    legs.forEach(leg => addLegToMap(leg));
-  };
 
-  // Legacy function - kept for initial load
-  const drawLegsOnMapLegacy = (legs: PublicLeg[]) => {
-    console.log('drawLegsOnMap: Called with', legs.length, 'legs');
-    if (!map.current) {
-      console.log('drawLegsOnMap: Skipping - no map.current');
-      return;
-    }
-    
-    // Check if map is loaded
-    if (!map.current.loaded()) {
-      console.log('drawLegsOnMap: Map not loaded yet, waiting...');
-      map.current.once('load', () => {
-        drawLegsOnMap(legs);
-      });
-      return;
-    }
 
-    // Clear existing legs
-    clearMapLegs();
-
-    legs.forEach((leg) => {
-      if (leg.waypoints.length < 2) return;
-
-      // Sort waypoints by index
-      const sortedWaypoints = [...leg.waypoints].sort((a, b) => a.index - b.index);
-      const startWaypoint = sortedWaypoints[0];
-      const endWaypoint = sortedWaypoints[sortedWaypoints.length - 1];
-
-      if (!startWaypoint || !endWaypoint) return;
-
-      // Draw route line using all waypoints
-      const coordinates: [number, number][] = sortedWaypoints.map(wp => wp.geocode.coordinates);
-
-      if (coordinates.length < 2) return;
-
-      const sourceId = `route-line-${leg.id}`;
-      const layerId = `route-line-layer-${leg.id}`;
-
-      // Add source
-      if (!map.current?.getSource(sourceId)) {
-        map.current?.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates,
-            },
-          },
-        });
-
-        // Add layer - grey, thinner, and dotted
-        map.current?.addLayer({
-          id: layerId,
-          type: 'line',
-          source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
-          paint: {
-            'line-color': '#6b7280', // grey-500
-            'line-width': 1.5, // Even thinner
-            'line-opacity': 0.8,
-            'line-dasharray': [2, 2], // Dotted line
-          },
-        });
-
-        routeSourcesRef.current.set(leg.id, sourceId);
-      }
-
-      // Add markers - only start and end, no intermediate waypoints
-      const markers: mapboxgl.Marker[] = [];
-
-      // Start marker with "S" - always on top
-      const [startLng, startLat] = startWaypoint.geocode.coordinates;
-      const startEl = document.createElement('div');
-      startEl.className = 'leg-start-marker';
-      startEl.style.width = '24px';
-      startEl.style.height = '24px';
-      startEl.style.borderRadius = '50%';
-      startEl.style.backgroundColor = '#6b7280'; // grey-500
-      startEl.style.border = '3px solid white';
-      startEl.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-      startEl.style.cursor = 'pointer';
-      startEl.style.display = 'flex';
-      startEl.style.alignItems = 'center';
-      startEl.style.justifyContent = 'center';
-      startEl.style.zIndex = '100'; // Always on top
-      
-      const startText = document.createElement('span');
-      startText.textContent = 'S';
-      startText.style.color = 'white';
-      startText.style.fontSize = '12px';
-      startText.style.fontWeight = 'bold';
-      startText.style.lineHeight = '1';
-      startEl.appendChild(startText);
-
-      const startMarker = new mapboxgl.Marker({ 
-        element: startEl, 
-        anchor: 'center'
-      })
-        .setLngLat([startLng, startLat])
-        .addTo(map.current!);
-      
-      markers.push(startMarker);
-
-      // End marker - simple gray waypoint (no letter)
-      const [endLng, endLat] = endWaypoint.geocode.coordinates;
-      const endEl = document.createElement('div');
-      endEl.className = 'leg-end-marker';
-      endEl.style.width = '16px';
-      endEl.style.height = '16px';
-      endEl.style.borderRadius = '50%';
-      endEl.style.backgroundColor = '#6b7280'; // grey-500
-      endEl.style.border = '2px solid white';
-      endEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-      endEl.style.cursor = 'pointer';
-
-      const endMarker = new mapboxgl.Marker({ 
-        element: endEl, 
-        anchor: 'center'
-      })
-        .setLngLat([endLng, endLat])
-        .addTo(map.current!);
-      
-      markers.push(endMarker);
-
-      legMarkersRef.current.set(leg.id, markers);
-    });
-  };
 
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
@@ -579,18 +1013,8 @@ export function BrowseJourneys() {
     const handleMoveEnd = () => {
       console.log('handleMoveEnd: Called');
       updateZoom();
-      const currentZoom = map.current?.getZoom() || 0;
-      console.log('handleMoveEnd: Current zoom:', currentZoom);
       
-      if (currentZoom <= 3.5) {
-        // Clear legs when zoomed out
-        console.log('handleMoveEnd: Zoom <= 3.5, clearing legs');
-        clearMapLegs();
-        lastViewportBoundsRef.current = null;
-        return;
-      }
-
-      // Always reload when zoom > 3.5 (viewport change check happens inside loadPublicJourneys via hasViewportChanged)
+      // Reload legs (viewport change check happens inside loadPublicJourneys via hasViewportChanged)
       if (map.current) {
         console.log('handleMoveEnd: Calling loadPublicJourneys');
         loadPublicJourneys();
@@ -602,8 +1026,8 @@ export function BrowseJourneys() {
       setMapLoaded(true);
       const initialZoom = map.current?.getZoom() || 2;
       setZoomLevel(initialZoom);
-      // Load legs on initial load if zoom > 3.5
-      if (initialZoom > 3.5 && map.current) {
+      // Load legs on initial load
+      if (map.current) {
         lastViewportBoundsRef.current = map.current.getBounds();
         loadPublicJourneys();
       }
@@ -641,7 +1065,6 @@ export function BrowseJourneys() {
   };
 
   const clearDateRange = (e: React.MouseEvent) => {
-    e.stopPropagation();
     setDateRange({ start: null, end: null });
   };
 
