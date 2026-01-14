@@ -27,8 +27,11 @@ type PublicLeg = {
   waypoints: Waypoint[];
   start_date?: string | null;
   end_date?: string | null;
-  boat_speed?: number | null;
-  boat_image_url?: string | null;
+        boat_speed?: number | null;
+        boat_image_url?: string | null;
+        boat_type?: string | null;
+        boat_name?: string | null;
+        skipper_name?: string | null;
 };
 
 export function BrowseJourneys() {
@@ -323,6 +326,9 @@ export function BrowseJourneys() {
             start_date: leg.start_date,
             end_date: leg.end_date,
             boat_speed: null, // boat_speed column doesn't exist in legs table
+        boat_type: null,
+        boat_name: null,
+        skipper_name: null,
           });
         }
       });
@@ -794,6 +800,9 @@ export function BrowseJourneys() {
         ...legFromPublicLegs,
         boat_speed: null,
         boat_image_url: null,
+        boat_type: null,
+        boat_name: null,
+        skipper_name: null,
       };
       
       // Fetch boat info through journey
@@ -814,10 +823,10 @@ export function BrowseJourneys() {
           const boatId = journeyData.boat_id;
           console.log('Found boat_id:', boatId);
           
-          // Get boat speed and images from boats table
+          // Get boat speed, images, type, name, and owner info from boats table
           const { data: boatData, error: boatError } = await supabase
             .from('boats')
-            .select('average_speed_knots, images')
+            .select('average_speed_knots, images, type, name, owner_id')
             .eq('id', boatId)
             .single();
           
@@ -825,7 +834,11 @@ export function BrowseJourneys() {
           
           if (!boatError && boatData) {
             legDetails.boat_speed = boatData.average_speed_knots || null;
+            legDetails.boat_type = boatData.type || null;
+            legDetails.boat_name = boatData.name || null;
             console.log('Set boat_speed:', legDetails.boat_speed);
+            console.log('Set boat_type:', legDetails.boat_type);
+            console.log('Set boat_name:', legDetails.boat_name);
             
             // Get first image from images array
             if (boatData.images && Array.isArray(boatData.images) && boatData.images.length > 0) {
@@ -833,6 +846,20 @@ export function BrowseJourneys() {
               console.log('Set boat_image_url from database:', legDetails.boat_image_url);
             } else {
               console.log('No images in boat.images array');
+            }
+            
+            // Get skipper (owner) name from profiles table
+            if (boatData.owner_id) {
+              const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('full_name, username')
+                .eq('id', boatData.owner_id)
+                .single();
+              
+              if (!profileError && profileData) {
+                legDetails.skipper_name = profileData.full_name || profileData.username || null;
+                console.log('Set skipper_name:', legDetails.skipper_name);
+              }
             }
           }
         } else {
@@ -863,6 +890,8 @@ export function BrowseJourneys() {
             end_date: leg.end_date,
             boat_speed: null,
             boat_image_url: null,
+            boat_type: null,
+            boat_name: null,
           }));
           
           setJourneyLegs(journeyLegsList);
@@ -876,7 +905,8 @@ export function BrowseJourneys() {
       console.log('Leg details object:', legDetails);
       console.log('Calling setSelectedLegDetails...');
       
-      setSelectedLegDetails(legDetails);
+      // Create a new object reference to ensure React detects the change
+      setSelectedLegDetails({ ...legDetails });
       
       console.log('setSelectedLegDetails called successfully');
       
@@ -907,6 +937,9 @@ export function BrowseJourneys() {
           // Fetch boat info
           let boatSpeed = null;
           let boatImageUrl = null;
+          let boatType = null;
+          let boatName = null;
+          let skipperName = null;
           
           try {
             console.log('Fetching boat info for journeyId (fallback):', legData.journey_id);
@@ -923,10 +956,10 @@ export function BrowseJourneys() {
             if (!journeyError && journeyWithBoat && journeyWithBoat.boat_id) {
               const boatId = journeyWithBoat.boat_id;
               
-              // Get boat speed and images from boats table
+              // Get boat data from boats table
               const { data: boatData, error: boatError } = await supabase
                 .from('boats')
-                .select('average_speed_knots, images')
+                .select('average_speed_knots, images, type, name, owner_id')
                 .eq('id', boatId)
                 .single();
               
@@ -934,6 +967,8 @@ export function BrowseJourneys() {
               
               if (!boatError && boatData) {
                 boatSpeed = boatData.average_speed_knots || null;
+                boatType = boatData.type || null;
+                boatName = boatData.name || null;
                 
                 // Get first image from images array
                 if (boatData.images && Array.isArray(boatData.images) && boatData.images.length > 0) {
@@ -941,6 +976,20 @@ export function BrowseJourneys() {
                   console.log('Set boat_image_url (fallback):', boatImageUrl);
                 } else {
                   console.log('No images in boat.images array (fallback)');
+                }
+                
+                // Get skipper (owner) name from profiles table
+                if (boatData.owner_id) {
+                  const { data: profileData, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('full_name, username')
+                    .eq('id', boatData.owner_id)
+                    .single();
+                  
+                  if (!profileError && profileData) {
+                    skipperName = profileData.full_name || profileData.username || null;
+                    console.log('Set skipper_name (fallback):', skipperName);
+                  }
                 }
               }
             }
@@ -958,6 +1007,9 @@ export function BrowseJourneys() {
             end_date: legData.end_date,
             boat_speed: boatSpeed,
             boat_image_url: boatImageUrl,
+            boat_type: boatType,
+            boat_name: boatName,
+            skipper_name: skipperName,
           };
           
           // Fetch all legs for this journey to enable navigation
@@ -980,6 +1032,9 @@ export function BrowseJourneys() {
                 end_date: leg.end_date,
                 boat_speed: null,
                 boat_image_url: null,
+                boat_type: null,
+                boat_name: null,
+                skipper_name: null,
               }));
               
               setJourneyLegs(journeyLegsList);
@@ -990,7 +1045,7 @@ export function BrowseJourneys() {
           }
           
           console.log('Fetched leg from database:', legDetails);
-          setSelectedLegDetails(legDetails);
+          setSelectedLegDetails({ ...legDetails });
         } else {
           console.error('Failed to fetch leg from database:', error);
         }
@@ -1610,6 +1665,9 @@ export function BrowseJourneys() {
             endDate={selectedLegDetails.end_date}
             boatSpeed={selectedLegDetails.boat_speed || null}
             boatImageUrl={selectedLegDetails.boat_image_url || null}
+            boatType={selectedLegDetails.boat_type || null}
+            boatName={selectedLegDetails.boat_name || null}
+            skipperName={selectedLegDetails.skipper_name || null}
             legName={selectedLegDetails.name}
             journeyName={selectedLegDetails.journeyName}
             onClose={() => {

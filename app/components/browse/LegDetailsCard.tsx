@@ -19,6 +19,9 @@ type LegDetailsCardProps = {
   endDate?: string | null;
   boatSpeed?: number | null; // Average speed in knots
   boatImageUrl?: string | null; // Boat image URL
+  boatType?: string | null; // Boat type (sailboat, motorboat)
+  boatName?: string | null; // Boat name
+  skipperName?: string | null; // Skipper name
   legName?: string | null;
   journeyName?: string | null;
   onClose?: () => void;
@@ -71,6 +74,9 @@ export function LegDetailsCard({
   endDate, 
   boatSpeed,
   boatImageUrl,
+  boatType,
+  boatName,
+  skipperName,
   legName,
   journeyName,
   onClose,
@@ -186,11 +192,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onPrev();
               }}
-              className="bg-card border border-border rounded-full p-2 hover:bg-accent transition-colors shadow-sm flex-shrink-0"
+              className="bg-card border border-border rounded-full p-1.5 hover:bg-accent transition-colors shadow-sm flex-shrink-0"
               aria-label="Previous leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -204,7 +210,7 @@ export function LegDetailsCard({
               </svg>
             </button>
           ) : (
-            <div className="w-10 flex-shrink-0" />
+            <div className="w-8 flex-shrink-0" />
           )}
           
           {/* Content in the middle */}
@@ -229,11 +235,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onNext();
               }}
-              className="bg-card border border-border rounded-full p-2 hover:bg-accent transition-colors shadow-sm flex-shrink-0"
+              className="bg-card border border-border rounded-full p-1.5 hover:bg-accent transition-colors shadow-sm flex-shrink-0"
               aria-label="Next leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -247,7 +253,7 @@ export function LegDetailsCard({
               </svg>
             </button>
           ) : (
-            <div className="w-10 flex-shrink-0" />
+            <div className="w-8 flex-shrink-0" />
           )}
         </div>
       ) : (
@@ -314,17 +320,17 @@ export function LegDetailsCard({
           </button>
         )}
         
-        {/* Journey Name Overlay - Slightly below center */}
+        {/* Journey Name Overlay - Centered vertically and horizontally */}
         {journeyName && (
-          <div className="absolute top-[35%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 px-4 w-full">
-            <h2 className="text-xl font-bold text-white drop-shadow-lg text-center">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 px-10 w-full">
+            <h2 className="text-base font-bold text-white drop-shadow-lg text-center">
               {journeyName}
             </h2>
           </div>
         )}
 
-        {/* Prev/Next Navigation Buttons - Between journey name and tags */}
-        <div className={`absolute top-[62%] left-0 right-0 flex items-center z-20 transform -translate-y-1/2 pointer-events-none ${
+        {/* Prev/Next Navigation Buttons - Vertically centered on boat image */}
+        <div className={`absolute top-1/2 left-0 right-0 flex items-center z-20 transform -translate-y-1/2 pointer-events-none ${
           hasPrev && hasNext ? 'justify-between' : hasNext ? 'justify-end' : 'justify-start'
         }`}>
           {/* Prev Button */}
@@ -334,11 +340,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onPrev();
               }}
-              className="pointer-events-auto bg-card border border-border rounded-full p-2 hover:bg-accent transition-colors shadow-sm flex-shrink-0 ml-2"
+              className="pointer-events-auto bg-card border border-border rounded-full p-1.5 hover:bg-accent transition-colors shadow-sm flex-shrink-0 ml-2"
               aria-label="Previous leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -360,11 +366,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onNext();
               }}
-              className="pointer-events-auto bg-card border border-border rounded-full p-2 hover:bg-accent transition-colors shadow-sm flex-shrink-0 mr-2"
+              className="pointer-events-auto bg-card border border-border rounded-full p-1.5 hover:bg-accent transition-colors shadow-sm flex-shrink-0 mr-2"
               aria-label="Next leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -381,8 +387,13 @@ export function LegDetailsCard({
         </div>
 
         {/* Duration and Distance Tags - Bottom Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pb-3">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent pt-4 pr-4 pb-3 pl-2">
           <div className="flex gap-2 flex-wrap">
+            {boatName && (
+              <span className="bg-white backdrop-blur-sm text-card-foreground px-2 py-0.5 rounded-full text-xs font-medium">
+                {boatName}{skipperName ? ` / ${skipperName}` : ''}
+              </span>
+            )}
             {durationHours !== null && (
               <span className="bg-white backdrop-blur-sm text-card-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                 {formatDuration(durationHours)}
