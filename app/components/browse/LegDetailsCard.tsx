@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { formatDate } from '@/app/lib/dateFormat';
 
 type Waypoint = {
@@ -77,6 +78,8 @@ export function LegDetailsCard({
   hasPrev = false,
   hasNext = false,
 }: LegDetailsCardProps) {
+  const [isMinimized, setIsMinimized] = React.useState(false);
+  
   // Debug: Log boat image URL
   console.log('LegDetailsCard - boatImageUrl:', boatImageUrl);
   console.log('LegDetailsCard - boatSpeed:', boatSpeed);
@@ -116,30 +119,140 @@ export function LegDetailsCard({
   };
 
   return (
-    <div className="bg-card rounded-lg shadow-lg overflow-hidden max-w-sm mx-auto relative">
-      {/* Close button */}
-      {onClose && (
+    <div className={`bg-card rounded-lg shadow-lg overflow-hidden max-w-sm mx-auto relative transition-all duration-300 ${isMinimized ? 'max-h-16' : ''}`}>
+      {/* Minimize and Close buttons */}
+      <div className="absolute top-2 right-2 z-30 flex gap-2">
+        {/* Minimize button */}
         <button
-          onClick={onClose}
-          className="absolute top-2 right-2 z-30 bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
-          aria-label="Close"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMinimized(!isMinimized);
+          }}
+          className="bg-white/80 hover:bg-white/90 rounded-full p-1 transition-colors backdrop-blur-sm"
+          aria-label={isMinimized ? "Expand" : "Minimize"}
         >
-          <svg
-            className="w-4 h-4 text-card-foreground"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
+          {isMinimized ? (
+            <svg
+              className="w-3 h-3 text-card-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M5 15l7-7 7 7"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-3 h-3 text-card-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          )}
         </button>
-      )}
+        {/* Close button */}
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="bg-white/80 hover:bg-white/90 rounded-full p-1 transition-colors backdrop-blur-sm"
+            aria-label="Close"
+          >
+            <svg
+              className="w-3 h-3 text-card-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
 
+      {isMinimized ? (
+        <div className="p-3 flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-card-foreground truncate">
+              {journeyName || legName || 'Leg Details'}
+            </div>
+            <div className="text-xs text-muted-foreground truncate">
+              {startWaypoint?.name && endWaypoint?.name && (
+                <>
+                  {formatLocationName(startWaypoint.name)} → {formatLocationName(endWaypoint.name)}
+                </>
+              )}
+            </div>
+          </div>
+          {/* Navigation buttons in minimized view */}
+          <div className="flex gap-1 ml-2">
+            {hasPrev && onPrev && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPrev();
+                }}
+                className="bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+                aria-label="Previous leg"
+              >
+                <svg
+                  className="w-4 h-4 text-card-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+            )}
+            {hasNext && onNext && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNext();
+                }}
+                className="bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+                aria-label="Next leg"
+              >
+                <svg
+                  className="w-4 h-4 text-card-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
       {/* Boat Image Section */}
       <div className="relative w-full h-48 bg-muted">
         {boatImageUrl ? (
@@ -168,17 +281,19 @@ export function LegDetailsCard({
           </div>
         )}
         
-        {/* Journey Name Overlay - Top */}
+        {/* Journey Name Overlay - Slightly below center */}
         {journeyName && (
-          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6 z-10">
-            <h2 className="text-xl font-bold text-white drop-shadow-lg">
+          <div className="absolute top-[35%] left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 px-4 w-full">
+            <h2 className="text-xl font-bold text-white drop-shadow-lg text-center">
               {journeyName}
             </h2>
           </div>
         )}
 
-        {/* Prev/Next Navigation Buttons - Centered Vertically */}
-        <div className="absolute top-1/2 left-0 right-0 flex justify-between items-center px-4 z-20 transform -translate-y-1/2 pointer-events-none">
+        {/* Prev/Next Navigation Buttons - Between journey name and tags */}
+        <div className={`absolute top-[62%] left-0 right-0 flex items-center z-20 transform -translate-y-1/2 pointer-events-none ${
+          hasPrev && hasNext ? 'justify-between' : hasNext ? 'justify-end' : 'justify-start'
+        }`}>
           {/* Prev Button */}
           {hasPrev && onPrev && (
             <button
@@ -186,11 +301,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onPrev();
               }}
-              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1 transition-colors backdrop-blur-sm ml-2"
               aria-label="Previous leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -212,11 +327,11 @@ export function LegDetailsCard({
                 e.stopPropagation();
                 onNext();
               }}
-              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1 transition-colors backdrop-blur-sm mr-2"
               aria-label="Next leg"
             >
               <svg
-                className="w-4 h-4 text-card-foreground"
+                className="w-3 h-3 text-card-foreground"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -257,7 +372,7 @@ export function LegDetailsCard({
             {/* Start Point */}
             <div className="mb-2">
               {startWaypoint ? (
-                <div>
+                <div className="line-clamp-2">
                   {formatLocationName(startWaypoint.name || 'Unknown location')}
                 </div>
               ) : (
@@ -282,7 +397,7 @@ export function LegDetailsCard({
             {/* End Point */}
             <div className="mb-2">
               {endWaypoint ? (
-                <div>
+                <div className="line-clamp-2">
                   {formatLocationName(endWaypoint.name || 'Unknown location')}
                 </div>
               ) : (
@@ -298,6 +413,8 @@ export function LegDetailsCard({
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 }
