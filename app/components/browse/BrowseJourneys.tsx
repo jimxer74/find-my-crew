@@ -41,6 +41,7 @@ export function BrowseJourneys() {
   const [zoomLevel, setZoomLevel] = useState<number>(2);
   const [publicLegs, setPublicLegs] = useState<PublicLeg[]>([]);
   const [selectedLegDetails, setSelectedLegDetails] = useState<PublicLeg | null>(null);
+  const [journeyLegs, setJourneyLegs] = useState<PublicLeg[]>([]); // All legs in the current journey
   const datePickerRef = useRef<HTMLDivElement>(null);
   
   // Debug: Log when selectedLegDetails changes
@@ -653,6 +654,36 @@ export function BrowseJourneys() {
         console.error('Exception fetching boat info:', error);
       }
       
+      // Fetch all legs for this journey to enable navigation
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: allLegsData, error: allLegsError } = await supabase
+          .from('legs')
+          .select('id, journey_id, name, waypoints, start_date, end_date')
+          .eq('journey_id', legFromPublicLegs.journeyId)
+          .order('start_date', { ascending: true, nullsFirst: false });
+        
+        if (!allLegsError && allLegsData) {
+          // Map to PublicLeg format
+          const journeyLegsList: PublicLeg[] = allLegsData.map((leg: any) => ({
+            id: leg.id,
+            journeyId: leg.journey_id,
+            journeyName: legFromPublicLegs.journeyName,
+            name: leg.name || 'Unnamed Leg',
+            waypoints: leg.waypoints || [],
+            start_date: leg.start_date,
+            end_date: leg.end_date,
+            boat_speed: null,
+            boat_image_url: null,
+          }));
+          
+          setJourneyLegs(journeyLegsList);
+          console.log('Loaded journey legs for navigation:', journeyLegsList.length);
+        }
+      } catch (error) {
+        console.error('Error loading journey legs:', error);
+      }
+      
       console.log('=== Setting leg details state ===');
       console.log('Leg details object:', legDetails);
       console.log('Calling setSelectedLegDetails...');
@@ -740,6 +771,35 @@ export function BrowseJourneys() {
             boat_speed: boatSpeed,
             boat_image_url: boatImageUrl,
           };
+          
+          // Fetch all legs for this journey to enable navigation
+          try {
+            const { data: allLegsData, error: allLegsError } = await supabase
+              .from('legs')
+              .select('id, journey_id, name, waypoints, start_date, end_date')
+              .eq('journey_id', legData.journey_id)
+              .order('start_date', { ascending: true, nullsFirst: false });
+            
+            if (!allLegsError && allLegsData) {
+              // Map to PublicLeg format
+              const journeyLegsList: PublicLeg[] = allLegsData.map((leg: any) => ({
+                id: leg.id,
+                journeyId: leg.journey_id,
+                journeyName: journeyData?.name || 'Unknown Journey',
+                name: leg.name || 'Unnamed Leg',
+                waypoints: leg.waypoints || [],
+                start_date: leg.start_date,
+                end_date: leg.end_date,
+                boat_speed: null,
+                boat_image_url: null,
+              }));
+              
+              setJourneyLegs(journeyLegsList);
+              console.log('Loaded journey legs for navigation (fallback):', journeyLegsList.length);
+            }
+          } catch (error) {
+            console.error('Error loading journey legs (fallback):', error);
+          }
           
           console.log('Fetched leg from database:', legDetails);
           setSelectedLegDetails(legDetails);
@@ -1287,6 +1347,53 @@ export function BrowseJourneys() {
     setDateRange({ start: null, end: null });
   };
 
+  // Navigation functions for leg card
+  const navigateToLeg = async (legId: string) => {
+    if (!map.current) return;
+    
+    // Find the leg in journeyLegs or publicLegs
+    const leg = journeyLegs.find(l => l.id === legId) || publicLegs.find(l => l.id === legId);
+    if (!leg) {
+      console.error('Leg not found for navigation:', legId);
+      return;
+    }
+
+    // Call handleLegMarkerClick to select the leg
+    await handleLegMarkerClick(legId, leg.journeyId);
+  };
+
+  const handlePrevLeg = async () => {
+    if (!selectedLegDetails) return;
+    
+    const currentIndex = journeyLegs.findIndex(l => l.id === selectedLegDetails.id);
+    if (currentIndex > 0) {
+      const prevLeg = journeyLegs[currentIndex - 1];
+      await navigateToLeg(prevLeg.id);
+    }
+  };
+
+  const handleNextLeg = async () => {
+    if (!selectedLegDetails) return;
+    
+    const currentIndex = journeyLegs.findIndex(l => l.id === selectedLegDetails.id);
+    if (currentIndex >= 0 && currentIndex < journeyLegs.length - 1) {
+      const nextLeg = journeyLegs[currentIndex + 1];
+      await navigateToLeg(nextLeg.id);
+    }
+  };
+
+  const getHasPrev = (): boolean => {
+    if (!selectedLegDetails || journeyLegs.length === 0) return false;
+    const currentIndex = journeyLegs.findIndex(l => l.id === selectedLegDetails.id);
+    return currentIndex > 0;
+  };
+
+  const getHasNext = (): boolean => {
+    if (!selectedLegDetails || journeyLegs.length === 0) return false;
+    const currentIndex = journeyLegs.findIndex(l => l.id === selectedLegDetails.id);
+    return currentIndex >= 0 && currentIndex < journeyLegs.length - 1;
+  };
+
   return (
     <div className="w-full h-full relative">
       <div ref={mapContainer} className="w-full h-full" />
@@ -1319,12 +1426,17 @@ export function BrowseJourneys() {
             journeyName={selectedLegDetails.journeyName}
             onClose={() => {
               setSelectedLegDetails(null);
+              setJourneyLegs([]);
               if (selectedLegIdRef.current) {
                 resetLegStyling(selectedLegIdRef.current);
                 updateMarkerColor(selectedLegIdRef.current, false);
                 selectedLegIdRef.current = null;
               }
             }}
+            onPrev={handlePrevLeg}
+            onNext={handleNextLeg}
+            hasPrev={getHasPrev()}
+            hasNext={getHasNext()}
           />
         </div>
       )}

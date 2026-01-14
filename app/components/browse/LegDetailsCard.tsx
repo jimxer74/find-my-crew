@@ -21,6 +21,10 @@ type LegDetailsCardProps = {
   legName?: string | null;
   journeyName?: string | null;
   onClose?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  hasPrev?: boolean;
+  hasNext?: boolean;
 };
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
@@ -67,7 +71,11 @@ export function LegDetailsCard({
   boatImageUrl,
   legName,
   journeyName,
-  onClose
+  onClose,
+  onPrev,
+  onNext,
+  hasPrev = false,
+  hasNext = false,
 }: LegDetailsCardProps) {
   // Debug: Log boat image URL
   console.log('LegDetailsCard - boatImageUrl:', boatImageUrl);
@@ -113,11 +121,11 @@ export function LegDetailsCard({
       {onClose && (
         <button
           onClick={onClose}
-          className="absolute top-2 right-2 z-20 text-white bg-black/50 hover:bg-black/70 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+          className="absolute top-2 right-2 z-30 bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
           aria-label="Close"
         >
           <svg
-            className="w-4 h-4"
+            className="w-4 h-4 text-card-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -162,23 +170,78 @@ export function LegDetailsCard({
         
         {/* Journey Name Overlay - Top */}
         {journeyName && (
-          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6">
+          <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 pt-6 z-10">
             <h2 className="text-xl font-bold text-white drop-shadow-lg">
               {journeyName}
             </h2>
           </div>
         )}
 
+        {/* Prev/Next Navigation Buttons - Centered Vertically */}
+        <div className="absolute top-1/2 left-0 right-0 flex justify-between items-center px-4 z-20 transform -translate-y-1/2 pointer-events-none">
+          {/* Prev Button */}
+          {hasPrev && onPrev && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrev();
+              }}
+              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+              aria-label="Previous leg"
+            >
+              <svg
+                className="w-4 h-4 text-card-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 19l-7-7 7-7"
+                />
+              </svg>
+            </button>
+          )}
+
+          {/* Next Button */}
+          {hasNext && onNext && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNext();
+              }}
+              className="pointer-events-auto bg-white/80 hover:bg-white/90 rounded-full p-1.5 transition-colors backdrop-blur-sm"
+              aria-label="Next leg"
+            >
+              <svg
+                className="w-4 h-4 text-card-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          )}
+        </div>
+
         {/* Duration and Distance Tags - Bottom Overlay */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 pb-3">
           <div className="flex gap-2 flex-wrap">
             {durationHours !== null && (
-              <span className="bg-white/90 backdrop-blur-sm text-card-foreground px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-white backdrop-blur-sm text-card-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                 {formatDuration(durationHours)}
               </span>
             )}
             {distanceNM !== null && (
-              <span className="bg-white/90 backdrop-blur-sm text-card-foreground px-3 py-1 rounded-full text-sm font-medium">
+              <span className="bg-white backdrop-blur-sm text-card-foreground px-2 py-0.5 rounded-full text-xs font-medium">
                 {Math.round(distanceNM)} nm
               </span>
             )}
