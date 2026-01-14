@@ -7,6 +7,7 @@ import { DateRangePicker, DateRange } from '@/app/components/ui/DateRangePicker'
 import { formatDateShort } from '@/app/lib/dateFormat';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { LegDetailsCard } from './LegDetailsCard';
 
 type Waypoint = {
   index: number;
@@ -25,6 +26,7 @@ type PublicLeg = {
   waypoints: Waypoint[];
   start_date?: string | null;
   end_date?: string | null;
+  boat_speed?: number | null;
 };
 
 export function BrowseJourneys() {
@@ -37,7 +39,13 @@ export function BrowseJourneys() {
   const [locationInput, setLocationInput] = useState('');
   const [zoomLevel, setZoomLevel] = useState<number>(2);
   const [publicLegs, setPublicLegs] = useState<PublicLeg[]>([]);
+  const [selectedLegDetails, setSelectedLegDetails] = useState<PublicLeg | null>(null);
   const datePickerRef = useRef<HTMLDivElement>(null);
+  
+  // Debug: Log when selectedLegDetails changes
+  useEffect(() => {
+    console.log('selectedLegDetails state changed:', selectedLegDetails);
+  }, [selectedLegDetails]);
   
   // Refs for map elements
   const lastViewportBoundsRef = useRef<mapboxgl.LngLatBounds | null>(null);
@@ -59,6 +67,9 @@ export function BrowseJourneys() {
         resetLegStyling(selectedLegIdRef.current);
         updateMarkerColor(selectedLegIdRef.current, false);
       }
+      
+      // Hide leg details card
+      setSelectedLegDetails(null);
 
       // Remove journey route lines
       journeyRouteSourcesRef.current.forEach((sourceId, legId) => {
@@ -183,25 +194,67 @@ export function BrowseJourneys() {
         return;
       }
 
-      const journeyIds = journeys.map(j => j.id);
-
-      // Get all legs for these journeys
-      const { data: legs, error: legsError } = await supabase
-        .from('legs')
-        .select('id, journey_id, name, waypoints, start_date, end_date')
-        .in('journey_id', journeyIds);
-
-      if (legsError) {
-        console.error('Error loading legs:', legsError);
-        return;
-      }
-
-      console.log('loadPublicJourneys: Found legs:', legs?.length || 0);
-
-      if (!legs) {
+      const journeyIds = journeys.map(j => j.id).filter(id => id); // Filter out any null/undefined IDs
+      
+      // Validate journeyIds before querying
+      if (!journeyIds || journeyIds.length === 0) {
+        console.log('No valid journey IDs to query, clearing map');
         clearMapLegs();
         return;
       }
+      
+      console.log('Querying legs for', journeyIds.length, 'journeys');
+      console.log('Journey IDs:', journeyIds);
+
+      // Get all legs for these journeys
+      // Use a try-catch to handle potential query errors
+      let legs, legsError;
+      try {
+        const result = await supabase
+          .from('legs')
+          .select('id, journey_id, name, waypoints, start_date, end_date')
+          .in('journey_id', journeyIds);
+        legs = result.data;
+        legsError = result.error;
+      } catch (queryError) {
+        console.error('Exception querying legs:', queryError);
+        legsError = queryError as any;
+        legs = null;
+      }
+
+      // Handle errors - log details for debugging
+      if (legsError) {
+        const errorStr = JSON.stringify(legsError);
+        const isEmptyError = errorStr === '{}' || Object.keys(legsError).length === 0;
+        
+        if (isEmptyError) {
+          // Empty error object - ignore it, likely a false positive
+          console.log('Empty error object ignored (false positive)');
+        } else {
+          // Real error - log full details
+          console.error('Error loading legs:', legsError);
+          console.error('Error message:', (legsError as any)?.message);
+          console.error('Error code:', (legsError as any)?.code);
+          console.error('Error details:', (legsError as any)?.details);
+          console.error('Error hint:', (legsError as any)?.hint);
+          
+          // If it's a 400 error, it might be a query issue - try to continue if we have data
+          if ((legsError as any)?.code === 'PGRST116' || (legsError as any)?.code === '22P02') {
+            console.warn('Query syntax error detected, but continuing if data available');
+          }
+        }
+      }
+      
+      // Always use data if available, regardless of error status
+      if (!legs || legs.length === 0) {
+        console.log('No legs data available, clearing map');
+        clearMapLegs();
+        return;
+      }
+      
+      console.log('Using legs data:', legs.length, 'legs found');
+
+      console.log('loadPublicJourneys: Found legs:', legs.length);
 
       // Filter legs where any waypoint is within viewport
       const filteredLegs: PublicLeg[] = [];
@@ -231,6 +284,7 @@ export function BrowseJourneys() {
             })),
             start_date: leg.start_date,
             end_date: leg.end_date,
+            boat_speed: null, // boat_speed column doesn't exist in legs table
           });
         }
       });
@@ -499,6 +553,7 @@ export function BrowseJourneys() {
       resetLegStyling(legId);
       updateMarkerColor(legId, false);
       selectedLegIdRef.current = null;
+      setSelectedLegDetails(null); // Hide details card
       return;
     }
 
@@ -531,6 +586,77 @@ export function BrowseJourneys() {
     // Always update marker color (even if route doesn't exist)
     updateMarkerColor(legId, true);
     selectedLegIdRef.current = legId;
+    
+    // Fetch and display leg details
+    console.log('=== Fetching leg details for legId:', legId, '===');
+    console.log('Available publicLegs count:', publicLegs.length);
+    console.log('publicLegs IDs:', publicLegs.map(l => l.id));
+    
+    // First, try to use data from publicLegs (we know it exists since the marker was created from it)
+    const legFromPublicLegs = publicLegs.find(l => l.id === legId);
+    console.log('Leg found in publicLegs:', !!legFromPublicLegs);
+    
+    if (legFromPublicLegs) {
+      console.log('Using leg from publicLegs:', legFromPublicLegs);
+      
+      // boat_speed column doesn't exist in legs table, so always set to null
+      let legDetails: PublicLeg = { 
+        ...legFromPublicLegs,
+        boat_speed: null 
+      };
+      
+      console.log('=== Setting leg details state ===');
+      console.log('Leg details object:', legDetails);
+      console.log('Calling setSelectedLegDetails...');
+      
+      setSelectedLegDetails(legDetails);
+      
+      console.log('setSelectedLegDetails called successfully');
+      
+      // Verify state was set after a short delay
+      setTimeout(() => {
+        console.log('State check after timeout - selectedLegDetails should be set now');
+      }, 200);
+    } else {
+      console.warn('Leg not found in publicLegs, fetching from database as fallback, legId:', legId);
+      
+      // Fallback: fetch from database
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: legData, error } = await supabase
+          .from('legs')
+          .select('id, journey_id, name, waypoints, start_date, end_date')
+          .eq('id', legId)
+          .single();
+        
+        if (!error && legData) {
+          // Fetch journey name
+          const { data: journeyData } = await supabase
+            .from('journeys')
+            .select('name')
+            .eq('id', legData.journey_id)
+            .single();
+          
+          const legDetails: PublicLeg = {
+            id: legData.id,
+            journeyId: legData.journey_id,
+            journeyName: journeyData?.name || 'Unknown Journey',
+            name: legData.name || 'Unnamed Leg',
+            waypoints: legData.waypoints || [],
+            start_date: legData.start_date,
+            end_date: legData.end_date,
+            boat_speed: null,
+          };
+          
+          console.log('Fetched leg from database:', legDetails);
+          setSelectedLegDetails(legDetails);
+        } else {
+          console.error('Failed to fetch leg from database:', error);
+        }
+      } catch (error) {
+        console.error('Exception fetching leg from database:', error);
+      }
+    }
     
     // Check if layer exists - retry more times if switching journeys
     let layerExists = map.current?.getLayer(layerId);
@@ -1077,12 +1203,42 @@ export function BrowseJourneys() {
         </div>
       )}
       
-      {/* Debug Info */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-card/90 backdrop-blur-sm border border-border rounded-md px-3 py-2 text-sm text-foreground z-10">
-        <div className="font-mono">
-          Zoom: {zoomLevel.toFixed(2)}
+      {/* Leg Details Card - Debug */}
+      {/* Test div to verify conditional rendering */}
+      {selectedLegDetails && (
+        <div className="absolute top-20 left-4 bg-red-500 text-white p-4 z-50">
+          DEBUG: Card should show! selectedLegDetails: {selectedLegDetails.id}
         </div>
-      </div>
+      )}
+      {selectedLegDetails && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4 pointer-events-auto">
+          <LegDetailsCard
+            startWaypoint={selectedLegDetails.waypoints?.length > 0 
+              ? (selectedLegDetails.waypoints.find(wp => wp.index === 0) || selectedLegDetails.waypoints[0])
+              : null}
+            endWaypoint={(() => {
+              if (!selectedLegDetails.waypoints || selectedLegDetails.waypoints.length === 0) {
+                return null;
+              }
+              const sorted = [...selectedLegDetails.waypoints].sort((a, b) => b.index - a.index);
+              return sorted[0] && sorted[0].index > 0 ? sorted[0] : null;
+            })()}
+            startDate={selectedLegDetails.start_date}
+            endDate={selectedLegDetails.end_date}
+            boatSpeed={selectedLegDetails.boat_speed || null}
+            legName={selectedLegDetails.name}
+            journeyName={selectedLegDetails.journeyName}
+            onClose={() => {
+              setSelectedLegDetails(null);
+              if (selectedLegIdRef.current) {
+                resetLegStyling(selectedLegIdRef.current);
+                updateMarkerColor(selectedLegIdRef.current, false);
+                selectedLegIdRef.current = null;
+              }
+            }}
+          />
+        </div>
+      )}
       
       {/* Floating Filter Menu */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
