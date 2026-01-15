@@ -3,6 +3,21 @@
  */
 
 /**
+ * Normalize Scandinavian characters to ASCII equivalents for URL query strings
+ * @param text - Text that may contain Scandinavian characters
+ * @returns Text with Scandinavian characters replaced (ö->o, ä->a, å->a, and uppercase versions)
+ */
+function normalizeScandinavianChars(text: string): string {
+  return text
+    .replace(/ö/g, 'o')
+    .replace(/Ö/g, 'O')
+    .replace(/ä/g, 'a')
+    .replace(/Ä/g, 'A')
+    .replace(/å/g, 'a')
+    .replace(/Å/g, 'A');
+}
+
+/**
  * Fetch a URL using ScraperAPI if configured, otherwise use direct fetch
  * @param url - The target URL to fetch
  * @param options - Optional fetch options (headers, etc.)
@@ -106,7 +121,9 @@ export async function querySailboatData(keyword: string): Promise<string[]> {
     return [];
   }
 
-  const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(keyword.trim())}&sort-select&sailboats_per_page=50`;
+  // Normalize Scandinavian characters before creating URL
+  const normalizedKeyword = normalizeScandinavianChars(keyword.trim());
+  const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
   
   console.log('=== SAILBOATDATA QUERY DEBUG ===');
   console.log('Keyword:', keyword);
@@ -185,9 +202,9 @@ export async function fetchSailboatDetails(sailboatQueryStr: string): Promise<Sa
     return null;
   }
 
-  // Clean the query string (remove spaces, convert to lowercase, replace spaces with hyphens)
-  const cleanQuery = sailboatQueryStr
-    .trim()
+  // Normalize Scandinavian characters, then clean the query string (remove spaces, convert to lowercase, replace spaces with hyphens)
+  const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
+  const cleanQuery = normalizedQuery
     .toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9-]/g, '');
