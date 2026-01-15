@@ -3,10 +3,56 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
+// Sailboat category information
+const sailboatCategories = {
+  'Daysailers': {
+    description: 'These are small, agile sailboats optimized for short, recreational outings in protected waters like lakes, bays, or calm coastal areas. They prioritize ease of handling, fun, and minimal maintenance over long-term comfort or seaworthiness.',
+    characteristics: 'Lightweight construction (often fiberglass or composite), simple rigging (sloop or cat rig), open cockpits, minimal or no cabin, lengths typically 15-30 feet. Shallow draft for easy trailering and launching.',
+    capabilities: 'Excellent for day trips, teaching sailing, or racing in light winds. Quick to rig/de-rig, responsive helm, but limited storage and no offshore potential. Top speeds around 5-8 knots.',
+    examples: 'Laser, Sunfish, J/22, or Beneteau First 27.',
+    prosCons: 'Pros include affordability, portability, and pure sailing joy; cons are exposure to elements and unsuitability for overnights or rough weather.'
+  },
+  'Coastal cruisers': {
+    description: 'Designed for weekend getaways or short hops along the coast, these boats offer basic liveaboard amenities while remaining manageable for small crews or families. They\'re versatile for inshore and near-offshore use but not built for extended ocean passages.',
+    characteristics: 'Moderate displacement, fin or wing keels for stability, comfortable cabins with berths, galley, and head. Lengths 25-40 feet, often with inboard engines for motoring in calms.',
+    capabilities: 'Good for 1-3 day trips in moderate conditions (up to Force 6 winds). Balanced sail plans for easy single-handing, with some weather resistance but limited tankage for water/fuel. Average speeds 6-8 knots.',
+    examples: 'Catalina 30, Hunter 33, or Jeanneau Sun Odyssey 349.',
+    prosCons: 'Pros are value for money, spacious interiors for their size, and user-friendly; cons include less robustness in heavy seas and potential for quicker wear in demanding use.'
+  },
+  'Traditional offshore cruisers': {
+    description: 'These are robust, bluewater-capable boats emphasizing safety, comfort, and endurance for long-distance ocean voyages. They draw from classic designs, focusing on seaworthiness over speed.',
+    characteristics: 'Heavy displacement hulls (often full or long keels), solid fiberglass or steel construction, deep cockpits for protection, extensive storage. Lengths 35-50 feet, with high ballast ratios for stability.',
+    capabilities: 'Ideal for transoceanic crossings or circumnavigations in varied weather. Self-righting in knockdowns, comfortable motion in waves, but slower (5-7 knots average). Large tanks for autonomy (weeks at sea).',
+    examples: 'Hallberg-Rassy 38 (as discussed previously), Swan 43, or Amel Super Maramu.',
+    prosCons: 'Pros include proven reliability, luxurious wood interiors, and storm-handling; cons are higher cost, slower performance, and more effort to maneuver in tight spaces.'
+  },
+  'Performance cruisers': {
+    description: 'A hybrid category blending cruising comforts with racing-inspired speed and agility. These are for sailors who want efficient passage-making without sacrificing excitement, suitable for both coastal and offshore use.',
+    characteristics: 'Lighter displacement, deep fin keels with bulb ballast, fractional rigs for better upwind performance, carbon or advanced composites. Lengths 30-50 feet, with sleek lines and modern sail controls.',
+    capabilities: 'Fast passages (8-12 knots), responsive in light airs, and capable of club racing or bluewater rallies. Good for short-handed crews with autopilots and furling systems, but may pound more in heavy seas.',
+    examples: 'J/Boats J/121, X-Yachts X4³, or Dehler 42.',
+    prosCons: 'Pros are thrilling sail handling, efficiency, and modern tech (e.g., electric winches); cons include less interior volume and higher maintenance for high-tech components.'
+  },
+  'Multihulls': {
+    description: 'These feature multiple hulls for enhanced stability, speed, and living space, making them popular for tropical charters or family cruising. They\'re distinct due to their wide beam and shallow draft.',
+    characteristics: 'Twin (cat) or three (tri) hulls, often in lightweight composites, bridgedeck cabins, no ballast (relies on form stability). Lengths 30-60 feet, with nets or trampolines for lounging.',
+    capabilities: 'Excellent for warm-water cruising or fast ocean transits (10-15+ knots). Minimal heeling for comfort, beachable in shallows, but can be prone to capsize in extremes (though rare in modern designs). Spacious for liveaboards.',
+    examples: 'Lagoon 42 (catamaran), Corsair 37 (trimaran), or Fountaine Pajot Isla 40.',
+    prosCons: 'Pros include vast deck space, stability at anchor, and fuel efficiency; cons are higher purchase price, wider berthing needs, and less traditional sailing feel.'
+  },
+  'Expedition sailboats': {
+    description: 'Expedition Class Sailboats (also called expedition cruisers, explorer sailboats, or high-latitude/exploration yachts) represent the most rugged and self-sufficient subcategory within offshore sailboats. They go beyond standard bluewater or traditional offshore cruisers by being specifically engineered for extreme environments, remote exploration, and prolonged autonomy in challenging or isolated regions—such as high latitudes (Arctic/Antarctic), the Southern Ocean, polar passages (e.g., Northwest Passage), or other areas with minimal infrastructure, ice risks, or unpredictable weather.',
+    characteristics: 'Typically built with reinforced aluminum or steel hulls (for impact resistance against ice, grounding, or debris), watertight bulkheads, crash boxes, skeg-protected or protected rudders, and often ice-class or polar-capable reinforcements. Heavy displacement with full or modified full keels for stability and shallow draft options in some designs. Robust deck structures, pilothouse/doghouse options for enclosed steering in cold/wet weather, insulated hulls and superstructures, and non-magnetic construction (aluminum) to avoid compass interference in high latitudes. Lengths usually 45-65 feet for optimal balance of autonomy, stability, and short-handed manageability.',
+    capabilities: 'Extreme self-sufficiency with massive tankage (fuel, water, and provisions for 30-60+ days off-grid), redundant systems (twin generators, backup steering, etc.), extensive storage for spares/tools/gear, watermakers, solar/wind power, and often specialized equipment like reinforced chainplates, heavy ground tackle, and scientific/research fittings. Excellent in severe conditions (high winds, breaking seas, ice navigation), with comfortable (though sometimes slower) motion due to weight and form stability. Suitable for high-latitude voyages, remote anchorages, and expeditions where rescue or resupply is unreliable. Average speeds 5-8 knots, prioritizing safety and reliability over performance.',
+    examples: 'Garcia Exploration series (e.g., Exploration 45, 52, 60—pioneered with Jimmy Cornell for Northwest Passage), Bestevaer range (e.g., Bestevaer 53/56—designed by Gerard Dijkstra for adventure cruising), Ovni series (aluminum lift-keel designs proven in extreme areas), Allures (e.g., Allures 51.9—adventure-focused with high-latitude features), or custom aluminum/steel builds like those from Boréal or Meta.',
+    prosCons: 'Pros include unmatched durability, peace of mind in remote/extreme areas, low maintenance in harsh environments (aluminum resists corrosion), and proven track records in polar/Southern Ocean voyages; cons are higher cost, heavier/slower sailing in light winds, wider maintenance needs for metal hulls (though often simpler long-term), and less interior volume or "cruising comfort" compared to fiberglass production boats. Not ideal for casual coastal or trade-wind-only sailing due to weight and expense.'
+  }
+};
+
 type Boat = {
   id?: string;
   name: string;
-  type: 'sailboat' | 'motorboat';
+  type: 'Daysailers' | 'Coastal cruisers' | 'Traditional offshore cruisers' | 'Performance cruisers' | 'Multihulls' | 'Expedition sailboats' | null;
   make: string;
   model: string;
   capacity: number | null;
@@ -16,6 +62,17 @@ type Boat = {
   displcmt_m: number | null;
   average_speed_knots: number | null;
   link_to_specs: string;
+  characteristics: string;
+  capabilities: string;
+  accommodations: string;
+  // Sailboat performance calculations (read-only, fetched from external source)
+  sa_displ_ratio: number | null;
+  ballast_displ_ratio: number | null;
+  displ_len_ratio: number | null;
+  comfort_ratio: number | null;
+  capsize_screening: number | null;
+  hull_speed_knots: number | null;
+  ppi_pounds_per_inch: number | null;
 };
 
 type BoatFormModalProps = {
@@ -29,7 +86,7 @@ type BoatFormModalProps = {
 export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: BoatFormModalProps) {
   const [formData, setFormData] = useState<Boat>({
     name: '',
-    type: 'sailboat',
+    type: null,
     make: '',
     model: '',
     capacity: null,
@@ -39,12 +96,23 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     displcmt_m: null,
     average_speed_knots: null,
     link_to_specs: '',
+    characteristics: '',
+    capabilities: '',
+    accommodations: '',
+    sa_displ_ratio: null,
+    ballast_displ_ratio: null,
+    displ_len_ratio: null,
+    comfort_ratio: null,
+    capsize_screening: null,
+    hull_speed_knots: null,
+    ppi_pounds_per_inch: null,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingBoat, setIsLoadingBoat] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [showCategoryInfo, setShowCategoryInfo] = useState(false);
 
   useEffect(() => {
     if (isOpen && boatId) {
@@ -53,7 +121,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       // Reset form for new boat
       setFormData({
         name: '',
-        type: 'sailboat',
+        type: null,
         make: '',
         model: '',
         capacity: null,
@@ -63,6 +131,16 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         displcmt_m: null,
         average_speed_knots: null,
         link_to_specs: '',
+        characteristics: '',
+        capabilities: '',
+        accommodations: '',
+        sa_displ_ratio: null,
+        ballast_displ_ratio: null,
+        displ_len_ratio: null,
+        comfort_ratio: null,
+        capsize_screening: null,
+        hull_speed_knots: null,
+        ppi_pounds_per_inch: null,
       });
       setImages([]);
       setError(null);
@@ -85,7 +163,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     } else if (data) {
       setFormData({
         name: data.name || '',
-        type: data.type || 'sailboat',
+        type: data.type || null,
         make: data.make || '',
         model: data.model || '',
         capacity: data.capacity || null,
@@ -95,6 +173,16 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         displcmt_m: data.displcmt_m || null,
         average_speed_knots: data.average_speed_knots || null,
         link_to_specs: data.link_to_specs || '',
+        characteristics: data.characteristics || '',
+        capabilities: data.capabilities || '',
+        accommodations: data.accommodations || '',
+        sa_displ_ratio: data.sa_displ_ratio || null,
+        ballast_displ_ratio: data.ballast_displ_ratio || null,
+        displ_len_ratio: data.displ_len_ratio || null,
+        comfort_ratio: data.comfort_ratio || null,
+        capsize_screening: data.capsize_screening || null,
+        hull_speed_knots: data.hull_speed_knots || null,
+        ppi_pounds_per_inch: data.ppi_pounds_per_inch || null,
       });
       setImages(data.images || []);
     }
@@ -179,6 +267,9 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       displcmt_m: formData.displcmt_m || null,
       average_speed_knots: formData.average_speed_knots || null,
       link_to_specs: formData.link_to_specs || null,
+      characteristics: formData.characteristics || null,
+      capabilities: formData.capabilities || null,
+      accommodations: formData.accommodations || null,
       images: images.length > 0 ? images : null,
       updated_at: new Date().toISOString(),
     };
@@ -220,6 +311,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       ...prev,
       [name]: name === 'capacity' || name === 'loa_m' || name === 'beam_m' || name === 'displcmt_m' || name === 'average_speed_knots'
         ? value === '' ? null : Number(value)
+        : name === 'type'
+        ? value === '' ? null : value
         : value,
     }));
   };
@@ -285,19 +378,35 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
 
                   {/* Boat Type */}
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-foreground mb-1">
-                      Boat Type *
-                    </label>
+                    <div className="flex items-center gap-2 mb-1">
+                      <label htmlFor="type" className="block text-sm font-medium text-foreground">
+                        Sailboat Category
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowCategoryInfo(true)}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        aria-label="Show category information"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </button>
+                    </div>
                     <select
                       id="type"
                       name="type"
-                      required
-                      value={formData.type}
+                      value={formData.type || ''}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     >
-                      <option value="sailboat">Sailboat</option>
-                      <option value="motorboat">Motorboat</option>
+                      <option value="">Select category...</option>
+                      <option value="Daysailers">Daysailers</option>
+                      <option value="Coastal cruisers">Coastal cruisers</option>
+                      <option value="Traditional offshore cruisers">Traditional offshore cruisers</option>
+                      <option value="Performance cruisers">Performance cruisers</option>
+                      <option value="Multihulls">Multihulls</option>
+                      <option value="Expedition sailboats">Expedition sailboats</option>
                     </select>
                   </div>
 
@@ -438,6 +547,54 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                     />
                   </div>
 
+                  {/* Characteristics */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="characteristics" className="block text-sm font-medium text-foreground mb-1">
+                      Characteristics
+                    </label>
+                    <textarea
+                      id="characteristics"
+                      name="characteristics"
+                      rows={3}
+                      value={formData.characteristics}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                      placeholder="Describe the boat's characteristics..."
+                    />
+                  </div>
+
+                  {/* Capabilities */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="capabilities" className="block text-sm font-medium text-foreground mb-1">
+                      Capabilities
+                    </label>
+                    <textarea
+                      id="capabilities"
+                      name="capabilities"
+                      rows={3}
+                      value={formData.capabilities}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                      placeholder="Describe the boat's capabilities..."
+                    />
+                  </div>
+
+                  {/* Accommodations */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="accommodations" className="block text-sm font-medium text-foreground mb-1">
+                      Accommodations
+                    </label>
+                    <textarea
+                      id="accommodations"
+                      name="accommodations"
+                      rows={3}
+                      value={formData.accommodations}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                      placeholder="Describe the boat's accommodations..."
+                    />
+                  </div>
+
                   {/* Link to Specs */}
                   <div className="md:col-span-2">
                     <label htmlFor="link_to_specs" className="block text-sm font-medium text-foreground mb-1">
@@ -452,6 +609,55 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                       placeholder="https://sailboatdata.com/..."
                     />
+                  </div>
+
+                  {/* Sailboat Performance Calculations - Read Only */}
+                  <div className="md:col-span-2 border-t border-border pt-4 mt-4">
+                    <h3 className="text-lg font-semibold text-foreground mb-4">Sailboat Performance Calculations</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">S.A. / Displ.</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.sa_displ_ratio !== null ? formData.sa_displ_ratio.toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">Bal. / Displ. (%)</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.ballast_displ_ratio !== null ? formData.ballast_displ_ratio.toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">Disp: / Len</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.displ_len_ratio !== null ? formData.displ_len_ratio.toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">Comfort Ratio</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.comfort_ratio !== null ? formData.comfort_ratio.toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">Capsize Screening</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.capsize_screening !== null ? formData.capsize_screening.toFixed(2) : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md">
+                        <div className="text-xs text-muted-foreground mb-1">Hull Speed</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.hull_speed_knots !== null ? `${formData.hull_speed_knots.toFixed(2)} kn` : 'N/A'}
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 p-3 rounded-md md:col-span-2">
+                        <div className="text-xs text-muted-foreground mb-1">Pounds/Inch Immersion (PPI)</div>
+                        <div className="text-sm font-medium text-foreground">
+                          {formData.ppi_pounds_per_inch !== null ? `${formData.ppi_pounds_per_inch.toFixed(2)} lbs/inch` : 'N/A'}
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Image Upload */}
@@ -537,6 +743,100 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
           </div>
         </div>
       </div>
+
+      {/* Category Info Modal */}
+      {showCategoryInfo && (
+        <div
+          className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
+          onClick={() => setShowCategoryInfo(false)}
+        >
+          <div
+            className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-card-foreground">
+                  Sailboat Categories Information
+                </h2>
+                <button
+                  onClick={() => setShowCategoryInfo(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Close"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Categories List */}
+              <div className="space-y-4">
+                {Object.entries(sailboatCategories).map(([category, info]) => (
+                  <div
+                    key={category}
+                    className={`border border-border rounded-lg p-4 cursor-pointer transition-all hover:bg-accent hover:border-ring ${
+                      formData.type === category ? 'bg-accent border-ring ring-2 ring-ring' : ''
+                    }`}
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, type: category as Boat['type'] }));
+                      setShowCategoryInfo(false);
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="text-xl font-semibold text-foreground">{category}</h3>
+                      {formData.type !== category && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setFormData((prev) => ({ ...prev, type: category as Boat['type'] }));
+                            setShowCategoryInfo(false);
+                          }}
+                          className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+                        >
+                          Select
+                        </button>
+                      )}
+                    </div>
+                    <div className="space-y-3 text-sm text-muted-foreground">
+                      <div>
+                        <p className="text-foreground">{info.description}</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">Characteristics: </span>
+                        <span>{info.characteristics}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">Capabilities: </span>
+                        <span>{info.capabilities}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">Examples: </span>
+                        <span>{info.examples}</span>
+                      </div>
+                      <div>
+                        <span className="font-medium text-foreground">Pros/Cons: </span>
+                        <span>{info.prosCons}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end mt-6 pt-4 border-t border-border">
+                <button
+                  onClick={() => setShowCategoryInfo(false)}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

@@ -1,17 +1,19 @@
 Database tables
 
+-- ============================================================================
+-- EXTENSIONS
+-- ============================================================================
+
 -- Enable UUID generation (usually already enabled in Supabase)
 create extension if not exists "pgcrypto";
 
--- 0) Create enum type if it doesn't exist yet
-do $$
-begin
-  if not exists (select 1 from pg_type where typname = 'boat_type') then
-    create type boat_type as enum ('sailboat', 'motorboat');
-  end if;
-end$$;
 
--- 1) Simple enum for registration status
+-- ============================================================================
+-- ENUM TYPES
+-- ============================================================================
+
+
+-- Registration status enum
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'registration_status') then
@@ -19,7 +21,7 @@ begin
   end if;
 end$$;
 
--- 1) Simple enum for profile type
+-- Profile type enum
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'profile_type') then
@@ -27,7 +29,7 @@ begin
   end if;
 end$$;
 
--- 1) Simple enum for risk level
+-- Risk level enum
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'risk_level') then
@@ -35,7 +37,7 @@ begin
   end if;
 end$$;
 
--- 1) Simple enum for journey state
+-- Journey state enum
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'journey_state') then
@@ -43,8 +45,20 @@ begin
   end if;
 end$$;
 
+-- Sailboat category enum
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'sailboat_category') then
+    create type sailboat_category as enum ('Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats');
+  end if;
+end$$;
 
--- 2) profiles: one row per user, extends auth.users
+
+-- ============================================================================
+-- TABLE: profiles
+-- ============================================================================
+
+-- Table definition
 create table if not exists public.profiles (
   id          uuid not null references auth.users(id) primary key,
   role        profile_type not null default 'crew',
@@ -58,12 +72,13 @@ create table if not exists public.profiles (
   updated_at  timestamptz not null default now()
 );
 
+-- Indexes
 create unique index if not exists profiles_user_id_key on public.profiles (id);
 
--- enable sec
+-- Enable Row Level Security
 alter table profiles enable row level security;
 
--- setup basic policies
+-- Policies
 create policy "Public profiles are viewable by all"
 on profiles for select
 using (true);
@@ -77,35 +92,55 @@ on profiles for update
 using (auth.uid() = id);
 
 
--- 3) boats
+-- ============================================================================
+-- TABLE: boats
+-- ============================================================================
+
+-- Table definition
 create table if not exists public.boats (
   id          uuid primary key default gen_random_uuid(),
   owner_id    uuid not null references auth.users (id) on delete cascade,
   name        text not null,
-  type        boat_type not null default 'sailboat',
+  type        sailboat_category, -- Sailboat category (nullable)
   make        text,
   model       text,
   capacity    int,
   home_port   text, 
   loa_m       numeric, -- length overall in meters
+  lwl_m       numeric, -- length waterline in meters (for sailboat calculations)
   beam_m      numeric, -- Beam in meters
   displcmt_m  numeric, -- Displacement in kg
+  ballast_kg  numeric, -- Ballast weight in kg (for sailboats)
+  sail_area_sqm numeric, -- Total sail area in square meters (for sailboats)
   average_speed_knots numeric, -- Average cruising speed in knots
   link_to_specs text, -- Link to additional information like sailboatdata.com
   images      text[] default '{}',  -- store image URLs from Supabase Storage
+  characteristics text, -- Boat characteristics description
+  capabilities text, -- Boat capabilities description
+  accommodations text, -- Accommodations description
+  -- Sailboat performance calculations (can be calculated from above or stored directly)
+  sa_displ_ratio numeric, -- Sail Area to Displacement Ratio (S.A. / Displ.)
+  ballast_displ_ratio numeric, -- Ballast to Displacement Ratio (Bal. / Displ.) as percentage
+  displ_len_ratio numeric, -- Displacement to Length Ratio (Disp: / Len)
+  comfort_ratio numeric, -- Comfort Ratio (Ted Brewer's formula)
+  capsize_screening numeric, -- Capsize Screening Formula value
+  hull_speed_knots numeric, -- Theoretical hull speed in knots
+  ppi_pounds_per_inch numeric, -- Pounds per Inch Immersion (PPI)
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
 
+-- Indexes
 create index if not exists boats_owner_id_idx on public.boats (owner_id);
+
+-- Enable Row Level Security
 alter table boats enable row level security;
 
--- basic policies
+-- Policies
 create policy "Boats are accessible to all"
 on boats for select
 using(true);
 
--- owners can insert their boats
 create policy "Owners can insert their boats"
 on boats for insert
 with check (auth.uid() = owner_id);
@@ -118,7 +153,12 @@ create policy "Onwers can delete their boats"
 on boats for delete
 using(auth.uid() = owner_id);
 
--- 4) journeys
+
+-- ============================================================================
+-- TABLE: journeys
+-- ============================================================================
+
+-- Table definition
 create table if not exists public.journeys (
   id           uuid primary key default gen_random_uuid(),
   boat_id      uuid not null references public.boats (id) on delete cascade,
@@ -134,13 +174,14 @@ create table if not exists public.journeys (
   updated_at   timestamptz not null default now()
 );
 
+-- Indexes
 create index if not exists journeys_boat_id_idx on public.journeys (boat_id);
 create index if not exists journeys_state_idx on public.journeys (state);
 
--- Enable RLS on journeys
+-- Enable Row Level Security
 alter table journeys enable row level security;
 
--- Journeys policies
+-- Policies
 -- Only published journeys are viewable by everyone, owners can see all their journeys
 create policy "Published journeys are viewable by all"
 on journeys for select
@@ -183,7 +224,12 @@ using (
   )
 );
 
--- 5) legs
+
+-- ============================================================================
+-- TABLE: legs
+-- ============================================================================
+
+-- Table definition
 create table if not exists public.legs (
   id           uuid primary key default gen_random_uuid(),
   journey_id   uuid not null references public.journeys (id) on delete cascade,
@@ -197,13 +243,14 @@ create table if not exists public.legs (
   updated_at   timestamptz not null default now()
 );
 
+-- Indexes
 create index if not exists legs_journey_id_idx on public.legs (journey_id);
 create index if not exists legs_waypoints_idx on public.legs using gin (waypoints);
 
--- Enable RLS on legs
+-- Enable Row Level Security
 alter table legs enable row level security;
 
--- Legs policies
+-- Policies
 create policy "Legs are viewable by all"
 on legs for select
 using (true);
@@ -241,7 +288,12 @@ using (
   )
 );
 
--- 6) registrations
+
+-- ============================================================================
+-- TABLE: registrations
+-- ============================================================================
+
+-- Table definition
 create table if not exists public.registrations (
   id           uuid primary key default gen_random_uuid(),
   leg_id       uuid not null references public.legs (id) on delete cascade,
@@ -252,12 +304,19 @@ create table if not exists public.registrations (
   updated_at   timestamptz not null default now()
 );
 
+-- Indexes
 create index if not exists registrations_leg_id_idx on public.registrations (leg_id);
 create index if not exists registrations_user_id_idx on public.registrations (user_id);
 create unique index if not exists registrations_leg_user_unique
   on public.registrations (leg_id, user_id);
 
--- Storage bucket policies for boat-images
+-- Note: RLS not enabled for registrations (no policies defined)
+-- Add RLS and policies here if needed in the future
+
+
+-- ============================================================================
+-- STORAGE POLICIES: boat-images bucket
+-- ============================================================================
 -- Note: First create the bucket in Supabase Dashboard > Storage > New bucket
 -- Name: boat-images, Public: true
 
