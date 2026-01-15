@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { callAI, AIServiceError } from '@/app/lib/ai/service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,13 +39,6 @@ export async function POST(request: NextRequest) {
       lat: endLocation.lat,
       lng: endLocation.lng
     });
-
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-      return NextResponse.json(
-        { error: 'Google Gemini API key not configured' },
-        { status: 500 }
-      );
-    }
 
     // Create a prompt for Gemini
     const dateInfo = startDate || endDate 
@@ -189,71 +183,29 @@ IMPORTANT:
 - Coordinates are [longitude, latitude] format
 - Return ONLY the JSON, no markdown, no code blocks`;
 
-    // Use REST API directly to avoid SDK version issues
-    // Try different API versions and models
-    const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
-    const apiVersions = ['v1beta', 'v1'];
-    // Available models from Google AI Studio
-    const modelsToTry = [
-      'gemini-2.5-flash',      // Most balanced model with 1M token context
-      'gemini-3-flash',        // Frontier-class performance
-      'gemini-2.5-pro',        // Powerful reasoning model
-      'gemini-3-pro',          // Most intelligent model
-      'gemini-2.5-flash-lite', // Fastest and most cost-efficient
-    ];
-    
-    let text: string | undefined;
-    let lastError: any = null;
-    
-    for (const apiVersion of apiVersions) {
-      for (const modelName of modelsToTry) {
-        try {
-          const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${modelName}:generateContent?key=${apiKey}`;
-          
-          const apiResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: prompt
-                }]
-              }]
-            }),
-          });
-
-          if (!apiResponse.ok) {
-            const errorData = await apiResponse.json().catch(() => ({}));
-            lastError = new Error(`${apiVersion}/${modelName}: ${errorData.error?.message || apiResponse.statusText}`);
-            console.log(`API ${apiVersion}, Model ${modelName} failed:`, lastError.message);
-            continue; // Try next model
-          }
-
-          const apiData = await apiResponse.json();
-          text = apiData.candidates?.[0]?.content?.parts?.[0]?.text;
-          
-          if (text) {
-            console.log(`Successfully used API ${apiVersion}, model: ${modelName}`);
-            break; // Success! Exit both loops
-          }
-        } catch (err: any) {
-          lastError = err;
-          console.log(`API ${apiVersion}, Model ${modelName} error:`, err.message);
-          continue;
-        }
+    // Use centralized AI service
+    let result;
+    try {
+      result = await callAI({
+        useCase: 'generate-journey',
+        prompt,
+      });
+      console.log(`Success with ${result.provider}/${result.model}`);
+    } catch (error: any) {
+      console.error('=== AI SERVICE ERROR ===');
+      console.error('Error:', error.message);
+      if (error instanceof AIServiceError) {
+        console.error('Provider:', error.provider);
+        console.error('Model:', error.model);
       }
-      if (text) break; // Exit outer loop if we got text
-    }
-    
-    if (!text) {
-      throw new Error(
-        `All models failed. Last error: ${lastError?.message || 'Unknown error'}. ` +
-        `Tried models: ${modelsToTry.join(', ')}. ` +
-        `Please check Google AI Studio (https://aistudio.google.com/) to see which models are available for your API key.`
+      console.error('========================');
+      return NextResponse.json(
+        { error: error.message || 'Failed to generate journey' },
+        { status: 500 }
       );
     }
+
+    const text = result.text;
 
     // Parse the JSON response (remove markdown code blocks if present)
     let jsonText = text.trim();

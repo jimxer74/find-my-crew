@@ -53,12 +53,12 @@ type Boat = {
   id?: string;
   name: string;
   type: 'Daysailers' | 'Coastal cruisers' | 'Traditional offshore cruisers' | 'Performance cruisers' | 'Multihulls' | 'Expedition sailboats' | null;
-  make: string;
-  model: string;
+  make_model: string; // Combined Make and Model field
   capacity: number | null;
   home_port: string;
   loa_m: number | null;
   beam_m: number | null;
+  max_draft_m: number | null;
   displcmt_m: number | null;
   average_speed_knots: number | null;
   link_to_specs: string;
@@ -87,12 +87,12 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   const [formData, setFormData] = useState<Boat>({
     name: '',
     type: null,
-    make: '',
-    model: '',
+    make_model: '',
     capacity: null,
     home_port: '',
     loa_m: null,
     beam_m: null,
+    max_draft_m: null,
     displcmt_m: null,
     average_speed_knots: null,
     link_to_specs: '',
@@ -113,6 +113,13 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showCategoryInfo, setShowCategoryInfo] = useState(false);
+  const [makeModelSuggestions, setMakeModelSuggestions] = useState<string[]>([]);
+  const [showMakeModelSuggestions, setShowMakeModelSuggestions] = useState(false);
+  const [makeModelInputValue, setMakeModelInputValue] = useState('');
+  const [isLoadingMakeModelSuggestions, setIsLoadingMakeModelSuggestions] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [isLoadingBoatDetails, setIsLoadingBoatDetails] = useState(false);
+  const [enableAIAutocomplete, setEnableAIAutocomplete] = useState(false); // Toggle for AI autocomplete search
 
   useEffect(() => {
     if (isOpen && boatId) {
@@ -122,12 +129,12 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       setFormData({
         name: '',
         type: null,
-        make: '',
-        model: '',
+        make_model: '',
         capacity: null,
         home_port: '',
         loa_m: null,
         beam_m: null,
+        max_draft_m: null,
         displcmt_m: null,
         average_speed_knots: null,
         link_to_specs: '',
@@ -144,6 +151,9 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       });
       setImages([]);
       setError(null);
+      setMakeModelInputValue('');
+      setMakeModelSuggestions([]);
+      setShowMakeModelSuggestions(false);
     }
   }, [isOpen, boatId]);
 
@@ -161,15 +171,19 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     if (fetchError) {
       setError('Failed to load boat details');
     } else if (data) {
+      const makeModelValue = data.make && data.model 
+        ? `${data.make} ${data.model}`.trim()
+        : data.make || data.model || '';
+      
       setFormData({
         name: data.name || '',
         type: data.type || null,
-        make: data.make || '',
-        model: data.model || '',
+        make_model: makeModelValue,
         capacity: data.capacity || null,
         home_port: data.home_port || '',
         loa_m: data.loa_m || null,
         beam_m: data.beam_m || null,
+        max_draft_m: data.max_draft_m || null,
         displcmt_m: data.displcmt_m || null,
         average_speed_knots: data.average_speed_knots || null,
         link_to_specs: data.link_to_specs || '',
@@ -185,8 +199,177 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         ppi_pounds_per_inch: data.ppi_pounds_per_inch || null,
       });
       setImages(data.images || []);
+      setMakeModelInputValue(makeModelValue);
     }
     setIsLoadingBoat(false);
+  };
+
+  // Function to auto-fill boat details: first fetch hard data, then use AI for reasoned fields
+  const fillBoatDetailsFromSailboatData = async () => {
+    if (!formData.make_model || formData.make_model.trim().length < 2) {
+      setError('Please enter a Make and Model first');
+      return;
+    }
+
+    setIsLoadingBoatDetails(true);
+    setError(null);
+
+    try {
+      // Step 1: Fetch hard data from sailboatdata.com via ScraperAPI
+      console.log('=== STEP 1: Fetching hard data from sailboatdata.com ===');
+      const hardDataResponse = await fetch('/api/sailboatdata/fetch-details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ make_model: formData.make_model }),
+      });
+
+      if (!hardDataResponse.ok) {
+        const errorData = await hardDataResponse.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch boat details from sailboatdata.com');
+      }
+
+      const hardDataResult = await hardDataResponse.json();
+      const hardData = hardDataResult.boatDetails;
+
+      console.log('Hard data fetched:', hardData);
+
+      // Step 2: Use AI to fill reasoned fields based on hard data
+      console.log('=== STEP 2: Using AI to fill reasoned fields ===');
+      const aiResponse = await fetch('/api/ai/fill-reasoned-details', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          make_model: formData.make_model,
+          hardData: {
+            loa_m: hardData.loa_m,
+            beam_m: hardData.beam_m,
+            max_draft_m: hardData.max_draft_m,
+            displcmt_m: hardData.displcmt_m,
+            sa_displ_ratio: hardData.sa_displ_ratio,
+            ballast_displ_ratio: hardData.ballast_displ_ratio,
+            displ_len_ratio: hardData.displ_len_ratio,
+            comfort_ratio: hardData.comfort_ratio,
+            capsize_screening: hardData.capsize_screening,
+            hull_speed_knots: hardData.hull_speed_knots,
+            ppi_pounds_per_inch: hardData.ppi_pounds_per_inch,
+          }
+        }),
+      });
+
+      let reasonedData: {
+        type?: string | null;
+        capacity?: number | null;
+        average_speed_knots?: number | null;
+        characteristics?: string;
+        capabilities?: string;
+        accommodations?: string;
+      } = {};
+      if (aiResponse.ok) {
+        const aiResult = await aiResponse.json();
+        reasonedData = aiResult.reasonedDetails || {};
+        console.log('AI reasoned data fetched:', reasonedData);
+      } else {
+        console.warn('AI reasoned details failed, continuing with hard data only');
+        const errorData = await aiResponse.json().catch(() => ({}));
+        console.warn('AI error:', errorData.error);
+      }
+
+      // Step 3: Merge hard data and AI-reasoned data
+      // Validate category type
+      const validCategories: Boat['type'][] = [
+        'Daysailers',
+        'Coastal cruisers',
+        'Traditional offshore cruisers',
+        'Performance cruisers',
+        'Multihulls',
+        'Expedition sailboats',
+      ];
+      const validatedType: Boat['type'] = 
+        reasonedData.type && validCategories.includes(reasonedData.type as Boat['type'])
+          ? (reasonedData.type as Boat['type'])
+          : null;
+
+      setFormData((prev) => ({
+        ...prev,
+        // Hard data (from sailboatdata.com scraping)
+        loa_m: hardData.loa_m ?? prev.loa_m,
+        beam_m: hardData.beam_m ?? prev.beam_m,
+        max_draft_m: hardData.max_draft_m ?? prev.max_draft_m,
+        displcmt_m: hardData.displcmt_m ?? prev.displcmt_m,
+        link_to_specs: hardData.link_to_specs || prev.link_to_specs,
+        sa_displ_ratio: hardData.sa_displ_ratio ?? prev.sa_displ_ratio,
+        ballast_displ_ratio: hardData.ballast_displ_ratio ?? prev.ballast_displ_ratio,
+        displ_len_ratio: hardData.displ_len_ratio ?? prev.displ_len_ratio,
+        comfort_ratio: hardData.comfort_ratio ?? prev.comfort_ratio,
+        capsize_screening: hardData.capsize_screening ?? prev.capsize_screening,
+        hull_speed_knots: hardData.hull_speed_knots ?? prev.hull_speed_knots,
+        ppi_pounds_per_inch: hardData.ppi_pounds_per_inch ?? prev.ppi_pounds_per_inch,
+        // AI-reasoned data (category, capacity, average speed, descriptions)
+        type: validatedType || prev.type,
+        capacity: reasonedData.capacity ?? prev.capacity,
+        average_speed_knots: reasonedData.average_speed_knots ?? prev.average_speed_knots,
+        characteristics: reasonedData.characteristics || prev.characteristics,
+        capabilities: reasonedData.capabilities || prev.capabilities,
+        accommodations: reasonedData.accommodations || prev.accommodations,
+      }));
+
+      console.log('=== Auto-fill completed successfully ===');
+    } catch (error: any) {
+      console.error('Error filling boat details:', error);
+      setError(error.message || 'Failed to fetch boat details. Please fill manually.');
+    } finally {
+      setIsLoadingBoatDetails(false);
+    }
+  };
+
+  // Function to fetch sailboat suggestions (triggered manually on Enter)
+  const fetchSailboatSuggestions = async () => {
+    if (makeModelInputValue.trim().length < 2) {
+      setMakeModelSuggestions([]);
+      setShowMakeModelSuggestions(false);
+      setIsLoadingMakeModelSuggestions(false);
+      return;
+    }
+
+    // Check if AI autocomplete is enabled
+    if (!enableAIAutocomplete) {
+      setMakeModelSuggestions([]);
+      setShowMakeModelSuggestions(false);
+      setIsLoadingMakeModelSuggestions(false);
+      return;
+    }
+
+    setIsLoadingMakeModelSuggestions(true);
+    setHasSearched(true);
+    
+    try {
+      const response = await fetch('/api/ai/suggest-sailboats', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: makeModelInputValue }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMakeModelSuggestions(data.suggestions || []);
+        setShowMakeModelSuggestions(data.suggestions && data.suggestions.length > 0);
+      } else {
+        setMakeModelSuggestions([]);
+        setShowMakeModelSuggestions(false);
+      }
+    } catch (error) {
+      console.error('Error fetching sailboat suggestions:', error);
+      setMakeModelSuggestions([]);
+      setShowMakeModelSuggestions(false);
+    } finally {
+      setIsLoadingMakeModelSuggestions(false);
+    }
   };
 
   const handleImageUpload = async (files: FileList | null) => {
@@ -255,21 +438,35 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
 
     const supabase = getSupabaseBrowserClient();
 
+    // Parse make_model into make and model for database storage
+    const makeModelParts = formData.make_model.trim().split(/\s+/);
+    const make = makeModelParts.length > 0 ? makeModelParts[0] : null;
+    const model = makeModelParts.length > 1 ? makeModelParts.slice(1).join(' ') : null;
+
     const boatData = {
       name: formData.name,
       type: formData.type,
-      make: formData.make || null,
-      model: formData.model || null,
+      make: make || null,
+      model: model || null,
       capacity: formData.capacity || null,
       home_port: formData.home_port || null,
       loa_m: formData.loa_m || null,
       beam_m: formData.beam_m || null,
+      max_draft_m: formData.max_draft_m || null,
       displcmt_m: formData.displcmt_m || null,
       average_speed_knots: formData.average_speed_knots || null,
       link_to_specs: formData.link_to_specs || null,
       characteristics: formData.characteristics || null,
       capabilities: formData.capabilities || null,
       accommodations: formData.accommodations || null,
+      // Sailboat Performance Calculations
+      sa_displ_ratio: formData.sa_displ_ratio || null,
+      ballast_displ_ratio: formData.ballast_displ_ratio || null,
+      displ_len_ratio: formData.displ_len_ratio || null,
+      comfort_ratio: formData.comfort_ratio || null,
+      capsize_screening: formData.capsize_screening || null,
+      hull_speed_knots: formData.hull_speed_knots || null,
+      ppi_pounds_per_inch: formData.ppi_pounds_per_inch || null,
       images: images.length > 0 ? images : null,
       updated_at: new Date().toISOString(),
     };
@@ -309,7 +506,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'capacity' || name === 'loa_m' || name === 'beam_m' || name === 'displcmt_m' || name === 'average_speed_knots'
+      [name]: name === 'capacity' || name === 'loa_m' || name === 'beam_m' || name === 'max_draft_m' || name === 'displcmt_m' || name === 'average_speed_knots' || name === 'sa_displ_ratio' || name === 'ballast_displ_ratio' || name === 'displ_len_ratio' || name === 'comfort_ratio' || name === 'capsize_screening' || name === 'hull_speed_knots' || name === 'ppi_pounds_per_inch'
         ? value === '' ? null : Number(value)
         : name === 'type'
         ? value === '' ? null : value
@@ -427,36 +624,158 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                     />
                   </div>
 
-                  {/* Make */}
-                  <div>
-                    <label htmlFor="make" className="block text-sm font-medium text-foreground mb-1">
-                      Make
-                    </label>
-                    <input
-                      type="text"
-                      id="make"
-                      name="make"
-                      value={formData.make}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      placeholder="e.g., Beneteau"
-                    />
-                  </div>
-
-                  {/* Model */}
-                  <div>
-                    <label htmlFor="model" className="block text-sm font-medium text-foreground mb-1">
-                      Model
-                    </label>
-                    <input
-                      type="text"
-                      id="model"
-                      name="model"
-                      value={formData.model}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      placeholder="e.g., Oceanis 40"
-                    />
+                  {/* Make and Model (Combined) */}
+                  <div className="md:col-span-2 relative">
+                    <div className="flex items-center justify-between mb-1">
+                      <label htmlFor="make_model" className="block text-sm font-medium text-foreground">
+                        Make and Model
+                      </label>
+                      <button
+                        type="button"
+                        onClick={fillBoatDetailsFromSailboatData}
+                        disabled={isLoadingBoatDetails || !formData.make_model || formData.make_model.trim().length < 2}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Auto-fill boat details from sailboatdata.com"
+                      >
+                        {isLoadingBoatDetails ? (
+                          <>
+                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Filling...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span>Auto-fill Details</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="make_model"
+                        name="make_model"
+                        value={formData.make_model}
+                        onChange={(e) => {
+                          handleChange(e);
+                          setMakeModelInputValue(e.target.value);
+                          // Reset search state when user types
+                          setHasSearched(false);
+                          setMakeModelSuggestions([]);
+                          setShowMakeModelSuggestions(false);
+                        }}
+                        onFocus={() => {
+                          // Only show suggestions if we've already searched
+                          if (hasSearched && makeModelSuggestions.length > 0 && makeModelInputValue.trim().length >= 2) {
+                            setShowMakeModelSuggestions(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Trigger AI search on Enter
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            if (makeModelInputValue.trim().length >= 2) {
+                              fetchSailboatSuggestions();
+                            } else if (showMakeModelSuggestions) {
+                              // If suggestions are showing, accept the current input
+                              setShowMakeModelSuggestions(false);
+                            }
+                          }
+                          // Allow Escape to close suggestions
+                          if (e.key === 'Escape') {
+                            setShowMakeModelSuggestions(false);
+                          }
+                        }}
+                        onBlur={() => {
+                          // Delay hiding suggestions to allow clicking on them
+                          setTimeout(() => setShowMakeModelSuggestions(false), 200);
+                        }}
+                        className="w-full px-3 py-2 pr-8 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                        placeholder="e.g., Hallberg-Rassy 38 (press Enter to search)"
+                        autoComplete="off"
+                      />
+                      {/* Loading Indicator */}
+                      {isLoadingMakeModelSuggestions && (
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <svg className="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {/* AI Autocomplete Toggle Checkbox */}
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="enable_ai_autocomplete"
+                        checked={enableAIAutocomplete}
+                        onChange={(e) => setEnableAIAutocomplete(e.target.checked)}
+                        className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-ring"
+                      />
+                      <label htmlFor="enable_ai_autocomplete" className="text-sm text-muted-foreground cursor-pointer">
+                        Enable AI autocomplete search (for testing - limits API calls)
+                      </label>
+                    </div>
+                    {/* Hint message when user hasn't searched yet */}
+                    {makeModelInputValue.trim().length >= 2 && !hasSearched && !isLoadingMakeModelSuggestions && enableAIAutocomplete && (
+                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg">
+                        <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-foreground bg-muted border border-border rounded">Enter</kbd> to search sailboatdata.com</span>
+                        </div>
+                      </div>
+                    )}
+                    {makeModelInputValue.trim().length >= 2 && !enableAIAutocomplete && (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        AI autocomplete is disabled. Enable the checkbox above to use AI search.
+                      </div>
+                    )}
+                    {/* Suggestions Dropdown */}
+                    {showMakeModelSuggestions && (
+                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        {isLoadingMakeModelSuggestions ? (
+                          <div className="px-3 py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
+                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Searching sailboatdata.com...</span>
+                          </div>
+                        ) : makeModelSuggestions.length > 0 ? (
+                          <>
+                            {makeModelSuggestions.map((suggestion, index) => (
+                              <button
+                                key={index}
+                                type="button"
+                                onClick={() => {
+                                  setFormData((prev) => ({ ...prev, make_model: suggestion }));
+                                  setMakeModelInputValue(suggestion);
+                                  setShowMakeModelSuggestions(false);
+                                }}
+                                className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm text-foreground"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
+                              Or press Enter to use "{makeModelInputValue}"
+                            </div>
+                          </>
+                        ) : hasSearched && makeModelInputValue.trim().length >= 2 ? (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">
+                            No suggestions found. Press Enter to use "{makeModelInputValue}"
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
 
                   {/* Home Port */}
@@ -484,12 +803,12 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       type="number"
                       id="loa_m"
                       name="loa_m"
-                      step="0.1"
+                      step="0.01"
                       min="0"
                       value={formData.loa_m || ''}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      placeholder="e.g., 12.5"
+                      placeholder="e.g., 13.50"
                     />
                   </div>
 
@@ -502,12 +821,30 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       type="number"
                       id="beam_m"
                       name="beam_m"
-                      step="0.1"
+                      step="0.01"
                       min="0"
                       value={formData.beam_m || ''}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      placeholder="e.g., 4.2"
+                      placeholder="e.g., 4.05"
+                    />
+                  </div>
+
+                  {/* Max Draft */}
+                  <div>
+                    <label htmlFor="max_draft_m" className="block text-sm font-medium text-foreground mb-1">
+                      Max Draft (m)
+                    </label>
+                    <input
+                      type="number"
+                      id="max_draft_m"
+                      name="max_draft_m"
+                      step="0.01"
+                      min="0"
+                      value={formData.max_draft_m || ''}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      placeholder="e.g., 2.00"
                     />
                   </div>
 
@@ -611,51 +948,121 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                     />
                   </div>
 
-                  {/* Sailboat Performance Calculations - Read Only */}
+                  {/* Sailboat Performance Calculations - Editable */}
                   <div className="md:col-span-2 border-t border-border pt-4 mt-4">
                     <h3 className="text-lg font-semibold text-foreground mb-4">Sailboat Performance Calculations</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">S.A. / Displ.</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.sa_displ_ratio !== null ? formData.sa_displ_ratio.toFixed(2) : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="sa_displ_ratio" className="block text-sm font-medium text-foreground mb-1">
+                          S.A. / Displ.
+                        </label>
+                        <input
+                          type="number"
+                          id="sa_displ_ratio"
+                          name="sa_displ_ratio"
+                          step="0.01"
+                          min="0"
+                          value={formData.sa_displ_ratio || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 15.5"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">Bal. / Displ. (%)</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.ballast_displ_ratio !== null ? formData.ballast_displ_ratio.toFixed(2) : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="ballast_displ_ratio" className="block text-sm font-medium text-foreground mb-1">
+                          Bal. / Displ.
+                        </label>
+                        <input
+                          type="number"
+                          id="ballast_displ_ratio"
+                          name="ballast_displ_ratio"
+                          step="0.01"
+                          min="0"
+                          value={formData.ballast_displ_ratio || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 33.80"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">Disp: / Len</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.displ_len_ratio !== null ? formData.displ_len_ratio.toFixed(2) : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="displ_len_ratio" className="block text-sm font-medium text-foreground mb-1">
+                          Disp: / Len
+                        </label>
+                        <input
+                          type="number"
+                          id="displ_len_ratio"
+                          name="displ_len_ratio"
+                          step="0.01"
+                          min="0"
+                          value={formData.displ_len_ratio || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 250"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">Comfort Ratio</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.comfort_ratio !== null ? formData.comfort_ratio.toFixed(2) : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="comfort_ratio" className="block text-sm font-medium text-foreground mb-1">
+                          Comfort Ratio
+                        </label>
+                        <input
+                          type="number"
+                          id="comfort_ratio"
+                          name="comfort_ratio"
+                          step="0.01"
+                          min="0"
+                          value={formData.comfort_ratio || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 35.5"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">Capsize Screening</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.capsize_screening !== null ? formData.capsize_screening.toFixed(2) : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="capsize_screening" className="block text-sm font-medium text-foreground mb-1">
+                          Capsize Screening
+                        </label>
+                        <input
+                          type="number"
+                          id="capsize_screening"
+                          name="capsize_screening"
+                          step="0.01"
+                          min="0"
+                          value={formData.capsize_screening || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 1.85"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md">
-                        <div className="text-xs text-muted-foreground mb-1">Hull Speed</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.hull_speed_knots !== null ? `${formData.hull_speed_knots.toFixed(2)} kn` : 'N/A'}
-                        </div>
+                      <div>
+                        <label htmlFor="hull_speed_knots" className="block text-sm font-medium text-foreground mb-1">
+                          Hull Speed (knots)
+                        </label>
+                        <input
+                          type="number"
+                          id="hull_speed_knots"
+                          name="hull_speed_knots"
+                          step="0.01"
+                          min="0"
+                          value={formData.hull_speed_knots || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 7.5"
+                        />
                       </div>
-                      <div className="bg-muted/50 p-3 rounded-md md:col-span-2">
-                        <div className="text-xs text-muted-foreground mb-1">Pounds/Inch Immersion (PPI)</div>
-                        <div className="text-sm font-medium text-foreground">
-                          {formData.ppi_pounds_per_inch !== null ? `${formData.ppi_pounds_per_inch.toFixed(2)} lbs/inch` : 'N/A'}
-                        </div>
+                      <div className="md:col-span-2">
+                        <label htmlFor="ppi_pounds_per_inch" className="block text-sm font-medium text-foreground mb-1">
+                          Pounds/Inch Immersion (PPI)
+                        </label>
+                        <input
+                          type="number"
+                          id="ppi_pounds_per_inch"
+                          name="ppi_pounds_per_inch"
+                          step="0.01"
+                          min="0"
+                          value={formData.ppi_pounds_per_inch || ''}
+                          onChange={handleChange}
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          placeholder="e.g., 1200"
+                        />
                       </div>
                     </div>
                   </div>

@@ -109,6 +109,7 @@ create table if not exists public.boats (
   loa_m       numeric, -- length overall in meters
   lwl_m       numeric, -- length waterline in meters (for sailboat calculations)
   beam_m      numeric, -- Beam in meters
+  max_draft_m numeric, -- Maximum draft (deepest point below waterline) in meters
   displcmt_m  numeric, -- Displacement in kg
   ballast_kg  numeric, -- Ballast weight in kg (for sailboats)
   sail_area_sqm numeric, -- Total sail area in square meters (for sailboats)
