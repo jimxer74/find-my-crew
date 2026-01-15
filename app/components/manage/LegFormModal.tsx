@@ -35,6 +35,7 @@ export function LegFormModal({
 
   // Form state
   const [legName, setLegName] = useState('');
+  const [description, setDescription] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [crewNeeded, setCrewNeeded] = useState<number | ''>('');
@@ -78,6 +79,7 @@ export function LegFormModal({
 
   const resetForm = () => {
     setLegName('');
+    setDescription('');
     setStartDate('');
     setEndDate('');
     setCrewNeeded('');
@@ -96,7 +98,7 @@ export function LegFormModal({
     
     const { data, error } = await supabase
       .from('legs')
-      .select('id, name, waypoints, start_date, end_date, crew_needed, skills')
+      .select('id, name, description, waypoints, start_date, end_date, crew_needed, skills')
       .eq('id', legId)
       .eq('journey_id', journeyId)
       .single();
@@ -112,6 +114,7 @@ export function LegFormModal({
       const sortedWaypoints = [...(data.waypoints || [])].sort((a: any, b: any) => a.index - b.index);
       
       setLegName(data.name);
+      setDescription(data.description || '');
       setStartDate(data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '');
       setEndDate(data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '');
       setCrewNeeded(data.crew_needed || '');
@@ -143,6 +146,7 @@ export function LegFormModal({
       const legData: any = {
         journey_id: journeyId,
         name: legName.trim(),
+        description: description.trim() || null,
         waypoints: waypoints,
         updated_at: new Date().toISOString(),
       };
@@ -319,6 +323,21 @@ export function LegFormModal({
                     onChange={(e) => setLegName(e.target.value)}
                     className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                     placeholder="e.g., Barcelona to Palma"
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label htmlFor="leg-description" className="block text-sm font-medium text-foreground mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    id="leg-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                    placeholder="Additional details about this leg (optional)"
                   />
                 </div>
 

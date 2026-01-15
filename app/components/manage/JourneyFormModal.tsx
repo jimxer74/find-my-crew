@@ -118,6 +118,53 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
 
     const supabase = getSupabaseBrowserClient();
 
+    // Debug: Check authentication
+    console.log('=== JOURNEY CREATION DEBUG ===');
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    console.log('Auth user:', authUser?.id);
+    console.log('Auth error:', authError);
+    console.log('User ID from props:', userId);
+    
+    // Verify boat exists and belongs to user
+    if (formData.boat_id) {
+      const { data: boatData, error: boatError } = await supabase
+        .from('boats')
+        .select('id, name, owner_id')
+        .eq('id', formData.boat_id)
+        .single();
+      
+      console.log('Boat data:', boatData);
+      console.log('Boat error:', boatError);
+      console.log('Boat owner_id:', boatData?.owner_id);
+      console.log('Auth user id:', authUser?.id);
+      console.log('Boat belongs to user:', boatData?.owner_id === authUser?.id);
+      
+      // Test RLS policy by checking if we can see the boat with the same query the policy uses
+      if (authUser?.id) {
+        const { data: rlsTestData, error: rlsTestError } = await supabase
+          .from('boats')
+          .select('id, owner_id')
+          .eq('id', formData.boat_id)
+          .eq('owner_id', authUser.id)
+          .single();
+        
+        console.log('RLS Policy Test - Can see boat with owner_id filter:', rlsTestData ? 'YES' : 'NO');
+        console.log('RLS Policy Test result:', rlsTestData);
+        console.log('RLS Policy Test error:', rlsTestError);
+      }
+      
+      if (boatError) {
+        console.error('Error fetching boat:', boatError);
+      }
+      if (!boatData) {
+        console.error('Boat not found with id:', formData.boat_id);
+      }
+      if (boatData && boatData.owner_id !== authUser?.id) {
+        console.error('Boat owner mismatch! Boat owner:', boatData.owner_id, 'Auth user:', authUser?.id);
+        console.error('This mismatch will cause RLS policy to fail!');
+      }
+    }
+
     const journeyData = {
       boat_id: formData.boat_id,
       name: formData.name,
@@ -129,27 +176,62 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       updated_at: new Date().toISOString(),
     };
 
+    console.log('Journey data to insert:', JSON.stringify(journeyData, null, 2));
+    console.log('================================');
+
     try {
       if (journeyId) {
         // Update existing journey
-        const { error: updateError } = await supabase
+        console.log('Updating journey:', journeyId);
+        const { data: updateData, error: updateError } = await supabase
           .from('journeys')
           .update(journeyData)
-          .eq('id', journeyId);
+          .eq('id', journeyId)
+          .select();
 
-        if (updateError) throw updateError;
+        console.log('Update result data:', updateData);
+        console.log('Update error:', updateError);
+        if (updateError) {
+          console.error('Update error details:', {
+            message: updateError.message,
+            details: updateError.details,
+            hint: updateError.hint,
+            code: updateError.code,
+          });
+          throw updateError;
+        }
       } else {
         // Create new journey
-        const { error: insertError } = await supabase
+        console.log('Creating new journey...');
+        const { data: insertData, error: insertError } = await supabase
           .from('journeys')
-          .insert(journeyData);
+          .insert(journeyData)
+          .select();
 
-        if (insertError) throw insertError;
+        console.log('Insert result data:', insertData);
+        console.log('Insert error:', insertError);
+        if (insertError) {
+          console.error('Insert error details:', {
+            message: insertError.message,
+            details: insertError.details,
+            hint: insertError.hint,
+            code: insertError.code,
+          });
+          throw insertError;
+        }
+        console.log('Journey created successfully:', insertData);
       }
 
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('=== JOURNEY SAVE ERROR ===');
+      console.error('Error object:', err);
+      console.error('Error message:', err.message);
+      console.error('Error code:', err.code);
+      console.error('Error details:', err.details);
+      console.error('Error hint:', err.hint);
+      console.error('==========================');
       setError(err.message || 'Failed to save journey');
     } finally {
       setLoading(false);

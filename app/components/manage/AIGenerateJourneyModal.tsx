@@ -219,11 +219,57 @@ export function AIGenerateJourneyModal({
         journeyInsertData.end_date = endDate;
       }
 
+      // Debug: Check authentication and boat ownership before insert
+      console.log('=== AI JOURNEY CREATION DEBUG ===');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      console.log('Auth user:', authUser?.id);
+      console.log('Auth error:', authError);
+      console.log('Selected boat ID:', selectedBoatId);
+      
+      // Verify boat exists and belongs to user
+      if (selectedBoatId) {
+        const { data: boatData, error: boatError } = await supabase
+          .from('boats')
+          .select('id, name, owner_id')
+          .eq('id', selectedBoatId)
+          .single();
+        
+        console.log('Boat data:', boatData);
+        console.log('Boat error:', boatError);
+        console.log('Boat owner_id:', boatData?.owner_id);
+        console.log('Auth user id:', authUser?.id);
+        console.log('Boat belongs to user:', boatData?.owner_id === authUser?.id);
+        
+        if (boatError) {
+          console.error('Error fetching boat:', boatError);
+        }
+        if (!boatData) {
+          console.error('Boat not found with id:', selectedBoatId);
+        }
+        if (boatData && boatData.owner_id !== authUser?.id) {
+          console.error('Boat owner mismatch! Boat owner:', boatData.owner_id, 'Auth user:', authUser?.id);
+        }
+      }
+
+      console.log('Journey data to insert:', JSON.stringify(journeyInsertData, null, 2));
+      console.log('==================================');
+
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
         .insert(journeyInsertData)
         .select()
         .single();
+
+      console.log('Journey insert result data:', journeyData);
+      console.log('Journey insert error:', journeyError);
+      if (journeyError) {
+        console.error('Journey insert error details:', {
+          message: journeyError.message,
+          details: journeyError.details,
+          hint: journeyError.hint,
+          code: journeyError.code,
+        });
+      }
 
       if (journeyError) throw journeyError;
 

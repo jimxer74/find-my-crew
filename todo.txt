@@ -1,0 +1,11 @@
+TODO:
+
+- Refactor waypoints to PostGIST for performance
+- Add type of sailing preferences to profile
+
+
+
+Later:
+
+- Add unit testing framework
+- 

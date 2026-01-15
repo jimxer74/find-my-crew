@@ -7,6 +7,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 
 type Profile = {
   id: string;
@@ -17,6 +18,7 @@ type Profile = {
   certifications: string | null;
   phone: string | null;
   sailing_experience: 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null;
+  risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   created_at: string;
   updated_at: string;
 };
@@ -40,6 +42,7 @@ export default function ProfilePage() {
     certifications: '',
     phone: '',
     sailing_experience: null as 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null,
+    risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
   });
 
   useEffect(() => {
@@ -83,6 +86,7 @@ export default function ProfilePage() {
           certifications: '',
           phone: '',
           sailing_experience: null,
+          risk_level: [],
         });
 
         // Create a temporary profile object for display
@@ -95,6 +99,7 @@ export default function ProfilePage() {
           certifications: null,
           phone: null,
           sailing_experience: null,
+          risk_level: [],
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -111,6 +116,7 @@ export default function ProfilePage() {
         certifications: data.certifications || '',
         phone: data.phone || '',
         sailing_experience: data.sailing_experience || null,
+        risk_level: data.risk_level || [],
       });
     }
     setLoading(false);
@@ -135,33 +141,35 @@ export default function ProfilePage() {
 
     if (isNewProfile) {
       // Create new profile
-      const { error: insertError } = await supabase
-        .from('profiles')
-        .insert({
-          id: user.id,
-          role: role,
-          username: formData.username || null,
-          full_name: formData.full_name || null,
-          experience: formData.experience || null,
-          certifications: formData.certifications || null,
-          phone: formData.phone || null,
-          sailing_experience: formData.sailing_experience || null,
-        });
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            role: role,
+            username: formData.username || null,
+            full_name: formData.full_name || null,
+            experience: formData.experience || null,
+            certifications: formData.certifications || null,
+            phone: formData.phone || null,
+            sailing_experience: formData.sailing_experience || null,
+            risk_level: formData.risk_level || [],
+          });
 
       error = insertError;
     } else {
       // Update existing profile
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
-          username: formData.username || null,
-          full_name: formData.full_name || null,
-          experience: formData.experience || null,
-          certifications: formData.certifications || null,
-          phone: formData.phone || null,
-          sailing_experience: formData.sailing_experience || null,
-          updated_at: new Date().toISOString(),
-        })
+          .update({
+            username: formData.username || null,
+            full_name: formData.full_name || null,
+            experience: formData.experience || null,
+            certifications: formData.certifications || null,
+            phone: formData.phone || null,
+            sailing_experience: formData.sailing_experience || null,
+            risk_level: formData.risk_level || [],
+            updated_at: new Date().toISOString(),
+          })
         .eq('id', user.id);
 
       error = updateError;
@@ -300,6 +308,16 @@ export default function ProfilePage() {
                 onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
               />
             </div>
+
+            {/* Risk Level - Only visible for crew members */}
+            {(profile?.role === 'crew' || (isNewProfile && (searchParams.get('role') === 'crew' || user?.user_metadata?.role === 'crew'))) && (
+              <div className="grid grid-cols-1 gap-4">
+                <RiskLevelSelector
+                  value={formData.risk_level}
+                  onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
+                />
+              </div>
+            )}
 
             <div>
               <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">

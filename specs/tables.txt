@@ -68,6 +68,7 @@ create table if not exists public.profiles (
   certifications text,       -- free text or JSON later
   phone       text,
   sailing_experience text,   -- 'Beginner', 'Confident Crew', 'Competent Coastal', 'Advanced'
+  risk_level  risk_level[] default '{}',   -- User preferred risk levels for sailing journeys (array)
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -197,11 +198,15 @@ using (
 
 create policy "Owners can insert journeys for their boats"
 on journeys for insert
+to authenticated
 with check (
-  exists (
-    select 1 from boats
-    where boats.id = journeys.boat_id
-    and boats.owner_id = auth.uid()
+  auth.uid() IS NOT NULL
+  AND journeys.boat_id IS NOT NULL
+  AND EXISTS (
+    SELECT 1 
+    FROM public.boats 
+    WHERE boats.id::text = journeys.boat_id::text
+    AND boats.owner_id::text = auth.uid()::text
   )
 );
 
@@ -235,6 +240,7 @@ create table if not exists public.legs (
   id           uuid primary key default gen_random_uuid(),
   journey_id   uuid not null references public.journeys (id) on delete cascade,
   name         text not null,
+  description  text,  -- Additional descriptive text for the leg
   waypoints    jsonb default '[]',  -- Array of waypoints: [{"index": 0, "geocode": {"type": "Point", "coordinates": [lng, lat]}, "name": "Location name"}, ...]
   start_date   timestamptz,
   end_date     timestamptz,

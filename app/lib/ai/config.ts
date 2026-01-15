@@ -93,11 +93,9 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   ],
   'generate-journey': [
     {
-      provider: 'gemini',
+      provider: 'deepseek',
       models: [
-        'gemini-2.5-pro',
-        'gemini-3-pro',
-        'gemini-2.5-flash',
+        'deepseek-reasoner', 'deepseek-chat'
       ],
       temperature: 0.7,
       maxTokens: 4000,
