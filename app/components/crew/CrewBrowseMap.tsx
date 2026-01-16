@@ -232,7 +232,26 @@ export function CrewBrowseMap({
 
           try {
             if (!map.current) return;
-            const bounds = map.current.getBounds();
+            
+            // Ensure map is fully loaded before getting bounds
+            if (!map.current.loaded()) {
+              console.log('[CrewBrowseMap] Map not fully loaded yet, skipping bounds request');
+              isLoadingRef.current = false;
+              setLoading(false);
+              return;
+            }
+            
+            // Get bounds with error handling
+            let bounds: mapboxgl.LngLatBounds | null = null;
+            try {
+              bounds = map.current.getBounds();
+            } catch (error) {
+              console.error('[CrewBrowseMap] Error getting bounds:', error);
+              isLoadingRef.current = false;
+              setLoading(false);
+              return;
+            }
+            
             if (!bounds) {
               console.log('[CrewBrowseMap] Debounced handler: bounds not available');
               isLoadingRef.current = false;
@@ -240,10 +259,120 @@ export function CrewBrowseMap({
               return;
             }
             
-            const minLng = bounds.getWest();
-            const minLat = bounds.getSouth();
-            const maxLng = bounds.getEast();
-            const maxLat = bounds.getNorth();
+            // Extract bounds values with error handling
+            // Try to get bounds values directly - if bounds is invalid, this will throw
+            let minLng: number;
+            let minLat: number;
+            let maxLng: number;
+            let maxLat: number;
+            
+            try {
+              // Attempt to extract bounds values
+              // If bounds object is invalid, this will throw an error
+              if (!bounds) {
+                throw new Error('Bounds is null');
+              }
+              minLng = bounds.getWest();
+              minLat = bounds.getSouth();
+              maxLng = bounds.getEast();
+              maxLat = bounds.getNorth();
+            } catch (error) {
+              // If we can't extract bounds values, log error and skip
+              console.error('[CrewBrowseMap] Error extracting bounds values:', error);
+              console.error('[CrewBrowseMap] Bounds object state:', {
+                boundsExists: bounds !== null && bounds !== undefined,
+                boundsType: bounds !== null && bounds !== undefined ? typeof bounds : 'null/undefined',
+                mapLoaded: map.current?.loaded(),
+                mapExists: !!map.current,
+              });
+              isLoadingRef.current = false;
+              setLoading(false);
+              return;
+            }
+
+            console.log('[CrewBrowseMap] Raw bounds from Mapbox:', {
+              minLng: typeof minLng === 'number' ? minLng : 'invalid',
+              minLat: typeof minLat === 'number' ? minLat : 'invalid',
+              maxLng: typeof maxLng === 'number' ? maxLng : 'invalid',
+              maxLat: typeof maxLat === 'number' ? maxLat : 'invalid',
+              crossesDateLine: typeof minLng === 'number' && typeof maxLng === 'number' ? minLng > maxLng : false,
+            });
+
+            // Check for invalid bounds first
+            if (
+              typeof minLng !== 'number' || typeof minLat !== 'number' || 
+              typeof maxLng !== 'number' || typeof maxLat !== 'number' ||
+              isNaN(minLng) || isNaN(minLat) || isNaN(maxLng) || isNaN(maxLat) ||
+              !isFinite(minLng) || !isFinite(minLat) || !isFinite(maxLng) || !isFinite(maxLat)
+            ) {
+              console.error('[CrewBrowseMap] Bounds contain invalid values:', {
+                minLng: typeof minLng === 'number' ? minLng : String(minLng),
+                minLat: typeof minLat === 'number' ? minLat : String(minLat),
+                maxLng: typeof maxLng === 'number' ? maxLng : String(maxLng),
+                maxLat: typeof maxLat === 'number' ? maxLat : String(maxLat),
+                minLngType: typeof minLng,
+                minLatType: typeof minLat,
+                maxLngType: typeof maxLng,
+                maxLatType: typeof maxLat,
+                minLngValid: typeof minLng === 'number' && isFinite(minLng),
+                minLatValid: typeof minLat === 'number' && isFinite(minLat),
+                maxLngValid: typeof maxLng === 'number' && isFinite(maxLng),
+                maxLatValid: typeof maxLat === 'number' && isFinite(maxLat),
+              });
+              isLoadingRef.current = false;
+              setLoading(false);
+              return;
+            }
+
+            // Handle international date line crossing (when bounds wrap around 180/-180)
+            // If the viewport crosses the date line, Mapbox returns bounds where minLng > maxLng
+            // For example: minLng = 170, maxLng = -170 means we're viewing from 170°E to 170°W
+            if (minLng > maxLng) {
+              // This means we're crossing the date line
+              // For PostGIS queries, we need to use the full longitude range to include both sides
+              console.log('[CrewBrowseMap] Viewport crosses international date line, using full longitude range', {
+                originalMinLng: minLng,
+                originalMaxLng: maxLng,
+              });
+              // Use the full longitude range that includes both sides of the date line
+              minLng = -180;
+              maxLng = 180;
+            }
+
+            // Clamp values to valid ranges (after date line handling)
+            minLng = Math.max(-180, Math.min(180, minLng));
+            minLat = Math.max(-90, Math.min(90, minLat));
+            maxLng = Math.max(-180, Math.min(180, maxLng));
+            maxLat = Math.max(-90, Math.min(90, maxLat));
+
+            // Final validation - ensure min < max after all adjustments
+            const lngValid = minLng < maxLng;
+            const latValid = minLat < maxLat;
+            
+            if (!lngValid || !latValid) {
+              const errorDetails = {
+                minLng: typeof minLng === 'number' ? minLng : String(minLng),
+                minLat: typeof minLat === 'number' ? minLat : String(minLat),
+                maxLng: typeof maxLng === 'number' ? maxLng : String(maxLng),
+                maxLat: typeof maxLat === 'number' ? maxLat : String(maxLat),
+                lngValid,
+                latValid,
+                lngDiff: typeof maxLng === 'number' && typeof minLng === 'number' ? maxLng - minLng : 'N/A',
+                latDiff: typeof maxLat === 'number' && typeof minLat === 'number' ? maxLat - minLat : 'N/A',
+              };
+              
+              console.error('[CrewBrowseMap] Invalid bounds after normalization:', errorDetails);
+              console.error('[CrewBrowseMap] Raw values:', {
+                minLngRaw: bounds.getWest(),
+                minLatRaw: bounds.getSouth(),
+                maxLngRaw: bounds.getEast(),
+                maxLatRaw: bounds.getNorth(),
+              });
+              
+              isLoadingRef.current = false;
+              setLoading(false);
+              return;
+            }
 
             // Check if viewport has changed significantly
             const newBounds = { minLng, minLat, maxLng, maxLat };
