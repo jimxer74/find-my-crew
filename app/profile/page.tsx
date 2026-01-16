@@ -211,6 +211,38 @@ export default function ProfilePage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const appendToSailingPreferences = (text: string) => {
+    setFormData((prev) => {
+      const currentValue = prev.sailing_preferences || '';
+      const separator = currentValue.trim() && !currentValue.endsWith('\n') ? '\n\n' : '';
+      const newValue = currentValue + separator + text;
+      
+      // Focus the textarea and set cursor position after state update
+      setTimeout(() => {
+        const textarea = document.getElementById('sailing_preferences') as HTMLTextAreaElement;
+        if (textarea) {
+          textarea.focus();
+          // Move cursor to end of appended text
+          textarea.setSelectionRange(newValue.length, newValue.length);
+        }
+      }, 0);
+      
+      return {
+        ...prev,
+        sailing_preferences: newValue,
+      };
+    });
+  };
+
+  // Reusable styles for bullet point items with add button
+  const bulletPointTextClass = "flex-1 group-hover:opacity-70 transition-opacity";
+  const addButtonClass = "bg-white text-gray-900 rounded-full p-2 shadow-lg border border-black";
+  const addButtonIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+    </svg>
+  );
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -428,47 +460,167 @@ export default function ProfilePage() {
                       <>
                         <p className="font-medium mb-3">Consider the following when describing your motivation and sailing preferences:</p>
                         <ul className="space-y-3 list-none">
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Do you have any dietary restrictions, allergies, or preferences that could affect meal planning (e.g., vegetarian, gluten-free, or aversion to canned/freeze-dried food)?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Do you have any dietary restrictions, allergies, or preferences that could affect meal planning (e.g., vegetarian, gluten-free, or aversion to canned/freeze-dried food)?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('I have dietary restrictions or allergies: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Do you have any history of motion sickness or seasickness? If so, how do you manage it, and under what conditions does it worsen (e.g., high waves, enclosed spaces)?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Do you have any history of motion sickness or seasickness? If so, how do you manage it, and under what conditions does it worsen (e.g., high waves, enclosed spaces)?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('Regarding motion sickness: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Are there any physical limitations or health concerns we should know about or medications that require refrigeration?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Are there any physical limitations or health concerns we should know about or medications that require refrigeration?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('I have the following physical limitations or health concerns: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>What aspects of sailing excite you most, solitude, handling rough weather, stargazing at night, exploring ports, sightseeing or the camaraderie with the crew?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>What aspects of sailing excite you most, solitude, handling rough weather, stargazing at night, exploring ports, sightseeing or the camaraderie with the crew?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('What excites me most about sailing: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Are you looking for a more relaxed cruise and downtime, or an intense, performance-oriented sailing with watches, sail changes and/or navigation challenges?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Are you looking for a more relaxed cruise and downtime, or an intense, performance-oriented sailing with watches, sail changes and/or navigation challenges?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('I prefer: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Do you prefer structured activities like learning knots and sail trim, or more free-form time to enjoy the ocean and socialize?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Do you prefer structured activities like learning knots and sail trim, or more free-form time to enjoy the ocean and socialize?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('Regarding activities, I prefer: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Are there any strong dislikes for you that would prevent joining the trip (e.g., lack of privacy, being cold/wet, bugs at anchor, long motoring in no wind, or crowded anchorages)?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Are there any strong dislikes for you that would prevent joining the trip (e.g., lack of privacy, being cold/wet, bugs at anchor, long motoring in no wind, or crowded anchorages)?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToSailingPreferences('I would prefer to avoid: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
                           {hasOffshoreSailing && (
                             <>
-                              <li className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span>What draws you to offshore sailing (e.g., solitude, adventure, skill-building, camraderie / team activity?)</span>
+                              <li className="relative group">
+                                <div className="flex items-start">
+                                  <span className="mr-2 text-primary">•</span>
+                                  <span className={bulletPointTextClass}>What draws you to offshore sailing (e.g., solitude, adventure, skill-building, camraderie / team activity?)</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => appendToSailingPreferences('What draws me to offshore sailing: ')}
+                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                  title="Add to text field"
+                                >
+                                  <div className={addButtonClass}>
+                                    {addButtonIcon}
+                                  </div>
+                                </button>
                               </li>
-                              <li className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span>How do you handle sleep deprivation or irregular schedules, such as night watches every few hours?</span>
+                              <li className="relative group">
+                                <div className="flex items-start">
+                                  <span className="mr-2 text-primary">•</span>
+                                  <span className={bulletPointTextClass}>How do you handle sleep deprivation or irregular schedules, such as night watches every few hours?</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => appendToSailingPreferences('Regarding sleep and watch schedules: ')}
+                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                  title="Add to text field"
+                                >
+                                  <div className={addButtonClass}>
+                                    {addButtonIcon}
+                                  </div>
+                                </button>
                               </li>
-                              <li className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span>What level of risk are you comfortable with—e.g., would you prefer to avoid passages with potential for storms, or are you okay with that as part of the adventure?</span>
+                              <li className="relative group">
+                                <div className="flex items-start">
+                                  <span className="mr-2 text-primary">•</span>
+                                  <span className={bulletPointTextClass}>What level of risk are you comfortable with—e.g., would you prefer to avoid passages with potential for storms, or are you okay with that as part of the adventure?</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => appendToSailingPreferences('My comfort level with risk: ')}
+                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                  title="Add to text field"
+                                >
+                                  <div className={addButtonClass}>
+                                    {addButtonIcon}
+                                  </div>
+                                </button>
                               </li>
                             </>
                           )}
