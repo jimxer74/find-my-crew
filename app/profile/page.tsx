@@ -420,6 +420,8 @@ export default function ProfilePage() {
                 value={formData.sailing_preferences}
                 onChange={handleChange}
                 onFocus={() => {
+                  const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
+                  
                   setSidebarContent({
                     title: 'Motivation and Sailing Preferences',
                     content: (
@@ -454,6 +456,22 @@ export default function ProfilePage() {
                             <span className="mr-2 text-primary">•</span>
                             <span>Are there any strong dislikes for you that would prevent joining the trip (e.g., lack of privacy, being cold/wet, bugs at anchor, long motoring in no wind, or crowded anchorages)?</span>
                           </li>
+                          {hasOffshoreSailing && (
+                            <>
+                              <li className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span>What draws you to offshore sailing (e.g., solitude, adventure, skill-building, camraderie / team activity?)</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span>How do you handle sleep deprivation or irregular schedules, such as night watches every few hours?</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span>What level of risk are you comfortable with—e.g., would you prefer to avoid passages with potential for storms, or are you okay with that as part of the adventure?</span>
+                              </li>
+                            </>
+                          )}
                         </ul>
                       </>
                     ),
@@ -475,6 +493,56 @@ export default function ProfilePage() {
                 name="experience"
                 value={formData.experience}
                 onChange={handleChange}
+                onFocus={() => {
+                  const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
+                  const hasExtremeSailing = formData.risk_level.includes('Extreme sailing');
+                  
+                  setSidebarContent({
+                    title: 'Skills and Experience',
+                    content: (
+                      <>
+                        <p className="font-medium mb-3">Consider the following when describing your skills and experience:</p>
+                        <ul className="space-y-3 list-none">
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Have you trained / do you have basic first aid skills?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>What is your sailing experience? (e.g., number of years/miles, types of boats—monohull, catamaran, dinghy and waters sailed: coastal, offshore, ocean crossings?)</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>What certifications or qualifications do you hold? (e.g., RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA equivalents; International Certificate of Competence (ICC); Powerboat Level 2; VHF radio license?)</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)</span>
+                          </li>
+                          {hasOffshoreSailing && (
+                            <li className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span>Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)</span>
+                            </li>
+                          )}
+                          {hasExtremeSailing && (
+                            <>
+                              <li className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span>Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?</span>
+                              </li>
+                              <li className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span>Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)</span>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+                      </>
+                    ),
+                  });
+                  setShowPreferencesSidebar(true);
+                }}
                 rows={4}
                 className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring"
                 placeholder={
