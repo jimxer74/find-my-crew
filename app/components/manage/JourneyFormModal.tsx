@@ -123,6 +123,50 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
 
     const supabase = getSupabaseBrowserClient();
 
+    // Validate: If state is "Published", check that all legs have start_date and end_date
+    if (formData.state === 'Published') {
+      if (journeyId) {
+        // Check existing journey's legs
+        const { data: legsData, error: legsError } = await supabase
+          .from('legs')
+          .select('id, name, start_date, end_date')
+          .eq('journey_id', journeyId);
+
+        if (legsError) {
+          setError('Failed to validate legs: ' + legsError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (legsData && legsData.length > 0) {
+          // Check if any leg is missing start_date or end_date
+          const legsWithMissingDates = legsData.filter(
+            leg => !leg.start_date || !leg.end_date
+          );
+
+          if (legsWithMissingDates.length > 0) {
+            const legNames = legsWithMissingDates.map(leg => leg.name || 'Unnamed leg').join(', ');
+            setError(
+              `Cannot publish journey: The following leg(s) are missing start or end dates: ${legNames}. ` +
+              `Please ensure all legs have both start and end dates before publishing.`
+            );
+            setLoading(false);
+            return;
+          }
+        } else {
+          // No legs exist yet
+          setError('Cannot publish journey: A journey must have at least one leg with start and end dates before it can be published.');
+          setLoading(false);
+          return;
+        }
+      } else {
+        // New journey - can't publish without legs
+        setError('Cannot publish journey: A journey must have at least one leg with start and end dates before it can be published. Please create the journey first, add legs with dates, then publish it.');
+        setLoading(false);
+        return;
+      }
+    }
+
     // Debug: Check authentication
     console.log('=== JOURNEY CREATION DEBUG ===');
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();

@@ -1,18 +1,27 @@
 TODO:
 
-- Add skill requirements to Legs or Journeys or both
-- Refactor waypoints to PostGIST for performance
+
+
 - Create new BrowseLegs functionality where users can very easily find matching legs for their 
 preferences and availabilities
+- Add registration logic and ui
+- Add approval process and ui, could there be AI automated approvals? maybe skipper can enable if wants to 
+possible approval processes (Automated, Manual Approval, Interview Approval)
+
+- Add missing validation logic to journey and leg dates to avoid illogical setups
 - Add registration to legs, journeys
 
 Later:
 
 - Add unit testing framework
+- Extend leg browsing to AI matching of legs and crew
+- Create browse full journeys, a more content driven and visual kind of sales presentation about journey
+- Refactor mobile reponsive components and pages for owner side
 - Add availablility ranges setting for profile, if users want to define their availability already at profile level
 
 Maybe later:
 
+- Add notifications and messaging to users
 - Add skipper / boat specific skills / questions that needs to answered when registration + mgmt ui for this
 - Add feedback functionality for users to give feedback, also add management so that feedback is handled, 
 or not handled (in stars and in text), like not like, improvements, features missing etc. 
