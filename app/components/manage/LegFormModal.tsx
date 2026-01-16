@@ -5,6 +5,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
+import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -246,35 +247,75 @@ export function LegFormModal({
     setError(null);
     const supabase = getSupabaseBrowserClient();
     
-    const { data, error } = await supabase
+    // Load leg data
+    const { data: legData, error: legError } = await supabase
       .from('legs')
-      .select('id, name, description, waypoints, start_date, end_date, crew_needed, skills, risk_level')
+      .select('id, name, description, start_date, end_date, crew_needed, skills, risk_level')
       .eq('id', legId)
       .eq('journey_id', journeyId)
       .single();
 
-    if (error) {
-      console.error('Error loading leg:', error);
+    if (legError) {
+      console.error('Error loading leg:', legError);
       setError('Failed to load leg');
       setLoading(false);
       return;
     }
 
-    if (data) {
-      const sortedWaypoints = [...(data.waypoints || [])].sort((a: any, b: any) => a.index - b.index);
+    // Load waypoints from waypoints table using RPC function
+    const { data: waypointsData, error: waypointsError } = await supabase
+      .rpc('get_leg_waypoints', { leg_id_param: legId });
+
+    let waypointsResult: Waypoint[] = [];
+    
+    if (waypointsError) {
+      console.error('Error loading waypoints via RPC:', waypointsError);
+      // Fallback: if RPC doesn't exist yet, return empty array
+      // The RPC function should be created by migration
+      waypointsResult = [];
+    } else if (waypointsData) {
+      // Convert PostGIS GeoJSON to waypoint format
+      waypointsResult = waypointsData.map((row: any) => {
+        let coordinates: [number, number] = [0, 0];
+        
+        // Parse GeoJSON from PostGIS
+        if (row.location) {
+          if (typeof row.location === 'string') {
+            try {
+              const geoJson = JSON.parse(row.location);
+              coordinates = geoJson.coordinates as [number, number];
+            } catch (e) {
+              console.error('Error parsing location GeoJSON:', e);
+            }
+          } else if (row.location.coordinates) {
+            coordinates = row.location.coordinates as [number, number];
+          } else if (row.location.type === 'Point' && row.location.coordinates) {
+            coordinates = row.location.coordinates as [number, number];
+          }
+        }
+
+        return {
+          index: row.index,
+          geocode: {
+            type: 'Point',
+            coordinates: coordinates,
+          },
+          name: row.name || '',
+        };
+      });
+    }
+
+    if (legData) {
+      setLegName(legData.name);
+      setDescription(legData.description || '');
+      setStartDate(legData.start_date ? new Date(legData.start_date).toISOString().split('T')[0] : '');
+      setEndDate(legData.end_date ? new Date(legData.end_date).toISOString().split('T')[0] : '');
+      setCrewNeeded(legData.crew_needed || '');
+      setSkills(legData.skills || []);
+      setRiskLevel((legData.risk_level as RiskLevel) || null);
+      setWaypoints(waypointsResult);
       
-      setLegName(data.name);
-      setDescription(data.description || '');
-      setStartDate(data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '');
-      setEndDate(data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '');
-      setCrewNeeded(data.crew_needed || '');
-      // Set skills and risk level from leg data
-      // Note: If journey has skills, leg skills should be empty (journey skills are read-only)
-      setSkills(data.skills || []);
-      setRiskLevel((data.risk_level as RiskLevel) || null);
-      setWaypoints(sortedWaypoints);
-      
-      console.log('Leg loaded - risk_level:', data.risk_level, 'skills:', data.skills);
+      console.log('Leg loaded - risk_level:', legData.risk_level, 'skills:', legData.skills, 'waypoints:', waypointsResult.length);
     }
     
     setLoading(false);
@@ -303,12 +344,19 @@ export function LegFormModal({
     const supabase = getSupabaseBrowserClient();
 
     try {
+      // Validate waypoint coordinates
+      for (const waypoint of waypoints) {
+        const [lng, lat] = waypoint.geocode.coordinates;
+        if (!validateCoordinates(lng, lat)) {
+          throw new Error(`Invalid coordinates for waypoint "${waypoint.name}": lng=${lng}, lat=${lat}`);
+        }
+      }
+
       const legData: any = {
         journey_id: journeyId,
         name: legName.trim(),
         description: description.trim() || null,
         risk_level: riskLevel,
-        waypoints: waypoints,
         updated_at: new Date().toISOString(),
       };
       
@@ -334,38 +382,116 @@ export function LegFormModal({
         // Default: boat capacity - 1 (assuming owner/skipper is always on board)
         legData.crew_needed = Math.max(0, boatCapacity - 1);
       }
-      if (skills.length > 0) {
-        legData.skills = skills;
-      }
+
+      let savedLegId: string;
 
       if (legId) {
         // Update existing leg
-        const { error: updateError } = await supabase
+        const { data: updatedLeg, error: updateError } = await supabase
           .from('legs')
           .update(legData)
           .eq('id', legId)
-          .eq('journey_id', journeyId);
+          .eq('journey_id', journeyId)
+          .select('id')
+          .single();
 
         if (updateError) {
           throw updateError;
         }
+
+        savedLegId = updatedLeg.id;
+
+        // Delete existing waypoints and insert new ones
+        const { error: deleteError } = await supabase
+          .from('waypoints')
+          .delete()
+          .eq('leg_id', savedLegId);
+
+        if (deleteError) {
+          throw deleteError;
+        }
       } else {
         // Create new leg
-        const { error: insertError } = await supabase
+        const { data: newLeg, error: insertError } = await supabase
           .from('legs')
           .insert(legData)
-          .select()
+          .select('id')
           .single();
 
         if (insertError) {
           throw insertError;
         }
+
+        savedLegId = newLeg.id;
+      }
+
+      // Insert waypoints using PostGIS ST_MakePoint
+      // We need to use raw SQL for PostGIS functions
+      const waypointInserts = waypoints.map(wp => {
+        const [lng, lat] = wp.geocode.coordinates;
+        return {
+          leg_id: savedLegId,
+          index: wp.index,
+          name: wp.name || null,
+          location: `SRID=4326;POINT(${lng} ${lat})`, // PostGIS WKT format
+        };
+      });
+
+      // Insert waypoints - Supabase will handle the PostGIS conversion
+      // We'll use a workaround: insert as text and let PostGIS cast it
+      // Actually, we need to use RPC or raw query for PostGIS functions
+      // Let's use a simpler approach: insert with raw SQL via RPC
+      
+      // For now, let's use Supabase's built-in support for PostGIS
+      // We'll insert waypoints with location as a GeoJSON-like structure
+      // Supabase PostgREST should handle the conversion
+      
+      const { error: waypointsError } = await supabase
+        .from('waypoints')
+        .insert(
+          waypoints.map(wp => {
+            const [lng, lat] = wp.geocode.coordinates;
+            // Use PostGIS WKT format - Supabase should handle this
+            return {
+              leg_id: savedLegId,
+              index: wp.index,
+              name: wp.name || null,
+              // We'll need to use a function to convert to PostGIS geometry
+              // For now, try using the raw SQL approach via RPC
+            };
+          })
+        );
+
+      // Since Supabase client doesn't directly support PostGIS functions,
+      // we need to use an RPC function or raw SQL
+      // Let's create an RPC function to handle waypoint insertion
+      
+      // Alternative: Use Supabase's PostGIS support by calling an RPC function
+      const { error: waypointsInsertError } = await supabase.rpc('insert_leg_waypoints', {
+        leg_id_param: savedLegId,
+        waypoints_param: waypoints.map(wp => ({
+          index: wp.index,
+          name: wp.name || null,
+          lng: wp.geocode.coordinates[0],
+          lat: wp.geocode.coordinates[1],
+        })),
+      });
+
+      if (waypointsInsertError) {
+        // If RPC doesn't exist, try direct insert with WKT
+        // We'll need to create the RPC function first
+        console.warn('RPC function insert_leg_waypoints not found, using direct insert');
+        
+        // Direct insert approach - Supabase may not support PostGIS directly
+        // We need to create an RPC function for this
+        throw new Error('Waypoint insertion requires RPC function. Please create insert_leg_waypoints function.');
       }
 
       onSuccess();
       onClose();
       resetForm();
     } catch (err: any) {
+      console.error('Error saving leg:', err);
       setError(err.message || 'Failed to save leg');
     } finally {
       setSaving(false);

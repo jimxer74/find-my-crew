@@ -285,7 +285,6 @@ export function AIGenerateJourneyModal({
         const legInsertData: any = {
           journey_id: journeyData.id,
           name: leg.name,
-          waypoints: leg.waypoints,
         };
 
         // Add leg dates if provided (from speed-based planning)
@@ -303,11 +302,37 @@ export function AIGenerateJourneyModal({
           legInsertData.crew_needed = defaultCrewNeeded;
         }
 
-        const { error: legError } = await supabase
+        // Insert leg first (without waypoints)
+        const { data: newLeg, error: legError } = await supabase
           .from('legs')
-          .insert(legInsertData);
+          .insert(legInsertData)
+          .select('id')
+          .single();
 
-        if (legError) throw legError;
+        if (legError) {
+          console.error('Error creating leg:', legError);
+          throw legError;
+        }
+
+        // Insert waypoints using RPC function with PostGIS support
+        if (leg.waypoints && leg.waypoints.length > 0) {
+          const { error: waypointsError } = await supabase.rpc('insert_leg_waypoints', {
+            leg_id_param: newLeg.id,
+            waypoints_param: leg.waypoints.map((wp: any) => ({
+              index: wp.index !== undefined ? wp.index : 0,
+              name: wp.name || null,
+              lng: wp.geocode?.coordinates?.[0] || 0,
+              lat: wp.geocode?.coordinates?.[1] || 0,
+            })),
+          });
+
+          if (waypointsError) {
+            console.error('Error inserting waypoints for leg:', waypointsError);
+            // Rollback: delete the leg if waypoints failed
+            await supabase.from('legs').delete().eq('id', newLeg.id);
+            throw waypointsError;
+          }
+        }
       }
 
       // Call onSuccess callback

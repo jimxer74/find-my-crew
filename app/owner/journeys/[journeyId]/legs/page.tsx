@@ -111,69 +111,119 @@ export default function LegsManagementPage() {
     if (!user || !journeyId) return;
 
     const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase
+    
+    // Load legs data
+    const { data: legsData, error: legsError } = await supabase
       .from('legs')
-      .select('id, name, waypoints, start_date, end_date')
+      .select('id, name, start_date, end_date')
       .eq('journey_id', journeyId)
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error loading legs:', error);
-    } else if (data) {
-      // Convert database format to component format
-      const convertedLegs: Leg[] = data.map((leg: any) => {
-        const waypoints = leg.waypoints || [];
-        const sortedWaypoints = [...waypoints].sort((a: any, b: any) => a.index - b.index);
-        
-        const startWaypoint = sortedWaypoints.find((w: any) => w.index === 0) || null;
-        const endWaypoint = sortedWaypoints.find((w: any, idx: number, arr: any[]) => 
-          idx === arr.length - 1 && w.index > 0
-        ) || null;
-        const intermediateWaypoints = sortedWaypoints.filter((w: any) => 
-          w.index > 0 && w !== endWaypoint
-        );
-
-        return {
-          id: leg.id,
-          startWaypoint: startWaypoint ? {
-            index: startWaypoint.index,
-            geocode: {
-              type: startWaypoint.geocode.type,
-              coordinates: startWaypoint.geocode.coordinates,
-            },
-            name: startWaypoint.name || '',
-          } : null,
-          endWaypoint: endWaypoint ? {
-            index: endWaypoint.index,
-            geocode: {
-              type: endWaypoint.geocode.type,
-              coordinates: endWaypoint.geocode.coordinates,
-            },
-            name: endWaypoint.name || '',
-          } : null,
-          start_date: leg.start_date || null,
-          end_date: leg.end_date || null,
-          intermediateWaypoints: intermediateWaypoints.map((w: any) => ({
-            index: w.index,
-            geocode: {
-              type: w.geocode.type,
-              coordinates: w.geocode.coordinates,
-            },
-            name: w.name || '',
-          })),
-        };
-      });
-      
-      setLegs(convertedLegs);
-      
-      // Fit map to show all legs if map is loaded
-      if (convertedLegs.length > 0 && mapRef.current && mapLoaded) {
-        // Use setTimeout to ensure map is fully ready
-        setTimeout(() => {
-          fitMapToLegs(mapRef.current, convertedLegs);
-        }, 200);
-      }
+    if (legsError) {
+      console.error('Error loading legs:', legsError);
+      setLoading(false);
+      return;
     }
+
+    if (!legsData || legsData.length === 0) {
+      setLegs([]);
+      setLoading(false);
+      return;
+    }
+
+    // Load waypoints for all legs using RPC function
+    const convertedLegs: Leg[] = [];
+
+    for (const leg of legsData) {
+      // Load waypoints for this leg
+      const { data: waypointsData, error: waypointsError } = await supabase
+        .rpc('get_leg_waypoints', { leg_id_param: leg.id });
+
+      let waypoints: Array<{
+        index: number;
+        geocode: { type: string; coordinates: [number, number] };
+        name: string;
+      }> = [];
+
+      if (!waypointsError && waypointsData) {
+        // Convert PostGIS GeoJSON to waypoint format
+        waypoints = waypointsData.map((row: any) => {
+          let coordinates: [number, number] = [0, 0];
+          
+          // Parse GeoJSON from PostGIS
+          if (row.location) {
+            if (typeof row.location === 'string') {
+              try {
+                const geoJson = JSON.parse(row.location);
+                coordinates = geoJson.coordinates as [number, number];
+              } catch (e) {
+                console.error('Error parsing location GeoJSON:', e);
+              }
+            } else if (row.location.coordinates) {
+              coordinates = row.location.coordinates as [number, number];
+            } else if (row.location.type === 'Point' && row.location.coordinates) {
+              coordinates = row.location.coordinates as [number, number];
+            }
+          }
+
+          return {
+            index: row.index,
+            geocode: {
+              type: 'Point',
+              coordinates: coordinates,
+            },
+            name: row.name || '',
+          };
+        }).sort((a, b) => a.index - b.index);
+      }
+
+      const startWaypoint = waypoints.find(w => w.index === 0) || null;
+      const maxIndex = waypoints.length > 0 ? Math.max(...waypoints.map(w => w.index)) : -1;
+      const endWaypoint = waypoints.find(w => w.index === maxIndex) || null;
+      const intermediateWaypoints = waypoints.filter(w => w.index !== 0 && w.index !== maxIndex);
+
+      convertedLegs.push({
+        id: leg.id,
+        startWaypoint: startWaypoint ? {
+          index: startWaypoint.index,
+          geocode: {
+            type: startWaypoint.geocode.type,
+            coordinates: startWaypoint.geocode.coordinates,
+          },
+          name: startWaypoint.name || '',
+        } : null,
+        endWaypoint: endWaypoint ? {
+          index: endWaypoint.index,
+          geocode: {
+            type: endWaypoint.geocode.type,
+            coordinates: endWaypoint.geocode.coordinates,
+          },
+          name: endWaypoint.name || '',
+        } : null,
+        start_date: leg.start_date || null,
+        end_date: leg.end_date || null,
+        intermediateWaypoints: intermediateWaypoints.map(w => ({
+          index: w.index,
+          geocode: {
+            type: w.geocode.type,
+            coordinates: w.geocode.coordinates,
+          },
+          name: w.name || '',
+        })),
+      });
+    }
+      
+    setLegs(convertedLegs);
+    
+    // Fit map to show all legs if map is loaded
+    if (convertedLegs.length > 0 && mapRef.current && mapLoaded) {
+      // Use setTimeout to ensure map is fully ready
+      setTimeout(() => {
+        fitMapToLegs(mapRef.current, convertedLegs);
+      }, 200);
+    }
+    
+    setLoading(false);
   };
 
   // Effect to fit map when both map and legs are ready (only on initial load)
@@ -387,7 +437,6 @@ export default function LegsManagementPage() {
       const legInsertData: any = {
         journey_id: journeyId,
         name: legName,
-        waypoints: allWaypoints,
       };
 
       // Set default crew_needed: boat capacity - 1 (assuming owner/skipper is always on board)
@@ -395,21 +444,39 @@ export default function LegsManagementPage() {
         legInsertData.crew_needed = Math.max(0, boatCapacity - 1);
       }
 
-      const { data, error } = await supabase
+      const { data: newLeg, error: insertError } = await supabase
         .from('legs')
         .insert(legInsertData)
-        .select()
+        .select('id')
         .single();
       
-      if (error) {
-        console.error('Error saving leg to database:', error);
+      if (insertError) {
+        console.error('Error saving leg to database:', insertError);
+        return;
+      }
+
+      // Insert waypoints using RPC function
+      const { error: waypointsError } = await supabase.rpc('insert_leg_waypoints', {
+        leg_id_param: newLeg.id,
+        waypoints_param: allWaypoints.map(wp => ({
+          index: wp.index,
+          name: wp.name || null,
+          lng: wp.geocode.coordinates[0],
+          lat: wp.geocode.coordinates[1],
+        })),
+      });
+
+      if (waypointsError) {
+        console.error('Error saving waypoints:', waypointsError);
+        // Rollback: delete the leg if waypoints failed
+        await supabase.from('legs').delete().eq('id', newLeg.id);
         return;
       }
       
       // Update local state with database ID
       const updatedLegs = [...legs];
       updatedLegs[activeLegIndex] = {
-        id: data.id,
+        id: newLeg.id,
         startWaypoint: activeLeg.startWaypoint,
         endWaypoint: endWaypoint,
         intermediateWaypoints: activeLeg.intermediateWaypoints,
@@ -424,16 +491,31 @@ export default function LegsManagementPage() {
       }
     } else {
       // Existing leg - update in database
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('legs')
         .update({
           name: legName,
-          waypoints: allWaypoints,
         })
         .eq('id', activeLeg.id);
       
-      if (error) {
-        console.error('Error updating leg in database:', error);
+      if (updateError) {
+        console.error('Error updating leg in database:', updateError);
+        return;
+      }
+
+      // Update waypoints using RPC function
+      const { error: waypointsError } = await supabase.rpc('insert_leg_waypoints', {
+        leg_id_param: activeLeg.id,
+        waypoints_param: allWaypoints.map(wp => ({
+          index: wp.index,
+          name: wp.name || null,
+          lng: wp.geocode.coordinates[0],
+          lat: wp.geocode.coordinates[1],
+        })),
+      });
+
+      if (waypointsError) {
+        console.error('Error updating waypoints:', waypointsError);
         return;
       }
       
