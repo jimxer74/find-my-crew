@@ -1,0 +1,53 @@
+{
+  "general": [
+    {
+      "name": "first_aid",
+      "infoText": "Have you trained / do you have basic first aid skills?",
+      "startingSentence": "I have basic first aid training: "
+    },
+    {
+      "name": "sailing_experience",
+      "infoText": "What is your sailing experience? (e.g., number of years/miles, types of boats—monohull, catamaran, dinghy and waters sailed: coastal, offshore, ocean crossings?)",
+      "startingSentence": "My sailing experience includes: "
+    },
+    {
+      "name": "certifications",
+      "infoText": "What certifications or qualifications do you hold? (e.g., RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA equivalents; International Certificate of Competence (ICC); Powerboat Level 2; VHF radio license?)",
+      "startingSentence": "I hold the following certifications: "
+    },
+    {
+      "name": "navigation",
+      "infoText": "What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)",
+      "startingSentence": "My navigation experience includes: "
+    },
+    {
+      "name": "cooking",
+      "infoText": "Do you have cooking skills or motivation to cook if needed?",
+      "startingSentence": "Regarding cooking skills: "
+    },
+    {
+      "name": "technical_skills",
+      "infoText": "Do you have engine, electrical or other technically oriented skills?",
+      "startingSentence": "My technical skills include: "
+    }
+  ],
+  "offshore": [
+    {
+      "name": "night_sailing",
+      "infoText": "Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)",
+      "startingSentence": "Regarding night sailing and watch systems: "
+    }
+  ],
+  "extreme": [
+    {
+      "name": "survival_skills",
+      "infoText": "Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?",
+      "startingSentence": "I have training in survival skills: "
+    },
+    {
+      "name": "firearms_training",
+      "infoText": "Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)",
+      "startingSentence": "Regarding firearms training and polar bear deterrents: "
+    }
+  ]
+}

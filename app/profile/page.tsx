@@ -8,6 +8,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
+import skillsConfig from '@/app/config/skills-config.json';
 
 type Profile = {
   id: string;
@@ -283,6 +284,26 @@ export default function ProfilePage() {
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
     </svg>
+  );
+
+  // Helper function to render a skill bullet point
+  const renderSkillItem = (skill: { name: string; infoText: string; startingSentence: string }, onAppend: (text: string) => void) => (
+    <li key={skill.name} className="relative group">
+      <div className="flex items-start">
+        <span className="mr-2 text-primary">•</span>
+        <span className={bulletPointTextClass}>{skill.infoText}</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => onAppend(skill.startingSentence)}
+        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+        title="Add to text field"
+      >
+        <div className={addButtonClass}>
+          {addButtonIcon}
+        </div>
+      </button>
+    </li>
   );
 
   if (authLoading || loading) {
@@ -728,156 +749,14 @@ export default function ProfilePage() {
                       <>
                         <p className="font-medium mb-3">Consider the following when describing your skills and experience:</p>
                         <ul className="space-y-3 list-none">
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Have you trained / do you have basic first aid skills?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('I have basic first aid training: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>What is your sailing experience? (e.g., number of years/miles, types of boats—monohull, catamaran, dinghy and waters sailed: coastal, offshore, ocean crossings?)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('My sailing experience includes: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>What certifications or qualifications do you hold? (e.g., RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA equivalents; International Certificate of Competence (ICC); Powerboat Level 2; VHF radio license?)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('I hold the following certifications: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('My navigation experience includes: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Do you have cooking skills or motivation to cook if needed?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('Regarding cooking skills: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Do you have engine, electrical or other technically oriented skills?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToExperience('My technical skills include: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          {hasOffshoreSailing && (
-                            <li className="relative group">
-                              <div className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span className={bulletPointTextClass}>Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => appendToExperience('Regarding night sailing and watch systems: ')}
-                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                title="Add to text field"
-                              >
-                                <div className={addButtonClass}>
-                                  {addButtonIcon}
-                                </div>
-                              </button>
-                            </li>
-                          )}
-                          {hasExtremeSailing && (
-                            <>
-                              <li className="relative group">
-                                <div className="flex items-start">
-                                  <span className="mr-2 text-primary">•</span>
-                                  <span className={bulletPointTextClass}>Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => appendToExperience('I have training in survival skills: ')}
-                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                  title="Add to text field"
-                                >
-                                  <div className={addButtonClass}>
-                                    {addButtonIcon}
-                                  </div>
-                                </button>
-                              </li>
-                              <li className="relative group">
-                                <div className="flex items-start">
-                                  <span className="mr-2 text-primary">•</span>
-                                  <span className={bulletPointTextClass}>Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => appendToExperience('Regarding firearms training and polar bear deterrents: ')}
-                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                  title="Add to text field"
-                                >
-                                  <div className={addButtonClass}>
-                                    {addButtonIcon}
-                                  </div>
-                                </button>
-                              </li>
-                            </>
-                          )}
+                          {/* General skills - always shown */}
+                          {skillsConfig.general.map(skill => renderSkillItem(skill, appendToExperience))}
+                          
+                          {/* Offshore sailing skills */}
+                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill, appendToExperience))}
+                          
+                          {/* Extreme sailing skills */}
+                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill, appendToExperience))}
                         </ul>
                       </>
                     ),
