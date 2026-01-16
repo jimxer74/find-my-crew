@@ -106,7 +106,7 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
-              src="/seaman2.png"
+              src="/Beginner.png"
               alt="Beginner"
               fill
               className="object-contain"
@@ -129,7 +129,7 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
-              src="/seaman2.png"
+              src="/Competent_crew.png"
               alt="Competent Crew"
               fill
               className="object-contain"
@@ -152,7 +152,7 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
-              src="/seaman2.png"
+              src="/Coastal_skipper.png"
               alt="Coastal Skipper"
               fill
               className="object-contain"
@@ -175,7 +175,7 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
-              src="/seaman2.png"
+              src="/Offshore_skipper.png"
               alt="Offshore Skipper"
               fill
               className="object-contain"
