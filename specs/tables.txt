@@ -7,6 +7,10 @@ Database tables
 -- Enable UUID generation (usually already enabled in Supabase)
 create extension if not exists "pgcrypto";
 
+-- Enable PostGIS for geospatial support (required for waypoints spatial queries)
+-- See: migrations/enable_postgis.sql
+create extension if not exists "postgis";
+
 
 -- ============================================================================
 -- ENUM TYPES
@@ -243,11 +247,11 @@ create table if not exists public.legs (
   journey_id   uuid not null references public.journeys (id) on delete cascade,
   name         text not null,
   description  text,  -- Additional descriptive text for the leg
-  waypoints    jsonb default '[]',  -- Array of waypoints: [{"index": 0, "geocode": {"type": "Point", "coordinates": [lng, lat]}, "name": "Location name"}, ...]
+  bbox         geometry(Polygon, 4326),  -- Bounding box of all waypoints, pre-calculated for fast viewport queries (PostGIS)
   start_date   timestamptz,
   end_date     timestamptz,
   crew_needed  int,
-  skills       text[] default '{}',  -- simple array of skill tags
+  skills       text[] default '{}',  -- simple array of skill tags (leg-specific skills, not journey skills)
   risk_level   risk_level,  -- Risk level for this leg: Coastal sailing, Offshore sailing, or Extreme sailing (single selection)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
@@ -255,7 +259,9 @@ create table if not exists public.legs (
 
 -- Indexes
 create index if not exists legs_journey_id_idx on public.legs (journey_id);
-create index if not exists legs_waypoints_idx on public.legs using gin (waypoints);
+create index if not exists legs_bbox_idx on public.legs using gist (bbox);  -- GIST spatial index for viewport queries
+
+-- Note: Waypoints are now stored in the normalized waypoints table (see waypoints table definition below)
 
 -- Enable Row Level Security
 alter table legs enable row level security;
@@ -294,6 +300,86 @@ using (
     select 1 from journeys
     join boats on boats.id = journeys.boat_id
     where journeys.id = legs.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+
+-- ============================================================================
+-- TABLE: waypoints
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.waypoints (
+  id           uuid primary key default gen_random_uuid(),
+  leg_id       uuid not null references public.legs (id) on delete cascade,
+  index        integer not null,  -- Order within leg (0 = start, 1+ = waypoints, last = end)
+  name         text,  -- Location name
+  location     geometry(Point, 4326) not null,  -- PostGIS geometry (lng, lat) in WGS84
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  constraint waypoints_leg_index_unique unique (leg_id, index)
+);
+
+-- Indexes
+create index if not exists waypoints_location_idx on public.waypoints using gist (location);  -- GIST spatial index for geospatial queries
+create index if not exists waypoints_leg_id_idx on public.waypoints (leg_id);  -- Index for fast joins with legs
+create index if not exists waypoints_leg_id_index_idx on public.waypoints (leg_id, index);  -- Composite index for ordered retrieval
+
+-- Comments
+comment on table public.waypoints is 'Waypoints for journey legs, stored as PostGIS geometry for efficient spatial queries';
+comment on column public.waypoints.location is 'PostGIS Point geometry in WGS84 (SRID 4326). Coordinates are stored as [lng, lat]';
+comment on column public.waypoints.index is 'Order of waypoint within leg: 0 = start, 1+ = intermediate waypoints, last = end';
+
+-- Triggers
+-- Automatic bbox update: see migrations/create_bbox_update_trigger.sql
+-- The bbox column in legs table is automatically updated when waypoints are modified
+
+-- Enable Row Level Security
+alter table waypoints enable row level security;
+
+-- Policies (inherit from legs - waypoints are accessible if the leg is accessible)
+create policy "Waypoints are viewable by all"
+on waypoints for select
+using (
+  exists (
+    select 1 from legs
+    where legs.id = waypoints.leg_id
+  )
+);
+
+create policy "Owners can insert waypoints for their legs"
+on waypoints for insert
+with check (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = waypoints.leg_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can update waypoints for their legs"
+on waypoints for update
+using (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = waypoints.leg_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+create policy "Owners can delete waypoints for their legs"
+on waypoints for delete
+using (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = waypoints.leg_id
     and boats.owner_id = auth.uid()
   )
 );
