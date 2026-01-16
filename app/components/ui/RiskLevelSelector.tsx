@@ -189,7 +189,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
         const allInfo = newValue.map(level => getRiskLevelInfo(level));
         const combinedTitle = newValue.length === 1 
           ? allInfo[0].title 
-          : `Selected Risk Levels (${newValue.length})`;
+          : allInfo[0].title; // Use first title instead of "Selected Risk Levels"
         const combinedContent = (
           <div className="space-y-4">
             {allInfo.map((info, index) => (

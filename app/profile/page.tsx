@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -39,6 +39,25 @@ export default function ProfilePage() {
     title: string;
     content: React.ReactNode;
   } | null>(null);
+  const sidebarScrollRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top when sidebar content changes (for Skill Level and Risk Level selections)
+  useEffect(() => {
+    if (showPreferencesSidebar && sidebarContent && sidebarScrollRef.current) {
+      // Scroll for Skill Level and Risk Level selections
+      const skillLevelTitles = ['Beginner', 'Confident Crew', 'Competent Coastal Skipper', 'Offshore Skipper'];
+      const riskLevelTitles = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+      if (skillLevelTitles.includes(sidebarContent.title) || riskLevelTitles.includes(sidebarContent.title)) {
+        // Small delay to ensure sidebar is fully rendered
+        const timer = setTimeout(() => {
+          if (sidebarScrollRef.current) {
+            sidebarScrollRef.current.scrollTop = 0;
+          }
+        }, 50);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [showPreferencesSidebar, sidebarContent]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -234,6 +253,29 @@ export default function ProfilePage() {
     });
   };
 
+  const appendToExperience = (text: string) => {
+    setFormData((prev) => {
+      const currentValue = prev.experience || '';
+      const separator = currentValue.trim() && !currentValue.endsWith('\n') ? '\n\n' : '';
+      const newValue = currentValue + separator + text;
+      
+      // Focus the textarea and set cursor position after state update
+      setTimeout(() => {
+        const textarea = document.getElementById('experience') as HTMLTextAreaElement;
+        if (textarea) {
+          textarea.focus();
+          // Move cursor to end of appended text
+          textarea.setSelectionRange(newValue.length, newValue.length);
+        }
+      }, 0);
+      
+      return {
+        ...prev,
+        experience: newValue,
+      };
+    });
+  };
+
   // Reusable styles for bullet point items with add button
   const bulletPointTextClass = "flex-1 group-hover:opacity-70 transition-opacity";
   const addButtonClass = "bg-white text-gray-900 rounded-full p-2 shadow-lg border border-black";
@@ -264,19 +306,24 @@ export default function ProfilePage() {
             } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden h-full`}
           >
             {showPreferencesSidebar && (
-              <div 
+              <div
+                ref={sidebarScrollRef}
                 className="flex-1 overflow-y-auto p-6 profile-sidebar-scroll"
                 style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
                 }}
               >
-                {/* Header */}
-                <div className="mb-4">
-                  <h3 className="text-lg font-bold text-card-foreground">
-                    {sidebarContent.title}
-                  </h3>
-                </div>
+                {/* Header - only show for non-Risk Level content */}
+                {sidebarContent.title !== 'Coastal sailing' && 
+                 sidebarContent.title !== 'Offshore sailing' && 
+                 sidebarContent.title !== 'Extreme sailing' && (
+                  <div className="mb-4">
+                    <h3 className="text-lg font-bold text-card-foreground">
+                      {sidebarContent.title}
+                    </h3>
+                  </div>
+                )}
 
                 {/* Content */}
                 <div className="space-y-3 text-sm text-foreground">
@@ -419,6 +466,12 @@ export default function ProfilePage() {
                 onInfoClick={(title, content) => {
                   setSidebarContent({ title, content });
                   setShowPreferencesSidebar(true);
+                  // Scroll to top of sidebar after opening
+                  setTimeout(() => {
+                    if (sidebarScrollRef.current) {
+                      sidebarScrollRef.current.scrollTop = 0;
+                    }
+                  }, 100);
                 }}
               />
             </div>
@@ -432,6 +485,12 @@ export default function ProfilePage() {
                   onInfoClick={(title, content) => {
                     setSidebarContent({ title, content });
                     setShowPreferencesSidebar(true);
+                    // Scroll to top of sidebar after opening
+                    setTimeout(() => {
+                      if (sidebarScrollRef.current) {
+                        sidebarScrollRef.current.scrollTop = 0;
+                      }
+                    }, 100);
                   }}
                   onClose={() => {
                     setShowPreferencesSidebar(false);
@@ -655,37 +714,121 @@ export default function ProfilePage() {
                       <>
                         <p className="font-medium mb-3">Consider the following when describing your skills and experience:</p>
                         <ul className="space-y-3 list-none">
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>Have you trained / do you have basic first aid skills?</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Have you trained / do you have basic first aid skills?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('I have basic first aid training: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>What is your sailing experience? (e.g., number of years/miles, types of boats—monohull, catamaran, dinghy and waters sailed: coastal, offshore, ocean crossings?)</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>What is your sailing experience? (e.g., number of years/miles, types of boats—monohull, catamaran, dinghy and waters sailed: coastal, offshore, ocean crossings?)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('My sailing experience includes: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>What certifications or qualifications do you hold? (e.g., RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA equivalents; International Certificate of Competence (ICC); Powerboat Level 2; VHF radio license?)</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>What certifications or qualifications do you hold? (e.g., RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA equivalents; International Certificate of Competence (ICC); Powerboat Level 2; VHF radio license?)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('I hold the following certifications: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
-                          <li className="flex items-start">
-                            <span className="mr-2 text-primary">•</span>
-                            <span>What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)</span>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('My navigation experience includes: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
                           </li>
                           {hasOffshoreSailing && (
-                            <li className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span>Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)</span>
+                            <li className="relative group">
+                              <div className="flex items-start">
+                                <span className="mr-2 text-primary">•</span>
+                                <span className={bulletPointTextClass}>Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => appendToExperience('Regarding night sailing and watch systems: ')}
+                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                title="Add to text field"
+                              >
+                                <div className={addButtonClass}>
+                                  {addButtonIcon}
+                                </div>
+                              </button>
                             </li>
                           )}
                           {hasExtremeSailing && (
                             <>
-                              <li className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span>Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?</span>
+                              <li className="relative group">
+                                <div className="flex items-start">
+                                  <span className="mr-2 text-primary">•</span>
+                                  <span className={bulletPointTextClass}>Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => appendToExperience('I have training in survival skills: ')}
+                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                  title="Add to text field"
+                                >
+                                  <div className={addButtonClass}>
+                                    {addButtonIcon}
+                                  </div>
+                                </button>
                               </li>
-                              <li className="flex items-start">
-                                <span className="mr-2 text-primary">•</span>
-                                <span>Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)</span>
+                              <li className="relative group">
+                                <div className="flex items-start">
+                                  <span className="mr-2 text-primary">•</span>
+                                  <span className={bulletPointTextClass}>Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)</span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => appendToExperience('Regarding firearms training and polar bear deterrents: ')}
+                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                                  title="Add to text field"
+                                >
+                                  <div className={addButtonClass}>
+                                    {addButtonIcon}
+                                  </div>
+                                </button>
                               </li>
                             </>
                           )}
