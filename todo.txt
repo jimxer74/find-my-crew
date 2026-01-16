@@ -1,11 +1,20 @@
 TODO:
 
+- Add skill requirements to Legs or Journeys or both
 - Refactor waypoints to PostGIST for performance
-- Add type of sailing preferences to profile
-
+- Create new BrowseLegs functionality where users can very easily find matching legs for their 
+preferences and availabilities
+- Add registration to legs, journeys
 
 
 Later:
 
 - Add unit testing framework
-- 
+- Add availablility ranges setting for profile, if users want to define their availability already at profile level
+- Add Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to insight to chance their plans etc. 
+- Add feedback functionality for users to give feedback, also add management so that feedback is handled, 
+or not handled (in stars and in text), like not like, improvements, features missing etc. 
+--> make AI to analyze and propose new features automatically based on feedback
+- Add interview process to registration and interview scheduler
+
+

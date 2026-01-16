@@ -500,7 +500,13 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Sailing Preferences */}
+            {/* Sailing Preferences - Only visible for crew members */}
+            {(() => {
+              const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
+              const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
+              const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
+              return role === 'crew';
+            })() && (
             <div>
               <label htmlFor="sailing_preferences" className="block text-sm font-medium text-foreground mb-2">
                 Motivation and Sailing Preferences
@@ -694,6 +700,7 @@ export default function ProfilePage() {
                 placeholder="Describe your motivation and preferences, what draws you to the sailing and what do you like?"
               />
             </div>
+            )}
 
             <div>
               <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
