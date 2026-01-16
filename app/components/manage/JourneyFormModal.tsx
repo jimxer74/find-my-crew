@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
+import skillsConfig from '@/app/config/skills-config.json';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
@@ -14,6 +15,7 @@ type Journey = {
   end_date: string;
   description: string;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
+  skills: string[];
   state: JourneyState;
 };
 
@@ -38,6 +40,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     end_date: '',
     description: '',
     risk_level: [],
+    skills: [],
     state: 'In planning',
   });
   const [boats, setBoats] = useState<Boat[]>([]);
@@ -60,6 +63,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           end_date: '',
           description: '',
           risk_level: [],
+          skills: [],
           state: 'In planning',
         });
         setError(null);
@@ -105,6 +109,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
         risk_level: data.risk_level || [],
+        skills: data.skills || [],
         state: data.state || 'In planning',
       });
     }
@@ -172,6 +177,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       end_date: formData.end_date || null,
       description: formData.description || null,
       risk_level: formData.risk_level || [],
+      skills: formData.skills || [],
       state: formData.state,
       updated_at: new Date().toISOString(),
     };
@@ -341,6 +347,49 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                     value={formData.risk_level}
                     onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
                   />
+
+                  {/* Skills */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Required Skills
+                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      {(() => {
+                        // Extract all unique skill names from all categories
+                        const allSkills = [
+                          ...skillsConfig.general,
+                          ...skillsConfig.offshore,
+                          ...skillsConfig.extreme
+                        ];
+                        // Convert snake_case to Title Case for display
+                        const formatSkillName = (name: string) => {
+                          return name
+                            .split('_')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                        };
+                        return allSkills.map((skill) => {
+                          const displayName = formatSkillName(skill.name);
+                          return (
+                            <label key={skill.name} className="flex items-center gap-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.skills.includes(displayName)}
+                                onChange={(e) => {
+                                  const newSkills = e.target.checked
+                                    ? [...formData.skills, displayName]
+                                    : formData.skills.filter(s => s !== displayName);
+                                  setFormData(prev => ({ ...prev, skills: newSkills }));
+                                }}
+                                className="rounded border-border"
+                              />
+                              <span className="text-sm text-foreground">{displayName}</span>
+                            </label>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
 
                   {/* Start Date */}
                   <div>

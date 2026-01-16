@@ -170,6 +170,7 @@ create table if not exists public.journeys (
   end_date     date,
   description  text,
   risk_level   risk_level[] default '{}',
+  skills       text[] default '{}',  -- Required skills for this journey (array of skill names)
   state        journey_state not null default 'In planning',
   is_ai_generated boolean default false,
   ai_prompt    text,
@@ -247,6 +248,7 @@ create table if not exists public.legs (
   end_date     timestamptz,
   crew_needed  int,
   skills       text[] default '{}',  -- simple array of skill tags
+  risk_level   risk_level,  -- Risk level for this leg: Coastal sailing, Offshore sailing, or Extreme sailing (single selection)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );

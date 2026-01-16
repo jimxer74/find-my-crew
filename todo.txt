@@ -9,7 +9,6 @@ preferences and availabilities
 Later:
 
 - Add unit testing framework
-- Refactor the skills in own database table or just a JSON configuration file (and create management ui for it)
 - Add availablility ranges setting for profile, if users want to define their availability already at profile level
 
 Maybe later:

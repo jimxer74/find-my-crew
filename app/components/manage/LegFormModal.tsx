@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
+import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import skillsConfig from '@/app/config/skills-config.json';
+
+type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
 type Waypoint = {
   index: number;
@@ -32,6 +36,8 @@ export function LegFormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [boatCapacity, setBoatCapacity] = useState<number | null>(null);
+  const [journeyDefaultsLoaded, setJourneyDefaultsLoaded] = useState(false);
+  const [journeyDefaultsApplied, setJourneyDefaultsApplied] = useState(false);
 
   // Form state
   const [legName, setLegName] = useState('');
@@ -40,40 +46,132 @@ export function LegFormModal({
   const [endDate, setEndDate] = useState('');
   const [crewNeeded, setCrewNeeded] = useState<number | ''>('');
   const [skills, setSkills] = useState<string[]>([]);
+  const [riskLevel, setRiskLevel] = useState<RiskLevel | null>(null);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [editingWaypointIndex, setEditingWaypointIndex] = useState<number | null>(null);
 
   // Load boat capacity and leg data when modal opens
   useEffect(() => {
     if (isOpen) {
-      loadBoatCapacity();
+      setJourneyDefaultsApplied(false); // Reset flag when modal opens
       if (legId) {
+        // Editing existing leg - load leg data first, then load journey data for capacity
         loadLeg();
+        loadBoatCapacity(legId); // Load journey data (defaults will be applied by useEffect if needed)
       } else {
-        // Reset form for new leg
+        // Creating new leg - reset form first, then load journey defaults
         resetForm();
+        // Load journey defaults after a brief delay to ensure state is reset
+        const timer = setTimeout(() => {
+          loadBoatCapacity(null); // This will set risk level and skills from journey
+        }, 50);
+        return () => clearTimeout(timer);
       }
     }
   }, [isOpen, legId, journeyId]);
 
-  const loadBoatCapacity = async () => {
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('Risk level state changed to:', riskLevel);
+  }, [riskLevel]);
+
+  useEffect(() => {
+    console.log('Skills state changed to:', skills);
+  }, [skills]);
+
+  // Set journey defaults for existing legs that don't have values
+  useEffect(() => {
+    if (isOpen && legId && journeyDefaultsLoaded && (!riskLevel || skills.length === 0)) {
+      console.log('Leg loaded but missing values, loading journey defaults');
+      loadBoatCapacity(legId);
+    }
+  }, [isOpen, legId, riskLevel, skills, journeyDefaultsLoaded]);
+
+  const loadBoatCapacity = async (currentLegId: string | null) => {
     const supabase = getSupabaseBrowserClient();
     
-    // Get journey's boat capacity
+    // Get journey's boat capacity, risk level, and skills
     const { data: journeyData, error: journeyError } = await supabase
       .from('journeys')
-      .select('boat_id, boats(capacity)')
+      .select('boat_id, risk_level, skills, boats(capacity)')
       .eq('id', journeyId)
       .single();
 
     if (journeyError) {
-      console.error('Error loading boat capacity:', journeyError);
+      console.error('Error loading journey data:', journeyError);
       return;
     }
 
-    if (journeyData && (journeyData as any).boats) {
-      const capacity = (journeyData as any).boats.capacity;
-      setBoatCapacity(capacity);
+    console.log('Journey data loaded:', journeyData);
+    console.log('Current legId parameter:', currentLegId);
+    console.log('Journey risk_level:', (journeyData as any)?.risk_level);
+    console.log('Journey skills:', (journeyData as any)?.skills);
+
+    if (journeyData) {
+      if ((journeyData as any).boats) {
+        const capacity = (journeyData as any).boats.capacity;
+        setBoatCapacity(capacity);
+      }
+      
+      // Always check current state using functional updates to see if we need to set defaults
+      // This works for both new legs and existing legs that don't have values
+      setRiskLevel(currentRiskLevel => {
+        setSkills(currentSkills => {
+          const shouldSetRiskLevel = !currentRiskLevel;
+          const shouldSetSkills = !currentSkills || currentSkills.length === 0;
+          const shouldSetDefaults = !currentLegId || shouldSetRiskLevel || shouldSetSkills;
+          
+          if (shouldSetDefaults) {
+            console.log('Setting defaults from journey. New leg:', !currentLegId, 'Missing risk level:', shouldSetRiskLevel, 'Missing skills:', shouldSetSkills);
+            
+            // Set default risk level from journey (use first one if array) - only if not already set
+            if (shouldSetRiskLevel) {
+              const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
+              console.log('Journey risk levels:', journeyRiskLevels);
+              if (journeyRiskLevels && journeyRiskLevels.length > 0) {
+                const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
+                console.log('Setting risk level to:', defaultRiskLevel);
+                if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
+                  console.log('Calling setRiskLevel with:', defaultRiskLevel);
+                  // Set risk level using setTimeout to avoid nested state updates
+                  setTimeout(() => {
+                    setRiskLevel(defaultRiskLevel);
+                  }, 0);
+                } else {
+                  console.log('Risk level validation failed:', defaultRiskLevel);
+                }
+              }
+            }
+
+            // Set default skills from journey - only if not already set
+            if (shouldSetSkills) {
+              const journeySkills = (journeyData as any).skills as string[] | null;
+              console.log('Journey skills:', journeySkills);
+              if (journeySkills && journeySkills.length > 0) {
+                console.log('Setting skills to:', journeySkills);
+                const newSkills = [...journeySkills];
+                console.log('New skills to set:', newSkills);
+                // Return new skills array
+                return newSkills;
+              } else {
+                console.log('No journey skills to set');
+                return currentSkills;
+              }
+            }
+            
+            return currentSkills;
+          } else {
+            console.log('Leg already has risk level and skills, not setting defaults');
+            return currentSkills;
+          }
+        });
+        
+        return currentRiskLevel;
+      });
+      
+      // Mark that defaults have been loaded
+      setJourneyDefaultsLoaded(true);
+      console.log('Journey defaults loaded flag set to true');
     }
   };
 
@@ -83,10 +181,12 @@ export function LegFormModal({
     setStartDate('');
     setEndDate('');
     setCrewNeeded('');
-    setSkills([]);
     setWaypoints([]);
     setEditingWaypointIndex(null);
     setError(null);
+    // Reset riskLevel and skills - they will be set from journey default in loadBoatCapacity
+    setRiskLevel(null);
+    setSkills([]);
   };
 
   const loadLeg = async () => {
@@ -98,7 +198,7 @@ export function LegFormModal({
     
     const { data, error } = await supabase
       .from('legs')
-      .select('id, name, description, waypoints, start_date, end_date, crew_needed, skills')
+      .select('id, name, description, waypoints, start_date, end_date, crew_needed, skills, risk_level')
       .eq('id', legId)
       .eq('journey_id', journeyId)
       .single();
@@ -118,8 +218,12 @@ export function LegFormModal({
       setStartDate(data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '');
       setEndDate(data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '');
       setCrewNeeded(data.crew_needed || '');
+      // Set skills and risk level from leg data (may be null/empty, in which case journey defaults will be used)
       setSkills(data.skills || []);
+      setRiskLevel((data.risk_level as RiskLevel) || null);
       setWaypoints(sortedWaypoints);
+      
+      console.log('Leg loaded - risk_level:', data.risk_level, 'skills:', data.skills);
     }
     
     setLoading(false);
@@ -137,6 +241,11 @@ export function LegFormModal({
       return;
     }
 
+    if (!riskLevel) {
+      setError('Risk level is required');
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
@@ -147,6 +256,7 @@ export function LegFormModal({
         journey_id: journeyId,
         name: legName.trim(),
         description: description.trim() || null,
+        risk_level: riskLevel,
         waypoints: waypoints,
         updated_at: new Date().toISOString(),
       };
@@ -397,23 +507,94 @@ export function LegFormModal({
                   />
                 </div>
 
+                {/* Risk Level */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Risk Level
+                  </label>
+                  <div className="flex flex-wrap gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="risk-level"
+                        value="Coastal sailing"
+                        checked={riskLevel === 'Coastal sailing'}
+                        onChange={() => setRiskLevel('Coastal sailing')}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">{riskLevelsConfig.coastal_sailing.title}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="risk-level"
+                        value="Offshore sailing"
+                        checked={riskLevel === 'Offshore sailing'}
+                        onChange={() => setRiskLevel('Offshore sailing')}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">{riskLevelsConfig.offshore_sailing.title}</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="risk-level"
+                        value="Extreme sailing"
+                        checked={riskLevel === 'Extreme sailing'}
+                        onChange={() => setRiskLevel('Extreme sailing')}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
+                      />
+                      <span className="text-sm text-foreground">{riskLevelsConfig.extreme_sailing.title}</span>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Skills */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Required Skills
+                    Required Skills {skills.length > 0 && `(${skills.length} selected)`}
                   </label>
+                  {/* Debug: Show current skills state */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="text-xs text-muted-foreground mb-2">
+                      Debug - Skills state: {JSON.stringify(skills)}
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-3">
-                    {['Navigation', 'Cooking', 'Engine Maintenance', 'Sailing', 'First Aid', 'Diving'].map((skill) => (
-                      <label key={skill} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={skills.includes(skill)}
-                          onChange={(e) => handleSkillChange(skill, e.target.checked)}
-                          className="rounded border-border"
-                        />
-                        <span className="text-sm text-foreground">{skill}</span>
-                      </label>
-                    ))}
+                    {(() => {
+                      // Extract all unique skill names from all categories
+                      const allSkills = [
+                        ...skillsConfig.general,
+                        ...skillsConfig.offshore,
+                        ...skillsConfig.extreme
+                      ];
+                      // Convert snake_case to Title Case for display
+                      const formatSkillName = (name: string) => {
+                        return name
+                          .split('_')
+                          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(' ');
+                      };
+                      return allSkills.map((skill) => {
+                        const displayName = formatSkillName(skill.name);
+                        const isChecked = skills.includes(displayName);
+                        // Debug log for each checkbox
+                        if (process.env.NODE_ENV === 'development' && skills.length > 0) {
+                          console.log(`Skill "${displayName}": checked=${isChecked}, in skills array=${skills.includes(displayName)}`);
+                        }
+                        return (
+                          <label key={skill.name} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => handleSkillChange(displayName, e.target.checked)}
+                              className="rounded border-border"
+                            />
+                            <span className="text-sm text-foreground">{displayName}</span>
+                          </label>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 
