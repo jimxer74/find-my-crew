@@ -38,6 +38,7 @@ export function LegFormModal({
   const [boatCapacity, setBoatCapacity] = useState<number | null>(null);
   const [journeyDefaultsLoaded, setJourneyDefaultsLoaded] = useState(false);
   const [journeyDefaultsApplied, setJourneyDefaultsApplied] = useState(false);
+  const [journeySkills, setJourneySkills] = useState<string[] | null>(null); // Journey-level skills (if any)
 
   // Form state
   const [legName, setLegName] = useState('');
@@ -54,10 +55,14 @@ export function LegFormModal({
   useEffect(() => {
     if (isOpen) {
       setJourneyDefaultsApplied(false); // Reset flag when modal opens
+      setJourneySkills(null); // Reset journey skills when modal opens
       if (legId) {
-        // Editing existing leg - load leg data first, then load journey data for capacity
-        loadLeg();
-        loadBoatCapacity(legId); // Load journey data (defaults will be applied by useEffect if needed)
+        // Editing existing leg - load journey data first to get journey skills, then load leg data
+        // This ensures journeySkills state is set before leg data potentially overwrites it
+        loadBoatCapacity(legId).then(() => {
+          // After journey data is loaded, load leg data
+          loadLeg();
+        });
       } else {
         // Creating new leg - reset form first, then load journey defaults
         resetForm();
@@ -79,13 +84,49 @@ export function LegFormModal({
     console.log('Skills state changed to:', skills);
   }, [skills]);
 
+  useEffect(() => {
+    console.log('Journey skills state changed to:', journeySkills);
+  }, [journeySkills]);
+
   // Set journey defaults for existing legs that don't have values
   useEffect(() => {
-    if (isOpen && legId && journeyDefaultsLoaded && (!riskLevel || skills.length === 0)) {
-      console.log('Leg loaded but missing values, loading journey defaults');
-      loadBoatCapacity(legId);
+    if (isOpen && legId && journeyDefaultsLoaded && !journeyDefaultsApplied && (!riskLevel || (skills.length === 0 && (!journeySkills || journeySkills.length === 0)))) {
+      console.log('Leg loaded but missing values, applying journey defaults');
+      setJourneyDefaultsApplied(true);
+      // Load journey data and apply defaults
+      const applyDefaults = async () => {
+        const supabase = getSupabaseBrowserClient();
+        const { data: journeyData } = await supabase
+          .from('journeys')
+          .select('risk_level, skills')
+          .eq('id', journeyId)
+          .single();
+        
+        if (journeyData) {
+          // Set risk level if missing
+          if (!riskLevel) {
+            const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
+            if (journeyRiskLevels && journeyRiskLevels.length > 0) {
+              const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
+              if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
+                console.log('Applying journey risk level:', defaultRiskLevel);
+                setRiskLevel(defaultRiskLevel);
+              }
+            }
+          }
+          
+          // Don't set skills if journey has them - they're read-only
+          // Only set leg skills if journey doesn't have skills and leg doesn't have them
+          const journeySkillsData = (journeyData as any).skills as string[] | null;
+          if (skills.length === 0 && (!journeySkillsData || journeySkillsData.length === 0)) {
+            // Neither journey nor leg has skills - this is fine, leg can have its own
+            console.log('No skills at journey or leg level');
+          }
+        }
+      };
+      applyDefaults();
     }
-  }, [isOpen, legId, riskLevel, skills, journeyDefaultsLoaded]);
+  }, [isOpen, legId, riskLevel, skills, journeyDefaultsLoaded, journeyDefaultsApplied, journeySkills, journeyId]);
 
   const loadBoatCapacity = async (currentLegId: string | null) => {
     const supabase = getSupabaseBrowserClient();
@@ -112,6 +153,12 @@ export function LegFormModal({
         const capacity = (journeyData as any).boats.capacity;
         setBoatCapacity(capacity);
       }
+      
+      // Store journey skills (if any) - they will be shown as read-only
+      const journeySkillsData = (journeyData as any).skills as string[] | null;
+      const hasJourneySkills = journeySkillsData && journeySkillsData.length > 0;
+      console.log('Setting journeySkills state to:', hasJourneySkills ? journeySkillsData : null);
+      setJourneySkills(hasJourneySkills ? journeySkillsData : null);
       
       // Always check current state using functional updates to see if we need to set defaults
       // This works for both new legs and existing legs that don't have values
@@ -143,19 +190,21 @@ export function LegFormModal({
               }
             }
 
-            // Set default skills from journey - only if not already set
+            // Set default skills from journey - only if journey doesn't have skills defined
+            // If journey has skills, they will be shown as read-only, so we don't set leg skills
             if (shouldSetSkills) {
-              const journeySkills = (journeyData as any).skills as string[] | null;
-              console.log('Journey skills:', journeySkills);
-              if (journeySkills && journeySkills.length > 0) {
-                console.log('Setting skills to:', journeySkills);
-                const newSkills = [...journeySkills];
-                console.log('New skills to set:', newSkills);
-                // Return new skills array
-                return newSkills;
+              const journeySkillsData = (journeyData as any).skills as string[] | null;
+              console.log('Journey skills:', journeySkillsData);
+              // Only set leg skills if journey doesn't have skills defined
+              // If journey has skills, they are read-only and not stored in leg
+              if (!journeySkillsData || journeySkillsData.length === 0) {
+                // Journey has no skills, so leg can have its own skills
+                console.log('Journey has no skills, leg can have its own');
+                return currentSkills; // Keep current (empty) skills
               } else {
-                console.log('No journey skills to set');
-                return currentSkills;
+                // Journey has skills - they will be shown as read-only, don't store in leg
+                console.log('Journey has skills defined, they will be shown as read-only');
+                return []; // Don't store skills in leg when journey has them
               }
             }
             
@@ -187,6 +236,7 @@ export function LegFormModal({
     // Reset riskLevel and skills - they will be set from journey default in loadBoatCapacity
     setRiskLevel(null);
     setSkills([]);
+    setJourneySkills(null);
   };
 
   const loadLeg = async () => {
@@ -218,7 +268,8 @@ export function LegFormModal({
       setStartDate(data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '');
       setEndDate(data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '');
       setCrewNeeded(data.crew_needed || '');
-      // Set skills and risk level from leg data (may be null/empty, in which case journey defaults will be used)
+      // Set skills and risk level from leg data
+      // Note: If journey has skills, leg skills should be empty (journey skills are read-only)
       setSkills(data.skills || []);
       setRiskLevel((data.risk_level as RiskLevel) || null);
       setWaypoints(sortedWaypoints);
@@ -260,6 +311,15 @@ export function LegFormModal({
         waypoints: waypoints,
         updated_at: new Date().toISOString(),
       };
+      
+      // Only save skills to leg if journey doesn't have skills defined
+      // If journey has skills, they are read-only and not stored in leg table
+      if (!journeySkills || journeySkills.length === 0) {
+        legData.skills = skills;
+      } else {
+        // Journey has skills - don't save skills to leg, set to empty array
+        legData.skills = [];
+      }
 
       if (startDate) {
         legData.start_date = new Date(startDate).toISOString();
@@ -371,6 +431,13 @@ export function LegFormModal({
   };
 
   const handleSkillChange = (skill: string, checked: boolean) => {
+    // Don't allow modifying journey skills
+    if (journeySkills && journeySkills.includes(skill)) {
+      console.log('Cannot modify journey skill:', skill);
+      return;
+    }
+    
+    // Only allow adding/removing leg-specific skills
     if (checked) {
       setSkills([...skills, skill]);
     } else {
@@ -552,12 +619,22 @@ export function LegFormModal({
                 {/* Skills */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Required Skills {skills.length > 0 && `(${skills.length} selected)`}
+                    Required Skills
+                    {journeySkills && journeySkills.length > 0 && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({journeySkills.length} from Journey - read-only)
+                      </span>
+                    )}
+                    {skills.length > 0 && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        ({skills.length} leg-specific)
+                      </span>
+                    )}
                   </label>
                   {/* Debug: Show current skills state */}
                   {process.env.NODE_ENV === 'development' && (
                     <div className="text-xs text-muted-foreground mb-2">
-                      Debug - Skills state: {JSON.stringify(skills)}
+                      Debug - Journey skills: {JSON.stringify(journeySkills)}, Leg skills: {JSON.stringify(skills)}
                     </div>
                   )}
                   <div className="flex flex-wrap gap-3">
@@ -575,22 +652,42 @@ export function LegFormModal({
                           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                           .join(' ');
                       };
+                      
+                      // Merge journey skills (always present, read-only) with leg skills (editable)
+                      // For display: show all skills that are either in journey OR in leg
+                      const allDisplayedSkills = journeySkills && journeySkills.length > 0
+                        ? [...new Set([...journeySkills, ...skills])] // Merge and deduplicate
+                        : skills; // No journey skills, just show leg skills
+                      
+                      // Debug log
+                      console.log('Rendering skills UI - journeySkills:', journeySkills, 'leg skills:', skills, 'allDisplayedSkills:', allDisplayedSkills);
+                      
                       return allSkills.map((skill) => {
                         const displayName = formatSkillName(skill.name);
-                        const isChecked = skills.includes(displayName);
-                        // Debug log for each checkbox
-                        if (process.env.NODE_ENV === 'development' && skills.length > 0) {
-                          console.log(`Skill "${displayName}": checked=${isChecked}, in skills array=${skills.includes(displayName)}`);
-                        }
+                        const isJourneySkill = journeySkills && journeySkills.includes(displayName);
+                        const isLegSkill = skills.includes(displayName);
+                        const isChecked = isJourneySkill || isLegSkill;
+                        const isReadOnly = isJourneySkill; // Journey skills are read-only
+                        
                         return (
-                          <label key={skill.name} className="flex items-center gap-2 cursor-pointer">
+                          <label 
+                            key={skill.name} 
+                            className={`flex items-center gap-2 ${isReadOnly ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                          >
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={(e) => handleSkillChange(displayName, e.target.checked)}
-                              className="rounded border-border"
+                              disabled={isReadOnly}
+                              onChange={(e) => {
+                                if (!isReadOnly) {
+                                  handleSkillChange(displayName, e.target.checked);
+                                }
+                              }}
+                              className="rounded border-border disabled:opacity-50 disabled:cursor-not-allowed"
                             />
-                            <span className="text-sm text-foreground">{displayName}</span>
+                            <span className={`text-sm ${isReadOnly ? 'text-muted-foreground' : 'text-foreground'}`}>
+                              {displayName}
+                            </span>
                           </label>
                         );
                       });
