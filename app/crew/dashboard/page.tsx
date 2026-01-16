@@ -2,10 +2,9 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
+import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
 
 export default function CrewDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -26,26 +25,11 @@ export default function CrewDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Crew Dashboard</h1>
-          <p className="text-muted-foreground">Browse available journeys and manage your applications</p>
-        </div>
-
-        <div className="bg-card rounded-lg shadow p-8 text-center">
-          <p className="text-muted-foreground mb-4">
-            Journey browsing and application features coming soon!
-          </p>
-          <Link
-            href="/"
-            className="font-medium text-primary hover:opacity-80"
-          >
-            ← Back to Home
-          </Link>
-        </div>
+      <main className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
+        <CrewBrowseMap style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
       </main>
     </div>
   );

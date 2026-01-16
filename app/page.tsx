@@ -46,7 +46,7 @@ export default function Home() {
             {user ? (
               <>
                 <Link
-                  href="/journeys"
+                  href="/crew/dashboard"
                   className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
                 >
                   Browse Journeys
