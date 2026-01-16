@@ -712,8 +712,15 @@ export default function ProfilePage() {
                 value={formData.experience}
                 onChange={handleChange}
                 onFocus={() => {
-                  const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
-                  const hasExtremeSailing = formData.risk_level.includes('Extreme sailing');
+                  // Determine user role
+                  const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
+                  const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
+                  const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
+                  
+                  // For owners, show all risk level questions. For crew, show based on selected risk levels
+                  const isOwner = role === 'owner';
+                  const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
+                  const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
                   
                   setSidebarContent({
                     title: 'Skills and Experience',
@@ -777,6 +784,38 @@ export default function ProfilePage() {
                             <button
                               type="button"
                               onClick={() => appendToExperience('My navigation experience includes: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
+                          </li>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Do you have cooking skills or motivation to cook if needed?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('Regarding cooking skills: ')}
+                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+                              title="Add to text field"
+                            >
+                              <div className={addButtonClass}>
+                                {addButtonIcon}
+                              </div>
+                            </button>
+                          </li>
+                          <li className="relative group">
+                            <div className="flex items-start">
+                              <span className="mr-2 text-primary">•</span>
+                              <span className={bulletPointTextClass}>Do you have engine, electrical or other technically oriented skills?</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => appendToExperience('My technical skills include: ')}
                               className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
                               title="Add to text field"
                             >

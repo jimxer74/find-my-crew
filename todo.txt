@@ -6,15 +6,18 @@ TODO:
 preferences and availabilities
 - Add registration to legs, journeys
 
-
 Later:
 
 - Add unit testing framework
+- Refactor the skills in own database table or just a JSON configuration file (and create management ui for it)
 - Add availablility ranges setting for profile, if users want to define their availability already at profile level
-- Add Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to insight to chance their plans etc. 
+
+Maybe later:
+
+- Add skipper / boat specific skills / questions that needs to answered when registration + mgmt ui for this
 - Add feedback functionality for users to give feedback, also add management so that feedback is handled, 
 or not handled (in stars and in text), like not like, improvements, features missing etc. 
 --> make AI to analyze and propose new features automatically based on feedback
 - Add interview process to registration and interview scheduler
-
+- Add Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to insight to chance their plans etc. 
 
