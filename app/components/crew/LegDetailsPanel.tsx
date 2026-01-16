@@ -106,25 +106,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
 
   return (
     <>
-      {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Panel */}
+      {/* Panel - Left Side */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-2xl z-50 transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-y-0' : 'translate-y-full'
+        className={`fixed top-0 left-0 bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-transform duration-300 ease-out ${
+          isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
-        style={{ maxHeight: '85vh' }}
+        style={{ width: '400px', maxWidth: '90vw' }}
       >
-        {/* Handle bar */}
-        <div className="flex justify-center pt-2 pb-1">
-          <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
-        </div>
 
         {/* Close button */}
         <button
@@ -148,7 +136,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
         </button>
 
         {/* Content */}
-        <div className="overflow-y-auto" style={{ maxHeight: 'calc(85vh - 60px)' }}>
+        <div className="overflow-y-auto h-full">
           <div className="p-6 space-y-6">
             {/* Header */}
             <div>

@@ -3,12 +3,30 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { LegDetailsPanel } from './LegDetailsPanel';
 
 type Leg = {
   leg_id: string;
   leg_name: string;
+  leg_description: string | null;
+  journey_id: string;
   journey_name: string;
+  start_date: string | null;
+  end_date: string | null;
+  crew_needed: number | null;
+  risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  skills: string[];
+  boat_id: string;
+  boat_name: string;
+  boat_type: string | null;
+  boat_image_url: string | null;
+  skipper_name: string | null;
   start_waypoint: {
+    lng: number;
+    lat: number;
+    name: string | null;
+  } | null;
+  end_waypoint: {
     lng: number;
     lat: number;
     name: string | null;
@@ -35,7 +53,7 @@ export function CrewBrowseMap({
   const [zoomLevel, setZoomLevel] = useState<number>(initialZoom);
   const [legs, setLegs] = useState<Leg[]>([]);
   const [loading, setLoading] = useState(false);
-  const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null);
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
   const mapLoadedRef = useRef(false);
@@ -45,7 +63,7 @@ export function CrewBrowseMap({
     maxLng: number;
     maxLat: number;
   } | null>(null);
-  const legsRef = useRef<Leg[]>([]);
+  const sourceAddedRef = useRef(false);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -83,86 +101,46 @@ export function CrewBrowseMap({
     return false;
   };
 
-  // Update markers when legs change (only when legs actually change, not on zoom)
+  // Store full leg data in a map for quick lookup
+  const legsMapRef = useRef<Map<string, Leg>>(new Map());
+
+  // Update legs map when legs change
   useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-
-    // Only show markers if zoom > 3.5
-    if (zoomLevel <= 3.5) {
-      // Clear markers if zoom is too low
-      markersRef.current.forEach((marker) => {
-        marker.remove();
-      });
-      markersRef.current.clear();
-      legsRef.current = [];
-      return;
-    }
-
-    // Check if legs have actually changed
-    const legsChanged = 
-      legs.length !== legsRef.current.length ||
-      legs.some((leg, idx) => {
-        const oldLeg = legsRef.current[idx];
-        return !oldLeg || leg.leg_id !== oldLeg.leg_id;
-      });
-
-    if (!legsChanged) {
-      // Legs haven't changed, don't recreate markers
-      return;
-    }
-
-    // Legs have changed, update markers
-    // Remove markers for legs that no longer exist
-    const currentLegIds = new Set(legs.map(leg => leg.leg_id));
-    markersRef.current.forEach((marker, legId) => {
-      if (!currentLegIds.has(legId)) {
-        marker.remove();
-        markersRef.current.delete(legId);
-      }
+    legsMapRef.current.clear();
+    legs.forEach(leg => {
+      legsMapRef.current.set(leg.leg_id, leg);
     });
+  }, [legs]);
 
-    // Create or update markers for each leg's start waypoint
-    legs.forEach((leg) => {
-      if (!leg.start_waypoint) return;
+  // Update GeoJSON source when legs change
+  useEffect(() => {
+    if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
-      const { lng, lat } = leg.start_waypoint;
+    // Convert legs to GeoJSON format
+    const features = legs
+      .filter(leg => leg.start_waypoint !== null)
+      .map(leg => ({
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
+        },
+        properties: {
+          leg_id: leg.leg_id,
+        },
+      }));
 
-      // Check if marker already exists for this leg
-      const existingMarker = markersRef.current.get(leg.leg_id);
-      if (existingMarker) {
-        // Update existing marker position if needed
-        const currentLngLat = existingMarker.getLngLat();
-        if (currentLngLat.lng !== lng || currentLngLat.lat !== lat) {
-          existingMarker.setLngLat([lng, lat]);
-        }
-        return;
-      }
+    const geoJsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features,
+    };
 
-      // Create new marker element
-      const el = document.createElement('div');
-      el.className = 'leg-marker';
-      el.style.width = '24px';
-      el.style.height = '24px';
-      el.style.borderRadius = '50%';
-      el.style.backgroundColor = '#3b82f6'; // Blue marker
-      el.style.border = '3px solid white';
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
-      el.style.cursor = 'pointer';
-
-      // Create and add marker
-      const marker = new mapboxgl.Marker({
-        element: el,
-        anchor: 'center',
-      })
-        .setLngLat([lng, lat])
-        .addTo(map.current!);
-
-      markersRef.current.set(leg.leg_id, marker);
-    });
-
-    // Update ref with current legs
-    legsRef.current = legs;
-  }, [legs, mapLoaded, zoomLevel]);
+    // Update the source data
+    const source = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
+    if (source) {
+      source.setData(geoJsonData);
+    }
+  }, [legs, mapLoaded]);
 
   useEffect(() => {
     // Only initialize map once
@@ -214,14 +192,12 @@ export function CrewBrowseMap({
       console.log('[CrewBrowseMap] handleViewportChange:', { zoom: currentZoom });
       setZoomLevel(currentZoom);
 
-      // Only load legs when zoom > 3.5
-      if (currentZoom > 3.5) {
-        // Clear any existing timer
-        if (viewportDebounceTimerRef.current) {
-          clearTimeout(viewportDebounceTimerRef.current);
-        }
-        // Debounce the viewport change
-        viewportDebounceTimerRef.current = setTimeout(async () => {
+      // Clear any existing timer
+      if (viewportDebounceTimerRef.current) {
+        clearTimeout(viewportDebounceTimerRef.current);
+      }
+      // Debounce the viewport change
+      viewportDebounceTimerRef.current = setTimeout(async () => {
           if (!map.current || isLoadingRef.current) {
             console.log('[CrewBrowseMap] Debounced handler: map not ready or already loading');
             return;
@@ -420,12 +396,6 @@ export function CrewBrowseMap({
             isLoadingRef.current = false;
           }
         }, 300);
-      } else {
-        // Clear legs when zoom <= 3.5
-        console.log('[CrewBrowseMap] Zoom <= 3.5, clearing legs');
-        setLegs([]);
-        lastLoadedBoundsRef.current = null; // Reset bounds so it will reload when zooming back in
-      }
     };
 
     // Update zoom level when zoom changes
@@ -448,6 +418,150 @@ export function CrewBrowseMap({
       if (map.current.getCanvasContainer()) {
         map.current.getCanvasContainer().style.cursor = 'default';
       }
+
+      // Add GeoJSON source for legs with clustering
+      map.current.addSource('legs-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+        cluster: true,
+        clusterMaxZoom: 14, // Max zoom to cluster points on
+        clusterRadius: 50, // Radius of each cluster when clustering points
+      });
+
+      // Add cluster circles layer
+      map.current.addLayer({
+        id: 'clusters',
+        type: 'circle',
+        source: 'legs-source',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'step',
+            ['get', 'point_count'],
+            '#22276E', // Custom blue for small clusters
+            10,
+            '#1a1f56', // Darker for medium clusters
+            30,
+            '#14193d', // Darkest for large clusters
+          ],
+          'circle-radius': [
+            'step',
+            ['get', 'point_count'],
+            20, // Small clusters
+            10,
+            30, // Medium clusters
+            30,
+            40, // Large clusters
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      // Add cluster count labels
+      map.current.addLayer({
+        id: 'cluster-count',
+        type: 'symbol',
+        source: 'legs-source',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#fff',
+        },
+      });
+
+      // Add unclustered point layer (individual leg markers)
+      map.current.addLayer({
+        id: 'unclustered-point',
+        type: 'circle',
+        source: 'legs-source',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': '#22276E',
+          'circle-radius': 8,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      // Handle cluster clicks - zoom in
+      map.current.on('click', 'clusters', (e) => {
+        const features = map.current!.queryRenderedFeatures(e.point, {
+          layers: ['clusters'],
+        });
+        const clusterId = features[0].properties!.cluster_id;
+        const source = map.current!.getSource('legs-source') as mapboxgl.GeoJSONSource;
+        
+        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || !zoom) return;
+          
+          map.current!.easeTo({
+            center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
+            zoom: zoom,
+          });
+        });
+      });
+
+      // Change cursor on hover for clusters
+      map.current.on('mouseenter', 'clusters', () => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = 'pointer';
+        }
+      });
+
+      map.current.on('mouseleave', 'clusters', () => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = '';
+        }
+      });
+
+      // Handle clicks on unclustered points - select leg
+      const handlePointClick = (e: mapboxgl.MapLayerMouseEvent) => {
+        const features = map.current!.queryRenderedFeatures(e.point, {
+          layers: ['unclustered-point'],
+        });
+        
+        if (features.length > 0) {
+          const legId = features[0].properties!.leg_id;
+          // Find the leg in our legs map
+          const leg = legsMapRef.current.get(legId);
+          if (leg) {
+            setSelectedLeg(leg);
+            // Optionally fly to the leg location
+            if (leg.start_waypoint) {
+              map.current!.flyTo({
+                center: [leg.start_waypoint.lng, leg.start_waypoint.lat],
+                zoom: Math.max(map.current!.getZoom(), 10),
+                duration: 1000,
+              });
+            }
+          }
+        }
+      };
+
+      map.current.on('click', 'unclustered-point', handlePointClick);
+
+      // Change cursor on hover for unclustered points
+      map.current.on('mouseenter', 'unclustered-point', () => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = 'pointer';
+        }
+      });
+
+      map.current.on('mouseleave', 'unclustered-point', () => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = '';
+        }
+      });
+
+      sourceAddedRef.current = true;
       
       // Attach viewport handlers now that map is loaded
       if (map.current) {
@@ -460,16 +574,14 @@ export function CrewBrowseMap({
       const currentZoom = map.current.getZoom();
       setZoomLevel(currentZoom);
       console.log('[CrewBrowseMap] Initial zoom:', currentZoom);
-      // Load legs if zoom > 3.5 on initial load
-      if (currentZoom > 3.5) {
-        // Trigger viewport change handler to load legs
-        setTimeout(() => {
-          if (map.current) {
-            console.log('[CrewBrowseMap] Triggering initial leg load');
-            handleViewportChange();
-          }
-        }, 500);
-      }
+      
+      // Trigger initial leg load
+      setTimeout(() => {
+        if (map.current) {
+          console.log('[CrewBrowseMap] Triggering initial leg load');
+          handleViewportChange();
+        }
+      }, 500);
     });
 
     // Cleanup on unmount only
@@ -477,20 +589,37 @@ export function CrewBrowseMap({
       if (viewportDebounceTimerRef.current) {
         clearTimeout(viewportDebounceTimerRef.current);
       }
-      // Remove all markers
-      markersRef.current.forEach((marker) => {
-        marker.remove();
-      });
-      markersRef.current.clear();
       if (map.current) {
+        // Remove layers and source
+        try {
+          if (map.current.getLayer('clusters')) {
+            map.current.removeLayer('clusters');
+          }
+          if (map.current.getLayer('cluster-count')) {
+            map.current.removeLayer('cluster-count');
+          }
+          if (map.current.getLayer('unclustered-point')) {
+            map.current.removeLayer('unclustered-point');
+          }
+          if (map.current.getSource('legs-source')) {
+            map.current.removeSource('legs-source');
+          }
+        } catch (error) {
+          // Layers/source may not exist if map wasn't fully loaded
+          console.log('[CrewBrowseMap] Error removing layers/source:', error);
+        }
+        
         // Remove event listeners
         map.current.off('zoom', updateZoom);
         map.current.off('zoomend', handleViewportChange);
         map.current.off('moveend', handleViewportChange);
+        // Note: We can't easily remove the click handler without storing a reference
+        // but it will be cleaned up when the map is removed
         map.current.remove();
         map.current = null;
       }
       mapInitializedRef.current = false;
+      sourceAddedRef.current = false;
     };
   }, []); // Empty deps - only run once on mount
 
@@ -520,6 +649,15 @@ export function CrewBrowseMap({
             <span className="text-sm text-foreground">Loading legs...</span>
           </div>
         </div>
+      )}
+
+      {/* Leg Details Panel - Left Side */}
+      {selectedLeg && (
+        <LegDetailsPanel
+          leg={selectedLeg}
+          isOpen={!!selectedLeg}
+          onClose={() => setSelectedLeg(null)}
+        />
       )}
     </div>
   );
