@@ -19,6 +19,7 @@ type Profile = {
   phone: string | null;
   sailing_experience: 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
+  sailing_preferences: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -33,6 +34,11 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isNewProfile, setIsNewProfile] = useState(false);
+  const [showPreferencesSidebar, setShowPreferencesSidebar] = useState(false);
+  const [sidebarContent, setSidebarContent] = useState<{
+    title: string;
+    content: React.ReactNode;
+  } | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -43,6 +49,7 @@ export default function ProfilePage() {
     phone: '',
     sailing_experience: null as 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null,
     risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
+    sailing_preferences: '',
   });
 
   useEffect(() => {
@@ -87,6 +94,7 @@ export default function ProfilePage() {
           phone: '',
           sailing_experience: null,
           risk_level: [],
+          sailing_preferences: '',
         });
 
         // Create a temporary profile object for display
@@ -117,6 +125,7 @@ export default function ProfilePage() {
         phone: data.phone || '',
         sailing_experience: data.sailing_experience || null,
         risk_level: data.risk_level || [],
+        sailing_preferences: data.sailing_preferences || '',
       });
     }
     setLoading(false);
@@ -153,6 +162,7 @@ export default function ProfilePage() {
             phone: formData.phone || null,
             sailing_experience: formData.sailing_experience || null,
             risk_level: formData.risk_level || [],
+            sailing_preferences: formData.sailing_preferences || null,
           });
 
       error = insertError;
@@ -168,6 +178,7 @@ export default function ProfilePage() {
             phone: formData.phone || null,
             sailing_experience: formData.sailing_experience || null,
             risk_level: formData.risk_level || [],
+            sailing_preferences: formData.sailing_preferences || null,
             updated_at: new Date().toISOString(),
           })
         .eq('id', user.id);
@@ -209,10 +220,77 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 flex overflow-hidden relative min-h-0">
+        {/* Left Sidebar - Info Panel */}
+        {sidebarContent && (
+          <div
+            className={`${
+              showPreferencesSidebar ? 'w-80' : 'w-0'
+            } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden h-full`}
+          >
+            {showPreferencesSidebar && (
+              <div 
+                className="flex-1 overflow-y-auto p-6 profile-sidebar-scroll"
+                style={{
+                  scrollbarWidth: 'thin',
+                  scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+                }}
+              >
+                {/* Header */}
+                <div className="mb-4">
+                  <h3 className="text-lg font-bold text-card-foreground">
+                    {sidebarContent.title}
+                  </h3>
+                </div>
+
+                {/* Content */}
+                <div className="space-y-3 text-sm text-foreground">
+                  {sidebarContent.content}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Toggle Button */}
+        {sidebarContent && (
+          <button
+            onClick={() => setShowPreferencesSidebar(!showPreferencesSidebar)}
+            className={`absolute top-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all ${
+              showPreferencesSidebar ? 'left-[320px]' : 'left-4'
+            }`}
+            title={showPreferencesSidebar ? 'Close panel' : 'Open panel'}
+            aria-label={showPreferencesSidebar ? 'Close panel' : 'Open panel'}
+          >
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              {showPreferencesSidebar ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
+              )}
+            </svg>
+          </button>
+        )}
+
+        {/* Main Content */}
+        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
             {isNewProfile ? 'Complete Your Profile' : 'My Profile'}
@@ -306,6 +384,10 @@ export default function ProfilePage() {
               <SkillLevelSelector
                 value={formData.sailing_experience}
                 onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
+                onInfoClick={(title, content) => {
+                  setSidebarContent({ title, content });
+                  setShowPreferencesSidebar(true);
+                }}
               />
             </div>
 
@@ -315,13 +397,78 @@ export default function ProfilePage() {
                 <RiskLevelSelector
                   value={formData.risk_level}
                   onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
+                  onInfoClick={(title, content) => {
+                    setSidebarContent({ title, content });
+                    setShowPreferencesSidebar(true);
+                  }}
+                  onClose={() => {
+                    setShowPreferencesSidebar(false);
+                    setSidebarContent(null);
+                  }}
                 />
               </div>
             )}
 
+            {/* Sailing Preferences */}
+            <div>
+              <label htmlFor="sailing_preferences" className="block text-sm font-medium text-foreground mb-2">
+                Motivation and Sailing Preferences
+              </label>
+              <textarea
+                id="sailing_preferences"
+                name="sailing_preferences"
+                value={formData.sailing_preferences}
+                onChange={handleChange}
+                onFocus={() => {
+                  setSidebarContent({
+                    title: 'Motivation and Sailing Preferences',
+                    content: (
+                      <>
+                        <p className="font-medium mb-3">Consider the following when describing your motivation and sailing preferences:</p>
+                        <ul className="space-y-3 list-none">
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Do you have any dietary restrictions, allergies, or preferences that could affect meal planning (e.g., vegetarian, gluten-free, or aversion to canned/freeze-dried food)?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Do you have any history of motion sickness or seasickness? If so, how do you manage it, and under what conditions does it worsen (e.g., high waves, enclosed spaces)?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Are there any physical limitations or health concerns we should know about or medications that require refrigeration?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>What aspects of sailing excite you most, solitude, handling rough weather, stargazing at night, exploring ports, sightseeing or the camaraderie with the crew?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Are you looking for a more relaxed cruise and downtime, or an intense, performance-oriented sailing with watches, sail changes and/or navigation challenges?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Do you prefer structured activities like learning knots and sail trim, or more free-form time to enjoy the ocean and socialize?</span>
+                          </li>
+                          <li className="flex items-start">
+                            <span className="mr-2 text-primary">•</span>
+                            <span>Are there any strong dislikes for you that would prevent joining the trip (e.g., lack of privacy, being cold/wet, bugs at anchor, long motoring in no wind, or crowded anchorages)?</span>
+                          </li>
+                        </ul>
+                      </>
+                    ),
+                  });
+                  setShowPreferencesSidebar(true);
+                }}
+                rows={4}
+                className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                placeholder="Describe your motivation and preferences, what draws you to the sailing and what do you like?"
+              />
+            </div>
+
             <div>
               <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
-                Experience
+                Skills and Experience
               </label>
               <textarea
                 id="experience"
@@ -373,6 +520,7 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+        </div>
         </div>
       </main>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 
 type SkillLevel = 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper';
@@ -8,13 +8,82 @@ type SkillLevel = 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore 
 type SkillLevelSelectorProps = {
   value: SkillLevel | null;
   onChange: (value: SkillLevel | null) => void;
+  onInfoClick?: (title: string, content: React.ReactNode) => void;
 };
 
-export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps) {
-  const [showBeginnerTooltip, setShowBeginnerTooltip] = useState(false);
-  const [showConfidentCrewTooltip, setShowConfidentCrewTooltip] = useState(false);
-  const [showCompetentCoastalTooltip, setShowCompetentCoastalTooltip] = useState(false);
-  const [showAdvancedTooltip, setShowAdvancedTooltip] = useState(false);
+const getSkillLevelInfo = (level: SkillLevel): { title: string; content: React.ReactNode } => {
+  switch (level) {
+    case 'Beginner':
+      return {
+        title: 'Beginner',
+        content: (
+          <div className="space-y-2">
+            <p>Little to no previous time on sailboats (0–10–15 days total)</p>
+            <p>May have done a short introductory sail or a "try sailing" day</p>
+            <p>Understands very basic concepts (what a tiller/helm is, wind direction, points of sail) but cannot yet apply them independently</p>
+            <p>Can be a helpful crew member under close supervision (grinding winches, tailing sheets, basic safety awareness)</p>
+            <p>Cannot skipper even the smallest sailboat independently</p>
+            <p className="font-medium">Typical equivalent: RYA Competent Crew start / ASA 101 start / "Green beginner"</p>
+            <p className="italic">This level is about safety orientation, terminology, and getting comfortable on the water.</p>
+          </div>
+        ),
+      };
+    case 'Competent Crew':
+      return {
+        title: 'Confident Crew',
+        content: (
+          <div className="space-y-2">
+            <p>Roughly 10–50 days on the water (mix of crew and helm time)</p>
+            <p>Can actively crew on most points of sail, handle basic maneuvers (tacking, gybing, reefing), assist with mooring/docking, understand basic rules of the road</p>
+            <p>Has skippered small boats (dinghies or daysailers &lt;30 ft) in light to moderate conditions in familiar, protected waters during daylight</p>
+            <p>Can take the helm for short periods under supervision on larger cruising boats</p>
+            <p className="font-medium">Typical equivalents: RYA Day Skipper practical + some miles / ASA 104 Basic Coastal Cruising / NauticEd Skipper Level I–II / International Bareboat Skipper (entry level)</p>
+            <p className="italic">This is the "I can safely take friends out for a weekend sail in good weather" level.</p>
+          </div>
+        ),
+      };
+    case 'Coastal Skipper':
+      return {
+        title: 'Competent Coastal Skipper',
+        content: (
+          <div className="space-y-2">
+            <p>50–150+ days on the water, with at least half as skipper/master of the vessel</p>
+            <p>Comfortable skippering 30–45 ft cruising yachts as bareboat charter captain</p>
+            <p>Can plan and execute coastal passages (day & night), handle marina berthing in crosswinds/current, reef early, manage heavy weather tactics in moderate to fresh conditions (up to ~25–30 knots)</p>
+            <p>Good knowledge of navigation (electronic + traditional), weather interpretation, pilotage, and emergency procedures</p>
+            <p className="font-medium">Typical equivalents: RYA Coastal Skipper / Yachtmaster Coastal / IYT Bareboat Skipper with experience / NauticEd Bareboat Charter Master Level III–IV / Most charter companies' "Level 2–3 Qualified Skipper" rating</p>
+            <p className="italic">This is the most common level for confident recreational bareboat chartering in the Mediterranean, Caribbean, etc.</p>
+          </div>
+        ),
+      };
+    case 'Offshore Skipper':
+      return {
+        title: 'Offshore Skipper',
+        content: (
+          <div className="space-y-2">
+            <p>150–500+ days on the water (very often several hundred), with the majority as skipper</p>
+            <p>Extensive experience skippering sailboats in challenging conditions — strong winds (30+ knots), large seas, heavy weather, long offshore passages (multi-day/night), ocean crossings</p>
+            <p>Very strong all-round seamanship: advanced boat handling (including under storm sails or bare poles), heavy weather tactics, jury rigging, man-overboard in rough conditions, long-distance navigation & routing, crew management in stressful situations</p>
+            <p>Has likely completed long offshore passages (e.g., Atlantic crossing, multi-week voyages)</p>
+            <p className="font-medium">Typical equivalents: RYA Yachtmaster Offshore / Ocean / IYT Yachtmaster Offshore / NauticEd Captain rank + Level V / Charter company "Expert Level" rating with proven offshore resume</p>
+            <p className="italic">This level represents the serious, years-of-experience skippers who can confidently take a boat almost anywhere, in almost any conditions, while keeping safety margins high. Many charter companies and sailing communities use similar 3–5 tier systems, but this 4-level breakdown nicely matches the progression from "never sailed" → "can take friends out" → "confident charter skipper" → "seasoned offshore sailor".</p>
+          </div>
+        ),
+      };
+  }
+};
+
+export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelSelectorProps) {
+  const handleClick = (level: SkillLevel) => {
+    const newValue = value === level ? null : level;
+    onChange(newValue);
+    
+    // Show info for selected level
+    if (onInfoClick && newValue) {
+      const info = getSkillLevelInfo(newValue);
+      onInfoClick(info.title, info.content);
+    }
+  };
 
   return (
     <div className="md:col-span-2">
@@ -25,34 +94,13 @@ export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps)
         {/* Beginner */}
         <button
           type="button"
-          onClick={() => onChange(value === 'Beginner' ? null : 'Beginner')}
+          onClick={() => handleClick('Beginner')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             value === 'Beginner'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          {/* Info icon in top left corner */}
-          <div 
-            className="absolute top-2 left-2 z-10"
-            onMouseEnter={() => setShowBeginnerTooltip(true)}
-            onMouseLeave={() => setShowBeginnerTooltip(false)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg className="w-5 h-5 text-muted-foreground cursor-help" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            {showBeginnerTooltip && (
-              <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg z-50">
-                <p className="text-sm text-popover-foreground">
-                  Little to no previous time on sailboats (0–10–15 days total). May have done a short introductory sail. Understands very basic concepts but cannot yet apply them independently. Can be a helpful crew member under close supervision.
-                </p>
-                {/* Tooltip arrow */}
-                <div className="absolute left-4 bottom-full mb-0 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-popover"></div>
-                <div className="absolute left-[15px] bottom-full w-0 h-0 border-l-[7px] border-r-[7px] border-b-[7px] border-transparent border-b-border"></div>
-              </div>
-            )}
-          </div>
           <div className="flex items-center justify-center mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-sm text-center">Beginner</h3>
           </div>
@@ -69,34 +117,13 @@ export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps)
         {/* Competent Crew */}
         <button
           type="button"
-          onClick={() => onChange(value === 'Competent Crew' ? null : 'Competent Crew')}
+          onClick={() => handleClick('Competent Crew')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             value === 'Competent Crew'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          {/* Info icon in top left corner */}
-          <div 
-            className="absolute top-2 left-2 z-10"
-            onMouseEnter={() => setShowConfidentCrewTooltip(true)}
-            onMouseLeave={() => setShowConfidentCrewTooltip(false)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg className="w-5 h-5 text-muted-foreground cursor-help" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            {showConfidentCrewTooltip && (
-              <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg z-50">
-                <p className="text-sm text-popover-foreground">
-                  Roughly 10–50 days on the water (mix of crew and helm time). Can actively crew on most points of sail, handle basic maneuvers (tacking, gybing, reefing), assist with mooring/docking. Has skippered small boats in light to moderate conditions in familiar, protected waters.
-                </p>
-                {/* Tooltip arrow */}
-                <div className="absolute left-4 bottom-full mb-0 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-popover"></div>
-                <div className="absolute left-[15px] bottom-full w-0 h-0 border-l-[7px] border-r-[7px] border-b-[7px] border-transparent border-b-border"></div>
-              </div>
-            )}
-          </div>
           <div className="flex items-center justify-center mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-sm text-center">Competent Crew</h3>
           </div>
@@ -113,34 +140,13 @@ export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps)
         {/* Coastal Skipper */}
         <button
           type="button"
-          onClick={() => onChange(value === 'Coastal Skipper' ? null : 'Coastal Skipper')}
+          onClick={() => handleClick('Coastal Skipper')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             value === 'Coastal Skipper'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          {/* Info icon in top left corner */}
-          <div 
-            className="absolute top-2 left-2 z-10"
-            onMouseEnter={() => setShowCompetentCoastalTooltip(true)}
-            onMouseLeave={() => setShowCompetentCoastalTooltip(false)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg className="w-5 h-5 text-muted-foreground cursor-help" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            {showCompetentCoastalTooltip && (
-              <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg z-50">
-                <p className="text-sm text-popover-foreground">
-                  50–150+ days on the water, with at least half as skipper/master of the vessel. Comfortable skippering 30–45 ft cruising yachts as bareboat charter captain. Can plan and execute coastal passages (day & night), handle marina berthing in crosswinds/current, reef early, manage heavy weather tactics in moderate to fresh conditions.
-                </p>
-                {/* Tooltip arrow */}
-                <div className="absolute left-4 bottom-full mb-0 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-popover"></div>
-                <div className="absolute left-[15px] bottom-full w-0 h-0 border-l-[7px] border-r-[7px] border-b-[7px] border-transparent border-b-border"></div>
-              </div>
-            )}
-          </div>
           <div className="flex items-center justify-center mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-sm text-center">Coastal Skipper</h3>
           </div>
@@ -157,34 +163,13 @@ export function SkillLevelSelector({ value, onChange }: SkillLevelSelectorProps)
         {/* Offshore Skipper */}
         <button
           type="button"
-          onClick={() => onChange(value === 'Offshore Skipper' ? null : 'Offshore Skipper')}
+          onClick={() => handleClick('Offshore Skipper')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             value === 'Offshore Skipper'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          {/* Info icon in top left corner */}
-          <div 
-            className="absolute top-2 left-2 z-10"
-            onMouseEnter={() => setShowAdvancedTooltip(true)}
-            onMouseLeave={() => setShowAdvancedTooltip(false)}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg className="w-5 h-5 text-muted-foreground cursor-help" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            {showAdvancedTooltip && (
-              <div className="absolute left-0 top-full mt-2 w-64 p-3 bg-popover border border-border rounded-lg shadow-lg z-50">
-                <p className="text-sm text-popover-foreground">
-                  150–500+ days on the water (very often several hundred), with the majority as skipper. Extensive experience skippering sailboats in challenging conditions — strong winds (30+ knots), large seas, heavy weather, long offshore passages (multi-day/night), ocean crossings. Very strong all-round seamanship.
-                </p>
-                {/* Tooltip arrow */}
-                <div className="absolute left-4 bottom-full mb-0 w-0 h-0 border-l-[6px] border-r-[6px] border-b-[6px] border-transparent border-b-popover"></div>
-                <div className="absolute left-[15px] bottom-full w-0 h-0 border-l-[7px] border-r-[7px] border-b-[7px] border-transparent border-b-border"></div>
-              </div>
-            )}
-          </div>
           <div className="flex items-center justify-center mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-sm text-center">Offshore Skipper</h3>
           </div>
