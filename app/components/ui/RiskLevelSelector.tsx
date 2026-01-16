@@ -178,7 +178,8 @@ const getRiskLevelInfo = (level: RiskLevel): { title: string; content: React.Rea
 
 export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: RiskLevelSelectorProps) {
   const handleClick = (level: RiskLevel) => {
-    const newValue: RiskLevel[] = value.includes(level)
+    const wasSelected = value.includes(level);
+    const newValue: RiskLevel[] = wasSelected
       ? value.filter((v): v is RiskLevel => v !== level)
       : [...value, level];
     onChange(newValue);
@@ -186,18 +187,47 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
     // Show info for all selected risk levels, or close if none selected
     if (onInfoClick) {
       if (newValue.length > 0) {
+        // If a level was just selected (not deselected), it's the last selected one
+        const lastSelectedLevel = wasSelected ? null : level;
+        
+        // Get info for all selected levels
         const allInfo = newValue.map(level => getRiskLevelInfo(level));
+        
+        // Find the last selected level's info to show at top
+        const lastSelectedInfo = lastSelectedLevel 
+          ? getRiskLevelInfo(lastSelectedLevel)
+          : null;
+        
+        // Get other selected levels (excluding the last selected one)
+        const otherSelectedLevels = lastSelectedLevel
+          ? newValue.filter(l => l !== lastSelectedLevel)
+          : newValue;
+        const otherInfo = otherSelectedLevels.map(level => getRiskLevelInfo(level));
+        
         const combinedTitle = newValue.length === 1 
           ? allInfo[0].title 
           : allInfo[0].title; // Use first title instead of "Selected Risk Levels"
+        
         const combinedContent = (
           <div className="space-y-4">
-            {allInfo.map((info, index) => (
-              <div key={index}>
-                <h4 className="font-semibold mb-2">{info.title}</h4>
-                {info.content}
+            {/* Show last selected risk level info at the top */}
+            {lastSelectedInfo && (
+              <div>
+                <h4 className="font-semibold mb-2">{lastSelectedInfo.title}</h4>
+                {lastSelectedInfo.content}
               </div>
-            ))}
+            )}
+            {/* Show other selected risk levels below */}
+            {otherInfo.length > 0 && (
+              <>
+                {otherInfo.map((info, index) => (
+                  <div key={index}>
+                    <h4 className="font-semibold mb-2">{info.title}</h4>
+                    {info.content}
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         );
         onInfoClick(combinedTitle, combinedContent);
