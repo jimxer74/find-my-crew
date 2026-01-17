@@ -1,31 +1,47 @@
 TODO:
 
-
-
+- Add unit testing framework
+- Add GDPR notifications and required functions to forget, report data etc.
 - Create new BrowseLegs functionality where users can very easily find matching legs for their 
 preferences and availabilities
 - Add registration logic and ui
 - Add approval process and ui, could there be AI automated approvals? maybe skipper can enable if wants to 
 possible approval processes (Automated, Manual Approval, Interview Approval)
-
 - Add missing validation logic to journey and leg dates to avoid illogical setups
-- Add registration to legs, journeys
+- Add a cost sharing model managementn for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty, where each contributes? --> This links to meal prepping  AI assistant, to understand food costs
+- Secure document vault for sensitive uploaded docs like passports, etc.
+- Extend leg browsing to AI matching of legs and crew
 
 Later:
 
-- Add unit testing framework
-- Extend leg browsing to AI matching of legs and crew
-- Create browse full journeys, a more content driven and visual kind of sales presentation about journey
 - Refactor mobile reponsive components and pages for owner side
 - Add availablility ranges setting for profile, if users want to define their availability already at profile level
-
-Maybe later:
-
-- Add notifications and messaging to users
+- Make mobile ready web app
 - Add skipper / boat specific skills / questions that needs to answered when registration + mgmt ui for this
+- Support for co-owned boats.
+- Support for multiple persons registrations at same time, families, couples etc?
+- Add links to other platforms in boats, like noforeignland, youtube, facebook, insta
+- Add interview process to registration and interview scheduler
+
+In future:
+
+- Create browse full journeys, a more content driven and visual kind of sales presentation about journey
+- AI screening of profile, "trustworthniess score"
+- Scoring system for crew and skippers to build trust
+- Add notifications and messaging to users
 - Add feedback functionality for users to give feedback, also add management so that feedback is handled, 
 or not handled (in stars and in text), like not like, improvements, features missing etc. 
 --> make AI to analyze and propose new features automatically based on feedback
-- Add interview process to registration and interview scheduler
 - Add Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to insight to chance their plans etc. 
+- Implement native mobile app
+- Define production deployment architecture, with performance considerations
+- Patreon / crowdsourcing support model
+- Meal prepping / planning AI assistant, creting meal plan for a passage / journey
 
+
+Maybe in future:
+- Plan earnings logic / business model: Freemium, Subscription, Adds, or community / crowdsourced --> this maybe to way, build it so good that userbase keeps growing and keep it free, Challenge to use good AI models?  
+one option is to provide basic free but add subscription for advanced AI features that uses higher priced models
+- Add a story and rationale for why I am doing this service / app, what is the philosophy
+- Marketing plan and materials, videos, AI marketing assistant to create automated content in different channels
+- Co-operation with noforeignland? this requires some success first
