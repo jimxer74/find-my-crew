@@ -1,0 +1,93 @@
+Product Requirements Document (PRD): find-my-crew - Crew and Sailboat Owner Matching Platform
+1. Document Information
+Product Name: find-my-crew
+Version: 1.1
+Date: January 17, 2026
+Author: Grok AI (Assisted Response)
+Status: Draft
+Purpose: This PRD outlines the requirements for enhancing the find-my-crew platform with AI-driven automation for matching, approvals, and related processes. It assumes basic functionality (e.g., user profiles, passage listings, basic search) and data structures (e.g., user databases, passage records) are already implemented. The focus is on AI integration, additional data needs, and enabling features such as security, identification, and auditing.
+2. Product Overview
+2.1 Problem Statement
+Sailboat owners and crew members often struggle to find compatible matches for passages due to mismatched skills, preferences, schedules, and experiences. Manual searching and approval processes are time-consuming, error-prone, and inefficient, leading to missed opportunities, safety risks, and frustration. The platform aims to solve this by leveraging AI to automate matching and approvals, making the process seamless and reliable.
+2.2 Value Proposition
+find-my-crew makes finding and securing sailboat passages as easy as possible by using AI to:
+Automatically match crew with owners based on skills, experiences, preferences, and real-time data.
+Automate approval workflows to reduce manual intervention.
+Ensure trust through strong security, identification, and auditing features. This results in faster, safer, and more personalized connections, differentiating from manual or basic matching platforms.
+2.3 Objectives
+Achieve 80% automation in matching and approvals within the first release.
+Reduce match time from days to hours.
+Maintain high user trust with robust security and compliance.
+Collect and utilize data ethically to improve AI accuracy over time.
+2.4 Scope
+In Scope: AI matching engine, automated approvals, additional data collection/integration, security enhancements (e.g., strong ID verification), auditing/logging, and enabler features like notifications and feedback loops.
+Out of Scope: Core UI/UX redesign, payment processing, hardware integrations (e.g., GPS devices). Assumes existing basic CRUD operations for users and passages.
+3. Target Users and Personas
+3.1 User Segments
+Crew Members: Individuals seeking passages (e.g., sailors, adventurers). Key needs: Easy profile setup, personalized recommendations, quick approvals.
+Sailboat Owners/Captains: Those offering passages. Key needs: Reliable crew vetting, automated screening, control over approvals.
+Admins/Moderators: Platform operators for oversight, dispute resolution, and AI tuning.
+3.2 Personas
+Crew Persona - Alex the Novice Sailor: 28-year-old with basic sailing skills, prefers short coastal trips, values safety and learning opportunities. Expects AI to suggest beginner-friendly passages.
+Owner Persona - Captain Maria: 45-year-old experienced owner, seeks skilled crew for transatlantic voyages, prioritizes verified experiences and automated background checks.
+Admin Persona - System Operator Jordan: Monitors AI decisions, handles escalations, needs audit trails for compliance.
+4. Features
+Focus on AI automation and enablers, building on existing basics.
+4.1 AI Matching Engine
+Description: An AI system that analyzes user data to generate personalized matches.
+Requirements:
+Use machine learning models (e.g., recommendation algorithms like collaborative filtering or neural networks) to score matches based on weighted factors.
+Input Factors: Crew skills (e.g., navigation, rigging), experience levels (e.g., miles sailed, certifications), preferences (e.g., trip duration, location, boat type), availability. Owner requirements (e.g., minimum skill levels, crew size).
+Output: Ranked list of matches with explanations (e.g., "80% match due to aligned skills and location").
+Automation: Real-time matching on profile updates or new listings; push notifications for high-scoring matches.
+Data Needs: Enhanced profiles with structured fields (e.g., dropdowns for skills, uploadable certifications).
+4.2 Automated Approval Process
+Description: AI-driven workflow to approve/deny applications without full manual review.
+Requirements:
+AI evaluates applications against owner criteria (e.g., skill thresholds, reference checks).
+Threshold-based automation: Auto-approve if score > 90%; flag for manual review if 70-90%; auto-deny if <70%.
+Integration with verification tools (e.g., check uploaded docs for authenticity via AI image analysis).
+Fallback: Owners can override AI decisions; feedback loop to retrain models.
+Data Needs: Historical approval data for training; user feedback ratings post-passage.
+4.3 Data Collection and Management
+Description: Gather and structure data to power AI while ensuring privacy.
+Requirements:
+Profile Enhancements: Mandatory fields for skills/experiences (e.g., enum lists: beginner/intermediate/expert); optional uploads (e.g., resumes, certs as PDFs/images).
+Dynamic Data: Integrate external APIs if needed (e.g., weather for passage feasibility, but only via secure proxies).
+Analytics: Track user interactions (e.g., view/apply rates) for AI improvement.
+Data Storage: Use existing structures; add tables for AI metadata (e.g., match scores, audit logs).
+Privacy: GDPR-compliant consent forms; anonymized data for training.
+4.4 Enabler Features
+Notifications and Communication: AI-triggered alerts (e.g., "New match available"); in-app chat for confirmed matches.
+Feedback and Rating System: Post-passage reviews to refine AI (e.g., "Did the match meet expectations?").
+Search and Filtering: AI-enhanced search with natural language queries (e.g., "Find coastal trips for beginners").
+Onboarding Wizard: Guided setup to collect AI-needed data without overwhelming users.
+5. AI-Specific Requirements
+Model Selection: Use pre-trained models (e.g., via libraries like scikit-learn or TensorFlow) for matching; fine-tune with platform data.
+Training and Iteration: Initial model trained on synthetic/historical data; continuous learning from user feedback.
+Bias Mitigation: Audit for biases (e.g., gender/location); ensure diverse training data.
+Performance Metrics: Accuracy >85% on test matches; latency <2 seconds for recommendations.
+Integration: API endpoints for AI calls; scalable hosting (e.g., cloud-based).
+6. Security and Compliance
+Strong Identification: Integrate with third-party ID verification (e.g., via APIs like Jumio or Onfido) for KYC; require for high-value passages.
+Authentication: Multi-factor authentication (MFA); OAuth for logins.
+Data Security: Encrypt sensitive data (e.g., personal info, locations); role-based access control (RBAC).
+Auditing: Log all AI decisions, user actions, and approvals; searchable audit trails for admins (e.g., "AI approved match X on date Y due to Z").
+Compliance: Adhere to GDPR, CCPA; regular security audits; incident response plan.
+Risk Management: AI explainability for disputes; human override for safety-critical decisions.
+7. Non-Functional Requirements
+Performance: Handle 10,000 users; AI responses in <5 seconds.
+Scalability: Cloud-agnostic; auto-scale for peak seasons.
+Usability: Mobile-responsive; intuitive AI explanations (e.g., tooltips on match scores).
+Reliability: 99.9% uptime; backups for data.
+Accessibility: WCAG 2.1 compliance.
+Internationalization: Support multiple languages/time zones (e.g., for global passages).
+8. Assumptions and Dependencies
+Assumptions: Users have basic tech literacy; existing backend supports API integrations; no legal barriers to AI use in matching.
+Dependencies: Access to AI libraries/tools; third-party services for ID verification; user data consent.
+Risks: AI inaccuracies leading to poor matches (mitigate with beta testing); data privacy breaches (mitigate with encryption).
+Success Metrics: User satisfaction score >4/5; match acceptance rate >70%; reduced support tickets for matching issues.
+9. Appendix
+Wireframes/Sketches: (To be added: e.g., AI match dashboard, approval workflow diagram).
+Technical Stack Suggestions: Use current next.js / tailwind.css stack for frontend, Backend: Node.js/Python; AI: ML frameworks; Database: PostgreSQL with extensions for auditing.
+Next Steps: Prioritize MVP features (AI matching + basic security); conduct user testing; iterate based on feedback.
