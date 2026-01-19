@@ -10,16 +10,21 @@ import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
 
+type SkillEntry = {
+  skill_name: string;
+  description: string;
+};
+
 type Profile = {
   id: string;
   role: 'owner' | 'crew';
   username: string | null;
   full_name: string | null;
-  experience: string | null;
   certifications: string | null;
   phone: string | null;
   sailing_experience: 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
+  skills: string[]; // Array of JSON strings: ['{"skill_name": "first_aid", "description": "..."}', ...]
   sailing_preferences: string | null;
   created_at: string;
   updated_at: string;
@@ -64,11 +69,11 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
-    experience: '',
     certifications: '',
     phone: '',
     sailing_experience: null as 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null,
     risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
+    skills: [] as SkillEntry[], // Array of skill objects with skill_name and description
     sailing_preferences: '',
   });
 
@@ -109,11 +114,11 @@ export default function ProfilePage() {
         setFormData({
           username: usernameFromEmail,
           full_name: fullNameFromMetadata,
-          experience: '',
           certifications: '',
           phone: '',
           sailing_experience: null,
           risk_level: [],
+          skills: [],
           sailing_preferences: '',
         });
 
@@ -123,11 +128,12 @@ export default function ProfilePage() {
           role: role,
           username: null,
           full_name: null,
-          experience: null,
           certifications: null,
           phone: null,
           sailing_experience: null,
           risk_level: [],
+          skills: [],
+          sailing_preferences: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -137,14 +143,24 @@ export default function ProfilePage() {
       }
     } else if (data) {
       setProfile(data);
+      // Parse skills from JSON strings to SkillEntry objects
+      const parsedSkills: SkillEntry[] = (data.skills || []).map((skillJson: string) => {
+        try {
+          return JSON.parse(skillJson);
+        } catch {
+          // Fallback: if it's not valid JSON, treat as old format (just skill name)
+          return { skill_name: skillJson, description: '' };
+        }
+      });
+
       setFormData({
         username: data.username || '',
         full_name: data.full_name || '',
-        experience: data.experience || '',
         certifications: data.certifications || '',
         phone: data.phone || '',
         sailing_experience: data.sailing_experience || null,
         risk_level: data.risk_level || [],
+        skills: parsedSkills,
         sailing_preferences: data.sailing_preferences || '',
       });
     }
@@ -177,11 +193,11 @@ export default function ProfilePage() {
             role: role,
             username: formData.username || null,
             full_name: formData.full_name || null,
-            experience: formData.experience || null,
             certifications: formData.certifications || null,
             phone: formData.phone || null,
             sailing_experience: formData.sailing_experience || null,
             risk_level: formData.risk_level || [],
+            skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
             sailing_preferences: formData.sailing_preferences || null,
           });
 
@@ -193,11 +209,11 @@ export default function ProfilePage() {
           .update({
             username: formData.username || null,
             full_name: formData.full_name || null,
-            experience: formData.experience || null,
             certifications: formData.certifications || null,
             phone: formData.phone || null,
             sailing_experience: formData.sailing_experience || null,
             risk_level: formData.risk_level || [],
+            skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
             sailing_preferences: formData.sailing_preferences || null,
             updated_at: new Date().toISOString(),
           })
@@ -254,27 +270,44 @@ export default function ProfilePage() {
     });
   };
 
-  const appendToExperience = (text: string) => {
+  // Add skill to form when user clicks "+" button
+  const addSkillToForm = (skill: { name: string; infoText: string; startingSentence: string }) => {
     setFormData((prev) => {
-      const currentValue = prev.experience || '';
-      const separator = currentValue.trim() && !currentValue.endsWith('\n') ? '\n\n' : '';
-      const newValue = currentValue + separator + text;
+      // Check if skill already exists
+      const skillExists = prev.skills.some(s => s.skill_name === skill.name);
+      if (skillExists) {
+        return prev; // Don't add duplicate
+      }
       
-      // Focus the textarea and set cursor position after state update
-      setTimeout(() => {
-        const textarea = document.getElementById('experience') as HTMLTextAreaElement;
-        if (textarea) {
-          textarea.focus();
-          // Move cursor to end of appended text
-          textarea.setSelectionRange(newValue.length, newValue.length);
-        }
-      }, 0);
+      // Add new skill with empty description
+      const newSkill: SkillEntry = {
+        skill_name: skill.name,
+        description: '',
+      };
       
       return {
         ...prev,
-        experience: newValue,
+        skills: [...prev.skills, newSkill],
       };
     });
+  };
+
+  // Remove skill from form
+  const removeSkill = (skillName: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter(s => s.skill_name !== skillName),
+    }));
+  };
+
+  // Update skill description
+  const updateSkillDescription = (skillName: string, description: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.map(s => 
+        s.skill_name === skillName ? { ...s, description } : s
+      ),
+    }));
   };
 
   // Reusable styles for bullet point items with add button
@@ -285,26 +318,59 @@ export default function ProfilePage() {
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
     </svg>
   );
-
-  // Helper function to render a skill bullet point
-  const renderSkillItem = (skill: { name: string; infoText: string; startingSentence: string }, onAppend: (text: string) => void) => (
-    <li key={skill.name} className="relative group">
-      <div className="flex items-start">
-        <span className="mr-2 text-primary">•</span>
-        <span className={bulletPointTextClass}>{skill.infoText}</span>
-      </div>
-      <button
-        type="button"
-        onClick={() => onAppend(skill.startingSentence)}
-        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-        title="Add to text field"
-      >
-        <div className={addButtonClass}>
-          {addButtonIcon}
-        </div>
-      </button>
-    </li>
+  const editButtonIcon = (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+    </svg>
   );
+
+  // Helper function to render a skill bullet point with "+" button to add to form
+  const renderSkillItem = (skill: { name: string; infoText: string; startingSentence: string }) => {
+    const isAdded = formData.skills.some(s => s.skill_name === skill.name);
+    
+    return (
+      <li key={skill.name} className="relative group">
+        <div className="flex items-start">
+          <span className="mr-2 text-primary">•</span>
+          <span className={bulletPointTextClass}>{skill.infoText}</span>
+        </div>
+        {!isAdded && (
+          <button
+            type="button"
+            onClick={() => addSkillToForm(skill)}
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+            title="Add skill to profile"
+          >
+            <div className={addButtonClass}>
+              {addButtonIcon}
+            </div>
+          </button>
+        )}
+        {isAdded && (
+          <button
+            type="button"
+            onClick={() => {
+              // Scroll to and focus the skill's textarea
+              const skillTextareaId = `skill-${skill.name}`;
+              const textarea = document.getElementById(skillTextareaId) as HTMLTextAreaElement;
+              if (textarea) {
+                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                  textarea.focus();
+                }, 300);
+              }
+            }}
+            className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
+            title="Edit skill description"
+          >
+            <div className={addButtonClass}>
+              {editButtonIcon}
+            </div>
+          </button>
+        )}
+      </li>
+    );
+  };
 
   if (authLoading || loading) {
     return (
@@ -723,54 +789,131 @@ export default function ProfilePage() {
             </div>
             )}
 
-            <div>
-              <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
-                Skills and Experience
-              </label>
-              <textarea
-                id="experience"
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
+            {/* Skills Selection */}
+            <div className="grid grid-cols-1 gap-4">
+              <label 
+                htmlFor="skills-section" 
+                className="block text-sm font-medium text-foreground mb-2"
                 onFocus={() => {
                   // Determine user role
                   const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
                   const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
                   const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
                   
-                  // For owners, show all risk level questions. For crew, show based on selected risk levels
+                  // For owners, show all skills. For crew, show based on selected risk levels
                   const isOwner = role === 'owner';
                   const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
                   const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
                   
                   setSidebarContent({
-                    title: 'Skills and Experience',
+                    title: 'Skills',
                     content: (
                       <>
-                        <p className="font-medium mb-3">Consider the following when describing your skills and experience:</p>
+                        <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
                         <ul className="space-y-3 list-none">
                           {/* General skills - always shown */}
-                          {skillsConfig.general.map(skill => renderSkillItem(skill, appendToExperience))}
+                          {skillsConfig.general.map(skill => renderSkillItem(skill))}
                           
                           {/* Offshore sailing skills */}
-                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill, appendToExperience))}
+                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
                           
                           {/* Extreme sailing skills */}
-                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill, appendToExperience))}
+                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
                         </ul>
                       </>
                     ),
                   });
                   setShowPreferencesSidebar(true);
                 }}
-                rows={4}
-                className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring"
-                placeholder={
-                  profile?.role === 'owner'
-                    ? 'Describe your sailing experience, years of ownership, etc.'
-                    : 'Describe your sailing experience, skills, previous voyages, etc.'
-                }
-              />
+              >
+                Skills
+              </label>
+              
+              {/* Display selected skills with editable descriptions */}
+              {formData.skills.length > 0 && (
+                <div className="space-y-3 mb-3">
+                  {formData.skills.map((skill) => {
+                    // Convert snake_case to Title Case for display
+                    const formatSkillName = (name: string) => {
+                      return name
+                        .split('_')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    };
+                    const displayName = formatSkillName(skill.skill_name);
+                    
+                    return (
+                      <div key={skill.skill_name} className="flex items-start gap-2 p-3 border border-border rounded-md bg-card">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <label className="text-sm font-medium text-foreground">
+                              {displayName}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removeSkill(skill.skill_name)}
+                              className="text-red-500 hover:text-red-700 text-sm font-medium"
+                              title="Remove skill"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          <textarea
+                            id={`skill-${skill.skill_name}`}
+                            value={skill.description}
+                            onChange={(e) => updateSkillDescription(skill.skill_name, e.target.value)}
+                            placeholder={`Describe your ${displayName.toLowerCase()} experience...`}
+                            rows={2}
+                            className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring text-sm"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* Add Skills button - always shown */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Determine user role
+                  const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
+                  const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
+                  const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
+                  
+                  // For owners, show all skills. For crew, show based on selected risk levels
+                  const isOwner = role === 'owner';
+                  const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
+                  const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
+                  
+                  setSidebarContent({
+                    title: 'Skills',
+                    content: (
+                      <>
+                        <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
+                        <ul className="space-y-3 list-none">
+                          {/* General skills - always shown */}
+                          {skillsConfig.general.map(skill => renderSkillItem(skill))}
+                          
+                          {/* Offshore sailing skills */}
+                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
+                          
+                          {/* Extreme sailing skills */}
+                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
+                        </ul>
+                      </>
+                    ),
+                  });
+                  setShowPreferencesSidebar(true);
+                }}
+                className="w-full px-4 py-3 border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Skills
+              </button>
             </div>
 
             <div>

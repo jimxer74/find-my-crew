@@ -294,63 +294,109 @@ Prove the core concepts work with minimal implementation before committing to fu
 
 ## Validation 4: Identity Verification & Security (Week 4)
 
-### 4.1 Verification Service Research
+### 4.1 MVP Verification Approach: OAuth + Passport + AI
 
-**Goal:** Identify viable identity verification solutions.
+**Goal:** Validate simplified MVP verification approach (OAuth + Passport OCR + Name Matching).
 
-**Tasks:**
-
-1. **Service Provider Evaluation**
-   - Research: Jumio, Onfido, Veriff, Persona, Stripe Identity
-   - Compare: cost, features, integration complexity, coverage
-   - Assess: API quality, documentation, support
-
-2. **Feature Comparison**
-   - ID document verification (passport, driver's license)
-   - Selfie verification (liveness detection)
-   - KYC compliance level
-   - Fraud detection capabilities
-   - Cost per verification
-   - Success rates by region
-
-**Deliverables:**
-- Service provider comparison matrix
-- Recommended provider(s)
-- Cost analysis per verification
-
-### 4.2 Integration Prototype
-
-**Goal:** Test integration feasibility and user experience.
+**MVP Approach:**
+- OAuth providers (Google, Facebook, LinkedIn) for identity source
+- Passport image upload for verification document
+- AI OCR to extract passport name
+- Name matching algorithm to verify OAuth name matches passport
 
 **Tasks:**
 
-1. **Build Integration Proof of Concept**
-   - Integrate selected provider's SDK/API
-   - Test verification flow (ID upload, selfie, verification result)
-   - Handle success/failure scenarios
-   - Test on mobile and desktop
+1. **OAuth Provider Research**
+   - Evaluate Google, Facebook, LinkedIn OAuth APIs
+   - Assess data quality (what identity info do they provide?)
+   - Compare setup complexity, reliability
+   - Test name data formats (handling variations, middle names)
 
-2. **User Experience Testing**
-   - How easy is verification to complete?
-   - How long does it take?
-   - What are failure scenarios? (poor photo, rejected ID, network issues)
-   - User feedback on verification process
+2. **OCR Service Evaluation**
+   - Test OCR services: Google Cloud Vision, AWS Textract, Azure Form Recognizer
+   - Evaluate passport text extraction accuracy
+   - Test with various passport formats (different countries, qualities)
+   - Assess cost per verification
 
-3. **Security Assessment**
-   - Does verification prevent obvious fraud?
-   - What additional checks are needed?
-   - How to handle verification failures gracefully?
+3. **Name Matching Algorithm Prototype**
+   - Build name normalization function
+   - Implement fuzzy matching (handle "John Smith" vs "John A. Smith")
+   - Test matching accuracy with various name formats
+   - Define similarity thresholds (verified/needs review/failed)
 
 **Deliverables:**
-- Integration prototype
-- UX test results
-- Security assessment
-- Recommended verification strategy
+- OAuth provider comparison (data quality, reliability)
+- OCR service recommendation
+- Name matching algorithm prototype
+- Matching accuracy test results
 
 **Success Criteria:**
-- Integration works reliably (90%+ success rate)
+- OCR extracts passport names with >90% accuracy
+- Name matching handles common variations (>80% match rate)
+- OAuth providers provide reliable identity data
+
+### 4.2 Verification Flow Prototype
+
+**Goal:** Test end-to-end verification flow.
+
+**Tasks:**
+
+1. **Build MVP Prototype**
+   - OAuth login integration (start with Google)
+   - Passport upload interface
+   - OCR integration (extract name from passport)
+   - Name matching logic
+   - Verification status tracking
+
+2. **User Experience Testing**
+   - Test with 10-15 users (various passport formats)
+   - Measure: completion time, success rate, user satisfaction
+   - Test failure scenarios (poor image quality, name mismatch)
+   - Gather user feedback
+
+3. **Security Assessment**
+   - Can users game the system? (fake passports, mismatched names)
+   - What fraud scenarios are possible?
+   - Does verification prevent obvious fraud?
+   - What manual review is needed?
+
+**Deliverables:**
+- Working verification prototype
+- UX test results
+- Security assessment
+- Recommended improvements
+
+**Success Criteria:**
+- Verification flow works end-to-end (90%+ success rate)
 - Verification takes <5 minutes for users
-- Security assessment shows fraud prevention capability
+- Security assessment shows basic fraud prevention
+- Users understand and trust the process
+
+### 4.3 Owner Confidence Validation
+
+**Goal:** Validate that verification increases owner trust in auto-approval.
+
+**Tasks:**
+
+1. **Owner Interviews**
+   - Show verification concept to owners
+   - Ask: Does this increase trust in auto-approval?
+   - Compare: Auto-approval with vs. without verification
+   - Identify additional verification needs
+
+2. **Trust Assessment**
+   - Measure owner comfort level (with/without verification)
+   - Assess if verification enables higher auto-approval threshold
+   - Validate that verified users are trusted more
+
+**Deliverables:**
+- Owner trust assessment
+- Verification impact on auto-approval acceptance
+- Required features for owner confidence
+
+**Success Criteria:**
+- >60% of owners trust auto-approval more with verification
+- Verification enables higher auto-approval acceptance rate
 
 ### 4.3 Fraud Prevention Strategy
 
