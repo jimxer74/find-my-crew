@@ -158,7 +158,7 @@ export function RegistrationRequirementsForm({
     <div className="space-y-4">
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-foreground mb-2">
-          Registration Requirements
+          Registration Questions
         </h3>
         <p className="text-sm text-muted-foreground">
           Please answer the following questions for: <span className="font-medium text-foreground">{legName}</span>

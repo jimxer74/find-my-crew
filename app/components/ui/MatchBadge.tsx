@@ -34,7 +34,7 @@ export function MatchBadge({
           {percentage === 100 ? 'Perfect Match' : `${percentage}% Match`}
         </span>
       )}
-      <span>{percentage}%</span>
+      <span></span>
     </span>
   );
 }
