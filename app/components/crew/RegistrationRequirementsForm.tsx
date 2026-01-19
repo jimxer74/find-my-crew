@@ -23,8 +23,10 @@ type Answer = {
 type RegistrationRequirementsFormProps = {
   journeyId: string;
   legName: string;
-  onComplete: (answers: Answer[]) => void;
+  onComplete: (answers: Answer[], notes: string) => void;
   onCancel: () => void;
+  isRegistering?: boolean;
+  registrationError?: string | null;
 };
 
 export function RegistrationRequirementsForm({
@@ -32,11 +34,14 @@ export function RegistrationRequirementsForm({
   legName,
   onComplete,
   onCancel,
+  isRegistering = false,
+  registrationError = null,
 }: RegistrationRequirementsFormProps) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [notes, setNotes] = useState('');
 
   useEffect(() => {
     loadRequirements();
@@ -65,7 +70,7 @@ export function RegistrationRequirementsForm({
     }
   };
 
-  const handleAnswerChange = (requirementId: string, value: string | any[]) => {
+  const handleAnswerChange = (requirementId: string, value: string | any[] | number) => {
     const requirement = requirements.find((r) => r.id === requirementId);
     if (!requirement) return;
 
@@ -76,7 +81,8 @@ export function RegistrationRequirementsForm({
     if (requirement.question_type === 'text' || requirement.question_type === 'yes_no') {
       newAnswer.answer_text = value as string;
     } else {
-      newAnswer.answer_json = value;
+      // For rating, store as number in answer_json
+      newAnswer.answer_json = typeof value === 'number' ? value : value;
     }
 
     setAnswers((prev) => ({
@@ -131,7 +137,7 @@ export function RegistrationRequirementsForm({
       (answer) => answer.answer_text || answer.answer_json
     );
 
-    onComplete(answersArray);
+    onComplete(answersArray, notes);
   };
 
   if (loading) {
@@ -143,7 +149,8 @@ export function RegistrationRequirementsForm({
   }
 
   if (requirements.length === 0) {
-    // No requirements, proceed directly
+    // No requirements - this form shouldn't be shown
+    // Parent component will show regular registration modal instead
     return null;
   }
 
@@ -158,7 +165,7 @@ export function RegistrationRequirementsForm({
         </p>
       </div>
 
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+      <div className="space-y-4">
         {requirements.map((requirement, index) => (
           <div key={requirement.id} className="border-b border-border pb-4 last:border-b-0">
             <label className="block text-sm font-medium text-foreground mb-2">
@@ -243,20 +250,47 @@ export function RegistrationRequirementsForm({
         ))}
       </div>
 
+      {/* Additional Notes Field */}
+      <div className="pt-4 border-t border-border">
+        <label className="block text-sm font-medium text-foreground mb-2">
+          Additional Notes (Optional)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Tell the owner why you're interested in this leg..."
+          className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+          rows={4}
+          maxLength={500}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          {notes.length}/500 characters
+        </p>
+      </div>
+
+      {/* Error Display */}
+      {registrationError && (
+        <div className="mt-4 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+          {registrationError}
+        </div>
+      )}
+
       <div className="flex gap-3 justify-end pt-4 border-t border-border">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          disabled={isRegistering}
+          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
         >
           Cancel
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+          disabled={isRegistering}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
         >
-          Continue Registration
+          {isRegistering ? 'Registering...' : 'Submit Registration'}
         </button>
       </div>
     </div>
