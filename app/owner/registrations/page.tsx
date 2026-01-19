@@ -377,59 +377,54 @@ export default function AllRegistrationsPage() {
           </div>
         </div>
 
-        {/* Registrations List */}
+        {/* Registrations Grid */}
         {registrations.length === 0 ? (
           <div className="bg-card rounded-lg shadow p-8 text-center">
             <p className="text-muted-foreground">No registrations found matching your filters.</p>
           </div>
         ) : (
           <>
-            <div className="space-y-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
               {registrations.map((registration) => {
                 const profile = registration.profiles;
                 const leg = registration.legs;
                 const journey = leg.journeys;
 
                 return (
-                  <div key={registration.id} className="bg-card rounded-lg shadow p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-foreground">
-                            {profile.full_name || profile.username || 'Unknown User'}
-                          </h3>
-                          {getStatusBadge(registration.status)}
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-sm text-muted-foreground">
-                            Journey: <Link href={`/owner/journeys/${journey.id}/legs`} className="font-medium text-primary hover:underline">{journey.name}</Link>
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Leg: <span className="font-medium text-foreground">{leg.name}</span>
-                          </p>
-                          {leg.start_date && (
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(leg.start_date)}
-                              {leg.end_date && ` - ${formatDate(leg.end_date)}`}
-                            </p>
-                          )}
-                        </div>
+                  <div key={registration.id} className="bg-card rounded-lg shadow p-5 flex flex-col h-full">
+                    {/* Header */}
+                    <div className="mb-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-base font-semibold text-foreground line-clamp-2 flex-1">
+                          {profile.full_name || profile.username || 'Unknown User'}
+                        </h3>
                       </div>
-                      <div className="text-right text-xs text-muted-foreground">
-                        <div>Registered: {formatDate(registration.created_at)}</div>
-                        {registration.updated_at !== registration.created_at && (
-                          <div>Updated: {formatDate(registration.updated_at)}</div>
+                      <div className="flex items-center gap-2 mb-2">
+                        {getStatusBadge(registration.status)}
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground">
+                          Journey: <Link href={`/owner/journeys/${journey.id}/legs`} className="font-medium text-primary hover:underline line-clamp-1">{journey.name}</Link>
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Leg: <span className="font-medium text-foreground">{leg.name}</span>
+                        </p>
+                        {leg.start_date && (
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(leg.start_date)}
+                            {leg.end_date && ` - ${formatDate(leg.end_date)}`}
+                          </p>
                         )}
                       </div>
                     </div>
 
                     {/* Profile Info */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border">
-                      <div>
+                    <div className="mb-4 pb-4 border-b border-border">
+                      <div className="mb-3">
                         <p className="text-xs text-muted-foreground mb-1">Experience Level</p>
                         {profile.sailing_experience ? (
                           <div className="flex items-center gap-2">
-                            <div className="relative w-8 h-8">
+                            <div className="relative w-6 h-6">
                               <Image
                                 src={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).icon}
                                 alt={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
@@ -480,49 +475,54 @@ export default function AllRegistrationsPage() {
                     {registration.notes && (
                       <div className="mb-4">
                         <p className="text-xs text-muted-foreground mb-1">Crew Member Notes:</p>
-                        <p className="text-sm text-foreground bg-accent/50 p-2 rounded">{registration.notes}</p>
+                        <p className="text-sm text-foreground bg-accent/50 p-2 rounded line-clamp-3">{registration.notes}</p>
                       </div>
                     )}
 
-                    {/* Actions */}
-                    {registration.status === 'Pending approval' && (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-xs text-muted-foreground mb-1">
-                            Add Notes (Optional)
-                          </label>
-                          <textarea
-                            value={updateNotes[registration.id] || ''}
-                            onChange={(e) => setUpdateNotes(prev => ({ ...prev, [registration.id]: e.target.value }))}
-                            placeholder="Add notes about this registration..."
-                            className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                            rows={2}
-                          />
+                    {/* Actions - Push to bottom */}
+                    <div className="mt-auto pt-3 border-t border-border">
+                      {registration.status === 'Pending approval' && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs text-muted-foreground mb-1">
+                              Add Notes (Optional)
+                            </label>
+                            <textarea
+                              value={updateNotes[registration.id] || ''}
+                              onChange={(e) => setUpdateNotes(prev => ({ ...prev, [registration.id]: e.target.value }))}
+                              placeholder="Add notes..."
+                              className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                              rows={2}
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleUpdateStatus(registration.id, 'Approved')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                            >
+                              {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
+                              disabled={updatingRegistrationId === registration.id}
+                              className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                            >
+                              {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleUpdateStatus(registration.id, 'Approved')}
-                            disabled={updatingRegistrationId === registration.id}
-                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-                          >
-                            {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
-                            disabled={updatingRegistrationId === registration.id}
-                            className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                          >
-                            {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
+                      )}
 
-                    {registration.status !== 'Pending approval' && (
-                      <div className="text-xs text-muted-foreground">
-                        Updated: {formatDate(registration.updated_at)}
-                      </div>
-                    )}
+                      {registration.status !== 'Pending approval' && (
+                        <div className="text-xs text-muted-foreground">
+                          <div>Registered: {formatDate(registration.created_at)}</div>
+                          {registration.updated_at !== registration.created_at && (
+                            <div>Updated: {formatDate(registration.updated_at)}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}

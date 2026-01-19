@@ -70,6 +70,8 @@ export function CrewBrowseMap({
   const [showAllLegs, setShowAllLegs] = useState(false); // When true, shows all legs regardless of experience level
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
+  const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const { user } = useAuth();
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
@@ -86,6 +88,24 @@ export function CrewBrowseMap({
   const showAllLegsRef = useRef(false);
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
+  const iconsLoadedRef = useRef(false);
+
+  // Function to create Mapbox-style pin marker icon with text
+  const createPinMarkerIcon = (color: string, text: string): string => {
+    // Create SVG for Mapbox-style pin marker with text inside and shadow
+    const svg = `
+      <svg width="27" height="41" viewBox="0 0 27 41" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)"/>
+          </filter>
+        </defs>
+        <path d="M13.5 0C6.04 0 0 6.04 0 13.5C0 23.58 13.5 41 13.5 41C13.5 41 27 23.58 27 13.5C27 6.04 20.96 0 13.5 0Z" fill="${color}" stroke="#fff" stroke-width="1.5" filter="url(#shadow)"/>
+        <text x="13.5" y="18" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle" dominant-baseline="middle">${text}</text>
+      </svg>
+    `;
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  };
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -187,7 +207,44 @@ export function CrewBrowseMap({
       }
     };
 
+    const loadUserRegistrations = async () => {
+      if (!user) {
+        setUserRegistrations(new Map());
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from('registrations')
+          .select('leg_id, status')
+          .eq('user_id', user.id)
+          .in('status', ['Approved', 'Pending approval']);
+
+        if (error) {
+          console.error('[CrewBrowseMap] Error loading registrations:', error);
+          setUserRegistrations(new Map());
+          return;
+        }
+
+        // Create map of leg_id -> status
+        const registrationsMap = new Map<string, 'Approved' | 'Pending approval'>();
+        (data || []).forEach((reg: { leg_id: string; status: string }) => {
+          if (reg.status === 'Approved' || reg.status === 'Pending approval') {
+            registrationsMap.set(reg.leg_id, reg.status as 'Approved' | 'Pending approval');
+          }
+        });
+
+        console.log('[CrewBrowseMap] User registrations loaded:', registrationsMap);
+        setUserRegistrations(registrationsMap);
+      } catch (error) {
+        console.error('[CrewBrowseMap] Error loading registrations:', error);
+        setUserRegistrations(new Map());
+      }
+    };
+
     loadUserProfile();
+    loadUserRegistrations();
   }, [user]);
 
   // Update refs when toggle changes and trigger reload
@@ -221,6 +278,7 @@ export function CrewBrowseMap({
           leg_id: leg.leg_id,
           match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
           experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
+          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Approved', 'Pending approval', or null
         },
       }));
 
@@ -544,7 +602,7 @@ export function CrewBrowseMap({
     };
 
     // Handle map load
-    map.current.on('load', () => {
+    map.current.on('load', async () => {
       console.log('[CrewBrowseMap] Map loaded');
       mapLoadedRef.current = true;
       setMapLoaded(true);
@@ -554,6 +612,34 @@ export function CrewBrowseMap({
       // Set cursor to default pointer
       if (map.current.getCanvasContainer()) {
         map.current.getCanvasContainer().style.cursor = 'default';
+      }
+
+      // Load custom pin marker icons for registered legs
+      if (!iconsLoadedRef.current && map.current) {
+        try {
+          // Create approved pin marker with green color and "A" text
+          const approvedIcon = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = createPinMarkerIcon('#22c55e', 'A'); // green-500
+          });
+          map.current.addImage('pin-marker-approved', approvedIcon);
+
+          // Create pending pin marker with yellow color and "P" text
+          const pendingIcon = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = createPinMarkerIcon('#eab308', 'P'); // yellow-500
+          });
+          map.current.addImage('pin-marker-pending', pendingIcon);
+
+          iconsLoadedRef.current = true;
+          console.log('[CrewBrowseMap] Custom pin marker icons loaded');
+        } catch (error) {
+          console.error('[CrewBrowseMap] Error loading custom pin marker icons:', error);
+        }
       }
 
       // Add GeoJSON source for legs with clustering
@@ -614,14 +700,57 @@ export function CrewBrowseMap({
         },
       });
 
-      // Add unclustered point layer (individual leg markers)
+      // Add icon layers for registered legs (approved and pending)
+      // These will be added after icons are loaded, but we define them here
+      // Approved registrations - green sailboat pin
+      map.current.addLayer({
+        id: 'registered-approved',
+        type: 'symbol',
+        source: 'legs-source',
+        filter: [
+          'all',
+          ['!', ['has', 'point_count']],
+          ['==', ['get', 'registration_status'], 'Approved'],
+        ],
+        layout: {
+          'icon-image': 'pin-marker-approved',
+          'icon-size': 0.8, // Pin marker size
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+        },
+      });
+
+      // Pending registrations - orange pin marker with "P"
+      map.current.addLayer({
+        id: 'registered-pending',
+        type: 'symbol',
+        source: 'legs-source',
+        filter: [
+          'all',
+          ['!', ['has', 'point_count']],
+          ['==', ['get', 'registration_status'], 'Pending approval'],
+        ],
+        layout: {
+          'icon-image': 'pin-marker-pending',
+          'icon-size': 0.8, // Pin marker size
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+        },
+      });
+
+      // Add unclustered point layer (individual leg markers for non-registered legs)
       // Color based on match percentage: green (80+), yellow (50-79), orange (25-49), red (<25)
       // Always show red if experience level doesn't match
+      // Only show circles for legs without registrations
       map.current.addLayer({
         id: 'unclustered-point',
         type: 'circle',
         source: 'legs-source',
-        filter: ['!', ['has', 'point_count']],
+        filter: [
+          'all',
+          ['!', ['has', 'point_count']],
+          ['==', ['get', 'registration_status'], null], // Only show circles for non-registered legs
+        ],
         paint: {
           'circle-color': [
             'case',
@@ -672,10 +801,10 @@ export function CrewBrowseMap({
         }
       });
 
-      // Handle clicks on unclustered points - select leg
+      // Handle clicks on unclustered points and registered icons - select leg
       const handlePointClick = async (e: mapboxgl.MapLayerMouseEvent) => {
         const features = map.current!.queryRenderedFeatures(e.point, {
-          layers: ['unclustered-point'],
+          layers: ['unclustered-point', 'registered-approved', 'registered-pending'],
         });
         
         if (features.length > 0) {
@@ -719,19 +848,74 @@ export function CrewBrowseMap({
       };
 
       map.current.on('click', 'unclustered-point', handlePointClick);
+      map.current.on('click', 'registered-approved', handlePointClick);
+      map.current.on('click', 'registered-pending', handlePointClick);
 
       // Change cursor on hover for unclustered points
-      map.current.on('mouseenter', 'unclustered-point', () => {
+      const handleMouseEnter = () => {
         if (map.current && map.current.getCanvasContainer()) {
           map.current.getCanvasContainer().style.cursor = 'pointer';
         }
-      });
+      };
 
-      map.current.on('mouseleave', 'unclustered-point', () => {
+      const handleMouseLeave = () => {
         if (map.current && map.current.getCanvasContainer()) {
           map.current.getCanvasContainer().style.cursor = '';
         }
-      });
+      };
+
+      // Tooltip handlers for registered markers
+      const handleRegisteredMouseEnter = (e: mapboxgl.MapLayerMouseEvent) => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = 'pointer';
+        }
+        
+        const features = map.current!.queryRenderedFeatures(e.point, {
+          layers: ['registered-approved', 'registered-pending'],
+        });
+        
+        if (features.length > 0) {
+          const feature = features[0];
+          const status = feature.properties?.registration_status as string;
+          const statusText = status === 'Approved' ? 'Approved' : 'Pending approval';
+          
+          // Get mouse coordinates relative to map container
+          const container = map.current.getCanvasContainer();
+          const rect = container.getBoundingClientRect();
+          
+          setTooltip({
+            text: `Status: ${statusText}`,
+            x: e.point.x,
+            y: e.point.y - 10, // Offset above the marker
+          });
+        }
+      };
+
+      const handleRegisteredMouseLeave = () => {
+        if (map.current && map.current.getCanvasContainer()) {
+          map.current.getCanvasContainer().style.cursor = '';
+        }
+        setTooltip(null);
+      };
+
+      const handleRegisteredMouseMove = (e: mapboxgl.MapLayerMouseEvent) => {
+        if (tooltip) {
+          setTooltip({
+            ...tooltip,
+            x: e.point.x,
+            y: e.point.y - 10,
+          });
+        }
+      };
+
+      map.current.on('mouseenter', 'unclustered-point', handleMouseEnter);
+      map.current.on('mouseleave', 'unclustered-point', handleMouseLeave);
+      map.current.on('mouseenter', 'registered-approved', handleRegisteredMouseEnter);
+      map.current.on('mouseleave', 'registered-approved', handleRegisteredMouseLeave);
+      map.current.on('mousemove', 'registered-approved', handleRegisteredMouseMove);
+      map.current.on('mouseenter', 'registered-pending', handleRegisteredMouseEnter);
+      map.current.on('mouseleave', 'registered-pending', handleRegisteredMouseLeave);
+      map.current.on('mousemove', 'registered-pending', handleRegisteredMouseMove);
 
       sourceAddedRef.current = true;
       
@@ -805,8 +989,21 @@ export function CrewBrowseMap({
           if (map.current.getLayer('unclustered-point')) {
             map.current.removeLayer('unclustered-point');
           }
+          if (map.current.getLayer('registered-approved')) {
+            map.current.removeLayer('registered-approved');
+          }
+          if (map.current.getLayer('registered-pending')) {
+            map.current.removeLayer('registered-pending');
+          }
           if (map.current.getLayer('leg-route-line')) {
             map.current.removeLayer('leg-route-line');
+          }
+          // Remove icons
+          if (map.current.hasImage('pin-marker-approved')) {
+            map.current.removeImage('pin-marker-approved');
+          }
+          if (map.current.hasImage('pin-marker-pending')) {
+            map.current.removeImage('pin-marker-pending');
           }
           // Arrow layer removed - no longer needed
           if (map.current.getSource('legs-source')) {
@@ -997,6 +1194,20 @@ export function CrewBrowseMap({
             <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             <span className="text-sm text-foreground">Loading legs...</span>
           </div>
+        </div>
+      )}
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="absolute bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg pointer-events-none z-20"
+          style={{
+            left: `${tooltip.x}px`,
+            top: `${tooltip.y}px`,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
+          {tooltip.text}
         </div>
       )}
 
