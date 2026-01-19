@@ -7,6 +7,7 @@ import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
 import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
 import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@/app/types/experience-levels';
+import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import Image from 'next/image';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
@@ -124,6 +125,7 @@ export function LegFormModal({
           
           // Don't set skills if journey has them - they're read-only
           // Only set leg skills if journey doesn't have skills and leg doesn't have them
+          // Note: journeySkillsData is already converted to display format in loadBoatCapacity
           const journeySkillsData = (journeyData as any).skills as string[] | null;
           if (skills.length === 0 && (!journeySkillsData || journeySkillsData.length === 0)) {
             // Neither journey nor leg has skills - this is fine, leg can have its own
@@ -162,10 +164,14 @@ export function LegFormModal({
       }
       
       // Store journey skills (if any) - they will be shown as read-only
+      // Convert from canonical format to display format for UI
       const journeySkillsData = (journeyData as any).skills as string[] | null;
       const hasJourneySkills = journeySkillsData && journeySkillsData.length > 0;
-      console.log('Setting journeySkills state to:', hasJourneySkills ? journeySkillsData : null);
-      setJourneySkills(hasJourneySkills ? journeySkillsData : null);
+      const displayJourneySkills = hasJourneySkills 
+        ? journeySkillsData.map(toDisplaySkillName)
+        : null;
+      console.log('Setting journeySkills state to:', displayJourneySkills);
+      setJourneySkills(displayJourneySkills);
       
       // Store journey min_experience_level (if any) - it will be shown as read-only
       const journeyExpLevel = (journeyData as any).min_experience_level as number | null;
@@ -209,7 +215,7 @@ export function LegFormModal({
               // If journey has skills, they will be shown as read-only, so we don't set leg skills
               if (shouldSetSkills) {
                 const journeySkillsData = (journeyData as any).skills as string[] | null;
-                console.log('Journey skills:', journeySkillsData);
+                console.log('Journey skills (canonical):', journeySkillsData);
                 // Only set leg skills if journey doesn't have skills defined
                 // If journey has skills, they are read-only and not stored in leg
                 if (!journeySkillsData || journeySkillsData.length === 0) {
@@ -352,7 +358,9 @@ export function LegFormModal({
       setStartDate(legData.start_date ? new Date(legData.start_date).toISOString().split('T')[0] : '');
       setEndDate(legData.end_date ? new Date(legData.end_date).toISOString().split('T')[0] : '');
       setCrewNeeded(legData.crew_needed || '');
-      setSkills(legData.skills || []);
+      // Convert skills from canonical format to display format for UI
+      const displaySkills = (legData.skills || []).map(toDisplaySkillName);
+      setSkills(displaySkills);
       setRiskLevel((legData.risk_level as RiskLevel) || null);
       // Set experience level: use leg's if set, otherwise use journey's (if available)
       // This ensures the UI shows the effective level even if leg doesn't have its own stored
@@ -417,10 +425,13 @@ export function LegFormModal({
         updated_at: new Date().toISOString(),
       };
       
+      // Normalize skills to canonical format (snake_case) for storage
+      const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+      
       // Only save skills to leg if journey doesn't have skills defined
       // If journey has skills, they are read-only and not stored in leg table
       if (!journeySkills || journeySkills.length === 0) {
-        legData.skills = skills;
+        legData.skills = normalizeSkillNames(skills); // Store in canonical format
       } else {
         // Journey has skills - don't save skills to leg, set to empty array
         legData.skills = [];

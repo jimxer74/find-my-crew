@@ -339,6 +339,13 @@ export default function JourneysPage() {
                           View legs
                         </Link>
                         <span className="text-border">|</span>
+                        <Link
+                          href={`/owner/journeys/${journey.id}/registrations`}
+                          className="font-medium text-sm text-primary hover:opacity-80"
+                        >
+                          Registrations
+                        </Link>
+                        <span className="text-border">|</span>
                         <button
                           onClick={() => {
                             setEditingJourneyId(journey.id);

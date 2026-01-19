@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
-import { MatchBadge } from '@/app/components/ui/MatchBadge';
-import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
+import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type Leg = {
   leg_id: string;
@@ -45,9 +46,10 @@ type LegDetailsPanelProps = {
   onClose: () => void;
   userSkills?: string[]; // User's skills for matching display
   userExperienceLevel?: number | null; // User's experience level for matching display
+  onRegistrationChange?: () => void; // Callback when registration status changes
 };
 
-export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null }: LegDetailsPanelProps) {
+export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -111,11 +113,152 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
   };
 
-  // Handle register button click (placeholder for now)
+  const { user } = useAuth();
+  const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [registrationNotes, setRegistrationNotes] = useState('');
+
+  // Load registration status when leg changes
+  useEffect(() => {
+    if (!user || !leg.leg_id) {
+      setRegistrationStatus(null);
+      return;
+    }
+
+    const loadRegistrationStatus = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('registrations')
+        .select('status')
+        .eq('leg_id', leg.leg_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error loading registration status:', error);
+        return;
+      }
+
+      setRegistrationStatus(data?.status || null);
+    };
+
+    loadRegistrationStatus();
+  }, [user, leg.leg_id]);
+
+  // Handle register button click
   const handleRegister = () => {
-    // TODO: Implement registration flow in Phase 4
-    console.log('Register for leg:', leg.leg_id);
-    alert('Registration feature coming soon!');
+    setShowRegistrationModal(true);
+    setRegistrationError(null);
+    setRegistrationNotes('');
+  };
+
+  // Submit registration
+  const handleSubmitRegistration = async () => {
+    if (!user) {
+      setRegistrationError('You must be logged in to register');
+      return;
+    }
+
+    setIsRegistering(true);
+    setRegistrationError(null);
+
+    try {
+      const response = await fetch('/api/registrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leg_id: leg.leg_id,
+          notes: registrationNotes.trim() || null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to register');
+      }
+
+      // Update local state
+      setRegistrationStatus(data.registration.status);
+      setShowRegistrationModal(false);
+      setRegistrationNotes('');
+      
+      // Notify parent component
+      onRegistrationChange?.();
+
+      // Show success message (could be replaced with toast notification)
+      console.log('Registration successful:', data.message);
+    } catch (error: any) {
+      setRegistrationError(error.message || 'An error occurred while registering');
+      console.error('Registration error:', error);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  // Cancel registration (set to Cancelled)
+  const handleCancelRegistration = async () => {
+    if (!user || !registrationStatus) return;
+
+    if (!confirm('Are you sure you want to cancel your registration?')) {
+      return;
+    }
+
+    setIsRegistering(true);
+    setRegistrationError(null);
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: registration } = await supabase
+        .from('registrations')
+        .select('id')
+        .eq('leg_id', leg.leg_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!registration) {
+        throw new Error('Registration not found');
+      }
+
+      const { error: updateError } = await supabase
+        .from('registrations')
+        .update({
+          status: 'Cancelled',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', registration.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setRegistrationStatus('Cancelled');
+      onRegistrationChange?.();
+    } catch (error: any) {
+      setRegistrationError(error.message || 'Failed to cancel registration');
+      console.error('Cancel registration error:', error);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'Approved': 'bg-green-100 text-green-800 border-green-300',
+      'Not approved': 'bg-red-100 text-red-800 border-red-300',
+      'Cancelled': 'bg-gray-100 text-gray-800 border-gray-300',
+    };
+
+    return (
+      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${statusConfig[status as keyof typeof statusConfig] || statusConfig['Pending approval']}`}>
+        {status}
+      </span>
+    );
   };
 
   // Prevent body scroll when panel is open
@@ -329,71 +472,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             )}
 
             {/* Skills */}
-            {leg.skills && leg.skills.length > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground">Required Skills</h3>
-                  {leg.skill_match_percentage !== undefined && userSkills.length > 0 && (
-                    <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
-                  )}
-                </div>
-                
-                {/* Show matching/missing breakdown if user has skills */}
-                {userSkills.length > 0 && leg.skill_match_percentage !== undefined ? (
-                  <div className="space-y-2">
-                    {(() => {
-                      const { matching, missing } = getMatchingAndMissingSkills(userSkills, leg.skills);
-                      return (
-                        <>
-                          {matching.length > 0 && (
-                            <div>
-                              <p className="text-xs font-medium text-green-700 mb-1">✓ You have ({matching.length}/{leg.skills.length}):</p>
-                              <div className="flex flex-wrap gap-2">
-                                {matching.map((skill, index) => (
-                                  <span
-                                    key={`match-${index}`}
-                                    className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs border border-green-300"
-                                  >
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {missing.length > 0 && (
-                            <div>
-                              <p className="text-xs font-medium text-orange-700 mb-1">⚠ Missing ({missing.length}/{leg.skills.length}):</p>
-                              <div className="flex flex-wrap gap-2">
-                                {missing.map((skill, index) => (
-                                  <span
-                                    key={`missing-${index}`}
-                                    className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs border border-orange-300"
-                                  >
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                ) : (
-                  /* If user has no skills, show all required skills */
-                  <div className="flex flex-wrap gap-2">
-                    {leg.skills.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+            <SkillsMatchingDisplay
+              legSkills={leg.skills || []}
+              userSkills={userSkills}
+              skillMatchPercentage={leg.skill_match_percentage}
+            />
 
             {/* Boat Info */}
             <div className="pt-4 border-t border-border">
@@ -423,15 +506,89 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             </div>
 
-            {/* Register Button */}
+            {/* Registration Section */}
             <div className="pt-4 border-t border-border">
-              <button
-                onClick={handleRegister}
-                className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
-              >
-                Register Interest
-              </button>
+              {registrationStatus ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Registration Status:</span>
+                    {getStatusBadge(registrationStatus)}
+                  </div>
+                  {registrationStatus === 'Pending approval' && (
+                    <button
+                      onClick={handleCancelRegistration}
+                      disabled={isRegistering}
+                      className="w-full bg-secondary text-secondary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      Cancel Registration
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={handleRegister}
+                  disabled={isRegistering}
+                  className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {isRegistering ? 'Registering...' : 'Register Interest'}
+                </button>
+              )}
+              {registrationError && (
+                <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+                  {registrationError}
+                </div>
+              )}
             </div>
+
+            {/* Registration Modal */}
+            {showRegistrationModal && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowRegistrationModal(false)}>
+                <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Register for Leg</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
+                  </p>
+                  
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Additional Notes (Optional)
+                    </label>
+                    <textarea
+                      value={registrationNotes}
+                      onChange={(e) => setRegistrationNotes(e.target.value)}
+                      placeholder="Tell the owner why you're interested in this leg..."
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      rows={4}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {registrationNotes.length}/500 characters
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      onClick={() => {
+                        setShowRegistrationModal(false);
+                        setRegistrationNotes('');
+                        setRegistrationError(null);
+                      }}
+                      disabled={isRegistering}
+                      className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSubmitRegistration}
+                      disabled={isRegistering}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      {isRegistering ? 'Registering...' : 'Submit Registration'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -92,7 +92,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
         <div className="hidden md:flex items-center gap-4">
           {user ? (
             <>
-              {userRole === 'owner' && (
+              {userRole === 'owner' ? (
                 <>
                   <Link
                     href="/owner/boats"
@@ -106,8 +106,29 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                   >
                     My Journeys
                   </Link>
+                  <Link
+                    href="/owner/registrations"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    Registrations
+                  </Link>
                 </>
-              )}
+              ) : userRole === 'crew' ? (
+                <>
+                  <Link
+                    href="/crew/dashboard"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    My Dashboard
+                  </Link>
+                  <Link
+                    href="/crew/registrations"
+                    className="text-sm font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    My Registrations
+                  </Link>
+                </>
+              ) : null}
               <Link
                 href="/profile"
                 className="text-sm font-medium text-foreground hover:text-primary transition-colors"
@@ -235,29 +256,70 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                         </svg>
                         <span className="font-medium">My Journeys & Legs</span>
                       </Link>
+
+                      {/* Registrations */}
+                      <Link
+                        href="/owner/registrations"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-3 text-muted-foreground"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="font-medium">Registrations</span>
+                      </Link>
                     </>
                   ) : (
-                    /* Crew Dashboard */
-                    <Link
-                      href="/crew/dashboard"
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
-                    >
-                      <svg
-                        className="w-5 h-5 mr-3 text-muted-foreground"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <>
+                      {/* Crew Dashboard */}
+                      <Link
+                        href="/crew/dashboard"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
                       >
-                        <circle cx="12" cy="12" r="10" />
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                      </svg>
-                      <span className="font-medium">My Dashboard</span>
-                    </Link>
+                        <svg
+                          className="w-5 h-5 mr-3 text-muted-foreground"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <circle cx="12" cy="12" r="3" />
+                          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                        </svg>
+                        <span className="font-medium">My Dashboard</span>
+                      </Link>
+                      {/* My Registrations */}
+                      <Link
+                        href="/crew/registrations"
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 mr-3 text-muted-foreground"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="font-medium">My Registrations</span>
+                      </Link>
+                    </>
                   )}
 
                   {/* Divider */}

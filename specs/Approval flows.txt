@@ -1,0 +1,19 @@
+Approval flows logic is based on the model where automation in approval is grandually increased from fully manual to fully automated approval process, 
+starting from fully manual process:
+
+1. Manual approval process
+- Owner screens through the registrations data and does the assessment of registrations and crew profile data and selects which ones to approve and which ones to deny
+
+2. Automated assessment
+- AI screens through the registrations, crew profile data and journey / leg data to find good matches and makes a proposal to owner which
+ones to approve and which ones to deny. Owner then makes to final call to approve / deny
+
+3. Automated approval
+- Owner can add new requirements for a journey to include specific questions or areas of knowledge and experience to be asked from 
+crew candidates when they register to a leg
+- AI screens through the registrations, the additional asnwers from candidates and assesses then against the requirements defined by owner
+,crew profile data and journey / leg data to find good matches and auto-approves high matches, if not auto-approved, process continues as in 2. where owner 
+can verify whether to approve or deny the registration
+
+Additional Interview step can be mandated to 1. 2. flows, where candidate is asked to book an interview with the owner. 
+

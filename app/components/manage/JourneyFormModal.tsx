@@ -6,6 +6,7 @@ import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
+import { toDisplaySkillName } from '@/app/lib/skillUtils';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
@@ -107,6 +108,9 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     if (fetchError) {
       setError('Failed to load journey details');
     } else if (data) {
+      // Convert skills from canonical format (snake_case) to display format (Title Case) for UI
+      const displaySkills = (data.skills || []).map(toDisplaySkillName);
+      
       setFormData({
         boat_id: data.boat_id || '',
         name: data.name || '',
@@ -114,7 +118,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
         risk_level: data.risk_level || [],
-        skills: data.skills || [],
+        skills: displaySkills, // Convert to display format for UI
         min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1, // Default to Beginner if null
         state: data.state || 'In planning',
       });
@@ -245,6 +249,10 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       }
     }
 
+    // Normalize skills to canonical format (snake_case) for storage
+    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const normalizedSkills = normalizeSkillNames(formData.skills || []);
+
     const journeyData = {
       boat_id: formData.boat_id,
       name: formData.name,
@@ -252,7 +260,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       end_date: formData.end_date || null,
       description: formData.description || null,
       risk_level: formData.risk_level || [],
-      skills: formData.skills || [],
+      skills: normalizedSkills, // Store in canonical format
       min_experience_level: formData.min_experience_level || 1, // Default to Beginner if somehow null
       state: formData.state,
       updated_at: new Date().toISOString(),

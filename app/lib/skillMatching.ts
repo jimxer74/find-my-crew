@@ -2,6 +2,8 @@
  * Utility functions for calculating skill match percentages
  */
 
+import { toCanonicalSkillName } from './skillUtils';
+
 /**
  * Calculate match percentage between user skills and leg required skills
  * @param userSkills - Array of user's skill names
@@ -29,9 +31,33 @@ export function calculateMatchPercentage(
     return 100;
   }
 
+  // Normalize all skills to canonical format for comparison
+  const normalizedUserSkills = userSkills.map(skill => toCanonicalSkillName(String(skill).trim())).filter(s => s.length > 0);
+  const normalizedLegSkills = legSkills.map(skill => toCanonicalSkillName(String(skill).trim())).filter(s => s.length > 0);
+  
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
+    console.log('[calculateMatchPercentage]', {
+      userSkills: userSkills,
+      legSkills: legSkills,
+      normalizedUserSkills,
+      normalizedLegSkills,
+    });
+  }
+  
   // Count how many leg skills the user has
-  const matchingSkills = userSkills.filter(skill => legSkills.includes(skill));
-  const matchPercentage = Math.round((matchingSkills.length / legSkills.length) * 100);
+  const matchingSkills = normalizedLegSkills.filter(skill => normalizedUserSkills.includes(skill));
+  const matchPercentage = Math.round((matchingSkills.length / normalizedLegSkills.length) * 100);
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
+    console.log('[calculateMatchPercentage] Result:', {
+      matchingSkills,
+      matchPercentage,
+      userCount: normalizedUserSkills.length,
+      legCount: normalizedLegSkills.length,
+    });
+  }
   
   return matchPercentage;
 }
@@ -115,6 +141,20 @@ export function checkExperienceLevelMatch(
 }
 
 /**
+ * Normalize skill name for comparison (trim whitespace, handle null/undefined, convert to canonical format)
+ */
+function normalizeSkillName(skill: any): string {
+  if (skill === null || skill === undefined) return '';
+  let skillName = '';
+  if (typeof skill === 'object' && skill.skill_name) {
+    skillName = String(skill.skill_name).trim();
+  } else {
+    skillName = String(skill).trim();
+  }
+  return toCanonicalSkillName(skillName);
+}
+
+/**
  * Get matching and missing skills
  * @param userSkills - Array of user's skill names
  * @param legSkills - Array of leg's required skill names
@@ -124,8 +164,30 @@ export function getMatchingAndMissingSkills(
   userSkills: string[],
   legSkills: string[]
 ): { matching: string[]; missing: string[] } {
-  const matching = userSkills.filter(skill => legSkills.includes(skill));
-  const missing = legSkills.filter(skill => !userSkills.includes(skill));
+  // Normalize all skill names for comparison
+  const normalizedUserSkills = userSkills.map(normalizeSkillName).filter(s => s.length > 0);
+  const normalizedLegSkills = legSkills.map(normalizeSkillName).filter(s => s.length > 0);
+  
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
+    console.log('[getMatchingAndMissingSkills]', {
+      userSkills,
+      legSkills,
+      normalizedUserSkills,
+      normalizedLegSkills,
+    });
+  }
+  
+  const matching = normalizedLegSkills.filter(skill => normalizedUserSkills.includes(skill));
+  const missing = normalizedLegSkills.filter(skill => !normalizedUserSkills.includes(skill));
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
+    console.log('[getMatchingAndMissingSkills] Result:', {
+      matching,
+      missing,
+    });
+  }
   
   return { matching, missing };
 }

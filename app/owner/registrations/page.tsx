@@ -1,0 +1,558 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { Header } from '@/app/components/Header';
+import { formatDate } from '@/app/lib/dateFormat';
+import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
+import Link from 'next/link';
+import Image from 'next/image';
+
+type Registration = {
+  id: string;
+  leg_id: string;
+  user_id: string;
+  status: 'Pending approval' | 'Approved' | 'Not approved' | 'Cancelled';
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+  legs: {
+    id: string;
+    name: string;
+    start_date: string | null;
+    end_date: string | null;
+    journey_id: string;
+    journeys: {
+      id: string;
+      name: string;
+      boat_id: string;
+      boats: {
+        id: string;
+        name: string;
+        owner_id: string;
+      };
+    };
+  };
+  profiles: {
+    id: string;
+    full_name: string | null;
+    username: string | null;
+    sailing_experience: number | null;
+    skills: string[];
+    phone: string | null;
+  };
+};
+
+type Journey = {
+  id: string;
+  name: string;
+};
+
+type Leg = {
+  id: string;
+  name: string;
+  journey_id: string;
+};
+
+export default function AllRegistrationsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  
+  const [loading, setLoading] = useState(true);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterJourneyId, setFilterJourneyId] = useState<string>('all');
+  const [filterLegId, setFilterLegId] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [legs, setLegs] = useState<Leg[]>([]);
+  const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null);
+  const [updateNotes, setUpdateNotes] = useState<{ [key: string]: string }>({});
+
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+      return;
+    }
+
+    if (user) {
+      loadJourneys();
+      loadRegistrations();
+    }
+  }, [user, authLoading, router]);
+
+  useEffect(() => {
+    if (user) {
+      loadRegistrations();
+      setCurrentPage(1); // Reset to first page when filters change
+    }
+  }, [filterStatus, filterJourneyId, filterLegId, sortBy, sortOrder]);
+
+  useEffect(() => {
+    if (filterJourneyId !== 'all') {
+      loadLegsForJourney(filterJourneyId);
+    } else {
+      setLegs([]);
+      setFilterLegId('all');
+    }
+  }, [filterJourneyId]);
+
+  const loadJourneys = async () => {
+    if (!user) return;
+
+    try {
+      const supabase = await import('@/app/lib/supabaseClient').then(m => m.getSupabaseBrowserClient());
+      
+      // Get owner's boats
+      const { data: boats } = await supabase
+        .from('boats')
+        .select('id')
+        .eq('owner_id', user.id);
+
+      if (!boats || boats.length === 0) {
+        setJourneys([]);
+        return;
+      }
+
+      const boatIds = boats.map(boat => boat.id);
+
+      // Get journeys for owner's boats
+      const { data: journeysData, error } = await supabase
+        .from('journeys')
+        .select('id, name')
+        .in('boat_id', boatIds)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading journeys:', error);
+      } else {
+        setJourneys(journeysData || []);
+      }
+    } catch (error) {
+      console.error('Error loading journeys:', error);
+    }
+  };
+
+  const loadLegsForJourney = async (journeyId: string) => {
+    if (!user) return;
+
+    try {
+      const supabase = await import('@/app/lib/supabaseClient').then(m => m.getSupabaseBrowserClient());
+      const { data, error } = await supabase
+        .from('legs')
+        .select('id, name, journey_id')
+        .eq('journey_id', journeyId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Error loading legs:', error);
+      } else {
+        setLegs(data || []);
+      }
+    } catch (error) {
+      console.error('Error loading legs:', error);
+    }
+  };
+
+  const loadRegistrations = async () => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filterStatus !== 'all') {
+        params.append('status', filterStatus);
+      }
+      if (filterJourneyId !== 'all') {
+        params.append('journey_id', filterJourneyId);
+      }
+      if (filterLegId !== 'all') {
+        params.append('leg_id', filterLegId);
+      }
+      params.append('sort_by', sortBy);
+      params.append('sort_order', sortOrder);
+      params.append('limit', itemsPerPage.toString());
+      params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
+
+      const url = `/api/registrations/owner/all?${params.toString()}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to load registrations');
+      }
+
+      const data = await response.json();
+      setRegistrations(data.registrations || []);
+      setTotalCount(data.total || 0);
+    } catch (error: any) {
+      console.error('Error loading registrations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      loadRegistrations();
+    }
+  }, [currentPage]);
+
+  const handleUpdateStatus = async (registrationId: string, status: 'Approved' | 'Not approved' | 'Cancelled') => {
+    setUpdatingRegistrationId(registrationId);
+
+    try {
+      const notes = updateNotes[registrationId] || null;
+
+      const response = await fetch(`/api/registrations/${registrationId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          notes,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update registration');
+      }
+
+      // Reload registrations
+      await loadRegistrations();
+      // Clear notes for this registration
+      setUpdateNotes(prev => {
+        const next = { ...prev };
+        delete next[registrationId];
+        return next;
+      });
+    } catch (error: any) {
+      console.error('Error updating registration:', error);
+      alert(error.message || 'Failed to update registration');
+    } finally {
+      setUpdatingRegistrationId(null);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      'Approved': 'bg-green-100 text-green-800 border-green-300',
+      'Not approved': 'bg-red-100 text-red-800 border-red-300',
+      'Cancelled': 'bg-gray-100 text-gray-800 border-gray-300',
+    };
+
+    return (
+      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${statusConfig[status as keyof typeof statusConfig] || statusConfig['Pending approval']}`}>
+        {status}
+      </span>
+    );
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Header />
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-foreground mb-2">All Registrations</h1>
+          <p className="text-muted-foreground">Manage crew registrations across all your journeys</p>
+        </div>
+
+        {/* Filters and Sorting */}
+        <div className="mb-6 bg-card rounded-lg shadow p-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Status Filter */}
+            <div>
+              <label htmlFor="filter-status" className="block text-sm font-medium text-foreground mb-2">
+                Status
+              </label>
+              <select
+                id="filter-status"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">All Statuses</option>
+                <option value="Pending approval">Pending approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Not approved">Not approved</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            {/* Journey Filter */}
+            <div>
+              <label htmlFor="filter-journey" className="block text-sm font-medium text-foreground mb-2">
+                Journey
+              </label>
+              <select
+                id="filter-journey"
+                value={filterJourneyId}
+                onChange={(e) => setFilterJourneyId(e.target.value)}
+                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="all">All Journeys</option>
+                {journeys.map((journey) => (
+                  <option key={journey.id} value={journey.id}>
+                    {journey.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Leg Filter */}
+            <div>
+              <label htmlFor="filter-leg" className="block text-sm font-medium text-foreground mb-2">
+                Leg
+              </label>
+              <select
+                id="filter-leg"
+                value={filterLegId}
+                onChange={(e) => setFilterLegId(e.target.value)}
+                disabled={filterJourneyId === 'all' || legs.length === 0}
+                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <option value="all">All Legs</option>
+                {legs.map((leg) => (
+                  <option key={leg.id} value={leg.id}>
+                    {leg.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Sort By */}
+            <div>
+              <label htmlFor="sort-by" className="block text-sm font-medium text-foreground mb-2">
+                Sort By
+              </label>
+              <select
+                id="sort-by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="created_at">Registration Date</option>
+                <option value="updated_at">Last Updated</option>
+                <option value="status">Status</option>
+                <option value="journey_name">Journey Name</option>
+                <option value="leg_name">Leg Name</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Sort Order */}
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-foreground">Sort Order:</label>
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="px-3 py-1 border border-border bg-input-background rounded-md text-sm hover:bg-accent transition-colors flex items-center gap-1"
+            >
+              {sortOrder === 'asc' ? '↑' : '↓'} {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+            </button>
+          </div>
+
+          {/* Results Count */}
+          <div className="text-sm text-muted-foreground">
+            Showing {registrations.length} of {totalCount} {totalCount === 1 ? 'registration' : 'registrations'}
+          </div>
+        </div>
+
+        {/* Registrations List */}
+        {registrations.length === 0 ? (
+          <div className="bg-card rounded-lg shadow p-8 text-center">
+            <p className="text-muted-foreground">No registrations found matching your filters.</p>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-4 mb-6">
+              {registrations.map((registration) => {
+                const profile = registration.profiles;
+                const leg = registration.legs;
+                const journey = leg.journeys;
+
+                return (
+                  <div key={registration.id} className="bg-card rounded-lg shadow p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <h3 className="text-lg font-semibold text-foreground">
+                            {profile.full_name || profile.username || 'Unknown User'}
+                          </h3>
+                          {getStatusBadge(registration.status)}
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm text-muted-foreground">
+                            Journey: <Link href={`/owner/journeys/${journey.id}/legs`} className="font-medium text-primary hover:underline">{journey.name}</Link>
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Leg: <span className="font-medium text-foreground">{leg.name}</span>
+                          </p>
+                          {leg.start_date && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatDate(leg.start_date)}
+                              {leg.end_date && ` - ${formatDate(leg.end_date)}`}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right text-xs text-muted-foreground">
+                        <div>Registered: {formatDate(registration.created_at)}</div>
+                        {registration.updated_at !== registration.created_at && (
+                          <div>Updated: {formatDate(registration.updated_at)}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Profile Info */}
+                    <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Experience Level</p>
+                        {profile.sailing_experience ? (
+                          <div className="flex items-center gap-2">
+                            <div className="relative w-8 h-8">
+                              <Image
+                                src={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).icon}
+                                alt={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                            <span className="text-sm text-foreground">
+                              {getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">Not specified</p>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Skills</p>
+                        {profile.skills && profile.skills.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {profile.skills.slice(0, 5).map((skillJson: string, idx: number) => {
+                              let skillName = skillJson;
+                              try {
+                                const parsed = JSON.parse(skillJson);
+                                skillName = parsed.skill_name || skillJson;
+                              } catch {
+                                // Not JSON, use as-is
+                              }
+                              return (
+                                <span
+                                  key={idx}
+                                  className="px-2 py-0.5 bg-accent text-accent-foreground rounded-full text-xs"
+                                >
+                                  {skillName}
+                                </span>
+                              );
+                            })}
+                            {profile.skills.length > 5 && (
+                              <span className="text-xs text-muted-foreground">+{profile.skills.length - 5} more</span>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No skills listed</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Notes */}
+                    {registration.notes && (
+                      <div className="mb-4">
+                        <p className="text-xs text-muted-foreground mb-1">Crew Member Notes:</p>
+                        <p className="text-sm text-foreground bg-accent/50 p-2 rounded">{registration.notes}</p>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    {registration.status === 'Pending approval' && (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs text-muted-foreground mb-1">
+                            Add Notes (Optional)
+                          </label>
+                          <textarea
+                            value={updateNotes[registration.id] || ''}
+                            onChange={(e) => setUpdateNotes(prev => ({ ...prev, [registration.id]: e.target.value }))}
+                            placeholder="Add notes about this registration..."
+                            className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                            rows={2}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUpdateStatus(registration.id, 'Approved')}
+                            disabled={updatingRegistrationId === registration.id}
+                            className="flex-1 bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                          >
+                            {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
+                            disabled={updatingRegistrationId === registration.id}
+                            className="flex-1 bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                          >
+                            {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {registration.status !== 'Pending approval' && (
+                      <div className="text-xs text-muted-foreground">
+                        Updated: {formatDate(registration.updated_at)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-muted-foreground">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </main>
+    </div>
+  );
+}

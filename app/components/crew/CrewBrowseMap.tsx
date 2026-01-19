@@ -161,28 +161,13 @@ export function CrewBrowseMap({
         return;
       }
 
-      // Load skills
+      // Load skills - keep in canonical format for matching
       if (data?.skills && Array.isArray(data.skills)) {
         // Parse skills from JSON strings to extract skill_name
         // Skills are stored as: ['{"skill_name": "first_aid", "description": "..."}', ...]
-        const parsedSkills: string[] = [];
-        data.skills.forEach((skillJson: string) => {
-          try {
-            const skillObj = JSON.parse(skillJson);
-            if (skillObj.skill_name) {
-              // Convert snake_case to Title Case to match API format
-              const skillName = skillObj.skill_name
-                .split('_')
-                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-                .join(' ');
-              parsedSkills.push(skillName);
-            }
-          } catch {
-            // If it's not JSON, treat as plain skill name
-            parsedSkills.push(skillJson);
-          }
-        });
-        console.log('[CrewBrowseMap] User skills loaded:', parsedSkills);
+        const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
+        const parsedSkills = normalizeSkillNames(data.skills);
+        console.log('[CrewBrowseMap] User skills loaded (canonical):', parsedSkills);
         setUserSkills(parsedSkills);
         userSkillsRef.current = parsedSkills;
       } else {
@@ -1023,6 +1008,10 @@ export function CrewBrowseMap({
           onClose={() => setSelectedLeg(null)}
           userSkills={userSkills}
           userExperienceLevel={userExperienceLevel}
+          onRegistrationChange={() => {
+            // Could refresh data or show notification here
+            console.log('Registration status changed');
+          }}
         />
       )}
     </div>

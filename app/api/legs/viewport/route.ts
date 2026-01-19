@@ -153,7 +153,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Normalize skills to canonical format (handles both display and canonical formats)
+    // This ensures compatibility even if migration hasn't been run yet
+    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    
     // Transform waypoints from GeoJSON to { lng, lat, name } format
+    // Also normalize skills to canonical format
     const transformedData = (data || []).map((leg: any) => {
       const transformWaypoint = (waypointData: any) => {
         if (!waypointData || !waypointData.coordinates) {
@@ -169,6 +174,7 @@ export async function GET(request: NextRequest) {
 
       return {
         ...leg,
+        skills: normalizeSkillNames(leg.skills || []), // Normalize skills to canonical format
         start_waypoint: transformWaypoint(leg.start_waypoint),
         end_waypoint: transformWaypoint(leg.end_waypoint),
       };
