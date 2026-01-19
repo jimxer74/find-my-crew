@@ -22,16 +22,21 @@ export async function POST(
     const resolvedParams = params instanceof Promise ? await params : params;
     const registrationId = resolvedParams.registrationId;
     
+    console.log(`[AI Assessment API] Manual assessment triggered for registration: ${registrationId}`);
+    
     const supabase = await getSupabaseServerClient();
     
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.error(`[AI Assessment API] Unauthorized access attempt for registration: ${registrationId}`);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
+    
+    console.log(`[AI Assessment API] Authenticated user: ${user.id}`);
 
     // Verify registration exists
     const { data: registration, error: regError } = await supabase
@@ -62,14 +67,29 @@ export async function POST(
       .single();
 
     if (regError || !registration) {
+      console.error(`[AI Assessment API] Registration not found: ${registrationId}`, regError);
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }
       );
     }
 
+    const registrationData = registration as any;
+
+    console.log(`[AI Assessment API] Registration loaded:`, {
+      registrationId: registrationData.id,
+      legId: registrationData.leg_id,
+      userId: registrationData.user_id,
+      status: registrationData.status,
+      journeyId: registrationData.legs?.journeys?.id,
+      journeyName: registrationData.legs?.journeys?.name,
+      autoApprovalEnabled: registrationData.legs?.journeys?.auto_approval_enabled,
+      threshold: registrationData.legs?.journeys?.auto_approval_threshold,
+    });
+
     // Check if auto-approval is enabled for this journey
-    if (!registration.legs.journeys.auto_approval_enabled) {
+    if (!registrationData.legs?.journeys?.auto_approval_enabled) {
+      console.log(`[AI Assessment API] Auto-approval not enabled for journey ${registrationData.legs?.journeys?.id}`);
       return NextResponse.json(
         { error: 'Auto-approval is not enabled for this journey' },
         { status: 400 }
@@ -83,7 +103,7 @@ export async function POST(
       .eq('id', user.id)
       .single();
 
-    const isJourneyOwner = registration.legs.journeys.boats.owner_id === user.id;
+    const isJourneyOwner = registrationData.legs?.journeys?.boats?.owner_id === user.id;
     if (!isJourneyOwner && profile?.role !== 'owner') {
       return NextResponse.json(
         { error: 'Only journey owners can trigger assessments' },
@@ -95,7 +115,7 @@ export async function POST(
     const { data: crewProfile } = await supabase
       .from('profiles')
       .select('full_name, sailing_experience, skills, risk_level, sailing_preferences')
-      .eq('id', registration.user_id)
+      .eq('id', registrationData.user_id)
       .single();
 
     if (!crewProfile) {
@@ -109,7 +129,7 @@ export async function POST(
     const { data: requirements } = await supabase
       .from('journey_requirements')
       .select('*')
-      .eq('journey_id', registration.legs.journeys.id)
+      .eq('journey_id', registrationData.legs?.journeys?.id)
       .order('order', { ascending: true });
 
     const { data: answers } = await supabase
@@ -130,28 +150,59 @@ export async function POST(
     const { data: leg } = await supabase
       .from('legs')
       .select('name, skills, min_experience_level, risk_level, start_date, end_date')
-      .eq('id', registration.leg_id)
+      .eq('id', registrationData.leg_id)
       .single();
 
+    console.log(`[AI Assessment API] Data loaded:`, {
+      crewProfile: {
+        userId: registrationData.user_id,
+        fullName: crewProfile.full_name,
+        experienceLevel: crewProfile.sailing_experience,
+        skillsCount: Array.isArray(crewProfile.skills) ? crewProfile.skills.length : 0,
+      },
+      requirementsCount: requirements?.length || 0,
+      answersCount: answers?.length || 0,
+      legName: leg?.name,
+    });
+
     // Build AI prompt
+    console.log(`[AI Assessment API] Building assessment prompt...`);
     const prompt = buildAssessmentPrompt({
       crewProfile,
-      journey: registration.legs.journeys,
+      journey: registrationData.legs?.journeys,
       leg,
       requirements: requirements || [],
       answers: answers || [],
     });
 
+    console.log(`[AI Assessment API] Prompt built, length: ${prompt.length} characters`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[AI Assessment API] Prompt preview (first 500 chars):`, prompt.substring(0, 500));
+    }
+
     // Call AI service
+    console.log(`[AI Assessment API] Calling AI service...`);
     let aiResponse: string;
+    const aiStartTime = Date.now();
     try {
       const result = await callAI({
         useCase: 'assess-registration',
         prompt,
       });
       aiResponse = result.text;
+      const aiDuration = Date.now() - aiStartTime;
+      console.log(`[AI Assessment API] AI call completed in ${aiDuration}ms:`, {
+        provider: result.provider,
+        model: result.model,
+        responseLength: aiResponse.length,
+      });
     } catch (aiError: any) {
-      console.error('AI assessment failed:', aiError);
+      const aiDuration = Date.now() - aiStartTime;
+      console.error(`[AI Assessment API] AI assessment failed after ${aiDuration}ms:`, {
+        error: aiError.message,
+        stack: aiError.stack,
+        registrationId,
+      });
       return NextResponse.json(
         { 
           error: 'AI assessment failed', 
@@ -163,6 +214,7 @@ export async function POST(
     }
 
     // Parse AI response (expecting JSON)
+    console.log(`[AI Assessment API] Parsing AI response...`);
     let assessment: {
       match_score: number;
       reasoning: string;
@@ -174,11 +226,21 @@ export async function POST(
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         assessment = JSON.parse(jsonMatch[0]);
+        console.log(`[AI Assessment API] Successfully parsed assessment:`, {
+          matchScore: assessment.match_score,
+          recommendation: assessment.recommendation,
+          reasoningLength: assessment.reasoning?.length || 0,
+        });
       } else {
+        console.error(`[AI Assessment API] No JSON found in AI response. Full response:`, aiResponse);
         throw new Error('No JSON found in AI response');
       }
     } catch (parseError) {
-      console.error('Failed to parse AI response:', aiResponse);
+      console.error(`[AI Assessment API] Failed to parse AI response:`, {
+        error: parseError,
+        responseText: aiResponse,
+        registrationId,
+      });
       return NextResponse.json(
         { 
           error: 'Failed to parse AI assessment response',
@@ -190,14 +252,23 @@ export async function POST(
 
     // Validate assessment
     if (typeof assessment.match_score !== 'number' || assessment.match_score < 0 || assessment.match_score > 100) {
+      console.error(`[AI Assessment API] Invalid match_score:`, assessment.match_score);
       return NextResponse.json(
         { error: 'Invalid match_score from AI (must be 0-100)' },
         { status: 500 }
       );
     }
 
-    const threshold = registration.legs.journeys.auto_approval_threshold || 80;
+    const threshold = registrationData.legs?.journeys?.auto_approval_threshold || 80;
     const shouldAutoApprove = assessment.match_score >= threshold && assessment.recommendation !== 'deny';
+    
+    console.log(`[AI Assessment API] Assessment results:`, {
+      matchScore: assessment.match_score,
+      threshold: threshold,
+      recommendation: assessment.recommendation,
+      shouldAutoApprove: shouldAutoApprove,
+      currentStatus: registrationData.status,
+    });
 
     // Update registration with AI assessment
     const updateData: any = {
@@ -205,10 +276,20 @@ export async function POST(
       ai_match_reasoning: assessment.reasoning || null,
     };
 
-    if (shouldAutoApprove && registration.status === 'Pending approval') {
+    if (shouldAutoApprove && registrationData.status === 'Pending approval') {
       updateData.status = 'Approved';
       updateData.auto_approved = true;
+      console.log(`[AI Assessment API] Auto-approving registration: ${registrationId}`);
+    } else {
+      console.log(`[AI Assessment API] Not auto-approving (score: ${assessment.match_score}%, threshold: ${threshold}%, status: ${registrationData.status})`);
     }
+
+    console.log(`[AI Assessment API] Updating registration with:`, {
+      ai_match_score: updateData.ai_match_score,
+      ai_match_reasoning_length: updateData.ai_match_reasoning?.length || 0,
+      status: updateData.status || 'unchanged',
+      auto_approved: updateData.auto_approved || false,
+    });
 
     const { data: updatedRegistration, error: updateError } = await supabase
       .from('registrations')
@@ -218,12 +299,22 @@ export async function POST(
       .single();
 
     if (updateError) {
-      console.error('Error updating registration:', updateError);
+      console.error(`[AI Assessment API] Error updating registration:`, {
+        registrationId,
+        error: updateError,
+        updateData,
+      });
       return NextResponse.json(
         { error: 'Failed to update registration with assessment', details: updateError.message },
         { status: 500 }
       );
     }
+
+    console.log(`[AI Assessment API] Successfully completed assessment for registration: ${registrationId}`, {
+      finalStatus: updateData.status || registrationData.status,
+      matchScore: updateData.ai_match_score,
+      autoApproved: updateData.auto_approved || false,
+    });
 
     return NextResponse.json({
       assessment: {

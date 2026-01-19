@@ -262,9 +262,25 @@ export async function POST(request: NextRequest) {
     // Trigger AI assessment if auto-approval is enabled
     // Do this asynchronously to not block registration creation
     if (autoApprovalEnabled && hasRequirements && answers && answers.length > 0) {
+      console.log(`[Registration API] Triggering AI assessment for registration: ${registration.id}`, {
+        journeyId: leg.journeys.id,
+        autoApprovalEnabled,
+        hasRequirements,
+        answersCount: answers.length,
+      });
       assessRegistrationWithAI(supabase, registration.id).catch((error) => {
-        console.error('AI assessment failed (non-blocking):', error);
+        console.error(`[Registration API] AI assessment failed (non-blocking) for registration ${registration.id}:`, {
+          error: error.message,
+          stack: error.stack,
+        });
         // Don't fail registration creation if AI assessment fails
+      });
+    } else {
+      console.log(`[Registration API] Skipping AI assessment:`, {
+        registrationId: registration.id,
+        autoApprovalEnabled,
+        hasRequirements,
+        hasAnswers: !!(answers && answers.length > 0),
       });
     }
 
