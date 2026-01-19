@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
+import { LegMobileCard } from './LegMobileCard';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage, checkExperienceLevelMatch } from '@/app/lib/skillMatching';
@@ -61,13 +62,13 @@ export function CrewBrowseMap({
   const [legs, setLegs] = useState<Leg[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null);
+  const [showFullPanelOnMobile, setShowFullPanelOnMobile] = useState(false);
   const [legWaypoints, setLegWaypoints] = useState<Array<{
     id: string;
     index: number;
     name: string | null;
     coordinates: [number, number] | null;
   }>>([]);
-  const [showAllLegs, setShowAllLegs] = useState(false); // When true, shows all legs regardless of experience level
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
   const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
@@ -85,7 +86,6 @@ export function CrewBrowseMap({
   const sourceAddedRef = useRef(false);
   const routeSourceAddedRef = useRef(false);
   const isFittingBoundsRef = useRef(false);
-  const showAllLegsRef = useRef(false);
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
   const iconsLoadedRef = useRef(false);
@@ -249,7 +249,6 @@ export function CrewBrowseMap({
 
   // Update refs when toggle changes and trigger reload
   useEffect(() => {
-    showAllLegsRef.current = showAllLegs;
     // Trigger reload when toggle changes
     if (map.current && mapLoadedRef.current) {
       // Trigger a moveend event to reload legs with new filter
@@ -259,7 +258,7 @@ export function CrewBrowseMap({
         }
       }, 100);
     }
-  }, [showAllLegs]);
+  });
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -343,7 +342,6 @@ export function CrewBrowseMap({
 
       const currentZoom = map.current.getZoom();
       console.log('[CrewBrowseMap] handleViewportChange:', { zoom: currentZoom });
-      setZoomLevel(currentZoom);
 
       // Clear any existing timer
       if (viewportDebounceTimerRef.current) {
@@ -531,13 +529,8 @@ export function CrewBrowseMap({
             // This allows us to show match percentages for all legs
             console.log('[CrewBrowseMap] Fetching all legs (filtering by match % on frontend)');
 
-            // Add experience level filter unless "Show all legs" is enabled
-            if (!showAllLegsRef.current && userExperienceLevelRef.current !== null) {
-              params.append('min_experience_level', userExperienceLevelRef.current.toString());
-              console.log('[CrewBrowseMap] Applying experience level filter:', userExperienceLevelRef.current);
-            } else {
-              console.log('[CrewBrowseMap] Showing all legs (experience level filter disabled)');
-            }
+            // Always show all legs (no experience level filter)
+            console.log('[CrewBrowseMap] Showing all legs');
 
             const url = `/api/legs/viewport?${params.toString()}`;
             console.log('[CrewBrowseMap] Fetching from:', url);
@@ -593,13 +586,6 @@ export function CrewBrowseMap({
         }, 300);
     };
 
-    // Update zoom level when zoom changes
-    const updateZoom = () => {
-      if (map.current) {
-        const currentZoom = map.current.getZoom();
-        setZoomLevel(currentZoom);
-      }
-    };
 
     // Handle map load
     map.current.on('load', async () => {
@@ -817,6 +803,7 @@ export function CrewBrowseMap({
             // Clear previous selection first to prevent focusing on old leg
             setSelectedLeg(null);
             setLegWaypoints([]);
+            setShowFullPanelOnMobile(false);
             
             // Small delay to ensure state is cleared
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -953,14 +940,11 @@ export function CrewBrowseMap({
       
       // Attach viewport handlers now that map is loaded
       if (map.current) {
-        map.current.on('zoom', updateZoom);
         map.current.on('zoomend', handleViewportChange);
         map.current.on('moveend', handleViewportChange);
       }
       
-      // Set initial zoom level
       const currentZoom = map.current.getZoom();
-      setZoomLevel(currentZoom);
       console.log('[CrewBrowseMap] Initial zoom:', currentZoom);
       
       // Trigger initial leg load
@@ -1020,7 +1004,6 @@ export function CrewBrowseMap({
         
         
         // Remove event listeners
-        map.current.off('zoom', updateZoom);
         map.current.off('zoomend', handleViewportChange);
         map.current.off('moveend', handleViewportChange);
         // Note: We can't easily remove the click handler without storing a reference
@@ -1152,40 +1135,6 @@ export function CrewBrowseMap({
       className={`w-full h-full relative ${className}`}
       style={{ minHeight: '400px', cursor: 'default', ...(style || {}) }}
     >
-      {/* Controls Panel */}
-      <div className="absolute top-4 right-4 bg-card border border-border rounded-lg shadow-lg px-4 py-2 z-10 space-y-3">
-        {/* Debug: Zoom level */}
-        <div className="text-sm text-foreground font-mono space-y-1">
-          <div>Zoom: {zoomLevel.toFixed(2)}</div>
-          {legs.length > 0 && (
-            <div className="text-xs text-muted-foreground">
-              {legs.length} {legs.length === 1 ? 'leg' : 'legs'}
-            </div>
-          )}
-        </div>
-
-        {/* Show All Legs Toggle */}
-        <div className="border-t border-border pt-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showAllLegs}
-              onChange={(e) => setShowAllLegs(e.target.checked)}
-              className="rounded border-border"
-            />
-            <span className="text-sm text-foreground">
-              Show all legs
-            </span>
-          </label>
-          <div className="text-xs text-muted-foreground mt-1 ml-6">
-            {showAllLegs 
-              ? 'Showing all legs regardless of experience level'
-              : userExperienceLevel !== null
-                ? `Filtering to Level ${userExperienceLevel} or higher`
-                : 'No experience level filter (no level in profile)'}
-          </div>
-        </div>
-      </div>
 
       {/* Loading indicator */}
       {loading && (
@@ -1211,19 +1160,56 @@ export function CrewBrowseMap({
         </div>
       )}
 
-      {/* Leg Details Panel - Left Side */}
-      {selectedLeg && (
-        <LegDetailsPanel
+      {/* Mobile Card - Bottom Center (Mobile only, when not showing full panel) */}
+      {selectedLeg && !showFullPanelOnMobile && (
+        <LegMobileCard
           leg={selectedLeg}
-          isOpen={!!selectedLeg}
           onClose={() => setSelectedLeg(null)}
-          userSkills={userSkills}
-          userExperienceLevel={userExperienceLevel}
-          onRegistrationChange={() => {
-            // Could refresh data or show notification here
-            console.log('Registration status changed');
+          onClick={() => {
+            // Open full panel on mobile when card is clicked
+            setShowFullPanelOnMobile(true);
           }}
         />
+      )}
+
+      {/* Leg Details Panel - Full screen on mobile, side panel on desktop */}
+      {selectedLeg && (
+        <>
+          {/* Mobile: Full screen panel */}
+          {showFullPanelOnMobile && (
+            <div className="md:hidden">
+              <LegDetailsPanel
+                leg={selectedLeg}
+                isOpen={true}
+                onClose={() => {
+                  setShowFullPanelOnMobile(false);
+                  setSelectedLeg(null);
+                }}
+                userSkills={userSkills}
+                userExperienceLevel={userExperienceLevel}
+                onRegistrationChange={() => {
+                  // Could refresh data or show notification here
+                  console.log('Registration status changed');
+                }}
+              />
+            </div>
+          )}
+          
+          {/* Desktop: Side panel */}
+          <div className="hidden md:block">
+            <LegDetailsPanel
+              leg={selectedLeg}
+              isOpen={!!selectedLeg}
+              onClose={() => setSelectedLeg(null)}
+              userSkills={userSkills}
+              userExperienceLevel={userExperienceLevel}
+              onRegistrationChange={() => {
+                // Could refresh data or show notification here
+                console.log('Registration status changed');
+              }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
