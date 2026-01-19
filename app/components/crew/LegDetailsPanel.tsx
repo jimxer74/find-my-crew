@@ -22,6 +22,7 @@ type Leg = {
   boat_name: string;
   boat_type: string | null;
   boat_image_url: string | null;
+  boat_average_speed_knots: number | null;
   skipper_name: string | null;
   min_experience_level: number | null;
   skill_match_percentage?: number;
@@ -67,14 +68,31 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   const distance = calculateDistance();
 
-  // Calculate duration in days
-  const calculateDuration = (): number | null => {
-    if (!leg.start_date || !leg.end_date) return null;
-    const start = new Date(leg.start_date);
-    const end = new Date(leg.end_date);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  // Calculate duration in hours based on distance and speed (matching owner page calculation)
+  const calculateDuration = (): { hours: number | null; formatted: string } => {
+    // Ensure boat speed is a valid number
+    const boatSpeed = typeof leg.boat_average_speed_knots === 'string' 
+      ? parseFloat(leg.boat_average_speed_knots) 
+      : leg.boat_average_speed_knots;
+    
+    if (!distance || !boatSpeed || boatSpeed <= 0 || isNaN(boatSpeed)) {
+      return { hours: null, formatted: 'N/A' };
+    }
+    
+    // Account for 70-80% efficiency due to conditions (same as owner page)
+    const effectiveSpeed = boatSpeed * 0.75;
+    const hours = distance / effectiveSpeed;
+    
+    // Format duration as human-readable string (same as owner page)
+    if (hours < 24) {
+      return { hours, formatted: `${Math.round(hours)}h` };
+    }
+    const days = Math.floor(hours / 24);
+    const remainingHours = Math.round(hours % 24);
+    if (remainingHours === 0) {
+      return { hours, formatted: `${days}d` };
+    }
+    return { hours, formatted: `${days}d ${remainingHours}h` };
   };
 
   const duration = calculateDuration();
@@ -155,71 +173,119 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Description */}
             {leg.leg_description && (
               <div>
-                <p className="text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
               </div>
             )}
 
-            {/* Journey Info */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Start Location */}
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-1">Start</h3>
-                <p className="text-foreground">
-                  {leg.start_waypoint?.name || 'Unknown location'}
-                </p>
-                {leg.start_date && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatDate(leg.start_date)}
-                  </p>
+            {/* Start and End Points with Arrow */}
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-4">
+              {/* Start Point */}
+              <div className="flex flex-col justify-center">
+                {leg.start_waypoint ? (
+                  <div className="text-xs text-foreground leading-tight">
+                    <div className="font-semibold">
+                      {(() => {
+                        const name = leg.start_waypoint.name || 'Unknown location';
+                        if (!name || name === 'Unknown location') {
+                          return name;
+                        }
+                        const parts = name.split(',').map(part => part.trim());
+                        if (parts.length >= 2) {
+                          const city = parts[0];
+                          const country = parts.slice(1).join(', ');
+                          return (
+                            <>
+                              {city}
+                              {country && <span className="font-normal">, {country}</span>}
+                            </>
+                          );
+                        }
+                        return name;
+                      })()}
+                    </div>
+                    {leg.start_date && (
+                      <div className="text-xs font-medium text-foreground">
+                        {formatDate(leg.start_date)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">No start point</div>
                 )}
               </div>
 
-              {/* End Location */}
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-1">End</h3>
-                <p className="text-foreground">
-                  {leg.end_waypoint?.name || 'Unknown location'}
-                </p>
-                {leg.end_date && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatDate(leg.end_date)}
-                  </p>
+              {/* Arrow */}
+              <div className="text-foreground flex items-center justify-center flex-shrink-0">
+                <span className="text-lg">→</span>
+              </div>
+
+              {/* End Point */}
+              <div className="flex flex-col justify-center">
+                {leg.end_waypoint ? (
+                  <div className="text-xs text-foreground leading-tight">
+                    <div className="font-semibold">
+                      {(() => {
+                        const name = leg.end_waypoint.name || 'Unknown location';
+                        if (!name || name === 'Unknown location') {
+                          return name;
+                        }
+                        const parts = name.split(',').map(part => part.trim());
+                        if (parts.length >= 2) {
+                          const city = parts[0];
+                          const country = parts.slice(1).join(', ');
+                          return (
+                            <>
+                              {city}
+                              {country && <span className="font-normal">, {country}</span>}
+                            </>
+                          );
+                        }
+                        return name;
+                      })()}
+                    </div>
+                    {leg.end_date && (
+                      <div className="text-xs font-medium text-foreground">
+                        {formatDate(leg.end_date)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">No end point</div>
                 )}
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
-              {distance !== null && (
+            {/* Duration and Distance */}
+            {distance !== null && (
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-4 pt-3">
+                {leg.boat_average_speed_knots && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">Duration</div>
+                    <div className="text-sm font-medium text-foreground">
+                      {duration.formatted}
+                      <span className="text-xs text-muted-foreground ml-1">
+                        ({Math.round(distance)}nm @ {typeof leg.boat_average_speed_knots === 'string' ? parseFloat(leg.boat_average_speed_knots) : leg.boat_average_speed_knots}kt)
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {/* Empty spacer to align with arrow column */}
+                {leg.boat_average_speed_knots && <div></div>}
                 <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">Distance</h3>
-                  <p className="text-lg font-semibold text-foreground">
-                    {distance.toFixed(0)} <span className="text-sm font-normal">nm</span>
-                  </p>
+                  <div className="text-xs text-muted-foreground mb-1">Distance</div>
+                  <div className="text-sm font-medium text-foreground">
+                    {Math.round(distance)} nm
+                  </div>
                 </div>
-              )}
-              {duration !== null && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">Duration</h3>
-                  <p className="text-lg font-semibold text-foreground">
-                    {duration} <span className="text-sm font-normal">day{duration !== 1 ? 's' : ''}</span>
-                  </p>
-                </div>
-              )}
-              {leg.crew_needed !== null && (
-                <div>
-                  <h3 className="text-sm font-semibold text-muted-foreground mb-1">Crew Needed</h3>
-                  <p className="text-lg font-semibold text-foreground">{leg.crew_needed}</p>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Risk Level */}
             {leg.risk_level && (
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Risk Level</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Risk Level</h3>
                 <span
-                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getRiskLevelColor(
+                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(
                     leg.risk_level
                   )}`}
                 >
@@ -265,8 +331,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Skills */}
             {leg.skills && leg.skills.length > 0 && (
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground">Required Skills</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground">Required Skills</h3>
                   {leg.skill_match_percentage !== undefined && userSkills.length > 0 && (
                     <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
                   )}
@@ -331,10 +397,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Boat Info */}
             <div className="pt-4 border-t border-border">
-              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Boat & Skipper</h3>
-              <div className="flex gap-4">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat & Skipper</h3>
+              <div className="flex gap-3">
                 {leg.boat_image_url && (
-                  <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
                       src={leg.boat_image_url}
                       alt={leg.boat_name}
@@ -344,12 +410,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-foreground mb-1">{leg.boat_name}</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">{leg.boat_name}</h4>
                   {leg.boat_type && (
-                    <p className="text-sm text-muted-foreground mb-2">{leg.boat_type}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{leg.boat_type}</p>
                   )}
                   {leg.skipper_name && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       Skipper: <span className="text-foreground">{leg.skipper_name}</span>
                     </p>
                   )}

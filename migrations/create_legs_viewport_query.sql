@@ -53,6 +53,7 @@ RETURNS TABLE (
   boat_name text,
   boat_type sailboat_category,
   boat_image_url text,  -- First image from images array
+  boat_average_speed_knots numeric,  -- Boat's average speed in knots
   skipper_name text,  -- Owner's full_name from profiles
   min_experience_level integer,  -- Minimum required experience level from journey
   start_waypoint jsonb,  -- GeoJSON of start waypoint (index = 0)
@@ -91,6 +92,7 @@ BEGIN
       WHEN array_length(b.images, 1) > 0 THEN b.images[1]
       ELSE NULL
     END AS boat_image_url,
+    b.average_speed_knots AS boat_average_speed_knots,
     -- Get skipper (owner) name from profiles
     p.full_name AS skipper_name,
     -- Get minimum required experience level: use leg's if set, otherwise journey's
