@@ -9,6 +9,7 @@ import { Header } from '@/app/components/Header';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
+import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
 
 type SkillEntry = {
   skill_name: string;
@@ -22,7 +23,7 @@ type Profile = {
   full_name: string | null;
   certifications: string | null;
   phone: string | null;
-  sailing_experience: 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null;
+  sailing_experience: ExperienceLevel | null;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   skills: string[]; // Array of JSON strings: ['{"skill_name": "first_aid", "description": "..."}', ...]
   sailing_preferences: string | null;
@@ -71,7 +72,7 @@ export default function ProfilePage() {
     full_name: '',
     certifications: '',
     phone: '',
-    sailing_experience: null as 'Beginner' | 'Competent Crew' | 'Coastal Skipper' | 'Offshore Skipper' | null,
+    sailing_experience: null as ExperienceLevel | null,
     risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
     skills: [] as SkillEntry[], // Array of skill objects with skill_name and description
     sailing_preferences: '',
@@ -158,7 +159,7 @@ export default function ProfilePage() {
         full_name: data.full_name || '',
         certifications: data.certifications || '',
         phone: data.phone || '',
-        sailing_experience: data.sailing_experience || null,
+        sailing_experience: (data.sailing_experience as ExperienceLevel | null) || null,
         risk_level: data.risk_level || [],
         skills: parsedSkills,
         sailing_preferences: data.sailing_preferences || '',
@@ -546,23 +547,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SkillLevelSelector
-                value={formData.sailing_experience}
-                onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
-                onInfoClick={(title, content) => {
-                  setSidebarContent({ title, content });
-                  setShowPreferencesSidebar(true);
-                  // Scroll to top of sidebar after opening
-                  setTimeout(() => {
-                    if (sidebarScrollRef.current) {
-                      sidebarScrollRef.current.scrollTop = 0;
-                    }
-                  }, 100);
-                }}
-              />
-            </div>
-
             {/* Risk Level - Only visible for crew members */}
             {(profile?.role === 'crew' || (isNewProfile && (searchParams.get('role') === 'crew' || user?.user_metadata?.role === 'crew'))) && (
               <div className="grid grid-cols-1 gap-4">
@@ -788,6 +772,23 @@ export default function ProfilePage() {
               />
             </div>
             )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SkillLevelSelector
+                value={formData.sailing_experience}
+                onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
+                onInfoClick={(title, content) => {
+                  setSidebarContent({ title, content });
+                  setShowPreferencesSidebar(true);
+                  // Scroll to top of sidebar after opening
+                  setTimeout(() => {
+                    if (sidebarScrollRef.current) {
+                      sidebarScrollRef.current.scrollTop = 0;
+                    }
+                  }, 100);
+                }}
+              />
+            </div>
 
             {/* Skills Selection */}
             <div className="grid grid-cols-1 gap-4">

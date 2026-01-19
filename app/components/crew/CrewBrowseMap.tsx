@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type Leg = {
   leg_id: string;
@@ -60,6 +62,9 @@ export function CrewBrowseMap({
     name: string | null;
     coordinates: [number, number] | null;
   }>>([]);
+  const [useSkillMatching, setUseSkillMatching] = useState(true);
+  const [userSkills, setUserSkills] = useState<string[]>([]);
+  const { user } = useAuth();
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
   const mapLoadedRef = useRef(false);
@@ -72,6 +77,8 @@ export function CrewBrowseMap({
   const sourceAddedRef = useRef(false);
   const routeSourceAddedRef = useRef(false);
   const isFittingBoundsRef = useRef(false);
+  const useSkillMatchingRef = useRef(true);
+  const userSkillsRef = useRef<string[]>([]);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -119,6 +126,75 @@ export function CrewBrowseMap({
       legsMapRef.current.set(leg.leg_id, leg);
     });
   }, [legs]);
+
+  // Load user's skills from profile
+  useEffect(() => {
+    if (!user) {
+      setUserSkills([]);
+      userSkillsRef.current = [];
+      return;
+    }
+
+    const loadUserSkills = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('skills')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('[CrewBrowseMap] Error loading user skills:', error);
+        setUserSkills([]);
+        userSkillsRef.current = [];
+        return;
+      }
+
+      if (data?.skills && Array.isArray(data.skills)) {
+        // Parse skills from JSON strings to extract skill_name
+        // Skills are stored as: ['{"skill_name": "first_aid", "description": "..."}', ...]
+        const parsedSkills: string[] = [];
+        data.skills.forEach((skillJson: string) => {
+          try {
+            const skillObj = JSON.parse(skillJson);
+            if (skillObj.skill_name) {
+              // Convert snake_case to Title Case to match API format
+              const skillName = skillObj.skill_name
+                .split('_')
+                .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+              parsedSkills.push(skillName);
+            }
+          } catch {
+            // If it's not JSON, treat as plain skill name
+            parsedSkills.push(skillJson);
+          }
+        });
+        console.log('[CrewBrowseMap] User skills loaded:', parsedSkills);
+        setUserSkills(parsedSkills);
+        userSkillsRef.current = parsedSkills;
+      } else {
+        setUserSkills([]);
+        userSkillsRef.current = [];
+      }
+    };
+
+    loadUserSkills();
+  }, [user]);
+
+  // Update ref when skill matching toggle changes and trigger reload
+  useEffect(() => {
+    useSkillMatchingRef.current = useSkillMatching;
+    // Trigger reload when skill matching toggle changes
+    if (map.current && mapLoadedRef.current) {
+      // Trigger a moveend event to reload legs with new filter
+      setTimeout(() => {
+        if (map.current && mapLoadedRef.current) {
+          map.current.fire('moveend');
+        }
+      }, 100);
+    }
+  }, [useSkillMatching]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -176,8 +252,9 @@ export function CrewBrowseMap({
     // Add navigation controls
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    // Handle viewport changes (move, zoom) - load legs when zoom > 3.5
-    const handleViewportChange = async () => {
+      // Handle viewport changes (move, zoom) - load legs when zoom > 3.5
+      // Note: This function captures state at mount time, but we'll use refs for dynamic values
+      const handleViewportChange = async () => {
       if (!map.current || !mapLoadedRef.current || isLoadingRef.current) {
         console.log('[CrewBrowseMap] handleViewportChange: map not ready or already loading', {
           hasMap: !!map.current,
@@ -380,6 +457,15 @@ export function CrewBrowseMap({
               max_lng: maxLng.toString(),
               max_lat: maxLat.toString(),
             });
+
+            // Add skills filter if skill matching is enabled and user has skills
+            // Use refs to get latest values since handleViewportChange is defined in useEffect
+            if (useSkillMatchingRef.current && userSkillsRef.current.length > 0) {
+              params.append('skills', userSkillsRef.current.join(','));
+              console.log('[CrewBrowseMap] Applying skill filter:', userSkillsRef.current);
+            } else {
+              console.log('[CrewBrowseMap] Skill matching disabled or no skills');
+            }
 
             const url = `/api/legs/viewport?${params.toString()}`;
             console.log('[CrewBrowseMap] Fetching from:', url);
@@ -813,13 +899,39 @@ export function CrewBrowseMap({
       className={`w-full h-full relative ${className}`}
       style={{ minHeight: '400px', cursor: 'default', ...(style || {}) }}
     >
-      {/* Debug: Zoom level */}
-      <div className="absolute top-4 right-4 bg-card border border-border rounded-lg shadow-lg px-4 py-2 z-10">
+      {/* Controls Panel */}
+      <div className="absolute top-4 right-4 bg-card border border-border rounded-lg shadow-lg px-4 py-2 z-10 space-y-3">
+        {/* Debug: Zoom level */}
         <div className="text-sm text-foreground font-mono space-y-1">
           <div>Zoom: {zoomLevel.toFixed(2)}</div>
           {legs.length > 0 && (
             <div className="text-xs text-muted-foreground">
               {legs.length} {legs.length === 1 ? 'leg' : 'legs'}
+            </div>
+          )}
+        </div>
+
+        {/* Skill Matching Toggle */}
+        <div className="border-t border-border pt-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useSkillMatching}
+              onChange={(e) => setUseSkillMatching(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-sm text-foreground">
+              Match my skills
+            </span>
+          </label>
+          {useSkillMatching && userSkills.length > 0 && (
+            <div className="text-xs text-muted-foreground mt-1 ml-6">
+              {userSkills.length} {userSkills.length === 1 ? 'skill' : 'skills'} matched
+            </div>
+          )}
+          {useSkillMatching && userSkills.length === 0 && (
+            <div className="text-xs text-muted-foreground mt-1 ml-6">
+              No skills in profile
             </div>
           )}
         </div>

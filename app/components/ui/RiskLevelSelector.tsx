@@ -126,7 +126,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium text-foreground mb-3">
-        Risk Level
+        Sailing preferences and Risk tolerance
       </label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Coastal sailing */}

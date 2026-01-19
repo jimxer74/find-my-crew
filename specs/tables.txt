@@ -71,7 +71,7 @@ create table if not exists public.profiles (
   experience  text,          -- free text for now
   certifications text,       -- free text or JSON later
   phone       text,
-  sailing_experience text,   -- 'Beginner', 'Confident Crew', 'Competent Coastal', 'Advanced'
+  sailing_experience integer,   -- Experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
   risk_level  risk_level[] default '{}',   -- User preferred risk levels for sailing journeys (array)
   skills      text[] default '{}',  -- User skills array - skill names from skills-config.json (e.g., "First Aid", "Navigation", "Night Sailing")
   sailing_preferences text,  -- User sailing preferences and preferences description
@@ -176,6 +176,7 @@ create table if not exists public.journeys (
   description  text,
   risk_level   risk_level[] default '{}',
   skills       text[] default '{}',  -- Required skills for this journey (array of skill names)
+  min_experience_level integer,  -- Minimum required experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
   state        journey_state not null default 'In planning',
   is_ai_generated boolean default false,
   ai_prompt    text,

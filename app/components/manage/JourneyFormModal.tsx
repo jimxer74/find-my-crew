@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
+import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
+import { ExperienceLevel } from '@/app/types/experience-levels';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
@@ -16,6 +18,7 @@ type Journey = {
   description: string;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   skills: string[];
+  min_experience_level: ExperienceLevel | null;
   state: JourneyState;
 };
 
@@ -64,6 +67,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           description: '',
           risk_level: [],
           skills: [],
+          min_experience_level: null,
           state: 'In planning',
         });
         setError(null);
@@ -110,6 +114,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         description: data.description || '',
         risk_level: data.risk_level || [],
         skills: data.skills || [],
+        min_experience_level: (data.min_experience_level as ExperienceLevel | null) || null,
         state: data.state || 'In planning',
       });
     }
@@ -222,6 +227,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       description: formData.description || null,
       risk_level: formData.risk_level || [],
       skills: formData.skills || [],
+      min_experience_level: formData.min_experience_level || null,
       state: formData.state,
       updated_at: new Date().toISOString(),
     };
@@ -391,6 +397,14 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                     value={formData.risk_level}
                     onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
                   />
+
+                  {/* Minimum Required Experience Level */}
+                  <div className="md:col-span-2">
+                    <SkillLevelSelector
+                      value={formData.min_experience_level}
+                      onChange={(min_experience_level) => setFormData(prev => ({ ...prev, min_experience_level }))}
+                    />
+                  </div>
 
                   {/* Skills */}
                   <div className="md:col-span-2">
