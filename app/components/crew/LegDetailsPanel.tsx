@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Image from 'next/image';
 import { formatDate } from '@/app/lib/dateFormat';
+import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 
 type Leg = {
   leg_id: string;
@@ -20,6 +21,7 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   skipper_name: string | null;
+  min_experience_level: number | null;
   start_waypoint: {
     lng: number;
     lat: number;
@@ -217,6 +219,31 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
                 >
                   {leg.risk_level}
                 </span>
+              </div>
+            )}
+
+            {/* Minimum Required Experience Level */}
+            {leg.min_experience_level && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Minimum Experience Level</h3>
+                <div className="flex items-center gap-3">
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <Image
+                      src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
+                      alt={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <div>
+                    <p className="text-foreground font-medium">
+                      {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).description}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 

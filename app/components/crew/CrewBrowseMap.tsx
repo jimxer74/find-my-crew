@@ -23,6 +23,7 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   skipper_name: string | null;
+  min_experience_level: number | null;
   start_waypoint: {
     lng: number;
     lat: number;
@@ -63,7 +64,9 @@ export function CrewBrowseMap({
     coordinates: [number, number] | null;
   }>>([]);
   const [useSkillMatching, setUseSkillMatching] = useState(true);
+  const [useExperienceMatching, setUseExperienceMatching] = useState(true);
   const [userSkills, setUserSkills] = useState<string[]>([]);
+  const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
   const { user } = useAuth();
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
@@ -78,7 +81,9 @@ export function CrewBrowseMap({
   const routeSourceAddedRef = useRef(false);
   const isFittingBoundsRef = useRef(false);
   const useSkillMatchingRef = useRef(true);
+  const useExperienceMatchingRef = useRef(true);
   const userSkillsRef = useRef<string[]>([]);
+  const userExperienceLevelRef = useRef<number | null>(null);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -127,29 +132,34 @@ export function CrewBrowseMap({
     });
   }, [legs]);
 
-  // Load user's skills from profile
+  // Load user's skills and experience level from profile
   useEffect(() => {
     if (!user) {
       setUserSkills([]);
       userSkillsRef.current = [];
+      setUserExperienceLevel(null);
+      userExperienceLevelRef.current = null;
       return;
     }
 
-    const loadUserSkills = async () => {
+    const loadUserProfile = async () => {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from('profiles')
-        .select('skills')
+        .select('skills, sailing_experience')
         .eq('id', user.id)
         .single();
 
       if (error) {
-        console.error('[CrewBrowseMap] Error loading user skills:', error);
+        console.error('[CrewBrowseMap] Error loading user profile:', error);
         setUserSkills([]);
         userSkillsRef.current = [];
+        setUserExperienceLevel(null);
+        userExperienceLevelRef.current = null;
         return;
       }
 
+      // Load skills
       if (data?.skills && Array.isArray(data.skills)) {
         // Parse skills from JSON strings to extract skill_name
         // Skills are stored as: ['{"skill_name": "first_aid", "description": "..."}', ...]
@@ -177,12 +187,23 @@ export function CrewBrowseMap({
         setUserSkills([]);
         userSkillsRef.current = [];
       }
+
+      // Load experience level
+      if (data?.sailing_experience !== null && data?.sailing_experience !== undefined) {
+        const experienceLevel = data.sailing_experience as number;
+        console.log('[CrewBrowseMap] User experience level loaded:', experienceLevel);
+        setUserExperienceLevel(experienceLevel);
+        userExperienceLevelRef.current = experienceLevel;
+      } else {
+        setUserExperienceLevel(null);
+        userExperienceLevelRef.current = null;
+      }
     };
 
-    loadUserSkills();
+    loadUserProfile();
   }, [user]);
 
-  // Update ref when skill matching toggle changes and trigger reload
+  // Update refs when matching toggles change and trigger reload
   useEffect(() => {
     useSkillMatchingRef.current = useSkillMatching;
     // Trigger reload when skill matching toggle changes
@@ -195,6 +216,19 @@ export function CrewBrowseMap({
       }, 100);
     }
   }, [useSkillMatching]);
+
+  useEffect(() => {
+    useExperienceMatchingRef.current = useExperienceMatching;
+    // Trigger reload when experience matching toggle changes
+    if (map.current && mapLoadedRef.current) {
+      // Trigger a moveend event to reload legs with new filter
+      setTimeout(() => {
+        if (map.current && mapLoadedRef.current) {
+          map.current.fire('moveend');
+        }
+      }, 100);
+    }
+  }, [useExperienceMatching]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -465,6 +499,14 @@ export function CrewBrowseMap({
               console.log('[CrewBrowseMap] Applying skill filter:', userSkillsRef.current);
             } else {
               console.log('[CrewBrowseMap] Skill matching disabled or no skills');
+            }
+
+            // Add experience level filter if experience matching is enabled and user has experience level
+            if (useExperienceMatchingRef.current && userExperienceLevelRef.current !== null) {
+              params.append('min_experience_level', userExperienceLevelRef.current.toString());
+              console.log('[CrewBrowseMap] Applying experience level filter:', userExperienceLevelRef.current);
+            } else {
+              console.log('[CrewBrowseMap] Experience matching disabled or no experience level');
             }
 
             const url = `/api/legs/viewport?${params.toString()}`;
@@ -932,6 +974,31 @@ export function CrewBrowseMap({
           {useSkillMatching && userSkills.length === 0 && (
             <div className="text-xs text-muted-foreground mt-1 ml-6">
               No skills in profile
+            </div>
+          )}
+        </div>
+
+        {/* Experience Level Matching Toggle */}
+        <div className="border-t border-border pt-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useExperienceMatching}
+              onChange={(e) => setUseExperienceMatching(e.target.checked)}
+              className="rounded border-border"
+            />
+            <span className="text-sm text-foreground">
+              Match my experience level
+            </span>
+          </label>
+          {useExperienceMatching && userExperienceLevel !== null && (
+            <div className="text-xs text-muted-foreground mt-1 ml-6">
+              Level {userExperienceLevel} or higher
+            </div>
+          )}
+          {useExperienceMatching && userExperienceLevel === null && (
+            <div className="text-xs text-muted-foreground mt-1 ml-6">
+              No experience level in profile
             </div>
           )}
         </div>

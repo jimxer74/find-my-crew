@@ -16,6 +16,7 @@ import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
  * - end_date: Filter legs ending on or before this date (optional, YYYY-MM-DD)
  * - risk_levels: Comma-separated risk levels to filter (optional, e.g., "Coastal sailing,Offshore sailing")
  * - skills: Comma-separated skills to filter (optional, e.g., "First Aid,Navigation")
+ * - min_experience_level: User's experience level for matching (optional, integer 1-4)
  */
 export async function GET(request: NextRequest) {
   try {
@@ -61,6 +62,7 @@ export async function GET(request: NextRequest) {
     const endDateFilter = searchParams.get('end_date') || null;
     const riskLevelsParam = searchParams.get('risk_levels');
     const skillsParam = searchParams.get('skills');
+    const minExperienceLevelParam = searchParams.get('min_experience_level');
 
     // Parse risk levels (comma-separated string to array)
     let riskLevelsFilter: string[] | null = null;
@@ -87,6 +89,20 @@ export async function GET(request: NextRequest) {
         .split(',')
         .map(skill => skill.trim())
         .filter(skill => skill.length > 0);
+    }
+
+    // Parse experience level (integer 1-4)
+    let minExperienceLevelFilter: number | null = null;
+    if (minExperienceLevelParam) {
+      const parsedLevel = parseInt(minExperienceLevelParam, 10);
+      if (!isNaN(parsedLevel) && parsedLevel >= 1 && parsedLevel <= 4) {
+        minExperienceLevelFilter = parsedLevel;
+      } else {
+        return NextResponse.json(
+          { error: 'Invalid min_experience_level. Must be an integer between 1 and 4.' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate date formats if provided
@@ -126,6 +142,7 @@ export async function GET(request: NextRequest) {
       end_date_filter: endDateFilter ? endDateFilter : null,
       risk_levels_filter: riskLevelsFilter,
       skills_filter: skillsFilter && skillsFilter.length > 0 ? skillsFilter : null,
+      min_experience_level_filter: minExperienceLevelFilter,
     });
 
     if (error) {

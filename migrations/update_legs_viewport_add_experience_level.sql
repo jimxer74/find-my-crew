@@ -1,8 +1,7 @@
--- RPC Function for efficient geospatial queries of legs within a viewport
--- This function uses PostGIS bbox for fast spatial filtering and returns
--- all necessary data for crew browsing interface
+-- Update get_legs_in_viewport function to add experience level filtering
+-- First drop all existing versions of the function, then create the new one
 
--- Drop old function if it exists (with old signature - 8 parameters)
+-- Drop old function (with 8 parameters - without min_experience_level_filter)
 DROP FUNCTION IF EXISTS get_legs_in_viewport(
   double precision,
   double precision,
@@ -27,6 +26,7 @@ DROP FUNCTION IF EXISTS get_legs_in_viewport(
   integer
 );
 
+-- Create new function with experience level parameter
 CREATE OR REPLACE FUNCTION get_legs_in_viewport(
   min_lng double precision,
   min_lat double precision,

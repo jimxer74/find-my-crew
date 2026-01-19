@@ -44,6 +44,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     description: '',
     risk_level: [],
     skills: [],
+    min_experience_level: 1, // Default to Beginner (1)
     state: 'In planning',
   });
   const [boats, setBoats] = useState<Boat[]>([]);
@@ -67,7 +68,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           description: '',
           risk_level: [],
           skills: [],
-          min_experience_level: null,
+          min_experience_level: 1, // Default to Beginner (1)
           state: 'In planning',
         });
         setError(null);
@@ -114,7 +115,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
         description: data.description || '',
         risk_level: data.risk_level || [],
         skills: data.skills || [],
-        min_experience_level: (data.min_experience_level as ExperienceLevel | null) || null,
+        min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1, // Default to Beginner if null
         state: data.state || 'In planning',
       });
     }
@@ -127,6 +128,31 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     setError(null);
 
     const supabase = getSupabaseBrowserClient();
+
+    // Validation 1: Date logic - end_date must be >= start_date
+    if (formData.start_date && formData.end_date) {
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.end_date);
+      if (endDate < startDate) {
+        setError('End date must be on or after start date.');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Validation 2: Risk level - at least one must be selected
+    if (formData.risk_level.length === 0) {
+      setError('Please select at least one risk level.');
+      setLoading(false);
+      return;
+    }
+
+    // Validation 3: Experience level - must be set
+    if (!formData.min_experience_level) {
+      setError('Please select a minimum required experience level.');
+      setLoading(false);
+      return;
+    }
 
     // Validate: If state is "Published", check that all legs have start_date and end_date
     if (formData.state === 'Published') {
@@ -227,7 +253,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       description: formData.description || null,
       risk_level: formData.risk_level || [],
       skills: formData.skills || [],
-      min_experience_level: formData.min_experience_level || null,
+      min_experience_level: formData.min_experience_level || 1, // Default to Beginner if somehow null
       state: formData.state,
       updated_at: new Date().toISOString(),
     };
