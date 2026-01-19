@@ -110,6 +110,44 @@ export function CrewBrowseMap({
     return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
   };
 
+  // Function to create CREW. marker styled like LogoWithText
+  const createCrewMarkerIcon = (): string => {
+    // Create SVG marker with CREW. text styled like LogoWithText
+    // Slightly smaller font size than LogoWithText (LogoWithText uses larger, this uses 18px)
+    // Shape mimics the border-radius: '50% 0% 50% 50% / 120%' from LogoWithText
+    // This creates a rounded shape with one sharp corner (top-right)
+    // Using a unique filter ID to avoid conflicts
+    const filterId = `crew-shadow-${Math.random().toString(36).substring(7)}`;
+    const svg = `
+      <svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="${filterId}" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)"/>
+          </filter>
+        </defs>
+        <!-- Shape that mimics border-radius: 50% 0% 50% 50% / 120% -->
+        <!-- Top-left: 50% radius (30px), Top-right: 0% (sharp), Bottom-right: 50%, Bottom-left: 50% -->
+        <!-- Vertical radius: 120% of horizontal (36px vertical) -->
+        <path 
+          d="M 0 36 Q 0 0 30 0 L 60 0 L 60 30 Q 60 60 30 60 Q 0 60 0 30 Z" 
+          fill="#22276E" 
+          filter="url(#${filterId})"
+        />
+        <text 
+          x="30" 
+          y="35" 
+          font-family="Cascadia Code, monospace" 
+          font-size="18" 
+          font-weight="600" 
+          fill="#fff" 
+          text-anchor="middle" 
+          dominant-baseline="middle"
+        >CREW.</text>
+      </svg>
+    `;
+    return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+  };
+
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
     newBounds: { minLng: number; minLat: number; maxLng: number; maxLat: number },
@@ -606,12 +644,15 @@ export function CrewBrowseMap({
       // Load custom pin marker icons for registered legs
       if (!iconsLoadedRef.current && map.current) {
         try {
-          // Create approved pin marker with green color and "A" text
+          // Load approved boat icon from public folder
           const approvedIcon = await new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
-            img.onerror = reject;
-            img.src = createPinMarkerIcon('#22c55e', 'A'); // green-500
+            img.onerror = (err) => {
+              console.error('[CrewBrowseMap] Error loading boat_approved2.png:', err);
+              reject(err);
+            };
+            img.src = '/boat_approved2.png';
           });
           map.current.addImage('pin-marker-approved', approvedIcon);
 
@@ -691,7 +732,7 @@ export function CrewBrowseMap({
 
       // Add icon layers for registered legs (approved and pending)
       // These will be added after icons are loaded, but we define them here
-      // Approved registrations - green sailboat pin
+      // Approved registrations - boat_approved.png icon (larger than normal markers)
       map.current.addLayer({
         id: 'registered-approved',
         type: 'symbol',
@@ -703,8 +744,8 @@ export function CrewBrowseMap({
         ],
         layout: {
           'icon-image': 'pin-marker-approved',
-          'icon-size': 0.8, // Pin marker size
-          'icon-anchor': 'bottom',
+          'icon-size': 0.2,
+          'icon-anchor': 'center',
           'icon-allow-overlap': true,
         },
       });
@@ -837,9 +878,11 @@ export function CrewBrowseMap({
         }
       };
 
-      map.current.on('click', 'unclustered-point', handlePointClick);
-      map.current.on('click', 'registered-approved', handlePointClick);
-      map.current.on('click', 'registered-pending', handlePointClick);
+      if (map.current) {
+        map.current.on('click', 'unclustered-point', handlePointClick);
+        map.current.on('click', 'registered-approved', handlePointClick);
+        map.current.on('click', 'registered-pending', handlePointClick);
+      }
 
       // Change cursor on hover for unclustered points
       const handleMouseEnter = () => {
@@ -856,11 +899,14 @@ export function CrewBrowseMap({
 
       // Tooltip handlers for registered markers
       const handleRegisteredMouseEnter = (e: mapboxgl.MapLayerMouseEvent) => {
-        if (map.current && map.current.getCanvasContainer()) {
-          map.current.getCanvasContainer().style.cursor = 'pointer';
+        if (!map.current) return;
+        
+        const canvasContainer = map.current.getCanvasContainer();
+        if (canvasContainer) {
+          canvasContainer.style.cursor = 'pointer';
         }
         
-        const features = map.current!.queryRenderedFeatures(e.point, {
+        const features = map.current.queryRenderedFeatures(e.point, {
           layers: ['registered-approved', 'registered-pending'],
         });
         
@@ -871,6 +917,7 @@ export function CrewBrowseMap({
           
           // Get mouse coordinates relative to map container
           const container = map.current.getCanvasContainer();
+          if (!container) return;
           const rect = container.getBoundingClientRect();
           
           setTooltip({
