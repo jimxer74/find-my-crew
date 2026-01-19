@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import Image from 'next/image';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
+import { MatchBadge } from '@/app/components/ui/MatchBadge';
+import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
 
 type Leg = {
   leg_id: string;
@@ -22,6 +24,8 @@ type Leg = {
   boat_image_url: string | null;
   skipper_name: string | null;
   min_experience_level: number | null;
+  skill_match_percentage?: number;
+  experience_level_matches?: boolean;
   start_waypoint: {
     lng: number;
     lat: number;
@@ -38,9 +42,11 @@ type LegDetailsPanelProps = {
   leg: Leg;
   isOpen: boolean;
   onClose: () => void;
+  userSkills?: string[]; // User's skills for matching display
+  userExperienceLevel?: number | null; // User's experience level for matching display
 };
 
-export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) {
+export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null }: LegDetailsPanelProps) {
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -226,7 +232,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
             {leg.min_experience_level && (
               <div>
                 <h3 className="text-sm font-semibold text-muted-foreground mb-2">Minimum Experience Level</h3>
-                <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-3 p-3 rounded-lg border ${
+                  leg.experience_level_matches === false 
+                    ? 'bg-red-50 border-red-300' 
+                    : 'bg-transparent border-transparent'
+                }`}>
                   <div className="relative w-16 h-16 flex-shrink-0">
                     <Image
                       src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
@@ -235,13 +245,18 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
                       className="object-contain"
                     />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-foreground font-medium">
                       {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).description}
                     </p>
+                    {leg.experience_level_matches === false && userExperienceLevel !== null && (
+                      <p className="text-sm text-red-700 font-medium mt-1">
+                        ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -250,17 +265,67 @@ export function LegDetailsPanel({ leg, isOpen, onClose }: LegDetailsPanelProps) 
             {/* Skills */}
             {leg.skills && leg.skills.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Required Skills</h3>
-                <div className="flex flex-wrap gap-2">
-                  {leg.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-accent text-accent-foreground rounded-full text-sm"
-                    >
-                      {skill}
-                    </span>
-                  ))}
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Required Skills</h3>
+                  {leg.skill_match_percentage !== undefined && userSkills.length > 0 && (
+                    <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
+                  )}
                 </div>
+                
+                {/* Show matching/missing breakdown if user has skills */}
+                {userSkills.length > 0 && leg.skill_match_percentage !== undefined ? (
+                  <div className="space-y-2">
+                    {(() => {
+                      const { matching, missing } = getMatchingAndMissingSkills(userSkills, leg.skills);
+                      return (
+                        <>
+                          {matching.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-green-700 mb-1">✓ You have ({matching.length}/{leg.skills.length}):</p>
+                              <div className="flex flex-wrap gap-2">
+                                {matching.map((skill, index) => (
+                                  <span
+                                    key={`match-${index}`}
+                                    className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs border border-green-300"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {missing.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-orange-700 mb-1">⚠ Missing ({missing.length}/{leg.skills.length}):</p>
+                              <div className="flex flex-wrap gap-2">
+                                {missing.map((skill, index) => (
+                                  <span
+                                    key={`missing-${index}`}
+                                    className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs border border-orange-300"
+                                  >
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  /* If user has no skills, show all required skills */
+                  <div className="flex flex-wrap gap-2">
+                    {leg.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

@@ -6,6 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { calculateMatchPercentage, checkExperienceLevelMatch } from '@/app/lib/skillMatching';
 
 type Leg = {
   leg_id: string;
@@ -24,6 +25,8 @@ type Leg = {
   boat_image_url: string | null;
   skipper_name: string | null;
   min_experience_level: number | null;
+  skill_match_percentage?: number; // Calculated on frontend, not from API
+  experience_level_matches?: boolean; // Whether user's experience level meets requirement
   start_waypoint: {
     lng: number;
     lat: number;
@@ -63,8 +66,7 @@ export function CrewBrowseMap({
     name: string | null;
     coordinates: [number, number] | null;
   }>>([]);
-  const [useSkillMatching, setUseSkillMatching] = useState(true);
-  const [useExperienceMatching, setUseExperienceMatching] = useState(true);
+  const [showAllLegs, setShowAllLegs] = useState(false); // When true, shows all legs regardless of experience level
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
   const { user } = useAuth();
@@ -80,8 +82,7 @@ export function CrewBrowseMap({
   const sourceAddedRef = useRef(false);
   const routeSourceAddedRef = useRef(false);
   const isFittingBoundsRef = useRef(false);
-  const useSkillMatchingRef = useRef(true);
-  const useExperienceMatchingRef = useRef(true);
+  const showAllLegsRef = useRef(false);
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
 
@@ -203,10 +204,10 @@ export function CrewBrowseMap({
     loadUserProfile();
   }, [user]);
 
-  // Update refs when matching toggles change and trigger reload
+  // Update refs when toggle changes and trigger reload
   useEffect(() => {
-    useSkillMatchingRef.current = useSkillMatching;
-    // Trigger reload when skill matching toggle changes
+    showAllLegsRef.current = showAllLegs;
+    // Trigger reload when toggle changes
     if (map.current && mapLoadedRef.current) {
       // Trigger a moveend event to reload legs with new filter
       setTimeout(() => {
@@ -215,20 +216,7 @@ export function CrewBrowseMap({
         }
       }, 100);
     }
-  }, [useSkillMatching]);
-
-  useEffect(() => {
-    useExperienceMatchingRef.current = useExperienceMatching;
-    // Trigger reload when experience matching toggle changes
-    if (map.current && mapLoadedRef.current) {
-      // Trigger a moveend event to reload legs with new filter
-      setTimeout(() => {
-        if (map.current && mapLoadedRef.current) {
-          map.current.fire('moveend');
-        }
-      }, 100);
-    }
-  }, [useExperienceMatching]);
+  }, [showAllLegs]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -245,6 +233,8 @@ export function CrewBrowseMap({
         },
         properties: {
           leg_id: leg.leg_id,
+          match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
+          experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
         },
       }));
 
@@ -492,21 +482,17 @@ export function CrewBrowseMap({
               max_lat: maxLat.toString(),
             });
 
-            // Add skills filter if skill matching is enabled and user has skills
-            // Use refs to get latest values since handleViewportChange is defined in useEffect
-            if (useSkillMatchingRef.current && userSkillsRef.current.length > 0) {
-              params.append('skills', userSkillsRef.current.join(','));
-              console.log('[CrewBrowseMap] Applying skill filter:', userSkillsRef.current);
-            } else {
-              console.log('[CrewBrowseMap] Skill matching disabled or no skills');
-            }
+            // Note: We no longer filter by skills in the API
+            // Instead, we fetch all legs and filter by match percentage on the frontend
+            // This allows us to show match percentages for all legs
+            console.log('[CrewBrowseMap] Fetching all legs (filtering by match % on frontend)');
 
-            // Add experience level filter if experience matching is enabled and user has experience level
-            if (useExperienceMatchingRef.current && userExperienceLevelRef.current !== null) {
+            // Add experience level filter unless "Show all legs" is enabled
+            if (!showAllLegsRef.current && userExperienceLevelRef.current !== null) {
               params.append('min_experience_level', userExperienceLevelRef.current.toString());
               console.log('[CrewBrowseMap] Applying experience level filter:', userExperienceLevelRef.current);
             } else {
-              console.log('[CrewBrowseMap] Experience matching disabled or no experience level');
+              console.log('[CrewBrowseMap] Showing all legs (experience level filter disabled)');
             }
 
             const url = `/api/legs/viewport?${params.toString()}`;
@@ -521,7 +507,36 @@ export function CrewBrowseMap({
 
             const data = await response.json();
             console.log('[CrewBrowseMap] Received data:', { legCount: data.legs?.length || 0, data });
-            setLegs(data.legs || []);
+            
+            // Calculate match percentage and experience level match for each leg
+            const legsWithMatch = (data.legs || []).map((leg: Leg) => {
+              const experienceMatches = checkExperienceLevelMatch(
+                userExperienceLevelRef.current,
+                leg.min_experience_level
+              );
+              
+              const matchPercentage = calculateMatchPercentage(
+                userSkillsRef.current,
+                leg.skills || [],
+                userExperienceLevelRef.current,
+                leg.min_experience_level
+              );
+              
+              return {
+                ...leg,
+                skill_match_percentage: matchPercentage,
+                experience_level_matches: experienceMatches,
+              };
+            });
+            
+            console.log('[CrewBrowseMap] Legs with match percentages:', legsWithMatch.map((l: Leg) => ({
+              leg_name: l.leg_name,
+              match_percentage: l.skill_match_percentage,
+              experience_matches: l.experience_level_matches,
+              skills: l.skills,
+            })));
+            
+            setLegs(legsWithMatch);
             
             // Update last loaded bounds
             lastLoadedBoundsRef.current = newBounds;
@@ -614,13 +629,26 @@ export function CrewBrowseMap({
       });
 
       // Add unclustered point layer (individual leg markers)
+      // Color based on match percentage: green (80+), yellow (50-79), orange (25-49), red (<25)
+      // Always show red if experience level doesn't match
       map.current.addLayer({
         id: 'unclustered-point',
         type: 'circle',
         source: 'legs-source',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#22276E',
+          'circle-color': [
+            'case',
+            ['==', ['get', 'experience_matches'], false],
+            '#ef4444', // red-500 - always red if experience level doesn't match
+            ['>=', ['get', 'match_percentage'], 80],
+            '#22c55e', // green-500
+            ['>=', ['get', 'match_percentage'], 50],
+            '#eab308', // yellow-500
+            ['>=', ['get', 'match_percentage'], 25],
+            '#f97316', // orange-500
+            '#ef4444', // red-500
+          ],
           'circle-radius': 8,
           'circle-stroke-width': 2,
           'circle-stroke-color': '#fff',
@@ -953,54 +981,26 @@ export function CrewBrowseMap({
           )}
         </div>
 
-        {/* Skill Matching Toggle */}
+        {/* Show All Legs Toggle */}
         <div className="border-t border-border pt-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              checked={useSkillMatching}
-              onChange={(e) => setUseSkillMatching(e.target.checked)}
+              checked={showAllLegs}
+              onChange={(e) => setShowAllLegs(e.target.checked)}
               className="rounded border-border"
             />
             <span className="text-sm text-foreground">
-              Match my skills
+              Show all legs
             </span>
           </label>
-          {useSkillMatching && userSkills.length > 0 && (
-            <div className="text-xs text-muted-foreground mt-1 ml-6">
-              {userSkills.length} {userSkills.length === 1 ? 'skill' : 'skills'} matched
-            </div>
-          )}
-          {useSkillMatching && userSkills.length === 0 && (
-            <div className="text-xs text-muted-foreground mt-1 ml-6">
-              No skills in profile
-            </div>
-          )}
-        </div>
-
-        {/* Experience Level Matching Toggle */}
-        <div className="border-t border-border pt-3">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={useExperienceMatching}
-              onChange={(e) => setUseExperienceMatching(e.target.checked)}
-              className="rounded border-border"
-            />
-            <span className="text-sm text-foreground">
-              Match my experience level
-            </span>
-          </label>
-          {useExperienceMatching && userExperienceLevel !== null && (
-            <div className="text-xs text-muted-foreground mt-1 ml-6">
-              Level {userExperienceLevel} or higher
-            </div>
-          )}
-          {useExperienceMatching && userExperienceLevel === null && (
-            <div className="text-xs text-muted-foreground mt-1 ml-6">
-              No experience level in profile
-            </div>
-          )}
+          <div className="text-xs text-muted-foreground mt-1 ml-6">
+            {showAllLegs 
+              ? 'Showing all legs regardless of experience level'
+              : userExperienceLevel !== null
+                ? `Filtering to Level ${userExperienceLevel} or higher`
+                : 'No experience level filter (no level in profile)'}
+          </div>
         </div>
       </div>
 
@@ -1020,6 +1020,8 @@ export function CrewBrowseMap({
           leg={selectedLeg}
           isOpen={!!selectedLeg}
           onClose={() => setSelectedLeg(null)}
+          userSkills={userSkills}
+          userExperienceLevel={userExperienceLevel}
         />
       )}
     </div>
