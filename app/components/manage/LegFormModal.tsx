@@ -6,6 +6,8 @@ import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAuto
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
 import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
+import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@/app/types/experience-levels';
+import Image from 'next/image';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -40,6 +42,7 @@ export function LegFormModal({
   const [journeyDefaultsLoaded, setJourneyDefaultsLoaded] = useState(false);
   const [journeyDefaultsApplied, setJourneyDefaultsApplied] = useState(false);
   const [journeySkills, setJourneySkills] = useState<string[] | null>(null); // Journey-level skills (if any)
+  const [journeyMinExperienceLevel, setJourneyMinExperienceLevel] = useState<ExperienceLevel | null>(null); // Journey-level min experience level (if any)
 
   // Form state
   const [legName, setLegName] = useState('');
@@ -49,6 +52,7 @@ export function LegFormModal({
   const [crewNeeded, setCrewNeeded] = useState<number | ''>('');
   const [skills, setSkills] = useState<string[]>([]);
   const [riskLevel, setRiskLevel] = useState<RiskLevel | null>(null);
+  const [minExperienceLevel, setMinExperienceLevel] = useState<ExperienceLevel | null>(null);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [editingWaypointIndex, setEditingWaypointIndex] = useState<number | null>(null);
 
@@ -57,12 +61,14 @@ export function LegFormModal({
     if (isOpen) {
       setJourneyDefaultsApplied(false); // Reset flag when modal opens
       setJourneySkills(null); // Reset journey skills when modal opens
+      setJourneyMinExperienceLevel(null); // Reset journey experience level when modal opens
       if (legId) {
         // Editing existing leg - load journey data first to get journey skills, then load leg data
         // This ensures journeySkills state is set before leg data potentially overwrites it
-        loadBoatCapacity(legId).then(() => {
+        loadBoatCapacity(legId).then((journeyExpLevel) => {
           // After journey data is loaded, load leg data
-          loadLeg();
+          // Pass journey experience level directly to ensure it's available
+          loadLeg(journeyExpLevel);
         });
       } else {
         // Creating new leg - reset form first, then load journey defaults
@@ -129,19 +135,19 @@ export function LegFormModal({
     }
   }, [isOpen, legId, riskLevel, skills, journeyDefaultsLoaded, journeyDefaultsApplied, journeySkills, journeyId]);
 
-  const loadBoatCapacity = async (currentLegId: string | null) => {
+  const loadBoatCapacity = async (currentLegId: string | null): Promise<ExperienceLevel | null> => {
     const supabase = getSupabaseBrowserClient();
     
-    // Get journey's boat capacity, risk level, and skills
+    // Get journey's boat capacity, risk level, skills, and min_experience_level
     const { data: journeyData, error: journeyError } = await supabase
       .from('journeys')
-      .select('boat_id, risk_level, skills, boats(capacity)')
+      .select('boat_id, risk_level, skills, min_experience_level, boats(capacity)')
       .eq('id', journeyId)
       .single();
 
     if (journeyError) {
       console.error('Error loading journey data:', journeyError);
-      return;
+      return null;
     }
 
     console.log('Journey data loaded:', journeyData);
@@ -161,59 +167,86 @@ export function LegFormModal({
       console.log('Setting journeySkills state to:', hasJourneySkills ? journeySkillsData : null);
       setJourneySkills(hasJourneySkills ? journeySkillsData : null);
       
+      // Store journey min_experience_level (if any) - it will be shown as read-only
+      const journeyExpLevel = (journeyData as any).min_experience_level as number | null;
+      const hasJourneyExpLevel = journeyExpLevel !== null && journeyExpLevel !== undefined;
+      console.log('Setting journeyMinExperienceLevel state to:', hasJourneyExpLevel ? journeyExpLevel : null);
+      setJourneyMinExperienceLevel(hasJourneyExpLevel ? (journeyExpLevel as ExperienceLevel) : null);
+      
       // Always check current state using functional updates to see if we need to set defaults
       // This works for both new legs and existing legs that don't have values
       setRiskLevel(currentRiskLevel => {
         setSkills(currentSkills => {
-          const shouldSetRiskLevel = !currentRiskLevel;
-          const shouldSetSkills = !currentSkills || currentSkills.length === 0;
-          const shouldSetDefaults = !currentLegId || shouldSetRiskLevel || shouldSetSkills;
-          
-          if (shouldSetDefaults) {
-            console.log('Setting defaults from journey. New leg:', !currentLegId, 'Missing risk level:', shouldSetRiskLevel, 'Missing skills:', shouldSetSkills);
+          setMinExperienceLevel(currentExpLevel => {
+            const shouldSetRiskLevel = !currentRiskLevel;
+            const shouldSetSkills = !currentSkills || currentSkills.length === 0;
+            const shouldSetExpLevel = currentExpLevel === null;
+            const shouldSetDefaults = !currentLegId || shouldSetRiskLevel || shouldSetSkills || shouldSetExpLevel;
             
-            // Set default risk level from journey (use first one if array) - only if not already set
-            if (shouldSetRiskLevel) {
-              const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
-              console.log('Journey risk levels:', journeyRiskLevels);
-              if (journeyRiskLevels && journeyRiskLevels.length > 0) {
-                const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
-                console.log('Setting risk level to:', defaultRiskLevel);
-                if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
-                  console.log('Calling setRiskLevel with:', defaultRiskLevel);
-                  // Set risk level using setTimeout to avoid nested state updates
-                  setTimeout(() => {
-                    setRiskLevel(defaultRiskLevel);
-                  }, 0);
-                } else {
-                  console.log('Risk level validation failed:', defaultRiskLevel);
+            if (shouldSetDefaults) {
+              console.log('Setting defaults from journey. New leg:', !currentLegId, 'Missing risk level:', shouldSetRiskLevel, 'Missing skills:', shouldSetSkills, 'Missing exp level:', shouldSetExpLevel);
+              
+              // Set default risk level from journey (use first one if array) - only if not already set
+              if (shouldSetRiskLevel) {
+                const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
+                console.log('Journey risk levels:', journeyRiskLevels);
+                if (journeyRiskLevels && journeyRiskLevels.length > 0) {
+                  const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
+                  console.log('Setting risk level to:', defaultRiskLevel);
+                  if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
+                    console.log('Calling setRiskLevel with:', defaultRiskLevel);
+                    // Set risk level using setTimeout to avoid nested state updates
+                    setTimeout(() => {
+                      setRiskLevel(defaultRiskLevel);
+                    }, 0);
+                  } else {
+                    console.log('Risk level validation failed:', defaultRiskLevel);
+                  }
                 }
               }
-            }
 
-            // Set default skills from journey - only if journey doesn't have skills defined
-            // If journey has skills, they will be shown as read-only, so we don't set leg skills
-            if (shouldSetSkills) {
-              const journeySkillsData = (journeyData as any).skills as string[] | null;
-              console.log('Journey skills:', journeySkillsData);
-              // Only set leg skills if journey doesn't have skills defined
-              // If journey has skills, they are read-only and not stored in leg
-              if (!journeySkillsData || journeySkillsData.length === 0) {
-                // Journey has no skills, so leg can have its own skills
-                console.log('Journey has no skills, leg can have its own');
-                return currentSkills; // Keep current (empty) skills
-              } else {
-                // Journey has skills - they will be shown as read-only, don't store in leg
-                console.log('Journey has skills defined, they will be shown as read-only');
-                return []; // Don't store skills in leg when journey has them
+              // Set default skills from journey - only if journey doesn't have skills defined
+              // If journey has skills, they will be shown as read-only, so we don't set leg skills
+              if (shouldSetSkills) {
+                const journeySkillsData = (journeyData as any).skills as string[] | null;
+                console.log('Journey skills:', journeySkillsData);
+                // Only set leg skills if journey doesn't have skills defined
+                // If journey has skills, they are read-only and not stored in leg
+                if (!journeySkillsData || journeySkillsData.length === 0) {
+                  // Journey has no skills, so leg can have its own skills
+                  console.log('Journey has no skills, leg can have its own');
+                  // Keep current (empty) skills
+                } else {
+                  // Journey has skills - they will be shown as read-only, don't store in leg
+                  console.log('Journey has skills defined, they will be shown as read-only');
+                  // Don't store skills in leg when journey has them
+                }
               }
+
+              // Set default experience level from journey - only if not already set
+              if (shouldSetExpLevel) {
+                const journeyExpLevel = (journeyData as any).min_experience_level as number | null;
+                console.log('Journey min_experience_level:', journeyExpLevel);
+                if (journeyExpLevel !== null && journeyExpLevel !== undefined) {
+                  // Journey has experience level - set as default for leg
+                  // Leg can later be set to same or more strict level
+                  setTimeout(() => {
+                    setMinExperienceLevel(journeyExpLevel as ExperienceLevel);
+                  }, 0);
+                } else {
+                  // Journey has no experience level - leg can have its own
+                  console.log('Journey has no experience level, leg can have its own');
+                }
+              }
+              
+              return currentExpLevel;
+            } else {
+              console.log('Leg already has risk level, skills, and experience level, not setting defaults');
+              return currentExpLevel;
             }
-            
-            return currentSkills;
-          } else {
-            console.log('Leg already has risk level and skills, not setting defaults');
-            return currentSkills;
-          }
+          });
+          
+          return currentSkills;
         });
         
         return currentRiskLevel;
@@ -222,7 +255,13 @@ export function LegFormModal({
       // Mark that defaults have been loaded
       setJourneyDefaultsLoaded(true);
       console.log('Journey defaults loaded flag set to true');
+      
+      // Return journey experience level
+      const journeyExpLevelReturn = (journeyData as any).min_experience_level as number | null;
+      return journeyExpLevelReturn !== null && journeyExpLevelReturn !== undefined ? (journeyExpLevelReturn as ExperienceLevel) : null;
     }
+    
+    return null;
   };
 
   const resetForm = () => {
@@ -234,13 +273,15 @@ export function LegFormModal({
     setWaypoints([]);
     setEditingWaypointIndex(null);
     setError(null);
-    // Reset riskLevel and skills - they will be set from journey default in loadBoatCapacity
+    // Reset riskLevel, skills, and experience level - they will be set from journey default in loadBoatCapacity
     setRiskLevel(null);
     setSkills([]);
     setJourneySkills(null);
+    setMinExperienceLevel(null);
+    setJourneyMinExperienceLevel(null);
   };
 
-  const loadLeg = async () => {
+  const loadLeg = async (journeyExpLevel: ExperienceLevel | null = null) => {
     if (!legId) return;
 
     setLoading(true);
@@ -250,7 +291,7 @@ export function LegFormModal({
     // Load leg data
     const { data: legData, error: legError } = await supabase
       .from('legs')
-      .select('id, name, description, start_date, end_date, crew_needed, skills, risk_level')
+      .select('id, name, description, start_date, end_date, crew_needed, skills, risk_level, min_experience_level')
       .eq('id', legId)
       .eq('journey_id', journeyId)
       .single();
@@ -313,9 +354,15 @@ export function LegFormModal({
       setCrewNeeded(legData.crew_needed || '');
       setSkills(legData.skills || []);
       setRiskLevel((legData.risk_level as RiskLevel) || null);
+      // Set experience level: use leg's if set, otherwise use journey's (if available)
+      // This ensures the UI shows the effective level even if leg doesn't have its own stored
+      const legExpLevel = (legData.min_experience_level as ExperienceLevel | null) || null;
+      // Use journeyExpLevel parameter if provided, otherwise fall back to state (which should be set by now)
+      const effectiveJourneyLevel = journeyExpLevel !== null ? journeyExpLevel : journeyMinExperienceLevel;
+      setMinExperienceLevel(legExpLevel || effectiveJourneyLevel);
       setWaypoints(waypointsResult);
       
-      console.log('Leg loaded - risk_level:', legData.risk_level, 'skills:', legData.skills, 'waypoints:', waypointsResult.length);
+      console.log('Leg loaded - risk_level:', legData.risk_level, 'skills:', legData.skills, 'min_experience_level:', legData.min_experience_level, 'journeyMinExperienceLevel:', effectiveJourneyLevel, 'waypoints:', waypointsResult.length);
     }
     
     setLoading(false);
@@ -336,6 +383,16 @@ export function LegFormModal({
     if (!riskLevel) {
       setError('Risk level is required');
       return;
+    }
+
+    // Validate experience level: if journey has min_experience_level, leg level must be >= journey level
+    if (journeyMinExperienceLevel !== null && minExperienceLevel !== null) {
+      if (minExperienceLevel < journeyMinExperienceLevel) {
+        const journeyLevelName = getExperienceLevelConfig(journeyMinExperienceLevel).displayName;
+        const legLevelName = getExperienceLevelConfig(minExperienceLevel).displayName;
+        setError(`Leg experience level (${legLevelName}) cannot be less strict than journey level (${journeyLevelName}). Leg level must be ${journeyLevelName} or higher.`);
+        return;
+      }
     }
 
     setSaving(true);
@@ -367,6 +424,24 @@ export function LegFormModal({
       } else {
         // Journey has skills - don't save skills to leg, set to empty array
         legData.skills = [];
+      }
+
+      // Handle experience level: only save if leg has a more strict level than journey
+      // If journey has min_experience_level, leg can have a higher (more strict) level
+      // If leg level equals journey level, don't store it (use journey level)
+      // If journey doesn't have min_experience_level, leg can have any level
+      if (journeyMinExperienceLevel !== null) {
+        // Journey has experience level - leg can only have higher (more strict) level
+        if (minExperienceLevel !== null && minExperienceLevel > journeyMinExperienceLevel) {
+          // Leg has more strict level - store it
+          legData.min_experience_level = minExperienceLevel;
+        } else {
+          // Leg level equals journey level or is less strict - use journey level (don't store in leg)
+          legData.min_experience_level = null; // Journey level applies, don't store in leg
+        }
+      } else {
+        // Journey has no experience level - leg can have its own
+        legData.min_experience_level = minExperienceLevel || null;
       }
 
       if (startDate) {
@@ -742,6 +817,97 @@ export function LegFormModal({
                   </div>
                 </div>
 
+                {/* Minimum Required Experience Level */}
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-2">
+                    Minimum Experience Level
+                    {journeyMinExperienceLevel !== null && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        (Journey: {getExperienceLevelConfig(journeyMinExperienceLevel).displayName} - minimum)
+                      </span>
+                    )}
+                  </label>
+                  {journeyMinExperienceLevel !== null && (
+                    <p className="text-xs text-muted-foreground mb-3">
+                      You can set a more strict requirement for this leg (higher level):
+                    </p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {getAllExperienceLevels().map((levelConfig) => {
+                      const isJourneyLevel = journeyMinExperienceLevel === levelConfig.value;
+                      const isLegSelected = minExperienceLevel === levelConfig.value;
+                      // Journey level is always visually selected and disabled when journey has experience level
+                      const isSelected = isJourneyLevel || isLegSelected;
+                      const isDisabled = isJourneyLevel; // Journey level card is always disabled (read-only)
+                      const canSelect = journeyMinExperienceLevel === null || levelConfig.value >= journeyMinExperienceLevel;
+                      
+                      return (
+                        <button
+                          key={levelConfig.value}
+                          type="button"
+                          onClick={() => {
+                            if (isDisabled) return; // Can't unselect journey level
+                            if (!canSelect) {
+                              setError(`Leg experience level must be ${getExperienceLevelConfig(journeyMinExperienceLevel!).displayName} or higher`);
+                              return;
+                            }
+                            // Toggle selection: if already selected (leg level) and not journey level, deselect
+                            // If journey level, it stays selected (can't be unselected)
+                            const newValue = isLegSelected && !isJourneyLevel ? null : levelConfig.value;
+                            setMinExperienceLevel(newValue);
+                          }}
+                          disabled={isDisabled}
+                          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+                            isSelected
+                              ? isJourneyLevel
+                                ? 'border-primary bg-primary/10 opacity-75 cursor-not-allowed'
+                                : 'border-primary bg-primary/5'
+                              : canSelect
+                                ? 'border-border hover:border-primary/50'
+                                : 'border-border opacity-50 cursor-not-allowed'
+                          } ${isDisabled ? 'cursor-not-allowed' : ''}`}
+                          title={
+                            isJourneyLevel
+                              ? `Journey minimum (read-only) - ${levelConfig.displayName}`
+                              : !canSelect
+                                ? `Must be ${getExperienceLevelConfig(journeyMinExperienceLevel!).displayName} or higher`
+                                : levelConfig.displayName
+                          }
+                        >
+                          {isJourneyLevel && (
+                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
+                              Journey
+                            </div>
+                          )}
+                          <div className="flex items-center justify-center mb-2 flex-shrink-0">
+                            <h3 className="font-semibold text-card-foreground text-sm text-center">
+                              {levelConfig.displayName}
+                            </h3>
+                          </div>
+                          <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
+                            <Image
+                              src={levelConfig.icon}
+                              alt={levelConfig.displayName}
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {minExperienceLevel !== null && minExperienceLevel === journeyMinExperienceLevel && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Same as journey level - will use journey requirement
+                    </p>
+                  )}
+                  {minExperienceLevel !== null && journeyMinExperienceLevel !== null && minExperienceLevel > journeyMinExperienceLevel && (
+                    <p className="text-xs text-primary mt-2">
+                      More strict than journey - this leg requires {getExperienceLevelConfig(minExperienceLevel).displayName}
+                    </p>
+                  )}
+                </div>
+
                 {/* Skills */}
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
@@ -790,10 +956,10 @@ export function LegFormModal({
                       
                       return allSkills.map((skill) => {
                         const displayName = formatSkillName(skill.name);
-                        const isJourneySkill = journeySkills && journeySkills.includes(displayName);
+                        const isJourneySkill = Boolean(journeySkills && journeySkills.includes(displayName));
                         const isLegSkill = skills.includes(displayName);
                         const isChecked = isJourneySkill || isLegSkill;
-                        const isReadOnly = isJourneySkill; // Journey skills are read-only
+                        const isReadOnly = Boolean(isJourneySkill); // Journey skills are read-only
                         
                         return (
                           <label 

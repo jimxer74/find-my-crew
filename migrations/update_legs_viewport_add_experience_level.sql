@@ -93,8 +93,8 @@ BEGIN
     END AS boat_image_url,
     -- Get skipper (owner) name from profiles
     p.full_name AS skipper_name,
-    -- Get minimum required experience level from journey
-    j.min_experience_level AS min_experience_level,
+    -- Get minimum required experience level: use leg's if set, otherwise journey's
+    COALESCE(l.min_experience_level, j.min_experience_level) AS min_experience_level,
     -- Start waypoint (index = 0) with name and coordinates
     (
       SELECT jsonb_build_object(
@@ -171,14 +171,13 @@ BEGIN
     )
     -- Optional experience level filter
     -- If min_experience_level_filter is NULL: no filtering (returns all legs)
-    -- If min_experience_level_filter is provided: only returns legs where user's experience level >= journey's min_experience_level
-    -- Logic: user_experience_level >= journey_min_experience_level means user qualifies
-    -- Since we're filtering by user's level, we check: journey_min_experience_level <= user_experience_level
-    -- Or: user_experience_level >= journey_min_experience_level (same thing)
+    -- If min_experience_level_filter is provided: only returns legs where user's experience level >= leg's or journey's min_experience_level
+    -- Logic: Use leg's min_experience_level if set, otherwise use journey's min_experience_level
+    -- User qualifies if: user_experience_level >= effective_min_experience_level
     AND (
       min_experience_level_filter IS NULL
-      OR j.min_experience_level IS NULL
-      OR j.min_experience_level <= min_experience_level_filter
+      OR COALESCE(l.min_experience_level, j.min_experience_level) IS NULL
+      OR COALESCE(l.min_experience_level, j.min_experience_level) <= min_experience_level_filter
     )
   ORDER BY l.start_date ASC NULLS LAST, l.created_at DESC;
 END;

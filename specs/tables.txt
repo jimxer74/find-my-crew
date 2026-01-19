@@ -255,6 +255,7 @@ create table if not exists public.legs (
   crew_needed  int,
   skills       text[] default '{}',  -- simple array of skill tags (leg-specific skills, not journey skills)
   risk_level   risk_level,  -- Risk level for this leg: Coastal sailing, Offshore sailing, or Extreme sailing (single selection)
+  min_experience_level integer,  -- Minimum required experience level for this leg. Can be more strict (higher number) than journey level, but not less strict. Values: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
