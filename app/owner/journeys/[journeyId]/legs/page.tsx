@@ -614,47 +614,97 @@ export default function LegsManagementPage() {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Header />
 
-      <main className="flex-1 flex overflow-hidden relative min-h-0">
-        {/* Toggle Button */}
-        <button
-          onClick={() => setIsPaneOpen(!isPaneOpen)}
-          className={`absolute top-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all ${
-            isPaneOpen ? 'left-[320px]' : 'left-4'
-          }`}
-          title={isPaneOpen ? 'Close panel' : 'Open panel'}
-          aria-label={isPaneOpen ? 'Close panel' : 'Open panel'}
-        >
-          <svg
-            className="w-5 h-5 text-foreground"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
+      <main className="flex-1 relative overflow-hidden min-h-0">
+        {/* Map Container - Always full width, stays in place */}
+        <div className="absolute inset-0 w-full h-full">
+          <EditJourneyMap
+            initialCenter={[0, 20]} // Default center (can be updated based on journey/legs data)
+            initialZoom={2}
+            onMapLoad={handleMapLoad}
+            onStartNewLeg={handleStartNewLeg}
+            onAddWaypoint={handleAddWaypoint}
+            onEndLeg={handleEndLeg}
+            hasActiveLegWithoutEnd={legs.some(leg => leg.startWaypoint !== null && leg.endWaypoint === null)}
+            activeLegWaypoints={getActiveLegWaypoints()}
+            allLegsWaypoints={getAllLegsWaypoints()}
+            selectedLegId={selectedLegId}
+            onLegClick={(legId) => {
+              setSelectedLegId(legId);
+              // Scroll to the leg card
+              const cardElement = legCardRefs.current.get(legId);
+              if (cardElement) {
+                cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            }}
+            className="absolute inset-0 w-full h-full"
+          />
+        </div>
+
+        {/* Floating button to open pane when closed */}
+        {!isPaneOpen && (
+          <button
+            onClick={() => setIsPaneOpen(true)}
+            className="absolute top-4 left-4 z-50 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+            title="Open panel"
+            aria-label="Open panel"
           >
-            {isPaneOpen ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-              />
-            ) : (
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 d="M13 5l7 7-7 7M5 5l7 7-7 7"
               />
-            )}
-          </svg>
-        </button>
+            </svg>
+          </button>
+        )}
 
-        {/* Left Sidebar - Journey Info */}
+        {/* Left Sidebar - Journey Info - Overlays the map */}
         <div
           className={`${
-            isPaneOpen ? 'w-80' : 'w-0'
-          } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden`}
+            isPaneOpen 
+              ? 'translate-x-0' 
+              : '-translate-x-full'
+          } ${
+            isPaneOpen ? 'w-full md:w-80' : 'w-0'
+          } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden absolute left-0 top-0 bottom-0 z-40 shadow-lg`}
         >
           {isPaneOpen && (
             <>
+              {/* Toggle Button - Inside Pane */}
+              <button
+                onClick={() => setIsPaneOpen(!isPaneOpen)}
+                className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+                title={isPaneOpen ? 'Close panel' : 'Open panel'}
+                aria-label={isPaneOpen ? 'Close panel' : 'Open panel'}
+              >
+                <svg
+                  className="w-5 h-5 text-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth="2"
+                >
+                  {isPaneOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    />
+                  )}
+                </svg>
+              </button>
               <div className="p-6 border-b border-border">
                 {journey && (
                   <div className="space-y-3">
@@ -783,30 +833,6 @@ export default function LegsManagementPage() {
           )}
         </div>
 
-        {/* Right Side - Map Container */}
-        <div className="flex-1 relative">
-          <EditJourneyMap
-            initialCenter={[0, 20]} // Default center (can be updated based on journey/legs data)
-            initialZoom={2}
-            onMapLoad={handleMapLoad}
-            onStartNewLeg={handleStartNewLeg}
-            onAddWaypoint={handleAddWaypoint}
-            onEndLeg={handleEndLeg}
-            hasActiveLegWithoutEnd={legs.some(leg => leg.startWaypoint !== null && leg.endWaypoint === null)}
-            activeLegWaypoints={getActiveLegWaypoints()}
-            allLegsWaypoints={getAllLegsWaypoints()}
-            selectedLegId={selectedLegId}
-            onLegClick={(legId) => {
-              setSelectedLegId(legId);
-              // Scroll to the leg card
-              const cardElement = legCardRefs.current.get(legId);
-              if (cardElement) {
-                cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-              }
-            }}
-            className="absolute inset-0"
-          />
-        </div>
       </main>
 
       {/* Journey Edit Modal */}

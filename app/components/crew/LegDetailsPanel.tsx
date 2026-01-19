@@ -51,6 +51,7 @@ type LegDetailsPanelProps = {
 };
 
 export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
+  const [isMinimized, setIsMinimized] = useState(false);
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -314,6 +315,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
+      // Reset minimized state when panel closes
+      setIsMinimized(false);
     }
     return () => {
       document.body.style.overflow = 'unset';
@@ -322,38 +325,68 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   return (
     <>
-      {/* Panel - Left Side */}
+      {/* Panel - Left Side - Overlays the map */}
       <div
-        className={`fixed top-0 left-0 bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-transform duration-300 ease-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-16 left-0 bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-all duration-300 ease-out ${
+          isOpen 
+            ? isMinimized 
+              ? 'w-0' 
+              : 'w-full md:w-[400px] translate-x-0'
+            : '-translate-x-full w-0'
         }`}
-        style={{ width: '400px', maxWidth: '90vw' }}
       >
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-muted-foreground hover:text-foreground transition-colors z-10"
-          aria-label="Close"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
+        {/* Minimize/Maximize button - Inside Pane */}
+        {isOpen && !isMinimized && (
+          <button
+            onClick={() => setIsMinimized(true)}
+            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+            title="Minimize panel"
+            aria-label="Minimize panel"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+              />
+            </svg>
+          </button>
+        )}
+
+        {/* Maximize button when minimized */}
+        {isOpen && isMinimized && (
+          <button
+            onClick={() => setIsMinimized(false)}
+            className="absolute top-4 left-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+            title="Maximize panel"
+            aria-label="Maximize panel"
+          >
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 5l7 7-7 7M5 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        )}
 
         {/* Content */}
-        <div className="overflow-y-auto h-full">
-          <div className="p-6 space-y-6">
+        {!isMinimized && (
+          <div className="overflow-y-auto h-full">
+            <div className="p-6 space-y-6">
             {/* Header */}
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-1">{leg.leg_name}</h2>
@@ -670,6 +703,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             )}
           </div>
         </div>
+        )}
       </div>
     </>
   );
