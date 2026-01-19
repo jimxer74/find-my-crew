@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Header } from '@/app/components/Header';
@@ -75,6 +75,9 @@ export default function AllRegistrationsPage() {
   const [legs, setLegs] = useState<Leg[]>([]);
   const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null);
   const [updateNotes, setUpdateNotes] = useState<{ [key: string]: string }>({});
+  const prevFiltersRef = useRef<string | null>(null);
+  const isLoadingRef = useRef<boolean>(false);
+  const hasLoadedOnceRef = useRef<boolean>(false);
 
   const itemsPerPage = 20;
 
@@ -86,23 +89,59 @@ export default function AllRegistrationsPage() {
 
     if (user) {
       loadJourneys();
-      loadRegistrations();
     }
   }, [user, authLoading, router]);
 
+  // Load registrations when filters, sort, or page changes
+  // Reset to page 1 when filters/sort change (but not when just page changes)
   useEffect(() => {
-    if (user) {
-      loadRegistrations();
-      setCurrentPage(1); // Reset to first page when filters change
+    if (!user) return;
+    
+    // Prevent duplicate simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('[Registrations] Skipping duplicate call - already loading');
+      return;
     }
-  }, [filterStatus, filterJourneyId, filterLegId, sortBy, sortOrder]);
+    
+    const currentFilterKey = `${filterStatus}-${filterJourneyId}-${filterLegId}-${sortBy}-${sortOrder}`;
+    const prevKey = prevFiltersRef.current;
+    
+    // Skip if this exact combination was already loaded (prevents duplicate calls from StrictMode/re-renders)
+    if (prevKey === currentFilterKey && hasLoadedOnceRef.current) {
+      console.log('[Registrations] Filter key unchanged, skipping load');
+      return;
+    }
+    
+    // If filters changed (not just page), reset to page 1 first
+    const filtersChanged = prevKey !== null && 
+      prevKey.split('-').slice(0, 5).join('-') !== currentFilterKey.split('-').slice(0, 5).join('-');
+    
+    if (filtersChanged && currentPage !== 1) {
+      console.log('[Registrations] Filters changed, resetting to page 1');
+      setCurrentPage(1);
+      // Don't update prevFiltersRef yet - let the page change trigger this effect again
+      return;
+    }
+    
+    // Update the filter key reference before loading
+    prevFiltersRef.current = currentFilterKey;
+    hasLoadedOnceRef.current = true;
+    
+    // Load registrations
+    console.log('[Registrations] Loading registrations with filter key:', currentFilterKey);
+    loadRegistrations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, filterStatus, filterJourneyId, filterLegId, sortBy, sortOrder, currentPage]);
 
   useEffect(() => {
     if (filterJourneyId !== 'all') {
       loadLegsForJourney(filterJourneyId);
     } else {
       setLegs([]);
-      setFilterLegId('all');
+      // Only update filterLegId if it's not already 'all' to prevent unnecessary re-renders
+      if (filterLegId !== 'all') {
+        setFilterLegId('all');
+      }
     }
   }, [filterJourneyId]);
 
@@ -165,7 +204,14 @@ export default function AllRegistrationsPage() {
 
   const loadRegistrations = async () => {
     if (!user) return;
+    
+    // Prevent duplicate simultaneous calls
+    if (isLoadingRef.current) {
+      console.log('[Registrations] loadRegistrations called but already loading, skipping');
+      return;
+    }
 
+    isLoadingRef.current = true;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -184,6 +230,7 @@ export default function AllRegistrationsPage() {
       params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
 
       const url = `/api/registrations/owner/all?${params.toString()}`;
+      console.log('[Registrations] Fetching:', url);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -194,18 +241,15 @@ export default function AllRegistrationsPage() {
       const data = await response.json();
       setRegistrations(data.registrations || []);
       setTotalCount(data.total || 0);
+      console.log('[Registrations] Loaded', data.registrations?.length || 0, 'registrations');
     } catch (error: any) {
       console.error('Error loading registrations:', error);
     } finally {
       setLoading(false);
+      isLoadingRef.current = false;
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      loadRegistrations();
-    }
-  }, [currentPage]);
 
   const handleUpdateStatus = async (registrationId: string, status: 'Approved' | 'Not approved' | 'Cancelled') => {
     setUpdatingRegistrationId(registrationId);
