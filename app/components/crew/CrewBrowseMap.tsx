@@ -54,6 +54,12 @@ export function CrewBrowseMap({
   const [legs, setLegs] = useState<Leg[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null);
+  const [legWaypoints, setLegWaypoints] = useState<Array<{
+    id: string;
+    index: number;
+    name: string | null;
+    coordinates: [number, number] | null;
+  }>>([]);
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
   const mapLoadedRef = useRef(false);
@@ -64,6 +70,8 @@ export function CrewBrowseMap({
     maxLat: number;
   } | null>(null);
   const sourceAddedRef = useRef(false);
+  const routeSourceAddedRef = useRef(false);
+  const isFittingBoundsRef = useRef(false);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -523,7 +531,7 @@ export function CrewBrowseMap({
       });
 
       // Handle clicks on unclustered points - select leg
-      const handlePointClick = (e: mapboxgl.MapLayerMouseEvent) => {
+      const handlePointClick = async (e: mapboxgl.MapLayerMouseEvent) => {
         const features = map.current!.queryRenderedFeatures(e.point, {
           layers: ['unclustered-point'],
         });
@@ -533,14 +541,36 @@ export function CrewBrowseMap({
           // Find the leg in our legs map
           const leg = legsMapRef.current.get(legId);
           if (leg) {
+            console.log('[CrewBrowseMap] Leg selected:', legId);
+            
+            // Clear previous selection first to prevent focusing on old leg
+            setSelectedLeg(null);
+            setLegWaypoints([]);
+            
+            // Small delay to ensure state is cleared
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Set new leg and fetch waypoints
             setSelectedLeg(leg);
-            // Optionally fly to the leg location
-            if (leg.start_waypoint) {
-              map.current!.flyTo({
-                center: [leg.start_waypoint.lng, leg.start_waypoint.lat],
-                zoom: Math.max(map.current!.getZoom(), 10),
-                duration: 1000,
-              });
+            
+            // Fetch waypoints for this leg
+            try {
+              console.log('[CrewBrowseMap] Fetching waypoints for leg:', legId);
+              const waypointsUrl = `/api/legs/${legId}/waypoints`;
+              console.log('[CrewBrowseMap] Waypoints URL:', waypointsUrl);
+              const response = await fetch(waypointsUrl);
+              if (response.ok) {
+                const data = await response.json();
+                console.log('[CrewBrowseMap] Waypoints received:', data);
+                setLegWaypoints(data.waypoints || []);
+              } else {
+                const errorText = await response.text();
+                console.error('[CrewBrowseMap] Failed to fetch waypoints:', response.status, errorText);
+                setLegWaypoints([]);
+              }
+            } catch (error) {
+              console.error('[CrewBrowseMap] Error fetching waypoints:', error);
+              setLegWaypoints([]);
             }
           }
         }
@@ -562,6 +592,38 @@ export function CrewBrowseMap({
       });
 
       sourceAddedRef.current = true;
+      
+      // Add route source for leg routes (initially empty)
+      map.current.addSource('leg-route-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      });
+
+      // Add route line layer with gradient to show direction
+      // Option 1: Gradient from start (lighter) to end (darker) - shows direction
+      map.current.addLayer({
+        id: 'leg-route-line',
+        type: 'line',
+        source: 'leg-route-source',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#22276E',
+          'line-width': 4,
+          'line-opacity': 0.9,
+          // Note: Mapbox doesn't support true gradients, but we can use a gradient-like effect
+          // by using line-gradient with a color expression, or use multiple layers
+        },
+      }, 'unclustered-point'); // Insert before unclustered-point layer
+      
+
+
+      routeSourceAddedRef.current = true;
       
       // Attach viewport handlers now that map is loaded
       if (map.current) {
@@ -601,13 +663,22 @@ export function CrewBrowseMap({
           if (map.current.getLayer('unclustered-point')) {
             map.current.removeLayer('unclustered-point');
           }
+          if (map.current.getLayer('leg-route-line')) {
+            map.current.removeLayer('leg-route-line');
+          }
+          // Arrow layer removed - no longer needed
           if (map.current.getSource('legs-source')) {
             map.current.removeSource('legs-source');
           }
+          if (map.current.getSource('leg-route-source')) {
+            map.current.removeSource('leg-route-source');
+          }
+          // Arrow layer removed - no longer needed
         } catch (error) {
           // Layers/source may not exist if map wasn't fully loaded
           console.log('[CrewBrowseMap] Error removing layers/source:', error);
         }
+        
         
         // Remove event listeners
         map.current.off('zoom', updateZoom);
@@ -620,8 +691,121 @@ export function CrewBrowseMap({
       }
       mapInitializedRef.current = false;
       sourceAddedRef.current = false;
+      routeSourceAddedRef.current = false;
     };
   }, []); // Empty deps - only run once on mount
+
+  // Handle leg selection and waypoint display
+  useEffect(() => {
+    console.log('[CrewBrowseMap] Route display effect triggered:', {
+      hasMap: !!map.current,
+      mapLoaded,
+      routeSourceAdded: routeSourceAddedRef.current,
+      selectedLeg: !!selectedLeg,
+      waypointsCount: legWaypoints.length,
+    });
+
+    if (!map.current || !mapLoaded || !routeSourceAddedRef.current) {
+      console.log('[CrewBrowseMap] Route display skipped - map not ready');
+      return;
+    }
+
+    // Clear previous route
+    const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
+    if (routeSource) {
+      routeSource.setData({
+        type: 'FeatureCollection',
+        features: [],
+      });
+    }
+
+    // If no leg selected or no waypoints, return
+    if (!selectedLeg || legWaypoints.length === 0) {
+      console.log('[CrewBrowseMap] Route display skipped - no leg or waypoints');
+      return;
+    }
+
+    // Filter waypoints with valid coordinates
+    const validWaypoints = legWaypoints.filter(wp => wp.coordinates !== null);
+    console.log('[CrewBrowseMap] Valid waypoints:', validWaypoints.length, 'out of', legWaypoints.length);
+    
+    if (validWaypoints.length < 2) {
+      console.log('[CrewBrowseMap] Route display skipped - need at least 2 waypoints');
+      return; // Need at least start and end
+    }
+
+    // Create route line from all waypoints
+    const coordinates = validWaypoints.map(wp => wp.coordinates!);
+    console.log('[CrewBrowseMap] Creating route with coordinates:', coordinates);
+    
+    const routeFeature: GeoJSON.Feature<GeoJSON.LineString> = {
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: coordinates,
+      },
+      properties: {},
+    };
+
+    // Update route source (reuse the routeSource variable from above)
+    if (routeSource) {
+      console.log('[CrewBrowseMap] Updating route source with feature');
+      routeSource.setData({
+        type: 'FeatureCollection',
+        features: [routeFeature],
+      });
+      
+    } else {
+      console.error('[CrewBrowseMap] Route source not found!');
+    }
+
+
+    // Calculate bounds to fit entire route
+    const lngs = coordinates.map(coord => coord[0]);
+    const lats = coordinates.map(coord => coord[1]);
+    
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+
+    // Add padding
+    const padding = 0.1; // 10% padding
+    const lngDiff = maxLng - minLng;
+    const latDiff = maxLat - minLat;
+    
+    // Handle edge case where all waypoints are at the same location
+    const finalLngDiff = lngDiff === 0 ? 0.01 : lngDiff;
+    const finalLatDiff = latDiff === 0 ? 0.01 : latDiff;
+    
+    const bounds = new mapboxgl.LngLatBounds(
+      [minLng - finalLngDiff * padding, minLat - finalLatDiff * padding],
+      [maxLng + finalLngDiff * padding, maxLat + finalLatDiff * padding]
+    );
+
+    console.log('[CrewBrowseMap] Fitting bounds:', { minLng, maxLng, minLat, maxLat });
+
+    // Prevent double focusing
+    if (isFittingBoundsRef.current) {
+      console.log('[CrewBrowseMap] Already fitting bounds, skipping');
+      return;
+    }
+
+    isFittingBoundsRef.current = true;
+
+    // Fit map to bounds
+    map.current.fitBounds(bounds, {
+      padding: 50, // Additional padding in pixels
+      duration: 1000,
+      maxZoom: 12, // Don't zoom in too much
+      essential: true, // This is essential, don't interrupt
+    });
+
+    // Reset flag after animation completes
+    setTimeout(() => {
+      isFittingBoundsRef.current = false;
+    }, 1100); // Slightly longer than animation duration
+  }, [selectedLeg, legWaypoints, mapLoaded]);
 
   return (
     <div
