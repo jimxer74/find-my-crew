@@ -8,7 +8,8 @@ type Leg = {
   leg_name: string;
   boat_name: string;
   boat_image_url: string | null;
-  skipper_name: string | null;
+  boat_make: string | null;
+  boat_model: string | null;
   start_waypoint: {
     lng: number;
     lat: number;
@@ -73,11 +74,16 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Boat Name with Skipper */}
+          {/* Boat Name with Make/Model */}
           <h3 className="font-bold text-card-foreground mb-2 text-sm">
             {leg.boat_name}
-            {leg.skipper_name && (
-              <span className="font-normal"> with {leg.skipper_name}</span>
+            {(leg.boat_make || leg.boat_model) && (
+              <span className="font-normal">
+                {' '}
+                {leg.boat_make && leg.boat_model 
+                  ? `${leg.boat_make} ${leg.boat_model}`
+                  : leg.boat_make || leg.boat_model || ''}
+              </span>
             )}
           </h3>
 

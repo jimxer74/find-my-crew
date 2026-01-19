@@ -27,6 +27,7 @@ type Profile = {
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   skills: string[]; // Array of JSON strings: ['{"skill_name": "first_aid", "description": "..."}', ...]
   sailing_preferences: string | null;
+  profile_image_url: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -76,7 +77,9 @@ export default function ProfilePage() {
     risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
     skills: [] as SkillEntry[], // Array of skill objects with skill_name and description
     sailing_preferences: '',
+    profile_image_url: '',
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -121,6 +124,7 @@ export default function ProfilePage() {
           risk_level: [],
           skills: [],
           sailing_preferences: '',
+          profile_image_url: '',
         });
 
         // Create a temporary profile object for display
@@ -135,6 +139,7 @@ export default function ProfilePage() {
           risk_level: [],
           skills: [],
           sailing_preferences: null,
+          profile_image_url: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
@@ -163,6 +168,7 @@ export default function ProfilePage() {
         risk_level: data.risk_level || [],
         skills: parsedSkills,
         sailing_preferences: data.sailing_preferences || '',
+        profile_image_url: data.profile_image_url || '',
       });
     }
     setLoading(false);
@@ -200,6 +206,7 @@ export default function ProfilePage() {
             risk_level: formData.risk_level || [],
             skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
             sailing_preferences: formData.sailing_preferences || null,
+            profile_image_url: formData.profile_image_url || null,
           });
 
       error = insertError;
@@ -216,6 +223,7 @@ export default function ProfilePage() {
             risk_level: formData.risk_level || [],
             skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
             sailing_preferences: formData.sailing_preferences || null,
+            profile_image_url: formData.profile_image_url || null,
             updated_at: new Date().toISOString(),
           })
         .eq('id', user.id);
@@ -299,6 +307,120 @@ export default function ProfilePage() {
       ...prev,
       skills: prev.skills.filter(s => s.skill_name !== skillName),
     }));
+  };
+
+  // Handle profile image upload
+  const handleImageUpload = async (file: File | null) => {
+    if (!file || !user) return;
+
+    setUploadingImage(true);
+    setError(null);
+    const supabase = getSupabaseBrowserClient();
+
+    try {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please upload only image files');
+        setUploadingImage(false);
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        setUploadingImage(false);
+        return;
+      }
+
+      // Delete old image if exists
+      if (formData.profile_image_url) {
+        try {
+          // Extract path from URL (format: https://...supabase.co/storage/v1/object/public/profile-images/userId/filename)
+          const urlParts = formData.profile_image_url.split('/profile-images/');
+          if (urlParts.length > 1) {
+            const oldImagePath = urlParts[1];
+            await supabase.storage
+              .from('profile-images')
+              .remove([oldImagePath]);
+          }
+        } catch (deleteError) {
+          console.warn('Failed to delete old image:', deleteError);
+          // Continue with upload even if deletion fails
+        }
+      }
+
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('profile-images')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        setError(`Failed to upload image: ${uploadError.message}`);
+        setUploadingImage(false);
+        return;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(uploadData.path);
+
+      setFormData((prev) => ({
+        ...prev,
+        profile_image_url: publicUrl,
+      }));
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  // Remove profile image
+  const removeProfileImage = async () => {
+    if (!formData.profile_image_url || !user) return;
+
+    const supabase = getSupabaseBrowserClient();
+    
+    try {
+      // Extract path from URL (format: https://...supabase.co/storage/v1/object/public/profile-images/userId/filename)
+      const urlParts = formData.profile_image_url.split('/profile-images/');
+      if (urlParts.length > 1) {
+        const imagePath = urlParts[1];
+        
+        // Delete from storage
+        const { error: deleteError } = await supabase.storage
+          .from('profile-images')
+          .remove([imagePath]);
+
+        if (deleteError) {
+          console.error('Failed to delete image:', deleteError);
+          setError('Failed to delete image');
+        } else {
+          setFormData((prev) => ({
+            ...prev,
+            profile_image_url: '',
+          }));
+        }
+      } else {
+        // If path extraction fails, just clear the URL
+        setFormData((prev) => ({
+          ...prev,
+          profile_image_url: '',
+        }));
+      }
+    } catch (err: any) {
+      console.error('Error removing image:', err);
+      setError('Failed to remove image');
+    }
   };
 
   // Update skill description
@@ -485,6 +607,67 @@ export default function ProfilePage() {
 
         <div className="bg-card rounded-lg shadow p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Profile Image Upload */}
+            <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Profile Image
+              </label>
+              <div className="relative">
+                {formData.profile_image_url ? (
+                  <div className="relative group">
+                    <img
+                      src={formData.profile_image_url}
+                      alt="Profile"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeProfileImage}
+                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      aria-label="Remove profile image"
+                      title="Remove profile image"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 rounded-full border-4 border-dashed border-border flex items-center justify-center bg-muted">
+                    <svg className="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              <label className="flex flex-col items-center justify-center w-full border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors px-4 py-3">
+                <div className="flex flex-col items-center justify-center">
+                  <svg className="w-6 h-6 mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold">Click to upload</span> or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF up to 5MB</p>
+                </div>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (file) {
+                      handleImageUpload(file);
+                    }
+                  }}
+                  disabled={uploadingImage}
+                />
+              </label>
+              {uploadingImage && (
+                <p className="text-sm text-muted-foreground">Uploading image...</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-2">

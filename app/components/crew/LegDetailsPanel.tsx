@@ -25,7 +25,10 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
-  skipper_name: string | null;
+  boat_make: string | null;
+  boat_model: string | null;
+  owner_name: string | null;
+  owner_image_url: string | null;
   min_experience_level: number | null;
   skill_match_percentage?: number;
   experience_level_matches?: boolean;
@@ -637,8 +640,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Boat Info */}
             <div className="pt-4 border-t border-border">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat & Skipper</h3>
-              <div className="flex gap-3">
+              <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h3>
+              <div className="flex gap-3 items-start">
                 {leg.boat_image_url && (
                   <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
                     <Image
@@ -654,12 +657,53 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   {leg.boat_type && (
                     <p className="text-xs text-muted-foreground mb-1">{leg.boat_type}</p>
                   )}
-                  {leg.skipper_name && (
+                  {(leg.boat_make || leg.boat_model) && (
                     <p className="text-xs text-muted-foreground">
-                      Skipper: <span className="text-foreground">{leg.skipper_name}</span>
+                      {leg.boat_make && leg.boat_model 
+                        ? `${leg.boat_make} ${leg.boat_model}`
+                        : leg.boat_make || leg.boat_model || ''}
                     </p>
                   )}
                 </div>
+                {/* Owner Avatar */}
+                {(leg.owner_name || leg.owner_image_url) && (
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {leg.owner_image_url ? (
+                      <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-border">
+                        <Image
+                          src={leg.owner_image_url}
+                          alt={leg.owner_name || 'Owner'}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                        <svg
+                          className="w-8 h-8 text-muted-foreground"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    {leg.owner_name && (
+                      <div className="flex flex-col">
+                        <p className="text-xs font-medium text-foreground">Skipper:</p>
+                        <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={leg.owner_name}>
+                          {leg.owner_name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

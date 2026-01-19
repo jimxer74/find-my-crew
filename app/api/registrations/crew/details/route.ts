@@ -81,6 +81,8 @@ export async function GET(request: NextRequest) {
             id,
             name,
             type,
+            make,
+            model,
             images,
             average_speed_knots,
             owner_id
@@ -106,14 +108,14 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get owner IDs to fetch skipper names
+    // Get owner IDs to fetch owner profile information
     const ownerIds = [...new Set(legsData.map((leg: any) => leg.journeys?.boats?.owner_id).filter(Boolean))];
     let ownerProfilesMap: Record<string, any> = {};
     
     if (ownerIds.length > 0) {
       const { data: ownerProfiles } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, profile_image_url')
         .in('id', ownerIds);
       
       if (ownerProfiles) {
@@ -236,11 +238,14 @@ export async function GET(request: NextRequest) {
         boat_id: leg.journeys?.boats?.id || '',
         boat_name: leg.journeys?.boats?.name || 'Unknown Boat',
         boat_type: leg.journeys?.boats?.type || null,
+        boat_make: leg.journeys?.boats?.make || null,
+        boat_model: leg.journeys?.boats?.model || null,
         boat_image_url: leg.journeys?.boats?.images && leg.journeys.boats.images.length > 0
           ? leg.journeys.boats.images[0]
           : null,
         boat_average_speed_knots: leg.journeys?.boats?.average_speed_knots || null,
-        skipper_name: ownerProfilesMap[leg.journeys?.boats?.owner_id]?.full_name || null,
+        owner_name: ownerProfilesMap[leg.journeys?.boats?.owner_id]?.full_name || null,
+        owner_image_url: ownerProfilesMap[leg.journeys?.boats?.owner_id]?.profile_image_url || null,
         min_experience_level: leg.min_experience_level,
         skill_match_percentage: skillMatchPercentage,
         experience_level_matches: experienceLevelMatches,

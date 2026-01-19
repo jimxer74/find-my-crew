@@ -25,7 +25,10 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
-  skipper_name: string | null;
+  boat_make: string | null;
+  boat_model: string | null;
+  owner_name: string | null;
+  owner_image_url: string | null;
   min_experience_level: number | null;
   skill_match_percentage?: number; // Calculated on frontend, not from API
   experience_level_matches?: boolean; // Whether user's experience level meets requirement

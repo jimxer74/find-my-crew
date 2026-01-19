@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Header } from '@/app/components/Header';
-import { LegDetailsPanel } from '@/app/components/crew/LegDetailsPanel';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
@@ -31,9 +31,12 @@ type RegistrationLeg = {
   boat_id: string;
   boat_name: string;
   boat_type: string | null;
+  boat_make: string | null;
+  boat_model: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
-  skipper_name: string | null;
+  owner_name: string | null;
+  owner_image_url: string | null;
   min_experience_level: number | null;
   skill_match_percentage?: number;
   experience_level_matches?: boolean;
@@ -55,7 +58,6 @@ export default function MyRegistrationsPage() {
   
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState<RegistrationLeg[]>([]);
-  const [selectedLeg, setSelectedLeg] = useState<RegistrationLeg | null>(null);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
 
@@ -139,44 +141,9 @@ export default function MyRegistrationsPage() {
     );
   };
 
-  const handleLegClick = (leg: RegistrationLeg) => {
-    setSelectedLeg(leg);
-  };
-
-  const handleClosePanel = () => {
-    setSelectedLeg(null);
-  };
-
   const handleRegistrationChange = () => {
     // Reload registrations when registration status changes
     loadRegistrations();
-  };
-
-  // Convert RegistrationLeg to Leg format for LegDetailsPanel
-  const convertToLegFormat = (reg: RegistrationLeg) => {
-    return {
-      leg_id: reg.leg_id,
-      leg_name: reg.leg_name,
-      leg_description: reg.leg_description,
-      journey_id: reg.journey_id,
-      journey_name: reg.journey_name,
-      start_date: reg.start_date,
-      end_date: reg.end_date,
-      crew_needed: reg.crew_needed,
-      risk_level: reg.risk_level,
-      skills: reg.skills,
-      boat_id: reg.boat_id,
-      boat_name: reg.boat_name,
-      boat_type: reg.boat_type,
-      boat_image_url: reg.boat_image_url,
-      boat_average_speed_knots: reg.boat_average_speed_knots,
-      skipper_name: reg.skipper_name,
-      min_experience_level: reg.min_experience_level,
-      skill_match_percentage: reg.skill_match_percentage,
-      experience_level_matches: reg.experience_level_matches,
-      start_waypoint: reg.start_waypoint,
-      end_waypoint: reg.end_waypoint,
-    };
   };
 
   if (authLoading || loading) {
@@ -252,8 +219,7 @@ export default function MyRegistrationsPage() {
               return (
                 <div
                   key={registration.registration_id}
-                  className="bg-card rounded-lg shadow p-5 cursor-pointer hover:shadow-lg transition-shadow flex flex-col h-full"
-                  onClick={() => handleLegClick(registration)}
+                  className="bg-card rounded-lg shadow p-5 hover:shadow-lg transition-shadow flex flex-col h-full"
                 >
                   {/* Header */}
                   <div className="mb-3">
@@ -297,6 +263,75 @@ export default function MyRegistrationsPage() {
                     )}
                   </div>
 
+                  {/* Boat and Skipper Info */}
+                  <div className="mb-3 pt-3 border-t border-border">
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h4>
+                    <div className="flex gap-3 items-start">
+                      {registration.boat_image_url && (
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                          <Image
+                            src={registration.boat_image_url}
+                            alt={registration.boat_name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h5 className="text-sm font-semibold text-foreground mb-1">{registration.boat_name}</h5>
+                        {registration.boat_type && (
+                          <p className="text-xs text-muted-foreground mb-1">{registration.boat_type}</p>
+                        )}
+                        {(registration.boat_make || registration.boat_model) && (
+                          <p className="text-xs text-muted-foreground">
+                            {registration.boat_make && registration.boat_model 
+                              ? `${registration.boat_make} ${registration.boat_model}`
+                              : registration.boat_make || registration.boat_model || ''}
+                          </p>
+                        )}
+                      </div>
+                      {/* Owner Avatar */}
+                      {(registration.owner_name || registration.owner_image_url) && (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {registration.owner_image_url ? (
+                            <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-border">
+                              <Image
+                                src={registration.owner_image_url}
+                                alt={registration.owner_name || 'Owner'}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                              <svg
+                                className="w-8 h-8 text-muted-foreground"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                          {registration.owner_name && (
+                            <div className="flex flex-col">
+                              <p className="text-xs font-medium text-foreground">Skipper:</p>
+                              <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={registration.owner_name}>
+                                {registration.owner_name}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Skills Preview */}
                   {legSkills.length > 0 && (
                     <div className="mt-auto pt-3 border-t border-border">
@@ -330,9 +365,6 @@ export default function MyRegistrationsPage() {
                     <div className="text-xs text-muted-foreground">
                       Registered: {new Date(registration.registration_created_at).toLocaleDateString()}
                     </div>
-                    <div className="mt-2 text-xs text-primary text-center">
-                      Click to view details
-                    </div>
                   </div>
                 </div>
               );
@@ -340,18 +372,6 @@ export default function MyRegistrationsPage() {
           </div>
         )}
       </main>
-
-      {/* Leg Details Panel */}
-      {selectedLeg && (
-        <LegDetailsPanel
-          leg={convertToLegFormat(selectedLeg)}
-          isOpen={true}
-          onClose={handleClosePanel}
-          userSkills={userSkills}
-          userExperienceLevel={userExperienceLevel}
-          onRegistrationChange={handleRegistrationChange}
-        />
-      )}
     </div>
   );
 }
