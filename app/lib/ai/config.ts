@@ -13,7 +13,8 @@ export type UseCase =
   | 'suggest-sailboats'      // Suggesting sailboat make/model names
   | 'generate-journey'        // Generating sailing journey plans
   | 'suggest-makers'         // Suggesting boat manufacturers
-  | 'suggest-models';         // Suggesting boat models
+  | 'suggest-models'         // Suggesting boat models
+  | 'assess-registration';   // Assessing crew member registration match for automated approval
 
 export interface ModelConfig {
   provider: AIProvider;
@@ -164,6 +165,36 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       temperature: 0.7,
       maxTokens: 300,
     },
+  ],
+  'assess-registration': [
+    {
+      // Development: Use reasoning models for better assessment quality
+      provider: 'deepseek',
+      models: ['deepseek-reasoner', 'deepseek-chat'],
+      temperature: 0.3, // Lower temperature for more consistent scoring
+      maxTokens: 2000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.3-70b-versatile',
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'openai/gpt-oss-120b',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-pro',
+        'gemini-3-pro',
+        'gemini-2.5-flash',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+    // Note: Production will use more sophisticated models (e.g., GPT-4, Claude Opus)
   ],
 };
 

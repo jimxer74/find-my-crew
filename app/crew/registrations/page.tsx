@@ -15,6 +15,9 @@ type RegistrationLeg = {
   registration_notes: string | null;
   registration_created_at: string;
   registration_updated_at: string;
+  ai_match_score?: number | null;
+  ai_match_reasoning?: string | null;
+  auto_approved?: boolean;
   leg_id: string;
   leg_name: string;
   leg_description: string | null;
@@ -259,8 +262,24 @@ export default function MyRegistrationsPage() {
                         {registration.leg_name}
                       </h3>
                     </div>
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       {getStatusBadge(registration.registration_status)}
+                      {registration.auto_approved && (
+                        <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
+                          Auto-approved by AI
+                        </span>
+                      )}
+                      {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          registration.ai_match_score >= 80 
+                            ? 'bg-green-100 text-green-800 border border-green-300'
+                            : registration.ai_match_score >= 50
+                            ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                            : 'bg-red-100 text-red-800 border border-red-300'
+                        }`}>
+                          AI Score: {registration.ai_match_score}%
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-2 line-clamp-1">
                       {registration.journey_name}
@@ -289,6 +308,20 @@ export default function MyRegistrationsPage() {
                         headerText="Skills"
                         compact={true}
                       />
+                    </div>
+                  )}
+
+                  {/* AI Assessment Info */}
+                  {registration.ai_match_reasoning && (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                          AI Assessment Details
+                        </summary>
+                        <div className="mt-2 p-2 bg-accent/50 rounded text-muted-foreground">
+                          {registration.ai_match_reasoning}
+                        </div>
+                      </details>
                     </div>
                   )}
 

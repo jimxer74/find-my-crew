@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     // Get user's registrations with leg IDs
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('id, leg_id, status, notes, created_at, updated_at')
+      .select('id, leg_id, status, notes, created_at, updated_at, ai_match_score, ai_match_reasoning, auto_approved')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -220,6 +220,9 @@ export async function GET(request: NextRequest) {
         registration_notes: reg.notes,
         registration_created_at: reg.created_at,
         registration_updated_at: reg.updated_at,
+        ai_match_score: reg.ai_match_score || null,
+        ai_match_reasoning: reg.ai_match_reasoning || null,
+        auto_approved: reg.auto_approved || false,
         leg_id: leg.id,
         leg_name: leg.name,
         leg_description: leg.description,

@@ -1,5 +1,78 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { assessRegistrationWithAI } from '@/app/lib/ai/assessRegistration';
+
+/**
+ * Helper function to handle registration answers
+ */
+async function handleRegistrationAnswers(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  registrationId: string,
+  answers: Array<{ requirement_id: string; answer_text?: string; answer_json?: any }>,
+  journeyId: string
+): Promise<string | null> {
+  // Get journey requirements to validate answers
+  const { data: requirements } = await supabase
+    .from('journey_requirements')
+    .select('id, question_type, is_required')
+    .eq('journey_id', journeyId);
+
+  if (!requirements || requirements.length === 0) {
+    return 'No requirements found for this journey';
+  }
+
+  const requirementsMap = new Map(requirements.map((r: any) => [r.id, r]));
+
+  // Validate all required questions are answered
+  const requiredIds = requirements.filter((r: any) => r.is_required).map((r: any) => r.id);
+  const answeredIds = answers.map((a: any) => a.requirement_id);
+  const missingRequired = requiredIds.filter((id: string) => !answeredIds.includes(id));
+
+  if (missingRequired.length > 0) {
+    return `Missing answers for required questions: ${missingRequired.join(', ')}`;
+  }
+
+  // Validate answer formats
+  for (const answer of answers) {
+    const requirement = requirementsMap.get(answer.requirement_id);
+    if (!requirement) {
+      return `Invalid requirement_id: ${answer.requirement_id}`;
+    }
+
+    // Validate format based on question type
+    if (requirement.question_type === 'text' || requirement.question_type === 'yes_no') {
+      if (!answer.answer_text || answer.answer_text.trim() === '') {
+        return `answer_text is required for ${requirement.question_type} questions`;
+      }
+      if (requirement.question_type === 'yes_no' && !['Yes', 'No'].includes(answer.answer_text)) {
+        return 'yes_no questions require answer_text to be "Yes" or "No"';
+      }
+    } else if (requirement.question_type === 'multiple_choice' || requirement.question_type === 'rating') {
+      if (!answer.answer_json) {
+        return `answer_json is required for ${requirement.question_type} questions`;
+      }
+    }
+  }
+
+  // Insert answers
+  const answersToInsert = answers.map((answer: any) => ({
+    registration_id: registrationId,
+    requirement_id: answer.requirement_id,
+    answer_text: answer.answer_text || null,
+    answer_json: answer.answer_json || null,
+  }));
+
+  const { error: insertError } = await supabase
+    .from('registration_answers')
+    .insert(answersToInsert);
+
+  if (insertError) {
+    console.error('Error creating answers:', insertError);
+    return insertError.message;
+  }
+
+  return null; // Success
+}
 
 /**
  * POST /api/registrations
@@ -38,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { leg_id, notes } = body;
+    const { leg_id, notes, answers } = body;
 
     // Validate required fields
     if (!leg_id) {
@@ -112,6 +185,11 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // Handle answers if provided
+        if (answers && Array.isArray(answers) && answers.length > 0) {
+          await handleRegistrationAnswers(supabase, updatedRegistration.id, answers, leg.journeys.id);
+        }
+
         return NextResponse.json({
           registration: updatedRegistration,
           message: 'Registration reactivated',
@@ -120,6 +198,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           { error: 'You have already registered for this leg' },
           { status: 409 }
+        );
+      }
+    }
+
+    // Check if journey has auto-approval enabled and requirements
+    const { data: journeySettings } = await supabase
+      .from('journeys')
+      .select('auto_approval_enabled, auto_approval_threshold')
+      .eq('id', leg.journeys.id)
+      .single();
+
+    const { count: requirementCount } = await supabase
+      .from('journey_requirements')
+      .select('*', { count: 'exact', head: true })
+      .eq('journey_id', leg.journeys.id);
+
+    const hasRequirements = requirementCount && requirementCount > 0;
+    const autoApprovalEnabled = journeySettings?.auto_approval_enabled === true;
+
+    // If auto-approval is enabled, require answers
+    if (autoApprovalEnabled && hasRequirements) {
+      if (!answers || !Array.isArray(answers) || answers.length === 0) {
+        return NextResponse.json(
+          { error: 'Answers are required for journeys with automated approval enabled' },
+          { status: 400 }
         );
       }
     }
@@ -142,6 +245,27 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create registration', details: insertError.message },
         { status: 500 }
       );
+    }
+
+    // Handle answers if provided
+    if (answers && Array.isArray(answers) && answers.length > 0) {
+      const answersError = await handleRegistrationAnswers(supabase, registration.id, answers, leg.journeys.id);
+      if (answersError) {
+        // Registration created but answers failed - return error but registration exists
+        return NextResponse.json(
+          { error: 'Registration created but failed to save answers', details: answersError },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Trigger AI assessment if auto-approval is enabled
+    // Do this asynchronously to not block registration creation
+    if (autoApprovalEnabled && hasRequirements && answers && answers.length > 0) {
+      assessRegistrationWithAI(supabase, registration.id).catch((error) => {
+        console.error('AI assessment failed (non-blocking):', error);
+        // Don't fail registration creation if AI assessment fails
+      });
     }
 
     return NextResponse.json({

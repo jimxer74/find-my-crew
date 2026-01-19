@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
+import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -118,7 +119,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [showRequirementsForm, setShowRequirementsForm] = useState(false);
   const [registrationNotes, setRegistrationNotes] = useState('');
+  const [requirementsAnswers, setRequirementsAnswers] = useState<any[]>([]);
+  const [hasRequirements, setHasRequirements] = useState(false);
 
   // Load registration status when leg changes
   useEffect(() => {
@@ -147,11 +151,47 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     loadRegistrationStatus();
   }, [user, leg.leg_id]);
 
+  // Check if journey has requirements
+  useEffect(() => {
+    if (leg.journey_id && showRegistrationModal) {
+      checkRequirements();
+    }
+  }, [leg.journey_id, showRegistrationModal]);
+
+  const checkRequirements = async () => {
+    try {
+      const response = await fetch(`/api/journeys/${leg.journey_id}/requirements`);
+      if (response.ok) {
+        const data = await response.json();
+        const reqs = data.requirements || [];
+        setHasRequirements(reqs.length > 0);
+        if (reqs.length > 0) {
+          setShowRequirementsForm(true);
+        } else {
+          // No requirements, show regular registration modal
+          setShowRequirementsForm(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking requirements:', error);
+      setHasRequirements(false);
+      setShowRequirementsForm(false);
+    }
+  };
+
   // Handle register button click
   const handleRegister = () => {
     setShowRegistrationModal(true);
     setRegistrationError(null);
     setRegistrationNotes('');
+    setRequirementsAnswers([]);
+  };
+
+  // Handle requirements form completion
+  const handleRequirementsComplete = (answers: any[]) => {
+    setRequirementsAnswers(answers);
+    setShowRequirementsForm(false);
+    // Continue to regular registration modal
   };
 
   // Submit registration
@@ -173,6 +213,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         body: JSON.stringify({
           leg_id: leg.leg_id,
           notes: registrationNotes.trim() || null,
+          answers: requirementsAnswers.length > 0 ? requirementsAnswers : undefined,
         }),
       });
 
@@ -185,13 +226,19 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       // Update local state
       setRegistrationStatus(data.registration.status);
       setShowRegistrationModal(false);
+      setShowRequirementsForm(false);
       setRegistrationNotes('');
+      setRequirementsAnswers([]);
       
       // Notify parent component
       onRegistrationChange?.();
 
-      // Show success message (could be replaced with toast notification)
-      console.log('Registration successful:', data.message);
+      // Show success message
+      if (data.registration.status === 'Approved' && data.registration.auto_approved) {
+        alert('Congratulations! You\'ve been automatically approved for this leg!');
+      } else {
+        console.log('Registration successful:', data.message);
+      }
     } catch (error: any) {
       setRegistrationError(error.message || 'An error occurred while registering');
       console.error('Registration error:', error);
@@ -542,50 +589,82 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Registration Modal */}
             {showRegistrationModal && (
-              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowRegistrationModal(false)}>
-                <div className="bg-card rounded-lg shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Register for Leg</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
-                  </p>
-                  
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-foreground mb-2">
-                      Additional Notes (Optional)
-                    </label>
-                    <textarea
-                      value={registrationNotes}
-                      onChange={(e) => setRegistrationNotes(e.target.value)}
-                      placeholder="Tell the owner why you're interested in this leg..."
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                      rows={4}
-                      maxLength={500}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {registrationNotes.length}/500 characters
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3 justify-end">
-                    <button
-                      onClick={() => {
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => {
+                setShowRegistrationModal(false);
+                setShowRequirementsForm(false);
+                setRegistrationNotes('');
+                setRequirementsAnswers([]);
+                setRegistrationError(null);
+              }}>
+                <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+                  {showRequirementsForm ? (
+                    <RegistrationRequirementsForm
+                      journeyId={leg.journey_id}
+                      legName={leg.leg_name}
+                      onComplete={handleRequirementsComplete}
+                      onCancel={() => {
                         setShowRegistrationModal(false);
+                        setShowRequirementsForm(false);
                         setRegistrationNotes('');
+                        setRequirementsAnswers([]);
                         setRegistrationError(null);
                       }}
-                      disabled={isRegistering}
-                      className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleSubmitRegistration}
-                      disabled={isRegistering}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      {isRegistering ? 'Registering...' : 'Submit Registration'}
-                    </button>
-                  </div>
+                    />
+                  ) : (
+                    <>
+                      <h3 className="text-lg font-semibold text-foreground mb-4">Register for Leg</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
+                      </p>
+                      
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-foreground mb-2">
+                          Additional Notes (Optional)
+                        </label>
+                        <textarea
+                          value={registrationNotes}
+                          onChange={(e) => setRegistrationNotes(e.target.value)}
+                          placeholder="Tell the owner why you're interested in this leg..."
+                          className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                          rows={4}
+                          maxLength={500}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {registrationNotes.length}/500 characters
+                        </p>
+                      </div>
+
+                      <div className="flex gap-3 justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRegistrationModal(false);
+                            setRegistrationNotes('');
+                            setRequirementsAnswers([]);
+                            setRegistrationError(null);
+                          }}
+                          disabled={isRegistering}
+                          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSubmitRegistration}
+                          disabled={isRegistering}
+                          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                        >
+                          {isRegistering ? 'Registering...' : 'Submit Registration'}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  
+                  {registrationError && (
+                    <div className="mt-4 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                      {registrationError}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

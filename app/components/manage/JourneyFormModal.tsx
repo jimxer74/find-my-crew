@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { RequirementsManager } from '@/app/components/manage/RequirementsManager';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
@@ -574,6 +575,16 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                     </p>
                   </div>
                 </div>
+
+                {/* Requirements Manager - Only show when editing existing journey */}
+                {journeyId && (
+                  <RequirementsManager
+                    journeyId={journeyId}
+                    onRequirementsChange={() => {
+                      // Optionally reload journey data or refresh UI
+                    }}
+                  />
+                )}
 
                 {/* Form Actions */}
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">

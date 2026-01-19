@@ -17,6 +17,9 @@ type Registration = {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  ai_match_score?: number | null;
+  ai_match_reasoning?: string | null;
+  auto_approved?: boolean;
   legs: {
     id: string;
     name: string;
@@ -399,8 +402,24 @@ export default function AllRegistrationsPage() {
                           {profile.full_name || profile.username || 'Unknown User'}
                         </h3>
                       </div>
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
                         {getStatusBadge(registration.status)}
+                        {registration.auto_approved && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
+                            Auto-approved by AI
+                          </span>
+                        )}
+                        {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            registration.ai_match_score >= 80 
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : registration.ai_match_score >= 50
+                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                              : 'bg-red-100 text-red-800 border border-red-300'
+                          }`}>
+                            AI Score: {registration.ai_match_score}%
+                          </span>
+                        )}
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm text-muted-foreground">
@@ -476,6 +495,20 @@ export default function AllRegistrationsPage() {
                       <div className="mb-4">
                         <p className="text-xs text-muted-foreground mb-1">Crew Member Notes:</p>
                         <p className="text-sm text-foreground bg-accent/50 p-2 rounded line-clamp-3">{registration.notes}</p>
+                      </div>
+                    )}
+
+                    {/* AI Assessment Info */}
+                    {registration.ai_match_reasoning && (
+                      <div className="mb-4">
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium mb-2">
+                            AI Assessment Details
+                          </summary>
+                          <div className="mt-2 p-2 bg-accent/50 rounded text-muted-foreground text-xs">
+                            {registration.ai_match_reasoning}
+                          </div>
+                        </details>
                       </div>
                     )}
 

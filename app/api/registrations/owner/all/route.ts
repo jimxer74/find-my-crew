@@ -163,6 +163,9 @@ export async function GET(request: NextRequest) {
         notes,
         created_at,
         updated_at,
+        ai_match_score,
+        ai_match_reasoning,
+        auto_approved,
         legs (
           id,
           name,
