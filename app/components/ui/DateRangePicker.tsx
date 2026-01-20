@@ -173,23 +173,23 @@ export function DateRangePicker({
     const year = month.getFullYear();
 
     return (
-      <div className="flex flex-col min-w-[280px]">
-        <div className="flex items-center justify-center gap-3 mb-5">
+      <div className="flex flex-col min-w-[280px] w-full sm:w-auto">
+        <div className="flex items-center justify-center gap-3 mb-4 sm:mb-5">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-1.5 hover:bg-muted rounded-md transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
             aria-label="Previous month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="font-semibold text-foreground text-sm">
+          <div className="font-semibold text-foreground text-sm sm:text-base">
             {monthName} {year}
           </div>
           <button
             onClick={() => navigateMonth('next')}
-            className="p-1.5 hover:bg-muted rounded-md transition-colors"
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
             aria-label="Next month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -225,7 +225,7 @@ export function DateRangePicker({
                 onClick={() => !isDisabled && handleDateClick(day, month)}
                 disabled={isDisabled}
                 className={`
-                  w-9 h-9 flex items-center justify-center text-sm rounded-md transition-colors font-medium
+                  w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-sm rounded-md transition-colors font-medium
                   ${isDisabled 
                     ? 'text-muted-foreground/30 cursor-not-allowed' 
                     : 'hover:bg-accent cursor-pointer active:scale-95'
@@ -250,12 +250,12 @@ export function DateRangePicker({
   return (
     <div
       ref={pickerRef}
-      className={`bg-card border border-border rounded-xl shadow-lg p-6 relative ${className}`}
+      className={`bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative ${className}`}
     >
       {/* Close button */}
       <button
         onClick={handleCancel}
-        className="absolute top-2 right-2 p-1.5 hover:bg-muted rounded-md transition-colors"
+        className="absolute top-2 right-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
         aria-label="Close"
       >
         <svg
@@ -271,23 +271,29 @@ export function DateRangePicker({
         </svg>
       </button>
 
+      {/* Availability label - shown on large screens */}
+      <div className="hidden lg:block mb-4 pb-4 border-b border-border">
+        <h3 className="text-lg font-semibold text-foreground">Availability</h3>
+        <p className="text-sm text-muted-foreground mt-1">Select your available date range</p>
+      </div>
+
       {/* Two-month calendar view */}
-      <div className="flex gap-6 lg:gap-8 flex-wrap lg:flex-nowrap justify-center mb-6">
+      <div className="flex gap-4 sm:gap-6 lg:gap-8 flex-col md:flex-row justify-center mb-4 sm:mb-6">
         {renderCalendar(currentMonth)}
         {renderCalendar(getNextMonth())}
       </div>
 
       {/* Save and Cancel buttons */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
         <button
           onClick={handleCancel}
-          className="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+          className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
-          className="px-4 py-2 text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+          className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
         >
           Save
         </button>

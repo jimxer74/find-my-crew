@@ -87,7 +87,7 @@ export function Header() {
   const formatDateRange = () => {
     const dateRange = filters.dateRange;
     if (!dateRange.start && !dateRange.end) {
-      return 'When?';
+      return 'Availability';
     }
     if (dateRange.start && dateRange.end) {
       const startStr = dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -97,7 +97,7 @@ export function Header() {
     if (dateRange.start) {
       return dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
-    return 'When?';
+    return 'Availability';
   };
 
   return (
@@ -119,7 +119,11 @@ export function Header() {
                       aria-label="Select date range"
                     >
                       <svg
-                        className="w-4 h-4 sm:w-5 sm:h-5 text-foreground flex-shrink-0"
+                        className={`w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 ${
+                          filters.dateRange.start || filters.dateRange.end 
+                            ? 'text-foreground' 
+                            : 'text-muted-foreground'
+                        }`}
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -132,7 +136,11 @@ export function Header() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span className="text-xs sm:text-sm font-medium text-foreground whitespace-nowrap hidden xs:inline">
+                      <span className={`text-xs sm:text-sm font-medium whitespace-nowrap ${
+                        filters.dateRange.start || filters.dateRange.end 
+                          ? 'text-foreground' 
+                          : 'text-muted-foreground'
+                      }`}>
                         {formatDateRange()}
                       </span>
                     </button>
@@ -170,7 +178,7 @@ export function Header() {
                       <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-2 sm:py-4">
                         <div 
                           ref={datePickerDialogRef}
-                          className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm"
+                          className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
                         >
                           <DateRangePicker
                             value={filters.dateRange}
