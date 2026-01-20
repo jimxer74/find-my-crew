@@ -65,7 +65,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
                   e.stopPropagation();
                   onClose();
                 }}
-                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white transition-colors shadow-sm z-10"
+                className="absolute top-2 left-2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white transition-colors shadow-sm z-10"
                 aria-label="Close"
               >
                 <svg
@@ -104,7 +104,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
                   e.stopPropagation();
                   onClose();
                 }}
-                className="absolute top-2 left-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white transition-colors shadow-sm z-10"
+                className="absolute top-2 left-2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white transition-colors shadow-sm z-10"
                 aria-label="Close"
               >
                 <svg

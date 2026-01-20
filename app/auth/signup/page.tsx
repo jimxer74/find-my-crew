@@ -48,24 +48,24 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-card p-8 rounded-xl shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-card p-4 sm:p-8 rounded-xl shadow-lg">
         <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-card-foreground">
+          <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-card-foreground">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-muted-foreground">
+          <p className="mt-2 text-center text-xs sm:text-sm text-muted-foreground">
             Or{' '}
             <Link
               href="/auth/login"
-              className="font-medium text-primary hover:opacity-80"
+              className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
             >
               sign in to your existing account
             </Link>
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSignUp}>
+        <form className="mt-6 sm:mt-8 space-y-4 sm:space-y-6" onSubmit={handleSignUp}>
           {error && (
             <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
               {error}
@@ -84,7 +84,7 @@ export default function SignUpPage() {
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                 placeholder="John Doe"
               />
             </div>
@@ -101,7 +101,7 @@ export default function SignUpPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                 placeholder="you@example.com"
               />
             </div>
@@ -118,7 +118,7 @@ export default function SignUpPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                 placeholder="••••••••"
                 minLength={6}
               />
@@ -128,26 +128,26 @@ export default function SignUpPage() {
               <label className="block text-sm font-medium text-foreground mb-2">
                 I am a...
               </label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <label className="flex items-center min-h-[44px] cursor-pointer">
                   <input
                     type="radio"
                     name="role"
                     value="owner"
                     checked={role === 'owner'}
                     onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                    className="mr-2"
+                    className="mr-2 w-5 h-5"
                   />
                   <span>Boat Owner/Skipper</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center min-h-[44px] cursor-pointer">
                   <input
                     type="radio"
                     name="role"
                     value="crew"
                     checked={role === 'crew'}
                     onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                    className="mr-2"
+                    className="mr-2 w-5 h-5"
                   />
                   <span>Crew Member</span>
                 </label>
@@ -159,7 +159,7 @@ export default function SignUpPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-2 px-4 bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+              className="w-full flex justify-center py-3 px-4 min-h-[44px] bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
             >
               {loading ? 'Creating account...' : 'Sign up'}
             </button>

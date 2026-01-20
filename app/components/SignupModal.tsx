@@ -59,23 +59,23 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
         onClick={onClose}
       >
         {/* Modal */}
         <div
-          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-extrabold text-card-foreground">
+            <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
+              <h2 className="text-xl sm:text-3xl font-extrabold text-card-foreground pr-2">
                 Create your account
               </h2>
               <button
                 onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
                 aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,20 +84,20 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
               </button>
             </div>
 
-            <p className="text-center text-sm text-muted-foreground mb-8">
+            <p className="text-center text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
               Or{' '}
               <button
                 type="button"
                 onClick={() => {
                   onSwitchToLogin();
                 }}
-                className="font-medium text-primary hover:opacity-80"
+                className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
               >
                 sign in to your existing account
               </button>
             </p>
 
-            <form className="space-y-6" onSubmit={handleSignUp}>
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleSignUp}>
               {error && (
                 <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                   {error}
@@ -160,26 +160,26 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
                   <label className="block text-sm font-medium text-foreground mb-2">
                     I am a...
                   </label>
-                  <div className="flex gap-4">
-                    <label className="flex items-center">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                    <label className="flex items-center min-h-[44px] cursor-pointer">
                       <input
                         type="radio"
                         name="role"
                         value="owner"
                         checked={role === 'owner'}
                         onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                        className="mr-2"
+                        className="mr-2 w-5 h-5"
                       />
                       <span>Boat Owner/Skipper</span>
                     </label>
-                    <label className="flex items-center">
+                    <label className="flex items-center min-h-[44px] cursor-pointer">
                       <input
                         type="radio"
                         name="role"
                         value="crew"
                         checked={role === 'crew'}
                         onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                        className="mr-2"
+                        className="mr-2 w-5 h-5"
                       />
                       <span>Crew Member</span>
                     </label>
@@ -191,7 +191,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center py-2 px-4 bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                  className="w-full flex justify-center py-3 px-4 min-h-[44px] bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                 >
                   {loading ? 'Creating account...' : 'Sign up'}
                 </button>

@@ -1,9 +1,9 @@
 TODO:
 
-- Add unit testing framework
 - Add vulnerability and security issue scanner
 - Add GDPR notifications and required functions to forget, report data etc.
 - Add a cost sharing model managementn for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty, where each contributes? --> This links to meal prepping  AI assistant, to understand food costs
+- Mobile responsive pages analysis
 
 Later:
 

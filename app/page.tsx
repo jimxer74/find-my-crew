@@ -32,29 +32,29 @@ export default function Home() {
       <div className="relative z-10">
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 md:py-32">
           <div className="text-center">
-            <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg px-2">
               Connect Boat Owners with
               <span className="text-blue-300"> Crew Members</span>
             </h2>
-            <p className="text-xl text-white/95 mb-8 max-w-2xl mx-auto drop-shadow-md">
+            <p className="text-base sm:text-lg md:text-xl text-white/95 mb-6 sm:mb-8 max-w-2xl mx-auto drop-shadow-md px-2">
             Whether you're a boat owner looking for crew or an adventurer seeking sailing opportunities, 
             we make it easy to find your perfect match.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2">
             {user ? (
               <>
                 <Link
                   href="/crew/dashboard"
-                  className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
+                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
                   Browse Journeys
                 </Link>
                 {user && (
                   <Link
                     href="/owner/boats"
-                    className="border border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
+                    className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                   >
                     My Dashboard
                   </Link>
@@ -64,13 +64,13 @@ export default function Home() {
               <>
                 <button
                   onClick={() => setIsSignupModalOpen(true)}
-                  className="bg-primary text-primary-foreground px-8 py-3 rounded-lg transition-opacity font-medium text-lg text-center hover:opacity-90"
+                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
                   Sign up
                 </button>
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="border border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
+                  className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                 >
                   Log in
                 </button>
@@ -81,10 +81,10 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid md:grid-cols-2 gap-12 lg:gap-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className="grid md:grid-cols-2 gap-6 sm:gap-12 lg:gap-16">
           {/* For Owners */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
+          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
             <div className="w-16 h-16 mb-4 relative">
               <Image
                 src="/boat2.png"
@@ -115,7 +115,7 @@ export default function Home() {
           </div>
 
           {/* For Crew */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-border/20">
+          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
             <div className="w-16 h-16 mb-4 relative">
               <Image
                 src="/seaman2.png"
@@ -148,9 +148,9 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <h3 className="text-3xl font-bold text-center text-white mb-12 drop-shadow-lg">How It Works</h3>
-        <div className="grid md:grid-cols-3 gap-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mb-8 sm:mb-12 drop-shadow-lg px-2">How It Works</h3>
+        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
               <span className="text-2xl font-bold text-white">1</span>
@@ -182,25 +182,25 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="rounded-2xl p-12 text-center bg-primary">
-          <h3 className="text-3xl font-bold text-primary-foreground mb-4">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+        <div className="rounded-2xl p-6 sm:p-12 text-center bg-primary">
+          <h3 className="text-2xl sm:text-3xl font-bold text-primary-foreground mb-3 sm:mb-4 px-2">
             Ready to Start Your Adventure?
           </h3>
-          <p className="text-primary-foreground/90 mb-8 text-lg max-w-2xl mx-auto">
+          <p className="text-primary-foreground/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
             Join our community of boat owners and crew members today
           </p>
           {user ? (
             <Link
               href="/owner/boats"
-              className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg inline-block hover:opacity-90"
+              className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
               Go to Dashboard
             </Link>
           ) : (
             <button
               onClick={() => setIsSignupModalOpen(true)}
-              className="bg-card text-primary px-8 py-3 rounded-lg transition-opacity font-medium text-lg hover:opacity-90"
+              className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
               Sign up
             </button>
@@ -209,11 +209,11 @@ export default function Home() {
       </section>
 
         {/* Footer */}
-        <footer className="border-t border-white/20 bg-white/90 backdrop-blur-md mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <footer className="border-t border-white/20 bg-white/90 backdrop-blur-md mt-12 sm:mt-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="text-center text-white/80">
-            <p className="mb-2">© 2024 Find My Crew. All rights reserved.</p>
-            <p className="text-sm text-white/70">
+            <p className="mb-2 text-sm sm:text-base">© 2024 Find My Crew. All rights reserved.</p>
+            <p className="text-xs sm:text-sm text-white/70">
               Connecting boat owners with crew members worldwide
             </p>
           </div>

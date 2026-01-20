@@ -108,18 +108,18 @@ export function Header() {
             <div className="flex items-center">
               <LogoWithText />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               {/* Date Range Picker - Only show for crew users (not owners) */}
               {user && userRole === 'crew' && (
                 <>
                   <div className="relative group" ref={datePickerRef}>
                     <button
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                      className="flex items-center gap-2 px-2 md:px-3 py-2 rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                      className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
                       aria-label="Select date range"
                     >
                       <svg
-                        className="w-4 h-4 text-foreground"
+                        className="w-4 h-4 sm:w-5 sm:h-5 text-foreground flex-shrink-0"
                         fill="none"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -132,7 +132,7 @@ export function Header() {
                         <line x1="8" y1="2" x2="8" y2="6" />
                         <line x1="3" y1="10" x2="21" y2="10" />
                       </svg>
-                      <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                      <span className="text-xs sm:text-sm font-medium text-foreground whitespace-nowrap hidden xs:inline">
                         {formatDateRange()}
                       </span>
                     </button>
@@ -142,11 +142,11 @@ export function Header() {
                           e.stopPropagation();
                           updateFilters({ dateRange: { start: null, end: null } });
                         }}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
                         aria-label="Clear date range"
                       >
                         <svg
-                          className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                          className="w-4 h-4 text-muted-foreground hover:text-foreground"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -167,10 +167,10 @@ export function Header() {
                         onClick={() => setIsDatePickerOpen(false)}
                       />
                       {/* Centered DateRangePicker */}
-                      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
+                      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-2 sm:py-4">
                         <div 
                           ref={datePickerDialogRef}
-                          className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
+                          className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm"
                         >
                           <DateRangePicker
                             value={filters.dateRange}
@@ -189,11 +189,11 @@ export function Header() {
               {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
                 <button
                   onClick={() => setIsFiltersDialogOpen(true)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
                   aria-label="Filters"
                 >
                   <svg
-                    className="w-5 h-5 text-foreground"
+                    className="w-5 h-5 text-foreground flex-shrink-0"
                     fill="none"
                     strokeLinecap="round"
                     strokeLinejoin="round"

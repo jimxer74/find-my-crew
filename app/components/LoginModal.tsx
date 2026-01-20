@@ -80,23 +80,23 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
         onClick={onClose}
       >
         {/* Modal */}
         <div
-          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="p-8">
+          <div className="p-4 sm:p-8">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-3xl font-extrabold text-card-foreground">
+            <div className="flex justify-between items-start mb-4 sm:mb-6 gap-2">
+              <h2 className="text-xl sm:text-3xl font-extrabold text-card-foreground pr-2">
                 Sign in to your account
               </h2>
               <button
                 onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center flex-shrink-0"
                 aria-label="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,20 +105,20 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
               </button>
             </div>
 
-            <p className="text-center text-sm text-muted-foreground mb-8">
+            <p className="text-center text-xs sm:text-sm text-muted-foreground mb-4 sm:mb-8">
               Or{' '}
               <button
                 type="button"
                 onClick={() => {
                   onSwitchToSignup();
                 }}
-                className="font-medium text-primary hover:opacity-80"
+                className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
               >
                 create a new account
               </button>
             </p>
 
-            <form className="space-y-6" onSubmit={handleLogin}>
+            <form className="space-y-4 sm:space-y-6" onSubmit={handleLogin}>
               {error && (
                 <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                   {error}
@@ -165,7 +165,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full flex justify-center py-2 px-4 bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                  className="w-full flex justify-center py-3 px-4 min-h-[44px] bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
                 >
                   {loading ? 'Signing in...' : 'Sign in'}
                 </button>
@@ -183,7 +183,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
                   type="button"
                   onClick={handleFacebookLogin}
                   disabled={loading}
-                  className="w-full flex justify-center items-center gap-2 py-2 px-4 border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full flex justify-center items-center gap-2 py-3 px-4 min-h-[44px] border border-border rounded-md shadow-sm text-sm font-medium text-foreground bg-card hover:bg-accent focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />

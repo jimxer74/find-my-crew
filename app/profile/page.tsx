@@ -509,22 +509,50 @@ export default function ProfilePage() {
       <Header />
 
       <main className="flex-1 flex overflow-hidden relative min-h-0">
+        {/* Backdrop for mobile sidebar */}
+        {showPreferencesSidebar && sidebarContent && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setShowPreferencesSidebar(false)}
+          />
+        )}
+        
         {/* Left Sidebar - Info Panel */}
         {sidebarContent && (
           <div
             className={`${
-              showPreferencesSidebar ? 'w-80' : 'w-0'
-            } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden h-full`}
+              showPreferencesSidebar ? 'w-full md:w-80' : 'w-0'
+            } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden h-full fixed md:relative z-50 md:z-auto`}
           >
             {showPreferencesSidebar && (
               <div
                 ref={sidebarScrollRef}
-                className="flex-1 overflow-y-auto p-6 profile-sidebar-scroll"
+                className="flex-1 overflow-y-auto p-4 sm:p-6 profile-sidebar-scroll"
                 style={{
                   scrollbarWidth: 'thin',
                   scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
                 }}
               >
+                {/* Close button for mobile */}
+                <button
+                  onClick={() => setShowPreferencesSidebar(false)}
+                  className="md:hidden absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-all"
+                  aria-label="Close panel"
+                >
+                  <svg
+                    className="w-6 h-6 text-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
                 {/* Header - only show for non-Risk Level content */}
                 {sidebarContent.title !== 'Coastal sailing' && 
                  sidebarContent.title !== 'Offshore sailing' && 
@@ -545,11 +573,11 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Toggle Button */}
+        {/* Toggle Button - Desktop only */}
         {sidebarContent && (
           <button
             onClick={() => setShowPreferencesSidebar(!showPreferencesSidebar)}
-            className={`absolute top-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all ${
+            className={`hidden md:flex absolute top-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all ${
               showPreferencesSidebar ? 'left-[320px]' : 'left-4'
             }`}
             title={showPreferencesSidebar ? 'Close panel' : 'Open panel'}
@@ -580,12 +608,12 @@ export default function ProfilePage() {
         )}
 
         {/* Main Content */}
-        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-y-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
             {isNewProfile ? 'Complete Your Profile' : 'My Profile'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {isNewProfile 
               ? 'Please complete your profile information to get started'
               : profile?.role === 'owner' 
@@ -606,8 +634,8 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <div className="bg-card rounded-lg shadow p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-card rounded-lg shadow p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {/* Profile Image Upload */}
             <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -624,7 +652,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={removeProfileImage}
-                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-2 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                       aria-label="Remove profile image"
                       title="Remove profile image"
                     >
@@ -641,7 +669,7 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
-              <label className="flex flex-col items-center justify-center w-full border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors px-4 py-3">
+              <label className="flex flex-col items-center justify-center w-full border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors px-4 py-4 min-h-[120px] sm:min-h-[100px]">
                 <div className="flex flex-col items-center justify-center">
                   <svg className="w-6 h-6 mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -669,7 +697,7 @@ export default function ProfilePage() {
               )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-2">
                   Full Name *
@@ -680,7 +708,7 @@ export default function ProfilePage() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="John Doe"
                 />
               </div>
@@ -695,7 +723,7 @@ export default function ProfilePage() {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="johndoe"
                 />
               </div>
@@ -710,7 +738,7 @@ export default function ProfilePage() {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
                   placeholder="+1 234 567 8900"
                 />
               </div>
@@ -951,7 +979,7 @@ export default function ProfilePage() {
                   setShowPreferencesSidebar(true);
                 }}
                 rows={4}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+                className="w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
                 placeholder="Describe your motivation and preferences, what draws you to the sailing and what do you like?"
               />
             </div>
@@ -1092,7 +1120,7 @@ export default function ProfilePage() {
                   });
                   setShowPreferencesSidebar(true);
                 }}
-                className="w-full px-4 py-3 border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
+                className="w-full px-4 py-3 min-h-[44px] border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -1111,7 +1139,7 @@ export default function ProfilePage() {
                 value={formData.certifications}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring"
+                className="w-full px-3 py-3 min-h-[100px] text-base sm:text-sm border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
                 placeholder={
                   profile?.role === 'owner'
                     ? 'List any relevant certifications, licenses, or qualifications'
@@ -1120,17 +1148,17 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 border-t">
               <Link
                 href={profile?.role === 'owner' ? '/owner/boats' : '/crew/dashboard'}
-                className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                className="px-4 py-3 min-h-[44px] bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               >
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>

@@ -67,7 +67,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
       {/* Hamburger Menu Button - All screen sizes */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label="Toggle menu"
       >
         <svg
@@ -98,7 +98,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
           />
           
           {/* Menu */}
-          <div className="absolute right-0 top-12 w-64 bg-card rounded-lg shadow-xl z-50 border border-border overflow-hidden">
+          <div className="fixed md:absolute right-0 top-16 md:top-12 w-full sm:w-64 bg-card rounded-lg shadow-xl z-50 border border-border overflow-hidden md:rounded-lg">
             <div className="py-2">
               {loading ? (
                 <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
@@ -108,7 +108,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                   <Link
                     href="/profile"
                     onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                    className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                   >
                     <svg
                       className="w-5 h-5 mr-3 text-muted-foreground"
@@ -134,7 +134,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       <Link
                         href="/owner/boats"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-5 h-5 mr-3 text-muted-foreground"
@@ -156,7 +156,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       <Link
                         href="/owner/journeys"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-5 h-5 mr-3 text-muted-foreground"
@@ -176,7 +176,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       <Link
                         href="/owner/registrations"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-5 h-5 mr-3 text-muted-foreground"
@@ -198,7 +198,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       <Link
                         href="/crew/dashboard"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-5 h-5 mr-3 text-muted-foreground"
@@ -219,7 +219,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       <Link
                         href="/crew/registrations"
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors"
+                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                       >
                         <svg
                           className="w-5 h-5 mr-3 text-muted-foreground"
@@ -243,7 +243,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                   {/* Sign out */}
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors text-left"
+                    className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
                   >
                     <svg
                       className="w-5 h-5 mr-3 text-muted-foreground"
@@ -267,7 +267,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                       setIsOpen(false);
                       onOpenLogin?.();
                     }}
-                    className="w-full flex items-center px-4 py-3 text-card-foreground hover:bg-accent transition-colors text-left"
+                    className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
                   >
                     <svg
                       className="w-5 h-5 mr-3 text-muted-foreground"

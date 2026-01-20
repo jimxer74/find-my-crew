@@ -136,15 +136,15 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       />
       
       {/* Dialog */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
+      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-2 sm:py-4">
         <div
           ref={dialogRef}
-          className="pointer-events-auto bg-card border border-border rounded-xl shadow-lg p-6 relative w-full max-w-2xl max-h-[calc(100vh-2rem)] overflow-y-auto"
+          className="pointer-events-auto bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative w-full max-w-2xl max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
         >
           {/* Close button */}
           <button
             onClick={handleCancel}
-            className="absolute top-2 right-2 p-1.5 hover:bg-muted rounded-md transition-colors"
+            className="absolute top-2 right-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
             aria-label="Close"
           >
             <svg
@@ -161,7 +161,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
           </button>
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-foreground mb-6 pr-8">Filters</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6 pr-10 sm:pr-8">Filters</h2>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
@@ -262,16 +262,16 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+                  className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSave}
-                  className="px-4 py-2 text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+                  className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
                 >
                   Save
                 </button>

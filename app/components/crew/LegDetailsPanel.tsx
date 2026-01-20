@@ -439,21 +439,53 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   return (
     <>
-      {/* Panel - Left Side - Overlays the map */}
+      {/* Backdrop for mobile */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={onClose}
+        />
+      )}
+      
+      {/* Panel - Left Side on desktop, Full Screen on mobile - Overlays the map */}
       <div
-        className={`fixed top-16 left-0 bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-all duration-300 ease-out ${
+        className={`fixed top-16 md:top-16 left-0 right-0 md:right-auto bottom-0 md:bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-all duration-300 ease-out ${
           isOpen 
             ? isMinimized 
-              ? 'w-0' 
+              ? 'w-0 md:w-0' 
               : 'w-full md:w-[400px] translate-x-0'
-            : '-translate-x-full w-0'
+            : '-translate-x-full md:-translate-x-full w-0'
         }`}
       >
-        {/* Minimize/Maximize button - Inside Pane */}
+        {/* Close button for mobile - Top right */}
+        {isOpen && !isMinimized && (
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden"
+            title="Close panel"
+            aria-label="Close panel"
+          >
+            <svg
+              className="w-6 h-6 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+
+        {/* Minimize/Maximize button - Desktop only - Inside Pane */}
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
@@ -473,11 +505,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           </button>
         )}
 
-        {/* Maximize button when minimized */}
+        {/* Maximize button when minimized - Desktop only */}
         {isOpen && isMinimized && (
           <button
             onClick={() => setIsMinimized(false)}
-            className="absolute top-4 left-4 z-10 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex absolute top-4 left-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Maximize panel"
             aria-label="Maximize panel"
           >
@@ -519,7 +551,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             ) : showRegistrationModal ? (
               /* Registration Form - In pane */
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Register for Leg</h3>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -576,7 +608,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             ) : (
               /* Leg Details Content */
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Header */}
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-1">{leg.leg_name}</h2>
@@ -702,7 +734,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <h3 className="text-sm font-semibold text-muted-foreground">Risk Level</h3>
                     <button
                       onClick={() => setIsRiskLevelDialogOpen(true)}
-                      className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                      className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label="Show risk level information"
                     >
                       <svg
@@ -749,7 +781,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   <h3 className="text-sm font-semibold text-muted-foreground">Minimum Experience Level</h3>
                   <button
                     onClick={() => setIsExperienceLevelDialogOpen(true)}
-                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                     aria-label="Show experience level information"
                   >
                     <svg
@@ -885,7 +917,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <button
                       onClick={handleCancelRegistration}
                       disabled={isRegistering}
-                      className="w-full bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-secondary text-secondary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel Registration
                     </button>
@@ -895,7 +927,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 <button
                   onClick={handleRegister}
                   disabled={isRegistering}
-                  className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isRegistering ? 'Registering...' : 'Register for leg'}
                 </button>
@@ -921,12 +953,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             onClick={() => setIsRiskLevelDialogOpen(false)}
           />
           {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 flex-shrink-0">
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                     <Image
                       src={getRiskLevelConfig(effectiveRiskLevel)!.icon}
                       alt={getRiskLevelConfig(effectiveRiskLevel)!.displayName}
@@ -934,13 +966,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       className="object-contain"
                     />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground">
+                  <h2 className="text-base sm:text-lg font-semibold text-foreground">
                     {getRiskLevelConfig(effectiveRiskLevel)!.displayName}
                   </h2>
                 </div>
                 <button
                   onClick={() => setIsRiskLevelDialogOpen(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label="Close"
                 >
                   <svg
@@ -959,10 +991,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </button>
               </div>
               {/* Content */}
-              <div className="p-4 overflow-y-auto flex-1">
+              <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="prose prose-sm max-w-none text-foreground">
                   {getRiskLevelConfig(effectiveRiskLevel)!.fullInfoText.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-sm leading-relaxed">
+                    <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
                       {paragraph}
                     </p>
                   ))}
@@ -982,12 +1014,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             onClick={() => setIsExperienceLevelDialogOpen(false)}
           />
           {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-12 h-12 flex-shrink-0">
+              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
                     <Image
                       src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
                       alt={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
@@ -995,13 +1027,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       className="object-contain"
                     />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground">
+                  <h2 className="text-base sm:text-lg font-semibold text-foreground">
                     {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                   </h2>
                 </div>
                 <button
                   onClick={() => setIsExperienceLevelDialogOpen(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label="Close"
                 >
                   <svg
@@ -1020,10 +1052,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </button>
               </div>
               {/* Content */}
-              <div className="p-4 overflow-y-auto flex-1">
+              <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="prose prose-sm max-w-none text-foreground">
                   {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).infoText.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-sm leading-relaxed">
+                    <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
                       {paragraph}
                     </p>
                   ))}
