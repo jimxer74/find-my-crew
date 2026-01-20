@@ -1,12 +1,14 @@
 TODO:
 
-- Extend the Approval settings: Full autonomy, AI assisted
 - Add unit testing framework
+- Add vulnerability and security issue scanner
 - Add GDPR notifications and required functions to forget, report data etc.
 - Add a cost sharing model managementn for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty, where each contributes? --> This links to meal prepping  AI assistant, to understand food costs
 
 Later:
 
+- Internationalization! BIG task
+- Styles, terms and texts harmonizations
 - Refactor mobile reponsive components and pages for owner side
 - Add availablility ranges setting for profile, if users want to define their availability already at profile level
 - Make mobile ready web app
