@@ -50,23 +50,23 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
 
   return (
     <div className="md:col-span-2">
-      <label className="block text-sm font-medium text-foreground mb-3">
+      <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
         Experience level
       </label>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-1.5 md:gap-4">
         {levels.map((levelConfig) => (
           <button
             key={levelConfig.value}
             type="button"
             onClick={() => handleClick(levelConfig.value)}
-            className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+            className={`relative p-1.5 md:p-3 border md:border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
               value === levelConfig.value
                 ? 'border-primary bg-primary/5'
                 : 'border-border hover:border-primary/50'
             }`}
           >
-            <div className="flex items-center justify-center mb-2 flex-shrink-0">
-              <h3 className="font-semibold text-card-foreground text-sm text-center">
+            <div className="flex items-center justify-center mb-0.5 md:mb-2 flex-shrink-0">
+              <h3 className="font-semibold text-card-foreground text-[10px] md:text-sm text-center leading-tight">
                 {levelConfig.displayName}
               </h3>
             </div>

@@ -6,6 +6,7 @@ import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
 import { DateRangePicker, DateRange } from './ui/DateRangePicker';
+import { FiltersDialog } from './FiltersDialog';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -14,14 +15,26 @@ export function Header() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
   const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
+  const [roleLoading, setRoleLoading] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const datePickerDialogRef = useRef<HTMLDivElement>(null);
 
   // Get user role for Filters button visibility
   useEffect(() => {
     if (user) {
+      setRoleLoading(true);
+      // Try to get role from user metadata first (faster, synchronous)
+      const roleFromMetadata = user.user_metadata?.role as 'owner' | 'crew' | null;
+      if (roleFromMetadata) {
+        setUserRole(roleFromMetadata);
+        setRoleLoading(false);
+        return; // Early return if we have metadata
+      }
+      
+      // Fetch from database if no metadata available
       const supabase = getSupabaseBrowserClient();
       supabase
         .from('profiles')
@@ -31,10 +44,20 @@ export function Header() {
         .then(({ data }) => {
           if (data) {
             setUserRole(data.role);
+          } else {
+            // If no profile exists yet, default to crew (most common case)
+            setUserRole('crew');
           }
+          setRoleLoading(false);
+        })
+        .catch(() => {
+          // If query fails, default to crew
+          setUserRole('crew');
+          setRoleLoading(false);
         });
     } else {
       setUserRole(null);
+      setRoleLoading(false);
     }
   }, [user]);
 
@@ -133,8 +156,9 @@ export function Header() {
                   </>
                 )}
               </div>
-              {userRole === 'crew' && (
+              {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
                 <button
+                  onClick={() => setIsFiltersDialogOpen(true)}
                   className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
                   aria-label="Filters"
                 >
@@ -180,6 +204,10 @@ export function Header() {
           setIsSignupModalOpen(false);
           setIsLoginModalOpen(true);
         }}
+      />
+      <FiltersDialog
+        isOpen={isFiltersDialogOpen}
+        onClose={() => setIsFiltersDialogOpen(false)}
       />
     </>
   );

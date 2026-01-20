@@ -155,19 +155,19 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
       <label className="block text-sm font-medium text-foreground mb-3">
         {singleSelect ? 'Risk Level' : 'Sailing preferences and Risk tolerance'}
       </label>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 md:gap-4">
         {/* Coastal sailing */}
         <button
           type="button"
           onClick={() => handleClick('Coastal sailing')}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Coastal sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          <div className="flex items-center justify-center mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-sm text-center">Coastal sailing</h3>
+          <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
+            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Coastal sailing</h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
@@ -183,14 +183,14 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
         <button
           type="button"
           onClick={() => handleClick('Offshore sailing')}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Offshore sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          <div className="flex items-center justify-center mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-sm text-center">Offshore sailing</h3>
+          <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
+            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Offshore sailing</h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
@@ -206,14 +206,14 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
         <button
           type="button"
           onClick={() => handleClick('Extreme sailing')}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Extreme sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          <div className="flex items-center justify-center mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-sm text-center">Extreme sailing</h3>
+          <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
+            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Extreme sailing</h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
