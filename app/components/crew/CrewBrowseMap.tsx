@@ -92,6 +92,12 @@ export function CrewBrowseMap({
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
   const iconsLoadedRef = useRef(false);
+  const approvedLegsWaypointsRef = useRef<Map<string, Array<{
+    id: string;
+    index: number;
+    name: string | null;
+    coordinates: [number, number] | null;
+  }>>>(new Map());
 
   // Function to create Mapbox-style pin marker icon with text
   const createPinMarkerIcon = (color: string, text: string): string => {
@@ -305,9 +311,19 @@ export function CrewBrowseMap({
   useEffect(() => {
     if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
-    // Convert legs to GeoJSON format
+    // Separate approved legs from others to prevent clustering
+    const approvedLegIds = new Set(
+      Array.from(userRegistrations.entries())
+        .filter(([_, status]) => status === 'Approved')
+        .map(([legId]) => legId)
+    );
+
+    // Convert legs to GeoJSON format, excluding approved legs from clustering source
     const features = legs
-      .filter(leg => leg.start_waypoint !== null)
+      .filter(leg => 
+        leg.start_waypoint !== null && 
+        !approvedLegIds.has(leg.leg_id) // Exclude approved legs from clustering
+      )
       .map(leg => ({
         type: 'Feature' as const,
         geometry: {
@@ -318,7 +334,7 @@ export function CrewBrowseMap({
           leg_id: leg.leg_id,
           match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
           experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
-          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Approved', 'Pending approval', or null
+          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
         },
       }));
 
@@ -327,12 +343,139 @@ export function CrewBrowseMap({
       features,
     };
 
-    // Update the source data
+    // Update the source data (clustered source - excludes approved legs)
     const source = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
     if (source) {
       source.setData(geoJsonData);
     }
-  }, [legs, mapLoaded]);
+
+    // Update approved legs source (non-clustered, always visible)
+    const approvedFeatures = legs
+      .filter(leg => 
+        leg.start_waypoint !== null && 
+        approvedLegIds.has(leg.leg_id)
+      )
+      .map(leg => ({
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Point' as const,
+          coordinates: [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
+        },
+        properties: {
+          leg_id: leg.leg_id,
+          match_percentage: leg.skill_match_percentage ?? 100,
+          experience_matches: leg.experience_level_matches ?? true,
+          registration_status: 'Approved' as const,
+        },
+      }));
+
+    const approvedGeoJsonData: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: approvedFeatures,
+    };
+
+    const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
+    if (approvedSource) {
+      approvedSource.setData(approvedGeoJsonData);
+    }
+
+    // Fetch waypoints for approved legs and update routes
+    const approvedLegs = legs.filter(leg => 
+      userRegistrations.get(leg.leg_id) === 'Approved' &&
+      leg.start_waypoint !== null &&
+      leg.end_waypoint !== null
+    );
+
+    // Fetch waypoints for all approved legs
+    const fetchApprovedLegsWaypoints = async () => {
+      const waypointsMap = new Map<string, Array<{
+        id: string;
+        index: number;
+        name: string | null;
+        coordinates: [number, number] | null;
+      }>>();
+
+      // Fetch waypoints for each approved leg
+      const waypointPromises = approvedLegs.map(async (leg) => {
+        try {
+          const response = await fetch(`/api/legs/${leg.leg_id}/waypoints`);
+          if (response.ok) {
+            const data = await response.json();
+            waypointsMap.set(leg.leg_id, data.waypoints || []);
+          } else {
+            console.warn(`[CrewBrowseMap] Failed to fetch waypoints for leg ${leg.leg_id}`);
+            waypointsMap.set(leg.leg_id, []);
+          }
+        } catch (error) {
+          console.error(`[CrewBrowseMap] Error fetching waypoints for leg ${leg.leg_id}:`, error);
+          waypointsMap.set(leg.leg_id, []);
+        }
+      });
+
+      await Promise.all(waypointPromises);
+      approvedLegsWaypointsRef.current = waypointsMap;
+
+      // Create route features with all waypoints
+      const routeFeatures: GeoJSON.Feature<GeoJSON.LineString>[] = approvedLegs.map(leg => {
+        const waypoints = waypointsMap.get(leg.leg_id) || [];
+        
+        // Filter waypoints with valid coordinates and sort by index
+        const validWaypoints = waypoints
+          .filter(wp => wp.coordinates !== null)
+          .sort((a, b) => a.index - b.index);
+
+        // If we have waypoints, use them; otherwise fall back to start/end
+        let coordinates: [number, number][];
+        if (validWaypoints.length >= 2) {
+          coordinates = validWaypoints.map(wp => wp.coordinates!);
+        } else {
+          // Fallback to start and end waypoints if waypoints aren't loaded yet
+          coordinates = [
+            [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
+            [leg.end_waypoint!.lng, leg.end_waypoint!.lat],
+          ];
+        }
+
+        return {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'LineString' as const,
+            coordinates,
+          },
+          properties: {
+            leg_id: leg.leg_id,
+          },
+        };
+      });
+
+      const approvedRoutesData: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: routeFeatures,
+      };
+
+      // Update approved routes source if it exists (only after routeSourceAddedRef is true)
+      if (routeSourceAddedRef.current && map.current) {
+        const approvedRoutesSource = map.current.getSource('approved-legs-routes-source') as mapboxgl.GeoJSONSource;
+        if (approvedRoutesSource) {
+          approvedRoutesSource.setData(approvedRoutesData);
+        }
+      }
+    };
+
+    // Fetch waypoints and update routes
+    if (approvedLegs.length > 0 && routeSourceAddedRef.current) {
+      fetchApprovedLegsWaypoints();
+    } else if (routeSourceAddedRef.current && map.current) {
+      // Clear routes if no approved legs
+      const approvedRoutesSource = map.current.getSource('approved-legs-routes-source') as mapboxgl.GeoJSONSource;
+      if (approvedRoutesSource) {
+        approvedRoutesSource.setData({
+          type: 'FeatureCollection',
+          features: [],
+        });
+      }
+    }
+  }, [legs, mapLoaded, userRegistrations]);
 
   useEffect(() => {
     // Only initialize map once
@@ -672,7 +815,7 @@ export function CrewBrowseMap({
         }
       }
 
-      // Add GeoJSON source for legs with clustering
+      // Add GeoJSON source for legs with clustering (excludes approved legs)
       map.current.addSource('legs-source', {
         type: 'geojson',
         data: {
@@ -682,6 +825,17 @@ export function CrewBrowseMap({
         cluster: true,
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50, // Radius of each cluster when clustering points
+        clusterMinPoints: 3, // Only cluster if there are more than 4 waypoints (5 or more)
+      });
+
+      // Add separate non-clustered source for approved legs (always visible, never clustered)
+      map.current.addSource('approved-legs-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+        cluster: false, // No clustering for approved legs
       });
 
       // Add cluster circles layer
@@ -733,15 +887,11 @@ export function CrewBrowseMap({
       // Add icon layers for registered legs (approved and pending)
       // These will be added after icons are loaded, but we define them here
       // Approved registrations - boat_approved.png icon (larger than normal markers)
+      // Uses separate non-clustered source so approved legs always show individually
       map.current.addLayer({
         id: 'registered-approved',
         type: 'symbol',
-        source: 'legs-source',
-        filter: [
-          'all',
-          ['!', ['has', 'point_count']],
-          ['==', ['get', 'registration_status'], 'Approved'],
-        ],
+        source: 'approved-legs-source', // Use separate non-clustered source
         layout: {
           'icon-image': 'pin-marker-approved',
           'icon-size': 0.2,
@@ -983,6 +1133,32 @@ export function CrewBrowseMap({
           // by using line-gradient with a color expression, or use multiple layers
         },
       }, 'unclustered-point'); // Insert before unclustered-point layer
+
+      // Add source for approved leg routes
+      map.current.addSource('approved-legs-routes-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+      });
+
+      // Add dashed route line layer for approved legs
+      map.current.addLayer({
+        id: 'approved-legs-routes-line',
+        type: 'line',
+        source: 'approved-legs-routes-source',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#22276E',
+          'line-width': 3,
+          'line-opacity': 0.8,
+          'line-dasharray': [2, 2], // Dashed line pattern
+        },
+      }, 'unclustered-point'); // Insert before unclustered-point layer
       
 
 
@@ -1032,6 +1208,9 @@ export function CrewBrowseMap({
           if (map.current.getLayer('leg-route-line')) {
             map.current.removeLayer('leg-route-line');
           }
+          if (map.current.getLayer('approved-legs-routes-line')) {
+            map.current.removeLayer('approved-legs-routes-line');
+          }
           // Remove icons
           if (map.current.hasImage('pin-marker-approved')) {
             map.current.removeImage('pin-marker-approved');
@@ -1043,8 +1222,14 @@ export function CrewBrowseMap({
           if (map.current.getSource('legs-source')) {
             map.current.removeSource('legs-source');
           }
+          if (map.current.getSource('approved-legs-source')) {
+            map.current.removeSource('approved-legs-source');
+          }
           if (map.current.getSource('leg-route-source')) {
             map.current.removeSource('leg-route-source');
+          }
+          if (map.current.getSource('approved-legs-routes-source')) {
+            map.current.removeSource('approved-legs-routes-source');
           }
           // Arrow layer removed - no longer needed
         } catch (error) {
