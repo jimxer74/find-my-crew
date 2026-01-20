@@ -53,7 +53,8 @@ export default function ProfilePage() {
   useEffect(() => {
     if (showPreferencesSidebar && sidebarContent && sidebarScrollRef.current) {
       // Scroll for Skill Level and Risk Level selections
-      const skillLevelTitles = ['Beginner', 'Confident Crew', 'Competent Coastal Skipper', 'Offshore Skipper'];
+      // Get experience level display names dynamically from config to ensure consistency
+      const skillLevelTitles = getAllExperienceLevels().map(level => level.displayName);
       const riskLevelTitles = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
       if (skillLevelTitles.includes(sidebarContent.title) || riskLevelTitles.includes(sidebarContent.title)) {
         // Small delay to ensure sidebar is fully rendered

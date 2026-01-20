@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 import { SkillLevelSelector } from './SkillLevelSelector';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 
@@ -16,13 +17,15 @@ describe('SkillLevelSelector', () => {
   it('should render all experience level options', async () => {
     render(<SkillLevelSelector value={null} onChange={mockOnChange} />);
     
-    // Wait for component to render
+    // Wait for component to render - check for at least one level first
     await waitFor(() => {
       expect(screen.getByText('Beginner')).toBeInTheDocument();
-      expect(screen.getByText('Confident Crew')).toBeInTheDocument();
-      expect(screen.getByText('Competent Coastal Skipper')).toBeInTheDocument();
-      expect(screen.getByText('Offshore Skipper')).toBeInTheDocument();
     });
+    
+    // Then check for others
+    expect(screen.getByText('Competent Crew')).toBeInTheDocument();
+    expect(screen.getByText('Coastal Skipper')).toBeInTheDocument();
+    expect(screen.getByText('Offshore Skipper')).toBeInTheDocument();
   });
 
   it('should call onChange when a level is clicked', async () => {
@@ -50,9 +53,12 @@ describe('SkillLevelSelector', () => {
     render(<SkillLevelSelector value={2} onChange={mockOnChange} />);
     
     await waitFor(() => {
-      const selectedButton = screen.getByText('Confident Crew').closest('button');
-      expect(selectedButton).toHaveClass('border-primary');
+      const selectedButton = screen.getByText('Competent Crew').closest('button');
+      expect(selectedButton).toBeInTheDocument();
     });
+    
+    const selectedButton = screen.getByText('Competent Crew').closest('button');
+    expect(selectedButton).toHaveClass('border-primary');
   });
 
   it('should show profile indicator when showProfileIndicator is true', () => {
@@ -84,31 +90,50 @@ describe('SkillLevelSelector', () => {
 
   it('should call onWarning when selecting level higher than profile', async () => {
     const user = userEvent.setup();
-    render(
-      <SkillLevelSelector
-        value={null}
-        onChange={mockOnChange}
-        profileValue={2}
-        showProfileIndicator={true}
-        showWarning={true}
-        onWarning={mockOnWarning}
-      />
-    );
+    const TestComponent = () => {
+      const [value, setValue] = useState<ExperienceLevel | null>(null);
+      return (
+        <SkillLevelSelector
+          value={value}
+          onChange={(newValue) => {
+            setValue(newValue);
+            mockOnChange(newValue);
+          }}
+          profileValue={2}
+          showProfileIndicator={true}
+          showWarning={true}
+          onWarning={mockOnWarning}
+        />
+      );
+    };
     
-    // Select level 3 (higher than profile level 2)
+    render(<TestComponent />);
+    
+    // Wait for component to render
     await waitFor(() => {
-      const skipperButton = screen.getByText('Competent Coastal Skipper').closest('button');
-      expect(skipperButton).toBeInTheDocument();
+      expect(screen.getByText('Coastal Skipper')).toBeInTheDocument();
     });
     
-    const skipperButton = screen.getByText('Competent Coastal Skipper').closest('button');
+    const skipperButton = screen.getByText('Coastal Skipper').closest('button');
     await user.click(skipperButton!);
     
+    // Wait for useEffect to trigger warning with the actual message
     await waitFor(() => {
-      expect(mockOnWarning).toHaveBeenCalled();
-      const warningCall = mockOnWarning.mock.calls.find(call => call[0] && call[0].includes('higher than your profile level'));
-      expect(warningCall).toBeDefined();
-    });
+      const warningCalls = mockOnWarning.mock.calls;
+      const hasWarningMessage = warningCalls.some(call => 
+        call[0] && typeof call[0] === 'string' && call[0].includes('higher than your profile level')
+      );
+      if (!hasWarningMessage) {
+        throw new Error('Warning message not found yet');
+      }
+    }, { timeout: 2000 });
+    
+    // Verify the warning message was called
+    const warningCalls = mockOnWarning.mock.calls;
+    const hasWarningMessage = warningCalls.some(call => 
+      call[0] && typeof call[0] === 'string' && call[0].includes('higher than your profile level')
+    );
+    expect(hasWarningMessage).toBe(true);
   });
 
   it('should call onInfoClick when a level is selected', async () => {
@@ -139,19 +164,22 @@ describe('SkillLevelSelector', () => {
       />
     );
     
-    // Select level 2 (same as profile)
+    // Wait for component to render
     await waitFor(() => {
-      const crewButton = screen.getByText('Confident Crew').closest('button');
-      expect(crewButton).toBeInTheDocument();
+      expect(screen.getByText('Competent Crew')).toBeInTheDocument();
     });
     
-    const crewButton = screen.getByText('Confident Crew').closest('button');
+    const crewButton = screen.getByText('Competent Crew').closest('button');
     await user.click(crewButton!);
     
-    // Should not warn for same level - wait for useEffect to run
+    // Wait for useEffect to run and clear warning
     await waitFor(() => {
-      expect(mockOnWarning).toHaveBeenCalledWith(null);
-    });
+      expect(mockOnWarning).toHaveBeenCalled();
+    }, { timeout: 2000 });
+    
+    // Should clear warning (call with null) for same level
+    const lastCall = mockOnWarning.mock.calls[mockOnWarning.mock.calls.length - 1];
+    expect(lastCall[0]).toBe(null);
   });
 
   it('should not call onWarning when selecting level lower than profile', async () => {

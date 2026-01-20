@@ -58,7 +58,8 @@ export function normalizeSkillNames(skillNames: string[]): string[] {
               return toCanonicalSkillName(String(parsed.skill_name));
             }
           } catch {
-            // Not valid JSON, treat as plain skill name
+            // Not valid JSON, strip braces and treat as plain skill name
+            skill = skill.trim().replace(/^\{|\}$/g, '');
           }
         }
         // Plain string - normalize it (handles both display and canonical formats)

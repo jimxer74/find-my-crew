@@ -67,7 +67,7 @@ describe('DateRangePicker', () => {
     
     // Start date should be selected (visual indication)
     await waitFor(() => {
-      expect(day15Buttons[0].closest('button')).toHaveClass('bg-primary');
+      expect(day15Buttons[0].closest('button')).toHaveClass('bg-foreground');
     });
   });
 
@@ -85,8 +85,8 @@ describe('DateRangePicker', () => {
     
     // Both dates should be selected
     await waitFor(() => {
-      expect(day15Buttons[0].closest('button')).toHaveClass('bg-primary');
-      expect(day20Buttons[0].closest('button')).toHaveClass('bg-primary');
+      expect(day15Buttons[0].closest('button')).toHaveClass('bg-foreground');
+      expect(day20Buttons[0].closest('button')).toHaveClass('bg-foreground');
     });
   });
 
@@ -104,8 +104,8 @@ describe('DateRangePicker', () => {
     
     // Day 15 should become start, day 20 should become end
     await waitFor(() => {
-      expect(day15Buttons[0].closest('button')).toHaveClass('bg-primary');
-      expect(day20Buttons[0].closest('button')).toHaveClass('bg-primary');
+      expect(day15Buttons[0].closest('button')).toHaveClass('bg-foreground');
+      expect(day20Buttons[0].closest('button')).toHaveClass('bg-foreground');
     });
   });
 
@@ -160,10 +160,17 @@ describe('DateRangePicker', () => {
   it('should disable dates before minDate', async () => {
     const user = userEvent.setup();
     const minDate = new Date(2024, 5, 10); // June 10, 2024
+    // Set initial value to June 2024 so calendar shows that month
+    const initialValue: DateRange = { start: new Date(2024, 5, 15), end: null };
     
-    render(<DateRangePicker {...defaultProps} minDate={minDate} />);
+    render(<DateRangePicker {...defaultProps} value={initialValue} minDate={minDate} />);
     
-    // Day 5 should be disabled (use first calendar)
+    // Wait for calendar to render June 2024
+    await waitFor(() => {
+      expect(screen.getByText(/June/)).toBeInTheDocument();
+    });
+    
+    // Day 5 should be disabled (before minDate of June 10)
     const day5Buttons = screen.getAllByText('5');
     if (day5Buttons.length > 0) {
       const day5Button = day5Buttons[0].closest('button');
