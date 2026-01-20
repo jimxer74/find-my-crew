@@ -14,6 +14,7 @@ export type DateRangePickerProps = {
   minDate?: Date;
   maxDate?: Date;
   className?: string;
+  disableClickOutside?: boolean;
 };
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -29,9 +30,11 @@ export function DateRangePicker({
   minDate,
   maxDate,
   className = '',
+  disableClickOutside = false,
 }: DateRangePickerProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
+  const [tempRange, setTempRange] = useState<DateRange>(value);
   const pickerRef = useRef<HTMLDivElement>(null);
 
   // Initialize current month based on selected dates or today
@@ -44,8 +47,15 @@ export function DateRangePicker({
     }
   }, []);
 
+  // Update temp range when value prop changes
+  useEffect(() => {
+    setTempRange(value);
+  }, [value]);
+
   // Close picker when clicking outside
   useEffect(() => {
+    if (disableClickOutside) return;
+
     const handleClickOutside = (event: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
         onClose?.();
@@ -56,7 +66,7 @@ export function DateRangePicker({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [onClose]);
+  }, [onClose, disableClickOutside]);
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
@@ -88,39 +98,50 @@ export function DateRangePicker({
     if (minDate && clickedDate < minDate) return;
     if (maxDate && clickedDate > maxDate) return;
 
-    if (selectingStart || !value.start) {
+    if (selectingStart || !tempRange.start) {
       // Starting a new selection
-      onChange({ start: clickedDate, end: null });
+      setTempRange({ start: clickedDate, end: null });
       setSelectingStart(false);
     } else {
       // Completing the range
-      if (clickedDate < value.start) {
+      if (clickedDate < tempRange.start) {
         // If clicked date is before start, make it the new start
-        onChange({ start: clickedDate, end: value.start });
+        setTempRange({ start: clickedDate, end: tempRange.start });
       } else {
         // Normal case: set end date
-        onChange({ start: value.start, end: clickedDate });
+        setTempRange({ start: tempRange.start, end: clickedDate });
       }
       setSelectingStart(true);
     }
   };
 
+  const handleSave = () => {
+    onChange(tempRange);
+    onClose?.();
+  };
+
+  const handleCancel = () => {
+    setTempRange(value); // Revert to original value
+    setSelectingStart(true);
+    onClose?.();
+  };
+
   const isDateInRange = (day: number, month: Date): boolean => {
-    if (!value.start || !value.end) return false;
+    if (!tempRange.start || !tempRange.end) return false;
     const date = new Date(month.getFullYear(), month.getMonth(), day);
-    return date >= value.start && date <= value.end;
+    return date >= tempRange.start && date <= tempRange.end;
   };
 
   const isStartDate = (day: number, month: Date): boolean => {
-    if (!value.start) return false;
+    if (!tempRange.start) return false;
     const date = new Date(month.getFullYear(), month.getMonth(), day);
-    return date.getTime() === value.start.getTime();
+    return date.getTime() === tempRange.start.getTime();
   };
 
   const isEndDate = (day: number, month: Date): boolean => {
-    if (!value.end) return false;
+    if (!tempRange.end) return false;
     const date = new Date(month.getFullYear(), month.getMonth(), day);
-    return date.getTime() === value.end.getTime();
+    return date.getTime() === tempRange.end.getTime();
   };
 
   const isDateDisabled = (day: number, month: Date): boolean => {
@@ -152,23 +173,23 @@ export function DateRangePicker({
     const year = month.getFullYear();
 
     return (
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col min-w-[280px]">
+        <div className="flex items-center justify-center gap-3 mb-5">
           <button
             onClick={() => navigateMonth('prev')}
-            className="p-1 hover:bg-muted rounded transition-colors"
+            className="p-1.5 hover:bg-muted rounded-md transition-colors"
             aria-label="Previous month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="font-semibold text-foreground">
+          <div className="font-semibold text-foreground text-sm">
             {monthName} {year}
           </div>
           <button
             onClick={() => navigateMonth('next')}
-            className="p-1 hover:bg-muted rounded transition-colors"
+            className="p-1.5 hover:bg-muted rounded-md transition-colors"
             aria-label="Next month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -178,19 +199,19 @@ export function DateRangePicker({
         </div>
 
         {/* Weekday headers */}
-        <div className="grid grid-cols-7 gap-1 mb-2">
+        <div className="grid grid-cols-7 gap-2 mb-3">
           {WEEKDAYS.map((day) => (
-            <div key={day} className="text-center text-xs text-muted-foreground font-medium py-1">
+            <div key={day} className="text-center text-xs text-muted-foreground font-medium py-1.5 w-9">
               {day}
             </div>
           ))}
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-2">
           {days.map((day, index) => {
             if (day === null) {
-              return <div key={`empty-${index}`} className="aspect-square" />;
+              return <div key={`empty-${index}`} className="w-9 h-9" />;
             }
 
             const isInRange = isDateInRange(day, month);
@@ -204,13 +225,13 @@ export function DateRangePicker({
                 onClick={() => !isDisabled && handleDateClick(day, month)}
                 disabled={isDisabled}
                 className={`
-                  aspect-square flex items-center justify-center text-sm rounded transition-colors
+                  w-9 h-9 flex items-center justify-center text-sm rounded-md transition-colors font-medium
                   ${isDisabled 
                     ? 'text-muted-foreground/30 cursor-not-allowed' 
-                    : 'hover:bg-accent cursor-pointer'
+                    : 'hover:bg-accent cursor-pointer active:scale-95'
                   }
                   ${isStart || isEnd
-                    ? 'bg-foreground text-background font-semibold'
+                    ? 'bg-foreground text-background font-semibold shadow-sm'
                     : isInRange
                     ? 'bg-muted text-foreground'
                     : 'text-foreground'
@@ -229,21 +250,47 @@ export function DateRangePicker({
   return (
     <div
       ref={pickerRef}
-      className={`bg-card border border-border rounded-xl shadow-lg p-6 ${className}`}
+      className={`bg-card border border-border rounded-xl shadow-lg p-6 relative ${className}`}
     >
-      {/* Mode selector tabs - Currently only Days mode */}
-      <div className="flex items-center justify-center mb-6">
-        <div className="inline-flex bg-muted rounded-lg p-1">
-          <button className="px-4 py-2 rounded-md bg-card text-foreground font-medium text-sm transition-colors">
-            Days
-          </button>
-        </div>
-      </div>
+      {/* Close button */}
+      <button
+        onClick={handleCancel}
+        className="absolute top-2 right-2 p-1.5 hover:bg-muted rounded-md transition-colors"
+        aria-label="Close"
+      >
+        <svg
+          className="w-5 h-5 text-foreground"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
 
       {/* Two-month calendar view */}
-      <div className="flex gap-8">
+      <div className="flex gap-6 lg:gap-8 flex-wrap lg:flex-nowrap justify-center mb-6">
         {renderCalendar(currentMonth)}
         {renderCalendar(getNextMonth())}
+      </div>
+
+      {/* Save and Cancel buttons */}
+      <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
+        <button
+          onClick={handleCancel}
+          className="px-4 py-2 text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          className="px-4 py-2 text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+        >
+          Save
+        </button>
       </div>
     </div>
   );
