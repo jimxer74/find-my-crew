@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { ExperienceLevel, getExperienceLevelConfig, getAllExperienceLevels } from '@/app/types/experience-levels';
 
@@ -8,6 +8,10 @@ type SkillLevelSelectorProps = {
   value: ExperienceLevel | null;
   onChange: (value: ExperienceLevel | null) => void;
   onInfoClick?: (title: string, content: React.ReactNode) => void;
+  profileValue?: ExperienceLevel | null;
+  showProfileIndicator?: boolean;
+  showWarning?: boolean;
+  onWarning?: (message: string | null) => void;
 };
 
 const getSkillLevelInfo = (level: ExperienceLevel): { title: string; content: React.ReactNode } => {
@@ -34,9 +38,36 @@ const getSkillLevelInfo = (level: ExperienceLevel): { title: string; content: Re
   };
 };
 
-export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelSelectorProps) {
+export function SkillLevelSelector({ 
+  value, 
+  onChange, 
+  onInfoClick,
+  profileValue = null,
+  showProfileIndicator = false,
+  showWarning = false,
+  onWarning
+}: SkillLevelSelectorProps) {
   const levels = getAllExperienceLevels();
   
+  // Check if selected level is higher than profile level
+  const isHigherThanProfile = showWarning && 
+    profileValue !== null && 
+    value !== null && 
+    value > profileValue;
+
+  // Update warning when value changes
+  useEffect(() => {
+    if (showWarning && onWarning) {
+      if (isHigherThanProfile) {
+        const profileConfig = getExperienceLevelConfig(profileValue!);
+        const selectedConfig = getExperienceLevelConfig(value!);
+        onWarning(`You've selected ${selectedConfig.displayName}, which is higher than your profile level (${profileConfig.displayName}). Make sure you're comfortable with this level.`);
+      } else {
+        onWarning(null);
+      }
+    }
+  }, [value, profileValue, showWarning, isHigherThanProfile, onWarning]);
+
   const handleClick = (level: ExperienceLevel) => {
     const newValue = value === level ? null : level;
     onChange(newValue);
@@ -48,38 +79,55 @@ export function SkillLevelSelector({ value, onChange, onInfoClick }: SkillLevelS
     }
   };
 
+  const isProfileValue = (level: ExperienceLevel) => {
+    return showProfileIndicator && profileValue === level;
+  };
+
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
         Experience level
       </label>
       <div className="grid grid-cols-4 gap-1.5 md:gap-4">
-        {levels.map((levelConfig) => (
-          <button
-            key={levelConfig.value}
-            type="button"
-            onClick={() => handleClick(levelConfig.value)}
-            className={`relative p-1.5 md:p-3 border md:border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
-              value === levelConfig.value
-                ? 'border-primary bg-primary/5'
-                : 'border-border hover:border-primary/50'
-            }`}
-          >
-            <div className="flex items-center justify-center mb-0.5 md:mb-2 flex-shrink-0">
-              <h3 className="font-semibold text-card-foreground text-[10px] md:text-sm text-center leading-tight">
-                {levelConfig.displayName}
-              </h3>
-            </div>
-            <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
-              <Image
-                src={levelConfig.icon}
-                alt={levelConfig.displayName}
-                fill
-                className="object-contain"
-              />
-            </div>
-          </button>
-        ))}
+        {levels.map((levelConfig) => {
+          const isSelected = value === levelConfig.value;
+          const isProfile = isProfileValue(levelConfig.value);
+          
+          return (
+            <button
+              key={levelConfig.value}
+              type="button"
+              onClick={() => handleClick(levelConfig.value)}
+              className={`relative p-1.5 md:p-3 border md:border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+                isSelected
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              {/* Profile indicator badge */}
+              {isProfile && (
+                <div className="absolute top-1 right-1 z-10">
+                  <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                    Profile
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center justify-center mb-0.5 md:mb-2 flex-shrink-0">
+                <h3 className="font-semibold text-card-foreground text-[10px] md:text-sm text-center leading-tight">
+                  {levelConfig.displayName}
+                </h3>
+              </div>
+              <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
+                <Image
+                  src={levelConfig.icon}
+                  alt={levelConfig.displayName}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

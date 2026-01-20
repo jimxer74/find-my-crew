@@ -12,6 +12,8 @@ type RiskLevelSelectorProps = {
   onInfoClick?: (title: string, content: React.ReactNode) => void;
   onClose?: () => void;
   singleSelect?: boolean; // If true, only allow single selection
+  profileValue?: RiskLevel | RiskLevel[] | null;
+  showProfileIndicator?: boolean;
 };
 
 // Helper function to render a section with items
@@ -63,14 +65,28 @@ const getRiskLevelInfo = (level: RiskLevel): { title: string; content: React.Rea
   }
 };
 
-export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singleSelect = false }: RiskLevelSelectorProps) {
+export function RiskLevelSelector({ 
+  value, 
+  onChange, 
+  onInfoClick, 
+  onClose, 
+  singleSelect = false,
+  profileValue = null,
+  showProfileIndicator = false
+}: RiskLevelSelectorProps) {
   // Normalize value to array for internal use
   const valueArray = Array.isArray(value) ? value : value ? [value] : [];
+  const profileArray = Array.isArray(profileValue) ? profileValue : profileValue ? [profileValue] : [];
+  
   const isSelected = (level: RiskLevel) => {
     if (singleSelect) {
       return value === level;
     }
     return valueArray.includes(level);
+  };
+
+  const isProfileValue = (level: RiskLevel) => {
+    return showProfileIndicator && profileArray.includes(level);
   };
 
   const handleClick = (level: RiskLevel) => {
@@ -166,6 +182,13 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
               : 'border-border hover:border-primary/50'
           }`}
         >
+          {isProfileValue('Coastal sailing') && (
+            <div className="absolute top-1 right-1 z-10">
+              <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                Profile
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Coastal sailing</h3>
           </div>
@@ -189,6 +212,13 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
               : 'border-border hover:border-primary/50'
           }`}
         >
+          {isProfileValue('Offshore sailing') && (
+            <div className="absolute top-1 right-1 z-10">
+              <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                Profile
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Offshore sailing</h3>
           </div>
@@ -212,6 +242,13 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singl
               : 'border-border hover:border-primary/50'
           }`}
         >
+          {isProfileValue('Extreme sailing') && (
+            <div className="absolute top-1 right-1 z-10">
+              <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                Profile
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
             <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Extreme sailing</h3>
           </div>

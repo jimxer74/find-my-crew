@@ -10,6 +10,48 @@ import { FiltersDialog } from './FiltersDialog';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
+const DATE_RANGE_SESSION_KEY = 'crew-date-range';
+
+// Session storage helpers for date range
+const loadDateRangeFromSession = (): DateRange => {
+  if (typeof window === 'undefined') return { start: null, end: null };
+  try {
+    const stored = sessionStorage.getItem(DATE_RANGE_SESSION_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        start: parsed.start ? new Date(parsed.start) : null,
+        end: parsed.end ? new Date(parsed.end) : null,
+      };
+    }
+  } catch (err) {
+    console.error('Error loading date range from session:', err);
+  }
+  return { start: null, end: null };
+};
+
+const saveDateRangeToSession = (dateRange: DateRange) => {
+  if (typeof window === 'undefined') return;
+  try {
+    const serialized = {
+      start: dateRange.start ? dateRange.start.toISOString() : null,
+      end: dateRange.end ? dateRange.end.toISOString() : null,
+    };
+    sessionStorage.setItem(DATE_RANGE_SESSION_KEY, JSON.stringify(serialized));
+  } catch (err) {
+    console.error('Error saving date range to session:', err);
+  }
+};
+
+const clearDateRangeFromSession = () => {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(DATE_RANGE_SESSION_KEY);
+  } catch (err) {
+    console.error('Error clearing date range from session:', err);
+  }
+};
+
 export function Header() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
@@ -21,6 +63,12 @@ export function Header() {
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const datePickerDialogRef = useRef<HTMLDivElement>(null);
+
+  // Load date range from session storage on mount
+  useEffect(() => {
+    const savedDateRange = loadDateRangeFromSession();
+    setDateRange(savedDateRange);
+  }, []);
 
   // Get user role for Filters button visibility
   useEffect(() => {
@@ -108,7 +156,7 @@ export function Header() {
             </div>
             <div className="flex items-center gap-2">
               {/* Date Range Picker - icon only on mobile, full button on md+ */}
-              <div className="relative" ref={datePickerRef}>
+              <div className="relative group" ref={datePickerRef}>
                 <button
                   onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                   className="flex items-center gap-2 px-2 md:px-3 py-2 rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
@@ -128,34 +176,62 @@ export function Header() {
                     <line x1="8" y1="2" x2="8" y2="6" />
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
-                  <span className="text-sm font-medium text-foreground whitespace-nowrap hidden md:inline">
+                  <span className="text-sm font-medium text-foreground whitespace-nowrap">
                     {formatDateRange()}
                   </span>
                 </button>
-                {isDatePickerOpen && (
-                  <>
-                    {/* Backdrop */}
-                    <div
-                      className="fixed inset-0 bg-black/20 z-40"
-                      onClick={() => setIsDatePickerOpen(false)}
-                    />
-                    {/* Centered DateRangePicker */}
-                    <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
-                      <div 
-                        ref={datePickerDialogRef}
-                        className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
-                      >
-                        <DateRangePicker
-                          value={dateRange}
-                          onChange={setDateRange}
-                          onClose={() => setIsDatePickerOpen(false)}
-                          disableClickOutside={true}
-                        />
-                      </div>
-                    </div>
-                  </>
+                {(dateRange.start || dateRange.end) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const clearedRange = { start: null, end: null };
+                      setDateRange(clearedRange);
+                      clearDateRangeFromSession();
+                    }}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
+                    aria-label="Clear date range"
+                  >
+                    <svg
+                      className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 )}
               </div>
+              {isDatePickerOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 bg-black/20 z-40"
+                    onClick={() => setIsDatePickerOpen(false)}
+                  />
+                  {/* Centered DateRangePicker */}
+                  <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
+                    <div 
+                      ref={datePickerDialogRef}
+                      className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
+                    >
+                      <DateRangePicker
+                        value={dateRange}
+                        onChange={(newRange) => {
+                          setDateRange(newRange);
+                          // Save to session storage when user saves
+                          saveDateRangeToSession(newRange);
+                        }}
+                        onClose={() => setIsDatePickerOpen(false)}
+                        disableClickOutside={true}
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
               {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
                 <button
                   onClick={() => setIsFiltersDialogOpen(true)}
