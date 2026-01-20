@@ -1123,14 +1123,14 @@ export default function ProfilePage() {
             <div className="flex justify-end gap-4 pt-4 border-t">
               <Link
                 href={profile?.role === 'owner' ? '/owner/boats' : '/crew/dashboard'}
-                className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
+                className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 Cancel
               </Link>
               <button
                 type="submit"
                 disabled={saving}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
               >
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>

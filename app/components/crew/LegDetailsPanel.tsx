@@ -568,7 +568,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     type="button"
                     onClick={handleSubmitRegistration}
                     disabled={isRegistering}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isRegistering ? 'Registering...' : 'Submit Registration'}
                   </button>
@@ -885,7 +885,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <button
                       onClick={handleCancelRegistration}
                       disabled={isRegistering}
-                      className="w-full bg-secondary text-secondary-foreground px-6 py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+                      className="w-full bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel Registration
                     </button>
@@ -895,7 +895,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 <button
                   onClick={handleRegister}
                   disabled={isRegistering}
-                  className="w-full bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                  className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isRegistering ? 'Registering...' : 'Register for leg'}
                 </button>

@@ -27,7 +27,7 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
           onClick={() => {
             onChange(value === 'Coastal sailing' ? null : 'Coastal sailing');
           }}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
             value === 'Coastal sailing'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
@@ -119,7 +119,7 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
           onClick={() => {
             onChange(value === 'Extreme sailing' ? null : 'Extreme sailing');
           }}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
             value === 'Extreme sailing'
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'

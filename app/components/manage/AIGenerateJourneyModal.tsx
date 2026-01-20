@@ -530,7 +530,7 @@ export function AIGenerateJourneyModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     Cancel
                   </button>
@@ -538,7 +538,7 @@ export function AIGenerateJourneyModal({
                     type="button"
                     onClick={handleGenerate}
                     disabled={generating || !selectedBoatId || !startLocation.name || !endLocation.name}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   >
                     {generating ? 'Generating...' : 'Generate Journey'}
                   </button>
@@ -680,7 +680,7 @@ export function AIGenerateJourneyModal({
                       setGeneratedJourney(null);
                       setError(null);
                     }}
-                    className="px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
                   >
                     Regenerate
                   </button>
@@ -688,7 +688,7 @@ export function AIGenerateJourneyModal({
                     type="button"
                     onClick={handleAccept}
                     disabled={loading}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   >
                     {loading ? 'Saving...' : 'Accept & Create Journey'}
                   </button>

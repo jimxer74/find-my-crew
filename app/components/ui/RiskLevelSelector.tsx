@@ -176,7 +176,7 @@ export function RiskLevelSelector({
         <button
           type="button"
           onClick={() => handleClick('Coastal sailing')}
-          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
             isSelected('Coastal sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
@@ -236,7 +236,7 @@ export function RiskLevelSelector({
         <button
           type="button"
           onClick={() => handleClick('Extreme sailing')}
-          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
             isSelected('Extreme sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'

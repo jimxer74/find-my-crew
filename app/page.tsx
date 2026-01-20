@@ -54,7 +54,7 @@ export default function Home() {
                 {user && (
                   <Link
                     href="/owner/boats"
-                    className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
+                    className="border border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                   >
                     My Dashboard
                   </Link>
@@ -70,7 +70,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="border-2 border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
+                  className="border border-primary text-primary px-8 py-3 rounded-lg transition-colors font-medium text-lg text-center hover:bg-primary/10"
                 >
                   Log in
                 </button>

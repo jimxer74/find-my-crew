@@ -899,7 +899,7 @@ export function EditJourneyMap({
                           setLocationInfo(null);
                         }
                       }}
-                      className="flex-1 px-4 py-2 border border-border rounded-md text-foreground hover:bg-accent font-medium transition-colors"
+                      className="flex-1 px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
                     >
                       Add waypoint
                     </button>
@@ -939,7 +939,7 @@ export function EditJourneyMap({
                           setLocationInfo(null);
                         }
                       }}
-                      className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity"
+                      className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
                     >
                       End leg
                     </button>
@@ -965,7 +965,7 @@ export function EditJourneyMap({
                         setLocationInfo(null);
                       }
                     }}
-                    className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity"
+                    className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
                   >
                     Start new leg
                   </button>

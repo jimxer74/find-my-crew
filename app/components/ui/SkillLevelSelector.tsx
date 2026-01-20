@@ -98,7 +98,7 @@ export function SkillLevelSelector({
               key={levelConfig.value}
               type="button"
               onClick={() => handleClick(levelConfig.value)}
-              className={`relative p-1.5 md:p-3 border md:border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+              className={`relative p-1.5 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
                 isSelected
                   ? 'border-primary bg-primary/5'
                   : 'border-border hover:border-primary/50'

@@ -280,7 +280,7 @@ export function RegistrationRequirementsForm({
           type="button"
           onClick={onCancel}
           disabled={isRegistering}
-          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>
@@ -288,7 +288,7 @@ export function RegistrationRequirementsForm({
           type="button"
           onClick={handleSubmit}
           disabled={isRegistering}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isRegistering ? 'Registering...' : 'Submit Registration'}
         </button>
