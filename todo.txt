@@ -1,16 +1,9 @@
 TODO:
 
+- Extend the Approval settings: Full autonomy, AI assisted
 - Add unit testing framework
 - Add GDPR notifications and required functions to forget, report data etc.
-- Create new BrowseLegs functionality where users can very easily find matching legs for their 
-preferences and availabilities
-- Add registration logic and ui
-- Add approval process and ui, could there be AI automated approvals? maybe skipper can enable if wants to 
-possible approval processes (Automated, Manual Approval, Interview Approval)
-- Add missing validation logic to journey and leg dates to avoid illogical setups
 - Add a cost sharing model managementn for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty, where each contributes? --> This links to meal prepping  AI assistant, to understand food costs
-- Secure document vault for sensitive uploaded docs like passports, etc.
-- Extend leg browsing to AI matching of legs and crew
 
 Later:
 
@@ -22,9 +15,11 @@ Later:
 - Support for multiple persons registrations at same time, families, couples etc?
 - Add links to other platforms in boats, like noforeignland, youtube, facebook, insta
 - Add interview process to registration and interview scheduler
+- Secure document vault for sensitive uploaded docs like passports, etc.
 
 In future:
 
+- Extend leg browsing to AI matching of legs and crew
 - Create browse full journeys, a more content driven and visual kind of sales presentation about journey
 - AI screening of profile, "trustworthniess score"
 - Scoring system for crew and skippers to build trust

@@ -15,6 +15,8 @@ type Requirement = {
   order: number;
 };
 
+type ApprovalType = 'manual' | 'ai_assisted' | 'automated';
+
 type RequirementsManagerProps = {
   journeyId: string | null;
   onRequirementsChange?: () => void;
@@ -23,7 +25,7 @@ type RequirementsManagerProps = {
 export function RequirementsManager({ journeyId, onRequirementsChange }: RequirementsManagerProps) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(false);
-  const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
+  const [approvalType, setApprovalType] = useState<ApprovalType>('manual');
   const [autoApprovalThreshold, setAutoApprovalThreshold] = useState(80);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -41,7 +43,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
       loadAutoApprovalSettings();
     } else {
       setRequirements([]);
-      setAutoApprovalEnabled(false);
+      setApprovalType('manual');
       setAutoApprovalThreshold(80);
     }
   }, [journeyId]);
@@ -70,7 +72,14 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
       const response = await fetch(`/api/journeys/${journeyId}/auto-approval`);
       if (response.ok) {
         const data = await response.json();
-        setAutoApprovalEnabled(data.auto_approval_enabled || false);
+        // Map old boolean to new approval type (backward compatibility)
+        if (data.approval_type) {
+          setApprovalType(data.approval_type as ApprovalType);
+        } else if (data.auto_approval_enabled) {
+          setApprovalType('automated');
+        } else {
+          setApprovalType('manual');
+        }
         setAutoApprovalThreshold(data.auto_approval_threshold || 80);
       }
     } catch (error) {
@@ -78,11 +87,11 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
     }
   };
 
-  const handleToggleAutoApproval = async (enabled: boolean) => {
+  const handleApprovalTypeChange = async (type: ApprovalType) => {
     if (!journeyId) return;
     
-    if (enabled && requirements.length === 0) {
-      alert('Please add at least one requirement before enabling auto-approval');
+    if (type === 'automated' && requirements.length === 0) {
+      alert('Please add at least one requirement before enabling automated approval');
       return;
     }
 
@@ -91,21 +100,22 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          auto_approval_enabled: enabled,
+          approval_type: type,
+          auto_approval_enabled: type === 'automated', // Backward compatibility
           auto_approval_threshold: autoApprovalThreshold,
         }),
       });
 
       if (response.ok) {
-        setAutoApprovalEnabled(enabled);
+        setApprovalType(type);
         onRequirementsChange?.();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to update auto-approval settings');
+        alert(error.error || 'Failed to update approval settings');
       }
     } catch (error) {
-      console.error('Error updating auto-approval:', error);
-      alert('Failed to update auto-approval settings');
+      console.error('Error updating approval settings:', error);
+      alert('Failed to update approval settings');
     }
   };
 
@@ -119,7 +129,8 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          auto_approval_enabled: autoApprovalEnabled,
+          approval_type: approvalType,
+          auto_approval_enabled: approvalType === 'automated', // Backward compatibility
           auto_approval_threshold: threshold,
         }),
       });
@@ -205,9 +216,9 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
 
       if (response.ok) {
         await loadRequirements();
-        // If no requirements left, disable auto-approval
-        if (requirements.length === 1 && autoApprovalEnabled) {
-          await handleToggleAutoApproval(false);
+        // If no requirements left and automated approval is enabled, switch to manual
+        if (requirements.length === 1 && approvalType === 'automated') {
+          await handleApprovalTypeChange('manual');
         }
         onRequirementsChange?.();
       } else {
@@ -257,27 +268,74 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
     <div className="border-t border-border pt-4 mt-4">
       <h3 className="text-lg font-semibold text-foreground mb-4">Automated Approval Requirements</h3>
 
-      {/* Auto-Approval Toggle */}
+      {/* Approval Type Selection */}
       <div className="mb-4 p-4 bg-accent/50 rounded-lg">
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <label className="flex items-center gap-2 cursor-pointer">
+        <div className="mb-3">
+          <p className="text-sm font-medium text-foreground mb-3">Approval Method</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Choose how crew registrations are handled for this journey
+          </p>
+          
+          <div className="space-y-3">
+            {/* Manual Approval */}
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
               <input
-                type="checkbox"
-                checked={autoApprovalEnabled}
-                onChange={(e) => handleToggleAutoApproval(e.target.checked)}
-                className="rounded border-border"
+                type="radio"
+                name="approval_type"
+                value="manual"
+                checked={approvalType === 'manual'}
+                onChange={(e) => handleApprovalTypeChange(e.target.value as ApprovalType)}
+                className="mt-0.5 w-4 h-4 text-primary border-border focus:ring-ring"
               />
-              <span className="text-sm font-medium text-foreground">Enable Automated Approval</span>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground">Manual Approval</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  You review and approve or deny each registration request manually. Full control over who joins your journey.
+                </div>
+              </div>
             </label>
-            <p className="text-xs text-muted-foreground mt-1 ml-6">
-              AI will automatically approve registrations that meet the threshold
-            </p>
+
+            {/* AI-Assisted Approval */}
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
+              <input
+                type="radio"
+                name="approval_type"
+                value="ai_assisted"
+                checked={approvalType === 'ai_assisted'}
+                onChange={(e) => handleApprovalTypeChange(e.target.value as ApprovalType)}
+                className="mt-0.5 w-4 h-4 text-primary border-border focus:ring-ring"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground">AI-Assisted Approval</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  AI analyzes each registration and provides a recommendation, but you make the final decision to approve or deny.
+                </div>
+              </div>
+            </label>
+
+            {/* Automated Approval */}
+            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
+              <input
+                type="radio"
+                name="approval_type"
+                value="automated"
+                checked={approvalType === 'automated'}
+                onChange={(e) => handleApprovalTypeChange(e.target.value as ApprovalType)}
+                className="mt-0.5 w-4 h-4 text-primary border-border focus:ring-ring"
+              />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-foreground">Automated Approval</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  AI automatically approves registrations that meet the match score threshold. You can still review and manage approved registrations.
+                </div>
+              </div>
+            </label>
           </div>
         </div>
 
-        {autoApprovalEnabled && (
-          <div className="ml-6 mt-3">
+        {/* Threshold slider - only show for automated approval */}
+        {approvalType === 'automated' && (
+          <div className="mt-4 pt-4 border-t border-border">
             <label className="block text-sm text-foreground mb-2">
               Auto-Approval Threshold: {autoApprovalThreshold}%
             </label>
@@ -290,14 +348,14 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
               className="w-full"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Registrations with match score above {autoApprovalThreshold}% will be auto-approved
+              Registrations with match score above {autoApprovalThreshold}% will be automatically approved
             </p>
           </div>
         )}
 
-        {autoApprovalEnabled && requirements.length === 0 && (
-          <div className="ml-6 mt-3 p-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded text-sm text-yellow-800 dark:text-yellow-200">
-            ⚠️ Add at least one requirement for auto-approval to work
+        {approvalType === 'automated' && requirements.length === 0 && (
+          <div className="mt-4 p-2 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded text-sm text-yellow-800 dark:text-yellow-200">
+            ⚠️ Add at least one requirement for automated approval to work
           </div>
         )}
       </div>

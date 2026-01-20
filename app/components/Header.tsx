@@ -109,77 +109,81 @@ export function Header() {
               <LogoWithText />
             </div>
             <div className="flex items-center gap-2">
-              {/* Date Range Picker - icon only on mobile, full button on md+ */}
-              <div className="relative group" ref={datePickerRef}>
-                <button
-                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                  className="flex items-center gap-2 px-2 md:px-3 py-2 rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
-                  aria-label="Select date range"
-                >
-                  <svg
-                    className="w-4 h-4 text-foreground"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span className="text-sm font-medium text-foreground whitespace-nowrap">
-                    {formatDateRange()}
-                  </span>
-                </button>
-                {(filters.dateRange.start || filters.dateRange.end) && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      updateFilters({ dateRange: { start: null, end: null } });
-                    }}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
-                    aria-label="Clear date range"
-                  >
-                    <svg
-                      className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {isDatePickerOpen && (
+              {/* Date Range Picker - Only show for crew users (not owners) */}
+              {user && userRole === 'crew' && (
                 <>
-                  {/* Backdrop */}
-                  <div
-                    className="fixed inset-0 bg-black/20 z-40"
-                    onClick={() => setIsDatePickerOpen(false)}
-                  />
-                  {/* Centered DateRangePicker */}
-                  <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
-                    <div 
-                      ref={datePickerDialogRef}
-                      className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
+                  <div className="relative group" ref={datePickerRef}>
+                    <button
+                      onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                      className="flex items-center gap-2 px-2 md:px-3 py-2 rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                      aria-label="Select date range"
                     >
-                        <DateRangePicker
-                          value={filters.dateRange}
-                          onChange={(newRange) => {
-                            updateFilters({ dateRange: newRange });
-                          }}
-                          onClose={() => setIsDatePickerOpen(false)}
-                          disableClickOutside={true}
-                        />
-                    </div>
+                      <svg
+                        className="w-4 h-4 text-foreground"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span className="text-sm font-medium text-foreground whitespace-nowrap">
+                        {formatDateRange()}
+                      </span>
+                    </button>
+                    {(filters.dateRange.start || filters.dateRange.end) && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          updateFilters({ dateRange: { start: null, end: null } });
+                        }}
+                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
+                        aria-label="Clear date range"
+                      >
+                        <svg
+                          className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
+                  {isDatePickerOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <div
+                        className="fixed inset-0 bg-black/20 z-40"
+                        onClick={() => setIsDatePickerOpen(false)}
+                      />
+                      {/* Centered DateRangePicker */}
+                      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none py-4">
+                        <div 
+                          ref={datePickerDialogRef}
+                          className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
+                        >
+                          <DateRangePicker
+                            value={filters.dateRange}
+                            onChange={(newRange) => {
+                              updateFilters({ dateRange: newRange });
+                            }}
+                            onClose={() => setIsDatePickerOpen(false)}
+                            disableClickOutside={true}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </>
               )}
               {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
