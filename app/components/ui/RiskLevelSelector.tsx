@@ -7,10 +7,11 @@ import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
 type RiskLevelSelectorProps = {
-  value: RiskLevel[];
-  onChange: (value: RiskLevel[]) => void;
+  value: RiskLevel | RiskLevel[] | null;
+  onChange: (value: RiskLevel | RiskLevel[] | null) => void;
   onInfoClick?: (title: string, content: React.ReactNode) => void;
   onClose?: () => void;
+  singleSelect?: boolean; // If true, only allow single selection
 };
 
 // Helper function to render a section with items
@@ -62,63 +63,89 @@ const getRiskLevelInfo = (level: RiskLevel): { title: string; content: React.Rea
   }
 };
 
-export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: RiskLevelSelectorProps) {
+export function RiskLevelSelector({ value, onChange, onInfoClick, onClose, singleSelect = false }: RiskLevelSelectorProps) {
+  // Normalize value to array for internal use
+  const valueArray = Array.isArray(value) ? value : value ? [value] : [];
+  const isSelected = (level: RiskLevel) => {
+    if (singleSelect) {
+      return value === level;
+    }
+    return valueArray.includes(level);
+  };
+
   const handleClick = (level: RiskLevel) => {
-    const wasSelected = value.includes(level);
-    const newValue: RiskLevel[] = wasSelected
-      ? value.filter((v): v is RiskLevel => v !== level)
-      : [...value, level];
-    onChange(newValue);
-    
-    // Show info for all selected risk levels, or close if none selected
-    if (onInfoClick) {
-      if (newValue.length > 0) {
-        // If a level was just selected (not deselected), it's the last selected one
-        const lastSelectedLevel = wasSelected ? null : level;
-        
-        // Get info for all selected levels
-        const allInfo = newValue.map(level => getRiskLevelInfo(level));
-        
-        // Find the last selected level's info to show at top
-        const lastSelectedInfo = lastSelectedLevel 
-          ? getRiskLevelInfo(lastSelectedLevel)
-          : null;
-        
-        // Get other selected levels (excluding the last selected one)
-        const otherSelectedLevels = lastSelectedLevel
-          ? newValue.filter(l => l !== lastSelectedLevel)
-          : newValue;
-        const otherInfo = otherSelectedLevels.map(level => getRiskLevelInfo(level));
-        
-        const combinedTitle = newValue.length === 1 
-          ? allInfo[0].title 
-          : allInfo[0].title; // Use first title instead of "Selected Risk Levels"
-        
-        const combinedContent = (
-          <div className="space-y-4">
-            {/* Show last selected risk level info at the top */}
-            {lastSelectedInfo && (
-              <div>
-                <h4 className="font-semibold mb-2">{lastSelectedInfo.title}</h4>
-                {lastSelectedInfo.content}
-              </div>
-            )}
-            {/* Show other selected risk levels below */}
-            {otherInfo.length > 0 && (
-              <>
-                {otherInfo.map((info, index) => (
-                  <div key={index}>
-                    <h4 className="font-semibold mb-2">{info.title}</h4>
-                    {info.content}
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        );
-        onInfoClick(combinedTitle, combinedContent);
-      } else if (onClose) {
-        onClose();
+    if (singleSelect) {
+      // Single select mode: toggle the selected value
+      const newValue = value === level ? null : level;
+      onChange(newValue);
+      
+      // Show info for selected risk level
+      if (onInfoClick) {
+        if (newValue) {
+          const info = getRiskLevelInfo(newValue);
+          onInfoClick(info.title, info.content);
+        } else if (onClose) {
+          onClose();
+        }
+      }
+    } else {
+      // Multi-select mode (original behavior)
+      const wasSelected = valueArray.includes(level);
+      const newValue: RiskLevel[] = wasSelected
+        ? valueArray.filter((v): v is RiskLevel => v !== level)
+        : [...valueArray, level];
+      onChange(newValue);
+      
+      // Show info for all selected risk levels, or close if none selected
+      if (onInfoClick) {
+        if (newValue.length > 0) {
+          // If a level was just selected (not deselected), it's the last selected one
+          const lastSelectedLevel = wasSelected ? null : level;
+          
+          // Get info for all selected levels
+          const allInfo = newValue.map(level => getRiskLevelInfo(level));
+          
+          // Find the last selected level's info to show at top
+          const lastSelectedInfo = lastSelectedLevel 
+            ? getRiskLevelInfo(lastSelectedLevel)
+            : null;
+          
+          // Get other selected levels (excluding the last selected one)
+          const otherSelectedLevels = lastSelectedLevel
+            ? newValue.filter(l => l !== lastSelectedLevel)
+            : newValue;
+          const otherInfo = otherSelectedLevels.map(level => getRiskLevelInfo(level));
+          
+          const combinedTitle = newValue.length === 1 
+            ? allInfo[0].title 
+            : allInfo[0].title; // Use first title instead of "Selected Risk Levels"
+          
+          const combinedContent = (
+            <div className="space-y-4">
+              {/* Show last selected risk level info at the top */}
+              {lastSelectedInfo && (
+                <div>
+                  <h4 className="font-semibold mb-2">{lastSelectedInfo.title}</h4>
+                  {lastSelectedInfo.content}
+                </div>
+              )}
+              {/* Show other selected risk levels below */}
+              {otherInfo.length > 0 && (
+                <>
+                  {otherInfo.map((info, index) => (
+                    <div key={index}>
+                      <h4 className="font-semibold mb-2">{info.title}</h4>
+                      {info.content}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          );
+          onInfoClick(combinedTitle, combinedContent);
+        } else if (onClose) {
+          onClose();
+        }
       }
     }
   };
@@ -126,7 +153,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
   return (
     <div className="md:col-span-2">
       <label className="block text-sm font-medium text-foreground mb-3">
-        Sailing preferences and Risk tolerance
+        {singleSelect ? 'Risk Level' : 'Sailing preferences and Risk tolerance'}
       </label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Coastal sailing */}
@@ -134,7 +161,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
           type="button"
           onClick={() => handleClick('Coastal sailing')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
-            value.includes('Coastal sailing')
+            isSelected('Coastal sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
@@ -157,7 +184,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
           type="button"
           onClick={() => handleClick('Offshore sailing')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
-            value.includes('Offshore sailing')
+            isSelected('Offshore sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}
@@ -180,7 +207,7 @@ export function RiskLevelSelector({ value, onChange, onInfoClick, onClose }: Ris
           type="button"
           onClick={() => handleClick('Extreme sailing')}
           className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
-            value.includes('Extreme sailing')
+            isSelected('Extreme sailing')
               ? 'border-primary bg-primary/5'
               : 'border-border hover:border-primary/50'
           }`}

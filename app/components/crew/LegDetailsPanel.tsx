@@ -8,6 +8,70 @@ import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDispl
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+
+type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
+
+// Helper function to normalize risk level (handles different formats from database)
+// Handles both single strings and arrays (journeys can have multiple risk levels)
+const normalizeRiskLevel = (riskLevel: string | string[] | null | undefined): RiskLevel | null => {
+  if (!riskLevel) return null;
+  
+  // Handle array case (journey risk levels can be arrays)
+  if (Array.isArray(riskLevel)) {
+    // Use the first risk level in the array
+    if (riskLevel.length === 0) return null;
+    riskLevel = riskLevel[0];
+  }
+  
+  if (typeof riskLevel !== 'string') return null;
+  
+  const normalized = riskLevel.trim();
+  // Handle different possible formats
+  if (normalized === 'Coastal sailing' || normalized.toLowerCase() === 'coastal sailing' || normalized === 'coastal_sailing') {
+    return 'Coastal sailing';
+  }
+  if (normalized === 'Offshore sailing' || normalized.toLowerCase() === 'offshore sailing' || normalized === 'offshore_sailing') {
+    return 'Offshore sailing';
+  }
+  if (normalized === 'Extreme sailing' || normalized.toLowerCase() === 'extreme sailing' || normalized === 'extreme_sailing') {
+    return 'Extreme sailing';
+  }
+  return null;
+};
+
+// Helper function to get risk level config
+const getRiskLevelConfig = (riskLevel: RiskLevel | null) => {
+  if (!riskLevel) {
+    return null;
+  }
+  
+  switch (riskLevel) {
+    case 'Coastal sailing':
+      return {
+        icon: '/coastal_sailing2.png',
+        displayName: riskLevelsConfig.coastal_sailing.title,
+        shortDescription: riskLevelsConfig.coastal_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
+        fullInfoText: riskLevelsConfig.coastal_sailing.infoText,
+      };
+    case 'Offshore sailing':
+      return {
+        icon: '/offshore_sailing2.png',
+        displayName: riskLevelsConfig.offshore_sailing.title,
+        shortDescription: riskLevelsConfig.offshore_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
+        fullInfoText: riskLevelsConfig.offshore_sailing.infoText,
+      };
+    case 'Extreme sailing':
+      return {
+        icon: '/extreme_sailing2.png',
+        displayName: riskLevelsConfig.extreme_sailing.title,
+        shortDescription: riskLevelsConfig.extreme_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
+        fullInfoText: riskLevelsConfig.extreme_sailing.infoText,
+      };
+    default:
+      return null;
+  }
+};
 
 type Leg = {
   leg_id: string;
@@ -55,6 +119,9 @@ type LegDetailsPanelProps = {
 
 export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
+  const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
+  const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -123,6 +190,83 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+
+  // Fetch journey risk level if leg doesn't have one
+  useEffect(() => {
+    const fetchJourneyRiskLevel = async () => {
+      console.log('[LegDetailsPanel] Checking risk level:', {
+        legRiskLevel: leg.risk_level,
+        journeyId: leg.journey_id,
+        isOpen
+      });
+      
+      // Normalize leg's risk level first
+      const normalizedLegRiskLevel = normalizeRiskLevel(leg.risk_level);
+      console.log('[LegDetailsPanel] Normalized leg risk level:', normalizedLegRiskLevel);
+      
+      // Only fetch from journey if leg doesn't have a valid risk level
+      if (!normalizedLegRiskLevel && leg.journey_id) {
+        console.log('[LegDetailsPanel] Fetching risk level from journey:', leg.journey_id);
+        try {
+          const supabase = getSupabaseBrowserClient();
+          const { data, error } = await supabase
+            .from('journeys')
+            .select('risk_level')
+            .eq('id', leg.journey_id)
+            .single();
+
+          console.log('[LegDetailsPanel] Journey query result:', { data, error });
+
+          if (error) {
+            console.error('[LegDetailsPanel] Error fetching journey risk level:', error);
+            setJourneyRiskLevel(null);
+            return;
+          }
+
+          if (data?.risk_level) {
+            console.log('[LegDetailsPanel] Raw journey risk level:', data.risk_level);
+            const normalized = normalizeRiskLevel(data.risk_level);
+            console.log('[LegDetailsPanel] Normalized journey risk level:', normalized);
+            if (normalized) {
+              console.log('[LegDetailsPanel] Setting journey risk level:', normalized);
+              setJourneyRiskLevel(normalized);
+            } else {
+              console.warn('[LegDetailsPanel] Journey risk level could not be normalized:', data.risk_level);
+              setJourneyRiskLevel(null);
+            }
+          } else {
+            console.log('[LegDetailsPanel] No risk level in journey data');
+            setJourneyRiskLevel(null);
+          }
+        } catch (error) {
+          console.error('[LegDetailsPanel] Exception fetching journey risk level:', error);
+          setJourneyRiskLevel(null);
+        }
+      } else {
+        // Clear journey risk level if leg has its own
+        console.log('[LegDetailsPanel] Leg has risk level or no journey_id, clearing journey risk level');
+        setJourneyRiskLevel(null);
+      }
+    };
+
+    if (isOpen && leg.leg_id) {
+      fetchJourneyRiskLevel();
+    }
+  }, [leg.risk_level, leg.journey_id, leg.leg_id, isOpen]);
+
+  // Computed risk level: use leg's risk level if available (normalized), otherwise use journey's
+  const normalizedLegRiskLevel = normalizeRiskLevel(leg.risk_level);
+  const effectiveRiskLevel = normalizedLegRiskLevel || journeyRiskLevel;
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[LegDetailsPanel] Risk level state:', {
+      legRiskLevel: leg.risk_level,
+      normalizedLegRiskLevel,
+      journeyRiskLevel,
+      effectiveRiskLevel
+    });
+  }, [leg.risk_level, normalizedLegRiskLevel, journeyRiskLevel, effectiveRiskLevel]);
   const [showRequirementsForm, setShowRequirementsForm] = useState(false);
   const [registrationNotes, setRegistrationNotes] = useState('');
   const [requirementsAnswers, setRequirementsAnswers] = useState<any[]>([]);
@@ -584,23 +728,79 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             )}
 
             {/* Risk Level */}
-            {leg.risk_level && (
-              <div>
-                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Risk Level</h3>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getRiskLevelColor(
-                    leg.risk_level
-                  )}`}
-                >
-                  {leg.risk_level}
-                </span>
-              </div>
-            )}
+            {(() => {
+              const riskConfig = effectiveRiskLevel ? getRiskLevelConfig(effectiveRiskLevel) : null;
+              return riskConfig ? (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Risk Level</h3>
+                    <button
+                      onClick={() => setIsRiskLevelDialogOpen(true)}
+                      className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                      aria-label="Show risk level information"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        strokeWidth="2"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-transparent border-transparent">
+                    <div className="relative w-16 h-16 flex-shrink-0">
+                      <Image
+                        src={riskConfig.icon}
+                        alt={riskConfig.displayName}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-foreground font-medium">
+                        {riskConfig.displayName}
+                      </p>
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {riskConfig.shortDescription}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null;
+            })()}
 
             {/* Minimum Required Experience Level */}
             {leg.min_experience_level && (
               <div>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">Minimum Experience Level</h3>
+                <div className="flex items-center gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Minimum Experience Level</h3>
+                  <button
+                    onClick={() => setIsExperienceLevelDialogOpen(true)}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                    aria-label="Show experience level information"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                  </button>
+                </div>
                 <div className={`flex items-center gap-3 p-3 rounded-lg border ${
                   leg.experience_level_matches === false 
                     ? 'bg-red-50 border-red-300' 
@@ -618,7 +818,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <p className="text-foreground font-medium">
                       {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground line-clamp-3">
                       {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).description}
                     </p>
                     {leg.experience_level_matches === false && userExperienceLevel !== null && (
@@ -745,6 +945,143 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           </div>
         )}
       </div>
+
+      {/* Risk Level Info Dialog */}
+      {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel) && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setIsRiskLevelDialogOpen(false)}
+          />
+          {/* Dialog */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <Image
+                      src={getRiskLevelConfig(effectiveRiskLevel)!.icon}
+                      alt={getRiskLevelConfig(effectiveRiskLevel)!.displayName}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {getRiskLevelConfig(effectiveRiskLevel)!.displayName}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setIsRiskLevelDialogOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              {/* Content */}
+              <div className="p-4 overflow-y-auto flex-1">
+                <div className="prose prose-sm max-w-none text-foreground">
+                  {getRiskLevelConfig(effectiveRiskLevel)!.fullInfoText.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-sm leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Experience Level Info Dialog */}
+      {isExperienceLevelDialogOpen && leg.min_experience_level && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setIsExperienceLevelDialogOpen(false)}
+          />
+          {/* Dialog */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-12 h-12 flex-shrink-0">
+                    <Image
+                      src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
+                      alt={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <h2 className="text-lg font-semibold text-foreground">
+                    {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setIsExperienceLevelDialogOpen(false)}
+                  className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              {/* Content */}
+              <div className="p-4 overflow-y-auto flex-1">
+                <div className="prose prose-sm max-w-none text-foreground">
+                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).infoText.split('\n\n').map((paragraph, index) => (
+                    <p key={index} className="mb-4 text-sm leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="font-semibold mb-2">Typical Equivalents:</p>
+                      <p className="text-sm text-muted-foreground">
+                        {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents}
+                      </p>
+                    </div>
+                  )}
+                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note && (
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <p className="text-sm italic text-muted-foreground">
+                        {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }

@@ -18,7 +18,7 @@ type Journey = {
   start_date: string;
   end_date: string;
   description: string;
-  risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
+  risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
   skills: string[];
   min_experience_level: ExperienceLevel | null;
   state: JourneyState;
@@ -44,7 +44,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     start_date: '',
     end_date: '',
     description: '',
-    risk_level: [],
+    risk_level: null,
     skills: [],
     min_experience_level: 1, // Default to Beginner (1)
     state: 'In planning',
@@ -68,7 +68,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           start_date: '',
           end_date: '',
           description: '',
-          risk_level: [],
+          risk_level: null,
           skills: [],
           min_experience_level: 1, // Default to Beginner (1)
           state: 'In planning',
@@ -112,13 +112,23 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       // Convert skills from canonical format (snake_case) to display format (Title Case) for UI
       const displaySkills = (data.skills || []).map(toDisplaySkillName);
       
+      // Handle risk_level: if it's an array (old format), take the first value; if single value, use it; otherwise null
+      let riskLevel: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null = null;
+      if (data.risk_level) {
+        if (Array.isArray(data.risk_level) && data.risk_level.length > 0) {
+          riskLevel = data.risk_level[0] as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
+        } else if (typeof data.risk_level === 'string') {
+          riskLevel = data.risk_level as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
+        }
+      }
+      
       setFormData({
         boat_id: data.boat_id || '',
         name: data.name || '',
         start_date: data.start_date ? new Date(data.start_date).toISOString().split('T')[0] : '',
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
-        risk_level: data.risk_level || [],
+        risk_level: riskLevel,
         skills: displaySkills, // Convert to display format for UI
         min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1, // Default to Beginner if null
         state: data.state || 'In planning',
@@ -145,9 +155,9 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
       }
     }
 
-    // Validation 2: Risk level - at least one must be selected
-    if (formData.risk_level.length === 0) {
-      setError('Please select at least one risk level.');
+    // Validation 2: Risk level - must be selected
+    if (!formData.risk_level) {
+      setError('Please select a risk level.');
       setLoading(false);
       return;
     }
@@ -430,7 +440,14 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                   {/* Risk Level Selection */}
                   <RiskLevelSelector
                     value={formData.risk_level}
-                    onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
+                    onChange={(risk_level) => {
+                      // Ensure single value (not array) since singleSelect is true
+                      const singleValue = Array.isArray(risk_level) 
+                        ? (risk_level.length > 0 ? risk_level[0] : null)
+                        : risk_level;
+                      setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
+                    }}
+                    singleSelect={true}
                   />
 
                   {/* Minimum Required Experience Level */}

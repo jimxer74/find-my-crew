@@ -113,13 +113,19 @@ export function LegFormModal({
         if (journeyData) {
           // Set risk level if missing
           if (!riskLevel) {
-            const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
-            if (journeyRiskLevels && journeyRiskLevels.length > 0) {
-              const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
-              if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
-                console.log('Applying journey risk level:', defaultRiskLevel);
-                setRiskLevel(defaultRiskLevel);
-              }
+            // Handle both array (old format) and single value (new format) for backward compatibility
+            const journeyRiskLevelRaw = (journeyData as any).risk_level;
+            let defaultRiskLevel: RiskLevel | null = null;
+            if (Array.isArray(journeyRiskLevelRaw) && journeyRiskLevelRaw.length > 0) {
+              // Old format: array - take first element
+              defaultRiskLevel = journeyRiskLevelRaw[0] as RiskLevel;
+            } else if (typeof journeyRiskLevelRaw === 'string') {
+              // New format: single value
+              defaultRiskLevel = journeyRiskLevelRaw as RiskLevel;
+            }
+            if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
+              console.log('Applying journey risk level:', defaultRiskLevel);
+              setRiskLevel(defaultRiskLevel);
             }
           }
           
@@ -194,10 +200,18 @@ export function LegFormModal({
               
               // Set default risk level from journey (use first one if array) - only if not already set
               if (shouldSetRiskLevel) {
-                const journeyRiskLevels = (journeyData as any).risk_level as string[] | null;
-                console.log('Journey risk levels:', journeyRiskLevels);
-                if (journeyRiskLevels && journeyRiskLevels.length > 0) {
-                  const defaultRiskLevel = journeyRiskLevels[0] as RiskLevel;
+                // Handle both array (old format) and single value (new format) for backward compatibility
+                const journeyRiskLevelRaw = (journeyData as any).risk_level;
+                console.log('Journey risk level:', journeyRiskLevelRaw);
+                let defaultRiskLevel: RiskLevel | null = null;
+                if (Array.isArray(journeyRiskLevelRaw) && journeyRiskLevelRaw.length > 0) {
+                  // Old format: array - take first element
+                  defaultRiskLevel = journeyRiskLevelRaw[0] as RiskLevel;
+                } else if (typeof journeyRiskLevelRaw === 'string') {
+                  // New format: single value
+                  defaultRiskLevel = journeyRiskLevelRaw as RiskLevel;
+                }
+                if (defaultRiskLevel) {
                   console.log('Setting risk level to:', defaultRiskLevel);
                   if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
                     console.log('Calling setRiskLevel with:', defaultRiskLevel);
