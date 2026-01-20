@@ -55,7 +55,8 @@ RETURNS TABLE (
   boat_type sailboat_category,
   boat_image_url text,  -- First image from images array
   boat_average_speed_knots numeric,  -- Boat's average speed in knots
-  skipper_name text,  -- Owner's full_name from profiles
+  owner_name text,  -- Owner's full_name from profiles
+  owner_image_url text,  -- Owner's image URL from profiles (if available)
   min_experience_level integer,  -- Minimum required experience level from journey
   start_waypoint jsonb,  -- GeoJSON of start waypoint (index = 0)
   end_waypoint jsonb  -- GeoJSON of end waypoint (highest index)
@@ -96,8 +97,9 @@ BEGIN
       ELSE NULL
     END AS boat_image_url,
     b.average_speed_knots AS boat_average_speed_knots,
-    -- Get skipper (owner) name from profiles
-    p.full_name AS skipper_name,
+    -- Get owner name and image from profiles
+    p.full_name AS owner_name,
+    p.profile_image_url AS owner_image_url,
     -- Get minimum required experience level: use leg's if set, otherwise journey's
     COALESCE(l.min_experience_level, j.min_experience_level) AS min_experience_level,
     -- Start waypoint (index = 0) with name and coordinates
