@@ -825,7 +825,7 @@ export function CrewBrowseMap({
         cluster: true,
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50, // Radius of each cluster when clustering points
-        clusterMinPoints: 3, // Only cluster if there are more than 4 waypoints (5 or more)
+        clusterMinPoints: 4, // Only cluster if there are more than 4 waypoints (5 or more)
       });
 
       // Add separate non-clustered source for approved legs (always visible, never clustered)
@@ -848,11 +848,11 @@ export function CrewBrowseMap({
           'circle-color': [
             'step',
             ['get', 'point_count'],
-            '#22276E', // Custom blue for small clusters
+            '#d1d5db', // Light gray for small clusters
             10,
-            '#1a1f56', // Darker for medium clusters
+            '#9ca3af', // Medium gray for medium clusters
             30,
-            '#14193d', // Darkest for large clusters
+            '#6b7280', // Darker gray for large clusters
           ],
           'circle-radius': [
             'step',
@@ -877,10 +877,14 @@ export function CrewBrowseMap({
         layout: {
           'text-field': '{point_count_abbreviated}',
           'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': 12,
+          'text-size': 14,
+          'text-allow-overlap': true, // Always show text even if overlapping
         },
         paint: {
           'text-color': '#fff',
+          'text-halo-color': '#000',
+          'text-halo-width': 1,
+          'text-halo-blur': 1,
         },
       });
 
