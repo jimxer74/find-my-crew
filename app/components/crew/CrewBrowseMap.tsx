@@ -6,6 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { LegMobileCard } from './LegMobileCard';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage, checkExperienceLevelMatch } from '@/app/lib/skillMatching';
 
@@ -77,6 +78,7 @@ export function CrewBrowseMap({
   const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const { user } = useAuth();
+  const { filters } = useFilters();
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
   const mapLoadedRef = useRef(false);
@@ -294,9 +296,9 @@ export function CrewBrowseMap({
     loadUserRegistrations();
   }, [user]);
 
-  // Update refs when toggle changes and trigger reload
+  // Reload legs when filters change
   useEffect(() => {
-    // Trigger reload when toggle changes
+    // Trigger reload when filters change
     if (map.current && mapLoadedRef.current) {
       // Trigger a moveend event to reload legs with new filter
       setTimeout(() => {
@@ -305,7 +307,7 @@ export function CrewBrowseMap({
         }
       }, 100);
     }
-  });
+  }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.dateRange]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -730,7 +732,7 @@ export function CrewBrowseMap({
             console.log('[CrewBrowseMap] Received data:', { legCount: data.legs?.length || 0, data });
             
             // Calculate match percentage and experience level match for each leg
-            const legsWithMatch = (data.legs || []).map((leg: Leg) => {
+            let legsWithMatch = (data.legs || []).map((leg: Leg) => {
               const experienceMatches = checkExperienceLevelMatch(
                 userExperienceLevelRef.current,
                 leg.min_experience_level
@@ -750,10 +752,27 @@ export function CrewBrowseMap({
               };
             });
             
+            // Apply experience level filter from FilterContext
+            // Show legs that require same level OR lower level than selected
+            // If leg has no experience level requirement, show it
+            if (filters.experienceLevel !== null) {
+              legsWithMatch = legsWithMatch.filter((leg: Leg) => {
+                // If leg has no experience level requirement, show it
+                if (leg.min_experience_level === null) {
+                  return true;
+                }
+                // Show legs where required level <= selected level
+                // Lower number = lower requirement (1=Beginner, 4=Offshore Skipper)
+                return leg.min_experience_level <= filters.experienceLevel!;
+              });
+              console.log('[CrewBrowseMap] Filtered by experience level:', filters.experienceLevel, 'Legs remaining:', legsWithMatch.length);
+            }
+            
             console.log('[CrewBrowseMap] Legs with match percentages:', legsWithMatch.map((l: Leg) => ({
               leg_name: l.leg_name,
               match_percentage: l.skill_match_percentage,
               experience_matches: l.experience_level_matches,
+              min_experience_level: l.min_experience_level,
               skills: l.skills,
             })));
             

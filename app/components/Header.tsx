@@ -8,67 +8,20 @@ import { SignupModal } from './SignupModal';
 import { DateRangePicker, DateRange } from './ui/DateRangePicker';
 import { FiltersDialog } from './FiltersDialog';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-
-const DATE_RANGE_SESSION_KEY = 'crew-date-range';
-
-// Session storage helpers for date range
-const loadDateRangeFromSession = (): DateRange => {
-  if (typeof window === 'undefined') return { start: null, end: null };
-  try {
-    const stored = sessionStorage.getItem(DATE_RANGE_SESSION_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return {
-        start: parsed.start ? new Date(parsed.start) : null,
-        end: parsed.end ? new Date(parsed.end) : null,
-      };
-    }
-  } catch (err) {
-    console.error('Error loading date range from session:', err);
-  }
-  return { start: null, end: null };
-};
-
-const saveDateRangeToSession = (dateRange: DateRange) => {
-  if (typeof window === 'undefined') return;
-  try {
-    const serialized = {
-      start: dateRange.start ? dateRange.start.toISOString() : null,
-      end: dateRange.end ? dateRange.end.toISOString() : null,
-    };
-    sessionStorage.setItem(DATE_RANGE_SESSION_KEY, JSON.stringify(serialized));
-  } catch (err) {
-    console.error('Error saving date range to session:', err);
-  }
-};
-
-const clearDateRangeFromSession = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.removeItem(DATE_RANGE_SESSION_KEY);
-  } catch (err) {
-    console.error('Error clearing date range from session:', err);
-  }
-};
 
 export function Header() {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
+  const { filters, updateFilters } = useFilters();
   const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
-  const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const datePickerRef = useRef<HTMLDivElement>(null);
   const datePickerDialogRef = useRef<HTMLDivElement>(null);
-
-  // Load date range from session storage on mount
-  useEffect(() => {
-    const savedDateRange = loadDateRangeFromSession();
-    setDateRange(savedDateRange);
-  }, []);
 
   // Get user role for Filters button visibility
   useEffect(() => {
@@ -132,6 +85,7 @@ export function Header() {
   }, [isDatePickerOpen]);
 
   const formatDateRange = () => {
+    const dateRange = filters.dateRange;
     if (!dateRange.start && !dateRange.end) {
       return 'When?';
     }
@@ -180,13 +134,11 @@ export function Header() {
                     {formatDateRange()}
                   </span>
                 </button>
-                {(dateRange.start || dateRange.end) && (
+                {(filters.dateRange.start || filters.dateRange.end) && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const clearedRange = { start: null, end: null };
-                      setDateRange(clearedRange);
-                      clearDateRangeFromSession();
+                      updateFilters({ dateRange: { start: null, end: null } });
                     }}
                     className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
                     aria-label="Clear date range"
@@ -218,16 +170,14 @@ export function Header() {
                       ref={datePickerDialogRef}
                       className="pointer-events-auto my-auto max-h-[calc(100vh-2rem)] overflow-y-auto"
                     >
-                      <DateRangePicker
-                        value={dateRange}
-                        onChange={(newRange) => {
-                          setDateRange(newRange);
-                          // Save to session storage when user saves
-                          saveDateRangeToSession(newRange);
-                        }}
-                        onClose={() => setIsDatePickerOpen(false)}
-                        disableClickOutside={true}
-                      />
+                        <DateRangePicker
+                          value={filters.dateRange}
+                          onChange={(newRange) => {
+                            updateFilters({ dateRange: newRange });
+                          }}
+                          onClose={() => setIsDatePickerOpen(false)}
+                          disableClickOutside={true}
+                        />
                     </div>
                   </div>
                 </>

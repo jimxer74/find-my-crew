@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
 import { RiskLevelSelector } from './ui/RiskLevelSelector';
@@ -15,54 +16,18 @@ type FiltersDialogProps = {
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
-type FilterState = {
-  location: Location | null;
-  locationInput: string;
-  riskLevel: RiskLevel[];
-  experienceLevel: ExperienceLevel | null;
-};
-
-const SESSION_STORAGE_KEY = 'crew-filters';
-
-// Session storage helpers
-const loadFiltersFromSession = (): FilterState | null => {
-  if (typeof window === 'undefined') return null;
-  try {
-    const stored = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      // Convert location back to object if it exists
-      if (parsed.location) {
-        parsed.location = parsed.location as Location;
-      }
-      return parsed;
-    }
-  } catch (err) {
-    console.error('Error loading filters from session:', err);
-  }
-  return null;
-};
-
-const saveFiltersToSession = (filters: FilterState) => {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(filters));
-  } catch (err) {
-    console.error('Error saving filters to session:', err);
-  }
-};
-
 export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
   const { user } = useAuth();
+  const { filters, updateFilters } = useFilters();
   const dialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   
-  // Filter state (from session storage)
-  const [location, setLocation] = useState<Location | null>(null);
-  const [locationInput, setLocationInput] = useState('');
-  const [riskLevel, setRiskLevel] = useState<RiskLevel[]>([]);
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null);
+  // Temporary filter state (for editing before save)
+  const [tempLocation, setTempLocation] = useState<Location | null>(null);
+  const [tempLocationInput, setTempLocationInput] = useState('');
+  const [tempRiskLevel, setTempRiskLevel] = useState<RiskLevel[]>([]);
+  const [tempExperienceLevel, setTempExperienceLevel] = useState<ExperienceLevel | null>(null);
   
   // Profile values (from database, for indicators)
   const [profileValues, setProfileValues] = useState<{
@@ -72,21 +37,23 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     riskLevel: [],
     experienceLevel: null,
   });
-  
-  // Original values for cancel
-  const [originalValues, setOriginalValues] = useState<FilterState>({
-    location: null,
-    locationInput: '',
-    riskLevel: [],
-    experienceLevel: null,
-  });
 
-  // Load user profile data and session filters
+  // Load user profile data and initialize temp state from filters
   useEffect(() => {
     if (isOpen && user) {
       loadData();
     }
   }, [isOpen, user]);
+
+  // Initialize temp state from filters when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      setTempLocation(filters.location);
+      setTempLocationInput(filters.locationInput);
+      setTempRiskLevel(filters.riskLevel);
+      setTempExperienceLevel(filters.experienceLevel);
+    }
+  }, [isOpen, filters]);
 
   const loadData = async () => {
     if (!user) return;
@@ -110,28 +77,6 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
           riskLevel: profileRiskLevel,
           experienceLevel: profileExperienceLevel,
         });
-
-        // Load filters from session storage, fallback to profile values
-        const sessionFilters = loadFiltersFromSession();
-        if (sessionFilters) {
-          setLocation(sessionFilters.location);
-          setLocationInput(sessionFilters.locationInput);
-          setRiskLevel(sessionFilters.riskLevel);
-          setExperienceLevel(sessionFilters.experienceLevel);
-          
-          setOriginalValues(sessionFilters);
-        } else {
-          // No session data, use profile values as defaults
-          setRiskLevel(profileRiskLevel);
-          setExperienceLevel(profileExperienceLevel);
-          
-          setOriginalValues({
-            location: null,
-            locationInput: '',
-            riskLevel: profileRiskLevel,
-            experienceLevel: profileExperienceLevel,
-          });
-        }
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -158,28 +103,24 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
   }, [isOpen]);
 
   const handleSave = () => {
-    // Save to session storage only (not database)
-    const filters: FilterState = {
-      location,
-      locationInput,
-      riskLevel,
-      experienceLevel,
-    };
+    // Save to context (which persists to session storage)
+    updateFilters({
+      location: tempLocation,
+      locationInput: tempLocationInput,
+      riskLevel: tempRiskLevel,
+      experienceLevel: tempExperienceLevel,
+    });
     
-    saveFiltersToSession(filters);
-    
-    // Update original values
-    setOriginalValues(filters);
-    
+    setWarningMessage(null);
     onClose();
   };
 
   const handleCancel = () => {
-    // Revert to original values
-    setLocation(originalValues.location);
-    setLocationInput(originalValues.locationInput);
-    setRiskLevel(originalValues.riskLevel);
-    setExperienceLevel(originalValues.experienceLevel);
+    // Revert temp state to current filters
+    setTempLocation(filters.location);
+    setTempLocationInput(filters.locationInput);
+    setTempRiskLevel(filters.riskLevel);
+    setTempExperienceLevel(filters.experienceLevel);
     setWarningMessage(null);
     onClose();
   };
@@ -234,26 +175,26 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
                   <LocationAutocomplete
                     id="filter-location"
                     label="Location"
-                    value={locationInput}
+                    value={tempLocationInput}
                     onChange={(loc) => {
-                      setLocation(loc);
-                      setLocationInput(loc.name);
+                      setTempLocation(loc);
+                      setTempLocationInput(loc.name);
                     }}
                     onInputChange={(value) => {
-                      setLocationInput(value);
+                      setTempLocationInput(value);
                       if (!value) {
-                        setLocation(null);
+                        setTempLocation(null);
                       }
                     }}
                     placeholder="Search for a location..."
                   />
-                  {location && (
+                  {tempLocation && (
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setLocation(null);
-                        setLocationInput('');
-                      }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTempLocation(null);
+                      setTempLocationInput('');
+                    }}
                       className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
                       aria-label="Clear location"
                       type="button"
@@ -277,8 +218,8 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
               {/* Experience Level */}
               <div>
                 <SkillLevelSelector
-                  value={experienceLevel}
-                  onChange={setExperienceLevel}
+                  value={tempExperienceLevel}
+                  onChange={setTempExperienceLevel}
                   profileValue={profileValues.experienceLevel}
                   showProfileIndicator={true}
                   showWarning={true}
@@ -307,12 +248,12 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
               {/* Risk Tolerance */}
               <div>
                 <RiskLevelSelector
-                  value={riskLevel}
+                  value={tempRiskLevel}
                   onChange={(value) => {
                     if (Array.isArray(value)) {
-                      setRiskLevel(value);
+                      setTempRiskLevel(value);
                     } else {
-                      setRiskLevel(value ? [value] : []);
+                      setTempRiskLevel(value ? [value] : []);
                     }
                   }}
                   profileValue={profileValues.riskLevel}
