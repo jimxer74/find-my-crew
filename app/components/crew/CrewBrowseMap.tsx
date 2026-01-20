@@ -19,7 +19,8 @@ type Leg = {
   start_date: string | null;
   end_date: string | null;
   crew_needed: number | null;
-  risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  leg_risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  journey_risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null;
   skills: string[];
   boat_id: string;
   boat_name: string;
@@ -710,13 +711,32 @@ export function CrewBrowseMap({
               max_lat: maxLat.toString(),
             });
 
+            // Add experience level filter if set
+            if (filters.experienceLevel !== null) {
+              params.append('min_experience_level', filters.experienceLevel.toString());
+            }
+
+            // Add risk level filter if set (multi-select)
+            if (filters.riskLevel && filters.riskLevel.length > 0) {
+              params.append('risk_levels', filters.riskLevel.join(','));
+            }
+
+            // Add date range filter if set
+            if (filters.dateRange.start) {
+              params.append('start_date', filters.dateRange.start.toISOString().split('T')[0]);
+            }
+            if (filters.dateRange.end) {
+              params.append('end_date', filters.dateRange.end.toISOString().split('T')[0]);
+            }
+
             // Note: We no longer filter by skills in the API
             // Instead, we fetch all legs and filter by match percentage on the frontend
             // This allows us to show match percentages for all legs
-            console.log('[CrewBrowseMap] Fetching all legs (filtering by match % on frontend)');
-
-            // Always show all legs (no experience level filter)
-            console.log('[CrewBrowseMap] Showing all legs');
+            console.log('[CrewBrowseMap] Fetching legs with filters:', {
+              experienceLevel: filters.experienceLevel,
+              riskLevel: filters.riskLevel,
+              dateRange: filters.dateRange,
+            });
 
             const url = `/api/legs/viewport?${params.toString()}`;
             console.log('[CrewBrowseMap] Fetching from:', url);
@@ -752,21 +772,8 @@ export function CrewBrowseMap({
               };
             });
             
-            // Apply experience level filter from FilterContext
-            // Show legs that require same level OR lower level than selected
-            // If leg has no experience level requirement, show it
-            if (filters.experienceLevel !== null) {
-              legsWithMatch = legsWithMatch.filter((leg: Leg) => {
-                // If leg has no experience level requirement, show it
-                if (leg.min_experience_level === null) {
-                  return true;
-                }
-                // Show legs where required level <= selected level
-                // Lower number = lower requirement (1=Beginner, 4=Offshore Skipper)
-                return leg.min_experience_level <= filters.experienceLevel!;
-              });
-              console.log('[CrewBrowseMap] Filtered by experience level:', filters.experienceLevel, 'Legs remaining:', legsWithMatch.length);
-            }
+            // Note: Experience level and risk level filtering are now done in SQL (backend)
+            // The API already returns filtered results based on filters.experienceLevel and filters.riskLevel
             
             console.log('[CrewBrowseMap] Legs with match percentages:', legsWithMatch.map((l: Leg) => ({
               leg_name: l.leg_name,

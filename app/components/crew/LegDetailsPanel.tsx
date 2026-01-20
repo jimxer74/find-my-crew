@@ -82,7 +82,8 @@ type Leg = {
   start_date: string | null;
   end_date: string | null;
   crew_needed: number | null;
-  risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  leg_risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  journey_risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null;
   skills: string[];
   boat_id: string;
   boat_name: string;
@@ -191,82 +192,47 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
-  // Fetch journey risk level if leg doesn't have one
+  // Process risk level from leg and journey data (now provided by API)
   useEffect(() => {
-    const fetchJourneyRiskLevel = async () => {
-      console.log('[LegDetailsPanel] Checking risk level:', {
-        legRiskLevel: leg.risk_level,
-        journeyId: leg.journey_id,
-        isOpen
-      });
-      
-      // Normalize leg's risk level first
-      const normalizedLegRiskLevel = normalizeRiskLevel(leg.risk_level);
-      console.log('[LegDetailsPanel] Normalized leg risk level:', normalizedLegRiskLevel);
-      
-      // Only fetch from journey if leg doesn't have a valid risk level
-      if (!normalizedLegRiskLevel && leg.journey_id) {
-        console.log('[LegDetailsPanel] Fetching risk level from journey:', leg.journey_id);
-        try {
-          const supabase = getSupabaseBrowserClient();
-          const { data, error } = await supabase
-            .from('journeys')
-            .select('risk_level')
-            .eq('id', leg.journey_id)
-            .single();
-
-          console.log('[LegDetailsPanel] Journey query result:', { data, error });
-
-          if (error) {
-            console.error('[LegDetailsPanel] Error fetching journey risk level:', error);
-            setJourneyRiskLevel(null);
-            return;
-          }
-
-          if (data?.risk_level) {
-            console.log('[LegDetailsPanel] Raw journey risk level:', data.risk_level);
-            const normalized = normalizeRiskLevel(data.risk_level);
-            console.log('[LegDetailsPanel] Normalized journey risk level:', normalized);
-            if (normalized) {
-              console.log('[LegDetailsPanel] Setting journey risk level:', normalized);
-              setJourneyRiskLevel(normalized);
-            } else {
-              console.warn('[LegDetailsPanel] Journey risk level could not be normalized:', data.risk_level);
-              setJourneyRiskLevel(null);
-            }
-          } else {
-            console.log('[LegDetailsPanel] No risk level in journey data');
-            setJourneyRiskLevel(null);
-          }
-        } catch (error) {
-          console.error('[LegDetailsPanel] Exception fetching journey risk level:', error);
-          setJourneyRiskLevel(null);
-        }
-      } else {
-        // Clear journey risk level if leg has its own
-        console.log('[LegDetailsPanel] Leg has risk level or no journey_id, clearing journey risk level');
-        setJourneyRiskLevel(null);
-      }
-    };
-
-    if (isOpen && leg.leg_id) {
-      fetchJourneyRiskLevel();
+    console.log('[LegDetailsPanel] Processing risk level:', {
+      legRiskLevel: leg.leg_risk_level,
+      journeyRiskLevel: leg.journey_risk_level,
+      journeyId: leg.journey_id,
+      isOpen
+    });
+    
+    // Normalize leg's risk level first
+    const normalizedLegRiskLevel = normalizeRiskLevel(leg.leg_risk_level);
+    console.log('[LegDetailsPanel] Normalized leg risk level:', normalizedLegRiskLevel);
+    
+    // Process journey's risk level array (take first one if multiple)
+    let normalizedJourneyRiskLevel: string | null = null;
+    if (leg.journey_risk_level && leg.journey_risk_level.length > 0) {
+      // Journey has risk level array - normalize the first one
+      normalizedJourneyRiskLevel = normalizeRiskLevel(leg.journey_risk_level[0]);
+      console.log('[LegDetailsPanel] Normalized journey risk level (from array):', normalizedJourneyRiskLevel);
     }
-  }, [leg.risk_level, leg.journey_id, leg.leg_id, isOpen]);
+    
+    // Set journey risk level state for display
+    setJourneyRiskLevel(normalizedJourneyRiskLevel);
+  }, [leg.leg_risk_level, leg.journey_risk_level, leg.journey_id, leg.leg_id, isOpen]);
 
-  // Computed risk level: use leg's risk level if available (normalized), otherwise use journey's
-  const normalizedLegRiskLevel = normalizeRiskLevel(leg.risk_level);
-  const effectiveRiskLevel = normalizedLegRiskLevel || journeyRiskLevel;
+  // Computed risk level: use leg's risk level if available (normalized), otherwise use journey's first risk level
+  const normalizedLegRiskLevel = normalizeRiskLevel(leg.leg_risk_level);
+  const effectiveRiskLevel = normalizedLegRiskLevel || (leg.journey_risk_level && leg.journey_risk_level.length > 0 
+    ? normalizeRiskLevel(leg.journey_risk_level[0]) 
+    : null);
   
   // Debug logging
   useEffect(() => {
     console.log('[LegDetailsPanel] Risk level state:', {
-      legRiskLevel: leg.risk_level,
+      legRiskLevel: leg.leg_risk_level,
+      journeyRiskLevelArray: leg.journey_risk_level,
       normalizedLegRiskLevel,
       journeyRiskLevel,
       effectiveRiskLevel
     });
-  }, [leg.risk_level, normalizedLegRiskLevel, journeyRiskLevel, effectiveRiskLevel]);
+  }, [leg.leg_risk_level, leg.journey_risk_level, normalizedLegRiskLevel, journeyRiskLevel, effectiveRiskLevel]);
   const [showRequirementsForm, setShowRequirementsForm] = useState(false);
   const [registrationNotes, setRegistrationNotes] = useState('');
   const [requirementsAnswers, setRequirementsAnswers] = useState<any[]>([]);

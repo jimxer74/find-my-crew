@@ -47,7 +47,8 @@ RETURNS TABLE (
   start_date timestamptz,
   end_date timestamptz,
   crew_needed int,
-  risk_level risk_level,
+  leg_risk_level risk_level,  -- Leg's risk level (single value, nullable)
+  journey_risk_level risk_level[],  -- Journey's risk level (array, nullable)
   skills text[],  -- Combined journey + leg skills
   boat_id uuid,
   boat_name text,
@@ -73,7 +74,9 @@ BEGIN
     l.start_date,
     l.end_date,
     l.crew_needed,
-    l.risk_level,
+    l.risk_level AS leg_risk_level,
+    -- Convert scalar journey.risk_level to array for consistent API
+    CASE WHEN j.risk_level IS NULL THEN NULL ELSE ARRAY[j.risk_level] END AS journey_risk_level,
     -- Combine journey skills and leg-specific skills (remove duplicates)
     (
       SELECT array_agg(DISTINCT skill)
@@ -140,8 +143,36 @@ BEGIN
     -- Optional date filters
     AND (start_date_filter IS NULL OR l.start_date::date >= start_date_filter)
     AND (end_date_filter IS NULL OR l.end_date::date <= end_date_filter)
-    -- Optional risk level filter (leg risk_level must match one in array)
-    AND (risk_levels_filter IS NULL OR l.risk_level = ANY(risk_levels_filter))
+    -- Optional risk level filter (multi-select filter with complex logic)
+    -- Logic:
+    -- 1. If leg has risk_level defined:
+    --    - If leg's risk_level matches any selected filter → include
+    --    - If leg's risk_level doesn't match any selected filter → exclude
+    -- 2. If leg doesn't have risk_level defined:
+    --    - Check journey's risk_level array
+    --    - If journey's risk_level array contains any selected filter → include
+    --    - If journey's risk_level array doesn't contain any selected filter → exclude
+    --    - If journey's risk_level is null or empty → include (no restriction)
+    AND (
+      risk_levels_filter IS NULL 
+      OR risk_levels_filter = ARRAY[]::risk_level[]
+      OR (
+        -- Case 1: Leg has risk_level defined
+        (l.risk_level IS NOT NULL AND l.risk_level = ANY(risk_levels_filter))
+        OR
+        -- Case 2: Leg doesn't have risk_level, check journey
+        -- Note: journey.risk_level is a scalar enum (not array), so compare directly
+        (
+          l.risk_level IS NULL
+          AND (
+            -- Journey has no risk_level restriction (null) → include
+            -- OR Journey has risk_level and it matches any selected filter → include
+            j.risk_level IS NULL
+            OR j.risk_level = ANY(risk_levels_filter)
+          )
+        )
+      )
+    )
     -- Optional skills filter (combined skills must contain all requested skills)
     -- If skills_filter is NULL or empty array: no filtering (returns all legs)
     -- If skills_filter has values: only returns legs where ALL filter skills are present
@@ -186,4 +217,4 @@ END;
 $$;
 
 -- Add comment
-COMMENT ON FUNCTION get_legs_in_viewport(double precision, double precision, double precision, double precision, date, date, risk_level[], text[], integer) IS 'Returns legs within a viewport for crew browsing. Uses PostGIS bbox for fast spatial queries. Only returns legs from published journeys. Supports optional filters for dates, risk levels, skills, and minimum experience level.';
+COMMENT ON FUNCTION get_legs_in_viewport(double precision, double precision, double precision, double precision, date, date, risk_level[], text[], integer) IS 'Returns legs within a viewport for crew browsing. Uses PostGIS bbox for fast spatial queries. Only returns legs from published journeys. Supports optional filters for dates, risk levels (multi-select with leg/journey fallback logic), skills, and minimum experience level. Returns both leg_risk_level and journey_risk_level fields.';
