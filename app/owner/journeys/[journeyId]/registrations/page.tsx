@@ -580,6 +580,7 @@ export default function JourneyRegistrationsPage() {
             selectedLegId={selectedLegId}
             onLegClick={handleLegClick}
             legMarkerLabels={legMarkerLabels}
+            disableStartNewLeg={true}
             className="absolute inset-0 w-full h-full"
           />
         </div>

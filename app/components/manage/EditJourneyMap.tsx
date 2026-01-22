@@ -34,6 +34,7 @@ type EditJourneyMapProps = {
   onLegClick?: (legId: string) => void; // Callback when a leg route or marker is clicked
   className?: string;
   legMarkerLabels?: Map<string, string>; // Optional custom labels for leg start markers (legId -> label text)
+  disableStartNewLeg?: boolean; // Disable the "Start new leg" functionality
 };
 
 type LocationInfo = {
@@ -56,6 +57,7 @@ export function EditJourneyMap({
   onLegClick,
   className = '',
   legMarkerLabels,
+  disableStartNewLeg = false,
 }: EditJourneyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -154,6 +156,11 @@ export function EditJourneyMap({
     const handleMapClick = async (e: mapboxgl.MapMouseEvent) => {
       if (!map.current) return;
 
+      // If start new leg is disabled, don't handle map clicks
+      if (disableStartNewLeg) {
+        return;
+      }
+
       // Check if a route line was clicked (using flag set by route line click handler)
       if (routeLineClickedRef.current) {
         return;
@@ -165,7 +172,7 @@ export function EditJourneyMap({
         const layerId = feature.layer?.id || '';
         return layerId.startsWith('route-line-layer-');
       });
-      
+
       // If a route line was clicked, don't open the dialog
       if (clickedRouteLine) {
         return;
