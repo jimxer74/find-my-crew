@@ -703,99 +703,12 @@ export default function JourneyRegistrationsPage() {
                         )}
                       </div>
                     )}
-                    {/* Navigation Icons at the bottom */}
-                    <div className="flex items-center justify-center gap-2 mt-auto pt-4 border-t border-border">
-                      {/* Edit Journey */}
-                      <button
-                        onClick={() => setIsEditModalOpen(true)}
-                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                        title="Edit journey"
-                        aria-label="Edit journey"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                      </button>
-                      {/* Legs View */}
-                      <Link
-                        href={`/owner/journeys/${journeyId}/legs`}
-                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                        title="View legs"
-                        aria-label="View legs"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-                          />
-                        </svg>
-                      </Link>
-                      {/* Registrations View (Current) */}
-                      <div
-                        className="p-1.5 text-primary rounded bg-primary/10"
-                        title="Registrations (current)"
-                        aria-label="Registrations (current)"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                          />
-                        </svg>
-                      </div>
-                      {/* Back to Journeys */}
-                      <Link
-                        href={`/owner/journeys`}
-                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                        title="Back to journeys"
-                        aria-label="Back to journeys"
-                      >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
-                      </Link>
-                    </div>
                   </div>
                 )}
               </div>
 
-
               {/* Content Section */}
-              <div className="flex-1 p-6 overflow-y-auto">
+              <div className="flex-1 p-6 overflow-y-auto min-h-0">
                 {registrations.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-sm text-muted-foreground">
@@ -938,6 +851,95 @@ export default function JourneyRegistrationsPage() {
                     })}
                   </div>
                 )}
+              </div>
+
+              {/* Footer - Sticky Icon Menu */}
+              <div className="sticky bottom-0 border-t border-border bg-card py-2 px-4">
+                <div className="flex items-center justify-center gap-2">
+                  {/* Edit Journey */}
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="p-1 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                    title="Edit journey"
+                    aria-label="Edit journey"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                      />
+                    </svg>
+                  </button>
+                  {/* Legs View */}
+                  <Link
+                    href={`/owner/journeys/${journeyId}/legs`}
+                    className="p-1 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                    title="View legs"
+                    aria-label="View legs"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                      />
+                    </svg>
+                  </Link>
+                  {/* Registrations View (Current) */}
+                  <div
+                    className="p-1 text-primary rounded bg-primary/10"
+                    title="Registrations (current)"
+                    aria-label="Registrations (current)"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
+                    </svg>
+                  </div>
+                  {/* Back to Journeys */}
+                  <Link
+                    href={`/owner/journeys`}
+                    className="p-1 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                    title="Back to journeys"
+                    aria-label="Back to journeys"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 15l7-7 7 7"
+                      />
+                    </svg>
+                  </Link>
+                </div>
               </div>
             </>
           )}
