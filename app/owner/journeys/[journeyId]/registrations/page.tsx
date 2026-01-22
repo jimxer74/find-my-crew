@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -103,13 +103,15 @@ export default function JourneyRegistrationsPage() {
   
   const [loading, setLoading] = useState(true);
   const [journey, setJourney] = useState<Journey | null>(null);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [allRegistrations, setAllRegistrations] = useState<Registration[]>([]);
   const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
+  const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [legs, setLegs] = useState<Leg[]>([]);
   const [isPaneOpen, setIsPaneOpen] = useState(true);
   const [mapLoaded, setMapLoaded] = useState(false);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const hasFittedInitialBounds = useRef(false);
+  const registrationCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -124,12 +126,13 @@ export default function JourneyRegistrationsPage() {
     }
   }, [user, authLoading, router, journeyId]);
 
-  useEffect(() => {
-    if (user && journeyId) {
-      loadRegistrations();
+  // Filter registrations client-side based on selectedLegId (memoized to prevent unnecessary re-renders)
+  const registrations = useMemo(() => {
+    if (!selectedLegId) {
+      return allRegistrations;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLegId]);
+    return allRegistrations.filter(reg => reg.leg_id === selectedLegId);
+  }, [allRegistrations, selectedLegId]);
 
   const loadJourney = async () => {
     if (!user || !journeyId) return;
@@ -268,15 +271,10 @@ export default function JourneyRegistrationsPage() {
 
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (selectedLegId) {
-        params.append('leg_id', selectedLegId);
-      }
-
-      const url = `/api/registrations/by-journey/${journeyId}${params.toString() ? '?' + params.toString() : ''}`;
+      // Load all registrations without leg filter
+      const url = `/api/registrations/by-journey/${journeyId}`;
       console.log('[loadRegistrations] Fetching:', url, {
         journeyId,
-        selectedLegId,
       });
       const response = await fetch(url);
       
@@ -343,11 +341,11 @@ export default function JourneyRegistrationsPage() {
       
       if (!Array.isArray(data.registrations)) {
         console.warn('[loadRegistrations] registrations is not an array:', data);
-        setRegistrations([]);
+        setAllRegistrations([]);
         return;
       }
       
-      setRegistrations(data.registrations || []);
+      setAllRegistrations(data.registrations || []);
     } catch (error: any) {
       console.error('Error loading registrations:', error);
       // Show user-friendly error message
@@ -466,8 +464,8 @@ export default function JourneyRegistrationsPage() {
     }
   };
 
-  // Get all legs' waypoints for the map
-  const getAllLegsWaypoints = (): Array<{ waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }>; legId: string; isComplete: boolean }> => {
+  // Get all legs' waypoints for the map (memoized to prevent map re-initialization)
+  const getAllLegsWaypoints = useMemo((): Array<{ waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }>; legId: string; isComplete: boolean }> => {
     const allWaypoints: Array<{ waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }>; legId: string; isComplete: boolean }> = [];
     
     legs.forEach(leg => {
@@ -495,14 +493,28 @@ export default function JourneyRegistrationsPage() {
     });
     
     return allWaypoints;
-  };
+  }, [legs]);
 
   const handleLegClick = (legId: string) => {
     // Toggle selection: if clicking the same leg, deselect it
     if (selectedLegId === legId) {
       setSelectedLegId(null);
+      setSelectedRegistrationId(null);
     } else {
       setSelectedLegId(legId);
+      setSelectedRegistrationId(null);
+    }
+  };
+
+  const handleRegistrationCardClick = (registration: Registration) => {
+    // When a registration card is clicked, highlight its leg on the map
+    setSelectedLegId(registration.leg_id);
+    setSelectedRegistrationId(registration.id);
+    
+    // Scroll to the registration card
+    const cardElement = registrationCardRefs.current.get(registration.id);
+    if (cardElement) {
+      cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   };
 
@@ -521,9 +533,9 @@ export default function JourneyRegistrationsPage() {
     );
   };
 
-  // Registrations are already filtered by the API based on selectedLegId
-
-  if (authLoading || loading) {
+  // Only show loading screen during initial auth check or initial data load
+  // Filtering happens client-side and shouldn't trigger loading state
+  if (authLoading || (loading && allRegistrations.length === 0)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">Loading...</div>
@@ -542,7 +554,7 @@ export default function JourneyRegistrationsPage() {
             initialCenter={[0, 20]}
             initialZoom={2}
             onMapLoad={handleMapLoad}
-            allLegsWaypoints={getAllLegsWaypoints()}
+            allLegsWaypoints={getAllLegsWaypoints}
             selectedLegId={selectedLegId}
             onLegClick={handleLegClick}
             className="absolute inset-0 w-full h-full"
@@ -641,9 +653,12 @@ export default function JourneyRegistrationsPage() {
                       </div>
                     )}
                     {selectedLegId && (
-                      <div className="text-xs text-muted-foreground">
-                        Showing registrations for selected leg
-                      </div>
+                      <button
+                        onClick={() => setSelectedLegId(null)}
+                        className="text-xs text-primary hover:underline font-medium"
+                      >
+                        Show all registrations
+                      </button>
                     )}
                   </div>
                 )}
@@ -672,8 +687,28 @@ export default function JourneyRegistrationsPage() {
 
                       if (!profile || !leg || !journeyData) return null;
 
+                      const isSelected = selectedRegistrationId === registration.id;
+                      const isLegSelected = selectedLegId === registration.leg_id;
+                      
                       return (
-                        <div key={registration.id} className="bg-card rounded-lg shadow p-4 flex flex-col h-full relative border border-border">
+                        <div 
+                          key={registration.id} 
+                          ref={(el) => {
+                            if (el) {
+                              registrationCardRefs.current.set(registration.id, el);
+                            } else {
+                              registrationCardRefs.current.delete(registration.id);
+                            }
+                          }}
+                          onClick={() => handleRegistrationCardClick(registration)}
+                          className={`bg-card rounded-lg shadow p-4 flex flex-col h-full relative border transition-all cursor-pointer ${
+                            isSelected 
+                              ? 'border-primary border-2 shadow-lg' 
+                              : isLegSelected 
+                              ? 'border-primary/50 border-2' 
+                              : 'border-border'
+                          }`}
+                        >
                           {/* Name and Avatar */}
                           <div className="flex items-start gap-3 mb-3">
                             {/* Crew Avatar - Left Side */}
