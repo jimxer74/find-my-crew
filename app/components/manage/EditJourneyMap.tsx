@@ -33,6 +33,7 @@ type EditJourneyMapProps = {
   selectedLegId?: string | null; // ID of the currently selected leg
   onLegClick?: (legId: string) => void; // Callback when a leg route or marker is clicked
   className?: string;
+  legMarkerLabels?: Map<string, string>; // Optional custom labels for leg start markers (legId -> label text)
 };
 
 type LocationInfo = {
@@ -54,6 +55,7 @@ export function EditJourneyMap({
   selectedLegId = null,
   onLegClick,
   className = '',
+  legMarkerLabels,
 }: EditJourneyMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -577,28 +579,31 @@ export function EditJourneyMap({
           const zIndex = isSelected ? '10' : '5';
           
           if (!existingStartMarker) {
-            // Create start marker with "S" label
+            // Create start marker with custom label or "S"
+            const customLabel = legMarkerLabels?.get(legId);
+            const markerSize = customLabel ? '32px' : '24px'; // Larger marker for longer text
             const el = document.createElement('div');
             el.className = 'leg-start-marker';
-            el.style.width = '24px';
-            el.style.height = '24px';
+            el.style.width = markerSize;
+            el.style.height = markerSize;
             el.style.borderRadius = '50%';
             el.style.backgroundColor = backgroundColor;
             el.style.border = '3px solid white';
             el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
             el.style.cursor = 'pointer';
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.style.zIndex = zIndex;
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.zIndex = zIndex;
             
-            // Add "S" text
+            // Add label text (custom label or default "S")
             const text = document.createElement('span');
-            text.textContent = 'S';
+            text.textContent = customLabel || 'S';
             text.style.color = 'white';
-            text.style.fontSize = '12px';
+            text.style.fontSize = customLabel ? '9px' : '12px'; // Smaller font for longer text
             text.style.fontWeight = 'bold';
             text.style.lineHeight = '1';
+            text.style.textAlign = 'center';
             el.appendChild(text);
             
             // Add click handler to marker
@@ -619,11 +624,29 @@ export function EditJourneyMap({
               legStartMarkersRef.current.set(legId, marker);
             }
           } else {
-            // Update existing marker color and z-index
+            // Update existing marker color, z-index, and label
             const markerEl = existingStartMarker.getElement();
             if (markerEl) {
               markerEl.style.backgroundColor = backgroundColor;
               markerEl.style.zIndex = zIndex;
+              // Update label text if custom labels are provided
+              const textElement = markerEl.querySelector('span');
+              if (textElement) {
+                const customLabel = legMarkerLabels?.get(legId);
+                if (customLabel) {
+                  textElement.textContent = customLabel;
+                  textElement.style.fontSize = '9px'; // Smaller font for longer text
+                  // Update marker size if needed for longer text
+                  markerEl.style.width = '32px';
+                  markerEl.style.height = '32px';
+                } else {
+                  textElement.textContent = 'S';
+                  textElement.style.fontSize = '12px';
+                  // Reset to default size
+                  markerEl.style.width = '24px';
+                  markerEl.style.height = '24px';
+                }
+              }
             }
           }
         }
@@ -700,7 +723,7 @@ export function EditJourneyMap({
         removeLegMarkers(legId);
       }
     });
-  }, [allLegsWaypoints, mapLoaded, selectedLegId, onLegClick]);
+  }, [allLegsWaypoints, mapLoaded, selectedLegId, onLegClick, legMarkerLabels]);
 
   const handleStartNewLeg = (lng: number, lat: number, legId: string) => {
     if (!map.current) {
@@ -730,27 +753,30 @@ export function EditJourneyMap({
       const zIndex = isSelected ? '10' : '5'; // Start markers always on top, but even higher when selected, but always below dialogs
       
       // Create a new marker element with the correct size from the start
+      const customLabel = legMarkerLabels?.get(legId);
+      const markerSize = customLabel ? '32px' : '24px'; // Larger marker for longer text
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
-      el.style.width = '24px';
-      el.style.height = '24px';
+      el.style.width = markerSize;
+      el.style.height = markerSize;
       el.style.borderRadius = '50%';
       el.style.backgroundColor = backgroundColor;
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.style.zIndex = zIndex;
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.zIndex = zIndex;
       
-      // Add "S" text
+      // Add label text (custom label or default "S")
       const text = document.createElement('span');
-      text.textContent = 'S';
+      text.textContent = customLabel || 'S';
       text.style.color = 'white';
-      text.style.fontSize = '12px';
+      text.style.fontSize = customLabel ? '9px' : '12px'; // Smaller font for longer text
       text.style.fontWeight = 'bold';
       text.style.lineHeight = '1';
+      text.style.textAlign = 'center';
       el.appendChild(text);
       
       // Add click handler to marker
@@ -775,33 +801,36 @@ export function EditJourneyMap({
       }
     } else {
       console.warn('No temporary marker found, creating new gray marker');
-      // If no temporary marker exists, create a new marker with "S" label
+      // If no temporary marker exists, create a new marker with custom label or "S"
       // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
       const backgroundColor = isSelected ? '#22c55e' : '#6b7280'; // green-500 if selected, gray-500 otherwise
       const zIndex = isSelected ? '10' : '5'; // Start markers always on top, but even higher when selected, but always below dialogs
       
+      const customLabel = legMarkerLabels?.get(legId);
+      const markerSize = customLabel ? '32px' : '24px'; // Larger marker for longer text
       const el = document.createElement('div');
       el.className = 'leg-start-marker';
-      el.style.width = '24px';
-      el.style.height = '24px';
+      el.style.width = markerSize;
+      el.style.height = markerSize;
       el.style.borderRadius = '50%';
       el.style.backgroundColor = backgroundColor;
       el.style.border = '3px solid white';
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4)';
       el.style.cursor = 'pointer';
-    el.style.display = 'flex';
-    el.style.alignItems = 'center';
-    el.style.justifyContent = 'center';
-    el.style.zIndex = zIndex;
+      el.style.display = 'flex';
+      el.style.alignItems = 'center';
+      el.style.justifyContent = 'center';
+      el.style.zIndex = zIndex;
       
-      // Add "S" text
+      // Add label text (custom label or default "S")
       const text = document.createElement('span');
-      text.textContent = 'S';
+      text.textContent = customLabel || 'S';
       text.style.color = 'white';
-      text.style.fontSize = '12px';
+      text.style.fontSize = customLabel ? '9px' : '12px'; // Smaller font for longer text
       text.style.fontWeight = 'bold';
       text.style.lineHeight = '1';
+      text.style.textAlign = 'center';
       el.appendChild(text);
       
       // Add click handler to marker

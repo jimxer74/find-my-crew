@@ -365,7 +365,7 @@ export default function JourneysPage() {
                   };
 
                   return (
-                    <div key={journey.id} className="bg-card rounded-lg shadow p-6">
+                    <div key={journey.id} className="bg-card rounded-lg shadow p-6 flex flex-col">
                       {/* Tags at the top */}
                       <div className="flex items-center gap-2 mb-3 flex-wrap">
                         {/* Journey State Tag */}
@@ -384,10 +384,9 @@ export default function JourneysPage() {
                           </span>
                         )}
                       </div>
-
                       {/* Journey Name */}
                       <div className="mb-4">
-                        <h3 className="text-xl font-semibold text-card-foreground mb-2">{journey.name}</h3>
+                        <h3 className="text-base font-semibold text-card-foreground mb-2">{journey.name}</h3>
                         <div className="text-sm text-muted-foreground space-y-1">
                           {journey.boat_name && <p>Boat: {journey.boat_name}</p>}
                           {journey.start_date && <p>Start: {formatDate(journey.start_date)}</p>}
@@ -397,36 +396,94 @@ export default function JourneysPage() {
                       {journey.description && (
                         <p className="text-muted-foreground mb-4 text-sm sm:text-base">{journey.description}</p>
                       )}
-                      <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                        <Link
-                          href={`/owner/journeys/${journey.id}/legs`}
-                          className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0"
-                        >
-                          View legs
-                        </Link>
-                        <span className="hidden sm:inline text-border">|</span>
-                        <Link
-                          href={`/owner/journeys/${journey.id}/registrations`}
-                          className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0"
-                        >
-                          Registrations
-                        </Link>
-                        <span className="hidden sm:inline text-border">|</span>
+                      {/* Navigation Icons */}
+                      <div className="flex items-center justify-center gap-2 mt-auto pt-4 border-t border-border">
+                        {/* Edit Journey */}
                         <button
                           onClick={() => {
                             setEditingJourneyId(journey.id);
                             setIsModalOpen(true);
                           }}
-                          className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0 text-left sm:text-left"
+                          className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                          title="Edit journey"
+                          aria-label="Edit journey"
                         >
-                          Edit
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                            />
+                          </svg>
                         </button>
-                        <span className="hidden sm:inline text-border">|</span>
+                        {/* Legs View */}
+                        <Link
+                          href={`/owner/journeys/${journey.id}/legs`}
+                          className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                          title="View legs"
+                          aria-label="View legs"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                            />
+                          </svg>
+                        </Link>
+                        {/* Registrations View */}
+                        <Link
+                          href={`/owner/journeys/${journey.id}/registrations`}
+                          className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                          title="View registrations"
+                          aria-label="View registrations"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                        </Link>
+                        {/* Delete Journey */}
                         <button
                           onClick={() => handleDeleteJourney(journey.id)}
-                          className="font-medium text-sm text-destructive hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0 text-left sm:text-left"
+                          className="p-1.5 text-destructive hover:text-destructive/80 transition-colors rounded hover:bg-destructive/10"
+                          title="Delete journey"
+                          aria-label="Delete journey"
                         >
-                          Delete
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth="2"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
                         </button>
                       </div>
                     </div>

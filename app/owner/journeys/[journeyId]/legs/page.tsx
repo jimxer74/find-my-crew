@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
@@ -707,9 +708,9 @@ export default function LegsManagementPage() {
               </button>
               <div className="p-6 border-b border-border">
                 {journey && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex flex-col">
                     {/* Tags at the top */}
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <div className="flex items-center gap-2 flex-wrap">
                       {/* Journey State Tag */}
                       {journey.state && (() => {
                         let stateStyle = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
@@ -741,32 +742,12 @@ export default function LegsManagementPage() {
                         </button>
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <h2 className="text-lg font-semibold text-card-foreground">
-                          {journey.name}
-                        </h2>
-                        <button
-                          onClick={() => setIsEditModalOpen(true)}
-                          title="Edit journey details"
-                          className="p-1 text-muted-foreground hover:text-primary transition-colors cursor-pointer"
-                          aria-label="Edit journey details"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            strokeWidth="2"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+                    <div className="mb-2">
+                      <h2 className="text-base font-semibold text-card-foreground">
+                        {journey.name}
+                      </h2>
+                    </div>
+                    {journey.start_date && (
                       <div className="flex gap-4 text-sm text-muted-foreground">
                         {journey.start_date && (
                           <p>
@@ -781,6 +762,92 @@ export default function LegsManagementPage() {
                           </p>
                         )}
                       </div>
+                    )}
+                    {/* Navigation Icons at the bottom */}
+                    <div className="flex items-center justify-center gap-2 mt-auto pt-4 border-t border-border">
+                      {/* Edit Journey */}
+                      <button
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                        title="Edit journey"
+                        aria-label="Edit journey"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
+                      </button>
+                      {/* Legs View (Current) */}
+                      <div
+                        className="p-1.5 text-primary rounded bg-primary/10"
+                        title="Legs (current)"
+                        aria-label="Legs (current)"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                          />
+                        </svg>
+                      </div>
+                      {/* Registrations View */}
+                      <Link
+                        href={`/owner/journeys/${journeyId}/registrations`}
+                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                        title="View registrations"
+                        aria-label="View registrations"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                      </Link>
+                      {/* Delete Journey */}
+                      <Link
+                        href={`/owner/journeys`}
+                        className="p-1.5 text-destructive hover:text-destructive/80 transition-colors rounded hover:bg-destructive/10"
+                        title="Back to journeys"
+                        aria-label="Back to journeys"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </Link>
                     </div>
                   </div>
                 )}

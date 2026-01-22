@@ -6,6 +6,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
+import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { formatDate } from '@/app/lib/dateFormat';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -63,6 +64,7 @@ type Journey = {
   state?: string;
   start_date?: string | null;
   end_date?: string | null;
+  is_ai_generated?: boolean;
 };
 
 type Leg = {
@@ -85,6 +87,7 @@ type Leg = {
   } | null;
   start_date?: string | null;
   end_date?: string | null;
+  crew_needed?: number | null;
   intermediateWaypoints?: {
     index: number;
     geocode: {
@@ -112,6 +115,7 @@ export default function JourneyRegistrationsPage() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const hasFittedInitialBounds = useRef(false);
   const registrationCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -140,7 +144,7 @@ export default function JourneyRegistrationsPage() {
     const supabase = getSupabaseBrowserClient();
     const { data, error } = await supabase
       .from('journeys')
-      .select('id, name, state, start_date, end_date')
+      .select('id, name, state, start_date, end_date, is_ai_generated')
       .eq('id', journeyId)
       .single();
 
@@ -159,7 +163,7 @@ export default function JourneyRegistrationsPage() {
     // Load legs data
     const { data: legsData, error: legsError } = await supabase
       .from('legs')
-      .select('id, name, start_date, end_date')
+      .select('id, name, start_date, end_date, crew_needed')
       .eq('journey_id', journeyId)
       .order('created_at', { ascending: true });
 
@@ -245,6 +249,7 @@ export default function JourneyRegistrationsPage() {
         } : null,
         start_date: leg.start_date || null,
         end_date: leg.end_date || null,
+        crew_needed: leg.crew_needed || null,
         intermediateWaypoints: intermediateWaypoints.map(w => ({
           index: w.index,
           geocode: {
@@ -518,6 +523,23 @@ export default function JourneyRegistrationsPage() {
     }
   };
 
+  // Calculate approved registrations per leg and create marker labels
+  const legMarkerLabels = useMemo(() => {
+    const labelsMap = new Map<string, string>();
+    
+    legs.forEach(leg => {
+      const approvedCount = allRegistrations.filter(
+        reg => reg.leg_id === leg.id && reg.status === 'Approved'
+      ).length;
+      
+      const capacity = leg.crew_needed || 0;
+      const label = capacity > 0 ? `${approvedCount}/${capacity}` : `${approvedCount}`;
+      labelsMap.set(leg.id, label);
+    });
+    
+    return labelsMap;
+  }, [legs, allRegistrations]);
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -557,6 +579,7 @@ export default function JourneyRegistrationsPage() {
             allLegsWaypoints={getAllLegsWaypoints}
             selectedLegId={selectedLegId}
             onLegClick={handleLegClick}
+            legMarkerLabels={legMarkerLabels}
             className="absolute inset-0 w-full h-full"
           />
         </div>
@@ -630,9 +653,37 @@ export default function JourneyRegistrationsPage() {
               {/* Header Section */}
               <div className="p-6 border-b border-border">
                 {journey && (
-                  <div className="space-y-3 pr-10">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h2 className="text-lg font-semibold text-card-foreground">
+                  <div className="space-y-3 flex flex-col">
+                    {/* Tags at the top */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* Journey State Tag */}
+                      {journey.state && (() => {
+                        let stateStyle = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                        if (journey.state === 'In planning') {
+                          stateStyle = 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+                        } else if (journey.state === 'Published') {
+                          stateStyle = 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+                        } else if (journey.state === 'Archived') {
+                          stateStyle = 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
+                        }
+                        return (
+                          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium border rounded-md ${stateStyle}`}>
+                            {journey.state}
+                          </span>
+                        );
+                      })()}
+                      {/* AI Generated Tag */}
+                      {journey.is_ai_generated && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded-md">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          AI generated
+                        </span>
+                      )}
+                    </div>
+                    <div className="mb-2">
+                      <h2 className="text-base font-semibold text-card-foreground">
                         {journey.name}
                       </h2>
                     </div>
@@ -652,14 +703,92 @@ export default function JourneyRegistrationsPage() {
                         )}
                       </div>
                     )}
-                    {selectedLegId && (
+                    {/* Navigation Icons at the bottom */}
+                    <div className="flex items-center justify-center gap-2 mt-auto pt-4 border-t border-border">
+                      {/* Edit Journey */}
                       <button
-                        onClick={() => setSelectedLegId(null)}
-                        className="text-xs text-primary hover:underline font-medium"
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                        title="Edit journey"
+                        aria-label="Edit journey"
                       >
-                        Show all registrations
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
                       </button>
-                    )}
+                      {/* Legs View */}
+                      <Link
+                        href={`/owner/journeys/${journeyId}/legs`}
+                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
+                        title="View legs"
+                        aria-label="View legs"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                          />
+                        </svg>
+                      </Link>
+                      {/* Registrations View (Current) */}
+                      <div
+                        className="p-1.5 text-primary rounded bg-primary/10"
+                        title="Registrations (current)"
+                        aria-label="Registrations (current)"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                      </div>
+                      {/* Delete Journey */}
+                      <Link
+                        href={`/owner/journeys`}
+                        className="p-1.5 text-destructive hover:text-destructive/80 transition-colors rounded hover:bg-destructive/10"
+                        title="Back to journeys"
+                        aria-label="Back to journeys"
+                      >
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
@@ -677,9 +806,17 @@ export default function JourneyRegistrationsPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <div className="text-xs text-muted-foreground mb-2">
-                      {registrations.length} {registrations.length === 1 ? 'registration' : 'registrations'}
-                    </div>
+                    {selectedLegId && (
+                      <button
+                        onClick={() => {
+                          setSelectedLegId(null);
+                          setSelectedRegistrationId(null);
+                        }}
+                        className="text-xs text-primary hover:underline font-medium mb-2"
+                      >
+                        Show all registrations
+                      </button>
+                    )}
                     {registrations.map((registration) => {
                       const profile = registration.profiles;
                       const leg = registration.legs;
@@ -806,6 +943,19 @@ export default function JourneyRegistrationsPage() {
           )}
         </div>
       </main>
+
+      {/* Journey Edit Modal */}
+      {user && journey && (
+        <JourneyFormModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            loadJourney();
+          }}
+          journeyId={journey.id}
+          userId={user.id}
+        />
+      )}
     </div>
   );
 }
