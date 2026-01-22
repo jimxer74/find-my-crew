@@ -267,43 +267,6 @@ export default function AllRegistrationsPage() {
   };
 
 
-  const handleUpdateStatus = async (registrationId: string, status: 'Approved' | 'Not approved' | 'Cancelled') => {
-    setUpdatingRegistrationId(registrationId);
-
-    try {
-      const notes = updateNotes[registrationId] || null;
-
-      const response = await fetch(`/api/registrations/${registrationId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status,
-          notes,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update registration');
-      }
-
-      // Reload registrations
-      await loadRegistrations();
-      // Clear notes for this registration
-      setUpdateNotes(prev => {
-        const next = { ...prev };
-        delete next[registrationId];
-        return next;
-      });
-    } catch (error: any) {
-      console.error('Error updating registration:', error);
-      alert(error.message || 'Failed to update registration');
-    } finally {
-      setUpdatingRegistrationId(null);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -459,129 +422,102 @@ export default function AllRegistrationsPage() {
                 }
 
                 return (
-                  <div key={registration.id} className="bg-card rounded-lg shadow overflow-hidden flex h-full">
-                    {/* Crew Image - Left Side - Full Height */}
-                    <div className="relative w-24 sm:w-32 flex-shrink-0 h-full">
-                      {profile.profile_image_url ? (
-                        <Image
-                          src={profile.profile_image_url}
-                          alt={profile.full_name || profile.username || 'Crew member'}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 96px, 128px"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-accent flex items-center justify-center">
-                          <svg
-                            className="w-12 h-12 text-muted-foreground"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
+                  <div key={registration.id} className="bg-card rounded-lg shadow p-4 flex flex-col h-full relative">
+                    {/* Status Badge - Top Right */}
+                    <div className="absolute top-4 right-4">
+                      {getStatusBadge(registration.status)}
+                    </div>
+
+                    {/* Name and Avatar */}
+                    <div className="flex items-center gap-3 mb-3 pr-16">
+                      {/* Crew Avatar - Left Side */}
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        {profile.profile_image_url ? (
+                          <Image
+                            src={profile.profile_image_url}
+                            alt={profile.full_name || profile.username || 'Crew member'}
+                            fill
+                            className="object-cover rounded-full"
+                            sizes="48px"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-accent rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-6 h-6 text-muted-foreground"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground line-clamp-1 flex-1">
+                        {profile.full_name || profile.username || 'Unknown User'}
+                      </h3>
+                    </div>
+
+                    {/* Journey, Leg, and Dates */}
+                    <div className="space-y-3 flex-1">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">Journey</p>
+                        <Link 
+                          href={`/owner/journeys/${journey.id}/legs`} 
+                          className="text-sm font-medium text-primary hover:underline line-clamp-1 block"
+                        >
+                          {journey.name}
+                        </Link>
+                      </div>
+                      
+                      {/* Leg Name */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Leg</p>
+                        <p className="text-sm font-semibold text-foreground line-clamp-1">
+                          {leg.name}
+                        </p>
+                      </div>
+
+                      {/* Dates with Arrow */}
+                      {leg.start_date && (
+                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                          {/* Start Date */}
+                          <div className="flex flex-col justify-center">
+                            <div className="text-xs font-medium text-foreground">
+                              {formatDate(leg.start_date)}
+                            </div>
+                          </div>
+
+                          {/* Arrow */}
+                          <div className="text-foreground flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg">→</span>
+                          </div>
+
+                          {/* End Date */}
+                          <div className="flex flex-col justify-center">
+                            {leg.end_date ? (
+                              <div className="text-xs font-medium text-foreground">
+                                {formatDate(leg.end_date)}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground">No end date</div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>
 
-                    {/* Content - Right Side */}
-                    <div className="flex-1 p-4 flex flex-col min-w-0">
-                      {/* Name and Tags */}
-                      <div className="mb-3">
-                        <h3 className="text-base font-semibold text-foreground mb-2 line-clamp-1">
-                          {profile.full_name || profile.username || 'Unknown User'}
-                        </h3>
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {getStatusBadge(registration.status)}
-                          {registration.auto_approved && (
-                            <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
-                              Auto-approved
-                            </span>
-                          )}
-                          {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              registration.ai_match_score >= 80 
-                                ? 'bg-green-100 text-green-800 border border-green-300'
-                                : registration.ai_match_score >= 50
-                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                                : 'bg-red-100 text-red-800 border border-red-300'
-                            }`}>
-                              AI: {registration.ai_match_score}%
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Journey, Leg, and Dates */}
-                      <div className="space-y-2 flex-1">
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-0.5">Journey</p>
-                          <Link 
-                            href={`/owner/journeys/${journey.id}/legs`} 
-                            className="text-sm font-medium text-primary hover:underline line-clamp-1 block"
-                          >
-                            {journey.name}
-                          </Link>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground mb-0.5">Leg</p>
-                          <p className="text-sm font-medium text-foreground line-clamp-1">
-                            {leg.name}
-                          </p>
-                        </div>
-                        {leg.start_date && (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-0.5">Dates</p>
-                            <p className="text-sm text-foreground">
-                              {formatDate(leg.start_date)}
-                              {leg.end_date && ` - ${formatDate(leg.end_date)}`}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions - Push to bottom */}
-                      <div className="mt-auto pt-3 border-t border-border">
-                        {registration.status === 'Pending approval' && (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleUpdateStatus(registration.id, 'Approved')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-                              >
-                                {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
-                                disabled={updatingRegistrationId === registration.id}
-                                className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                              >
-                                {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
-                              </button>
-                            </div>
-                            <textarea
-                              value={updateNotes[registration.id] || ''}
-                              onChange={(e) => setUpdateNotes(prev => ({ ...prev, [registration.id]: e.target.value }))}
-                              placeholder="Add notes..."
-                              className="w-full px-2 py-1 border border-border bg-input-background rounded-md text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                              rows={2}
-                            />
-                          </div>
-                        )}
-
-                        {registration.status !== 'Pending approval' && (
-                          <div className="text-xs text-muted-foreground">
-                            <div>Registered: {formatDate(registration.created_at)}</div>
-                            {registration.updated_at !== registration.created_at && (
-                              <div>Updated: {formatDate(registration.updated_at)}</div>
-                            )}
-                          </div>
+                    {/* Registration Date */}
+                    <div className="mt-auto pt-3 border-t border-border">
+                      <div className="text-xs text-muted-foreground">
+                        <div>Registered: {formatDate(registration.created_at)}</div>
+                        {registration.updated_at !== registration.created_at && (
+                          <div>Updated: {formatDate(registration.updated_at)}</div>
                         )}
                       </div>
                     </div>
