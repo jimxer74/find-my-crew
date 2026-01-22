@@ -767,10 +767,10 @@ export default function JourneyRegistrationsPage() {
                           />
                         </svg>
                       </div>
-                      {/* Delete Journey */}
+                      {/* Back to Journeys */}
                       <Link
                         href={`/owner/journeys`}
-                        className="p-1.5 text-destructive hover:text-destructive/80 transition-colors rounded hover:bg-destructive/10"
+                        className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
                         title="Back to journeys"
                         aria-label="Back to journeys"
                       >
@@ -784,7 +784,7 @@ export default function JourneyRegistrationsPage() {
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            d="M5 15l7-7 7 7"
                           />
                         </svg>
                       </Link>
