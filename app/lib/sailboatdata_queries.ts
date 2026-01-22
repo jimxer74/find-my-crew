@@ -21,18 +21,21 @@ function normalizeScandinavianChars(text: string): string {
  * Fetch a URL using ScraperAPI if configured, otherwise use direct fetch
  * @param url - The target URL to fetch
  * @param options - Optional fetch options (headers, etc.)
+ * @param render - Whether to enable JavaScript rendering (default: false)
  * @returns Response object
  */
-async function fetchWithScraperAPI(url: string, options: RequestInit = {}): Promise<Response> {
+async function fetchWithScraperAPI(url: string, options: RequestInit = {}, render: boolean = false): Promise<Response> {
   const scraperApiKey = process.env.SCRAPERAPI_API_KEY;
   
   if (scraperApiKey && scraperApiKey.trim() !== '' && scraperApiKey !== 'your_scraperapi_api_key_here') {
     // Use ScraperAPI
-    const scraperApiUrl = `https://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(url)}&render=false`;
+    const renderParam = render ? '&render=true' : '&render=false';
+    const scraperApiUrl = `https://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(url)}${renderParam}`;
     
     console.log('=== USING SCRAPERAPI ===');
     console.log('Target URL:', url);
     console.log('ScraperAPI URL:', scraperApiUrl);
+    console.log('Render JavaScript:', render);
     console.log('========================');
     
     // ScraperAPI handles headers and browser simulation, so we use minimal headers
@@ -87,6 +90,12 @@ export interface SailboatResult {
   fullName: string; // "Make Model" format
 }
 
+export interface SailboatSearchResult {
+  name: string; // "Make Model" format
+  url: string; // Full URL like "https://sailboatdata.com/sailboat/hallberg-rassy-38"
+  slug: string; // URL slug like "hallberg-rassy-38"
+}
+
 export interface SailboatDetails {
   make?: string;
   model?: string;
@@ -112,7 +121,66 @@ export interface SailboatDetails {
 }
 
 /**
- * Query sailboatdata.com and parse sailboat results
+ * Search sailboatdata.com and parse results with URLs
+ * @param keyword - Search keyword (what user typed)
+ * @returns Array of sailboat search results with names and URLs
+ */
+export async function searchSailboatData(keyword: string): Promise<SailboatSearchResult[]> {
+  if (!keyword || keyword.trim().length < 2) {
+    return [];
+  }
+
+  // Normalize Scandinavian characters before creating URL
+  const normalizedKeyword = normalizeScandinavianChars(keyword.trim());
+  const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
+  
+  console.log('=== SAILBOATDATA SEARCH DEBUG ===');
+  console.log('Keyword:', keyword);
+  console.log('Search URL:', searchUrl);
+  console.log('================================');
+
+  try {
+    // Fetch the HTML page using ScraperAPI if configured, otherwise direct fetch
+    // Enable JavaScript rendering since search results are loaded dynamically via Algolia
+    const response = await fetchWithScraperAPI(searchUrl, {}, true);
+
+    if (!response.ok) {
+      console.error('=== FETCH ERROR DEBUG ===');
+      console.error('Status:', response.status, response.statusText);
+      console.error('URL:', searchUrl);
+      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      // Try to get error body if available
+      try {
+        const errorText = await response.text();
+        console.error('Error response body (first 500 chars):', errorText.substring(0, 500));
+      } catch (e) {
+        console.error('Could not read error response body');
+      }
+      console.error('==========================');
+      
+      return [];
+    }
+
+    const html = await response.text();
+    
+    // Parse HTML to extract sailboat names and URLs
+    const sailboats = parseSailboatSearchHTML(html, keyword);
+    
+    console.log('=== PARSED SEARCH RESULTS DEBUG ===');
+    console.log('Found sailboats:', sailboats.length);
+    console.log('Results:', sailboats);
+    console.log('==================================');
+
+    return sailboats;
+  } catch (error) {
+    console.error('Error searching sailboatdata.com:', error);
+    return [];
+  }
+}
+
+/**
+ * Query sailboatdata.com and parse sailboat results (legacy function, returns strings only)
  * @param keyword - Search keyword (what user typed)
  * @returns Array of sailboat results in "Make Model" format
  */
@@ -194,20 +262,27 @@ export async function querySailboatData(keyword: string): Promise<string[]> {
 
 /**
  * Fetch detailed sailboat data from a specific sailboat page
- * @param sailboatQueryStr - The sailboat identifier/slug (e.g., "hallberg-rassy-38")
+ * @param sailboatQueryStr - The sailboat identifier/slug (e.g., "hallberg-rassy-38") or make/model string
+ * @param slug - Optional: Direct slug from search results (more reliable than converting make_model)
  * @returns Parsed sailboat details or null if not found
  */
-export async function fetchSailboatDetails(sailboatQueryStr: string): Promise<SailboatDetails | null> {
+export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: string): Promise<SailboatDetails | null> {
   if (!sailboatQueryStr || sailboatQueryStr.trim().length === 0) {
     return null;
   }
 
-  // Normalize Scandinavian characters, then clean the query string (remove spaces, convert to lowercase, replace spaces with hyphens)
-  const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
-  const cleanQuery = normalizedQuery
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+  // Use provided slug if available, otherwise convert make_model string to slug
+  let cleanQuery: string;
+  if (slug && slug.trim().length > 0) {
+    cleanQuery = slug.trim();
+  } else {
+    // Normalize Scandinavian characters, then clean the query string (remove spaces, convert to lowercase, replace spaces with hyphens)
+    const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
+    cleanQuery = normalizedQuery
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
+  }
 
   const sailboatUrl = `https://sailboatdata.com/sailboat/${cleanQuery}`;
   
@@ -511,7 +586,206 @@ function parseSailboatDetailsHTML(html: string, url: string): SailboatDetails {
 }
 
 /**
- * Parse HTML from sailboatdata.com to extract sailboat make and model
+ * Parse HTML from sailboatdata.com search results to extract sailboat names and URLs
+ * @param html - HTML content from sailboatdata.com search results
+ * @param keyword - Original search keyword for filtering
+ * @returns Array of sailboat search results with names and URLs
+ */
+function parseSailboatSearchHTML(html: string, keyword: string): SailboatSearchResult[] {
+  const results: SailboatSearchResult[] = [];
+  const keywordLower = keyword.toLowerCase();
+
+  try {
+    // Debug: Log HTML snippet for inspection
+    console.log('=== HTML PARSING DEBUG ===');
+    console.log('HTML length:', html.length);
+    console.log('HTML snippet (first 2000 chars):', html.substring(0, 2000));
+    console.log('===========================');
+
+    // Strategy 1: Look for links in the results table (sailboats-table)
+    // Pattern: <table class="sailboats-table"> ... <tbody> ... <tr> ... <td data-title="MODEL"> ... <a href="/sailboat/[slug]">Name</a>
+    const tableBodyRegex = /<tbody[^>]*>([\s\S]*?)<\/tbody>/i;
+    const tbodyMatch = html.match(tableBodyRegex);
+    
+    if (tbodyMatch && tbodyMatch[1]) {
+      const tbodyContent = tbodyMatch[1];
+      // Extract all table rows from tbody
+      const rowRegex = /<tr[^>]*data-sailboat=["']([^"']+)["'][^>]*>([\s\S]*?)<\/tr>/gi;
+      let rowMatch;
+      
+      while ((rowMatch = rowRegex.exec(tbodyContent)) !== null) {
+        const rowContent = rowMatch[2];
+        // Look for MODEL cell with link
+        const modelCellRegex = /<td[^>]*data-title=["']MODEL["'][^>]*>([\s\S]*?)<\/td>/i;
+        const modelCellMatch = rowContent.match(modelCellRegex);
+        
+        if (modelCellMatch && modelCellMatch[1]) {
+          // Extract link from MODEL cell
+          const linkRegex = /<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/i;
+          const linkMatch = modelCellMatch[1].match(linkRegex);
+          
+          if (linkMatch) {
+            const urlPath = linkMatch[1].trim();
+            const sailboatName = linkMatch[2]
+              .replace(/<[^>]+>/g, '') // Remove any nested HTML tags
+              .replace(/&nbsp;/g, ' ')
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/\s+/g, ' ')
+              .trim();
+            
+            if (sailboatName && sailboatName.length > 2 && urlPath) {
+              // Extract slug from URL path (could be /sailboat/slug or full URL)
+              let slug = '';
+              let fullUrl = '';
+              
+              if (urlPath.startsWith('http')) {
+                fullUrl = urlPath;
+                const slugMatch = urlPath.match(/\/sailboat\/([^\/\?]+)/);
+                slug = slugMatch ? slugMatch[1] : '';
+              } else if (urlPath.startsWith('/sailboat/')) {
+                const slugMatch = urlPath.match(/\/sailboat\/([^\/\?]+)/);
+                slug = slugMatch ? slugMatch[1] : '';
+                fullUrl = `https://sailboatdata.com${urlPath}`;
+              } else if (urlPath.startsWith('/')) {
+                // Handle other relative paths
+                fullUrl = `https://sailboatdata.com${urlPath}`;
+                slug = urlPath.replace(/^\//, '').split('/')[0];
+              }
+              
+              // Filter by keyword match
+              if (slug && fullUrl && sailboatName.toLowerCase().includes(keywordLower)) {
+                if (!results.find(r => r.url === fullUrl || r.slug === slug)) {
+                  results.push({
+                    name: sailboatName,
+                    url: fullUrl,
+                    slug: slug,
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Strategy 2: Look for any links to sailboat pages (fallback - catches links outside table)
+    // Pattern: <a href="/sailboat/[slug]">Make Model</a>
+    const sailboatLinkRegex = /<a[^>]*href=["'](\/sailboat\/[^"'\?]+)[^"']*["'][^>]*>([^<]+)<\/a>/gi;
+    let match;
+    
+    while ((match = sailboatLinkRegex.exec(html)) !== null) {
+      const urlPath = match[1].trim();
+      const sailboatName = match[2].trim();
+      
+      // Clean up HTML entities and extra whitespace
+      const cleaned = sailboatName
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (cleaned && cleaned.length > 2 && urlPath) {
+        // Extract slug from URL path
+        const slugMatch = urlPath.match(/\/sailboat\/([^\/\?]+)/);
+        const slug = slugMatch ? slugMatch[1] : '';
+        const fullUrl = `https://sailboatdata.com${urlPath}`;
+        
+        // Filter by keyword match and avoid duplicates
+        if (slug && cleaned.toLowerCase().includes(keywordLower)) {
+          if (!results.find(r => r.url === fullUrl || r.slug === slug)) {
+            results.push({
+              name: cleaned,
+              url: fullUrl,
+              slug: slug,
+            });
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Look for links in table rows (additional fallback)
+    const tableRowRegex = /<tr[^>]*>[\s\S]*?<\/tr>/gi;
+    const rows = html.match(tableRowRegex) || [];
+
+    for (const row of rows) {
+      // Look for links in table rows that point to sailboat pages
+      const rowLinkRegex = /<a[^>]*href=["'](\/sailboat\/[^"'\?]+)[^"']*["'][^>]*>([^<]+)<\/a>/gi;
+      let linkMatch;
+      
+      while ((linkMatch = rowLinkRegex.exec(row)) !== null) {
+        const urlPath = linkMatch[1].trim();
+        const linkText = linkMatch[2].trim();
+        const cleaned = linkText
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        // Check if it looks like a sailboat name
+        if (cleaned && 
+            cleaned.length > 2 && 
+            cleaned.length < 100 &&
+            /^[A-Z]/.test(cleaned) &&
+            /[a-zA-Z]/.test(cleaned) &&
+            cleaned.toLowerCase().includes(keywordLower)) {
+          
+          const slugMatch = urlPath.match(/\/sailboat\/([^\/\?]+)/);
+          const slug = slugMatch ? slugMatch[1] : '';
+          const fullUrl = `https://sailboatdata.com${urlPath}`;
+          
+          if (slug && !results.find(r => r.url === fullUrl || r.slug === slug)) {
+            results.push({
+              name: cleaned,
+              url: fullUrl,
+              slug: slug,
+            });
+          }
+        }
+      }
+    }
+
+    // Sort results by relevance (exact matches first, then alphabetical)
+    const sorted = results
+      .filter(result => {
+        const nameLower = result.name.toLowerCase();
+        return nameLower.includes(keywordLower);
+      })
+      .sort((a, b) => {
+        const aLower = a.name.toLowerCase();
+        const bLower = b.name.toLowerCase();
+        const aStarts = aLower.startsWith(keywordLower);
+        const bStarts = bLower.startsWith(keywordLower);
+        
+        // Exact start matches first
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        
+        // Then by length (shorter/more specific first)
+        if (a.name.length !== b.name.length) {
+          return a.name.length - b.name.length;
+        }
+        
+        // Finally alphabetical
+        return aLower.localeCompare(bLower);
+      })
+      .slice(0, 10); // Limit to 10 results
+
+    return sorted;
+  } catch (error) {
+    console.error('Error parsing sailboatdata.com search HTML:', error);
+    return [];
+  }
+}
+
+/**
+ * Parse HTML from sailboatdata.com to extract sailboat make and model (legacy function)
  * @param html - HTML content from sailboatdata.com search results
  * @param keyword - Original search keyword for filtering
  * @returns Array of sailboat names in "Make Model" format

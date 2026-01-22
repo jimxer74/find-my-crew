@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -43,24 +43,51 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
     router.refresh();
   };
 
-  // Get user role for dashboard link
-  const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
+  // Get user roles for dashboard link
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (user) {
-      const supabase = getSupabaseBrowserClient();
-      supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data) {
-            setUserRole(data.role);
-          }
-        });
+  const loadUserRoles = useCallback(async () => {
+    if (!user) {
+      setUserRoles([]);
+      return;
+    }
+    
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .single();
+    
+    if (data && data.roles) {
+      setUserRoles(data.roles);
+    } else {
+      setUserRoles([]);
     }
   }, [user]);
+
+  useEffect(() => {
+    loadUserRoles();
+  }, [loadUserRoles]);
+
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      loadUserRoles();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [loadUserRoles]);
+
+  // Refresh roles when menu opens
+  useEffect(() => {
+    if (isOpen && user) {
+      loadUserRoles();
+    }
+  }, [isOpen, loadUserRoles]);
 
   return (
     <div className="relative" ref={menuRef}>
@@ -128,8 +155,12 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                   <div className="border-t border-gray-200 my-1" />
 
                   {/* Owner-specific menu items */}
-                  {userRole === 'owner' ? (
+                  {userRoles.includes('owner') && (
                     <>
+                      {/* For Skipper header */}
+                      <div className="px-4 py-2">
+                        <span className="text-[10px] font-medium text-muted-foreground">For Skipper:</span>
+                      </div>
                       {/* My Boats */}
                       <Link
                         href="/owner/boats"
@@ -172,7 +203,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                         <span className="font-medium">My Journeys & Legs</span>
                       </Link>
 
-                      {/* Registrations */}
+                      {/* My Crew */}
                       <Link
                         href="/owner/registrations"
                         onClick={() => setIsOpen(false)}
@@ -189,12 +220,19 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                         >
                           <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        <span className="font-medium">Registrations</span>
+                        <span className="font-medium">My Crew</span>
                       </Link>
                     </>
-                  ) : (
+                  )}
+
+                  {/* Crew-specific menu items */}
+                  {userRoles.includes('crew') && (
                     <>
-                      {/* Crew Dashboard */}
+                      {/* For Crew header */}
+                      <div className="px-4 py-2">
+                        <span className="text-[10px] font-medium text-muted-foreground">For Crew:</span>
+                      </div>
+                      {/* Browse Journeys */}
                       <Link
                         href="/crew/dashboard"
                         onClick={() => setIsOpen(false)}
@@ -213,7 +251,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                           <circle cx="12" cy="12" r="3" />
                           <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                         </svg>
-                        <span className="font-medium">My Dashboard</span>
+                        <span className="font-medium">Browse Journeys</span>
                       </Link>
                       {/* My Registrations */}
                       <Link
@@ -235,6 +273,13 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                         <span className="font-medium">My Registrations</span>
                       </Link>
                     </>
+                  )}
+
+                  {/* Show message if user has no roles */}
+                  {userRoles.length === 0 && (
+                    <div className="px-4 py-3 text-sm text-muted-foreground">
+                      Complete your profile and select roles to access features.
+                    </div>
                   )}
 
                   {/* Divider */}
@@ -261,6 +306,31 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
                 </>
               ) : (
                 <>
+                  {/* Browse Journeys - Available to non-signed-in users */}
+                  <Link
+                    href="/crew/dashboard"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+                  >
+                    <svg
+                      className="w-5 h-5 mr-3 text-muted-foreground"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                    </svg>
+                    <span className="font-medium">Browse Journeys</span>
+                  </Link>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 my-1" />
+
                   {/* Sign in */}
                   <button
                     onClick={() => {

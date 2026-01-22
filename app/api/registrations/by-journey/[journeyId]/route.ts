@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
 /**
  * GET /api/registrations/by-journey/[journeyId]
@@ -33,11 +34,11 @@ export async function GET(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can view journey registrations' },
         { status: 403 }
@@ -119,7 +120,9 @@ export async function GET(
           id,
           name,
           start_date,
-          end_date
+          end_date,
+          skills,
+          min_experience_level
         ),
         profiles:user_id (
           id,
@@ -147,9 +150,52 @@ export async function GET(
       );
     }
 
+    // Fetch registration answers for all registrations
+    const registrationIds = (registrations || []).map((r: any) => r.id);
+    let answersMap: Record<string, any[]> = {};
+    
+    if (registrationIds.length > 0) {
+      const { data: allAnswers, error: answersError } = await supabase
+        .from('registration_answers')
+        .select(`
+          id,
+          registration_id,
+          requirement_id,
+          answer_text,
+          answer_json,
+          journey_requirements!inner (
+            id,
+            question_text,
+            question_type,
+            options,
+            is_required,
+            order
+          )
+        `)
+        .in('registration_id', registrationIds)
+        .order('journey_requirements.order', { ascending: true });
+
+      if (!answersError && allAnswers) {
+        // Group answers by registration_id
+        answersMap = allAnswers.reduce((acc: Record<string, any[]>, answer: any) => {
+          if (!acc[answer.registration_id]) {
+            acc[answer.registration_id] = [];
+          }
+          acc[answer.registration_id].push(answer);
+          return acc;
+        }, {});
+      }
+    }
+
+    // Merge answers into registrations
+    const registrationsWithAnswers = (registrations || []).map((reg: any) => ({
+      ...reg,
+      answers: answersMap[reg.id] || [],
+    }));
+
     return NextResponse.json({
-      registrations: registrations || [],
-      count: registrations?.length || 0,
+      registrations: registrationsWithAnswers || [],
+      count: registrationsWithAnswers?.length || 0,
     });
 
   } catch (error: any) {

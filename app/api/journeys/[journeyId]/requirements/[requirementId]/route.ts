@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
 /**
  * PUT /api/journeys/[journeyId]/requirements/[requirementId]
@@ -37,11 +38,11 @@ export async function PUT(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can update requirements' },
         { status: 403 }
@@ -212,11 +213,11 @@ export async function DELETE(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can delete requirements' },
         { status: 403 }

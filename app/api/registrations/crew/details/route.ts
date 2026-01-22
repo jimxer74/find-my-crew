@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasCrewRole } from '@/app/lib/auth/checkRole';
 
 /**
  * GET /api/registrations/crew/details
@@ -23,11 +24,11 @@ export async function GET(request: NextRequest) {
     // Verify user is a crew member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role, skills, sailing_experience')
+      .select('roles, role, skills, sailing_experience')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'crew') {
+    if (!profile || !hasCrewRole(profile)) {
       return NextResponse.json(
         { error: 'Only crew members can view their registrations' },
         { status: 403 }

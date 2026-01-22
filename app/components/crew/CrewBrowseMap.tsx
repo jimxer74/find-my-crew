@@ -223,6 +223,16 @@ export function CrewBrowseMap({
         .single();
 
       if (error) {
+        // Profile doesn't exist (PGRST116) - this is expected for users without profiles
+        if (error.code === 'PGRST116') {
+          // User doesn't have a profile yet - set empty values
+          setUserSkills([]);
+          userSkillsRef.current = [];
+          setUserExperienceLevel(null);
+          userExperienceLevelRef.current = null;
+          return;
+        }
+        // Other errors should be logged
         console.error('[CrewBrowseMap] Error loading user profile:', error);
         setUserSkills([]);
         userSkillsRef.current = [];

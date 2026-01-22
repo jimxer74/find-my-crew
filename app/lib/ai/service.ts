@@ -46,43 +46,62 @@ async function callDeepSeek(
     throw new AIServiceError('DeepSeek API key not configured', 'deepseek');
   }
 
-  const response = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature,
-      max_tokens: maxTokens,
-    }),
-  });
+  // Create abort controller with 60 second timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new AIServiceError(
-      `DeepSeek API error: ${errorData.error?.message || response.statusText}`,
-      'deepseek',
-      model,
-      errorData
-    );
+  try {
+    const response = await fetch('https://api.deepseek.com/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new AIServiceError(
+        `DeepSeek API error: ${errorData.error?.message || response.statusText}`,
+        'deepseek',
+        model,
+        errorData
+      );
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+
+    if (!text) {
+      throw new AIServiceError('DeepSeek returned empty response', 'deepseek', model);
+    }
+
+    return text;
+  } catch (error: any) {
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+      throw new AIServiceError(
+        `DeepSeek API timeout after 60 seconds`,
+        'deepseek',
+        model,
+        error
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
-
-  if (!text) {
-    throw new AIServiceError('DeepSeek returned empty response', 'deepseek', model);
-  }
-
-  return text;
 }
 
 /**
@@ -99,43 +118,62 @@ async function callGroq(
     throw new AIServiceError('Groq API key not configured', 'groq');
   }
 
-  const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature,
-      max_tokens: maxTokens,
-    }),
-  });
+  // Create abort controller with 60 second timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new AIServiceError(
-      `Groq API error: ${errorData.error?.message || response.statusText}`,
-      'groq',
-      model,
-      errorData
-    );
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new AIServiceError(
+        `Groq API error: ${errorData.error?.message || response.statusText}`,
+        'groq',
+        model,
+        errorData
+      );
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+
+    if (!text) {
+      throw new AIServiceError('Groq returned empty response', 'groq', model);
+    }
+
+    return text;
+  } catch (error: any) {
+    if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+      throw new AIServiceError(
+        `Groq API timeout after 60 seconds`,
+        'groq',
+        model,
+        error
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
-
-  if (!text) {
-    throw new AIServiceError('Groq returned empty response', 'groq', model);
-  }
-
-  return text;
 }
 
 /**
@@ -156,6 +194,10 @@ async function callGemini(
   const apiVersions = ['v1beta', 'v1'];
   
   for (const apiVersion of apiVersions) {
+    // Create abort controller with 60 second timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
+
     try {
       const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
 
@@ -179,10 +221,12 @@ async function callGemini(
             maxOutputTokens: maxTokens,
           },
         }),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        clearTimeout(timeoutId);
         // Try next API version if this one fails
         if (apiVersion === 'v1beta') {
           continue;
@@ -198,10 +242,26 @@ async function callGemini(
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
+      clearTimeout(timeoutId);
       if (text) {
         return text;
       }
     } catch (error: any) {
+      clearTimeout(timeoutId);
+      // Handle timeout errors
+      if (error.name === 'AbortError' || error.name === 'TimeoutError') {
+        // If it's the last API version, throw timeout error
+        if (apiVersion === 'v1') {
+          throw new AIServiceError(
+            `Gemini API timeout after 60 seconds`,
+            'gemini',
+            model,
+            error
+          );
+        }
+        // Otherwise continue to next API version
+        continue;
+      }
       // If it's the last API version, throw the error
       if (apiVersion === 'v1') {
         throw error;

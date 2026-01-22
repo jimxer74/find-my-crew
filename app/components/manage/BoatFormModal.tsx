@@ -113,13 +113,13 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showCategoryInfo, setShowCategoryInfo] = useState(false);
-  const [makeModelSuggestions, setMakeModelSuggestions] = useState<string[]>([]);
+  const [makeModelSuggestions, setMakeModelSuggestions] = useState<Array<{ name: string; url: string; slug: string }>>([]);
   const [showMakeModelSuggestions, setShowMakeModelSuggestions] = useState(false);
   const [makeModelInputValue, setMakeModelInputValue] = useState('');
   const [isLoadingMakeModelSuggestions, setIsLoadingMakeModelSuggestions] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isLoadingBoatDetails, setIsLoadingBoatDetails] = useState(false);
-  const [enableAIAutocomplete, setEnableAIAutocomplete] = useState(false); // Toggle for AI autocomplete search
+  const [selectedBoatSlug, setSelectedBoatSlug] = useState<string | null>(null); // Store slug from selected suggestion
 
   useEffect(() => {
     if (isOpen && boatId) {
@@ -154,6 +154,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       setMakeModelInputValue('');
       setMakeModelSuggestions([]);
       setShowMakeModelSuggestions(false);
+      setHasSearched(false);
+      setSelectedBoatSlug(null);
     }
   }, [isOpen, boatId]);
 
@@ -217,12 +219,16 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     try {
       // Step 1: Fetch hard data from sailboatdata.com via ScraperAPI
       console.log('=== STEP 1: Fetching hard data from sailboatdata.com ===');
+      console.log('Using slug:', selectedBoatSlug || '(will generate from make_model)');
       const hardDataResponse = await fetch('/api/sailboatdata/fetch-details', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ make_model: formData.make_model }),
+        body: JSON.stringify({ 
+          make_model: formData.make_model,
+          slug: selectedBoatSlug || undefined, // Use slug from search if available
+        }),
       });
 
       if (!hardDataResponse.ok) {
@@ -326,17 +332,9 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     }
   };
 
-  // Function to fetch sailboat suggestions (triggered manually on Enter)
+  // Function to fetch sailboat suggestions using scraping (triggered manually on Enter)
   const fetchSailboatSuggestions = async () => {
     if (makeModelInputValue.trim().length < 2) {
-      setMakeModelSuggestions([]);
-      setShowMakeModelSuggestions(false);
-      setIsLoadingMakeModelSuggestions(false);
-      return;
-    }
-
-    // Check if AI autocomplete is enabled
-    if (!enableAIAutocomplete) {
       setMakeModelSuggestions([]);
       setShowMakeModelSuggestions(false);
       setIsLoadingMakeModelSuggestions(false);
@@ -347,7 +345,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     setHasSearched(true);
     
     try {
-      const response = await fetch('/api/ai/suggest-sailboats', {
+      const response = await fetch('/api/sailboatdata/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,6 +358,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         setMakeModelSuggestions(data.suggestions || []);
         setShowMakeModelSuggestions(data.suggestions && data.suggestions.length > 0);
       } else {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Error fetching sailboat suggestions:', errorData.error);
         setMakeModelSuggestions([]);
         setShowMakeModelSuggestions(false);
       }
@@ -668,6 +668,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                           setHasSearched(false);
                           setMakeModelSuggestions([]);
                           setShowMakeModelSuggestions(false);
+                          setSelectedBoatSlug(null); // Clear selected slug when user types manually
                         }}
                         onFocus={() => {
                           // Only show suggestions if we've already searched
@@ -709,21 +710,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                         </div>
                       )}
                     </div>
-                    {/* AI Autocomplete Toggle Checkbox */}
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="enable_ai_autocomplete"
-                        checked={enableAIAutocomplete}
-                        onChange={(e) => setEnableAIAutocomplete(e.target.checked)}
-                        className="w-4 h-4 text-primary border-border rounded focus:ring-2 focus:ring-ring"
-                      />
-                      <label htmlFor="enable_ai_autocomplete" className="text-sm text-muted-foreground cursor-pointer">
-                        Enable AI autocomplete search (for testing - limits API calls)
-                      </label>
-                    </div>
                     {/* Hint message when user hasn't searched yet */}
-                    {makeModelInputValue.trim().length >= 2 && !hasSearched && !isLoadingMakeModelSuggestions && enableAIAutocomplete && (
+                    {makeModelInputValue.trim().length >= 2 && !hasSearched && !isLoadingMakeModelSuggestions && (
                       <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg">
                         <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -731,11 +719,6 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                           </svg>
                           <span>Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-foreground bg-muted border border-border rounded">Enter</kbd> to search sailboatdata.com</span>
                         </div>
-                      </div>
-                    )}
-                    {makeModelInputValue.trim().length >= 2 && !enableAIAutocomplete && (
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        AI autocomplete is disabled. Enable the checkbox above to use AI search.
                       </div>
                     )}
                     {/* Suggestions Dropdown */}
@@ -756,13 +739,15 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                                 key={index}
                                 type="button"
                                 onClick={() => {
-                                  setFormData((prev) => ({ ...prev, make_model: suggestion }));
-                                  setMakeModelInputValue(suggestion);
+                                  setFormData((prev) => ({ ...prev, make_model: suggestion.name }));
+                                  setMakeModelInputValue(suggestion.name);
+                                  setSelectedBoatSlug(suggestion.slug); // Store slug for use in fetchBoatDetails
                                   setShowMakeModelSuggestions(false);
                                 }}
                                 className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm text-foreground"
+                                title={suggestion.url}
                               >
-                                {suggestion}
+                                {suggestion.name}
                               </button>
                             ))}
                             <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">

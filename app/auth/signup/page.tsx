@@ -9,7 +9,6 @@ export default function SignUpPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'owner' | 'crew'>('crew');
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -22,14 +21,13 @@ export default function SignUpPage() {
     const supabase = getSupabaseBrowserClient();
 
     try {
-      // 1. Sign up the user
+      // Sign up the user without role selection
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             full_name: fullName,
-            role: role,
           },
         },
       });
@@ -37,8 +35,9 @@ export default function SignUpPage() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Redirect to profile page to complete profile setup
-        router.push(`/profile?role=${role}`);
+        // Redirect to home page - profile is optional
+        router.push('/');
+        router.refresh();
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred during signup');
@@ -124,35 +123,6 @@ export default function SignUpPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">
-                I am a...
-              </label>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <label className="flex items-center min-h-[44px] cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="owner"
-                    checked={role === 'owner'}
-                    onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                    className="mr-2 w-5 h-5"
-                  />
-                  <span>Boat Owner/Skipper</span>
-                </label>
-                <label className="flex items-center min-h-[44px] cursor-pointer">
-                  <input
-                    type="radio"
-                    name="role"
-                    value="crew"
-                    checked={role === 'crew'}
-                    onChange={(e) => setRole(e.target.value as 'owner' | 'crew')}
-                    className="mr-2 w-5 h-5"
-                  />
-                  <span>Crew Member</span>
-                </label>
-              </div>
-            </div>
           </div>
 
           <div>

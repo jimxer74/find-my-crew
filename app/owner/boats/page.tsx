@@ -8,6 +8,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
 import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
+import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { checkProfile } from '@/app/lib/profile/checkProfile';
 
 export default function BoatsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -16,6 +18,7 @@ export default function BoatsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
+  const [hasOwnerRole, setHasOwnerRole] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -24,9 +27,19 @@ export default function BoatsPage() {
     }
 
     if (user) {
+      checkOwnerRole();
       loadBoats();
     }
   }, [user, authLoading, router]);
+
+  const checkOwnerRole = async () => {
+    if (!user) {
+      setHasOwnerRole(false);
+      return;
+    }
+    const status = await checkProfile(user.id);
+    setHasOwnerRole(status.exists && status.roles.includes('owner'));
+  };
 
   const loadBoats = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -44,7 +57,7 @@ export default function BoatsPage() {
     setLoading(false);
   };
 
-  if (authLoading || loading) {
+  if (authLoading || loading || hasOwnerRole === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">Loading...</div>
@@ -53,8 +66,9 @@ export default function BoatsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <FeatureGate feature="create_boat">
+      <div className="min-h-screen bg-background">
+        <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
@@ -161,5 +175,6 @@ export default function BoatsPage() {
         />
       )}
     </div>
+    </FeatureGate>
   );
 }

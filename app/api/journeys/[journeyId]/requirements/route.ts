@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
 /**
  * GET /api/journeys/[journeyId]/requirements
@@ -116,11 +117,11 @@ export async function POST(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can create requirements' },
         { status: 403 }

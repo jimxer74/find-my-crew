@@ -4,7 +4,7 @@ import { callAI, AIServiceError } from '@/app/lib/ai/service';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { startLocation, endLocation, boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = body;
+    const { startLocation, endLocation, intermediateWaypoints, boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = body;
 
     if (!startLocation || !endLocation) {
       return NextResponse.json(
@@ -40,6 +40,21 @@ export async function POST(request: NextRequest) {
       lng: endLocation.lng
     });
 
+    // Build waypoints list for prompt
+    const allWaypoints = [
+      { name: startLocation.name, lat: startLocation.lat, lng: startLocation.lng },
+      ...(intermediateWaypoints && Array.isArray(intermediateWaypoints) && intermediateWaypoints.length > 0
+        ? intermediateWaypoints.map((wp: any) => ({ name: wp.name, lat: wp.lat, lng: wp.lng }))
+        : []),
+      { name: endLocation.name, lat: endLocation.lat, lng: endLocation.lng },
+    ];
+    
+    const waypointsInfo = allWaypoints.length > 2
+      ? `\n\nWaypoints (in order):\n${allWaypoints.map((wp, idx) => 
+          `  ${idx === 0 ? 'START' : idx === allWaypoints.length - 1 ? 'END' : `WAYPOINT ${idx}`}: ${wp.name} (${wp.lat}, ${wp.lng})`
+        ).join('\n')}`
+      : '';
+    
     // Create a prompt for Gemini
     const dateInfo = startDate || endDate 
       ? `\nJourney Dates:${startDate ? ` Start: ${startDate}` : ''}${endDate ? ` End: ${endDate}` : ''}`
@@ -63,7 +78,7 @@ export async function POST(request: NextRequest) {
 - Include start_date and end_date for each leg in the response`
       : '';
     
-    const prompt = `You are a sailing route planner. Generate a sailing journey with legs between two locations.
+    const prompt = `You are a sailing route planner. Generate a sailing journey with legs between locations.${waypointsInfo}
 
 Start Location: ${startLocation.name} (approximately ${startLocation.lat}, ${startLocation.lng})
 End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})${dateInfo}${speedPlanningInstructions}
@@ -83,12 +98,15 @@ CRITICAL RULES:
    - Navigation points, buoys, or landmarks
    - Used when needed for safe routing or interesting stops
 
-3. Each leg should:
+3. ${allWaypoints.length > 2 
+      ? `You MUST create legs that visit ALL waypoints in the specified order: ${allWaypoints.map(wp => wp.name).join(' → ')}. Each waypoint must be included as either a start or end point of a leg.`
+      : 'Each leg should:'}
    - Have a descriptive name
    - Start at a port/town/city/marina (crew exchange point)
    - End at a port/town/city/marina (crew exchange point)
    - Include intermediate waypoints ONLY if they add value (routing, safety, or interesting stops)
    - Form a logical sailing route considering safe passages
+   ${allWaypoints.length > 2 ? `- Visit all specified waypoints in order: ${allWaypoints.map(wp => wp.name).join(' → ')}` : ''}
 
 4. Geocodes (coordinates):
    - You must determine the EXACT coordinates for each waypoint
@@ -176,10 +194,14 @@ Return ONLY valid JSON in this exact format:${useSpeedPlanning && boatSpeed && s
 IMPORTANT:
 - First leg's starting waypoint (index 0) name should be "${startLocation.name}" or a specific port/marina in that location
 - Last leg's ending waypoint (highest index) name should be "${endLocation.name}" or a specific port/marina in that location
+${allWaypoints.length > 2 
+  ? `- You MUST create legs that visit ALL ${allWaypoints.length} waypoints in order: ${allWaypoints.map(wp => wp.name).join(' → ')}\n- Each waypoint from the list must appear as either the start or end of a leg\n- Create multiple legs if needed to visit all waypoints`
+  : ''}
 - Waypoint indices must be sequential (0, 1, 2, 3, etc.)
 - Start waypoint (index 0) and end waypoint (highest index) of each leg MUST be ports/towns/cities/marinas
 - Intermediate waypoints (between start and end) are optional and can be anywhere
 - You must provide accurate, real coordinates for all waypoints - do not use placeholder values
+- For waypoints provided by the user, use their exact coordinates: ${allWaypoints.map((wp, idx) => `${wp.name}: [${wp.lng}, ${wp.lat}]`).join(', ')}
 - Coordinates are [longitude, latitude] format
 - Return ONLY the JSON, no markdown, no code blocks`;
 

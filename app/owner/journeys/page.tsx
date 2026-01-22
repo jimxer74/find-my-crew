@@ -10,6 +10,8 @@ import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { AIGenerateJourneyModal } from '@/app/components/manage/AIGenerateJourneyModal';
 import { Pagination } from '@/app/components/ui/Pagination';
 import { formatDate } from '@/app/lib/dateFormat';
+import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { checkProfile } from '@/app/lib/profile/checkProfile';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();
@@ -26,6 +28,10 @@ export default function JourneysPage() {
   const [filterBoatId, setFilterBoatId] = useState<string>('all');
   const [filterState, setFilterState] = useState<string>('all');
   const itemsPerPage = 9; // 3 columns × 3 rows
+  const [hasOwnerRole, setHasOwnerRole] = useState<boolean | null>(null);
+  const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,9 +40,19 @@ export default function JourneysPage() {
     }
 
     if (user) {
+      checkOwnerRole();
       loadJourneys();
     }
   }, [user, authLoading, router]);
+
+  const checkOwnerRole = async () => {
+    if (!user) {
+      setHasOwnerRole(false);
+      return;
+    }
+    const status = await checkProfile(user.id);
+    setHasOwnerRole(status.exists && status.roles.includes('owner'));
+  };
 
   const loadJourneys = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -143,7 +159,54 @@ export default function JourneysPage() {
     setCurrentPage(1); // Reset to first page when filter changes
   };
 
-  if (authLoading || loading) {
+  // Handle delete journey
+  const handleDeleteJourney = async (journeyId: string) => {
+    setDeletingJourneyId(journeyId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDeleteJourney = async () => {
+    if (!deletingJourneyId) return;
+
+    setIsDeleting(true);
+    const supabase = getSupabaseBrowserClient();
+
+    try {
+      // First, delete all legs associated with this journey (and their waypoints via cascade)
+      const { error: legsError } = await supabase
+        .from('legs')
+        .delete()
+        .eq('journey_id', deletingJourneyId);
+
+      if (legsError) {
+        console.error('Error deleting legs:', legsError);
+        throw new Error('Failed to delete journey legs: ' + legsError.message);
+      }
+
+      // Then delete the journey itself
+      const { error: journeyError } = await supabase
+        .from('journeys')
+        .delete()
+        .eq('id', deletingJourneyId);
+
+      if (journeyError) {
+        console.error('Error deleting journey:', journeyError);
+        throw new Error('Failed to delete journey: ' + journeyError.message);
+      }
+
+      // Reload journeys list
+      await loadJourneys();
+      setShowDeleteConfirm(false);
+      setDeletingJourneyId(null);
+    } catch (error: any) {
+      console.error('Error deleting journey:', error);
+      alert(error.message || 'Failed to delete journey');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  if (authLoading || loading || hasOwnerRole === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">Loading...</div>
@@ -152,8 +215,9 @@ export default function JourneysPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <FeatureGate feature="create_journey">
+      <div className="min-h-screen bg-background">
+        <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
@@ -357,6 +421,13 @@ export default function JourneysPage() {
                         >
                           Edit
                         </button>
+                        <span className="hidden sm:inline text-border">|</span>
+                        <button
+                          onClick={() => handleDeleteJourney(journey.id)}
+                          className="font-medium text-sm text-destructive hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0 text-left sm:text-left"
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   );
@@ -402,6 +473,42 @@ export default function JourneysPage() {
           />
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-card-foreground mb-4">
+                Delete Journey?
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to delete this journey? This will permanently delete the journey and all its legs. This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDeletingJourneyId(null);
+                  }}
+                  disabled={isDeleting}
+                  className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteJourney}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </FeatureGate>
   );
 }

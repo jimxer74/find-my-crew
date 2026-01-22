@@ -10,6 +10,7 @@ import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
+import { MissingFieldsIndicator } from '@/app/components/profile/MissingFieldsIndicator';
 
 type SkillEntry = {
   skill_name: string;
@@ -18,7 +19,8 @@ type SkillEntry = {
 
 type Profile = {
   id: string;
-  role: 'owner' | 'crew';
+  role?: 'owner' | 'crew'; // Legacy field, kept for backward compatibility
+  roles?: string[]; // New roles array field
   username: string | null;
   full_name: string | null;
   certifications: string | null;
@@ -28,6 +30,7 @@ type Profile = {
   skills: string[]; // Array of JSON strings: ['{"skill_name": "first_aid", "description": "..."}', ...]
   sailing_preferences: string | null;
   profile_image_url: string | null;
+  profile_completion_percentage?: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -79,8 +82,50 @@ export default function ProfilePage() {
     skills: [] as SkillEntry[], // Array of skill objects with skill_name and description
     sailing_preferences: '',
     profile_image_url: '',
+    roles: [] as ('owner' | 'crew')[], // Roles array
   });
   const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Helper function to check if a field is missing (for profile completion)
+  const isFieldMissing = (fieldName: string): boolean => {
+    switch (fieldName) {
+      case 'username':
+        return !formData.username || formData.username.trim() === '';
+      case 'full_name':
+        return !formData.full_name || formData.full_name.trim() === '';
+      case 'phone':
+        return !formData.phone || formData.phone.trim() === '';
+      case 'sailing_experience':
+        return formData.sailing_experience === null;
+      case 'risk_level':
+        return !formData.risk_level || formData.risk_level.length === 0;
+      case 'skills':
+        return !formData.skills || formData.skills.length === 0;
+      case 'sailing_preferences':
+        return !formData.sailing_preferences || formData.sailing_preferences.trim() === '';
+      case 'roles':
+        return !formData.roles || formData.roles.length === 0;
+      default:
+        return false;
+    }
+  };
+
+  // Helper function to calculate profile completion percentage (matches database logic)
+  const calculateCompletionPercentage = (): number => {
+    const totalFields = 8;
+    let completionScore = 0;
+
+    if (formData.username && formData.username.trim() !== '') completionScore++;
+    if (formData.full_name && formData.full_name.trim() !== '') completionScore++;
+    if (formData.phone && formData.phone.trim() !== '') completionScore++;
+    if (formData.sailing_experience !== null) completionScore++;
+    if (formData.risk_level && formData.risk_level.length > 0) completionScore++;
+    if (formData.skills && formData.skills.length > 0) completionScore++;
+    if (formData.sailing_preferences && formData.sailing_preferences.trim() !== '') completionScore++;
+    if (formData.roles && formData.roles.length > 0) completionScore++;
+
+    return Math.round((completionScore / totalFields) * 100);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -107,10 +152,11 @@ export default function ProfilePage() {
       // Profile doesn't exist - this is a new signup
       if (fetchError.code === 'PGRST116') {
         setIsNewProfile(true);
-        // Get role from URL query params or user metadata
+        // Get roles from URL query params or user metadata (for backward compatibility)
         const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
         const roleFromMetadata = user.user_metadata?.role as 'owner' | 'crew' | null;
-        const role = roleFromUrl || roleFromMetadata || 'crew';
+        // Default to empty roles array (user can select roles)
+        const initialRoles: ('owner' | 'crew')[] = roleFromUrl ? [roleFromUrl] : roleFromMetadata ? [roleFromMetadata] : [];
         
         // Pre-fill form with data from signup if available
         const fullNameFromMetadata = user.user_metadata?.full_name || '';
@@ -126,12 +172,13 @@ export default function ProfilePage() {
           skills: [],
           sailing_preferences: '',
           profile_image_url: '',
+          roles: initialRoles,
         });
 
         // Create a temporary profile object for display
         setProfile({
           id: user.id,
-          role: role,
+          roles: initialRoles,
           username: null,
           full_name: null,
           certifications: null,
@@ -160,6 +207,13 @@ export default function ProfilePage() {
         }
       });
 
+      // Get roles array, fallback to legacy role field for backward compatibility
+      const roles: ('owner' | 'crew')[] = data.roles && data.roles.length > 0 
+        ? (data.roles as ('owner' | 'crew')[])
+        : data.role 
+          ? [data.role]
+          : [];
+
       setFormData({
         username: data.username || '',
         full_name: data.full_name || '',
@@ -170,6 +224,7 @@ export default function ProfilePage() {
         skills: parsedSkills,
         sailing_preferences: data.sailing_preferences || '',
         profile_image_url: data.profile_image_url || '',
+        roles: roles,
       });
     }
     setLoading(false);
@@ -177,7 +232,7 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !profile) return;
+    if (!user) return;
 
     setSaving(true);
     setError(null);
@@ -185,20 +240,20 @@ export default function ProfilePage() {
 
     const supabase = getSupabaseBrowserClient();
 
-    // Get role from existing profile, URL params, or user metadata
-    const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
-    const roleFromMetadata = user.user_metadata?.role as 'owner' | 'crew' | null;
-    const role = profile.role || roleFromUrl || roleFromMetadata || 'crew';
+    // Use roles array from form data
+    const roles = formData.roles || [];
 
     let error: any = null;
+    let insertedData: any = null;
+    let updatedData: any = null;
 
     if (isNewProfile) {
-      // Create new profile
-        const { error: insertError } = await supabase
+      // Create new profile with roles array
+        const { data: insertResult, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: user.id,
-            role: role,
+            roles: roles, // Use roles array
             username: formData.username || null,
             full_name: formData.full_name || null,
             certifications: formData.certifications || null,
@@ -208,14 +263,23 @@ export default function ProfilePage() {
             skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
             sailing_preferences: formData.sailing_preferences || null,
             profile_image_url: formData.profile_image_url || null,
-          });
+          })
+          .select()
+          .single();
 
       error = insertError;
+      insertedData = insertResult;
+      
+      // If insert was successful and we got data back, update the profile state immediately
+      if (!error && insertedData) {
+        setProfile(insertedData);
+      }
     } else {
-      // Update existing profile
-      const { error: updateError } = await supabase
+      // Update existing profile with roles array
+      const { data: updateResult, error: updateError } = await supabase
         .from('profiles')
           .update({
+            roles: roles, // Update roles array
             username: formData.username || null,
             full_name: formData.full_name || null,
             certifications: formData.certifications || null,
@@ -227,29 +291,70 @@ export default function ProfilePage() {
             profile_image_url: formData.profile_image_url || null,
             updated_at: new Date().toISOString(),
           })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select()
+        .single();
 
       error = updateError;
+      updatedData = updateResult;
     }
 
     if (error) {
       setError(error.message || 'Failed to save profile');
+      setSaving(false);
     } else {
       setSuccess(true);
       setIsNewProfile(false);
-      // Reload profile to get updated data
-      await loadProfile();
-      setTimeout(() => setSuccess(false), 3000);
       
-      // If this was a new profile, redirect to dashboard after a moment
+      // Calculate completion percentage on frontend for immediate UI update
+      const calculatedCompletion = calculateCompletionPercentage();
+      
+      // Update profile state immediately with calculated completion for instant feedback
+      if (profile) {
+        setProfile({
+          ...profile,
+          profile_completion_percentage: calculatedCompletion,
+          // Update other fields from formData
+          username: formData.username || null,
+          full_name: formData.full_name || null,
+          phone: formData.phone || null,
+          sailing_experience: formData.sailing_experience,
+          risk_level: formData.risk_level,
+          skills: formData.skills.map(skill => JSON.stringify(skill)),
+          sailing_preferences: formData.sailing_preferences || null,
+          roles: formData.roles,
+        });
+      }
+      
+      // Reload profile after a delay to get the trigger-calculated completion percentage from database
+      // This ensures we have the authoritative value from the database trigger
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await loadProfile();
+      
+      setTimeout(() => setSuccess(false), 3000);
+      setSaving(false);
+      
+      // Dispatch custom event to notify other components (like NavigationMenu) that profile was updated
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+      }
+      
+      // Refresh the router to update all components
+      router.refresh();
+      
+      // If this was a new profile, redirect based on roles
       if (isNewProfile) {
         setTimeout(() => {
-          router.push(role === 'owner' ? '/owner/boats' : '/crew/dashboard');
+          if (roles.includes('owner')) {
+            router.push('/owner/boats');
+          } else if (roles.includes('crew')) {
+            router.push('/crew/dashboard');
+          } else {
+            router.push('/'); // No roles selected, go to home
+          }
         }, 1500);
       }
     }
-
-    setSaving(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -616,10 +721,42 @@ export default function ProfilePage() {
           <p className="text-sm sm:text-base text-muted-foreground">
             {isNewProfile 
               ? 'Please complete your profile information to get started'
-              : profile?.role === 'owner' 
-                ? 'Manage your profile information as a boat owner/skipper'
-                : 'Manage your profile information as a crew member'}
+              : profile?.roles && profile.roles.length > 0
+                ? `Manage your profile information as ${profile.roles.join(' and ')}`
+                : 'Manage your profile information'}
           </p>
+          {profile && profile.profile_completion_percentage !== null && profile.profile_completion_percentage !== undefined && (
+            <div className="mt-2 space-y-3">
+              <div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                  <span>Profile Completion</span>
+                  <span>{profile.profile_completion_percentage}%</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${profile.profile_completion_percentage}%` }}
+                  />
+                </div>
+              </div>
+              {profile.profile_completion_percentage < 100 && (
+                <MissingFieldsIndicator 
+                  variant="compact" 
+                  showTitle={false}
+                  profileData={{
+                    username: profile.username,
+                    full_name: profile.full_name,
+                    phone: profile.phone,
+                    sailing_experience: profile.sailing_experience,
+                    risk_level: profile.risk_level,
+                    skills: profile.skills,
+                    sailing_preferences: profile.sailing_preferences,
+                    roles: profile.roles || [],
+                  }}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
@@ -636,6 +773,76 @@ export default function ProfilePage() {
 
         <div className="bg-card rounded-lg shadow p-4 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+            {/* Role Management */}
+            <div className="pb-6 border-b border-border">
+              <label className="block text-sm font-medium text-foreground mb-3">
+                I am a... <span className="text-muted-foreground">(select all that apply)</span>
+              </label>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.roles.includes('owner')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          roles: [...prev.roles.filter(r => r !== 'owner'), 'owner'] as ('owner' | 'crew')[]
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          roles: prev.roles.filter(r => r !== 'owner') as ('owner' | 'crew')[]
+                        }));
+                      }
+                    }}
+                    className="mr-3 w-5 h-5"
+                  />
+                  <span className="text-sm font-medium">Boat Owner/Skipper</span>
+                </label>
+                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={formData.roles.includes('crew')}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormData(prev => ({
+                          ...prev,
+                          roles: [...prev.roles.filter(r => r !== 'crew'), 'crew'] as ('owner' | 'crew')[]
+                        }));
+                      } else {
+                        setFormData(prev => ({
+                          ...prev,
+                          roles: prev.roles.filter(r => r !== 'crew') as ('owner' | 'crew')[]
+                        }));
+                      }
+                    }}
+                    className="mr-3 w-5 h-5"
+                  />
+                  <span className="text-sm font-medium">Crew Member</span>
+                </label>
+              </div>
+              {formData.roles.length === 0 && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Select at least one role to unlock features. You can be both an owner and crew member!
+                </p>
+              )}
+              {formData.roles.length > 0 && (
+                <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-md">
+                  <p className="text-sm text-foreground">
+                    <strong>Selected roles:</strong> {formData.roles.join(' and ')}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.roles.includes('owner') && '• Create and manage boats and journeys'}
+                    {formData.roles.includes('owner') && formData.roles.includes('crew') && ' • '}
+                    {formData.roles.includes('crew') && '• Register for crew positions'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Remove the old single Role display field */}
+
             {/* Profile Image Upload */}
             <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
               <label className="block text-sm font-medium text-foreground mb-2">
@@ -708,7 +915,9 @@ export default function ProfilePage() {
                   name="full_name"
                   value={formData.full_name}
                   onChange={handleChange}
-                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  className={`w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring ${
+                    isFieldMissing('full_name') ? 'border-primary/50 bg-primary/5' : 'border-border'
+                  }`}
                   placeholder="John Doe"
                 />
               </div>
@@ -716,6 +925,11 @@ export default function ProfilePage() {
               <div>
                 <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
                   Username
+                  {isFieldMissing('username') && (
+                    <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
+                      Please complete
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -723,7 +937,9 @@ export default function ProfilePage() {
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  className={`w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring ${
+                    isFieldMissing('username') ? 'border-primary/50 bg-primary/5' : 'border-border'
+                  }`}
                   placeholder="johndoe"
                 />
               </div>
@@ -742,29 +958,22 @@ export default function ProfilePage() {
                   placeholder="+1 234 567 8900"
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  Role
-                </label>
-                <div className="px-3 py-2 bg-muted border border-border rounded-md text-foreground">
-                  {(() => {
-                    const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
-                    const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
-                    const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
-                    return role === 'owner' ? 'Boat Owner/Skipper' : 'Crew Member';
-                  })()}
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Role cannot be changed</p>
-              </div>
             </div>
 
             {/* Risk Level - Only visible for crew members */}
-            {(profile?.role === 'crew' || (isNewProfile && (searchParams.get('role') === 'crew' || user?.user_metadata?.role === 'crew'))) && (
+            {(formData.roles.includes('crew') || (isNewProfile && (searchParams.get('role') === 'crew' || user?.user_metadata?.role === 'crew'))) && (
               <div className="grid grid-cols-1 gap-4">
-                <RiskLevelSelector
+                <div className={isFieldMissing('risk_level') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}>
+                  <RiskLevelSelector
                   value={formData.risk_level}
-                  onChange={(risk_level) => setFormData(prev => ({ ...prev, risk_level }))}
+                  onChange={(risk_level) => {
+                    const normalizedRiskLevel: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] = 
+                      risk_level === null ? [] :
+                      Array.isArray(risk_level) ? risk_level :
+                      [risk_level];
+                    setFormData(prev => ({ ...prev, risk_level: normalizedRiskLevel }));
+                  }}
+                  showRequiredBadge={isFieldMissing('risk_level')}
                   onInfoClick={(title, content) => {
                     setSidebarContent({ title, content });
                     setShowPreferencesSidebar(true);
@@ -780,25 +989,29 @@ export default function ProfilePage() {
                     setSidebarContent(null);
                   }}
                 />
+                </div>
               </div>
             )}
 
             {/* Sailing Preferences - Only visible for crew members */}
-            {(() => {
-              const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
-              const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
-              const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
-              return role === 'crew';
-            })() && (
+            {formData.roles.includes('crew') && (
             <div>
               <label htmlFor="sailing_preferences" className="block text-sm font-medium text-foreground mb-2">
                 Motivation and Sailing Preferences
+                {isFieldMissing('sailing_preferences') && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
+                    Please complete
+                  </span>
+                )}
               </label>
               <textarea
                 id="sailing_preferences"
                 name="sailing_preferences"
                 value={formData.sailing_preferences}
                 onChange={handleChange}
+                className={`w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y ${
+                  isFieldMissing('sailing_preferences') ? 'border-primary/50 bg-primary/5' : 'border-border'
+                }`}
                 onFocus={() => {
                   const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
                   
@@ -978,17 +1191,16 @@ export default function ProfilePage() {
                   });
                   setShowPreferencesSidebar(true);
                 }}
-                rows={4}
-                className="w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
-                placeholder="Describe your motivation and preferences, what draws you to the sailing and what do you like?"
               />
             </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SkillLevelSelector
+            <div className="grid grid-cols-1 gap-4">
+              <div className={isFieldMissing('sailing_experience') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}>
+                <SkillLevelSelector
                 value={formData.sailing_experience}
                 onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
+                showRequiredBadge={isFieldMissing('sailing_experience')}
                 onInfoClick={(title, content) => {
                   setSidebarContent({ title, content });
                   setShowPreferencesSidebar(true);
@@ -1000,14 +1212,16 @@ export default function ProfilePage() {
                   }, 100);
                 }}
               />
+              </div>
             </div>
 
             {/* Skills Selection */}
-            <div className="grid grid-cols-1 gap-4">
-              <label 
-                htmlFor="skills-section" 
-                className="block text-sm font-medium text-foreground mb-2"
-                onFocus={() => {
+            <div className={`grid grid-cols-1 gap-4 ${isFieldMissing('skills') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}`}>
+              <div className="flex items-center mb-2">
+                <label 
+                  htmlFor="skills-section" 
+                  className="block text-sm font-medium text-foreground"
+                  onFocus={() => {
                   // Determine user role
                   const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
                   const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
@@ -1040,7 +1254,13 @@ export default function ProfilePage() {
                 }}
               >
                 Skills
+                {isFieldMissing('skills') && (
+                  <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
+                    Please complete
+                  </span>
+                )}
               </label>
+              </div>
               
               {/* Display selected skills with editable descriptions */}
               {formData.skills.length > 0 && (
@@ -1089,37 +1309,32 @@ export default function ProfilePage() {
               {/* Add Skills button - always shown */}
               <button
                 type="button"
-                onClick={() => {
-                  // Determine user role
-                  const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
-                  const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
-                  const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
-                  
-                  // For owners, show all skills. For crew, show based on selected risk levels
-                  const isOwner = role === 'owner';
-                  const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
-                  const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
-                  
-                  setSidebarContent({
-                    title: 'Skills',
-                    content: (
-                      <>
-                        <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
-                        <ul className="space-y-3 list-none">
-                          {/* General skills - always shown */}
-                          {skillsConfig.general.map(skill => renderSkillItem(skill))}
-                          
-                          {/* Offshore sailing skills */}
-                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
-                          
-                          {/* Extreme sailing skills */}
-                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
-                        </ul>
-                      </>
-                    ),
-                  });
-                  setShowPreferencesSidebar(true);
-                }}
+                  onClick={() => {
+                    // Determine user role from form data
+                    const isOwner = formData.roles.includes('owner');
+                    const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
+                    const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
+                    
+                    setSidebarContent({
+                      title: 'Skills',
+                      content: (
+                        <>
+                          <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
+                          <ul className="space-y-3 list-none">
+                            {/* General skills - always shown */}
+                            {skillsConfig.general.map(skill => renderSkillItem(skill))}
+                            
+                            {/* Offshore sailing skills */}
+                            {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
+                            
+                            {/* Extreme sailing skills */}
+                            {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
+                          </ul>
+                        </>
+                      ),
+                    });
+                    setShowPreferencesSidebar(true);
+                  }}
                 className="w-full px-4 py-3 min-h-[44px] border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1141,7 +1356,7 @@ export default function ProfilePage() {
                 rows={3}
                 className="w-full px-3 py-3 min-h-[100px] text-base sm:text-sm border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
                 placeholder={
-                  profile?.role === 'owner'
+                  formData.roles.includes('owner')
                     ? 'List any relevant certifications, licenses, or qualifications'
                     : 'List your sailing certifications, licenses, or qualifications (e.g., RYA, ASA, etc.)'
                 }
@@ -1150,7 +1365,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 border-t">
               <Link
-                href={profile?.role === 'owner' ? '/owner/boats' : '/crew/dashboard'}
+                href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
                 className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
               >
                 Cancel
@@ -1165,7 +1380,7 @@ export default function ProfilePage() {
             </div>
           </form>
         </div>
-        </div>
+      </div>
       </main>
     </div>
   );

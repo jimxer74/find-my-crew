@@ -130,12 +130,25 @@ export function RegistrationRequirementsForm({
 
   const handleSubmit = () => {
     if (!validateAnswers()) {
+      console.error(`[RegistrationRequirementsForm] Validation failed, cannot submit`);
       return;
     }
 
     const answersArray = Object.values(answers).filter(
       (answer) => answer.answer_text || answer.answer_json
     );
+
+    console.log(`[RegistrationRequirementsForm] Submitting form with ${answersArray.length} answers:`, {
+      answersCount: answersArray.length,
+      requirementsCount: requirements.length,
+      notesLength: notes.length,
+    });
+
+    if (answersArray.length === 0 && requirements.length > 0) {
+      console.error(`[RegistrationRequirementsForm] ❌ No answers provided but requirements exist!`);
+      // This shouldn't happen due to validation, but add safety check
+      return;
+    }
 
     onComplete(answersArray, notes);
   };

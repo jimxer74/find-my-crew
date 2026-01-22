@@ -67,6 +67,7 @@ export function AIGenerateJourneyModal({
   const [selectedBoatSpeed, setSelectedBoatSpeed] = useState<number | null>(null);
   const [startLocation, setStartLocation] = useState({ name: '', lat: 0, lng: 0 });
   const [endLocation, setEndLocation] = useState({ name: '', lat: 0, lng: 0 });
+  const [intermediateWaypoints, setIntermediateWaypoints] = useState<Location[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [useSpeedPlanning, setUseSpeedPlanning] = useState(false);
@@ -85,6 +86,7 @@ export function AIGenerateJourneyModal({
       setSelectedBoatSpeed(null);
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
+      setIntermediateWaypoints([]);
       setStartDate('');
       setEndDate('');
       setUseSpeedPlanning(false);
@@ -143,6 +145,13 @@ export function AIGenerateJourneyModal({
       return;
     }
 
+    // Validate intermediate waypoints have valid coordinates
+    const invalidWaypoints = intermediateWaypoints.filter(wp => wp.lat === 0 || wp.lng === 0);
+    if (invalidWaypoints.length > 0) {
+      setError('Please select valid locations for all intermediate waypoints from the autocomplete suggestions');
+      return;
+    }
+
     // All validations passed, proceed with generation
     setGenerating(true);
     setError(null);
@@ -151,6 +160,25 @@ export function AIGenerateJourneyModal({
     // Use coordinates from autocomplete
     let startCoords = { lat: startLocation.lat, lng: startLocation.lng };
     let endCoords = { lat: endLocation.lat, lng: endLocation.lng };
+
+    // Build waypoints array: start + intermediate + end
+    const allWaypoints = [
+      {
+        name: startLocation.name,
+        lat: startCoords.lat,
+        lng: startCoords.lng,
+      },
+      ...intermediateWaypoints.map(wp => ({
+        name: wp.name,
+        lat: wp.lat,
+        lng: wp.lng,
+      })),
+      {
+        name: endLocation.name,
+        lat: endCoords.lat,
+        lng: endCoords.lng,
+      },
+    ];
 
     try {
       const response = await fetch('/api/ai/generate-journey', {
@@ -170,6 +198,11 @@ export function AIGenerateJourneyModal({
             lat: endCoords.lat,
             lng: endCoords.lng,
           },
+          intermediateWaypoints: intermediateWaypoints.length > 0 ? intermediateWaypoints.map(wp => ({
+            name: wp.name,
+            lat: wp.lat,
+            lng: wp.lng,
+          })) : null,
           startDate: startDate || null,
           endDate: endDate || null,
           useSpeedPlanning: useSpeedPlanning,
@@ -349,6 +382,7 @@ export function AIGenerateJourneyModal({
       setSelectedBoatSpeed(null);
       setStartLocation({ name: '', lat: 0, lng: 0 });
       setEndLocation({ name: '', lat: 0, lng: 0 });
+      setIntermediateWaypoints([]);
       setStartDate('');
       setEndDate('');
       setUseSpeedPlanning(false);
@@ -458,6 +492,74 @@ export function AIGenerateJourneyModal({
                     placeholder="e.g., Palma, Mallorca"
                     required
                   />
+                </div>
+
+                {/* Intermediate Waypoints */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      Intermediate Waypoints
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIntermediateWaypoints([...intermediateWaypoints, { name: '', lat: 0, lng: 0 }]);
+                        setError(null);
+                      }}
+                      className="text-sm text-primary hover:opacity-80 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Waypoint
+                    </button>
+                  </div>
+                  {intermediateWaypoints.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Optional: Add intermediate waypoints to create a multi-stop journey
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {intermediateWaypoints.map((waypoint, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="flex-1">
+                            <LocationAutocomplete
+                              id={`waypoint_${index}`}
+                              label={`Waypoint ${index + 1}`}
+                              value={waypoint.name}
+                              onChange={(location) => {
+                                const updated = [...intermediateWaypoints];
+                                updated[index] = location;
+                                setIntermediateWaypoints(updated);
+                                setError(null);
+                              }}
+                              onInputChange={(value) => {
+                                const updated = [...intermediateWaypoints];
+                                updated[index] = { name: value, lat: 0, lng: 0 };
+                                setIntermediateWaypoints(updated);
+                                setError(null);
+                              }}
+                              placeholder="e.g., Ibiza, Spain"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = intermediateWaypoints.filter((_, i) => i !== index);
+                              setIntermediateWaypoints(updated);
+                              setError(null);
+                            }}
+                            className="mt-6 text-destructive hover:opacity-80 p-2"
+                            title="Remove waypoint"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Start and End Date on same row */}

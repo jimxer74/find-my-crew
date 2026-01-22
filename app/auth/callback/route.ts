@@ -35,25 +35,25 @@ export async function GET(request: Request) {
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
+      // Profile is optional - don't create automatically
       const { data: profile } = await supabase
         .from('profiles')
-        .select('role')
+        .select('roles')
         .eq('id', user.id)
         .single();
 
-      // If no profile exists, create one (for OAuth users)
-      if (!profile) {
-        await supabase.from('profiles').insert({
-          id: user.id,
-          role: 'crew', // Default role
-          username: user.email?.split('@')[0] || 'user',
-          full_name: user.user_metadata?.full_name || user.user_metadata?.name || '',
-        });
+      // Determine redirect based on profile and roles
+      let redirectPath = '/'; // Default to home
+      
+      if (profile && profile.roles && profile.roles.length > 0) {
+        // User has roles - redirect based on primary role
+        if (profile.roles.includes('owner')) {
+          redirectPath = '/owner/boats';
+        } else if (profile.roles.includes('crew')) {
+          redirectPath = '/crew/dashboard';
+        }
       }
-
-      const redirectPath = profile?.role === 'owner' 
-        ? '/owner/boats' 
-        : '/crew/dashboard';
+      // If no profile or no roles, redirect to home (can browse limited)
       
       return NextResponse.redirect(new URL(redirectPath, request.url));
     }

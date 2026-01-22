@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
 /**
  * GET /api/registrations/owner/all
@@ -31,11 +32,11 @@ export async function GET(request: NextRequest) {
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can view all registrations' },
         { status: 403 }
@@ -172,6 +173,8 @@ export async function GET(request: NextRequest) {
           start_date,
           end_date,
           journey_id,
+          skills,
+          min_experience_level,
           journeys (
             id,
             name,
@@ -233,7 +236,7 @@ export async function GET(request: NextRequest) {
     if (userIds.length > 0) {
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, username, sailing_experience, skills, phone')
+        .select('id, full_name, username, sailing_experience, skills, phone, profile_image_url')
         .in('id', userIds);
 
       if (!profilesError && profiles) {
@@ -244,10 +247,48 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Merge profiles into registrations
+    // Fetch registration answers for all registrations
+    const registrationIds = (registrations || []).map((r: any) => r.id);
+    let answersMap: Record<string, any[]> = {};
+    
+    if (registrationIds.length > 0) {
+      const { data: allAnswers, error: answersError } = await supabase
+        .from('registration_answers')
+        .select(`
+          id,
+          registration_id,
+          requirement_id,
+          answer_text,
+          answer_json,
+          journey_requirements!inner (
+            id,
+            question_text,
+            question_type,
+            options,
+            is_required,
+            order
+          )
+        `)
+        .in('registration_id', registrationIds)
+        .order('journey_requirements.order', { ascending: true });
+
+      if (!answersError && allAnswers) {
+        // Group answers by registration_id
+        answersMap = allAnswers.reduce((acc: Record<string, any[]>, answer: any) => {
+          if (!acc[answer.registration_id]) {
+            acc[answer.registration_id] = [];
+          }
+          acc[answer.registration_id].push(answer);
+          return acc;
+        }, {});
+      }
+    }
+
+    // Merge profiles and answers into registrations
     const registrationsWithProfiles = (registrations || []).map((reg: any) => ({
       ...reg,
       profiles: profilesMap[reg.user_id] || null,
+      answers: answersMap[reg.id] || [],
     }));
 
     // Sort in application if needed

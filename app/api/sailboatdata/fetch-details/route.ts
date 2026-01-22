@@ -4,7 +4,7 @@ import { fetchSailboatDetails } from '@/app/lib/sailboatdata_queries';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { make_model } = body;
+    const { make_model, slug } = body;
 
     if (!make_model || typeof make_model !== 'string' || make_model.trim().length < 2) {
       return NextResponse.json(
@@ -14,13 +14,15 @@ export async function POST(request: NextRequest) {
     }
 
     const makeModelTrimmed = make_model.trim();
+    const slugTrimmed = slug && typeof slug === 'string' ? slug.trim() : undefined;
 
     console.log('=== FETCH SAILBOAT DETAILS API ===');
     console.log('Make/Model:', makeModelTrimmed);
+    console.log('Slug:', slugTrimmed || '(will be generated from make_model)');
     console.log('==================================');
 
-    // Fetch details from sailboatdata.com
-    const details = await fetchSailboatDetails(makeModelTrimmed);
+    // Fetch details from sailboatdata.com (use slug if provided for more reliable URL)
+    const details = await fetchSailboatDetails(makeModelTrimmed, slugTrimmed);
 
     if (!details) {
       return NextResponse.json(

@@ -54,6 +54,8 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
   const [error, setError] = useState<string | null>(null);
   const [isLoadingJourney, setIsLoadingJourney] = useState(false);
   const [isLoadingBoats, setIsLoadingBoats] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -349,6 +351,48 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
     }));
   };
 
+  const handleDeleteJourney = async () => {
+    if (!journeyId) return;
+
+    setIsDeleting(true);
+    setError(null);
+    const supabase = getSupabaseBrowserClient();
+
+    try {
+      // First, delete all legs associated with this journey (and their waypoints via cascade)
+      const { error: legsError } = await supabase
+        .from('legs')
+        .delete()
+        .eq('journey_id', journeyId);
+
+      if (legsError) {
+        console.error('Error deleting legs:', legsError);
+        throw new Error('Failed to delete journey legs: ' + legsError.message);
+      }
+
+      // Then delete the journey itself
+      const { error: journeyError } = await supabase
+        .from('journeys')
+        .delete()
+        .eq('id', journeyId);
+
+      if (journeyError) {
+        console.error('Error deleting journey:', journeyError);
+        throw new Error('Failed to delete journey: ' + journeyError.message);
+      }
+
+      // Success - close modal and refresh
+      onSuccess();
+      onClose();
+    } catch (err: any) {
+      console.error('Error deleting journey:', err);
+      setError(err.message || 'Failed to delete journey');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -438,17 +482,19 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                   </div>
 
                   {/* Risk Level Selection */}
-                  <RiskLevelSelector
-                    value={formData.risk_level}
-                    onChange={(risk_level) => {
-                      // Ensure single value (not array) since singleSelect is true
-                      const singleValue = Array.isArray(risk_level) 
-                        ? (risk_level.length > 0 ? risk_level[0] : null)
-                        : risk_level;
-                      setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
-                    }}
-                    singleSelect={true}
-                  />
+                  <div className="md:col-span-2">
+                    <RiskLevelSelector
+                      value={formData.risk_level}
+                      onChange={(risk_level) => {
+                        // Ensure single value (not array) since singleSelect is true
+                        const singleValue = Array.isArray(risk_level) 
+                          ? (risk_level.length > 0 ? risk_level[0] : null)
+                          : risk_level;
+                        setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
+                      }}
+                      singleSelect={true}
+                    />
+                  </div>
 
                   {/* Minimum Required Experience Level */}
                   <div className="md:col-span-2">
@@ -604,27 +650,73 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                 )}
 
                 {/* Form Actions */}
-                <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={loading || boats.length === 0}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-                  >
-                    {loading ? 'Saving...' : journeyId ? 'Update Journey' : 'Create Journey'}
-                  </button>
+                <div className="flex justify-between items-center pt-4 border-t border-border mt-6">
+                  {journeyId && (
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(true)}
+                      disabled={loading || isDeleting}
+                      className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    >
+                      Delete Journey
+                    </button>
+                  )}
+                  <div className="flex gap-4 ml-auto">
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading || boats.length === 0}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    >
+                      {loading ? 'Saving...' : journeyId ? 'Update Journey' : 'Create Journey'}
+                    </button>
+                  </div>
                 </div>
               </form>
             )}
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-card rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-card-foreground mb-4">
+                Delete Journey?
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Are you sure you want to delete this journey? This will permanently delete the journey and all its legs. This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                  }}
+                  disabled={isDeleting}
+                  className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteJourney}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                >
+                  {isDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

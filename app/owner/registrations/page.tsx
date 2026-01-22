@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Header } from '@/app/components/Header';
 import { formatDate } from '@/app/lib/dateFormat';
-import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -26,6 +25,8 @@ type Registration = {
     start_date: string | null;
     end_date: string | null;
     journey_id: string;
+    skills: string[] | null;
+    min_experience_level: number | null;
     journeys: {
       id: string;
       name: string;
@@ -44,7 +45,22 @@ type Registration = {
     sailing_experience: number | null;
     skills: string[];
     phone: string | null;
+    profile_image_url: string | null;
   };
+  answers?: Array<{
+    id: string;
+    requirement_id: string;
+    answer_text: string | null;
+    answer_json: any;
+    journey_requirements: {
+      id: string;
+      question_text: string;
+      question_type: string;
+      options: string[] | null;
+      is_required: boolean;
+      order: number;
+    };
+  }>;
 };
 
 type Journey = {
@@ -435,170 +451,139 @@ export default function AllRegistrationsPage() {
               {registrations.map((registration) => {
                 const profile = registration.profiles;
                 const leg = registration.legs;
-                const journey = leg.journeys;
+                const journey = leg?.journeys;
+
+                // Skip rendering if essential data is missing
+                if (!profile || !leg || !journey) {
+                  return null;
+                }
 
                 return (
-                  <div key={registration.id} className="bg-card rounded-lg shadow p-5 flex flex-col h-full">
-                    {/* Header */}
-                    <div className="mb-3">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="text-base font-semibold text-foreground line-clamp-2 flex-1">
+                  <div key={registration.id} className="bg-card rounded-lg shadow overflow-hidden flex h-full">
+                    {/* Crew Image - Left Side - Full Height */}
+                    <div className="relative w-24 sm:w-32 flex-shrink-0 h-full">
+                      {profile.profile_image_url ? (
+                        <Image
+                          src={profile.profile_image_url}
+                          alt={profile.full_name || profile.username || 'Crew member'}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 96px, 128px"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-accent flex items-center justify-center">
+                          <svg
+                            className="w-12 h-12 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content - Right Side */}
+                    <div className="flex-1 p-4 flex flex-col min-w-0">
+                      {/* Name and Tags */}
+                      <div className="mb-3">
+                        <h3 className="text-base font-semibold text-foreground mb-2 line-clamp-1">
                           {profile.full_name || profile.username || 'Unknown User'}
                         </h3>
-                      </div>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        {getStatusBadge(registration.status)}
-                        {registration.auto_approved && (
-                          <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
-                            Auto-approved by AI
-                          </span>
-                        )}
-                        {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                            registration.ai_match_score >= 80 
-                              ? 'bg-green-100 text-green-800 border border-green-300'
-                              : registration.ai_match_score >= 50
-                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
-                              : 'bg-red-100 text-red-800 border border-red-300'
-                          }`}>
-                            AI Score: {registration.ai_match_score}%
-                          </span>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">
-                          Journey: <Link href={`/owner/journeys/${journey.id}/legs`} className="font-medium text-primary hover:underline line-clamp-1">{journey.name}</Link>
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          Leg: <span className="font-medium text-foreground">{leg.name}</span>
-                        </p>
-                        {leg.start_date && (
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(leg.start_date)}
-                            {leg.end_date && ` - ${formatDate(leg.end_date)}`}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Profile Info */}
-                    <div className="mb-4 pb-4 border-b border-border">
-                      <div className="mb-3">
-                        <p className="text-xs text-muted-foreground mb-1">Experience Level</p>
-                        {profile.sailing_experience ? (
-                          <div className="flex items-center gap-2">
-                            <div className="relative w-6 h-6">
-                              <Image
-                                src={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).icon}
-                                alt={getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {getStatusBadge(registration.status)}
+                          {registration.auto_approved && (
+                            <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
+                              Auto-approved
                             </span>
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">Not specified</p>
-                        )}
+                          )}
+                          {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              registration.ai_match_score >= 80 
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : registration.ai_match_score >= 50
+                                ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                                : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
+                              AI: {registration.ai_match_score}%
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Skills</p>
-                        {profile.skills && profile.skills.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {profile.skills.slice(0, 5).map((skillJson: string, idx: number) => {
-                              let skillName = skillJson;
-                              try {
-                                const parsed = JSON.parse(skillJson);
-                                skillName = parsed.skill_name || skillJson;
-                              } catch {
-                                // Not JSON, use as-is
-                              }
-                              return (
-                                <span
-                                  key={idx}
-                                  className="px-2 py-0.5 bg-accent text-accent-foreground rounded-full text-xs"
-                                >
-                                  {skillName}
-                                </span>
-                              );
-                            })}
-                            {profile.skills.length > 5 && (
-                              <span className="text-xs text-muted-foreground">+{profile.skills.length - 5} more</span>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No skills listed</p>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Notes */}
-                    {registration.notes && (
-                      <div className="mb-4">
-                        <p className="text-xs text-muted-foreground mb-1">Crew Member Notes:</p>
-                        <p className="text-sm text-foreground bg-accent/50 p-2 rounded line-clamp-3">{registration.notes}</p>
-                      </div>
-                    )}
-
-                    {/* AI Assessment Info */}
-                    {registration.ai_match_reasoning && (
-                      <div className="mb-4">
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium mb-2">
-                            AI Assessment Details
-                          </summary>
-                          <div className="mt-2 p-2 bg-accent/50 rounded text-muted-foreground text-xs">
-                            {registration.ai_match_reasoning}
-                          </div>
-                        </details>
-                      </div>
-                    )}
-
-                    {/* Actions - Push to bottom */}
-                    <div className="mt-auto pt-3 border-t border-border">
-                      {registration.status === 'Pending approval' && (
-                        <div className="space-y-3">
+                      {/* Journey, Leg, and Dates */}
+                      <div className="space-y-2 flex-1">
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Journey</p>
+                          <Link 
+                            href={`/owner/journeys/${journey.id}/legs`} 
+                            className="text-sm font-medium text-primary hover:underline line-clamp-1 block"
+                          >
+                            {journey.name}
+                          </Link>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-0.5">Leg</p>
+                          <p className="text-sm font-medium text-foreground line-clamp-1">
+                            {leg.name}
+                          </p>
+                        </div>
+                        {leg.start_date && (
                           <div>
-                            <label className="block text-xs text-muted-foreground mb-1">
-                              Add Notes (Optional)
-                            </label>
+                            <p className="text-xs text-muted-foreground mb-0.5">Dates</p>
+                            <p className="text-sm text-foreground">
+                              {formatDate(leg.start_date)}
+                              {leg.end_date && ` - ${formatDate(leg.end_date)}`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions - Push to bottom */}
+                      <div className="mt-auto pt-3 border-t border-border">
+                        {registration.status === 'Pending approval' && (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleUpdateStatus(registration.id, 'Approved')}
+                                disabled={updatingRegistrationId === registration.id}
+                                className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                              >
+                                {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
+                                disabled={updatingRegistrationId === registration.id}
+                                className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                              >
+                                {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
+                              </button>
+                            </div>
                             <textarea
                               value={updateNotes[registration.id] || ''}
                               onChange={(e) => setUpdateNotes(prev => ({ ...prev, [registration.id]: e.target.value }))}
                               placeholder="Add notes..."
-                              className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                              className="w-full px-2 py-1 border border-border bg-input-background rounded-md text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                               rows={2}
                             />
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUpdateStatus(registration.id, 'Approved')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="flex-1 bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-                            >
-                              {updatingRegistrationId === registration.id ? 'Updating...' : 'Approve'}
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(registration.id, 'Not approved')}
-                              disabled={updatingRegistrationId === registration.id}
-                              className="flex-1 bg-red-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
-                            >
-                              {updatingRegistrationId === registration.id ? 'Updating...' : 'Deny'}
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        )}
 
-                      {registration.status !== 'Pending approval' && (
-                        <div className="text-xs text-muted-foreground">
-                          <div>Registered: {formatDate(registration.created_at)}</div>
-                          {registration.updated_at !== registration.created_at && (
-                            <div>Updated: {formatDate(registration.updated_at)}</div>
-                          )}
-                        </div>
-                      )}
+                        {registration.status !== 'Pending approval' && (
+                          <div className="text-xs text-muted-foreground">
+                            <div>Registered: {formatDate(registration.created_at)}</div>
+                            {registration.updated_at !== registration.created_at && (
+                              <div>Updated: {formatDate(registration.updated_at)}</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );

@@ -28,17 +28,25 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Get user profile to determine role
+        // Get user profile to determine roles (profile is optional)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('role')
+          .select('roles')
           .eq('id', data.user.id)
           .single();
 
-        // Redirect based on role
-        const redirectPath = profile?.role === 'owner' 
-          ? '/owner/boats' 
-          : '/crew/dashboard';
+        // Determine redirect based on profile and roles
+        let redirectPath = '/'; // Default to home
+        
+        if (profile && profile.roles && profile.roles.length > 0) {
+          // User has roles - redirect based on primary role
+          if (profile.roles.includes('owner')) {
+            redirectPath = '/owner/boats';
+          } else if (profile.roles.includes('crew')) {
+            redirectPath = '/crew/dashboard';
+          }
+        }
+        // If no profile or no roles, redirect to home (can browse limited)
         
         router.push(redirectPath);
         router.refresh();

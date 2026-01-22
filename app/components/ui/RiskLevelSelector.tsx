@@ -14,6 +14,7 @@ type RiskLevelSelectorProps = {
   singleSelect?: boolean; // If true, only allow single selection
   profileValue?: RiskLevel | RiskLevel[] | null;
   showProfileIndicator?: boolean;
+  showRequiredBadge?: boolean;
 };
 
 // Helper function to render a section with items
@@ -72,11 +73,13 @@ export function RiskLevelSelector({
   onClose, 
   singleSelect = false,
   profileValue = null,
-  showProfileIndicator = false
+  showProfileIndicator = false,
+  showRequiredBadge = false
 }: RiskLevelSelectorProps) {
   // Normalize value to array for internal use
   const valueArray = Array.isArray(value) ? value : value ? [value] : [];
   const profileArray = Array.isArray(profileValue) ? profileValue : profileValue ? [profileValue] : [];
+  const isEmpty = valueArray.length === 0;
   
   const isSelected = (level: RiskLevel) => {
     if (singleSelect) {
@@ -167,19 +170,24 @@ export function RiskLevelSelector({
   };
 
   return (
-    <div className="md:col-span-2">
-      <label className="block text-sm font-medium text-foreground mb-3">
-        {singleSelect ? 'Risk Level' : 'Sailing preferences and Risk tolerance'}
+    <div className="w-full">
+      <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
+        {singleSelect ? 'Risk Level' : 'Risk Level Preferences'}
+        {showRequiredBadge && isEmpty && (
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
+            Please complete
+          </span>
+        )}
       </label>
       <div className="grid grid-cols-3 gap-2 md:gap-4">
         {/* Coastal sailing */}
         <button
           type="button"
           onClick={() => handleClick('Coastal sailing')}
-          className={`relative p-2 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
+          className={`relative p-2 md:p-4 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Coastal sailing')
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+              : 'border-border hover:border-primary/50 hover:bg-accent/50'
           }`}
         >
           {isProfileValue('Coastal sailing') && (
@@ -190,14 +198,20 @@ export function RiskLevelSelector({
             </div>
           )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Coastal sailing</h3>
+            <h3 className={`font-semibold text-center text-xs md:text-sm ${
+              isSelected('Coastal sailing') ? 'text-primary font-bold' : 'text-card-foreground'
+            }`}>
+              Coastal sailing
+            </h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
               src="/coastal_sailing2.png"
               alt="Coastal sailing"
               fill
-              className="object-contain"
+              className={`object-contain transition-opacity ${
+                isSelected('Coastal sailing') ? 'opacity-100' : 'opacity-70'
+              }`}
             />
           </div>
         </button>
@@ -206,10 +220,10 @@ export function RiskLevelSelector({
         <button
           type="button"
           onClick={() => handleClick('Offshore sailing')}
-          className={`relative p-2 md:p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          className={`relative p-2 md:p-4 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Offshore sailing')
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+              : 'border-border hover:border-primary/50 hover:bg-accent/50'
           }`}
         >
           {isProfileValue('Offshore sailing') && (
@@ -220,14 +234,20 @@ export function RiskLevelSelector({
             </div>
           )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Offshore sailing</h3>
+            <h3 className={`font-semibold text-center text-xs md:text-sm ${
+              isSelected('Offshore sailing') ? 'text-primary font-bold' : 'text-card-foreground'
+            }`}>
+              Offshore sailing
+            </h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
               src="/offshore_sailing2.png"
               alt="Offshore sailing"
               fill
-              className="object-contain"
+              className={`object-contain transition-opacity ${
+                isSelected('Offshore sailing') ? 'opacity-100' : 'opacity-70'
+              }`}
             />
           </div>
         </button>
@@ -236,10 +256,10 @@ export function RiskLevelSelector({
         <button
           type="button"
           onClick={() => handleClick('Extreme sailing')}
-          className={`relative p-2 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
+          className={`relative p-2 md:p-4 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
             isSelected('Extreme sailing')
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+              : 'border-border hover:border-primary/50 hover:bg-accent/50'
           }`}
         >
           {isProfileValue('Extreme sailing') && (
@@ -250,14 +270,20 @@ export function RiskLevelSelector({
             </div>
           )}
           <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
-            <h3 className="font-semibold text-card-foreground text-xs md:text-sm text-center">Extreme sailing</h3>
+            <h3 className={`font-semibold text-center text-xs md:text-sm ${
+              isSelected('Extreme sailing') ? 'text-primary font-bold' : 'text-card-foreground'
+            }`}>
+              Extreme sailing
+            </h3>
           </div>
           <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
             <Image
               src="/extreme_sailing2.png"
               alt="Extreme sailing"
               fill
-              className="object-contain"
+              className={`object-contain transition-opacity ${
+                isSelected('Extreme sailing') ? 'opacity-100' : 'opacity-70'
+              }`}
             />
           </div>
         </button>

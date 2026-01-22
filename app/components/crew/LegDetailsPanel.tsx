@@ -9,6 +9,8 @@ import { RegistrationRequirementsForm } from '@/app/components/crew/Registration
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
+import { checkProfile } from '@/app/lib/profile/checkProfile';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -191,6 +193,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
+  const [profileStatus, setProfileStatus] = useState<{ exists: boolean; hasRoles: boolean; completionPercentage: number } | null>(null);
 
   // Process risk level from leg and journey data (now provided by API)
   useEffect(() => {
@@ -206,7 +209,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     console.log('[LegDetailsPanel] Normalized leg risk level:', normalizedLegRiskLevel);
     
     // Process journey's risk level array (take first one if multiple)
-    let normalizedJourneyRiskLevel: string | null = null;
+    let normalizedJourneyRiskLevel: RiskLevel | null = null;
     if (leg.journey_risk_level && leg.journey_risk_level.length > 0) {
       // Journey has risk level array - normalize the first one
       normalizedJourneyRiskLevel = normalizeRiskLevel(leg.journey_risk_level[0]);
@@ -214,7 +217,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
     
     // Set journey risk level state for display
-    setJourneyRiskLevel(normalizedJourneyRiskLevel);
+    setJourneyRiskLevel(normalizedJourneyRiskLevel as RiskLevel | null);
   }, [leg.leg_risk_level, leg.journey_risk_level, leg.journey_id, leg.leg_id, isOpen]);
 
   // Computed risk level: use leg's risk level if available (normalized), otherwise use journey's first risk level
@@ -237,6 +240,44 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [registrationNotes, setRegistrationNotes] = useState('');
   const [requirementsAnswers, setRequirementsAnswers] = useState<any[]>([]);
   const [hasRequirements, setHasRequirements] = useState(false);
+  const [isCheckingRequirements, setIsCheckingRequirements] = useState(false);
+
+  // Safety effect: If requirements exist but requirements form is not shown, show it
+  useEffect(() => {
+    if (hasRequirements && !showRequirementsForm && showRegistrationModal) {
+      console.warn(`[LegDetailsPanel] ⚠️ Requirements exist but regular modal is shown - auto-switching to requirements form`);
+      setShowRegistrationModal(false);
+      setShowRequirementsForm(true);
+    }
+  }, [hasRequirements, showRequirementsForm, showRegistrationModal]);
+
+  // Prevent regular modal from showing if requirements exist
+  useEffect(() => {
+    if (hasRequirements && showRegistrationModal && !showRequirementsForm) {
+      console.warn(`[LegDetailsPanel] ⚠️ Blocking regular modal - requirements exist, switching to requirements form`);
+      setShowRegistrationModal(false);
+      setShowRequirementsForm(true);
+    }
+  }, [hasRequirements, showRegistrationModal, showRequirementsForm]);
+
+  // Check profile status
+  useEffect(() => {
+    if (!user) {
+      setProfileStatus({ exists: false, hasRoles: false, completionPercentage: 0 });
+      return;
+    }
+
+    const loadProfileStatus = async () => {
+      const status = await checkProfile(user.id);
+      setProfileStatus({
+        exists: status.exists,
+        hasRoles: status.hasRoles,
+        completionPercentage: status.completionPercentage,
+      });
+    };
+
+    loadProfileStatus();
+  }, [user]);
 
   // Load registration status when leg changes
   useEffect(() => {
@@ -268,27 +309,122 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   // Check if journey has requirements when register button is clicked
   const checkRequirements = async () => {
     try {
-      const response = await fetch(`/api/journeys/${leg.journey_id}/requirements`);
-      if (response.ok) {
-        const data = await response.json();
-        const reqs = data.requirements || [];
-        setHasRequirements(reqs.length > 0);
-        if (reqs.length > 0) {
-          // Has requirements - show requirements form directly (no modal)
-          setShowRequirementsForm(true);
-          setShowRegistrationModal(false);
-        } else {
-          // No requirements - show regular registration modal
-          setShowRequirementsForm(false);
-          setShowRegistrationModal(true);
+      // Check requirements first (required)
+      let reqs: any[] = [];
+      try {
+        const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+        if (requirementsResponse.ok) {
+          const data = await requirementsResponse.json();
+          reqs = data.requirements || [];
         }
+      } catch (reqError: any) {
+        console.error('Error fetching requirements:', reqError);
+        // Continue with empty requirements if fetch fails
+        reqs = [];
+      }
+      
+      // Check auto-approval settings (optional - don't block if it fails)
+      let autoApprovalEnabled = false;
+      try {
+        console.log(`[LegDetailsPanel] Checking auto-approval for journey: ${leg.journey_id}`);
+        const autoApprovalResponse = await fetch(`/api/journeys/${leg.journey_id}/auto-approval`, {
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+        });
+        if (autoApprovalResponse.ok) {
+          const autoApprovalData = await autoApprovalResponse.json();
+          autoApprovalEnabled = autoApprovalData.auto_approval_enabled === true;
+          console.log(`[LegDetailsPanel] Auto-approval check result:`, {
+            journeyId: leg.journey_id,
+            autoApprovalEnabled,
+            threshold: autoApprovalData.auto_approval_threshold,
+          });
+        } else {
+          console.warn(`[LegDetailsPanel] Auto-approval check failed with status: ${autoApprovalResponse.status}`);
+        }
+      } catch (autoApprovalError: any) {
+        // Log but don't block - auto-approval check is optional
+        console.warn(`[LegDetailsPanel] Could not check auto-approval status (non-critical):`, {
+          error: autoApprovalError.message,
+          errorName: autoApprovalError.name,
+          journeyId: leg.journey_id,
+        });
+        autoApprovalEnabled = false;
+      }
+      
+      const hasReqs = reqs.length > 0;
+      
+      console.log(`[LegDetailsPanel] Requirements check result:`, {
+        journeyId: leg.journey_id,
+        hasReqs,
+        requirementsCount: reqs.length,
+        autoApprovalEnabled,
+        willShowRequirementsForm: hasReqs,
+      });
+      
+      // Update state synchronously
+      setHasRequirements(hasReqs);
+      
+      // If requirements exist (regardless of auto-approval), user MUST complete requirements form
+      if (hasReqs) {
+        console.log(`[LegDetailsPanel] ✅ Showing requirements form (requirements exist)`, {
+          autoApprovalEnabled,
+          requirementsCount: reqs.length,
+        });
+        // Set state synchronously - ensure requirements form is shown
+        setShowRegistrationModal(false);
+        setShowRequirementsForm(false); // Reset first
+        setHasRequirements(true);
+        // Use setTimeout(0) to ensure state updates are batched and applied
+        setTimeout(() => {
+          setShowRequirementsForm(true);
+        }, 0);
+      } else {
+        // No requirements - show regular registration modal
+        console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (no requirements)`);
+        setShowRequirementsForm(false);
+        setHasRequirements(false);
+        // Only show regular modal if no requirements exist
+        setTimeout(() => {
+          setShowRegistrationModal(true);
+        }, 0);
       }
     } catch (error) {
       console.error('Error checking requirements:', error);
+      // On error, try to verify requirements one more time before defaulting
+      // This prevents showing regular modal when requirements actually exist
+      try {
+        const fallbackResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json();
+          const fallbackReqs = fallbackData.requirements || [];
+          if (fallbackReqs.length > 0) {
+            console.warn(`[LegDetailsPanel] ⚠️ Fallback check found requirements (${fallbackReqs.length}), showing requirements form`);
+            setShowRegistrationModal(false);
+            setHasRequirements(true);
+            requestAnimationFrame(() => {
+              setShowRequirementsForm(true);
+            });
+            setIsCheckingRequirements(false);
+            return;
+          }
+        }
+      } catch (fallbackError) {
+        console.warn(`[LegDetailsPanel] Fallback requirements check also failed:`, fallbackError);
+      }
+      
+      // Only show regular modal if we're sure there are no requirements
+      console.warn(`[LegDetailsPanel] ⚠️ Error checking requirements, defaulting to no requirements:`, error);
       setHasRequirements(false);
       setShowRequirementsForm(false);
-      // On error, show regular registration modal
-      setShowRegistrationModal(true);
+      requestAnimationFrame(() => {
+        setShowRegistrationModal(true);
+      });
+    } finally {
+      setIsCheckingRequirements(false);
     }
   };
 
@@ -303,21 +439,116 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Handle requirements form completion - now includes notes and submits directly
   const handleRequirementsComplete = async (answers: any[], notes: string) => {
+    console.log(`[LegDetailsPanel] Requirements form completed:`, {
+      answersCount: answers.length,
+      answers: answers,
+      notesLength: notes.length,
+    });
+
+    if (!answers || answers.length === 0) {
+      console.error(`[LegDetailsPanel] ❌ Requirements form completed but no answers provided!`);
+      setRegistrationError('Please answer all required questions');
+      return;
+    }
+
+    // Update state for UI consistency
     setRequirementsAnswers(answers);
     setRegistrationNotes(notes);
-    // Submit registration directly from requirements form
-    await handleSubmitRegistration();
+    // Submit registration directly from requirements form, passing answers directly
+    // to avoid React state update race condition
+    await handleSubmitRegistration(answers, notes);
   };
 
   // Submit registration
-  const handleSubmitRegistration = async () => {
+  // Optional parameters allow passing answers/notes directly to avoid state race conditions
+  const handleSubmitRegistration = async (providedAnswers?: any[], providedNotes?: string) => {
     if (!user) {
       setRegistrationError('You must be logged in to register');
       return;
     }
 
+    // Use provided answers/notes if available, otherwise fall back to state
+    const answersToUse = providedAnswers !== undefined ? providedAnswers : requirementsAnswers;
+    const notesToUse = providedNotes !== undefined ? providedNotes : registrationNotes;
+
+    // IMMEDIATE check: If state says requirements exist but no answers, block immediately
+    // But skip this check if answers were provided directly (from requirements form)
+    if (providedAnswers === undefined && hasRequirements && requirementsAnswers.length === 0) {
+      console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist but no answers provided (immediate state check)`);
+      setRegistrationError('Please complete all required questions before submitting');
+      setShowRegistrationModal(false);
+      setShowRequirementsForm(true);
+      return;
+    }
+
+    // Check if requirements exist but no answers provided (using direct or state values)
+    if (hasRequirements && answersToUse.length === 0) {
+      console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist but no answers provided`);
+      setRegistrationError('Please complete all required questions before submitting');
+      setShowRegistrationModal(false);
+      setShowRequirementsForm(true);
+      return;
+    }
+
+    // Safety check: Verify requirements exist if we don't have answers
+    // This prevents race conditions where state hasn't updated yet
+    // Skip this check if answers were provided directly
+    if (providedAnswers === undefined && answersToUse.length === 0) {
+      console.log(`[LegDetailsPanel] No answers provided, checking if requirements exist...`);
+      try {
+        const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (requirementsResponse.ok) {
+          const data = await requirementsResponse.json();
+          const reqs = data.requirements || [];
+          if (reqs.length > 0) {
+            console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${reqs.length}) but no answers provided`);
+            setRegistrationError('Please complete all required questions before submitting');
+            // Switch to requirements form
+            setShowRegistrationModal(false);
+            setShowRequirementsForm(true);
+            setHasRequirements(true);
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn(`[LegDetailsPanel] Could not verify requirements, proceeding with submission:`, error);
+        // Continue with submission if check fails (don't block user)
+      }
+    }
+
     setIsRegistering(true);
     setRegistrationError(null);
+
+    const requestBody: {
+      leg_id: string;
+      notes: string | null;
+      answers?: any[];
+    } = {
+      leg_id: leg.leg_id,
+      notes: notesToUse?.trim() || null,
+    };
+
+    // Only include answers if we have them (don't send empty array)
+    // Use provided answers if available, otherwise use state
+    if (answersToUse.length > 0) {
+      requestBody.answers = answersToUse;
+    }
+
+    console.log(`[LegDetailsPanel] Submitting registration:`, {
+      leg_id: leg.leg_id,
+      journey_id: leg.journey_id,
+      hasNotes: !!requestBody.notes,
+      notesLength: requestBody.notes?.length || 0,
+      answersLength: requestBody.answers?.length || 0,
+      answers: requestBody.answers,
+      answersToUseLength: answersToUse.length,
+      providedAnswers: providedAnswers !== undefined,
+      requirementsAnswersLength: requirementsAnswers.length,
+      hasRequirements,
+      sendingAnswers: !!requestBody.answers,
+    });
 
     try {
       const response = await fetch('/api/registrations', {
@@ -325,17 +556,22 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          leg_id: leg.leg_id,
-          notes: registrationNotes.trim() || null,
-          answers: requirementsAnswers.length > 0 ? requirementsAnswers : undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to register');
+        console.error(`[LegDetailsPanel] Registration failed:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          details: data.details,
+          fullResponse: data,
+        });
+        const errorMessage = data.error || 'Failed to register';
+        const detailsMessage = data.details ? ` (${JSON.stringify(data.details)})` : '';
+        throw new Error(errorMessage + detailsMessage);
       }
 
       // Update local state
@@ -549,8 +785,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   registrationError={registrationError}
                 />
               </div>
-            ) : showRegistrationModal ? (
-              /* Registration Form - In pane */
+            ) : showRegistrationModal && !hasRequirements ? (
+              /* Registration Form - In pane - Only show if NO requirements exist */
               <div className="p-4 sm:p-6 space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold text-foreground mb-2">Register for Leg</h3>
@@ -598,11 +834,46 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </button>
                   <button
                     type="button"
-                    onClick={handleSubmitRegistration}
-                    disabled={isRegistering}
+                    onClick={async () => {
+                      // Double-check requirements before allowing submission
+                      // This prevents race conditions
+                      if (hasRequirements) {
+                        console.error(`[LegDetailsPanel] ❌ Cannot submit from regular modal: Requirements exist (state check)`);
+                        setRegistrationError('Please complete the required questions first');
+                        setShowRegistrationModal(false);
+                        setShowRequirementsForm(true);
+                        return;
+                      }
+                      
+                      // Additional safety: Verify no requirements exist before submitting
+                      try {
+                        const verifyResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+                          signal: AbortSignal.timeout(3000),
+                        });
+                        if (verifyResponse.ok) {
+                          const verifyData = await verifyResponse.json();
+                          const verifyReqs = verifyData.requirements || [];
+                          if (verifyReqs.length > 0) {
+                            console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${verifyReqs.length}) - verification check`);
+                            setRegistrationError('Please complete the required questions first');
+                            setShowRegistrationModal(false);
+                            setShowRequirementsForm(true);
+                            setHasRequirements(true);
+                            return;
+                          }
+                        }
+                      } catch (verifyError) {
+                        console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, verifyError);
+                        // Continue if verification fails - don't block user
+                      }
+                      
+                      // Only call handleSubmitRegistration if we're sure there are no requirements
+                      handleSubmitRegistration();
+                    }}
+                    disabled={isRegistering || hasRequirements}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {isRegistering ? 'Registering...' : 'Submit Registration'}
+                    {isRegistering ? 'Registering...' : hasRequirements ? 'Complete Questions First' : 'Submit Registration'}
                   </button>
                 </div>
               </div>
@@ -618,7 +889,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Description */}
             {leg.leg_description && (
               <div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
+                {profileStatus?.exists ? (
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
+                ) : (
+                  <>
+                    <p className="text-sm text-foreground whitespace-pre-wrap">
+                      {leg.leg_description.length > 150 
+                        ? leg.leg_description.substring(0, 150) + '...' 
+                        : leg.leg_description}
+                    </p>
+                    <LimitedAccessIndicator 
+                      message="Complete your profile to see full leg description"
+                      showCompleteProfileCTA={true}
+                    />
+                  </>
+                )}
               </div>
             )}
 
@@ -648,7 +933,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         return name;
                       })()}
                     </div>
-                    {leg.start_date && (
+                    {leg.start_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
                       <div className="text-xs font-medium text-foreground">
                         {formatDate(leg.start_date)}
                       </div>
@@ -688,7 +973,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         return name;
                       })()}
                     </div>
-                    {leg.end_date && (
+                    {leg.end_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
                       <div className="text-xs font-medium text-foreground">
                         {formatDate(leg.end_date)}
                       </div>
@@ -836,78 +1121,119 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               skillMatchPercentage={leg.skill_match_percentage}
             />
 
-            {/* Boat Info */}
-            <div className="pt-4 border-t border-border">
-              <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h3>
-              <div className="flex gap-3 items-start">
-                {leg.boat_image_url && (
-                  <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                    <Image
-                      src={leg.boat_image_url}
-                      alt={leg.boat_name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-foreground mb-1">{leg.boat_name}</h4>
-                  {leg.boat_type && (
-                    <p className="text-xs text-muted-foreground mb-1">{leg.boat_type}</p>
+            {/* Boat Info - Only show if profile is complete */}
+            {profileStatus?.exists && profileStatus.completionPercentage === 100 && (
+              <div className="pt-4 border-t border-border">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h3>
+                <div className="flex gap-3 items-start">
+                  {leg.boat_image_url && (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                      <Image
+                        src={leg.boat_image_url}
+                        alt={leg.boat_name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   )}
-                  {(leg.boat_make || leg.boat_model) && (
-                    <p className="text-xs text-muted-foreground">
-                      {leg.boat_make && leg.boat_model 
-                        ? `${leg.boat_make} ${leg.boat_model}`
-                        : leg.boat_make || leg.boat_model || ''}
-                    </p>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-semibold text-foreground mb-1">{leg.boat_name}</h4>
+                    {leg.boat_type && (
+                      <p className="text-xs text-muted-foreground mb-1">{leg.boat_type}</p>
+                    )}
+                    {(leg.boat_make || leg.boat_model) && (
+                      <p className="text-xs text-muted-foreground">
+                        {leg.boat_make && leg.boat_model 
+                          ? `${leg.boat_make} ${leg.boat_model}`
+                          : leg.boat_make || leg.boat_model || ''}
+                      </p>
+                    )}
+                  </div>
+                  {/* Owner Avatar */}
+                  {(leg.owner_name || leg.owner_image_url) && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {leg.owner_image_url ? (
+                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-border">
+                          <Image
+                            src={leg.owner_image_url}
+                            alt={leg.owner_name || 'Owner'}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
+                          <svg
+                            className="w-8 h-8 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      {leg.owner_name && (
+                        <div className="flex flex-col">
+                          <p className="text-xs font-medium text-foreground">Skipper:</p>
+                          <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={leg.owner_name}>
+                            {leg.owner_name}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
-                {/* Owner Avatar */}
-                {(leg.owner_name || leg.owner_image_url) && (
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {leg.owner_image_url ? (
-                      <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-border">
-                        <Image
-                          src={leg.owner_image_url}
-                          alt={leg.owner_name || 'Owner'}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
-                        <svg
-                          className="w-8 h-8 text-muted-foreground"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                    {leg.owner_name && (
-                      <div className="flex flex-col">
-                        <p className="text-xs font-medium text-foreground">Skipper:</p>
-                        <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={leg.owner_name}>
-                          {leg.owner_name}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
+            )}
 
             {/* Registration Section */}
             <div className="pt-4 border-t border-border">
-              {registrationStatus ? (
+              {!user ? (
+                <div className="space-y-3">
+                  <LimitedAccessIndicator 
+                    message="Sign up and complete your profile to register for this leg"
+                    showCompleteProfileCTA={true}
+                  />
+                  <button
+                    disabled
+                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                  >
+                    Register for leg
+                  </button>
+                </div>
+              ) : !profileStatus?.exists ? (
+                <div className="space-y-3">
+                  <LimitedAccessIndicator 
+                    message="Sign up and complete your profile to register for this leg"
+                    showCompleteProfileCTA={true}
+                  />
+                  <button
+                    disabled
+                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                  >
+                    Register for leg
+                  </button>
+                </div>
+              ) : !profileStatus.hasRoles || !profileStatus.exists ? (
+                <div className="space-y-3">
+                  <LimitedAccessIndicator 
+                    message="Add a crew role to your profile to register for legs"
+                    showCompleteProfileCTA={true}
+                  />
+                  <button
+                    disabled
+                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                  >
+                    Register for leg
+                  </button>
+                </div>
+              ) : registrationStatus ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Registration Status:</span>

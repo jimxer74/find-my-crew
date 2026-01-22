@@ -14,7 +14,10 @@ export async function assessRegistrationWithAI(
   supabase: SupabaseClient<any>,
   registrationId: string
 ): Promise<void> {
-  console.log(`[AI Assessment] Starting assessment for registration: ${registrationId}`);
+  console.log(`[AI Assessment] ========================================`);
+  console.log(`[AI Assessment] 🚀 STARTING assessment for registration: ${registrationId}`);
+  console.log(`[AI Assessment] Timestamp: ${new Date().toISOString()}`);
+  console.log(`[AI Assessment] ========================================`);
   
   // Load registration with all related data
   const { data: registration, error: regError } = await supabase
@@ -72,6 +75,51 @@ export async function assessRegistrationWithAI(
 
   console.log(`[AI Assessment] Auto-approval enabled, threshold: ${registration.legs.journeys.auto_approval_threshold}%`);
 
+  // Load requirements first - if no requirements, skip assessment
+  const { data: requirements } = await supabase
+    .from('journey_requirements')
+    .select('*')
+    .eq('journey_id', registration.legs.journeys.id)
+    .order('order', { ascending: true });
+
+  if (!requirements || requirements.length === 0) {
+    console.log(`[AI Assessment] No requirements found for journey ${registration.legs.journeys.id}, skipping assessment`);
+    return; // No requirements means no assessment needed
+  }
+
+  // Load answers - wait a bit to ensure they're committed to database
+  // Add a small delay to ensure answers are committed (race condition prevention)
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  const { data: answers } = await supabase
+    .from('registration_answers')
+    .select(`
+      requirement_id,
+      answer_text,
+      answer_json,
+      journey_requirements!inner (
+        question_text,
+        question_type,
+        weight
+      )
+    `)
+    .eq('registration_id', registrationId);
+
+  // Validate that we have answers for all required questions
+  const requiredRequirements = requirements.filter((r: any) => r.is_required);
+  const answeredRequirementIds = (answers || []).map((a: any) => a.requirement_id);
+  const missingRequired = requiredRequirements.filter((r: any) => !answeredRequirementIds.includes(r.id));
+
+  if (missingRequired.length > 0) {
+    console.error(`[AI Assessment] Missing answers for required questions:`, missingRequired.map((r: any) => r.id));
+    throw new Error(`Missing answers for required questions: ${missingRequired.map((r: any) => r.question_text).join(', ')}`);
+  }
+
+  if (!answers || answers.length === 0) {
+    console.error(`[AI Assessment] No answers found for registration ${registrationId}, cannot proceed with assessment`);
+    throw new Error(`No answers found for registration ${registrationId}`);
+  }
+
   // Load crew profile
   const { data: crewProfile } = await supabase
     .from('profiles')
@@ -92,38 +140,17 @@ export async function assessRegistrationWithAI(
     riskLevel: crewProfile.risk_level,
   });
 
-  // Load requirements and answers
-  const { data: requirements } = await supabase
-    .from('journey_requirements')
-    .select('*')
-    .eq('journey_id', registration.legs.journeys.id)
-    .order('order', { ascending: true });
-
-  const { data: answers } = await supabase
-    .from('registration_answers')
-    .select(`
-      requirement_id,
-      answer_text,
-      answer_json,
-      journey_requirements!inner (
-        question_text,
-        question_type,
-        weight
-      )
-    `)
-    .eq('registration_id', registrationId);
-
   console.log(`[AI Assessment] Requirements and answers loaded:`, {
-    requirementsCount: requirements?.length || 0,
-    answersCount: answers?.length || 0,
-    requirements: requirements?.map((r: any) => ({
+    requirementsCount: requirements.length,
+    answersCount: answers.length,
+    requirements: requirements.map((r: any) => ({
       id: r.id,
       question: r.question_text,
       type: r.question_type,
       weight: r.weight,
       required: r.is_required,
     })),
-    answers: answers?.map((a: any) => ({
+    answers: answers.map((a: any) => ({
       requirementId: a.requirement_id,
       answerText: a.answer_text,
       answerJson: a.answer_json,
@@ -148,12 +175,25 @@ export async function assessRegistrationWithAI(
   // Call AI
   console.log(`[AI Assessment] Calling AI service...`);
   const aiStartTime = Date.now();
-  const aiResult = await callAI({
-    useCase: 'assess-registration',
-    prompt,
-  });
-  const aiDuration = Date.now() - aiStartTime;
+  let aiResult;
+  try {
+    aiResult = await callAI({
+      useCase: 'assess-registration',
+      prompt,
+    });
+  } catch (aiError: any) {
+    const aiDuration = Date.now() - aiStartTime;
+    console.error(`[AI Assessment] AI call failed after ${aiDuration}ms:`, {
+      error: aiError.message,
+      provider: aiError.provider,
+      model: aiError.model,
+      originalError: aiError.originalError,
+    });
+    // Re-throw with more context
+    throw new Error(`AI assessment failed: ${aiError.message} (Provider: ${aiError.provider || 'unknown'}, Model: ${aiError.model || 'unknown'})`);
+  }
   
+  const aiDuration = Date.now() - aiStartTime;
   console.log(`[AI Assessment] AI call completed in ${aiDuration}ms:`, {
     provider: aiResult.provider,
     model: aiResult.model,

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { callAI } from '@/app/lib/ai/service';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+
+// Extend timeout for AI assessment (can take up to 60+ seconds)
+export const maxDuration = 90; // 90 seconds
+export const runtime = 'nodejs';
 
 /**
  * POST /api/ai/assess-registration/[registrationId]
@@ -99,12 +104,12 @@ export async function POST(
     // Verify user is journey owner (or allow system calls)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
     const isJourneyOwner = registrationData.legs?.journeys?.boats?.owner_id === user.id;
-    if (!isJourneyOwner && profile?.role !== 'owner') {
+    if (!isJourneyOwner && !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only journey owners can trigger assessments' },
         { status: 403 }

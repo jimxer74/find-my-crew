@@ -2,6 +2,9 @@
 
 import Image from 'next/image';
 import { formatDate } from '@/app/lib/dateFormat';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useEffect, useState } from 'react';
+import { checkProfile } from '@/app/lib/profile/checkProfile';
 
 type Leg = {
   leg_id: string;
@@ -33,6 +36,23 @@ type LegMobileCardProps = {
 };
 
 export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
+  const { user } = useAuth();
+  const [profileStatus, setProfileStatus] = useState<{ exists: boolean; completionPercentage: number } | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setProfileStatus({ exists: false, completionPercentage: 0 });
+      return;
+    }
+
+    const loadProfileStatus = async () => {
+      const status = await checkProfile(user.id);
+      setProfileStatus({ exists: status.exists, completionPercentage: status.completionPercentage });
+    };
+
+    loadProfileStatus();
+  }, [user]);
+
   const formatLocationName = (name: string | null) => {
     if (!name || name === 'Unknown location') {
       return 'Unknown location';
@@ -127,25 +147,10 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0 px-3 py-2 flex flex-col">
-          {/* Top Section: Boat Name and Skipper */}
-          <div className="flex items-center justify-between gap-2 mb-2">
-            {/* Boat Name with Make/Model */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-card-foreground text-sm leading-tight">
-                {leg.boat_name}
-                {(leg.boat_make || leg.boat_model) && (
-                  <span className="font-normal">
-                    {' '}
-                    {leg.boat_make && leg.boat_model 
-                      ? `${leg.boat_make} ${leg.boat_model}`
-                      : leg.boat_make || leg.boat_model || ''}
-                  </span>
-                )}
-              </h3>
-            </div>
-
-            {/* Skipper Avatar and Name */}
-            {(leg.owner_name || leg.owner_image_url) && (
+          {/* Top Section: Skipper */}
+          <div className="flex items-center justify-end gap-2 mb-2">
+            {/* Skipper Avatar and Name - Only show if profile is complete */}
+            {profileStatus?.exists && profileStatus.completionPercentage === 100 && (leg.owner_name || leg.owner_image_url) && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {leg.owner_image_url ? (
                   <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-border">
@@ -183,6 +188,26 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
                 )}
               </div>
             )}
+            {/* Empty avatar for incomplete profiles - no text */}
+            {(!profileStatus?.exists || profileStatus.completionPercentage < 100) && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
+                  <svg
+                    className="w-5 h-5 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Separator Line */}
@@ -195,7 +220,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
               <div className="font-semibold text-xs text-card-foreground leading-tight">
                 {formatLocationName(leg.start_waypoint?.name || null)}
               </div>
-              {leg.start_date && (
+              {leg.start_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
                 <div className="text-xs text-card-foreground mt-1 font-normal">
                   {formatDate(leg.start_date)}
                 </div>
@@ -212,7 +237,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
               <div className="font-semibold text-xs text-card-foreground leading-tight">
                 {formatLocationName(leg.end_waypoint?.name || null)}
               </div>
-              {leg.end_date && (
+              {leg.end_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
                 <div className="text-xs text-card-foreground mt-1 font-normal">
                   {formatDate(leg.end_date)}
                 </div>

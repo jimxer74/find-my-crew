@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
 /**
  * PATCH /api/journeys/[journeyId]/auto-approval
@@ -33,11 +34,11 @@ export async function PATCH(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles, role')
       .eq('id', user.id)
       .single();
 
-    if (!profile || profile.role !== 'owner') {
+    if (!profile || !hasOwnerRole(profile)) {
       return NextResponse.json(
         { error: 'Only owners can configure auto-approval' },
         { status: 403 }

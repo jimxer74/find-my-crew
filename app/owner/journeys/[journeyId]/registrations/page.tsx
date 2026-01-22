@@ -23,6 +23,8 @@ type Registration = {
     name: string;
     start_date: string | null;
     end_date: string | null;
+    skills: string[] | null;
+    min_experience_level: number | null;
   };
   profiles: {
     id: string;
@@ -32,6 +34,23 @@ type Registration = {
     skills: string[];
     phone: string | null;
   };
+  answers?: Array<{
+    id: string;
+    requirement_id: string;
+    answer_text: string | null;
+    answer_json: any;
+    journey_requirements: {
+      id: string;
+      question_text: string;
+      question_type: string;
+      options: string[] | null;
+      is_required: boolean;
+      order: number;
+    };
+  }>;
+  ai_match_score?: number | null;
+  ai_match_reasoning?: string | null;
+  auto_approved?: boolean;
 };
 
 type Journey = {
@@ -277,11 +296,27 @@ export default function JourneyRegistrationsPage() {
                 <div key={registration.id} className="bg-card rounded-lg shadow p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <h3 className="text-lg font-semibold text-foreground">
                           {profile.full_name || profile.username || 'Unknown User'}
                         </h3>
                         {getStatusBadge(registration.status)}
+                        {registration.auto_approved && (
+                          <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
+                            Auto-approved by AI
+                          </span>
+                        )}
+                        {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            registration.ai_match_score >= 80 
+                              ? 'bg-green-100 text-green-800 border border-green-300'
+                              : registration.ai_match_score >= 50
+                              ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                              : 'bg-red-100 text-red-800 border border-red-300'
+                          }`}>
+                            AI Score: {registration.ai_match_score}%
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground mb-1">
                         Leg: <span className="font-medium text-foreground">{leg.name}</span>
@@ -296,9 +331,10 @@ export default function JourneyRegistrationsPage() {
                   </div>
 
                   {/* Profile Info */}
-                  <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-border">
+                  <div className="mb-4 pb-4 border-b border-border space-y-4">
+                    {/* Experience Level */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Experience Level</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Experience Level</p>
                       {profile.sailing_experience ? (
                         <div className="flex items-center gap-2">
                           <div className="relative w-8 h-8">
@@ -309,16 +345,116 @@ export default function JourneyRegistrationsPage() {
                               className="object-contain"
                             />
                           </div>
-                          <span className="text-sm text-foreground">
+                          <span className="text-sm font-medium text-foreground">
                             {getExperienceLevelConfig(profile.sailing_experience as ExperienceLevel).displayName}
                           </span>
+                          {leg.min_experience_level && (
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              profile.sailing_experience >= leg.min_experience_level
+                                ? 'bg-green-100 text-green-800 border border-green-300'
+                                : 'bg-red-100 text-red-800 border border-red-300'
+                            }`}>
+                              {profile.sailing_experience >= leg.min_experience_level ? '✓ Meets requirement' : '✗ Below requirement'}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Not specified</p>
                       )}
+                      {leg.min_experience_level && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Required: {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
+                        </p>
+                      )}
                     </div>
+
+                    {/* Skill Matching */}
+                    {leg.skills && leg.skills.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Skill Matching</p>
+                        {(() => {
+                          // Parse user skills from JSON strings if needed
+                          const userSkillsRaw = profile.skills || [];
+                          const userSkills = userSkillsRaw.map((skillJson: string) => {
+                            try {
+                              const parsed = JSON.parse(skillJson);
+                              return parsed.skill_name || skillJson;
+                            } catch {
+                              return skillJson;
+                            }
+                          });
+                          // Parse leg skills from JSON strings if needed
+                          const legSkillsRaw = leg.skills || [];
+                          const legSkills = legSkillsRaw.map((skillJson: string) => {
+                            try {
+                              const parsed = JSON.parse(skillJson);
+                              return parsed.skill_name || skillJson;
+                            } catch {
+                              return skillJson;
+                            }
+                          });
+                          const { matching, missing } = getMatchingAndMissingSkills(userSkills, legSkills);
+                          const matchPercentage = calculateMatchPercentage(
+                            userSkills,
+                            legSkills,
+                            profile.sailing_experience,
+                            leg.min_experience_level
+                          );
+                          
+                          return (
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium text-foreground">Match Score</span>
+                                <span className={`text-sm font-bold px-2 py-1 rounded ${
+                                  matchPercentage >= 80 ? 'bg-green-100 text-green-800'
+                                  : matchPercentage >= 50 ? 'bg-yellow-100 text-yellow-800'
+                                  : matchPercentage >= 25 ? 'bg-orange-100 text-orange-800'
+                                  : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {matchPercentage}%
+                                </span>
+                              </div>
+                              
+                              {matching.length > 0 && (
+                                <div>
+                                  <p className="text-xs text-green-700 font-medium mb-1">✓ Matching Skills ({matching.length})</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {matching.map((skill, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs"
+                                      >
+                                        {skill}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {missing.length > 0 && (
+                                <div>
+                                  <p className="text-xs text-red-700 font-medium mb-1">✗ Missing Skills ({missing.length})</p>
+                                  <div className="flex flex-wrap gap-1">
+                                    {missing.map((skill, idx) => (
+                                      <span
+                                        key={idx}
+                                        className="px-2 py-0.5 bg-red-100 text-red-800 border border-red-300 rounded-full text-xs"
+                                      >
+                                        {skill}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* All User Skills */}
                     <div>
-                      <p className="text-xs text-muted-foreground mb-1">Skills</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">All Skills</p>
                       {profile.skills && profile.skills.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
                           {profile.skills.slice(0, 5).map((skillJson: string, idx: number) => {

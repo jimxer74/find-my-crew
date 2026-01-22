@@ -12,6 +12,7 @@ type SkillLevelSelectorProps = {
   showProfileIndicator?: boolean;
   showWarning?: boolean;
   onWarning?: (message: string | null) => void;
+  showRequiredBadge?: boolean;
 };
 
 const getSkillLevelInfo = (level: ExperienceLevel): { title: string; content: React.ReactNode } => {
@@ -45,7 +46,8 @@ export function SkillLevelSelector({
   profileValue = null,
   showProfileIndicator = false,
   showWarning = false,
-  onWarning
+  onWarning,
+  showRequiredBadge = false
 }: SkillLevelSelectorProps) {
   const levels = getAllExperienceLevels();
   
@@ -84,11 +86,16 @@ export function SkillLevelSelector({
   };
 
   return (
-    <div className="md:col-span-2">
+    <div className="w-full">
       <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
-        Experience level
+        Sailing Experience Level
+        {showRequiredBadge && value === null && (
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
+            Please complete
+          </span>
+        )}
       </label>
-      <div className="grid grid-cols-4 gap-1.5 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
         {levels.map((levelConfig) => {
           const isSelected = value === levelConfig.value;
           const isProfile = isProfileValue(levelConfig.value);
@@ -98,10 +105,10 @@ export function SkillLevelSelector({
               key={levelConfig.value}
               type="button"
               onClick={() => handleClick(levelConfig.value)}
-              className={`relative p-1.5 md:p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
+              className={`relative p-2 md:p-4 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
                 isSelected
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
+                  ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/50 hover:bg-accent/50'
               }`}
             >
               {/* Profile indicator badge */}
@@ -112,8 +119,10 @@ export function SkillLevelSelector({
                   </div>
                 </div>
               )}
-              <div className="flex items-center justify-center mb-0.5 md:mb-2 flex-shrink-0">
-                <h3 className="font-semibold text-card-foreground text-[10px] md:text-sm text-center leading-tight">
+              <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
+                <h3 className={`font-semibold text-center leading-tight text-[10px] md:text-sm ${
+                  isSelected ? 'text-primary font-bold' : 'text-card-foreground'
+                }`}>
                   {levelConfig.displayName}
                 </h3>
               </div>
@@ -122,7 +131,9 @@ export function SkillLevelSelector({
                   src={levelConfig.icon}
                   alt={levelConfig.displayName}
                   fill
-                  className="object-contain"
+                  className={`object-contain transition-opacity ${
+                    isSelected ? 'opacity-100' : 'opacity-70'
+                  }`}
                 />
               </div>
             </button>
