@@ -1,41 +1,27 @@
-TODO:
+#/bin/sh
 
-- Add vulnerability and security issue scanner
-- Add GDPR notifications and required functions to forget, report data etc.
-
-Later:
-
-- AI retrieval and creation of profile (both crew or owner) from external sources scraping web pages, facebook etc.
-- AI driven onboarding both for crew and onwer
-- Internationalization! BIG task
-- Support for co-owned boats.
-- Support for multiple persons registrations at same time, families, couples etc?
-- Add links to other platforms in boats, like noforeignland, youtube, facebook, insta
-- Add interview process to registration and interview scheduler
-- Secure document vault for sensitive uploaded docs like passports, etc.
-- Add a cost sharing model managementn for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty, where each contributes? --> This links to meal prepping  AI assistant, to understand food costs
-- Add functionality to gather user inputs and feedback, feature proposals and voting system 
-
-In future:
-
-- Extend leg browsing to AI matching of legs and crew
-- Create browse full journeys, a more content driven and visual kind of sales presentation about journey
-- AI screening of profile, "trustworthniess score"
-- Scoring system for crew and skippers to build trust
-- Add notifications and messaging to users
-- Add feedback functionality for users to give feedback, also add management so that feedback is handled, 
-or not handled (in stars and in text), like not like, improvements, features missing etc. 
---> make AI to analyze and propose new features automatically based on feedback
-- Add Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to insight to chance their plans etc. 
-- Implement native mobile app
-- Define production deployment architecture, with performance considerations
-- Patreon / crowdsourcing support model
-- Meal prepping / planning AI assistant, creting meal plan for a passage / journey
-
-
-Maybe in future:
-- Plan earnings logic / business model: Freemium, Subscription, Adds, or community / crowdsourced --> this maybe to way, build it so good that userbase keeps growing and keep it free, Challenge to use good AI models?  
-one option is to provide basic free but add subscription for advanced AI features that uses higher priced models
-- Add a story and rationale for why I am doing this service / app, what is the philosophy
-- Marketing plan and materials, videos, AI marketing assistant to create automated content in different channels
-- Co-operation with noforeignland? this requires some success first
+backlog task create "Add vulnerability and security issue scanner"
+backlog task create "Add GDPR notifications and mandatory features"
+backlog task create "AI assisted retrieval and creation of profile (both crew or owner) from external sources scraping web pages, facebook etc."
+backlog task create "AI driven onboarding both for crew and owner"
+backlog task create "Internationalization"
+backlog task create "Support for cobacklog task createowned boats and/or multiple permanent crew for a boat"
+backlog task create "Support for multiple persons registrations and/or invitation to join the boat/leg e.g. families, couples etc."
+backlog task create "Add interview process to registration and interview scheduler"
+backlog task create "Secure document vault for sensitive uploaded docs like passports, etc."
+backlog task create "Add a cost sharing model management for journeys and legs e.g. how costs are split and managed, each crew member of its own, common journey kitty" 
+backlog task create "Cost planning and meal prepping  AI assistant, to understand food and other costs for a leg"
+backlog task create "Functionality to gather user inputs and feedback, feature proposals and voting system" 
+backlog task create "AIbacklog task creategenerated automatic matching of crew and boats, based in interests, and profile. create "daily "perfect match" hits for users"
+backlog task create "AIbacklog task createassisted functionality to create "a marketing material for a Journey, with images, videos etc. that can be published on the app"
+backlog task create "AI screening of profile a "trust" score", some kind of analysis of how trustworthy the profile is."
+backlog task create "Scoring system for crew and skippers to build trust where it is possible to provide feedback after legs"
+backlog task create "Notifications and messaging to users e.g. new legs, changes, approvals, new matches"
+backlog task create "Feedback functionality for users to give feedback about the app e.g. missing features, issues / problems. create "AIbacklog task createcurated list of top new features visible for the users" 
+backlog task create "Proposal feature for crew to propose and vote certain legs, routes etc giving skippers to know about the demand." 
+backlog task create "Implement native mobile app"
+backlog task create "Define production deployment architecture, with performance considerations"
+backlog task create "Patreon / crowdsourcing support model"
+backlog task create "Plan earnings logic / business model: Freemium, Subscription, Adds, or community / crowdsourced"
+backlog task create "Marketing plan and materials, logos, icons, basic UX"
+backlog task create "Cobacklog task createoperation with noforeignland, Predict Wind, Navily"
