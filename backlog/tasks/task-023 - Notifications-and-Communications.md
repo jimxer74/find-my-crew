@@ -1,13 +1,14 @@
 ---
 id: TASK-023
 title: Notifications and Communications
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 18:56'
+updated_date: '2026-01-24 18:59'
 labels: []
 dependencies: []
 priority: high
+ordinal: 1000
 ---
 
 ## Description
