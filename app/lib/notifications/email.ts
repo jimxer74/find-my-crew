@@ -16,7 +16,7 @@ import type { EmailPreferences } from './types';
 // Configuration
 // ============================================================================
 
-const EMAIL_FROM = process.env.EMAIL_FROM || 'Find My Crew <notifications@findmycrew.app>';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'Sail Smart <notifications@sailsm.art>';
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
 // Check if email sending is enabled
