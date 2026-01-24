@@ -4,7 +4,7 @@ title: Notifications and Communications
 status: To Do
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 12:01'
+updated_date: '2026-01-24 12:04'
 labels: []
 dependencies: []
 ---
@@ -16,16 +16,14 @@ Goal: Automate user communication and reduce manual follow-ups
 
 Features:
 
-Real-time notifications: WebSocket or polling-based
+Real-time In-app notifications
 Email notifications: For important events
 In-app notification center: Bell icon with unread count
 Notification types:
-New match available (crew)
-Registration approved/denied
-New registration received (owner)
-Journey or leg updated
-AI assessment completed
-Profile completion reminders
+Registration approved/denied (to crew) email and in-app
+New registration received (to owner) email and in-app
+Journey or leg updated email and in-app
+Profile completion reminders email and in-app
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Implementation Plan
