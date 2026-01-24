@@ -4,7 +4,7 @@ title: Notifications and Communications
 status: In Progress
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 19:20'
+updated_date: '2026-01-24 19:35'
 labels: []
 dependencies: []
 priority: high
@@ -342,4 +342,20 @@ Run `migrations/005_add_email_to_profiles.sql` to:
 1. Add email column to profiles
 2. Sync existing emails from auth.users
 3. Create trigger for future email syncs
+
+## Added Review Needed Email (2026-01-24)
+
+### Files Modified:
+- `app/lib/notifications/email.ts` - Added `sendReviewNeededEmail()` function with amber-colored template
+- `app/lib/notifications/index.ts` - Exported the new function
+- `app/lib/ai/assessRegistration.ts` - Added email sending when AI determines manual review is needed
+
+### Email Flow Summary:
+| Trigger | Recipient | Email Function |
+|---------|-----------|----------------|
+| New registration | Owner | `sendNewRegistrationEmail` |
+| Registration approved | Crew | `sendRegistrationApprovedEmail` |
+| Registration denied | Crew | `sendRegistrationDeniedEmail` |
+| AI auto-approved | Crew | `sendRegistrationApprovedEmail` |
+| AI needs review | Owner | `sendReviewNeededEmail` |
 <!-- SECTION:NOTES:END -->
