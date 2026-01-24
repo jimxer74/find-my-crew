@@ -4,7 +4,7 @@ title: Owner Registration Summary Page
 status: Done
 assignee: []
 created_date: '2026-01-24 20:19'
-updated_date: '2026-01-24 20:31'
+updated_date: '2026-01-24 20:33'
 labels: []
 dependencies: []
 references:
@@ -124,7 +124,7 @@ A dedicated registration summary page for boat owners to view and manage a singl
 - [x] #7 Page is only accessible to the boat owner (returns 403 for others)
 - [x] #8 Notification links correctly navigate to this page with registration ID
 - [x] #9 Status badge click in /owner/registrations navigates to this page
-- [ ] #10 Status badge click in journey map pane navigates to this page
+- [x] #10 Status badge click in journey map pane navigates to this page
 - [x] #11 Page is responsive and works on mobile devices
 - [x] #12 Loading and error states are handled gracefully
 <!-- AC:END -->
