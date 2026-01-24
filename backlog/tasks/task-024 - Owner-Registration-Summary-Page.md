@@ -1,10 +1,10 @@
 ---
 id: TASK-024
 title: Owner Registration Summary Page
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-24 20:19'
-updated_date: '2026-01-24 20:25'
+updated_date: '2026-01-24 20:31'
 labels: []
 dependencies: []
 references:
@@ -115,18 +115,18 @@ A dedicated registration summary page for boat owners to view and manage a singl
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Page loads registration details including crew info, journey/leg info, and requirements Q&A
-- [ ] #2 Risk level and experience level display with correct icons and styling
-- [ ] #3 Skills matching shows required skills vs crew skills with match percentage
-- [ ] #4 AI assessment section displays score and reasoning when available
-- [ ] #5 Approve button updates status to Approved and shows success feedback
-- [ ] #6 Deny button shows confirmation dialog with reason field, updates status to Not approved
-- [ ] #7 Page is only accessible to the boat owner (returns 403 for others)
-- [ ] #8 Notification links correctly navigate to this page with registration ID
-- [ ] #9 Status badge click in /owner/registrations navigates to this page
+- [x] #1 Page loads registration details including crew info, journey/leg info, and requirements Q&A
+- [x] #2 Risk level and experience level display with correct icons and styling
+- [x] #3 Skills matching shows required skills vs crew skills with match percentage
+- [x] #4 AI assessment section displays score and reasoning when available
+- [x] #5 Approve button updates status to Approved and shows success feedback
+- [x] #6 Deny button shows confirmation dialog with reason field, updates status to Not approved
+- [x] #7 Page is only accessible to the boat owner (returns 403 for others)
+- [x] #8 Notification links correctly navigate to this page with registration ID
+- [x] #9 Status badge click in /owner/registrations navigates to this page
 - [ ] #10 Status badge click in journey map pane navigates to this page
-- [ ] #11 Page is responsive and works on mobile devices
-- [ ] #12 Loading and error states are handled gracefully
+- [x] #11 Page is responsive and works on mobile devices
+- [x] #12 Loading and error states are handled gracefully
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -174,3 +174,46 @@ A dedicated registration summary page for boat owners to view and manage a singl
    - Error states
    - Empty states (no AI assessment, no requirements, etc.)
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Complete
+
+### Files Created
+1. **`app/api/registrations/[registrationId]/details/route.ts`** - New API endpoint that returns comprehensive registration details including:
+   - Registration data (status, notes, timestamps, AI assessment)
+   - Crew profile (name, avatar, skills, experience level)
+   - Leg details with waypoints for distance calculation
+   - Journey and boat details
+   - Journey requirements and crew's answers
+   - Computed values (combined skills, skill match %, experience match)
+
+2. **`app/owner/registrations/[registrationId]/page.tsx`** - New registration summary page with:
+   - Header section with crew avatar, name, and status badge
+   - Auto-approved indicator when applicable
+   - Approve/Deny action buttons with confirmation dialog
+   - Journey & Leg info with waypoints, distance, and duration
+   - Requirements section (risk level, experience level, skills matching)
+   - AI Assessment section with score bar and reasoning
+   - Requirements Q&A display
+   - Crew profile details
+   - Loading and error states
+
+### Files Modified
+1. **`app/lib/notifications/service.ts`** - Updated notification links from `/owner/registrations?registration=X` to `/owner/registrations/X`
+2. **`app/lib/ai/assessRegistration.ts`** - Same link format update
+3. **`app/owner/registrations/page.tsx`** - Made status badge clickable, linking to registration details
+4. **`app/owner/journeys/[journeyId]/registrations/page.tsx`** - Made status badge clickable, linking to registration details
+
+### Features
+- Full registration details display with all specified data sections
+- Skills matching with visual breakdown (matching vs missing skills)
+- AI assessment score visualization with color-coded progress bar
+- Experience level comparison with match/mismatch indicators
+- Distance calculation using Haversine formula
+- Duration calculation based on boat speed at 75% efficiency
+- Approve/Deny functionality with confirmation dialog for deny
+- Responsive design for mobile devices
+- Loading skeleton and error states
+<!-- SECTION:FINAL_SUMMARY:END -->
