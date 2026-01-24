@@ -1,10 +1,10 @@
 ---
 id: TASK-024
 title: Owner Registration Summary Page
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-24 20:19'
-updated_date: '2026-01-24 20:22'
+updated_date: '2026-01-24 20:25'
 labels: []
 dependencies: []
 references:
