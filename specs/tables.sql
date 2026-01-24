@@ -68,6 +68,7 @@ create table if not exists public.profiles (
   role        profile_type not null default 'crew',
   username    text,
   full_name   text,
+  email       text,          -- synced from auth.users via trigger for notification access
   experience  text,          -- free text for now
   certifications text,       -- free text or JSON later
   phone       text,
@@ -81,6 +82,23 @@ create table if not exists public.profiles (
 
 -- Indexes
 create unique index if not exists profiles_user_id_key on public.profiles (id);
+create index if not exists idx_profiles_email on public.profiles(email);
+
+-- Trigger to sync email from auth.users
+create or replace function public.sync_user_email()
+returns trigger as $$
+begin
+  update public.profiles
+  set email = new.email
+  where id = new.id;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_email_updated
+  after insert or update of email on auth.users
+  for each row
+  execute function public.sync_user_email();
 
 -- Enable Row Level Security
 alter table profiles enable row level security;

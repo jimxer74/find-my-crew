@@ -41,6 +41,7 @@ export {
   sendRegistrationApprovedEmail,
   sendRegistrationDeniedEmail,
   sendNewRegistrationEmail,
+  sendReviewNeededEmail,
   sendJourneyUpdatedEmail,
   sendProfileReminderEmail,
   getUserEmail,

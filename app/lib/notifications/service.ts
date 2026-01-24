@@ -14,6 +14,43 @@ import {
   type NotificationsResponse,
   type NotificationMetadata,
 } from './types';
+import {
+  sendRegistrationApprovedEmail,
+  sendRegistrationDeniedEmail,
+  sendNewRegistrationEmail,
+} from './email';
+
+// ============================================================================
+// Email Helper
+// ============================================================================
+
+/**
+ * Gets a user's email from the profiles table.
+ * Email is synced from auth.users via database trigger.
+ * This approach uses RLS and doesn't require service role key.
+ */
+async function getUserEmailFromProfiles(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('[NotificationService] Error getting user email from profiles:', error);
+      return null;
+    }
+
+    return data?.email || null;
+  } catch (err) {
+    console.error('[NotificationService] Failed to get user email:', err);
+    return null;
+  }
+}
 
 // ============================================================================
 // Core CRUD Operations
@@ -219,7 +256,7 @@ export async function deleteNotification(
 // ============================================================================
 
 /**
- * Creates a registration approved notification
+ * Creates a registration approved notification and sends email
  */
 export async function notifyRegistrationApproved(
   supabase: SupabaseClient,
@@ -228,7 +265,8 @@ export async function notifyRegistrationApproved(
   journeyName: string,
   ownerName: string
 ): Promise<{ notification: Notification | null; error: string | null }> {
-  return createNotification(supabase, {
+  // Create in-app notification
+  const result = await createNotification(supabase, {
     user_id: crewUserId,
     type: NotificationType.REGISTRATION_APPROVED,
     title: 'Registration Approved',
@@ -240,10 +278,38 @@ export async function notifyRegistrationApproved(
       owner_name: ownerName,
     },
   });
+
+  // Send email notification (non-blocking)
+  try {
+    const userEmail = await getUserEmailFromProfiles(crewUserId);
+    if (userEmail) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+      const journeyLink = `${appUrl}/journeys/${journeyId}`;
+      const emailResult = await sendRegistrationApprovedEmail(
+        supabase,
+        userEmail,
+        crewUserId,
+        journeyName,
+        ownerName,
+        journeyLink
+      );
+      if (emailResult.error) {
+        console.error('[NotificationService] Failed to send approval email:', emailResult.error);
+      } else {
+        console.log('[NotificationService] Approval email sent to:', userEmail);
+      }
+    } else {
+      console.warn('[NotificationService] Could not get email for user:', crewUserId);
+    }
+  } catch (emailErr) {
+    console.error('[NotificationService] Error sending approval email:', emailErr);
+  }
+
+  return result;
 }
 
 /**
- * Creates a registration denied notification
+ * Creates a registration denied notification and sends email
  */
 export async function notifyRegistrationDenied(
   supabase: SupabaseClient,
@@ -257,7 +323,8 @@ export async function notifyRegistrationDenied(
     ? `Your registration for "${journeyName}" was not approved. Reason: ${reason}`
     : `Your registration for "${journeyName}" was not approved by ${ownerName}.`;
 
-  return createNotification(supabase, {
+  // Create in-app notification
+  const result = await createNotification(supabase, {
     user_id: crewUserId,
     type: NotificationType.REGISTRATION_DENIED,
     title: 'Registration Not Approved',
@@ -270,10 +337,36 @@ export async function notifyRegistrationDenied(
       reason,
     },
   });
+
+  // Send email notification (non-blocking)
+  try {
+    const userEmail = await getUserEmailFromProfiles(crewUserId);
+    if (userEmail) {
+      const emailResult = await sendRegistrationDeniedEmail(
+        supabase,
+        userEmail,
+        crewUserId,
+        journeyName,
+        ownerName,
+        reason
+      );
+      if (emailResult.error) {
+        console.error('[NotificationService] Failed to send denial email:', emailResult.error);
+      } else {
+        console.log('[NotificationService] Denial email sent to:', userEmail);
+      }
+    } else {
+      console.warn('[NotificationService] Could not get email for user:', crewUserId);
+    }
+  } catch (emailErr) {
+    console.error('[NotificationService] Error sending denial email:', emailErr);
+  }
+
+  return result;
 }
 
 /**
- * Creates a new registration notification for the journey owner
+ * Creates a new registration notification for the journey owner and sends email
  */
 export async function notifyNewRegistration(
   supabase: SupabaseClient,
@@ -284,7 +377,8 @@ export async function notifyNewRegistration(
   crewName: string,
   crewId: string
 ): Promise<{ notification: Notification | null; error: string | null }> {
-  return createNotification(supabase, {
+  // Create in-app notification
+  const result = await createNotification(supabase, {
     user_id: ownerUserId,
     type: NotificationType.NEW_REGISTRATION,
     title: 'New Crew Registration',
@@ -298,6 +392,34 @@ export async function notifyNewRegistration(
       crew_id: crewId,
     },
   });
+
+  // Send email notification (non-blocking)
+  try {
+    const ownerEmail = await getUserEmailFromProfiles(ownerUserId);
+    if (ownerEmail) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+      const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
+      const emailResult = await sendNewRegistrationEmail(
+        supabase,
+        ownerEmail,
+        ownerUserId,
+        crewName,
+        journeyName,
+        registrationLink
+      );
+      if (emailResult.error) {
+        console.error('[NotificationService] Failed to send new registration email:', emailResult.error);
+      } else {
+        console.log('[NotificationService] New registration email sent to:', ownerEmail);
+      }
+    } else {
+      console.warn('[NotificationService] Could not get email for owner:', ownerUserId);
+    }
+  } catch (emailErr) {
+    console.error('[NotificationService] Error sending new registration email:', emailErr);
+  }
+
+  return result;
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   notifyRegistrationApproved,
   createNotification,
   NotificationType,
+  sendReviewNeededEmail,
 } from '@/app/lib/notifications';
 
 /**
@@ -370,6 +371,38 @@ export async function assessRegistrationWithAI(
       console.error('[AI Assessment] Failed to send review notification to owner:', reviewNotifyResult.error);
     } else {
       console.log('[AI Assessment] Review needed notification sent to owner:', ownerId);
+    }
+
+    // Send email notification to owner
+    try {
+      const { data: ownerEmailData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', ownerId)
+        .single();
+
+      if (ownerEmailData?.email) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+        const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
+        const emailResult = await sendReviewNeededEmail(
+          supabase,
+          ownerEmailData.email,
+          ownerId,
+          crewName,
+          journeyName,
+          assessment.match_score,
+          registrationLink
+        );
+        if (emailResult.error) {
+          console.error('[AI Assessment] Failed to send review needed email:', emailResult.error);
+        } else {
+          console.log('[AI Assessment] Review needed email sent to:', ownerEmailData.email);
+        }
+      } else {
+        console.warn('[AI Assessment] Could not get email for owner:', ownerId);
+      }
+    } catch (emailErr) {
+      console.error('[AI Assessment] Error sending review needed email:', emailErr);
     }
   }
 }

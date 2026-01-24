@@ -253,6 +253,48 @@ export async function sendNewRegistrationEmail(
 }
 
 /**
+ * Sends AI review needed notification email to journey owner
+ */
+export async function sendReviewNeededEmail(
+  supabase: SupabaseClient,
+  ownerEmail: string,
+  ownerId: string,
+  crewName: string,
+  journeyName: string,
+  matchScore: number,
+  registrationLink: string
+): Promise<{ success: boolean; error: string | null }> {
+  // Check preferences
+  if (!(await shouldSendEmail(supabase, ownerId, 'registration_updates'))) {
+    console.log('[EmailService] User opted out of registration updates:', ownerId);
+    return { success: true, error: null };
+  }
+
+  const subject = `Review needed: ${crewName}'s application for "${journeyName}"`;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <h1 style="color: #f59e0b;">Registration Needs Review</h1>
+      <p><strong>${crewName}</strong> has applied to join your journey <strong>"${journeyName}"</strong>.</p>
+      <p>Our AI assessment gave this application a score of <strong>${matchScore}%</strong>, which is below your auto-approval threshold. Please review their application manually.</p>
+      <p style="margin: 30px 0;">
+        <a href="${registrationLink}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Application</a>
+      </p>
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
+      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+    </body>
+    </html>
+  `;
+
+  return sendEmail({ to: ownerEmail, subject, html });
+}
+
+/**
  * Sends journey updated email to crew member
  */
 export async function sendJourneyUpdatedEmail(
