@@ -4,7 +4,7 @@ title: Notifications and Communications
 status: In Progress
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 12:33'
+updated_date: '2026-01-24 13:48'
 labels: []
 dependencies: []
 priority: high
@@ -102,6 +102,8 @@ export enum NotificationType {
   JOURNEY_UPDATED = 'journey_updated',
   LEG_UPDATED = 'leg_updated',
   PROFILE_REMINDER = 'profile_reminder',
+  AI_AUTO_APPROVED = 'ai_auto_approved',
+  AI_REVIEW_NEEDED = 'ai_review_needed',
 }
 
 export interface Notification {
