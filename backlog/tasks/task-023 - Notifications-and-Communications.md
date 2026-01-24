@@ -4,7 +4,7 @@ title: Notifications and Communications
 status: In Progress
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 18:59'
+updated_date: '2026-01-24 19:10'
 labels: []
 dependencies: []
 priority: high
@@ -289,3 +289,32 @@ Check for incomplete profiles:
 - Supabase Realtime - included with Supabase client
 - date-fns or similar for relative timestamps
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Email Integration Implementation (2026-01-24)
+
+### Files Created:
+- `app/lib/supabaseAdmin.ts` - Supabase admin client using service role key for querying auth.users
+
+### Files Modified:
+- `app/lib/notifications/service.ts` - Updated `notifyRegistrationApproved`, `notifyRegistrationDenied`, and `notifyNewRegistration` to also send emails alongside in-app notifications
+
+### How It Works:
+1. When a registration is approved/denied/created, the notification service now:
+   - Creates the in-app notification (existing behavior)
+   - Fetches the user's email from `auth.users` using the admin client
+   - Sends the appropriate email using the existing email templates in `email.ts`
+   - Respects user email preferences (registration_updates setting)
+
+### Integration Points:
+- **POST /api/registrations** (new registration) -> `notifyNewRegistration` -> sends email to owner
+- **PATCH /api/registrations/[id]** (approve/deny) -> `notifyRegistrationApproved`/`notifyRegistrationDenied` -> sends email to crew
+- **AI Auto-approval** in `assessRegistration.ts` -> `notifyRegistrationApproved` -> sends email to crew
+
+### Requirements:
+- `SUPABASE_SERVICE_ROLE_KEY` environment variable must be set for email fetching to work
+- `RESEND_API_KEY` environment variable must be set for actual email sending (otherwise logs to console)
+- `NEXT_PUBLIC_APP_URL` should be set for proper links in emails
+<!-- SECTION:NOTES:END -->
