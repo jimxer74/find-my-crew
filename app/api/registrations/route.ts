@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { assessRegistrationWithAI } from '@/app/lib/ai/assessRegistration';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
+import { notifyNewRegistration } from '@/app/lib/notifications';
 
 // Extend timeout for registration with AI assessment
 export const maxDuration = 90; // 90 seconds
@@ -144,6 +145,7 @@ export async function POST(request: NextRequest) {
         journey_id,
         journeys!inner (
           id,
+          name,
           state,
           boat_id,
           boats!inner (
@@ -301,6 +303,33 @@ export async function POST(request: NextRequest) {
             answersSaved,
             reason: !autoApprovalEnabled ? 'auto-approval not enabled' : !hasRequirements ? 'no requirements' : !answersSaved ? 'answers not saved' : 'unknown',
           });
+        }
+
+        // Notify owner about reactivated registration
+        const reactivationJourney = Array.isArray(leg.journeys) ? leg.journeys[0] : leg.journeys;
+        if (reactivationJourney) {
+          const reactivationBoat = Array.isArray(reactivationJourney.boats) ? reactivationJourney.boats[0] : reactivationJourney.boats;
+          const reactivationOwnerId = reactivationBoat?.owner_id;
+          const reactivationJourneyId = reactivationJourney.id;
+          const reactivationJourneyName = reactivationJourney.name || 'your journey';
+
+          if (reactivationOwnerId) {
+            const { data: reactivationCrewProfile } = await supabase
+              .from('profiles')
+              .select('full_name, username')
+              .eq('id', user.id)
+              .single();
+
+            const reactivationCrewName = reactivationCrewProfile?.full_name || reactivationCrewProfile?.username || 'A crew member';
+
+            // Await notification to ensure it's sent before response
+            const reactivationNotifyResult = await notifyNewRegistration(supabase, reactivationOwnerId, updatedRegistration.id, reactivationJourneyId, reactivationJourneyName, reactivationCrewName, user.id);
+            if (reactivationNotifyResult.error) {
+              console.error('[Registration API] Failed to notify owner of reactivated registration:', reactivationNotifyResult.error);
+            } else {
+              console.log('[Registration API] Reactivated registration notification sent to owner:', reactivationOwnerId);
+            }
+          }
         }
 
         return NextResponse.json({
@@ -504,6 +533,51 @@ export async function POST(request: NextRequest) {
         reason: !autoApprovalEnabled ? 'auto-approval not enabled' : !hasRequirements ? 'no requirements' : !answersSaved ? 'answers not saved' : 'unknown',
       });
     }
+
+    // Notify the journey owner about the new registration (non-blocking)
+    console.log('[Registration API] === NOTIFICATION DEBUG START ===');
+    console.log('[Registration API] leg object keys:', Object.keys(leg));
+    console.log('[Registration API] leg.journeys type:', typeof leg.journeys);
+    console.log('[Registration API] leg.journeys:', JSON.stringify(leg.journeys, null, 2));
+
+    // Handle both array and object responses from Supabase
+    const journey = Array.isArray(leg.journeys) ? leg.journeys[0] : leg.journeys;
+
+    if (!journey) {
+      console.error('[Registration API] No journey data found in leg.journeys');
+      // Still return success for the registration, just skip notification
+      // Send notification if auto-approval is not enabled for this journey
+    } else if (!autoApprovalEnabled) {
+      const boat = Array.isArray(journey.boats) ? journey.boats[0] : journey.boats;
+      const ownerId = boat?.owner_id;
+      const journeyId = journey.id;
+      const journeyName = journey.name || 'your journey';
+
+      console.log('[Registration API] Owner notification data:', { ownerId, journeyId, journeyName, boat });
+
+      if (ownerId) {
+        // Get crew member name
+        const { data: crewProfile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+
+        const crewName = crewProfile?.full_name || crewProfile?.username || 'A crew member';
+
+        // Await notification to ensure it's sent before response (auth context needed)
+        const notifyResult = await notifyNewRegistration(supabase, ownerId, registration.id, journeyId, journeyName, crewName, user.id);
+        if (notifyResult.error) {
+          console.error('[Registration API] Failed to notify owner of new registration:', notifyResult.error);
+        } else {
+          console.log('[Registration API] New registration notification sent to owner:', ownerId);
+        }
+      } else {
+        console.error('[Registration API] No owner_id found, skipping notification');
+      }
+    }
+
+    console.log('[Registration API] === NOTIFICATION DEBUG END ===');
 
     return NextResponse.json({
       registration,

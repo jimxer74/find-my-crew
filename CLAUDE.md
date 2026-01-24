@@ -1,3 +1,7 @@
+---
+description: 
+alwaysApply: true
+---
 
 <!-- BACKLOG.MD MCP GUIDELINES START -->
 
@@ -27,3 +31,20 @@ You MUST read the overview resource to understand the complete workflow. The inf
 </CRITICAL_INSTRUCTION>
 
 <!-- BACKLOG.MD MCP GUIDELINES END -->
+
+## DATABASE SCHEMA INSTRUCTIONS
+
+**CRITICAL:** Whenever you make changes to the database schema (creating tables, adding columns, modifying indexes, adding RLS policies, etc.):
+
+1. Create a migration file in `/migrations/` with the next sequential number (e.g., `004_description.sql`)
+2. **ALWAYS** update `/specs/tables.sql` to reflect the new schema - this file serves as the single source of truth for the database structure
+3. If creating TypeScript types for new tables, add them in `app/lib/` following existing patterns
+
+## TASK MANAGEMENT INSTRUCTIONS
+
+**CRITICAL:** For complex tasks (multiple files, multiple steps, or multi-phase implementations):
+
+1. **ALWAYS** create a todo list first using `TaskCreate` before starting implementation
+2. Break down the work into clear, actionable items
+3. Update task status as you progress (`in_progress` when starting, `completed` when done)
+4. This helps track progress and ensures nothing is missed

@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server';
+import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getUnreadCount } from '@/app/lib/notifications';
+
+/**
+ * GET /api/notifications/unread-count
+ *
+ * Returns the count of unread notifications for the authenticated user.
+ */
+export async function GET() {
+  try {
+    const supabase = await getSupabaseServerClient();
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    // Get unread count
+    const count = await getUnreadCount(supabase, user.id);
+
+    return NextResponse.json({ count });
+  } catch (error: any) {
+    console.error('[Notifications API] Unexpected error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}

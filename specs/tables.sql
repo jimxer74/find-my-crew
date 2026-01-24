@@ -414,6 +414,79 @@ create unique index if not exists registrations_leg_user_unique
 
 
 -- ============================================================================
+-- TABLE: notifications
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.notifications (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references public.profiles(id) on delete cascade,
+  type        varchar(50) not null,  -- notification type: registration_approved, registration_denied, new_registration, journey_updated, leg_updated, profile_reminder
+  title       varchar(255) not null,
+  message     text,
+  link        varchar(500),  -- optional URL to navigate to when notification is clicked
+  read        boolean default false,
+  metadata    jsonb default '{}',  -- additional JSON data related to the notification (e.g., journey_id, registration_id)
+  created_at  timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists idx_notifications_user_id on public.notifications(user_id);
+create index if not exists idx_notifications_user_unread on public.notifications(user_id, read) where read = false;
+create index if not exists idx_notifications_created_at on public.notifications(created_at desc);
+create index if not exists idx_notifications_user_created on public.notifications(user_id, created_at desc);
+
+-- NOTE: RLS is DISABLED on notifications table.
+-- Notifications are only created/accessed through authenticated API routes
+-- which have their own authorization checks.
+
+
+-- ============================================================================
+-- TABLE: email_preferences
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.email_preferences (
+  user_id               uuid primary key references public.profiles(id) on delete cascade,
+  registration_updates  boolean default true,
+  journey_updates       boolean default true,
+  profile_reminders     boolean default true,
+  created_at            timestamptz not null default now(),
+  updated_at            timestamptz not null default now()
+);
+
+-- Enable Row Level Security
+alter table email_preferences enable row level security;
+
+-- Policies
+create policy "Users can view own email preferences"
+on email_preferences for select
+using (auth.uid() = user_id);
+
+create policy "Users can update own email preferences"
+on email_preferences for update
+using (auth.uid() = user_id);
+
+create policy "Users can insert own email preferences"
+on email_preferences for insert
+with check (auth.uid() = user_id);
+
+-- Trigger for updated_at
+create or replace function update_email_preferences_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trigger_email_preferences_updated_at
+  before update on public.email_preferences
+  for each row
+  execute function update_email_preferences_updated_at();
+
+
+-- ============================================================================
 -- STORAGE POLICIES: boat-images bucket
 -- ============================================================================
 -- Note: First create the bucket in Supabase Dashboard > Storage > New bucket
