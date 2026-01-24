@@ -1,7 +1,7 @@
 ---
 id: TASK-023
 title: Notifications and Communications
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-24 11:40'
 updated_date: '2026-01-24 19:42'
