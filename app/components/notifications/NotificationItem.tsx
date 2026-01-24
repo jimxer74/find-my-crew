@@ -113,10 +113,10 @@ export function NotificationItem({
       }`}
       onClick={handleClick}
     >
-      {/* Unread indicator */}
+      {/* Unread indicator 
       {!notification.read && (
         <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500" />
-      )}
+      )}*/}
 
       {/* Icon */}
       <div className="flex-shrink-0 mt-0.5">

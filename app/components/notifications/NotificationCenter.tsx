@@ -89,9 +89,8 @@ export function NotificationCenter({
         ref={panelRef}
         className="absolute right-0 top-full mt-2 w-screen sm:w-96 max-w-[calc(100vw-1rem)] bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden"
       >
-        {/* Header */}
+        {/* Header 
         <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 className="font-semibold text-foreground">Notifications</h2>
           {unreadCount > 0 && (
             <button
               onClick={onMarkAllAsRead}
@@ -100,7 +99,7 @@ export function NotificationCenter({
               Mark all as read
             </button>
           )}
-        </div>
+        </div>*/}
 
         {/* Notification list */}
         <div className="max-h-[60vh] overflow-y-auto">

@@ -277,7 +277,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
           </p>
           
           <div className="space-y-3">
-            {/* Manual Approval */}
+            {/* Manual approval */}
             <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
               <input
                 type="radio"
@@ -295,23 +295,6 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
               </div>
             </label>
 
-            {/* AI-Assisted Approval */}
-            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
-              <input
-                type="radio"
-                name="approval_type"
-                value="ai_assisted"
-                checked={approvalType === 'ai_assisted'}
-                onChange={(e) => handleApprovalTypeChange(e.target.value as ApprovalType)}
-                className="mt-0.5 w-4 h-4 text-primary border-border focus:ring-ring"
-              />
-              <div className="flex-1">
-                <div className="text-sm font-medium text-foreground">AI-Assisted Approval</div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  AI analyzes each registration and provides a recommendation, but you make the final decision to approve or deny.
-                </div>
-              </div>
-            </label>
 
             {/* Automated Approval */}
             <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-border hover:bg-accent/30 transition-colors">
