@@ -4,6 +4,7 @@ title: Notifications and Communications
 status: To Do
 assignee: []
 created_date: '2026-01-24 11:40'
+updated_date: '2026-01-24 12:01'
 labels: []
 dependencies: []
 ---
@@ -16,7 +17,7 @@ Goal: Automate user communication and reduce manual follow-ups
 Features:
 
 Real-time notifications: WebSocket or polling-based
-Email notifications: For important events (optional)
+Email notifications: For important events
 In-app notification center: Bell icon with unread count
 Notification types:
 New match available (crew)
