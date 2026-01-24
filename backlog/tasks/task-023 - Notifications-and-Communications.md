@@ -4,7 +4,7 @@ title: Notifications and Communications
 status: In Progress
 assignee: []
 created_date: '2026-01-24 11:40'
-updated_date: '2026-01-24 19:10'
+updated_date: '2026-01-24 19:20'
 labels: []
 dependencies: []
 priority: high
@@ -317,4 +317,29 @@ Check for incomplete profiles:
 - `SUPABASE_SERVICE_ROLE_KEY` environment variable must be set for email fetching to work
 - `RESEND_API_KEY` environment variable must be set for actual email sending (otherwise logs to console)
 - `NEXT_PUBLIC_APP_URL` should be set for proper links in emails
+
+## Refactored Email Access (2026-01-24)
+
+### Changed Approach:
+Removed service role key dependency. Now using RLS-compatible approach:
+
+1. **Added `email` column to `profiles` table** - synced from `auth.users` via trigger
+2. **Database trigger** - `sync_user_email()` copies email from auth.users to profiles on insert/update
+3. **RLS access** - profiles table is readable by authenticated users, so emails can be fetched without service role
+
+### Files Created:
+- `migrations/005_add_email_to_profiles.sql` - adds email column, index, and sync trigger
+
+### Files Removed:
+- `app/lib/supabaseAdmin.ts` - no longer needed
+
+### Files Modified:
+- `specs/tables.sql` - added email column and trigger to schema spec
+- `app/lib/notifications/service.ts` - replaced `getUserEmailFromAuth()` with `getUserEmailFromProfiles()` that queries profiles table
+
+### Migration Required:
+Run `migrations/005_add_email_to_profiles.sql` to:
+1. Add email column to profiles
+2. Sync existing emails from auth.users
+3. Create trigger for future email syncs
 <!-- SECTION:NOTES:END -->
