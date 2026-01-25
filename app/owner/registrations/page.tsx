@@ -7,6 +7,7 @@ import { Header } from '@/app/components/Header';
 import { formatDate } from '@/app/lib/dateFormat';
 import Link from 'next/link';
 import Image from 'next/image';
+import { Footer } from '@/app/components/Footer';
 
 type Registration = {
   id: string;
@@ -559,6 +560,7 @@ export default function AllRegistrationsPage() {
           </>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

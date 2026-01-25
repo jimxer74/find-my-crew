@@ -69,9 +69,15 @@ export async function assessRegistrationWithAI(
     legId: registration.leg_id,
     userId: registration.user_id,
     status: registration.status,
-    journeyName: registration.legs.journeys.name,
-    legName: registration.legs.name,
+    journeyName: registration.legs?.journeys?.name,
+    legName: registration.legs?.name,
   });
+
+  // Validate that we have the required nested data
+  if (!registration.legs?.journeys) {
+    console.error(`[AI Assessment] Missing journey data for registration ${registration.id}`);
+    throw new Error(`Missing journey data for registration: ${registration.id}`);
+  }
 
   // Check if auto-approval is enabled
   if (!registration.legs.journeys.auto_approval_enabled) {
@@ -79,17 +85,51 @@ export async function assessRegistrationWithAI(
     return; // No assessment needed
   }
 
+  // Check if user has consented to AI processing (GDPR compliance)
+  const { data: userConsents } = await supabase
+    .from('user_consents')
+    .select('ai_processing_consent')
+    .eq('user_id', registration.user_id)
+    .single();
+
+  if (!userConsents?.ai_processing_consent) {
+    console.log(`[AI Assessment] User ${registration.user_id} has not consented to AI processing, skipping assessment`);
+    // Notify owner that manual review is needed due to missing AI consent
+    const ownerId = registration.legs?.journeys?.boats?.owner_id;
+    
+    if (!ownerId) {
+      console.error(`[AI Assessment] Cannot notify owner: ownerId is null. Registration: ${registration.id}, Journey: ${registration.legs?.journeys?.id}`);
+      // Still return - we can't proceed without AI consent anyway
+      return;
+    }
+    
+    await createNotification(supabase, {
+      user_id: ownerId,
+      type: NotificationType.AI_REVIEW_NEEDED,
+      title: 'Manual Review Required',
+      message: `A crew member has applied but has not consented to AI matching. Please review manually.`,
+      link: `/owner/registrations/${registration.id}`,
+      metadata: {
+        registration_id: registration.id,
+        journey_id: registration.legs?.journeys?.id,
+        reason: 'no_ai_consent',
+      },
+    });
+    return; // Cannot proceed without AI consent
+  }
+
   console.log(`[AI Assessment] Auto-approval enabled, threshold: ${registration.legs.journeys.auto_approval_threshold}%`);
 
   // Load requirements first - if no requirements, skip assessment
+  const journeyId = registration.legs.journeys.id;
   const { data: requirements } = await supabase
     .from('journey_requirements')
     .select('*')
-    .eq('journey_id', registration.legs.journeys.id)
+    .eq('journey_id', journeyId)
     .order('order', { ascending: true });
 
   if (!requirements || requirements.length === 0) {
-    console.log(`[AI Assessment] No requirements found for journey ${registration.legs.journeys.id}, skipping assessment`);
+    console.log(`[AI Assessment] No requirements found for journey ${journeyId}, skipping assessment`);
     return; // No requirements means no assessment needed
   }
 
@@ -294,10 +334,15 @@ export async function assessRegistrationWithAI(
   });
 
   // Get crew and owner info for notifications
-  const journeyId = registration.legs.journeys.id;
-  const journeyName = registration.legs.journeys.name;
+  // journeyId is already defined earlier in the function
+  const journeyName = registration.legs?.journeys?.name;
   const crewUserId = registration.user_id;
-  const ownerId = registration.legs.journeys.boats.owner_id;
+  const ownerId = registration.legs?.journeys?.boats?.owner_id;
+  
+  if (!ownerId) {
+    console.error(`[AI Assessment] Cannot send notifications: ownerId is null. Registration: ${registration.id}, Journey: ${journeyId}`);
+    // Continue with assessment update but skip notifications
+  }
 
   // Get crew name for owner notification
   const { data: crewProfileData } = await supabase
@@ -318,92 +363,97 @@ export async function assessRegistrationWithAI(
   const ownerName = ownerProfile?.full_name || ownerProfile?.username || 'The boat owner';
 
   // Send notifications based on AI assessment result
-  if (updateData.auto_approved) {
-    // Notify crew member of approval
-    const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName);
-    if (crewNotifyResult.error) {
-      console.error('[AI Assessment] Failed to send approval notification to crew:', crewNotifyResult.error);
-    } else {
-      console.log('[AI Assessment] Approval notification sent to crew:', crewUserId);
-    }
+  // Only send notifications if we have a valid ownerId
+  if (ownerId) {
+    if (updateData.auto_approved) {
+      // Notify crew member of approval
+      const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName);
+      if (crewNotifyResult.error) {
+        console.error('[AI Assessment] Failed to send approval notification to crew:', crewNotifyResult.error);
+      } else {
+        console.log('[AI Assessment] Approval notification sent to crew:', crewUserId);
+      }
 
-    // Notify owner that AI auto-approved the registration
-    const ownerNotifyResult = await createNotification(supabase, {
-      user_id: ownerId,
-      type: NotificationType.AI_AUTO_APPROVED,
-      title: 'Registration Auto-Approved',
-      message: `${crewName}'s registration for "${journeyName}" was automatically approved by AI (Score: ${assessment.match_score}%).`,
-      link: `/owner/registrations/${registrationId}`,
-      metadata: {
-        registration_id: registrationId,
-        journey_id: journeyId,
-        journey_name: journeyName,
-        crew_name: crewName,
-        crew_id: crewUserId,
-        match_score: assessment.match_score,
-        recommendation: assessment.recommendation,
-      },
-    });
-    if (ownerNotifyResult.error) {
-      console.error('[AI Assessment] Failed to send auto-approval notification to owner:', ownerNotifyResult.error);
+      // Notify owner that AI auto-approved the registration
+      const ownerNotifyResult = await createNotification(supabase, {
+        user_id: ownerId,
+        type: NotificationType.AI_AUTO_APPROVED,
+        title: 'Registration Auto-Approved',
+        message: `${crewName}'s registration for "${journeyName}" was automatically approved by AI (Score: ${assessment.match_score}%).`,
+        link: `/owner/registrations/${registrationId}`,
+        metadata: {
+          registration_id: registrationId,
+          journey_id: journeyId,
+          journey_name: journeyName,
+          crew_name: crewName,
+          crew_id: crewUserId,
+          match_score: assessment.match_score,
+          recommendation: assessment.recommendation,
+        },
+      });
+      if (ownerNotifyResult.error) {
+        console.error('[AI Assessment] Failed to send auto-approval notification to owner:', ownerNotifyResult.error);
+      } else {
+        console.log('[AI Assessment] Auto-approval notification sent to owner:', ownerId);
+      }
     } else {
-      console.log('[AI Assessment] Auto-approval notification sent to owner:', ownerId);
+      // Notify owner that manual review is needed
+      const reviewNotifyResult = await createNotification(supabase, {
+        user_id: ownerId,
+        type: NotificationType.AI_REVIEW_NEEDED,
+        title: 'Registration Needs Review',
+        message: `${crewName}'s registration for "${journeyName}" needs your review (AI Score: ${assessment.match_score}%).`,
+        link: `/owner/registrations/${registrationId}`,
+        metadata: {
+          registration_id: registrationId,
+          journey_id: journeyId,
+          journey_name: journeyName,
+          crew_name: crewName,
+          crew_id: crewUserId,
+          match_score: assessment.match_score,
+          recommendation: assessment.recommendation,
+        },
+      });
+      if (reviewNotifyResult.error) {
+        console.error('[AI Assessment] Failed to send review notification to owner:', reviewNotifyResult.error);
+      } else {
+        console.log('[AI Assessment] Review needed notification sent to owner:', ownerId);
+      }
+
+      // Send email notification to owner
+      try {
+        const { data: ownerEmailData } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('id', ownerId)
+          .single();
+
+        if (ownerEmailData?.email) {
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+          const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
+          const emailResult = await sendReviewNeededEmail(
+            supabase,
+            ownerEmailData.email,
+            ownerId,
+            crewName,
+            journeyName,
+            assessment.match_score,
+            registrationLink
+          );
+          if (emailResult.error) {
+            console.error('[AI Assessment] Failed to send review needed email:', emailResult.error);
+          } else {
+            console.log('[AI Assessment] Review needed email sent to:', ownerEmailData.email);
+          }
+        } else {
+          console.warn('[AI Assessment] Could not get email for owner:', ownerId);
+        }
+      } catch (emailErr) {
+        console.error('[AI Assessment] Error sending review needed email:', emailErr);
+      }
     }
   } else {
-    // Notify owner that manual review is needed
-    const reviewNotifyResult = await createNotification(supabase, {
-      user_id: ownerId,
-      type: NotificationType.AI_REVIEW_NEEDED,
-      title: 'Registration Needs Review',
-      message: `${crewName}'s registration for "${journeyName}" needs your review (AI Score: ${assessment.match_score}%).`,
-      link: `/owner/registrations/${registrationId}`,
-      metadata: {
-        registration_id: registrationId,
-        journey_id: journeyId,
-        journey_name: journeyName,
-        crew_name: crewName,
-        crew_id: crewUserId,
-        match_score: assessment.match_score,
-        recommendation: assessment.recommendation,
-      },
-    });
-    if (reviewNotifyResult.error) {
-      console.error('[AI Assessment] Failed to send review notification to owner:', reviewNotifyResult.error);
-    } else {
-      console.log('[AI Assessment] Review needed notification sent to owner:', ownerId);
-    }
-
-    // Send email notification to owner
-    try {
-      const { data: ownerEmailData } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', ownerId)
-        .single();
-
-      if (ownerEmailData?.email) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-        const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
-        const emailResult = await sendReviewNeededEmail(
-          supabase,
-          ownerEmailData.email,
-          ownerId,
-          crewName,
-          journeyName,
-          assessment.match_score,
-          registrationLink
-        );
-        if (emailResult.error) {
-          console.error('[AI Assessment] Failed to send review needed email:', emailResult.error);
-        } else {
-          console.log('[AI Assessment] Review needed email sent to:', ownerEmailData.email);
-        }
-      } else {
-        console.warn('[AI Assessment] Could not get email for owner:', ownerId);
-      }
-    } catch (emailErr) {
-      console.error('[AI Assessment] Error sending review needed email:', emailErr);
-    }
+    console.warn('[AI Assessment] Skipping notifications: ownerId is null');
   }
 }
 

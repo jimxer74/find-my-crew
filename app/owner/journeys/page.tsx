@@ -12,6 +12,7 @@ import { Pagination } from '@/app/components/ui/Pagination';
 import { formatDate } from '@/app/lib/dateFormat';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
 import { checkProfile } from '@/app/lib/profile/checkProfile';
+import { Footer } from '@/app/components/Footer';
 
 export default function JourneysPage() {
   const { user, loading: authLoading } = useAuth();
@@ -500,6 +501,7 @@ export default function JourneysPage() {
           </>
         )}
       </main>
+      <Footer />
 
       {/* Journey Form Modal */}
       {user && (

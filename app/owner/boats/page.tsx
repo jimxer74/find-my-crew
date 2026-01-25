@@ -10,6 +10,7 @@ import { Header } from '@/app/components/Header';
 import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
 import { checkProfile } from '@/app/lib/profile/checkProfile';
+import { Footer } from '@/app/components/Footer';
 
 export default function BoatsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -158,6 +159,7 @@ export default function BoatsPage() {
           )}
         </div>
       </main>
+      <Footer />
 
       {/* Boat Form Modal */}
       {user && (
@@ -178,3 +180,4 @@ export default function BoatsPage() {
     </FeatureGate>
   );
 }
+

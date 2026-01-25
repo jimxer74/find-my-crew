@@ -8,6 +8,7 @@ import { Header } from '@/app/components/Header';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
+import { Footer } from '@/app/components/Footer';
 
 type RegistrationLeg = {
   registration_id: string;
@@ -371,6 +372,7 @@ export default function MyRegistrationsPage() {
             })}
           </div>
         )}
+        <Footer />
       </main>
     </div>
   );

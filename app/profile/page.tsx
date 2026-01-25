@@ -11,6 +11,7 @@ import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
 import { MissingFieldsIndicator } from '@/app/components/profile/MissingFieldsIndicator';
+import { Footer } from '../components/Footer';
 
 type SkillEntry = {
   skill_name: string;
@@ -1379,9 +1380,14 @@ export default function ProfilePage() {
               </button>
             </div>
           </form>
+
+          
         </div>
+      <Footer />
       </div>
+      
       </main>
     </div>
+
   );
 }

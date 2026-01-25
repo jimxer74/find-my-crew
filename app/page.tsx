@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { useAuth } from './contexts/AuthContext';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
+import { Footer } from './components/Footer';
 
 export default function Home() {
   const { user } = useAuth();
@@ -215,16 +216,7 @@ export default function Home() {
       </section>
 
         {/* Footer */}
-        <footer className="border-t border-white/20 bg-white/90 backdrop-blur-md mt-12 sm:mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="text-center text-white/80">
-            <p className="mb-2 text-sm sm:text-base">© 2024 Find My Crew. All rights reserved.</p>
-            <p className="text-xs sm:text-sm text-white/70">
-              Connecting boat owners with crew members worldwide
-            </p>
-          </div>
-        </div>
-      </footer>
+        <Footer />
       </div>
       <LoginModal
         isOpen={isLoginModalOpen}
