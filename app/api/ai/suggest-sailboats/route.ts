@@ -116,7 +116,7 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
         console.error('Text that failed to parse:', jsonText);
         // Try to extract valid items from truncated JSON
         try {
-          const arrayMatch = jsonText.match(/\[(.*)\]/s);
+          const arrayMatch = jsonText.match(/\[([\s\S]*)\]/);
           if (arrayMatch) {
             const items = arrayMatch[1]
               .split(',')
