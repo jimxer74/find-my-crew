@@ -1,10 +1,10 @@
 ---
 id: TASK-026
 title: Registration approved / denied summary page for crew
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-25 08:21'
-updated_date: '2026-01-25 11:46'
+updated_date: '2026-01-25 12:09'
 labels: []
 dependencies: []
 priority: high
