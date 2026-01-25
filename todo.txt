@@ -24,4 +24,4 @@ backlog task create "Define production deployment architecture, with performance
 backlog task create "Patreon / crowdsourcing support model"
 backlog task create "Plan earnings logic / business model: Freemium, Subscription, Adds, or community / crowdsourced"
 backlog task create "Marketing plan and materials, logos, icons, basic UX"
-backlog task create "Cobacklog task createoperation with noforeignland, Predict Wind, Navily"
+backlog task create "Cobacklog task createoperation with noforeignland,  Predict Wind, Navily"
