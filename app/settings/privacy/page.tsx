@@ -299,7 +299,7 @@ export default function PrivacySettingsPage() {
               <div>
                 <p className="font-medium text-foreground">Profile Sharing</p>
                 <p className="text-sm text-muted-foreground">
-                  Allow boat owners to view your profile when you apply for crew positions.
+                  Allow boat owners to view your profile when you apply for crew positions. Please note that without this consent, you are not able to register for journeys or legs.
                 </p>
               </div>
               <button

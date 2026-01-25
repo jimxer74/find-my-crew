@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
@@ -242,6 +243,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [hasRequirements, setHasRequirements] = useState(false);
   const [isCheckingRequirements, setIsCheckingRequirements] = useState(false);
   const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
+  const [hasProfileSharingConsent, setHasProfileSharingConsent] = useState<boolean | null>(null);
+  const [checkingProfileConsent, setCheckingProfileConsent] = useState(false);
 
   // Safety effect: If requirements exist but requirements form is not shown, show it
   useEffect(() => {
@@ -306,6 +309,40 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
     loadRegistrationStatus();
   }, [user, leg.leg_id]);
+
+  // Check profile sharing consent
+  useEffect(() => {
+    if (!user) {
+      setHasProfileSharingConsent(null);
+      return;
+    }
+
+    const checkProfileSharingConsent = async () => {
+      setCheckingProfileConsent(true);
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from('user_consents')
+          .select('profile_sharing_consent')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Error checking profile sharing consent:', error);
+          setHasProfileSharingConsent(null);
+        } else {
+          setHasProfileSharingConsent(data?.profile_sharing_consent === true);
+        }
+      } catch (err) {
+        console.error('Error checking profile sharing consent:', err);
+        setHasProfileSharingConsent(null);
+      } finally {
+        setCheckingProfileConsent(false);
+      }
+    };
+
+    checkProfileSharingConsent();
+  }, [user]);
 
   // Check if journey has requirements when register button is clicked
   const checkRequirements = async () => {
@@ -433,6 +470,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Handle register button click
   const handleRegister = async () => {
+    // Check profile sharing consent first
+    if (hasProfileSharingConsent === false) {
+      setRegistrationError('Profile sharing consent is required to register for legs. Please update your privacy settings.');
+      return;
+    }
+
     setRegistrationError(null);
     setRegistrationNotes('');
     setRequirementsAnswers([]);
@@ -467,6 +510,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const handleSubmitRegistration = async (providedAnswers?: any[], providedNotes?: string) => {
     if (!user) {
       setRegistrationError('You must be logged in to register');
+      return;
+    }
+
+    // Check profile sharing consent before submitting
+    if (hasProfileSharingConsent === false) {
+      setRegistrationError('Profile sharing consent is required to register for legs. Please update your privacy settings.');
       return;
     }
 
@@ -1254,13 +1303,67 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     </button>
                   )}
                 </div>
+              ) : hasProfileSharingConsent === false ? (
+                <div className="space-y-3">
+                  {/* Profile Sharing Consent Notification */}
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <svg
+                        className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-semibold text-amber-900 mb-1">
+                          Profile Sharing Consent Required
+                        </h4>
+                        <p className="text-sm text-amber-800 mb-2">
+                          To register for legs, you need to enable profile sharing consent. This allows boat owners to view your profile when reviewing your registration.
+                        </p>
+                        <Link
+                          href="/settings/privacy"
+                          className="text-sm font-medium text-amber-900 hover:text-amber-700 underline inline-flex items-center gap-1"
+                        >
+                          Go to Privacy Settings
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    disabled
+                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                  >
+                    Register for leg
+                  </button>
+                </div>
               ) : (
                 <button
                   onClick={handleRegister}
-                  disabled={isRegistering}
+                  disabled={isRegistering || checkingProfileConsent}
                   className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isRegistering ? 'Registering...' : 'Register for leg'}
+                  {isRegistering ? 'Registering...' : checkingProfileConsent ? 'Checking...' : 'Register for leg'}
                 </button>
               )}
               {registrationError && (
