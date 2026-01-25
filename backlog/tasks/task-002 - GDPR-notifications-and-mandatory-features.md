@@ -1,10 +1,10 @@
 ---
 id: TASK-002
 title: GDPR notifications and mandatory features
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-23 17:11'
-updated_date: '2026-01-25 08:48'
+updated_date: '2026-01-25 09:46'
 labels: []
 dependencies: []
 priority: high
@@ -79,21 +79,21 @@ Create `/settings/privacy` or `/account/privacy` page with:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Signup form includes required checkboxes for Privacy Policy and Terms of Service acceptance
-- [ ] #2 Signup form includes optional checkboxes for AI processing consent, profile sharing consent, and marketing emails
-- [ ] #3 Cookie consent banner appears on first visit with Essential/Analytics/Marketing categories
-- [ ] #4 Cookie preferences are stored and banner doesn't reappear once set
-- [ ] #5 Account settings page exists at /settings/privacy or /account/privacy
-- [ ] #6 View My Data section displays all collected personal data in readable format
-- [ ] #7 Export My Data button downloads complete personal data as JSON file
-- [ ] #8 Delete My Account flow with confirmation dialog permanently removes all user data
-- [ ] #9 Withdraw Consent section allows toggling AI processing, profile sharing, and marketing consents
-- [ ] #10 Privacy Policy page exists at /privacy-policy with placeholder content structure
-- [ ] #11 Terms of Service page exists at /terms-of-service with placeholder content structure
-- [ ] #12 Footer includes links to Privacy Policy and Terms of Service
-- [ ] #13 Database schema includes consent tracking fields with timestamps
-- [ ] #14 Email preferences UI allows managing registration/journey/profile notification preferences
-- [ ] #15 Consent changes are timestamped for audit purposes
+- [x] #1 Signup form includes required checkboxes for Privacy Policy and Terms of Service acceptance
+- [x] #2 Signup form includes optional checkboxes for AI processing consent, profile sharing consent, and marketing emails
+- [x] #3 Cookie consent banner appears on first visit with Essential/Analytics/Marketing categories
+- [x] #4 Cookie preferences are stored and banner doesn't reappear once set
+- [x] #5 Account settings page exists at /settings/privacy or /account/privacy
+- [x] #6 View My Data section displays all collected personal data in readable format
+- [x] #7 Export My Data button downloads complete personal data as JSON file
+- [x] #8 Delete My Account flow with confirmation dialog permanently removes all user data
+- [x] #9 Withdraw Consent section allows toggling AI processing, profile sharing, and marketing consents
+- [x] #10 Privacy Policy page exists at /privacy-policy with placeholder content structure
+- [x] #11 Terms of Service page exists at /terms-of-service with placeholder content structure
+- [x] #12 Footer includes links to Privacy Policy and Terms of Service
+- [x] #13 Database schema includes consent tracking fields with timestamps
+- [x] #14 Email preferences UI allows managing registration/journey/profile notification preferences
+- [x] #15 Consent changes are timestamped for audit purposes
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -144,3 +144,94 @@ Create `/settings/privacy` or `/account/privacy` page with:
 2. Check profile sharing consent in relevant queries
 3. Respect marketing consent in notification service
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Complete
+
+### Files Created
+
+**Database Schema**
+- `migrations/006_user_consents.sql` - Migration for user_consents and consent_audit_log tables
+- `app/types/consents.ts` - TypeScript types for consent management
+
+**Legal Pages**
+- `app/privacy-policy/page.tsx` - Privacy policy placeholder page with structured sections
+- `app/terms-of-service/page.tsx` - Terms of service placeholder page with structured sections
+
+**Cookie Consent**
+- `app/components/CookieConsentBanner.tsx` - GDPR-compliant cookie consent banner with Essential/Analytics/Marketing categories
+
+**API Endpoints**
+- `app/api/user/consents/route.ts` - GET/PATCH for managing user consents
+- `app/api/user/email-preferences/route.ts` - GET/PATCH for email notification preferences
+- `app/api/user/data-export/route.ts` - GET to export all user data as JSON
+- `app/api/user/delete-account/route.ts` - DELETE to permanently remove user account
+
+**Privacy Settings**
+- `app/settings/privacy/page.tsx` - Comprehensive privacy settings page with:
+  - Consent toggles (AI processing, profile sharing, marketing)
+  - Email notification preferences
+  - View My Data section with data summary
+  - Export My Data button (JSON download)
+  - Delete My Account with confirmation dialog
+
+**Footer Component**
+- `app/components/Footer.tsx` - Footer with links to privacy policy, terms, and privacy settings
+
+### Files Modified
+
+**Signup Flow**
+- `app/auth/signup/page.tsx` - Added consent checkboxes:
+  - Privacy Policy (required)
+  - Terms of Service (required)
+  - AI Processing (optional)
+  - Profile Sharing (optional)
+  - Marketing (optional)
+
+**AI Assessment**
+- `app/lib/ai/assessRegistration.ts` - Added AI consent check before processing; notifies owner for manual review if user hasn't consented
+
+**Root Layout**
+- `app/layout.tsx` - Added CookieConsentBanner component
+
+**Schema Documentation**
+- `specs/tables.sql` - Added user_consents and consent_audit_log table definitions
+
+### Features Implemented
+
+1. **Consent Management at Signup**
+   - Required: Privacy Policy and Terms of Service acceptance
+   - Optional: AI processing, profile sharing, marketing consent
+   - All consents timestamped and stored in database
+
+2. **Cookie Consent Banner**
+   - Appears on first visit
+   - Categories: Essential (always on), Analytics, Marketing
+   - Stored in localStorage for anonymous users
+   - Synced to database for authenticated users
+   - Accept All / Reject All / Customize options
+
+3. **Privacy Settings Page** (`/settings/privacy`)
+   - Toggle consents on/off with real-time updates
+   - View collected data summary
+   - Export all data as JSON (GDPR data portability)
+   - Delete account with confirmation dialog
+   - Email notification preferences
+
+4. **GDPR Compliance**
+   - Consent audit trail stored in consent_audit_log table
+   - AI processing requires explicit opt-in consent
+   - Data export includes all user data (profile, boats, registrations, etc.)
+   - Account deletion cascades to all related data
+
+5. **Legal Pages (Placeholders)**
+   - Privacy Policy with all required GDPR sections
+   - Terms of Service with standard sections
+   - Clearly marked as placeholders for legal review
+
+6. **Footer with Legal Links**
+   - Privacy Policy, Terms of Service, Privacy Settings links
+   - Added to legal pages and privacy settings page
+<!-- SECTION:FINAL_SUMMARY:END -->
