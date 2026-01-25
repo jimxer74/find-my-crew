@@ -8,6 +8,7 @@ import { RequirementsManager } from '@/app/components/manage/RequirementsManager
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { canCreateJourney, getLimits } from '@/app/lib/limits';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
@@ -56,12 +57,15 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
   const [isLoadingBoats, setIsLoadingBoats] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [currentJourneyCount, setCurrentJourneyCount] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       loadBoats();
       if (journeyId) {
         loadJourney();
+        setLimitReached(false);
       } else {
         // Reset form for new journey
         setFormData({
@@ -76,9 +80,24 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
           state: 'In planning',
         });
         setError(null);
+
+        // Check journey creation limit for new journeys
+        checkJourneyLimit();
       }
     }
   }, [isOpen, journeyId]);
+
+  const checkJourneyLimit = async () => {
+    const supabase = getSupabaseBrowserClient();
+    const result = await canCreateJourney(supabase, userId);
+    setCurrentJourneyCount(result.current);
+    if (!result.allowed) {
+      setLimitReached(true);
+      setError(result.message || `Journey limit reached (${result.current}/${result.limit})`);
+    } else {
+      setLimitReached(false);
+    }
+  };
 
   const loadBoats = async () => {
     setIsLoadingBoats(true);
@@ -671,7 +690,7 @@ export function JourneyFormModal({ isOpen, onClose, onSuccess, journeyId, userId
                     </button>
                     <button
                       type="submit"
-                      disabled={loading || boats.length === 0}
+                      disabled={loading || boats.length === 0 || (limitReached && !journeyId)}
                       className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                     >
                       {loading ? 'Saving...' : journeyId ? 'Update Journey' : 'Create Journey'}

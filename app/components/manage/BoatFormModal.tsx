@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { canCreateBoat, getLimits, getUserUsage } from '@/app/lib/limits';
 
 // Sailboat category information
 const sailboatCategories = {
@@ -110,6 +111,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingBoat, setIsLoadingBoat] = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
+  const [currentBoatCount, setCurrentBoatCount] = useState(0);
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showCategoryInfo, setShowCategoryInfo] = useState(false);
@@ -124,6 +127,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   useEffect(() => {
     if (isOpen && boatId) {
       loadBoat();
+      setLimitReached(false);
     } else if (isOpen && !boatId) {
       // Reset form for new boat
       setFormData({
@@ -156,8 +160,23 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       setShowMakeModelSuggestions(false);
       setHasSearched(false);
       setSelectedBoatSlug(null);
+
+      // Check boat creation limit for new boats
+      checkBoatLimit();
     }
   }, [isOpen, boatId]);
+
+  const checkBoatLimit = async () => {
+    const supabase = getSupabaseBrowserClient();
+    const result = await canCreateBoat(supabase, userId);
+    setCurrentBoatCount(result.current);
+    if (!result.allowed) {
+      setLimitReached(true);
+      setError(result.message || `Boat limit reached (${result.current}/${result.limit})`);
+    } else {
+      setLimitReached(false);
+    }
+  };
 
   const loadBoat = async () => {
     if (!boatId) return;
@@ -1124,7 +1143,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                   </button>
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || (limitReached && !boatId)}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   >
                     {loading ? 'Saving...' : boatId ? 'Update Boat' : 'Create Boat'}

@@ -1,52 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
+import {
+  validateLocation,
+  validateWaypointArray,
+  validateDateString,
+  validatePositiveNumber,
+  MAX_INPUT_LENGTHS,
+} from '@/app/lib/ai/validation';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { startLocation, endLocation, intermediateWaypoints, boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = body;
 
-    if (!startLocation || !endLocation) {
-      return NextResponse.json(
-        { error: 'Start and end locations are required' },
-        { status: 400 }
-      );
+    // Validate start location
+    const startResult = validateLocation(startLocation, 'Start location');
+    if (!startResult.valid) {
+      return NextResponse.json({ error: startResult.error }, { status: 400 });
     }
 
-    // Validate coordinates are present and valid
-    if (typeof startLocation.lat !== 'number' || typeof startLocation.lng !== 'number') {
-      return NextResponse.json(
-        { error: 'Start location must have valid lat and lng coordinates' },
-        { status: 400 }
-      );
+    // Validate end location
+    const endResult = validateLocation(endLocation, 'End location');
+    if (!endResult.valid) {
+      return NextResponse.json({ error: endResult.error }, { status: 400 });
     }
-    
-    if (typeof endLocation.lat !== 'number' || typeof endLocation.lng !== 'number') {
-      return NextResponse.json(
-        { error: 'End location must have valid lat and lng coordinates' },
-        { status: 400 }
-      );
+
+    // Validate intermediate waypoints (max 20)
+    const waypointsResult = validateWaypointArray(intermediateWaypoints, 20);
+    if (!waypointsResult.valid) {
+      return NextResponse.json({ error: waypointsResult.error }, { status: 400 });
     }
+
+    // Validate dates
+    const startDateResult = validateDateString(startDate, 'Start date');
+    if (!startDateResult.valid) {
+      return NextResponse.json({ error: startDateResult.error }, { status: 400 });
+    }
+
+    const endDateResult = validateDateString(endDate, 'End date');
+    if (!endDateResult.valid) {
+      return NextResponse.json({ error: endDateResult.error }, { status: 400 });
+    }
+
+    // Validate boat speed
+    const speedResult = validatePositiveNumber(boatSpeed, 'Boat speed', 50);
+    if (!speedResult.valid) {
+      return NextResponse.json({ error: speedResult.error }, { status: 400 });
+    }
+
+    // Use validated and sanitized values
+    const validatedStart = startResult.location!;
+    const validatedEnd = endResult.location!;
+    const validatedWaypoints = waypointsResult.waypoints;
+    const validatedStartDate = startDateResult.date;
+    const validatedEndDate = endDateResult.date;
+    const validatedSpeed = speedResult.value;
 
     // Log received coordinates for debugging
-    console.log('Received startLocation:', {
-      name: startLocation.name,
-      lat: startLocation.lat,
-      lng: startLocation.lng
-    });
-    console.log('Received endLocation:', {
-      name: endLocation.name,
-      lat: endLocation.lat,
-      lng: endLocation.lng
-    });
+    console.log('Validated startLocation:', validatedStart);
+    console.log('Validated endLocation:', validatedEnd);
 
-    // Build waypoints list for prompt
+    // Build waypoints list for prompt using validated values
     const allWaypoints = [
-      { name: startLocation.name, lat: startLocation.lat, lng: startLocation.lng },
-      ...(intermediateWaypoints && Array.isArray(intermediateWaypoints) && intermediateWaypoints.length > 0
-        ? intermediateWaypoints.map((wp: any) => ({ name: wp.name, lat: wp.lat, lng: wp.lng }))
-        : []),
-      { name: endLocation.name, lat: endLocation.lat, lng: endLocation.lng },
+      validatedStart,
+      ...validatedWaypoints,
+      validatedEnd,
     ];
     
     const waypointsInfo = allWaypoints.length > 2
@@ -56,32 +74,32 @@ export async function POST(request: NextRequest) {
       : '';
     
     // Create a prompt for Gemini
-    const dateInfo = startDate || endDate 
-      ? `\nJourney Dates:${startDate ? ` Start: ${startDate}` : ''}${endDate ? ` End: ${endDate}` : ''}`
+    const dateInfo = validatedStartDate || validatedEndDate
+      ? `\nJourney Dates:${validatedStartDate ? ` Start: ${validatedStartDate}` : ''}${validatedEndDate ? ` End: ${validatedEndDate}` : ''}`
       : '';
-    
-    const speedPlanningInstructions = useSpeedPlanning && boatSpeed && startDate && endDate
+
+    const speedPlanningInstructions = useSpeedPlanning && validatedSpeed && validatedStartDate && validatedEndDate
       ? `\n\nSPEED-BASED PLANNING (CRITICAL):
-- The boat's average cruising speed is ${boatSpeed} knots
-- Journey must start on ${startDate} and end by ${endDate}
+- The boat's average cruising speed is ${validatedSpeed} knots
+- Journey must start on ${validatedStartDate} and end by ${validatedEndDate}
 - You MUST calculate realistic dates for each leg based on:
   * Distance between waypoints (calculate using coordinates)
-  * Boat speed (${boatSpeed} knots)
+  * Boat speed (${validatedSpeed} knots)
   * Realistic sailing time (consider weather, rest periods, and safe navigation)
 - For each leg, calculate:
   * Distance in nautical miles between start and end waypoints
   * Estimated sailing time = Distance / Speed (account for 70-80% efficiency due to conditions)
   * Start date: Use journey start date for first leg, or end date of previous leg
   * End date: Start date + calculated sailing time + buffer for rest/weather
-- Ensure all leg dates fit within the journey timeframe (${startDate} to ${endDate})
+- Ensure all leg dates fit within the journey timeframe (${validatedStartDate} to ${validatedEndDate})
 - Leg dates should be sequential and realistic
 - Include start_date and end_date for each leg in the response`
       : '';
     
     const prompt = `You are a sailing route planner. Generate a sailing journey with legs between locations.${waypointsInfo}
 
-Start Location: ${startLocation.name} (approximately ${startLocation.lat}, ${startLocation.lng})
-End Location: ${endLocation.name} (approximately ${endLocation.lat}, ${endLocation.lng})${dateInfo}${speedPlanningInstructions}
+Start Location: ${validatedStart.name} (approximately ${validatedStart.lat}, ${validatedStart.lng})
+End Location: ${validatedEnd.name} (approximately ${validatedEnd.lat}, ${validatedEnd.lng})${dateInfo}${speedPlanningInstructions}
 
 CRITICAL RULES:
 1. Leg START and END waypoints MUST ALWAYS be at:
@@ -111,13 +129,13 @@ CRITICAL RULES:
 4. Geocodes (coordinates):
    - You must determine the EXACT coordinates for each waypoint
    - Use real, accurate coordinates for ports, towns, cities, and marinas
-   - For the start location (${startLocation.name}), use the actual coordinates of that port/town/city
-   - For the end location (${endLocation.name}), use the actual coordinates of that port/town/city
+   - For the start location (${validatedStart.name}), use the actual coordinates of that port/town/city
+   - For the end location (${validatedEnd.name}), use the actual coordinates of that port/town/city
    - Do NOT use the approximate coordinates provided above - find the real coordinates
    - Coordinates must be in [longitude, latitude] format
    - All coordinates must be valid numbers
 
-Return ONLY valid JSON in this exact format:${useSpeedPlanning && boatSpeed && startDate && endDate ? `
+Return ONLY valid JSON in this exact format:${useSpeedPlanning && validatedSpeed && validatedStartDate && validatedEndDate ? `
 {
   "journeyName": "Journey name here",
   "description": "Brief description of the journey",
@@ -192,8 +210,8 @@ Return ONLY valid JSON in this exact format:${useSpeedPlanning && boatSpeed && s
 }`}
 
 IMPORTANT:
-- First leg's starting waypoint (index 0) name should be "${startLocation.name}" or a specific port/marina in that location
-- Last leg's ending waypoint (highest index) name should be "${endLocation.name}" or a specific port/marina in that location
+- First leg's starting waypoint (index 0) name should be "${validatedStart.name}" or a specific port/marina in that location
+- Last leg's ending waypoint (highest index) name should be "${validatedEnd.name}" or a specific port/marina in that location
 ${allWaypoints.length > 2 
   ? `- You MUST create legs that visit ALL ${allWaypoints.length} waypoints in order: ${allWaypoints.map(wp => wp.name).join(' → ')}\n- Each waypoint from the list must appear as either the start or end of a leg\n- Create multiple legs if needed to visit all waypoints`
   : ''}
@@ -299,16 +317,16 @@ ${allWaypoints.length > 2
         const firstWp = leg.waypoints[0];
         // Only update name if it's clearly wrong, but keep AI's coordinates
         if (!firstWp.name || firstWp.name.trim() === '') {
-          firstWp.name = startLocation.name;
+          firstWp.name = validatedStart.name;
         }
       }
-      
+
       // Validate that last waypoint name matches end location (for last leg)
       if (i === generatedData.legs.length - 1 && leg.waypoints.length > 0) {
         const lastWp = leg.waypoints[leg.waypoints.length - 1];
         // Only update name if it's clearly wrong, but keep AI's coordinates
         if (!lastWp.name || lastWp.name.trim() === '') {
-          lastWp.name = endLocation.name;
+          lastWp.name = validatedEnd.name;
         }
       }
       

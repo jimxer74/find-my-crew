@@ -427,8 +427,68 @@ create index if not exists registrations_user_id_idx on public.registrations (us
 create unique index if not exists registrations_leg_user_unique
   on public.registrations (leg_id, user_id);
 
--- Note: RLS not enabled for registrations (no policies defined)
--- Add RLS and policies here if needed in the future
+-- Enable Row Level Security
+alter table registrations enable row level security;
+
+-- Policies
+-- Users can view their own registrations
+create policy "Users can view their own registrations"
+on registrations for select
+using (auth.uid() = user_id);
+
+-- Journey owners can view registrations for their journeys
+create policy "Owners can view registrations for their journeys"
+on registrations for select
+using (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = registrations.leg_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+-- Users can create registrations for themselves
+create policy "Users can create their own registrations"
+on registrations for insert
+with check (auth.uid() = user_id);
+
+-- Users can update their own registrations
+create policy "Users can update their own registrations"
+on registrations for update
+using (auth.uid() = user_id);
+
+-- Journey owners can update registrations for their journeys
+create policy "Owners can update registrations for their journeys"
+on registrations for update
+using (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = registrations.leg_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+-- Users can delete their own registrations
+create policy "Users can delete their own registrations"
+on registrations for delete
+using (auth.uid() = user_id);
+
+-- Journey owners can delete registrations for their journeys
+create policy "Owners can delete registrations for their journeys"
+on registrations for delete
+using (
+  exists (
+    select 1 from legs
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where legs.id = registrations.leg_id
+    and boats.owner_id = auth.uid()
+  )
+);
 
 
 -- ============================================================================

@@ -1,0 +1,123 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type (pilot, beta, production)'
+        required: true
+        default: 'pilot'
+        type: choice
+        options:
+          - pilot
+          - beta
+          - production
+      create_tag:
+        description: 'Create a git tag for this release'
+        required: true
+        default: true
+        type: boolean
+      tag_name:
+        description: 'Tag name (e.g., v1.0.0) - required if creating tag'
+        required: false
+        type: string
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate tag name
+        if: ${{ inputs.create_tag == true }}
+        run: |
+          if [ -z "${{ inputs.tag_name }}" ]; then
+            echo "::error::Tag name is required when creating a tag"
+            exit 1
+          fi
+          if ! echo "${{ inputs.tag_name }}" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+)?$'; then
+            echo "::error::Tag name must follow semver format (e.g., v1.0.0 or v1.0.0-pilot)"
+            exit 1
+          fi
+
+  ci:
+    name: Run CI Checks
+    needs: validate
+    uses: ./.github/workflows/ci.yml
+
+  deploy-production:
+    name: Deploy to Production
+    needs: ci
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Create Git Tag
+        if: ${{ inputs.create_tag == true }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a ${{ inputs.tag_name }} -m "Release ${{ inputs.tag_name }}"
+          git push origin ${{ inputs.tag_name }}
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+
+      - name: Deploy to Vercel Production
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Deployed to: $URL"
+
+      - name: Post Deployment Summary
+        run: |
+          echo "## Production Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release Type:** ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.create_tag }}" == "true" ]; then
+            echo "- **Tag:** ${{ inputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  notify:
+    name: Send Notifications
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Deployment Status
+        run: |
+          if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+            echo "Production deployment succeeded!"
+          else
+            echo "::error::Production deployment failed!"
+            exit 1
+          fi

@@ -19,7 +19,7 @@ DELETE FROM public.journey_requirements;
 
 -- Delete waypoints (depends on legs)
 DELETE FROM public.waypoints;
-DELETE FROM public.leg_waypoints;
+-- DELETE FROM public.leg_waypoints;
 
 -- Delete legs
 DELETE FROM public.legs;
