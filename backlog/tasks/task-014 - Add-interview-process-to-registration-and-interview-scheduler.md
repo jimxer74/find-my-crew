@@ -4,8 +4,10 @@ title: "Add interview process to registration and interview scheduler\r"
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:14'
+updated_date: '2026-01-25 08:22'
 labels: []
 dependencies: []
+ordinal: 9000
 ---
 
 

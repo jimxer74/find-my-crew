@@ -4,8 +4,10 @@ title: "AI assisted retrieval and creation of profile (both crew or owner) from 
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:13'
+updated_date: '2026-01-25 08:22'
 labels: []
 dependencies: []
+ordinal: 3000
 ---
 
 
