@@ -241,6 +241,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [requirementsAnswers, setRequirementsAnswers] = useState<any[]>([]);
   const [hasRequirements, setHasRequirements] = useState(false);
   const [isCheckingRequirements, setIsCheckingRequirements] = useState(false);
+  const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
 
   // Safety effect: If requirements exist but requirements form is not shown, show it
   useEffect(() => {
@@ -365,6 +366,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       
       // Update state synchronously
       setHasRequirements(hasReqs);
+      setAutoApprovalEnabled(autoApprovalEnabled);
       
       // If requirements exist (regardless of auto-approval), user MUST complete requirements form
       if (hasReqs) {
@@ -385,6 +387,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (no requirements)`);
         setShowRequirementsForm(false);
         setHasRequirements(false);
+        setAutoApprovalEnabled(false); // Reset when no requirements
         // Only show regular modal if no requirements exist
         setTimeout(() => {
           setShowRegistrationModal(true);
@@ -578,6 +581,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       setRegistrationStatus(data.registration.status);
       setShowRegistrationModal(false);
       setShowRequirementsForm(false);
+      setAutoApprovalEnabled(false); // Reset when closing
       setRegistrationNotes('');
       setRequirementsAnswers([]);
       
@@ -783,6 +787,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   }}
                   isRegistering={isRegistering}
                   registrationError={registrationError}
+                  autoApprovalEnabled={autoApprovalEnabled}
                 />
               </div>
             ) : showRegistrationModal && !hasRequirements ? (

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type QuestionType = 'text' | 'multiple_choice' | 'yes_no' | 'rating';
 
@@ -27,6 +30,7 @@ type RegistrationRequirementsFormProps = {
   onCancel: () => void;
   isRegistering?: boolean;
   registrationError?: string | null;
+  autoApprovalEnabled?: boolean;
 };
 
 export function RegistrationRequirementsForm({
@@ -36,16 +40,58 @@ export function RegistrationRequirementsForm({
   onCancel,
   isRegistering = false,
   registrationError = null,
+  autoApprovalEnabled = false,
 }: RegistrationRequirementsFormProps) {
+  const { user } = useAuth();
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState('');
+  const [hasAIConsent, setHasAIConsent] = useState<boolean | null>(null);
+  const [checkingConsent, setCheckingConsent] = useState(false);
 
   useEffect(() => {
     loadRequirements();
   }, [journeyId]);
+
+  // Check user AI consent if auto-approval is enabled
+  useEffect(() => {
+    if (autoApprovalEnabled && user) {
+      checkAIConsent();
+    } else {
+      setHasAIConsent(null);
+    }
+  }, [autoApprovalEnabled, user]);
+
+  const checkAIConsent = async () => {
+    if (!user) {
+      setHasAIConsent(null);
+      return;
+    }
+
+    setCheckingConsent(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('user_consents')
+        .select('ai_processing_consent')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking AI consent:', error);
+        setHasAIConsent(null);
+      } else {
+        setHasAIConsent(data?.ai_processing_consent === true);
+      }
+    } catch (err) {
+      console.error('Error checking AI consent:', err);
+      setHasAIConsent(null);
+    } finally {
+      setCheckingConsent(false);
+    }
+  };
 
   const loadRequirements = async () => {
     try {
@@ -167,6 +213,9 @@ export function RegistrationRequirementsForm({
     return null;
   }
 
+  // Show notification if auto-approval is enabled and user hasn't given AI consent
+  const showConsentNotification = autoApprovalEnabled && hasAIConsent === false && !checkingConsent;
+
   return (
     <div className="space-y-4">
       <div className="mb-4">
@@ -177,6 +226,54 @@ export function RegistrationRequirementsForm({
           Please answer the following questions for: <span className="font-medium text-foreground">{legName}</span>
         </p>
       </div>
+
+      {/* AI Consent Notification */}
+      {showConsentNotification && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start gap-3">
+            <svg
+              className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div className="flex-1">
+              <h4 className="text-sm font-semibold text-amber-900 mb-1">
+                AI-Assisted Approval Available
+              </h4>
+              <p className="text-sm text-amber-800 mb-2">
+                This journey uses automated AI assessment for faster approval. To enable AI-assisted approval for your registration, please update your privacy settings. You can also continue without the consent and use manual approval.  
+              </p>
+              <Link
+                href="/settings/privacy"
+                className="text-sm font-medium text-amber-900 hover:text-amber-700 underline inline-flex items-center gap-1"
+              >
+                Go to Privacy Settings
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {requirements.map((requirement, index) => (
