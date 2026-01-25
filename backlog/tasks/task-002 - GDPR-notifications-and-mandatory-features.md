@@ -4,7 +4,7 @@ title: GDPR notifications and mandatory features
 status: Done
 assignee: []
 created_date: '2026-01-23 17:11'
-updated_date: '2026-01-25 09:46'
+updated_date: '2026-01-25 10:17'
 labels: []
 dependencies: []
 priority: high
