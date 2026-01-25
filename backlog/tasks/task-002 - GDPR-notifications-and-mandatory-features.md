@@ -1,10 +1,10 @@
 ---
 id: TASK-002
 title: GDPR notifications and mandatory features
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-23 17:11'
-updated_date: '2026-01-25 08:46'
+updated_date: '2026-01-25 08:48'
 labels: []
 dependencies: []
 priority: high
