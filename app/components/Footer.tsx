@@ -9,7 +9,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} Find My Crew. All rights reserved.
+            &copy; {currentYear} SailSmart. All rights reserved.
           </p>
 
           {/* Links */}

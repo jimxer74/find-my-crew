@@ -3,8 +3,8 @@ import { Footer } from '@/app/components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Privacy Policy | Find My Crew',
-  description: 'Privacy Policy for Find My Crew - Learn how we collect, use, and protect your personal data.',
+  title: 'Privacy Policy | SailSmart',
+  description: 'Privacy Policy for SailSmart - Learn how we collect, use, and protect your personal data.',
 };
 
 export default function PrivacyPolicyPage() {
@@ -28,7 +28,7 @@ export default function PrivacyPolicyPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">1. Introduction</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] Welcome to Find My Crew. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, disclose, and safeguard your information when you use our service.
+              [PLACEHOLDER] Welcome to SailSmart. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, disclose, and safeguard your information when you use our service.
             </p>
           </section>
 

@@ -147,9 +147,23 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0 px-3 py-2 flex flex-col">
-          {/* Top Section: Skipper */}
-          <div className="flex items-center justify-end gap-2 mb-2">
-            {/* Skipper Avatar and Name - Only show if profile is complete */}
+          {/* Top Section: Boat Info (Left) and Skipper (Right) */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            {/* Boat Information - Left Side */}
+            {leg.boat_name && (
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-card-foreground leading-tight truncate" title={leg.boat_name}>
+                  {leg.boat_name}
+                </div>
+                {(leg.boat_make || leg.boat_model) && (
+                  <div className="text-xs text-muted-foreground leading-tight truncate">
+                    {leg.boat_make && leg.boat_model ? `${leg.boat_make} ${leg.boat_model}` : leg.boat_make || leg.boat_model}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Skipper Avatar and Name - Right Side */}
             {profileStatus?.exists && profileStatus.completionPercentage === 100 && (leg.owner_name || leg.owner_image_url) && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {leg.owner_image_url ? (

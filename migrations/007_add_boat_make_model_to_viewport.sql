@@ -1,9 +1,48 @@
+-- Migration: Add boat_make and boat_model to get_legs_in_viewport function
+-- This adds the boat make and model fields to the viewport query results
 
--- ============================================================================
--- Function to get legs per viewport
--- ============================================================================
+-- Drop the existing function first since we're changing the return type
+DROP FUNCTION IF EXISTS public.get_legs_in_viewport(double precision, double precision, double precision, double precision, date, date, risk_level[], text[], integer);
 
-
+-- Create the function with the updated return type
+CREATE FUNCTION public.get_legs_in_viewport(
+  min_lng double precision,
+  min_lat double precision,
+  max_lng double precision,
+  max_lat double precision,
+  start_date_filter date DEFAULT NULL,
+  end_date_filter date DEFAULT NULL,
+  risk_levels_filter risk_level[] DEFAULT NULL,
+  skills_filter text[] DEFAULT NULL,
+  min_experience_level_filter integer DEFAULT NULL
+)
+RETURNS TABLE (
+  leg_id uuid,
+  leg_name text,
+  leg_description text,
+  journey_id uuid,
+  journey_name text,
+  start_date timestamptz,
+  end_date timestamptz,
+  crew_needed integer,
+  leg_risk_level risk_level,
+  journey_risk_level risk_level[],
+  skills text[],
+  boat_id uuid,
+  boat_name text,
+  boat_type sailboat_category,
+  boat_image_url text,
+  boat_average_speed_knots numeric,
+  boat_make text,
+  boat_model text,
+  owner_name text,
+  owner_image_url text,
+  min_experience_level integer,
+  start_waypoint jsonb,
+  end_waypoint jsonb
+)
+LANGUAGE plpgsql
+AS $$
 BEGIN
   RETURN QUERY
   SELECT
@@ -158,20 +197,4 @@ BEGIN
     )
   ORDER BY l.start_date ASC NULLS LAST, l.created_at DESC;
 END;
-
-
--- ============================================================================
--- Function to get leg waypoints
--- ============================================================================
-
-
-BEGIN
-  RETURN QUERY
-  SELECT
-    w.index,
-    w.name,
-    ST_AsGeoJSON(w.location)::jsonb as location
-  FROM public.waypoints w
-  WHERE w.leg_id = leg_id_param
-  ORDER BY w.index ASC;
-END;
+$$;

@@ -110,10 +110,10 @@ export function Header() {
               <LogoWithText />
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              {/* Date Range Picker - Only show for crew users (not owners) */}
+              {/* Date Range Picker - Only show for crew users on medium+ screens (hidden on mobile) */}
               {user && userRole === 'crew' && (
                 <>
-                  <div className="relative group" ref={datePickerRef}>
+                  <div className="relative group hidden md:flex" ref={datePickerRef}>
                     <button
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                       className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"

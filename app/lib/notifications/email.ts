@@ -156,7 +156,7 @@ export async function sendRegistrationApprovedEmail(
       </p>
       <p>Fair winds and following seas!</p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;
@@ -203,7 +203,7 @@ export async function sendRegistrationDeniedEmail(
       </p>
       <p>Keep sailing!</p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;
@@ -244,7 +244,7 @@ export async function sendNewRegistrationEmail(
         <a href="${registrationLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Application</a>
       </p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;
@@ -286,7 +286,7 @@ export async function sendReviewNeededEmail(
         <a href="${registrationLink}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Review Application</a>
       </p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;
@@ -332,7 +332,7 @@ export async function sendJourneyUpdatedEmail(
         <a href="${journeyLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">View Updated Journey</a>
       </p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;
@@ -377,7 +377,7 @@ export async function sendProfileReminderEmail(
         <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/profile" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Complete Your Profile</a>
       </p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
-      <p style="color: #6b7280; font-size: 14px;">Find My Crew - Connecting sailors worldwide</p>
+      <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>
     </body>
     </html>
   `;

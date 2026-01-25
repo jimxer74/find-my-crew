@@ -3,8 +3,8 @@ import { Footer } from '@/app/components/Footer';
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Terms of Service | Find My Crew',
-  description: 'Terms of Service for Find My Crew - The rules and guidelines for using our platform.',
+  title: 'Terms of Service | SailSmart',
+  description: 'Terms of Service for SailSmart - The rules and guidelines for using our platform.',
 };
 
 export default function TermsOfServicePage() {
@@ -28,14 +28,14 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">1. Agreement to Terms</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] By accessing or using Find My Crew, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our service.
+              [PLACEHOLDER] By accessing or using SailSmart, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our service.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">2. Description of Service</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] Find My Crew is a platform that connects boat owners with crew members for sailing journeys. Our service includes:
+              [PLACEHOLDER] SailSmart is a platform that connects boat owners with crew members for sailing journeys. Our service includes:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li>Profile creation for crew members and boat owners</li>
@@ -122,7 +122,7 @@ export default function TermsOfServicePage() {
               [PLACEHOLDER - IMPORTANT: CONSULT LEGAL COUNSEL]
             </p>
             <p className="text-foreground/80 mb-4">
-              Find My Crew is a matching platform only. We do not:
+              SailSmart is a matching platform only. We do not:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li>Verify the accuracy of user-provided information</li>
@@ -139,14 +139,14 @@ export default function TermsOfServicePage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">8. Limitation of Liability</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER - CONSULT LEGAL COUNSEL] To the maximum extent permitted by law, Find My Crew shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service.
+              [PLACEHOLDER - CONSULT LEGAL COUNSEL] To the maximum extent permitted by law, SailSmart shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">9. Intellectual Property</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] The Find My Crew service, including its design, features, and content, is protected by intellectual property laws. You may not copy, modify, or distribute our service without permission.
+              [PLACEHOLDER] The SailSmart service, including its design, features, and content, is protected by intellectual property laws. You may not copy, modify, or distribute our service without permission.
             </p>
           </section>
 

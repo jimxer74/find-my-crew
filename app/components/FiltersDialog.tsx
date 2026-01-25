@@ -7,6 +7,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
 import { RiskLevelSelector } from './ui/RiskLevelSelector';
 import { SkillLevelSelector } from './ui/SkillLevelSelector';
+import { DateRangePicker, DateRange } from './ui/DateRangePicker';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 
 type FiltersDialogProps = {
@@ -20,14 +21,17 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const datePickerDialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   
   // Temporary filter state (for editing before save)
   const [tempLocation, setTempLocation] = useState<Location | null>(null);
   const [tempLocationInput, setTempLocationInput] = useState('');
   const [tempRiskLevel, setTempRiskLevel] = useState<RiskLevel[]>([]);
   const [tempExperienceLevel, setTempExperienceLevel] = useState<ExperienceLevel | null>(null);
+  const [tempDateRange, setTempDateRange] = useState<DateRange>(filters.dateRange);
   
   // Profile values (from database, for indicators)
   const [profileValues, setProfileValues] = useState<{
@@ -52,6 +56,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       setTempLocationInput(filters.locationInput);
       setTempRiskLevel(filters.riskLevel);
       setTempExperienceLevel(filters.experienceLevel);
+      setTempDateRange(filters.dateRange);
     }
   }, [isOpen, filters]);
 
@@ -88,8 +93,22 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
   // Close dialog when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
-        handleCancel();
+      if (
+        dialogRef.current && 
+        !dialogRef.current.contains(event.target as Node) &&
+        datePickerDialogRef.current &&
+        !datePickerDialogRef.current.contains(event.target as Node)
+      ) {
+        if (!isDatePickerOpen) {
+          // Revert temp state to current filters
+          setTempLocation(filters.location);
+          setTempLocationInput(filters.locationInput);
+          setTempRiskLevel(filters.riskLevel);
+          setTempExperienceLevel(filters.experienceLevel);
+          setTempDateRange(filters.dateRange);
+          setWarningMessage(null);
+          onClose();
+        }
       }
     };
 
@@ -100,7 +119,44 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, isDatePickerOpen, filters, onClose]);
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        datePickerDialogRef.current && 
+        !datePickerDialogRef.current.contains(event.target as Node) &&
+        dialogRef.current &&
+        !dialogRef.current.contains(event.target as Node)
+      ) {
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    if (isDatePickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDatePickerOpen]);
+
+  const formatDateRange = () => {
+    if (!tempDateRange.start && !tempDateRange.end) {
+      return 'Availability';
+    }
+    if (tempDateRange.start && tempDateRange.end) {
+      const startStr = tempDateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const endStr = tempDateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `${startStr} - ${endStr}`;
+    }
+    if (tempDateRange.start) {
+      return tempDateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    return 'Availability';
+  };
 
   const handleSave = () => {
     // Save to context (which persists to session storage)
@@ -109,6 +165,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       locationInput: tempLocationInput,
       riskLevel: tempRiskLevel,
       experienceLevel: tempExperienceLevel,
+      dateRange: tempDateRange,
     });
     
     setWarningMessage(null);
@@ -121,6 +178,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     setTempLocationInput(filters.locationInput);
     setTempRiskLevel(filters.riskLevel);
     setTempExperienceLevel(filters.experienceLevel);
+    setTempDateRange(filters.dateRange);
     setWarningMessage(null);
     onClose();
   };
@@ -169,6 +227,93 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Date Range Picker - Only show on mobile/small screens */}
+              <div className="md:hidden">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Availability
+                </label>
+                <div className="relative group">
+                  <button
+                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                    className="flex items-center gap-2 w-full px-3 py-2 min-h-[44px] rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                    aria-label="Select date range"
+                  >
+                    <svg
+                      className={`w-5 h-5 flex-shrink-0 ${
+                        tempDateRange.start || tempDateRange.end 
+                          ? 'text-foreground' 
+                          : 'text-muted-foreground'
+                      }`}
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                      <line x1="16" y1="2" x2="16" y2="6" />
+                      <line x1="8" y1="2" x2="8" y2="6" />
+                      <line x1="3" y1="10" x2="21" y2="10" />
+                    </svg>
+                    <span className={`text-sm font-medium flex-1 text-left ${
+                      tempDateRange.start || tempDateRange.end 
+                        ? 'text-foreground' 
+                        : 'text-muted-foreground'
+                    }`}>
+                      {formatDateRange()}
+                    </span>
+                  </button>
+                  {(tempDateRange.start || tempDateRange.end) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTempDateRange({ start: null, end: null });
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
+                      aria-label="Clear date range"
+                    >
+                      <svg
+                        className="w-4 h-4 text-muted-foreground hover:text-foreground"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {isDatePickerOpen && (
+                  <>
+                    {/* Backdrop */}
+                    <div
+                      className="fixed inset-0 bg-black/20 z-[60]"
+                      onClick={() => setIsDatePickerOpen(false)}
+                    />
+                    {/* Centered DateRangePicker */}
+                    <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-2 sm:py-4">
+                      <div 
+                        ref={datePickerDialogRef}
+                        className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
+                      >
+                        <DateRangePicker
+                          value={tempDateRange}
+                          onChange={(newRange) => {
+                            setTempDateRange(newRange);
+                          }}
+                          onClose={() => setIsDatePickerOpen(false)}
+                          disableClickOutside={true}
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               {/* Location Autocomplete */}
               <div className="group">
                 <div className="relative">

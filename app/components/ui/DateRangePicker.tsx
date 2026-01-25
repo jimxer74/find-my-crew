@@ -277,10 +277,13 @@ export function DateRangePicker({
         <p className="text-sm text-muted-foreground mt-1">Select your available date range</p>
       </div>
 
-      {/* Two-month calendar view */}
-      <div className="flex gap-4 sm:gap-6 lg:gap-8 flex-col md:flex-row justify-center mb-4 sm:mb-6">
+      {/* Calendar view - one month on small screens, two months on large screens */}
+      <div className="flex gap-4 sm:gap-6 lg:gap-8 flex-col lg:flex-row justify-center mb-4 sm:mb-6">
         {renderCalendar(currentMonth)}
-        {renderCalendar(getNextMonth())}
+        {/* Second month - only visible on large screens */}
+        <div className="hidden lg:block">
+          {renderCalendar(getNextMonth())}
+        </div>
       </div>
 
       {/* Save and Cancel buttons */}
