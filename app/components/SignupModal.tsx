@@ -58,7 +58,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4"
+        className="fixed inset-0 bg-black/50 z-[90] flex items-center justify-center p-2 sm:p-4"
         onClick={onClose}
       >
         {/* Modal */}

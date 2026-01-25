@@ -250,7 +250,7 @@ export function DateRangePicker({
   return (
     <div
       ref={pickerRef}
-      className={`bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative ${className}`}
+      className={`bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative z-[1] ${className}`}
     >
       {/* Close button */}
       <button

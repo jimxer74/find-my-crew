@@ -189,12 +189,12 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 z-40"
+        className="fixed inset-0 bg-black/20 z-[90]"
         onClick={handleCancel}
       />
       
       {/* Dialog */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-2 sm:py-4">
+      <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-2 sm:py-4">
         <div
           ref={dialogRef}
           className="pointer-events-auto bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative w-full max-w-2xl max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
@@ -291,14 +291,14 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
                   <>
                     {/* Backdrop */}
                     <div
-                      className="fixed inset-0 bg-black/20 z-[60]"
+                      className="fixed inset-0 bg-black/20 z-[9998]"
                       onClick={() => setIsDatePickerOpen(false)}
                     />
                     {/* Centered DateRangePicker */}
-                    <div className="fixed inset-0 flex items-center justify-center z-[70] pointer-events-none p-2 sm:py-4">
+                    <div className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none p-2 sm:py-4">
                       <div 
                         ref={datePickerDialogRef}
-                        className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
+                        className="relative z-[9999] pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
                       >
                         <DateRangePicker
                           value={tempDateRange}

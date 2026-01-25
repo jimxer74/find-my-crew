@@ -168,31 +168,6 @@ export function Header() {
                       </button>
                     )}
                   </div>
-                  {isDatePickerOpen && (
-                    <>
-                      {/* Backdrop */}
-                      <div
-                        className="fixed inset-0 bg-black/20 z-40"
-                        onClick={() => setIsDatePickerOpen(false)}
-                      />
-                      {/* Centered DateRangePicker */}
-                      <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none p-2 sm:py-4">
-                        <div 
-                          ref={datePickerDialogRef}
-                          className="pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
-                        >
-                          <DateRangePicker
-                            value={filters.dateRange}
-                            onChange={(newRange) => {
-                              updateFilters({ dateRange: newRange });
-                            }}
-                            onClose={() => setIsDatePickerOpen(false)}
-                            disableClickOutside={true}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </>
               )}
               {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
@@ -250,6 +225,32 @@ export function Header() {
         isOpen={isFiltersDialogOpen}
         onClose={() => setIsFiltersDialogOpen(false)}
       />
+      {/* DateRangePicker Dialog - Rendered outside nav to ensure proper z-index stacking */}
+      {isDatePickerOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/20 z-[9998]"
+            onClick={() => setIsDatePickerOpen(false)}
+          />
+          {/* Centered DateRangePicker */}
+          <div className="fixed inset-0 flex items-center justify-center z-[9999] pointer-events-none p-2 sm:py-4">
+            <div 
+              ref={datePickerDialogRef}
+              className="relative z-[9999] pointer-events-auto my-auto max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto w-full max-w-sm lg:max-w-4xl"
+            >
+              <DateRangePicker
+                value={filters.dateRange}
+                onChange={(newRange) => {
+                  updateFilters({ dateRange: newRange });
+                }}
+                onClose={() => setIsDatePickerOpen(false)}
+                disableClickOutside={true}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
