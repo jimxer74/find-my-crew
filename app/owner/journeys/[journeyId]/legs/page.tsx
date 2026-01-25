@@ -22,34 +22,22 @@ type Journey = {
   is_ai_generated?: boolean;
 };
 
+type Waypoint = {
+  index: number;
+  geocode: {
+    type: string;
+    coordinates: [number, number];
+  };
+  name: string;
+};
+
 type Leg = {
   id: string;
-  startWaypoint: {
-    index: number;
-    geocode: {
-      type: string;
-      coordinates: [number, number];
-    };
-    name: string;
-  } | null;
-  endWaypoint: {
-    index: number;
-    geocode: {
-      type: string;
-      coordinates: [number, number];
-    };
-    name: string;
-  } | null;
+  startWaypoint: Waypoint | null;
+  endWaypoint: Waypoint | null;
   start_date?: string | null;
   end_date?: string | null;
-  intermediateWaypoints?: {
-    index: number;
-    geocode: {
-      type: string;
-      coordinates: [number, number];
-    };
-    name: string;
-  }[];
+  intermediateWaypoints?: Waypoint[];
 };
 
 export default function LegsManagementPage() {
@@ -140,11 +128,7 @@ export default function LegsManagementPage() {
       const { data: waypointsData, error: waypointsError } = await supabase
         .rpc('get_leg_waypoints', { leg_id_param: leg.id });
 
-      let waypoints: Array<{
-        index: number;
-        geocode: { type: string; coordinates: [number, number] };
-        name: string;
-      }> = [];
+      let waypoints: Waypoint[] = [];
 
       if (!waypointsError && waypointsData) {
         // Convert PostGIS GeoJSON to waypoint format
@@ -175,7 +159,7 @@ export default function LegsManagementPage() {
             },
             name: row.name || '',
           };
-        }).sort((a, b) => a.index - b.index);
+        }).sort((a: Waypoint, b: Waypoint) => a.index - b.index);
       }
 
       const startWaypoint = waypoints.find(w => w.index === 0) || null;
@@ -539,14 +523,14 @@ export default function LegsManagementPage() {
 
   // Get all legs' waypoints for the map
   // Returns waypoints for all completed legs plus the active leg
-  const getAllLegsWaypoints = (): Array<{ waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }>; legId: string; isComplete: boolean }> => {
-    const allWaypoints: Array<{ waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }>; legId: string; isComplete: boolean }> = [];
+  const getAllLegsWaypoints = (): Array<{ waypoints: Waypoint[]; legId: string; isComplete: boolean }> => {
+    const allWaypoints: Array<{ waypoints: Waypoint[]; legId: string; isComplete: boolean }> = [];
     
     // Process all legs
     legs.forEach(leg => {
       if (!leg.startWaypoint) return;
       
-      const waypoints: Array<{ index: number; geocode: { type: string; coordinates: [number, number] }; name: string }> = [];
+      const waypoints: Waypoint[] = [];
       // Add start waypoint
       waypoints.push(leg.startWaypoint);
       

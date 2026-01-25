@@ -64,7 +64,8 @@ export async function GET(
       .single();
 
     const isCrewOwner = registration.user_id === user.id;
-    const isJourneyOwner = registration.legs.journeys.boats.owner_id === user.id;
+    const legs = registration.legs as unknown as { id: string; journey_id: string; journeys: { id: string; boat_id: string; boats: { owner_id: string } } };
+    const isJourneyOwner = legs.journeys.boats.owner_id === user.id;
 
     if (!isCrewOwner && !isJourneyOwner) {
       return NextResponse.json(

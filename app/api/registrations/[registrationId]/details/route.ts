@@ -108,8 +108,43 @@ export async function GET(
       );
     }
 
+    // Type assertion for nested Supabase joins
+    const legs = registration.legs as unknown as {
+      id: string;
+      name: string;
+      description: string;
+      start_date: string;
+      end_date: string;
+      crew_needed: number;
+      risk_level: string;
+      skills: string[];
+      min_experience_level: number;
+      journey_id: string;
+      journeys: {
+        id: string;
+        name: string;
+        description: string;
+        start_date: string;
+        end_date: string;
+        risk_level: string[];
+        skills: string[];
+        min_experience_level: number;
+        boat_id: string;
+        boats: {
+          id: string;
+          name: string;
+          type: string;
+          make: string;
+          model: string;
+          images: string[];
+          average_speed_knots: number;
+          owner_id: string;
+        };
+      };
+    };
+
     // Verify owner owns this journey's boat
-    if (registration.legs.journeys.boats.owner_id !== user.id) {
+    if (legs.journeys.boats.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to view this registration' },
         { status: 403 }
@@ -176,7 +211,7 @@ export async function GET(
     const { data: requirements, error: reqError } = await supabase
       .from('journey_requirements')
       .select('id, question_text, question_type, options, is_required, order, weight')
-      .eq('journey_id', registration.legs.journeys.id)
+      .eq('journey_id', legs.journeys.id)
       .order('order', { ascending: true });
 
     if (reqError) {
@@ -215,8 +250,8 @@ export async function GET(
 
     // Combine journey and leg skills (remove duplicates)
     const { normalizeSkillNames } = require('@/app/lib/skillUtils');
-    const journeySkills = normalizeSkillNames(registration.legs.journeys.skills || []);
-    const legSkills = normalizeSkillNames(registration.legs.skills || []);
+    const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
+    const legSkills = normalizeSkillNames(legs.skills || []);
     const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(Boolean);
 
     // Calculate skill match percentage
@@ -230,16 +265,16 @@ export async function GET(
     }
 
     // Determine effective values (leg overrides journey)
-    const effectiveRiskLevel = registration.legs.risk_level ||
-      (registration.legs.journeys.risk_level && registration.legs.journeys.risk_level[0]) ||
+    const effectiveRiskLevel = legs.risk_level ||
+      (legs.journeys.risk_level && legs.journeys.risk_level[0]) ||
       null;
-    const effectiveMinExperienceLevel = registration.legs.min_experience_level ??
-      registration.legs.journeys.min_experience_level ??
+    const effectiveMinExperienceLevel = legs.min_experience_level ??
+      legs.journeys.min_experience_level ??
       null;
 
     // Check experience level match
     let experienceLevelMatches: boolean | null = null;
-    if (effectiveMinExperienceLevel !== null && crewProfile?.sailing_experience !== null) {
+    if (effectiveMinExperienceLevel !== null && crewProfile && crewProfile.sailing_experience !== null) {
       experienceLevelMatches = crewProfile.sailing_experience >= effectiveMinExperienceLevel;
     }
 
@@ -268,36 +303,36 @@ export async function GET(
         sailing_preferences: crewProfile.sailing_preferences,
       } : null,
       leg: {
-        id: registration.legs.id,
-        name: registration.legs.name,
-        description: registration.legs.description,
-        start_date: registration.legs.start_date,
-        end_date: registration.legs.end_date,
-        crew_needed: registration.legs.crew_needed,
-        risk_level: registration.legs.risk_level,
+        id: legs.id,
+        name: legs.name,
+        description: legs.description,
+        start_date: legs.start_date,
+        end_date: legs.end_date,
+        crew_needed: legs.crew_needed,
+        risk_level: legs.risk_level,
         skills: legSkills,
-        min_experience_level: registration.legs.min_experience_level,
+        min_experience_level: legs.min_experience_level,
         start_waypoint: startWaypoint,
         end_waypoint: endWaypoint,
       },
       journey: {
-        id: registration.legs.journeys.id,
-        name: registration.legs.journeys.name,
-        description: registration.legs.journeys.description,
-        start_date: registration.legs.journeys.start_date,
-        end_date: registration.legs.journeys.end_date,
-        risk_level: registration.legs.journeys.risk_level,
+        id: legs.journeys.id,
+        name: legs.journeys.name,
+        description: legs.journeys.description,
+        start_date: legs.journeys.start_date,
+        end_date: legs.journeys.end_date,
+        risk_level: legs.journeys.risk_level,
         skills: journeySkills,
-        min_experience_level: registration.legs.journeys.min_experience_level,
+        min_experience_level: legs.journeys.min_experience_level,
       },
       boat: {
-        id: registration.legs.journeys.boats.id,
-        name: registration.legs.journeys.boats.name,
-        type: registration.legs.journeys.boats.type,
-        make: registration.legs.journeys.boats.make,
-        model: registration.legs.journeys.boats.model,
-        image_url: registration.legs.journeys.boats.images?.[0] || null,
-        average_speed_knots: registration.legs.journeys.boats.average_speed_knots,
+        id: legs.journeys.boats.id,
+        name: legs.journeys.boats.name,
+        type: legs.journeys.boats.type,
+        make: legs.journeys.boats.make,
+        model: legs.journeys.boats.model,
+        image_url: legs.journeys.boats.images?.[0] || null,
+        average_speed_knots: legs.journeys.boats.average_speed_knots,
       },
       requirements: requirements || [],
       answers: answers || [],

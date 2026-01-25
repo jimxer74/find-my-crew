@@ -163,25 +163,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Type assertion for nested Supabase join
+    const journey = leg.journeys as unknown as { id: string; name: string; state: string; boat_id: string; boats: { owner_id: string } };
+
     // Check if journey is published
     console.log(`[Registration API] Journey state check:`, {
       leg_id,
-      journeyId: leg.journeys.id,
-      journeyState: leg.journeys.state,
+      journeyId: journey.id,
+      journeyState: journey.state,
     });
 
-    if (leg.journeys.state !== 'Published') {
+    if (journey.state !== 'Published') {
       console.error(`[Registration API] ❌ 400 ERROR: Journey not published`, {
         leg_id,
-        journeyId: leg.journeys.id,
-        journeyState: leg.journeys.state,
+        journeyId: journey.id,
+        journeyState: journey.state,
       });
       return NextResponse.json(
-        { 
+        {
           error: 'Cannot register for legs in non-published journeys',
           details: {
-            journeyId: leg.journeys.id,
-            journeyState: leg.journeys.state,
+            journeyId: journey.id,
+            journeyState: journey.state,
           }
         },
         { status: 400 }
@@ -221,7 +224,7 @@ export async function POST(request: NextRequest) {
 
         // Handle answers if provided
         if (answers && Array.isArray(answers) && answers.length > 0) {
-          const answersError = await handleRegistrationAnswers(supabase, updatedRegistration.id, answers, leg.journeys.id);
+          const answersError = await handleRegistrationAnswers(supabase, updatedRegistration.id, answers, journey.id);
           if (answersError) {
             return NextResponse.json(
               { error: 'Registration reactivated but failed to save answers', details: answersError },
@@ -235,7 +238,7 @@ export async function POST(request: NextRequest) {
         const { data: journeySettings, error: journeySettingsError } = await supabase
           .from('journeys')
           .select('auto_approval_enabled, auto_approval_threshold')
-          .eq('id', leg.journeys.id)
+          .eq('id', journey.id)
           .single();
 
         if (journeySettingsError) {
@@ -245,7 +248,7 @@ export async function POST(request: NextRequest) {
         const { count: requirementCount, error: requirementCountError } = await supabase
           .from('journey_requirements')
           .select('*', { count: 'exact', head: true })
-          .eq('journey_id', leg.journeys.id);
+          .eq('journey_id', journey.id);
 
         if (requirementCountError) {
           console.error(`[Registration API] Error counting requirements for reactivation:`, requirementCountError);
@@ -268,7 +271,7 @@ export async function POST(request: NextRequest) {
         // Trigger AI assessment if auto-approval is enabled (same logic as new registration)
         if (autoApprovalEnabled && hasRequirements && answersSaved) {
           console.log(`[Registration API] ✅ ALL CONDITIONS MET - Triggering AI assessment for reactivated registration: ${updatedRegistration.id}`, {
-            journeyId: leg.journeys.id,
+            journeyId: journey.id,
             autoApprovalEnabled,
             hasRequirements,
             requirementCount,
@@ -345,11 +348,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if journey has auto-approval enabled and requirements
-    console.log(`[Registration API] Checking auto-approval settings for journey: ${leg.journeys.id}`);
+    console.log(`[Registration API] Checking auto-approval settings for journey: ${journey.id}`);
     const { data: journeySettings, error: journeySettingsError } = await supabase
       .from('journeys')
       .select('auto_approval_enabled, auto_approval_threshold')
-      .eq('id', leg.journeys.id)
+      .eq('id', journey.id)
       .single();
 
     if (journeySettingsError) {
@@ -357,7 +360,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`[Registration API] Journey settings:`, {
-      journeyId: leg.journeys.id,
+      journeyId: journey.id,
       auto_approval_enabled: journeySettings?.auto_approval_enabled,
       auto_approval_threshold: journeySettings?.auto_approval_threshold,
     });
@@ -365,7 +368,7 @@ export async function POST(request: NextRequest) {
     const { count: requirementCount, error: requirementCountError } = await supabase
       .from('journey_requirements')
       .select('*', { count: 'exact', head: true })
-      .eq('journey_id', leg.journeys.id);
+      .eq('journey_id', journey.id);
 
     if (requirementCountError) {
       console.error(`[Registration API] Error counting requirements:`, requirementCountError);
@@ -400,7 +403,7 @@ export async function POST(request: NextRequest) {
       
       if (!hasValidAnswers) {
         console.error(`[Registration API] ❌ 400 ERROR: Answers required but not provided`, {
-          journeyId: leg.journeys.id,
+          journeyId: journey.id,
           autoApprovalEnabled,
           hasRequirements,
           requirementCount,
@@ -413,7 +416,7 @@ export async function POST(request: NextRequest) {
           { 
             error: 'Answers are required for journeys with automated approval enabled. Please complete all required questions.',
             details: {
-              journeyId: leg.journeys.id,
+              journeyId: journey.id,
               autoApprovalEnabled,
               hasRequirements,
               requirementCount,
@@ -459,7 +462,7 @@ export async function POST(request: NextRequest) {
 
     if (answers && Array.isArray(answers) && answers.length > 0) {
       console.log(`[Registration API] Saving ${answers.length} answers for registration ${registration.id}`);
-      const answersError = await handleRegistrationAnswers(supabase, registration.id, answers, leg.journeys.id);
+      const answersError = await handleRegistrationAnswers(supabase, registration.id, answers, journey.id);
       if (answersError) {
         console.error(`[Registration API] Failed to save answers:`, answersError);
         // Registration created but answers failed - return error but registration exists
@@ -478,7 +481,7 @@ export async function POST(request: NextRequest) {
     // Only trigger if: auto-approval enabled AND requirements exist AND answers were saved
     console.log(`[Registration API] Evaluating AI assessment trigger conditions:`, {
       registrationId: registration.id,
-      journeyId: leg.journeys.id,
+      journeyId: journey.id,
       autoApprovalEnabled,
       hasRequirements,
       requirementCount,
@@ -490,7 +493,7 @@ export async function POST(request: NextRequest) {
 
     if (autoApprovalEnabled && hasRequirements && answersSaved) {
       console.log(`[Registration API] ✅ ALL CONDITIONS MET - Triggering AI assessment for registration: ${registration.id}`, {
-        journeyId: leg.journeys.id,
+        journeyId: journey.id,
         autoApprovalEnabled,
         hasRequirements,
         requirementCount,
@@ -537,23 +540,15 @@ export async function POST(request: NextRequest) {
     // Notify the journey owner about the new registration (non-blocking)
     console.log('[Registration API] === NOTIFICATION DEBUG START ===');
     console.log('[Registration API] leg object keys:', Object.keys(leg));
-    console.log('[Registration API] leg.journeys type:', typeof leg.journeys);
-    console.log('[Registration API] leg.journeys:', JSON.stringify(leg.journeys, null, 2));
+    console.log('[Registration API] journey:', JSON.stringify(journey, null, 2));
 
-    // Handle both array and object responses from Supabase
-    const journey = Array.isArray(leg.journeys) ? leg.journeys[0] : leg.journeys;
-
-    if (!journey) {
-      console.error('[Registration API] No journey data found in leg.journeys');
-      // Still return success for the registration, just skip notification
-      // Send notification if auto-approval is not enabled for this journey
-    } else if (!autoApprovalEnabled) {
-      const boat = Array.isArray(journey.boats) ? journey.boats[0] : journey.boats;
-      const ownerId = boat?.owner_id;
+    // Send notification if auto-approval is not enabled for this journey
+    if (!autoApprovalEnabled) {
+      const ownerId = journey.boats.owner_id;
       const journeyId = journey.id;
       const journeyName = journey.name || 'your journey';
 
-      console.log('[Registration API] Owner notification data:', { ownerId, journeyId, journeyName, boat });
+      console.log('[Registration API] Owner notification data:', { ownerId, journeyId, journeyName });
 
       if (ownerId) {
         // Get crew member name

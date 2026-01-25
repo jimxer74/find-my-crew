@@ -64,24 +64,48 @@ export async function assessRegistrationWithAI(
     throw new Error(`Registration not found: ${registrationId}`);
   }
 
+  // Type assertion for nested Supabase joins
+  const legs = registration.legs as unknown as {
+    id: string;
+    journey_id: string;
+    name: string;
+    skills: string[];
+    min_experience_level: number;
+    risk_level: string;
+    start_date: string;
+    end_date: string;
+    journeys: {
+      id: string;
+      name: string;
+      auto_approval_enabled: boolean;
+      auto_approval_threshold: number;
+      boat_id: string;
+      boats: {
+        id: string;
+        name: string;
+        owner_id: string;
+      };
+    };
+  } | null;
+
   console.log(`[AI Assessment] Registration loaded:`, {
     registrationId: registration.id,
     legId: registration.leg_id,
     userId: registration.user_id,
     status: registration.status,
-    journeyName: registration.legs?.journeys?.name,
-    legName: registration.legs?.name,
+    journeyName: legs?.journeys?.name,
+    legName: legs?.name,
   });
 
   // Validate that we have the required nested data
-  if (!registration.legs?.journeys) {
+  if (!legs?.journeys) {
     console.error(`[AI Assessment] Missing journey data for registration ${registration.id}`);
     throw new Error(`Missing journey data for registration: ${registration.id}`);
   }
 
   // Check if auto-approval is enabled
-  if (!registration.legs.journeys.auto_approval_enabled) {
-    console.log(`[AI Assessment] Auto-approval not enabled for journey ${registration.legs.journeys.id}, skipping assessment`);
+  if (!legs.journeys.auto_approval_enabled) {
+    console.log(`[AI Assessment] Auto-approval not enabled for journey ${legs.journeys.id}, skipping assessment`);
     return; // No assessment needed
   }
 
@@ -95,10 +119,10 @@ export async function assessRegistrationWithAI(
   if (!userConsents?.ai_processing_consent) {
     console.log(`[AI Assessment] User ${registration.user_id} has not consented to AI processing, skipping assessment`);
     // Notify owner that manual review is needed due to missing AI consent
-    const ownerId = registration.legs?.journeys?.boats?.owner_id;
+    const ownerId = legs?.journeys?.boats?.owner_id;
     
     if (!ownerId) {
-      console.error(`[AI Assessment] Cannot notify owner: ownerId is null. Registration: ${registration.id}, Journey: ${registration.legs?.journeys?.id}`);
+      console.error(`[AI Assessment] Cannot notify owner: ownerId is null. Registration: ${registration.id}, Journey: ${legs?.journeys?.id}`);
       // Still return - we can't proceed without AI consent anyway
       return;
     }
@@ -111,17 +135,17 @@ export async function assessRegistrationWithAI(
       link: `/owner/registrations/${registration.id}`,
       metadata: {
         registration_id: registration.id,
-        journey_id: registration.legs?.journeys?.id,
+        journey_id: legs?.journeys?.id,
         reason: 'no_ai_consent',
       },
     });
     return; // Cannot proceed without AI consent
   }
 
-  console.log(`[AI Assessment] Auto-approval enabled, threshold: ${registration.legs.journeys.auto_approval_threshold}%`);
+  console.log(`[AI Assessment] Auto-approval enabled, threshold: ${legs.journeys.auto_approval_threshold}%`);
 
   // Load requirements first - if no requirements, skip assessment
-  const journeyId = registration.legs.journeys.id;
+  const journeyId = legs.journeys.id;
   const { data: requirements } = await supabase
     .from('journey_requirements')
     .select('*')
@@ -207,8 +231,8 @@ export async function assessRegistrationWithAI(
   console.log(`[AI Assessment] Building assessment prompt...`);
   const prompt = buildAssessmentPrompt({
     crewProfile,
-    journey: registration.legs.journeys,
-    leg: registration.legs,
+    journey: legs.journeys,
+    leg: legs,
     requirements: requirements || [],
     answers: answers || [],
   });
@@ -281,7 +305,7 @@ export async function assessRegistrationWithAI(
     throw new Error(`Invalid match_score: ${assessment.match_score}`);
   }
 
-  const threshold = registration.legs.journeys.auto_approval_threshold || 80;
+  const threshold = legs.journeys.auto_approval_threshold || 80;
   const shouldAutoApprove = assessment.match_score >= threshold && assessment.recommendation !== 'deny';
   
   console.log(`[AI Assessment] Assessment results:`, {
@@ -335,9 +359,9 @@ export async function assessRegistrationWithAI(
 
   // Get crew and owner info for notifications
   // journeyId is already defined earlier in the function
-  const journeyName = registration.legs?.journeys?.name;
+  const journeyName = legs?.journeys?.name;
   const crewUserId = registration.user_id;
-  const ownerId = registration.legs?.journeys?.boats?.owner_id;
+  const ownerId = legs?.journeys?.boats?.owner_id;
   
   if (!ownerId) {
     console.error(`[AI Assessment] Cannot send notifications: ownerId is null. Registration: ${registration.id}, Journey: ${journeyId}`);

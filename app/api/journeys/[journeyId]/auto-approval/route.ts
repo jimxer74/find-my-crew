@@ -66,7 +66,8 @@ export async function PATCH(
     }
 
     // Verify owner owns this journey
-    if (journey.boats.owner_id !== user.id) {
+    const boat = journey.boats as unknown as { owner_id: string };
+    if (boat.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to configure auto-approval for this journey' },
         { status: 403 }
@@ -184,8 +185,9 @@ export async function GET(
     }
 
     // Check access: public if published, otherwise owner only
+    const boat = journey.boats as unknown as { owner_id: string };
     if (journey.state !== 'Published') {
-      if (!user || journey.boats.owner_id !== user.id) {
+      if (!user || boat.owner_id !== user.id) {
         return NextResponse.json(
           { error: 'Unauthorized' },
           { status: 401 }

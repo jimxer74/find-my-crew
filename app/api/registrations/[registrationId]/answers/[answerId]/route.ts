@@ -70,7 +70,8 @@ export async function PUT(
       );
     }
 
-    if (answer.registrations.user_id !== user.id) {
+    const registration = answer.registrations as unknown as { id: string; user_id: string; status: string };
+    if (registration.user_id !== user.id) {
       return NextResponse.json(
         { error: 'You can only update answers for your own registrations' },
         { status: 403 }
@@ -78,7 +79,7 @@ export async function PUT(
     }
 
     // Only allow if status is 'Pending approval'
-    if (answer.registrations.status !== 'Pending approval') {
+    if (registration.status !== 'Pending approval') {
       return NextResponse.json(
         { error: 'Answers can only be updated for registrations with status "Pending approval"' },
         { status: 400 }

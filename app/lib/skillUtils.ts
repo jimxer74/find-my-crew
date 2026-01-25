@@ -44,7 +44,9 @@ export function toDisplaySkillName(canonicalName: string): string {
  * Handles both display format and canonical format inputs
  * Also handles JSON strings from profiles: '{"skill_name": "navigation", "description": "..."}'
  */
-export function normalizeSkillNames(skillNames: string[]): string[] {
+export function normalizeSkillNames(
+  skillNames: (string | { skill_name: string; [key: string]: any })[]
+): string[] {
   if (!Array.isArray(skillNames)) return [];
   
   return skillNames

@@ -221,7 +221,7 @@ export default function JourneyRegistrationsPage() {
             },
             name: row.name || '',
           };
-        }).sort((a, b) => a.index - b.index);
+        }).sort((a: { index: number }, b: { index: number }) => a.index - b.index);
       }
 
       const startWaypoint = waypoints.find(w => w.index === 0) || null;

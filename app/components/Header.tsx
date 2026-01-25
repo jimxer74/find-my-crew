@@ -39,18 +39,16 @@ export function Header() {
         .select('role')
         .eq('id', user.id)
         .single()
-        .then(({ data }) => {
-          if (data) {
+        .then(({ data, error }) => {
+          if (error) {
+            // If query fails, default to crew
+            setUserRole('crew');
+          } else if (data) {
             setUserRole(data.role);
           } else {
             // If no profile exists yet, default to crew (most common case)
             setUserRole('crew');
           }
-          setRoleLoading(false);
-        })
-        .catch(() => {
-          // If query fails, default to crew
-          setUserRole('crew');
           setRoleLoading(false);
         });
     } else {

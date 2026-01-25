@@ -92,7 +92,8 @@ export async function PATCH(
     }
 
     // Verify owner owns this journey
-    if (registration.legs.journeys.boats.owner_id !== user.id) {
+    const legs = registration.legs as unknown as { id: string; journey_id: string; journeys: { id: string; name: string; boat_id: string; boats: { owner_id: string } } };
+    if (legs.journeys.boats.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to update this registration' },
         { status: 403 }
@@ -121,8 +122,8 @@ export async function PATCH(
 
     // Send notification to crew member (non-blocking)
     if (status === 'Approved' || status === 'Not approved') {
-      const journeyId = registration.legs.journeys.id;
-      const journeyName = registration.legs.journeys.name;
+      const journeyId = legs.journeys.id;
+      const journeyName = legs.journeys.name;
       const crewUserId = registration.user_id;
 
       // Get owner name

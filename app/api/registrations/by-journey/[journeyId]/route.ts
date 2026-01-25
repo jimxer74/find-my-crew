@@ -65,7 +65,8 @@ export async function GET(
       );
     }
 
-    if (journey.boats.owner_id !== user.id) {
+    const boat = journey.boats as unknown as { owner_id: string };
+    if (boat.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to view registrations for this journey' },
         { status: 403 }

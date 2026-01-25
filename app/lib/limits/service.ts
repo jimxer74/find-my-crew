@@ -5,15 +5,18 @@
  * Use these functions before creating boats, journeys, legs, or registrations.
  */
 
-import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { getLimits, getReleaseType } from './config';
 import { LimitCheckResult, UserUsage, JourneyUsage, SystemUsage } from './types';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnySupabaseClient = SupabaseClient<any, any, any>;
 
 /**
  * Check if a user can create another boat
  */
 export async function canCreateBoat(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   userId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
@@ -55,7 +58,7 @@ export async function canCreateBoat(
  * Check if a user can create another journey
  */
 export async function canCreateJourney(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   userId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
@@ -98,7 +101,7 @@ export async function canCreateJourney(
  * Check if a journey can have another leg
  */
 export async function canCreateLeg(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   journeyId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
@@ -140,7 +143,7 @@ export async function canCreateLeg(
  * Check if the system can accept another user registration
  */
 export async function canRegisterUser(
-  supabase: ReturnType<typeof createClient>
+  supabase: AnySupabaseClient
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
 
@@ -189,7 +192,7 @@ export async function canRegisterUser(
  * Check if a leg can have another waypoint
  */
 export async function canCreateWaypoint(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   legId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
@@ -231,7 +234,7 @@ export async function canCreateWaypoint(
  * Get user's current usage statistics
  */
 export async function getUserUsage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   userId: string
 ): Promise<UserUsage> {
   const [boatResult, journeyResult] = await Promise.all([
@@ -255,7 +258,7 @@ export async function getUserUsage(
  * Get journey's current usage statistics
  */
 export async function getJourneyUsage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: AnySupabaseClient,
   journeyId: string
 ): Promise<JourneyUsage> {
   const { count } = await supabase
@@ -272,7 +275,7 @@ export async function getJourneyUsage(
  * Get system-wide usage statistics
  */
 export async function getSystemUsage(
-  supabase: ReturnType<typeof createClient>
+  supabase: AnySupabaseClient
 ): Promise<SystemUsage> {
   const { count } = await supabase
     .from('profiles')

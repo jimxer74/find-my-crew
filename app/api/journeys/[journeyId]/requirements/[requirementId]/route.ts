@@ -75,7 +75,8 @@ export async function PUT(
     }
 
     // Verify owner owns this journey
-    if (requirement.journeys.boats.owner_id !== user.id) {
+    const journey = requirement.journeys as unknown as { id: string; boat_id: string; boats: { owner_id: string } };
+    if (journey.boats.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to update this requirement' },
         { status: 403 }
@@ -250,7 +251,8 @@ export async function DELETE(
     }
 
     // Verify owner owns this journey
-    if (requirement.journeys.boats.owner_id !== user.id) {
+    const journey = requirement.journeys as unknown as { id: string; boat_id: string; boats: { owner_id: string } };
+    if (journey.boats.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to delete this requirement' },
         { status: 403 }

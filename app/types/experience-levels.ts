@@ -21,7 +21,7 @@ export function getExperienceLevelConfig(level: ExperienceLevel): ExperienceLeve
   if (!config) {
     throw new Error(`Invalid experience level: ${level}`);
   }
-  return config;
+  return config as ExperienceLevelConfig;
 }
 
 /**
@@ -29,7 +29,7 @@ export function getExperienceLevelConfig(level: ExperienceLevel): ExperienceLeve
  */
 export function getExperienceLevelByName(name: string): ExperienceLevel | null {
   const config = experienceLevelsConfig.levels.find(l => l.name === name);
-  return config ? config.value : null;
+  return config ? (config.value as ExperienceLevel) : null;
 }
 
 /**
@@ -43,7 +43,7 @@ export function getExperienceLevelDisplayName(level: ExperienceLevel): string {
  * Get all experience level configs
  */
 export function getAllExperienceLevels(): ExperienceLevelConfig[] {
-  return experienceLevelsConfig.levels;
+  return experienceLevelsConfig.levels as ExperienceLevelConfig[];
 }
 
 /**

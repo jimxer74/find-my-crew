@@ -584,12 +584,12 @@ export default function RegistrationDetailsPage() {
                       <p className="font-medium text-foreground">
                         {getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
                       </p>
-                      {data.experience_level_matches === false && data.crew?.sailing_experience !== null && (
+                      {data.experience_level_matches === false && data.crew && data.crew.sailing_experience !== null && (
                         <p className="text-sm text-red-700 font-medium mt-1">
                           Crew level ({getExperienceLevelConfig(data.crew.sailing_experience as ExperienceLevel).displayName}) is below requirement
                         </p>
                       )}
-                      {data.experience_level_matches === true && data.crew?.sailing_experience !== null && (
+                      {data.experience_level_matches === true && data.crew && data.crew.sailing_experience !== null && (
                         <p className="text-sm text-green-700 font-medium mt-1">
                           Crew level: {getExperienceLevelConfig(data.crew.sailing_experience as ExperienceLevel).displayName}
                         </p>

@@ -90,7 +90,12 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
         }
 
         // Log initial consents to audit trail
-        const auditLogs = [
+        const auditLogs: Array<{
+          user_id: string;
+          consent_type: string;
+          action: string;
+          new_value: Record<string, unknown>;
+        }> = [
           {
             user_id: authData.user.id,
             consent_type: 'privacy_policy',

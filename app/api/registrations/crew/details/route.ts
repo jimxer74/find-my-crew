@@ -186,7 +186,9 @@ export async function GET(request: NextRequest) {
       // Normalize skills to canonical format (handles both display and canonical formats)
       // This ensures compatibility even if migration hasn't been run yet
       const { normalizeSkillNames } = require('@/app/lib/skillUtils');
-      const journeySkills = normalizeSkillNames(leg.journeys?.skills || []);
+      // Type assertion for nested Supabase join
+      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
+      const journeySkills = normalizeSkillNames(journey?.skills || []);
       const legSkills = normalizeSkillNames(leg.skills || []);
       
       const combinedSkills = [
@@ -230,23 +232,23 @@ export async function GET(request: NextRequest) {
         leg_name: leg.name,
         leg_description: leg.description,
         journey_id: leg.journey_id,
-        journey_name: leg.journeys?.name || 'Unknown Journey',
+        journey_name: journey?.name || 'Unknown Journey',
         start_date: leg.start_date,
         end_date: leg.end_date,
         crew_needed: leg.crew_needed,
         risk_level: leg.risk_level,
         skills: combinedSkills,
-        boat_id: leg.journeys?.boats?.id || '',
-        boat_name: leg.journeys?.boats?.name || 'Unknown Boat',
-        boat_type: leg.journeys?.boats?.type || null,
-        boat_make: leg.journeys?.boats?.make || null,
-        boat_model: leg.journeys?.boats?.model || null,
-        boat_image_url: leg.journeys?.boats?.images && leg.journeys.boats.images.length > 0
-          ? leg.journeys.boats.images[0]
+        boat_id: journey?.boats?.id || '',
+        boat_name: journey?.boats?.name || 'Unknown Boat',
+        boat_type: journey?.boats?.type || null,
+        boat_make: journey?.boats?.make || null,
+        boat_model: journey?.boats?.model || null,
+        boat_image_url: journey?.boats?.images && journey.boats.images.length > 0
+          ? journey.boats.images[0]
           : null,
-        boat_average_speed_knots: leg.journeys?.boats?.average_speed_knots || null,
-        owner_name: ownerProfilesMap[leg.journeys?.boats?.owner_id]?.full_name || null,
-        owner_image_url: ownerProfilesMap[leg.journeys?.boats?.owner_id]?.profile_image_url || null,
+        boat_average_speed_knots: journey?.boats?.average_speed_knots || null,
+        owner_name: ownerProfilesMap[journey?.boats?.owner_id || '']?.full_name || null,
+        owner_image_url: ownerProfilesMap[journey?.boats?.owner_id || '']?.profile_image_url || null,
         min_experience_level: leg.min_experience_level,
         skill_match_percentage: skillMatchPercentage,
         experience_level_matches: experienceLevelMatches,
