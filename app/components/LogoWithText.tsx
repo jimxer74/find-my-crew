@@ -13,12 +13,12 @@ export function LogoWithText({
   return (
     <Link href="/" className={className}>
       <Image 
-        src="/sailsmart.png" 
+        src="/sailsmart7.png" 
         alt="SailSmart" 
-        width={50} 
-        height={50}
+        width={55} 
+        height={55}
         priority
-        className="object-contain rounded-lg"
+        className="object-contain rounded-md"
       />
     </Link>
   );

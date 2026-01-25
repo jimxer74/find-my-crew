@@ -199,7 +199,7 @@ export async function sendRegistrationDeniedEmail(
       ${reasonText}
       <p>Don't be discouraged! There are many other journeys looking for crew members like you.</p>
       <p style="margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/journeys" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Browse Other Journeys</a>
+        <a href="https://www.sailms.art/journeys" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Browse Other Journeys</a>
       </p>
       <p>Keep sailing!</p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
@@ -374,7 +374,7 @@ export async function sendProfileReminderEmail(
       <p>A complete profile helps boat owners learn more about you and increases your chances of being approved for journeys.</p>
       ${fieldsList ? `<p><strong>Missing information:</strong></p>${fieldsList}` : ''}
       <p style="margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || ''}/profile" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Complete Your Profile</a>
+        <a href="https://www.sailms.art/profile" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Complete Your Profile</a>
       </p>
       <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
       <p style="color: #6b7280; font-size: 14px;">SailSmart - Connecting sailors worldwide</p>

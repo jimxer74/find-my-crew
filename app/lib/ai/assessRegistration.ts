@@ -429,8 +429,7 @@ export async function assessRegistrationWithAI(
           .single();
 
         if (ownerEmailData?.email) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-          const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
+          const registrationLink = `https://www.sailms.art/owner/registrations?registration=${registrationId}`;
           const emailResult = await sendReviewNeededEmail(
             supabase,
             ownerEmailData.email,

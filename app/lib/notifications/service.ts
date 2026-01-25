@@ -283,8 +283,7 @@ export async function notifyRegistrationApproved(
   try {
     const userEmail = await getUserEmailFromProfiles(supabase, crewUserId);
     if (userEmail) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-      const journeyLink = `${appUrl}/journeys/${journeyId}`;
+      const journeyLink = `https://www.sailms.art/journeys/${journeyId}`;
       const emailResult = await sendRegistrationApprovedEmail(
         supabase,
         userEmail,
@@ -397,8 +396,7 @@ export async function notifyNewRegistration(
   try {
     const ownerEmail = await getUserEmailFromProfiles(supabase, ownerUserId);
     if (ownerEmail) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
-      const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
+      const registrationLink = `https://www.sailms.art/owner/registrations?registration=${registrationId}`;
       const emailResult = await sendNewRegistrationEmail(
         supabase,
         ownerEmail,
