@@ -50,7 +50,7 @@ export default function Home() {
         }}
       />
       {/* Overlay for better text readability */}
-      <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] -z-10"></div>
+      <div className="fixed inset-0 bg-black/20 backdrop-blur-[1px] -z-10"></div>
       
       {/* Navigation */}
       <Header />
