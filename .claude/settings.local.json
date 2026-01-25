@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__backlog__task_view",
-      "mcp__backlog__task_edit"
+      "mcp__backlog__task_edit",
+      "Bash(npx tsc:*)"
     ]
   }
 }

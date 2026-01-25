@@ -333,7 +333,7 @@ export async function assessRegistrationWithAI(
       type: NotificationType.AI_AUTO_APPROVED,
       title: 'Registration Auto-Approved',
       message: `${crewName}'s registration for "${journeyName}" was automatically approved by AI (Score: ${assessment.match_score}%).`,
-      link: `/owner/registrations?registration=${registrationId}`,
+      link: `/owner/registrations/${registrationId}`,
       metadata: {
         registration_id: registrationId,
         journey_id: journeyId,
@@ -356,7 +356,7 @@ export async function assessRegistrationWithAI(
       type: NotificationType.AI_REVIEW_NEEDED,
       title: 'Registration Needs Review',
       message: `${crewName}'s registration for "${journeyName}" needs your review (AI Score: ${assessment.match_score}%).`,
-      link: `/owner/registrations?registration=${registrationId}`,
+      link: `/owner/registrations/${registrationId}`,
       metadata: {
         registration_id: registrationId,
         journey_id: journeyId,

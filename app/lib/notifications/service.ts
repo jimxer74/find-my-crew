@@ -383,7 +383,7 @@ export async function notifyNewRegistration(
     type: NotificationType.NEW_REGISTRATION,
     title: 'New Crew Registration',
     message: `${crewName} has registered for "${journeyName}". Review their application now.`,
-    link: `/owner/registrations?registration=${registrationId}`,
+    link: `/owner/registrations/${registrationId}`,
     metadata: {
       registration_id: registrationId,
       journey_id: journeyId,

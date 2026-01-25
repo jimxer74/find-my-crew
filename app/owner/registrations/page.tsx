@@ -423,10 +423,6 @@ export default function AllRegistrationsPage() {
 
                 return (
                   <div key={registration.id} className="bg-card rounded-lg shadow p-4 flex flex-col h-full relative">
-                    {/* Status Badge - Top Right */}
-                    <div className="absolute top-4 right-4">
-                      {getStatusBadge(registration.status)}
-                    </div>
 
                     {/* Name and Avatar */}
                     <div className="flex items-center gap-3 mb-3 pr-16">
@@ -458,9 +454,19 @@ export default function AllRegistrationsPage() {
                           </div>
                         )}
                       </div>
-                      <h3 className="text-base font-semibold text-foreground line-clamp-1 flex-1">
-                        {profile.full_name || profile.username || 'Unknown User'}
-                      </h3>
+                      <div className="flex-1 min-w-0">                              
+                        <h3 className="text-base font-semibold text-foreground line-clamp-1 flex-1">
+                          {profile.full_name || profile.username || 'Unknown User'}
+                        </h3>
+
+                        {/* Registration Date */}
+                        <div className="text-xs text-muted-foreground flex">
+                          <div>Registered: {formatDate(registration.created_at)}</div>
+                          {registration.updated_at !== registration.created_at && (
+                            <div>Updated: {formatDate(registration.updated_at)}</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     {/* Journey, Leg, and Dates */}
@@ -513,13 +519,15 @@ export default function AllRegistrationsPage() {
                     </div>
 
                     {/* Registration Date */}
+
                     <div className="mt-auto pt-3 border-t border-border">
-                      <div className="text-xs text-muted-foreground">
-                        <div>Registered: {formatDate(registration.created_at)}</div>
-                        {registration.updated_at !== registration.created_at && (
-                          <div>Updated: {formatDate(registration.updated_at)}</div>
-                        )}
-                      </div>
+                      {/* Status Badge - Top Right - Clickable */}
+                      <Link
+                        href={`/owner/registrations/${registration.id}`}
+                        className="flex justify-center hover:opacity-80 transition-opacity"
+                        title="View registration details">
+                        {getStatusBadge(registration.status)}
+                      </Link>
                     </div>
                   </div>
                 );

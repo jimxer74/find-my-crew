@@ -213,12 +213,18 @@ export async function GET(
             order
           )
         `)
-        .in('registration_id', registrationIds)
-        .order('journey_requirements.order', { ascending: true });
+        .in('registration_id', registrationIds);
 
       if (!answersError && allAnswers) {
+        // Sort answers by journey_requirements.order in JavaScript
+        const sortedAnswers = [...allAnswers].sort((a: any, b: any) => {
+          const orderA = a.journey_requirements?.order ?? 0;
+          const orderB = b.journey_requirements?.order ?? 0;
+          return orderA - orderB;
+        });
+
         // Group answers by registration_id
-        answersMap = allAnswers.reduce((acc: Record<string, any[]>, answer: any) => {
+        answersMap = sortedAnswers.reduce((acc: Record<string, any[]>, answer: any) => {
           if (!acc[answer.registration_id]) {
             acc[answer.registration_id] = [];
           }

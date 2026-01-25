@@ -843,9 +843,16 @@ export default function JourneyRegistrationsPage() {
                             )}
                           </div>
 
-                          {/* Status Badge - Bottom Center */}
+                          {/* Status Badge - Bottom Center - Clickable */}
                           <div className="mt-auto pt-3 flex justify-center">
-                            {getStatusBadge(registration.status)}
+                            <Link
+                              href={`/owner/registrations/${registration.id}`}
+                              className="hover:opacity-80 transition-opacity"
+                              title="View registration details"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {getStatusBadge(registration.status)}
+                            </Link>
                           </div>
                         </div>
                       );

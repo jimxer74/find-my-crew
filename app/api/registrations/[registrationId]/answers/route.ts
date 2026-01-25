@@ -74,7 +74,7 @@ export async function GET(
     }
 
     // Get answers with requirement details
-    const { data: answers, error: answersError } = await supabase
+    const { data: answersData, error: answersError } = await supabase
       .from('registration_answers')
       .select(`
         id,
@@ -93,8 +93,7 @@ export async function GET(
           order
         )
       `)
-      .eq('registration_id', registrationId)
-      .order('journey_requirements.order', { ascending: true });
+      .eq('registration_id', registrationId);
 
     if (answersError) {
       console.error('Error fetching answers:', answersError);
@@ -104,9 +103,16 @@ export async function GET(
       );
     }
 
+    // Sort answers by journey_requirements.order in JavaScript
+    const answers = (answersData || []).sort((a: any, b: any) => {
+      const orderA = a.journey_requirements?.order ?? 0;
+      const orderB = b.journey_requirements?.order ?? 0;
+      return orderA - orderB;
+    });
+
     return NextResponse.json({
-      answers: answers || [],
-      count: answers?.length || 0,
+      answers,
+      count: answers.length,
     });
 
   } catch (error: any) {
