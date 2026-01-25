@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from './components/Header';
@@ -8,11 +8,37 @@ import { useAuth } from './contexts/AuthContext';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
 import { Footer } from './components/Footer';
+import { getSupabaseBrowserClient } from './lib/supabaseClient';
 
 export default function Home() {
   const { user } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  const loadUserRoles = useCallback(async () => {
+    if (!user) {
+      setUserRoles([]);
+      return;
+    }
+    
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .single();
+    
+    if (data && data.roles) {
+      setUserRoles(data.roles);
+    } else {
+      setUserRoles([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadUserRoles();
+  }, [loadUserRoles]);
 
   return (
     <div className="min-h-screen">
@@ -46,18 +72,20 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2">
             {user ? (
               <>
+
                 <Link
-                  href="/crew/dashboard"
+                  href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/dashboard'}
                   className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
-                  Browse Journeys
+                  {userRoles.includes('owner') ? 'My Journeys' : 'Search Journeys'}
                 </Link>
+
                 {user && (
                   <Link
-                    href="/owner/boats"
+                    href={userRoles.includes('owner') ? '/owner/registrations' : '/crew/registrations'  }
                     className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                   >
-                    My Dashboard
+                    {userRoles.includes('owner') ?   'My Crew' : 'My Registrations'}
                   </Link>
                 )}
               </>
@@ -102,8 +130,8 @@ export default function Home() {
             </div>
             <h3 className="text-2xl font-bold text-card-foreground mb-4">For Boat Owners & Skippers</h3>
             <p className="text-muted-foreground mb-6">
-              Need crew for your next voyage? Easily post your boat details and journey plans, 
-              break them into legs, and find qualified crew members ready to join your adventure.
+              Need crew for your next voyage? Easily add your boat details and journey plans, 
+              break them into legs, and let AI to match with qualified crew members ready to join your adventure.
             </p>
             <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start">
@@ -116,7 +144,7 @@ export default function Home() {
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Review and approve crew applications</span>
+                <span>Review and approve crew applications or let AI to do it for you</span>
               </li>
             </ul>
           </div>
@@ -195,14 +223,14 @@ export default function Home() {
             Ready to Start Your Adventure?
           </h3>
           <p className="text-primary-foreground/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
-            Join our community of boat owners and crew members today
+            {userRoles.includes('owner') ? 'Create and publish your upcoming passages and destinations, and let AI assist you in finding the perfect crew.' : 'Your dream destinations and passages are just one click away!'}
           </p>
           {user ? (
             <Link
-              href="/owner/boats"
+              href={userRoles.includes('onwer') ? '/owner/journeys' : '/crew/dashboard' }
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
-              Go to Dashboard
+              {userRoles.includes('onwer') ? 'My Journeys' : 'Search Journeys' }
             </Link>
           ) : (
             <button

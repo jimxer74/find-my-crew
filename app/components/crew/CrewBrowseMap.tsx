@@ -79,7 +79,8 @@ export function CrewBrowseMap({
   const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const { user } = useAuth();
-  const { filters } = useFilters();
+  const { filters, lastUpdated } = useFilters();
+  const filtersRef = useRef(filters);
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
   const mapLoadedRef = useRef(false);
@@ -307,18 +308,61 @@ export function CrewBrowseMap({
     loadUserRegistrations();
   }, [user]);
 
-  // Reload legs when filters change
+  // Update filters ref whenever filters change
   useEffect(() => {
-    // Trigger reload when filters change
-    if (map.current && mapLoadedRef.current) {
-      // Trigger a moveend event to reload legs with new filter
-      setTimeout(() => {
-        if (map.current && mapLoadedRef.current) {
-          map.current.fire('moveend');
-        }
-      }, 100);
-    }
-  }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.dateRange]);
+    filtersRef.current = filters;
+  }, [filters]);
+
+  // Function to trigger reload
+  const triggerDataReload = useCallback(() => {
+    // Reset last loaded bounds to force reload
+    lastLoadedBoundsRef.current = null;
+    
+    // Wait for map to be ready, with retries (max 10 retries = ~2 seconds)
+    let retryCount = 0;
+    const maxRetries = 10;
+    const attemptReload = () => {
+      if (map.current && mapLoadedRef.current) {
+        // Trigger a moveend event to reload legs with new filter
+        console.log('[CrewBrowseMap] Triggering reload due to filter change');
+        map.current.fire('moveend');
+      } else if (retryCount < maxRetries) {
+        // If map not ready yet, retry after a short delay
+        retryCount++;
+        setTimeout(attemptReload, 200);
+      } else {
+        console.warn('[CrewBrowseMap] Map not ready after max retries, reload may not happen');
+      }
+    };
+    
+    // Start the reload process
+    setTimeout(attemptReload, 100);
+  }, []);
+
+  // Listen for custom filter update event
+  useEffect(() => {
+    const handleFiltersUpdated = () => {
+      console.log('[CrewBrowseMap] Received filtersUpdated event');
+      triggerDataReload();
+    };
+
+    window.addEventListener('filtersUpdated', handleFiltersUpdated);
+    return () => {
+      window.removeEventListener('filtersUpdated', handleFiltersUpdated);
+    };
+  }, [triggerDataReload]);
+
+  // Reload legs when filters change or when lastUpdated timestamp changes
+  useEffect(() => {
+    console.log('[CrewBrowseMap] Filters changed, triggering reload', {
+      experienceLevel: filters.experienceLevel,
+      riskLevel: filters.riskLevel,
+      location: filters.location,
+      dateRange: filters.dateRange,
+      lastUpdated,
+    });
+    triggerDataReload();
+  }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.dateRange, lastUpdated, triggerDataReload]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -699,8 +743,9 @@ export function CrewBrowseMap({
             }
 
             // Check if viewport has changed significantly
+            // If lastLoadedBoundsRef is null, it means filters changed and we should force reload
             const newBounds = { minLng, minLat, maxLng, maxLat };
-            if (!hasViewportChangedSignificantly(newBounds, lastLoadedBoundsRef.current)) {
+            if (lastLoadedBoundsRef.current !== null && !hasViewportChangedSignificantly(newBounds, lastLoadedBoundsRef.current)) {
               console.log('[CrewBrowseMap] Viewport has not changed significantly, skipping reload');
               isLoadingRef.current = false;
               setLoading(false);
@@ -721,31 +766,34 @@ export function CrewBrowseMap({
               max_lat: maxLat.toString(),
             });
 
+            // Use filters from ref to ensure we always have the latest values
+            const currentFilters = filtersRef.current;
+            
             // Add experience level filter if set
-            if (filters.experienceLevel !== null) {
-              params.append('min_experience_level', filters.experienceLevel.toString());
+            if (currentFilters.experienceLevel !== null) {
+              params.append('min_experience_level', currentFilters.experienceLevel.toString());
             }
 
             // Add risk level filter if set (multi-select)
-            if (filters.riskLevel && filters.riskLevel.length > 0) {
-              params.append('risk_levels', filters.riskLevel.join(','));
+            if (currentFilters.riskLevel && currentFilters.riskLevel.length > 0) {
+              params.append('risk_levels', currentFilters.riskLevel.join(','));
             }
 
             // Add date range filter if set
-            if (filters.dateRange.start) {
-              params.append('start_date', filters.dateRange.start.toISOString().split('T')[0]);
+            if (currentFilters.dateRange.start) {
+              params.append('start_date', currentFilters.dateRange.start.toISOString().split('T')[0]);
             }
-            if (filters.dateRange.end) {
-              params.append('end_date', filters.dateRange.end.toISOString().split('T')[0]);
+            if (currentFilters.dateRange.end) {
+              params.append('end_date', currentFilters.dateRange.end.toISOString().split('T')[0]);
             }
 
             // Note: We no longer filter by skills in the API
             // Instead, we fetch all legs and filter by match percentage on the frontend
             // This allows us to show match percentages for all legs
             console.log('[CrewBrowseMap] Fetching legs with filters:', {
-              experienceLevel: filters.experienceLevel,
-              riskLevel: filters.riskLevel,
-              dateRange: filters.dateRange,
+              experienceLevel: currentFilters.experienceLevel,
+              riskLevel: currentFilters.riskLevel,
+              dateRange: currentFilters.dateRange,
             });
 
             const url = `/api/legs/viewport?${params.toString()}`;

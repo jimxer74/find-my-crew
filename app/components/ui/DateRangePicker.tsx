@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 export type DateRange = {
   start: Date | null;
@@ -15,6 +16,7 @@ export type DateRangePickerProps = {
   maxDate?: Date;
   className?: string;
   disableClickOutside?: boolean;
+  isInDialog?: boolean;
 };
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -31,7 +33,9 @@ export function DateRangePicker({
   maxDate,
   className = '',
   disableClickOutside = false,
+  isInDialog = false,
 }: DateRangePickerProps) {
+  const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectingStart, setSelectingStart] = useState(true);
   const [tempRange, setTempRange] = useState<DateRange>(value);
@@ -118,6 +122,11 @@ export function DateRangePicker({
   const handleSave = () => {
     onChange(tempRange);
     onClose?.();
+    // Navigate to crew dashboard after saving only if not in dialog
+    if (!isInDialog) {
+      router.push('/crew/dashboard');
+      router.refresh();
+    }
   };
 
   const handleCancel = () => {
@@ -298,7 +307,7 @@ export function DateRangePicker({
           onClick={handleSave}
           className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
         >
-          Save
+          {isInDialog ? 'Save' : 'Save and Search'}
         </button>
       </div>
     </div>

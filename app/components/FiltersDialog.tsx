@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -18,6 +19,8 @@ type FiltersDialogProps = {
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
 export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -170,6 +173,16 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     
     setWarningMessage(null);
     onClose();
+    
+    // Dispatch custom event to trigger reload in CrewBrowseMap
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('filtersUpdated'));
+    }
+    
+    // Navigate to crew dashboard if not already there
+    if (pathname !== '/crew/dashboard') {
+      router.push('/crew/dashboard');
+    }
   };
 
   const handleCancel = () => {
@@ -227,8 +240,8 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Date Range Picker - Only show on mobile/small screens */}
-              <div className="md:hidden">
+              {/* Date Range Picker */}
+              <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Availability
                 </label>
@@ -307,6 +320,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
                           }}
                           onClose={() => setIsDatePickerOpen(false)}
                           disableClickOutside={true}
+                          isInDialog={true}
                         />
                       </div>
                     </div>
@@ -418,7 +432,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
                   onClick={handleSave}
                   className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
                 >
-                  Save
+                  Save and Search
                 </button>
               </div>
             </div>

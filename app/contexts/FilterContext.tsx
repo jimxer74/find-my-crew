@@ -19,6 +19,7 @@ type FilterContextType = {
   filters: FilterState;
   updateFilters: (updates: Partial<FilterState>) => void;
   clearFilters: () => void;
+  lastUpdated: number; // Timestamp of last filter update to trigger reloads
 };
 
 const defaultFilters: FilterState = {
@@ -33,11 +34,13 @@ const FilterContext = createContext<FilterContextType>({
   filters: defaultFilters,
   updateFilters: () => {},
   clearFilters: () => {},
+  lastUpdated: Date.now(),
 });
 
 export function FilterProvider({ children }: { children: ReactNode }) {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
   // Load filters from session storage on mount
   useEffect(() => {
@@ -116,14 +119,16 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   const updateFilters = (updates: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...updates }));
+    setLastUpdated(Date.now()); // Update timestamp to trigger reloads
   };
 
   const clearFilters = () => {
     setFilters(defaultFilters);
+    setLastUpdated(Date.now()); // Update timestamp to trigger reloads
   };
 
   return (
-    <FilterContext.Provider value={{ filters, updateFilters, clearFilters }}>
+    <FilterContext.Provider value={{ filters, updateFilters, clearFilters, lastUpdated }}>
       {children}
     </FilterContext.Provider>
   );

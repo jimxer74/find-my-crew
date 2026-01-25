@@ -271,7 +271,7 @@ export async function notifyRegistrationApproved(
     type: NotificationType.REGISTRATION_APPROVED,
     title: 'Registration Approved',
     message: `Your registration for "${journeyName}" has been approved by ${ownerName}. Welcome aboard!`,
-    link: `/journeys/${journeyId}`,
+    link: `/crew/registrations`,
     metadata: {
       journey_id: journeyId,
       journey_name: journeyName,
@@ -281,7 +281,7 @@ export async function notifyRegistrationApproved(
 
   // Send email notification (non-blocking)
   try {
-    const userEmail = await getUserEmailFromProfiles(crewUserId);
+    const userEmail = await getUserEmailFromProfiles(supabase, crewUserId);
     if (userEmail) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
       const journeyLink = `${appUrl}/journeys/${journeyId}`;
@@ -329,7 +329,7 @@ export async function notifyRegistrationDenied(
     type: NotificationType.REGISTRATION_DENIED,
     title: 'Registration Not Approved',
     message,
-    link: '/journeys',
+    link: '/crew/registrations',
     metadata: {
       journey_id: journeyId,
       journey_name: journeyName,
@@ -340,7 +340,7 @@ export async function notifyRegistrationDenied(
 
   // Send email notification (non-blocking)
   try {
-    const userEmail = await getUserEmailFromProfiles(crewUserId);
+    const userEmail = await getUserEmailFromProfiles(supabase, crewUserId);
     if (userEmail) {
       const emailResult = await sendRegistrationDeniedEmail(
         supabase,
@@ -395,7 +395,7 @@ export async function notifyNewRegistration(
 
   // Send email notification (non-blocking)
   try {
-    const ownerEmail = await getUserEmailFromProfiles(ownerUserId);
+    const ownerEmail = await getUserEmailFromProfiles(supabase, ownerUserId);
     if (ownerEmail) {
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
       const registrationLink = `${appUrl}/owner/registrations?registration=${registrationId}`;
