@@ -571,7 +571,7 @@ create trigger trigger_email_preferences_updated_at
 -- Stores user consent preferences for GDPR compliance
 
 create table if not exists public.user_consents (
-  user_id                       uuid primary key references public.profiles(id) on delete cascade,
+  user_id                       uuid primary key references auth.users(id) on delete cascade,
 
   -- Legal consents (required during signup)
   privacy_policy_accepted_at    timestamptz,  -- When user accepted privacy policy
@@ -628,7 +628,7 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger trigger_user_consents_updated_at
+create or replace trigger trigger_user_consents_updated_at
   before update on public.user_consents
   for each row
   execute function update_user_consents_updated_at();
@@ -641,7 +641,7 @@ create trigger trigger_user_consents_updated_at
 
 create table if not exists public.consent_audit_log (
   id              uuid primary key default gen_random_uuid(),
-  user_id         uuid not null references public.profiles(id) on delete cascade,
+  user_id         uuid not null references auth.users(id) on delete cascade,
   consent_type    varchar(50) not null,  -- 'privacy_policy', 'terms', 'ai_processing', 'profile_sharing', 'marketing', 'cookies'
   action          varchar(20) not null,  -- 'granted', 'revoked', 'updated'
   old_value       jsonb,  -- Previous consent state

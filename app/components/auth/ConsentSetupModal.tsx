@@ -33,6 +33,8 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
     setLoading(true);
     setError(null);
 
+
+    console.log('handleSave starting...');
     const supabase = getSupabaseBrowserClient();
     const now = new Date().toISOString();
 
@@ -49,21 +51,28 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         marketing_consent_at: now,
       };
 
+
+      console.log('consentData: ', consentData);
       // Try to update existing consent record
       const { error: updateError, count } = await supabase
         .from('user_consents')
-        .update({ ...consentData, updated_at: now })
+        .update({ ...consentData, updated_at: now, consent_setup_completed_at: now })
         .eq('user_id', userId);
 
-      // If no rows were updated (record doesn't exist), insert new record
-      if (updateError || count === 0) {
+      console.log('updateError: ', updateError);
+      console.log('Error: ', error);
+      console.log('count: ', count);
+        // If no rows were updated (record doesn't exist), insert new record
+
+      if (updateError || count === 0 || count === null) {
         const { error: insertError } = await supabase
           .from('user_consents')
           .insert({
             user_id: userId,
-            ...consentData,
+            ...consentData, updated_at: now, consent_setup_completed_at: now,
           });
 
+        console.log('insertError:', insertError);
         if (insertError) throw insertError;
       }
 

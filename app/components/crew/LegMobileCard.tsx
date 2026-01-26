@@ -164,7 +164,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
             )}
             
             {/* Skipper Avatar and Name - Right Side */}
-            {profileStatus?.exists && profileStatus.completionPercentage === 100 && (leg.owner_name || leg.owner_image_url) && (
+            {profileStatus?.exists && (leg.owner_name || leg.owner_image_url) && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {leg.owner_image_url ? (
                   <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-border">
@@ -203,7 +203,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
               </div>
             )}
             {/* Empty avatar for incomplete profiles - no text */}
-            {(!profileStatus?.exists || profileStatus.completionPercentage < 100) && (
+            {(!profileStatus?.exists ) && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
                   <svg
