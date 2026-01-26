@@ -6,6 +6,8 @@ export type Location = {
   name: string;
   lat: number;
   lng: number;
+  countryCode?: string;  // ISO 3166-1 alpha-2 code (e.g., US, GB, FR)
+  countryName?: string;  // Full country name
 };
 
 export type LocationAutocompleteProps = {
@@ -155,14 +157,22 @@ export function LocationAutocomplete({
       
       if (feature && feature.geometry && feature.geometry.coordinates) {
         const [lng, lat] = feature.geometry.coordinates;
-        const locationName = feature.properties?.full_address || 
-                            feature.properties?.name || 
+        const locationName = feature.properties?.full_address ||
+                            feature.properties?.name ||
                             suggestion.name;
+
+        // Extract country information from context
+        const context = feature.properties?.context;
+        const countryInfo = context?.country;
+        const countryCode = countryInfo?.country_code?.toUpperCase();
+        const countryName = countryInfo?.name;
 
         onChange({
           name: locationName,
           lat: lat,
           lng: lng,
+          countryCode,
+          countryName,
         });
 
         setInputValue(locationName);

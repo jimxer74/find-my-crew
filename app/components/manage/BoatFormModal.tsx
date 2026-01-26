@@ -116,13 +116,6 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showCategoryInfo, setShowCategoryInfo] = useState(false);
-  const [makeModelSuggestions, setMakeModelSuggestions] = useState<Array<{ name: string; url: string; slug: string }>>([]);
-  const [showMakeModelSuggestions, setShowMakeModelSuggestions] = useState(false);
-  const [makeModelInputValue, setMakeModelInputValue] = useState('');
-  const [isLoadingMakeModelSuggestions, setIsLoadingMakeModelSuggestions] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [isLoadingBoatDetails, setIsLoadingBoatDetails] = useState(false);
-  const [selectedBoatSlug, setSelectedBoatSlug] = useState<string | null>(null); // Store slug from selected suggestion
 
   useEffect(() => {
     if (isOpen && boatId) {
@@ -155,11 +148,6 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       });
       setImages([]);
       setError(null);
-      setMakeModelInputValue('');
-      setMakeModelSuggestions([]);
-      setShowMakeModelSuggestions(false);
-      setHasSearched(false);
-      setSelectedBoatSlug(null);
 
       // Check boat creation limit for new boats
       checkBoatLimit();
@@ -220,175 +208,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         ppi_pounds_per_inch: data.ppi_pounds_per_inch || null,
       });
       setImages(data.images || []);
-      setMakeModelInputValue(makeModelValue);
     }
     setIsLoadingBoat(false);
-  };
-
-  // Function to auto-fill boat details: first fetch hard data, then use AI for reasoned fields
-  const fillBoatDetailsFromSailboatData = async () => {
-    if (!formData.make_model || formData.make_model.trim().length < 2) {
-      setError('Please enter a Make and Model first');
-      return;
-    }
-
-    setIsLoadingBoatDetails(true);
-    setError(null);
-
-    try {
-      // Step 1: Fetch hard data from sailboatdata.com via ScraperAPI
-      console.log('=== STEP 1: Fetching hard data from sailboatdata.com ===');
-      console.log('Using slug:', selectedBoatSlug || '(will generate from make_model)');
-      const hardDataResponse = await fetch('/api/sailboatdata/fetch-details', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          make_model: formData.make_model,
-          slug: selectedBoatSlug || undefined, // Use slug from search if available
-        }),
-      });
-
-      if (!hardDataResponse.ok) {
-        const errorData = await hardDataResponse.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch boat details from sailboatdata.com');
-      }
-
-      const hardDataResult = await hardDataResponse.json();
-      const hardData = hardDataResult.boatDetails;
-
-      console.log('Hard data fetched:', hardData);
-
-      // Step 2: Use AI to fill reasoned fields based on hard data
-      console.log('=== STEP 2: Using AI to fill reasoned fields ===');
-      const aiResponse = await fetch('/api/ai/fill-reasoned-details', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          make_model: formData.make_model,
-          hardData: {
-            loa_m: hardData.loa_m,
-            beam_m: hardData.beam_m,
-            max_draft_m: hardData.max_draft_m,
-            displcmt_m: hardData.displcmt_m,
-            sa_displ_ratio: hardData.sa_displ_ratio,
-            ballast_displ_ratio: hardData.ballast_displ_ratio,
-            displ_len_ratio: hardData.displ_len_ratio,
-            comfort_ratio: hardData.comfort_ratio,
-            capsize_screening: hardData.capsize_screening,
-            hull_speed_knots: hardData.hull_speed_knots,
-            ppi_pounds_per_inch: hardData.ppi_pounds_per_inch,
-          }
-        }),
-      });
-
-      let reasonedData: {
-        type?: string | null;
-        capacity?: number | null;
-        average_speed_knots?: number | null;
-        characteristics?: string;
-        capabilities?: string;
-        accommodations?: string;
-      } = {};
-      if (aiResponse.ok) {
-        const aiResult = await aiResponse.json();
-        reasonedData = aiResult.reasonedDetails || {};
-        console.log('AI reasoned data fetched:', reasonedData);
-      } else {
-        console.warn('AI reasoned details failed, continuing with hard data only');
-        const errorData = await aiResponse.json().catch(() => ({}));
-        console.warn('AI error:', errorData.error);
-      }
-
-      // Step 3: Merge hard data and AI-reasoned data
-      // Validate category type
-      const validCategories: Boat['type'][] = [
-        'Daysailers',
-        'Coastal cruisers',
-        'Traditional offshore cruisers',
-        'Performance cruisers',
-        'Multihulls',
-        'Expedition sailboats',
-      ];
-      const validatedType: Boat['type'] = 
-        reasonedData.type && validCategories.includes(reasonedData.type as Boat['type'])
-          ? (reasonedData.type as Boat['type'])
-          : null;
-
-      setFormData((prev) => ({
-        ...prev,
-        // Hard data (from sailboatdata.com scraping)
-        loa_m: hardData.loa_m ?? prev.loa_m,
-        beam_m: hardData.beam_m ?? prev.beam_m,
-        max_draft_m: hardData.max_draft_m ?? prev.max_draft_m,
-        displcmt_m: hardData.displcmt_m ?? prev.displcmt_m,
-        link_to_specs: hardData.link_to_specs || prev.link_to_specs,
-        sa_displ_ratio: hardData.sa_displ_ratio ?? prev.sa_displ_ratio,
-        ballast_displ_ratio: hardData.ballast_displ_ratio ?? prev.ballast_displ_ratio,
-        displ_len_ratio: hardData.displ_len_ratio ?? prev.displ_len_ratio,
-        comfort_ratio: hardData.comfort_ratio ?? prev.comfort_ratio,
-        capsize_screening: hardData.capsize_screening ?? prev.capsize_screening,
-        hull_speed_knots: hardData.hull_speed_knots ?? prev.hull_speed_knots,
-        ppi_pounds_per_inch: hardData.ppi_pounds_per_inch ?? prev.ppi_pounds_per_inch,
-        // AI-reasoned data (category, capacity, average speed, descriptions)
-        type: validatedType || prev.type,
-        capacity: reasonedData.capacity ?? prev.capacity,
-        average_speed_knots: reasonedData.average_speed_knots ?? prev.average_speed_knots,
-        characteristics: reasonedData.characteristics || prev.characteristics,
-        capabilities: reasonedData.capabilities || prev.capabilities,
-        accommodations: reasonedData.accommodations || prev.accommodations,
-      }));
-
-      console.log('=== Auto-fill completed successfully ===');
-    } catch (error: any) {
-      console.error('Error filling boat details:', error);
-      setError(error.message || 'Failed to fetch boat details. Please fill manually.');
-    } finally {
-      setIsLoadingBoatDetails(false);
-    }
-  };
-
-  // Function to fetch sailboat suggestions using scraping (triggered manually on Enter)
-  const fetchSailboatSuggestions = async () => {
-    if (makeModelInputValue.trim().length < 2) {
-      setMakeModelSuggestions([]);
-      setShowMakeModelSuggestions(false);
-      setIsLoadingMakeModelSuggestions(false);
-      return;
-    }
-
-    setIsLoadingMakeModelSuggestions(true);
-    setHasSearched(true);
-    
-    try {
-      const response = await fetch('/api/sailboatdata/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: makeModelInputValue }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setMakeModelSuggestions(data.suggestions || []);
-        setShowMakeModelSuggestions(data.suggestions && data.suggestions.length > 0);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Error fetching sailboat suggestions:', errorData.error);
-        setMakeModelSuggestions([]);
-        setShowMakeModelSuggestions(false);
-      }
-    } catch (error) {
-      console.error('Error fetching sailboat suggestions:', error);
-      setMakeModelSuggestions([]);
-      setShowMakeModelSuggestions(false);
-    } finally {
-      setIsLoadingMakeModelSuggestions(false);
-    }
   };
 
   const handleImageUpload = async (files: FileList | null) => {
@@ -537,37 +358,34 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
-        {/* Modal */}
-        <div
-          className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-card-foreground">
+      <div className="min-h-[calc(100vh-4rem)]">
+        {/* Page Header */}
+        <div className="border-b border-border bg-background">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-foreground">
                 {boatId ? 'Edit Boat' : 'Add New Boat'}
-              </h2>
+              </h1>
               <button
                 onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close"
+                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Cancel and go back"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
+                <span className="text-sm font-medium">Cancel</span>
               </button>
             </div>
+          </div>
+        </div>
 
-            {isLoadingBoat ? (
-              <div className="text-center py-8">Loading boat details...</div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Content */}
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {isLoadingBoat ? (
+            <div className="text-center py-8">Loading boat details...</div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
                   <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                     {error}
@@ -644,142 +462,19 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                   </div>
 
                   {/* Make and Model (Combined) */}
-                  <div className="md:col-span-2 relative">
-                    <div className="flex items-center justify-between mb-1">
-                      <label htmlFor="make_model" className="block text-sm font-medium text-foreground">
-                        Make and Model
-                      </label>
-                      <button
-                        type="button"
-                        onClick={fillBoatDetailsFromSailboatData}
-                        disabled={isLoadingBoatDetails || !formData.make_model || formData.make_model.trim().length < 2}
-                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Auto-fill boat details from sailboatdata.com"
-                      >
-                        {isLoadingBoatDetails ? (
-                          <>
-                            <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Filling...</span>
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <span>Auto-fill Details</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        id="make_model"
-                        name="make_model"
-                        value={formData.make_model}
-                        onChange={(e) => {
-                          handleChange(e);
-                          setMakeModelInputValue(e.target.value);
-                          // Reset search state when user types
-                          setHasSearched(false);
-                          setMakeModelSuggestions([]);
-                          setShowMakeModelSuggestions(false);
-                          setSelectedBoatSlug(null); // Clear selected slug when user types manually
-                        }}
-                        onFocus={() => {
-                          // Only show suggestions if we've already searched
-                          if (hasSearched && makeModelSuggestions.length > 0 && makeModelInputValue.trim().length >= 2) {
-                            setShowMakeModelSuggestions(true);
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          // Trigger AI search on Enter
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (makeModelInputValue.trim().length >= 2) {
-                              fetchSailboatSuggestions();
-                            } else if (showMakeModelSuggestions) {
-                              // If suggestions are showing, accept the current input
-                              setShowMakeModelSuggestions(false);
-                            }
-                          }
-                          // Allow Escape to close suggestions
-                          if (e.key === 'Escape') {
-                            setShowMakeModelSuggestions(false);
-                          }
-                        }}
-                        onBlur={() => {
-                          // Delay hiding suggestions to allow clicking on them
-                          setTimeout(() => setShowMakeModelSuggestions(false), 200);
-                        }}
-                        className="w-full px-3 py-2 pr-8 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                        placeholder="e.g., Hallberg-Rassy 38 (press Enter to search)"
-                        autoComplete="off"
-                      />
-                      {/* Loading Indicator */}
-                      {isLoadingMakeModelSuggestions && (
-                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                          <svg className="animate-spin h-4 w-4 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    {/* Hint message when user hasn't searched yet */}
-                    {makeModelInputValue.trim().length >= 2 && !hasSearched && !isLoadingMakeModelSuggestions && (
-                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg">
-                        <div className="px-3 py-2 text-sm text-muted-foreground flex items-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>Press <kbd className="px-1.5 py-0.5 text-xs font-semibold text-foreground bg-muted border border-border rounded">Enter</kbd> to search sailboatdata.com</span>
-                        </div>
-                      </div>
-                    )}
-                    {/* Suggestions Dropdown */}
-                    {showMakeModelSuggestions && (
-                      <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-                        {isLoadingMakeModelSuggestions ? (
-                          <div className="px-3 py-4 text-center text-sm text-muted-foreground flex items-center justify-center gap-2">
-                            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Searching sailboatdata.com...</span>
-                          </div>
-                        ) : makeModelSuggestions.length > 0 ? (
-                          <>
-                            {makeModelSuggestions.map((suggestion, index) => (
-                              <button
-                                key={index}
-                                type="button"
-                                onClick={() => {
-                                  setFormData((prev) => ({ ...prev, make_model: suggestion.name }));
-                                  setMakeModelInputValue(suggestion.name);
-                                  setSelectedBoatSlug(suggestion.slug); // Store slug for use in fetchBoatDetails
-                                  setShowMakeModelSuggestions(false);
-                                }}
-                                className="w-full text-left px-3 py-2 hover:bg-accent transition-colors text-sm text-foreground"
-                                title={suggestion.url}
-                              >
-                                {suggestion.name}
-                              </button>
-                            ))}
-                            <div className="px-3 py-2 text-xs text-muted-foreground border-t border-border">
-                              Or press Enter to use "{makeModelInputValue}"
-                            </div>
-                          </>
-                        ) : hasSearched && makeModelInputValue.trim().length >= 2 ? (
-                          <div className="px-3 py-2 text-sm text-muted-foreground">
-                            No suggestions found. Press Enter to use "{makeModelInputValue}"
-                          </div>
-                        ) : null}
-                      </div>
-                    )}
+                  <div className="md:col-span-2">
+                    <label htmlFor="make_model" className="block text-sm font-medium text-foreground mb-1">
+                      Make and Model
+                    </label>
+                    <input
+                      type="text"
+                      id="make_model"
+                      name="make_model"
+                      value={formData.make_model}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      placeholder="e.g., Hallberg-Rassy 38"
+                    />
                   </div>
 
                   {/* Home Port */}
@@ -1153,7 +848,6 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
             )}
           </div>
         </div>
-      </div>
 
       {/* Category Info Modal */}
       {showCategoryInfo && (

@@ -130,7 +130,8 @@ create table if not exists public.boats (
   make        text,
   model       text,
   capacity    int,
-  home_port   text, 
+  home_port   text,
+  country_flag text, -- ISO 3166-1 alpha-2 country code (e.g., US, GB, FR)
   loa_m       numeric, -- length overall in meters
   lwl_m       numeric, -- length waterline in meters (for sailboat calculations)
   beam_m      numeric, -- Beam in meters
