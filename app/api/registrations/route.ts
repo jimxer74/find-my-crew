@@ -500,6 +500,7 @@ export async function POST(request: NextRequest) {
         answersCount: answers.length,
         answersSaved,
       });
+      
       // Trigger AI assessment asynchronously (don't await to avoid blocking)
       // Add a small delay to ensure database transaction is committed
       // Use Promise-based delay instead of setTimeout for better error handling
