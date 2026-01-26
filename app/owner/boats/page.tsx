@@ -162,7 +162,7 @@ export default function BoatsPage() {
                           }}
                           className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] px-2 py-2 sm:py-0"
                         >
-                          Edit
+                          Edit boat
                         </button>
                         <span className="hidden sm:inline text-border">|</span>
                         <Link
