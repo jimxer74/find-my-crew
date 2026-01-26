@@ -7,10 +7,17 @@ export const metadata = {
   description: 'Privacy Policy for SailSmart - Learn how we collect, use, and protect your personal data.',
 };
 
-export default function PrivacyPolicyPage() {
+type Props = {
+  searchParams: Promise<{ standalone?: string }>;
+};
+
+export default async function PrivacyPolicyPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const isStandalone = params.standalone === 'true';
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      {!isStandalone && <Header />}
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <article className="prose prose-slate dark:prose-invert max-w-none">
@@ -212,17 +219,19 @@ export default function PrivacyPolicyPage() {
           </section>
         </article>
 
-        <div className="mt-12 pt-8 border-t border-border">
-          <Link
-            href="/"
-            className="text-primary hover:underline"
-          >
-            &larr; Back to Home
-          </Link>
-        </div>
+        {!isStandalone && (
+          <div className="mt-12 pt-8 border-t border-border">
+            <Link
+              href="/"
+              className="text-primary hover:underline"
+            >
+              &larr; Back to Home
+            </Link>
+          </div>
+        )}
       </main>
 
-      <Footer />
+      {!isStandalone && <Footer />}
     </div>
   );
 }

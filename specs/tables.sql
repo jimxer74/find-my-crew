@@ -591,6 +591,9 @@ create table if not exists public.user_consents (
   cookie_preferences            jsonb default '{"essential": true, "analytics": false, "marketing": false}'::jsonb,
   cookie_preferences_at         timestamptz,  -- When cookie preferences were last updated
 
+  -- Consent setup tracking
+  consent_setup_completed_at    timestamptz,  -- When user completed the initial consent setup modal after first login
+
   created_at                    timestamptz not null default now(),
   updated_at                    timestamptz not null default now()
 );
