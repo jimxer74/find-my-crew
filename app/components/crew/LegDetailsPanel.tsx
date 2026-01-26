@@ -1175,8 +1175,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               skillMatchPercentage={leg.skill_match_percentage}
             />
 
-            {/* Boat Info - Only show if profile is complete */}
-            {profileStatus?.exists && profileStatus.completionPercentage === 100 && (
+            {/* Boat Info - Only show if profile*/}
+            {profileStatus?.exists && (
               <div className="pt-4 border-t border-border">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h3>
                 <div className="flex gap-3 items-start">

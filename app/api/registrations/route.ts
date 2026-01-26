@@ -3,6 +3,8 @@ import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { assessRegistrationWithAI } from '@/app/lib/ai/assessRegistration';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
+import { waitUntil } from '@vercel/functions';
+
 
 // Extend timeout for registration with AI assessment
 export const maxDuration = 90; // 90 seconds
@@ -78,6 +80,32 @@ async function handleRegistrationAnswers(
   }
 
   return null; // Success
+}
+
+/**
+ * Helper function to trigger AI assessment for a registration
+ * Uses Vercel's waitUntil to ensure the task completes even after response is sent
+ */
+function triggerAIAssessment(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  registrationId: string
+): void {
+  const assessmentPromise = assessRegistrationWithAI(supabase, registrationId)
+    .then(() => {
+      console.log(`[Registration API] ✅ AI assessment completed successfully for registration: ${registrationId}`);
+    })
+    .catch((error) => {
+      console.error(`[Registration API] ❌ AI assessment failed (non-blocking) for registration ${registrationId}:`, {
+        error: error.message,
+        stack: error.stack,
+        errorName: error.name,
+        errorType: typeof error,
+      });
+      // Don't fail registration creation if AI assessment fails
+    });
+
+  // Use waitUntil to ensure the task completes even after response is sent
+  waitUntil(assessmentPromise);
 }
 
 /**
@@ -277,26 +305,8 @@ export async function POST(request: NextRequest) {
             requirementCount,
             answersCount: answers.length,
           });
-          Promise.resolve()
-            .then(() => {
-              console.log(`[Registration API] Waiting 1 second before calling AI assessment for reactivated registration...`);
-              return new Promise(resolve => setTimeout(resolve, 1000));
-            })
-            .then(() => {
-              console.log(`[Registration API] Calling assessRegistrationWithAI for reactivated registration: ${updatedRegistration.id}`);
-              return assessRegistrationWithAI(supabase, updatedRegistration.id);
-            })
-            .then(() => {
-              console.log(`[Registration API] ✅ AI assessment completed successfully for reactivated registration: ${updatedRegistration.id}`);
-            })
-            .catch((error) => {
-              console.error(`[Registration API] ❌ AI assessment failed (non-blocking) for reactivated registration ${updatedRegistration.id}:`, {
-                error: error.message,
-                stack: error.stack,
-                errorName: error.name,
-              });
-              // Don't fail registration reactivation if AI assessment fails
-            });
+          console.log(`[Registration API] Calling assessRegistrationWithAI for reactivated registration: ${updatedRegistration.id}`);
+          triggerAIAssessment(supabase, updatedRegistration.id);
         } else {
           console.log(`[Registration API] ❌ SKIPPING AI assessment for reactivated registration - Conditions not met:`, {
             registrationId: updatedRegistration.id,
@@ -500,31 +510,8 @@ export async function POST(request: NextRequest) {
         answersCount: answers.length,
         answersSaved,
       });
-      
-      // Trigger AI assessment asynchronously (don't await to avoid blocking)
-      // Add a small delay to ensure database transaction is committed
-      // Use Promise-based delay instead of setTimeout for better error handling
-      Promise.resolve()
-        .then(() => {
-          console.log(`[Registration API] Waiting 1 second before calling AI assessment...`);
-          return new Promise(resolve => setTimeout(resolve, 1000)); // 1 second delay
-        })
-        .then(() => {
-          console.log(`[Registration API] Calling assessRegistrationWithAI for registration: ${registration.id}`);
-          return assessRegistrationWithAI(supabase, registration.id);
-        })
-        .then(() => {
-          console.log(`[Registration API] ✅ AI assessment completed successfully for registration: ${registration.id}`);
-        })
-        .catch((error) => {
-          console.error(`[Registration API] ❌ AI assessment failed (non-blocking) for registration ${registration.id}:`, {
-            error: error.message,
-            stack: error.stack,
-            errorName: error.name,
-            errorType: typeof error,
-          });
-          // Don't fail registration creation if AI assessment fails
-        });
+      console.log(`[Registration API] Calling assessRegistrationWithAI for registration: ${registration.id}`);
+      triggerAIAssessment(supabase, registration.id);
     } else {
       console.log(`[Registration API] ❌ SKIPPING AI assessment - Conditions not met:`, {
         registrationId: registration.id,
