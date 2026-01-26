@@ -748,8 +748,7 @@ function ProfilePageContent() {
         <form onSubmit={handleSubmit}>
           {/* Section 1: Personal Information */}
           <CollapsibleSection
-            sectionNumber={1}
-            title={`${displayName}'s Personal Information`}
+            title={`Personal Information`}
             defaultOpen={true}
           >
             <PersonalInfoSection
@@ -766,7 +765,6 @@ function ProfilePageContent() {
           {/* Section 2: Sailing Preferences - CREW ROLE ONLY */}
           {formData.roles.includes('crew') && (
             <CollapsibleSection
-              sectionNumber={2}
               title="Sailing Preferences"
               defaultOpen={true}
             >
@@ -793,7 +791,6 @@ function ProfilePageContent() {
 
           {/* Section 3: Experience and Skills */}
           <CollapsibleSection
-            sectionNumber={formData.roles.includes('crew') ? 3 : 2}
             title="Sailing Experience and Skills"
             defaultOpen={true}
           >
@@ -816,7 +813,6 @@ function ProfilePageContent() {
 
           {/* Section 4: Notifications and Consents */}
           <CollapsibleSection
-            sectionNumber={formData.roles.includes('crew') ? 4 : 3}
             title="Notifications and Consents"
             defaultOpen={false}
           >
