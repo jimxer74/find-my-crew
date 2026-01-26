@@ -1013,6 +1013,7 @@ function ProfilePageContent() {
                 className={`w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y ${
                   isFieldMissing('sailing_preferences') ? 'border-primary/50 bg-primary/5' : 'border-border'
                 }`}
+                /*
                 onFocus={() => {
                   const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
                   
@@ -1191,7 +1192,7 @@ function ProfilePageContent() {
                     ),
                   });
                   setShowPreferencesSidebar(true);
-                }}
+                }}*/
               />
             </div>
             )}
