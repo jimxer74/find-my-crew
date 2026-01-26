@@ -526,7 +526,7 @@ create index if not exists idx_notifications_user_created on public.notification
 
 -- Table definition
 create table if not exists public.email_preferences (
-  user_id               uuid primary key references public.profiles(id) on delete cascade,
+  user_id               uuid primary key references auth.users(id) on delete cascade,
   registration_updates  boolean default true,
   journey_updates       boolean default true,
   profile_reminders     boolean default true,
@@ -559,7 +559,7 @@ begin
 end;
 $$ language plpgsql;
 
-create trigger trigger_email_preferences_updated_at
+create or replace trigger trigger_email_preferences_updated_at
   before update on public.email_preferences
   for each row
   execute function update_email_preferences_updated_at();

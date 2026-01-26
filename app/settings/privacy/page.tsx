@@ -88,9 +88,9 @@ export default function PrivacySettingsPage() {
       });
       setConsents(consentsRes.data);
       setEmailPrefs(emailPrefsRes.data || {
-        registration_updates: true,
-        journey_updates: true,
-        profile_reminders: true,
+        registration_updates: false,
+        journey_updates: false,
+        profile_reminders: false,
       });
     } catch (err) {
       console.error('Error loading user data:', err);

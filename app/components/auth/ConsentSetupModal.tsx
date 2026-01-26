@@ -264,6 +264,9 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
                 </p>
               </div>
             </label>
+
+
+            
           </div>
 
           {/* Info Text */}

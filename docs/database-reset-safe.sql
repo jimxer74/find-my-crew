@@ -33,6 +33,15 @@ DELETE FROM public.boats;
 -- Delete profiles
 DELETE FROM public.profiles;
 
+-- Delete consets
+DELETE FROM public.email_preferences;
+
+-- Delete profiles
+DELETE FROM public.user_consents;
+
+-- Delete profiles
+DELETE FROM public.consent_audit_log;
+
 -- ============================================================================
 -- Verify deletion (optional)
 -- ============================================================================
