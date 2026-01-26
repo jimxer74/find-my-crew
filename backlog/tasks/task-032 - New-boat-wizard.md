@@ -1,10 +1,10 @@
 ---
 id: TASK-032
 title: New boat wizard
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-26 07:11'
-updated_date: '2026-01-26 07:38'
+updated_date: '2026-01-26 12:15'
 labels: []
 dependencies: []
 priority: high
