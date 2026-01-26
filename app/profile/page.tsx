@@ -6,12 +6,16 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Header } from '@/app/components/Header';
-import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
-import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
-import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
-import { MissingFieldsIndicator } from '@/app/components/profile/MissingFieldsIndicator';
-import { Footer } from '../components/Footer';
+import { UserConsents } from '@/app/types/consents';
+import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
+import {
+  PersonalInfoSection,
+  SailingPreferencesSection,
+  ExperienceSkillsSection,
+  NotificationsConsentsSection,
+} from '@/app/components/profile/sections';
+import skillsConfig from '@/app/config/skills-config.json';
 
 type SkillEntry = {
   skill_name: string;
@@ -20,20 +24,26 @@ type SkillEntry = {
 
 type Profile = {
   id: string;
-  role?: 'owner' | 'crew'; // Legacy field, kept for backward compatibility
-  roles?: string[]; // New roles array field
+  role?: 'owner' | 'crew';
+  roles?: string[];
   username: string | null;
   full_name: string | null;
   certifications: string | null;
   phone: string | null;
   sailing_experience: ExperienceLevel | null;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
-  skills: string[]; // Array of JSON strings: ['{"skill_name": "first_aid", "description": "..."}', ...]
+  skills: string[];
   sailing_preferences: string | null;
   profile_image_url: string | null;
   profile_completion_percentage?: number | null;
   created_at: string;
   updated_at: string;
+};
+
+type EmailPreferences = {
+  registration_updates: boolean;
+  journey_updates: boolean;
+  profile_reminders: boolean;
 };
 
 function ProfilePageContent() {
@@ -53,15 +63,17 @@ function ProfilePageContent() {
   } | null>(null);
   const sidebarScrollRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to top when sidebar content changes (for Skill Level and Risk Level selections)
+  // Consent and email preferences state
+  const [consents, setConsents] = useState<UserConsents | null>(null);
+  const [emailPrefs, setEmailPrefs] = useState<EmailPreferences | null>(null);
+  const [isUpdatingConsents, setIsUpdatingConsents] = useState(false);
+
+  // Scroll to top when sidebar content changes
   useEffect(() => {
     if (showPreferencesSidebar && sidebarContent && sidebarScrollRef.current) {
-      // Scroll for Skill Level and Risk Level selections
-      // Get experience level display names dynamically from config to ensure consistency
       const skillLevelTitles = getAllExperienceLevels().map(level => level.displayName);
       const riskLevelTitles = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
       if (skillLevelTitles.includes(sidebarContent.title) || riskLevelTitles.includes(sidebarContent.title)) {
-        // Small delay to ensure sidebar is fully rendered
         const timer = setTimeout(() => {
           if (sidebarScrollRef.current) {
             sidebarScrollRef.current.scrollTop = 0;
@@ -80,14 +92,14 @@ function ProfilePageContent() {
     phone: '',
     sailing_experience: null as ExperienceLevel | null,
     risk_level: [] as ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[],
-    skills: [] as SkillEntry[], // Array of skill objects with skill_name and description
+    skills: [] as SkillEntry[],
     sailing_preferences: '',
     profile_image_url: '',
-    roles: [] as ('owner' | 'crew')[], // Roles array
+    roles: [] as ('owner' | 'crew')[],
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Helper function to check if a field is missing (for profile completion)
+  // Helper function to check if a field is missing
   const isFieldMissing = (fieldName: string): boolean => {
     switch (fieldName) {
       case 'username':
@@ -111,7 +123,7 @@ function ProfilePageContent() {
     }
   };
 
-  // Helper function to calculate profile completion percentage (matches database logic)
+  // Calculate profile completion percentage
   const calculateCompletionPercentage = (): number => {
     const totalFields = 8;
     let completionScore = 0;
@@ -136,6 +148,7 @@ function ProfilePageContent() {
 
     if (user) {
       loadProfile();
+      loadConsentsAndPreferences();
     }
   }, [user, authLoading, router]);
 
@@ -150,19 +163,15 @@ function ProfilePageContent() {
       .single();
 
     if (fetchError) {
-      // Profile doesn't exist - this is a new signup
       if (fetchError.code === 'PGRST116') {
         setIsNewProfile(true);
-        // Get roles from URL query params or user metadata (for backward compatibility)
         const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
         const roleFromMetadata = user.user_metadata?.role as 'owner' | 'crew' | null;
-        // Default to empty roles array (user can select roles)
         const initialRoles: ('owner' | 'crew')[] = roleFromUrl ? [roleFromUrl] : roleFromMetadata ? [roleFromMetadata] : [];
-        
-        // Pre-fill form with data from signup if available
+
         const fullNameFromMetadata = user.user_metadata?.full_name || '';
         const usernameFromEmail = user.email?.split('@')[0] || '';
-        
+
         setFormData({
           username: usernameFromEmail,
           full_name: fullNameFromMetadata,
@@ -176,7 +185,6 @@ function ProfilePageContent() {
           roles: initialRoles,
         });
 
-        // Create a temporary profile object for display
         setProfile({
           id: user.id,
           roles: initialRoles,
@@ -198,20 +206,17 @@ function ProfilePageContent() {
       }
     } else if (data) {
       setProfile(data);
-      // Parse skills from JSON strings to SkillEntry objects
       const parsedSkills: SkillEntry[] = (data.skills || []).map((skillJson: string) => {
         try {
           return JSON.parse(skillJson);
         } catch {
-          // Fallback: if it's not valid JSON, treat as old format (just skill name)
           return { skill_name: skillJson, description: '' };
         }
       });
 
-      // Get roles array, fallback to legacy role field for backward compatibility
-      const roles: ('owner' | 'crew')[] = data.roles && data.roles.length > 0 
+      const roles: ('owner' | 'crew')[] = data.roles && data.roles.length > 0
         ? (data.roles as ('owner' | 'crew')[])
-        : data.role 
+        : data.role
           ? [data.role]
           : [];
 
@@ -231,6 +236,24 @@ function ProfilePageContent() {
     setLoading(false);
   };
 
+  const loadConsentsAndPreferences = async () => {
+    if (!user) return;
+
+    const supabase = getSupabaseBrowserClient();
+
+    const [consentsRes, emailPrefsRes] = await Promise.all([
+      supabase.from('user_consents').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('email_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+    ]);
+
+    setConsents(consentsRes.data);
+    setEmailPrefs(emailPrefsRes.data || {
+      registration_updates: true,
+      journey_updates: true,
+      profile_reminders: true,
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -240,64 +263,51 @@ function ProfilePageContent() {
     setSuccess(false);
 
     const supabase = getSupabaseBrowserClient();
-
-    // Use roles array from form data
     const roles = formData.roles || [];
 
     let error: any = null;
-    let insertedData: any = null;
-    let updatedData: any = null;
 
     if (isNewProfile) {
-      // Create new profile with roles array
-        const { data: insertResult, error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            roles: roles, // Use roles array
-            username: formData.username || null,
-            full_name: formData.full_name || null,
-            certifications: formData.certifications || null,
-            phone: formData.phone || null,
-            sailing_experience: formData.sailing_experience || null,
-            risk_level: formData.risk_level || [],
-            skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
-            sailing_preferences: formData.sailing_preferences || null,
-            profile_image_url: formData.profile_image_url || null,
-          })
-          .select()
-          .single();
+      const { error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          roles: roles,
+          username: formData.username || null,
+          full_name: formData.full_name || null,
+          certifications: formData.certifications || null,
+          phone: formData.phone || null,
+          sailing_experience: formData.sailing_experience || null,
+          risk_level: formData.risk_level || [],
+          skills: formData.skills.map(skill => JSON.stringify(skill)),
+          sailing_preferences: formData.sailing_preferences || null,
+          profile_image_url: formData.profile_image_url || null,
+        })
+        .select()
+        .single();
 
       error = insertError;
-      insertedData = insertResult;
-      
-      // If insert was successful and we got data back, update the profile state immediately
-      if (!error && insertedData) {
-        setProfile(insertedData);
-      }
     } else {
-      // Update existing profile with roles array
-      const { data: updateResult, error: updateError } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
-          .update({
-            roles: roles, // Update roles array
-            username: formData.username || null,
-            full_name: formData.full_name || null,
-            certifications: formData.certifications || null,
-            phone: formData.phone || null,
-            sailing_experience: formData.sailing_experience || null,
-            risk_level: formData.risk_level || [],
-            skills: formData.skills.map(skill => JSON.stringify(skill)), // Convert SkillEntry objects to JSON strings
-            sailing_preferences: formData.sailing_preferences || null,
-            profile_image_url: formData.profile_image_url || null,
-            updated_at: new Date().toISOString(),
-          })
+        .update({
+          roles: roles,
+          username: formData.username || null,
+          full_name: formData.full_name || null,
+          certifications: formData.certifications || null,
+          phone: formData.phone || null,
+          sailing_experience: formData.sailing_experience || null,
+          risk_level: formData.risk_level || [],
+          skills: formData.skills.map(skill => JSON.stringify(skill)),
+          sailing_preferences: formData.sailing_preferences || null,
+          profile_image_url: formData.profile_image_url || null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id)
         .select()
         .single();
 
       error = updateError;
-      updatedData = updateResult;
     }
 
     if (error) {
@@ -306,16 +316,13 @@ function ProfilePageContent() {
     } else {
       setSuccess(true);
       setIsNewProfile(false);
-      
-      // Calculate completion percentage on frontend for immediate UI update
+
       const calculatedCompletion = calculateCompletionPercentage();
-      
-      // Update profile state immediately with calculated completion for instant feedback
+
       if (profile) {
         setProfile({
           ...profile,
           profile_completion_percentage: calculatedCompletion,
-          // Update other fields from formData
           username: formData.username || null,
           full_name: formData.full_name || null,
           phone: formData.phone || null,
@@ -326,24 +333,19 @@ function ProfilePageContent() {
           roles: formData.roles,
         });
       }
-      
-      // Reload profile after a delay to get the trigger-calculated completion percentage from database
-      // This ensures we have the authoritative value from the database trigger
+
       await new Promise(resolve => setTimeout(resolve, 500));
       await loadProfile();
-      
+
       setTimeout(() => setSuccess(false), 3000);
       setSaving(false);
-      
-      // Dispatch custom event to notify other components (like NavigationMenu) that profile was updated
+
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('profileUpdated'));
       }
-      
-      // Refresh the router to update all components
+
       router.refresh();
-      
-      // If this was a new profile, redirect based on roles
+
       if (isNewProfile) {
         setTimeout(() => {
           if (roles.includes('owner')) {
@@ -351,69 +353,71 @@ function ProfilePageContent() {
           } else if (roles.includes('crew')) {
             router.push('/crew/dashboard');
           } else {
-            router.push('/'); // No roles selected, go to home
+            router.push('/');
           }
         }, 1500);
       }
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  // Handle consent toggle
+  const handleConsentToggle = async (consentType: 'ai_processing' | 'profile_sharing' | 'marketing') => {
+    setIsUpdatingConsents(true);
+    setError(null);
 
-  const appendToSailingPreferences = (text: string) => {
-    setFormData((prev) => {
-      const currentValue = prev.sailing_preferences || '';
-      const separator = currentValue.trim() && !currentValue.endsWith('\n') ? '\n\n' : '';
-      const newValue = currentValue + separator + text;
-      
-      // Focus the textarea and set cursor position after state update
-      setTimeout(() => {
-        const textarea = document.getElementById('sailing_preferences') as HTMLTextAreaElement;
-        if (textarea) {
-          textarea.focus();
-          // Move cursor to end of appended text
-          textarea.setSelectionRange(newValue.length, newValue.length);
-        }
-      }, 0);
-      
-      return {
-        ...prev,
-        sailing_preferences: newValue,
-      };
-    });
-  };
+    const currentValue = consents?.[`${consentType}_consent` as keyof UserConsents] as boolean ?? false;
+    const newValue = !currentValue;
 
-  // Add skill to form when user clicks "+" button
-  const addSkillToForm = (skill: { name: string; infoText: string; startingSentence: string }) => {
-    setFormData((prev) => {
-      // Check if skill already exists
-      const skillExists = prev.skills.some(s => s.skill_name === skill.name);
-      if (skillExists) {
-        return prev; // Don't add duplicate
+    try {
+      const response = await fetch('/api/user/consents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          consent_type: consentType,
+          value: newValue,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update consent');
       }
-      
-      // Add new skill with empty description
-      const newSkill: SkillEntry = {
-        skill_name: skill.name,
-        description: '',
-      };
-      
-      return {
-        ...prev,
-        skills: [...prev.skills, newSkill],
-      };
-    });
+
+      const data = await response.json();
+      setConsents(data.consents);
+    } catch (err) {
+      setError('Failed to update consent. Please try again.');
+    } finally {
+      setIsUpdatingConsents(false);
+    }
   };
 
-  // Remove skill from form
-  const removeSkill = (skillName: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      skills: prev.skills.filter(s => s.skill_name !== skillName),
-    }));
+  // Handle email preference toggle
+  const handleEmailPrefToggle = async (prefType: 'registration_updates' | 'journey_updates' | 'profile_reminders') => {
+    if (!emailPrefs) return;
+
+    setIsUpdatingConsents(true);
+    setError(null);
+
+    const newValue = !emailPrefs[prefType];
+
+    try {
+      const response = await fetch('/api/user/email-preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [prefType]: newValue }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update email preference');
+      }
+
+      const data = await response.json();
+      setEmailPrefs(data.preferences);
+    } catch (err) {
+      setError('Failed to update email preference. Please try again.');
+    } finally {
+      setIsUpdatingConsents(false);
+    }
   };
 
   // Handle profile image upload
@@ -425,24 +429,20 @@ function ProfilePageContent() {
     const supabase = getSupabaseBrowserClient();
 
     try {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         setError('Please upload only image files');
         setUploadingImage(false);
         return;
       }
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setError('Image size must be less than 5MB');
         setUploadingImage(false);
         return;
       }
 
-      // Delete old image if exists
       if (formData.profile_image_url) {
         try {
-          // Extract path from URL (format: https://...supabase.co/storage/v1/object/public/profile-images/userId/filename)
           const urlParts = formData.profile_image_url.split('/profile-images/');
           if (urlParts.length > 1) {
             const oldImagePath = urlParts[1];
@@ -452,15 +452,12 @@ function ProfilePageContent() {
           }
         } catch (deleteError) {
           console.warn('Failed to delete old image:', deleteError);
-          // Continue with upload even if deletion fails
         }
       }
 
-      // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(fileName, file, {
@@ -475,7 +472,6 @@ function ProfilePageContent() {
         return;
       }
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('profile-images')
         .getPublicUrl(uploadData.path);
@@ -496,14 +492,12 @@ function ProfilePageContent() {
     if (!formData.profile_image_url || !user) return;
 
     const supabase = getSupabaseBrowserClient();
-    
+
     try {
-      // Extract path from URL (format: https://...supabase.co/storage/v1/object/public/profile-images/userId/filename)
       const urlParts = formData.profile_image_url.split('/profile-images/');
       if (urlParts.length > 1) {
         const imagePath = urlParts[1];
-        
-        // Delete from storage
+
         const { error: deleteError } = await supabase.storage
           .from('profile-images')
           .remove([imagePath]);
@@ -518,7 +512,6 @@ function ProfilePageContent() {
           }));
         }
       } else {
-        // If path extraction fails, just clear the URL
         setFormData((prev) => ({
           ...prev,
           profile_image_url: '',
@@ -530,39 +523,35 @@ function ProfilePageContent() {
     }
   };
 
-  // Update skill description
-  const updateSkillDescription = (skillName: string, description: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      skills: prev.skills.map(s => 
-        s.skill_name === skillName ? { ...s, description } : s
-      ),
-    }));
+  // Add skill to form
+  const addSkillToForm = (skill: { name: string; infoText: string; startingSentence: string }) => {
+    setFormData((prev) => {
+      const skillExists = prev.skills.some(s => s.skill_name === skill.name);
+      if (skillExists) {
+        return prev;
+      }
+
+      const newSkill: SkillEntry = {
+        skill_name: skill.name,
+        description: '',
+      };
+
+      return {
+        ...prev,
+        skills: [...prev.skills, newSkill],
+      };
+    });
   };
 
-  // Reusable styles for bullet point items with add button
-  const bulletPointTextClass = "flex-1 group-hover:opacity-70 transition-opacity";
-  const addButtonClass = "bg-white text-gray-900 rounded-full p-2 shadow-lg border border-black";
-  const addButtonIcon = (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-    </svg>
-  );
-  const editButtonIcon = (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-    </svg>
-  );
-
-  // Helper function to render a skill bullet point with "+" button to add to form
+  // Helper function to render a skill bullet point
   const renderSkillItem = (skill: { name: string; infoText: string; startingSentence: string }) => {
     const isAdded = formData.skills.some(s => s.skill_name === skill.name);
-    
+
     return (
       <li key={skill.name} className="relative group">
         <div className="flex items-start">
           <span className="mr-2 text-primary">•</span>
-          <span className={bulletPointTextClass}>{skill.infoText}</span>
+          <span className="flex-1 group-hover:opacity-70 transition-opacity">{skill.infoText}</span>
         </div>
         {!isAdded && (
           <button
@@ -571,8 +560,10 @@ function ProfilePageContent() {
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
             title="Add skill to profile"
           >
-            <div className={addButtonClass}>
-              {addButtonIcon}
+            <div className="bg-white text-gray-900 rounded-full p-2 shadow-lg border border-black">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
             </div>
           </button>
         )}
@@ -580,7 +571,6 @@ function ProfilePageContent() {
           <button
             type="button"
             onClick={() => {
-              // Scroll to and focus the skill's textarea
               const skillTextareaId = `skill-${skill.name}`;
               const textarea = document.getElementById(skillTextareaId) as HTMLTextAreaElement;
               if (textarea) {
@@ -593,8 +583,10 @@ function ProfilePageContent() {
             className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
             title="Edit skill description"
           >
-            <div className={addButtonClass}>
-              {editButtonIcon}
+            <div className="bg-white text-gray-900 rounded-full p-2 shadow-lg border border-black">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
             </div>
           </button>
         )}
@@ -602,164 +594,145 @@ function ProfilePageContent() {
     );
   };
 
+  // Show skills sidebar
+  const showSkillsSidebar = () => {
+    const isOwner = formData.roles.includes('owner');
+    const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
+    const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
+
+    setSidebarContent({
+      title: 'Skills',
+      content: (
+        <>
+          <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
+          <ul className="space-y-3 list-none">
+            {skillsConfig.general.map(skill => renderSkillItem(skill))}
+            {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
+            {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
+          </ul>
+        </>
+      ),
+    });
+    setShowPreferencesSidebar(true);
+  };
+
+  const completionPercentage = profile?.profile_completion_percentage ?? calculateCompletionPercentage();
+  const displayName = formData.full_name || formData.username || 'Your';
+
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl">Loading...</div>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 bg-muted rounded w-1/3"></div>
+            <div className="h-32 bg-muted rounded"></div>
+            <div className="h-48 bg-muted rounded"></div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="flex-1 flex overflow-hidden relative min-h-0">
-        {/* Backdrop for mobile sidebar */}
-        {showPreferencesSidebar && sidebarContent && (
-          <div
-            className="fixed inset-0 bg-black/50 z-40 md:hidden"
-            onClick={() => setShowPreferencesSidebar(false)}
-          />
-        )}
-        
-        {/* Left Sidebar - Info Panel */}
-        {sidebarContent && (
-          <div
-            className={`${
-              showPreferencesSidebar ? 'w-full md:w-80' : 'w-0'
-            } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden h-full fixed md:relative z-50 md:z-auto`}
-          >
-            {showPreferencesSidebar && (
-              <div
-                ref={sidebarScrollRef}
-                className="flex-1 overflow-y-auto p-4 sm:p-6 profile-sidebar-scroll"
-                style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
-                }}
-              >
-                {/* Close button for mobile */}
-                <button
-                  onClick={() => setShowPreferencesSidebar(false)}
-                  className="md:hidden absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-all"
-                  aria-label="Close panel"
-                >
-                  <svg
-                    className="w-6 h-6 text-foreground"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-                {/* Header - only show for non-Risk Level content */}
-                {sidebarContent.title !== 'Coastal sailing' && 
-                 sidebarContent.title !== 'Offshore sailing' && 
-                 sidebarContent.title !== 'Extreme sailing' && (
-                  <div className="mb-4">
-                    <h3 className="text-lg font-bold text-card-foreground">
-                      {sidebarContent.title}
-                    </h3>
-                  </div>
-                )}
+      {/* Backdrop for mobile sidebar */}
+      {showPreferencesSidebar && sidebarContent && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setShowPreferencesSidebar(false)}
+        />
+      )}
 
-                {/* Content */}
-                <div className="space-y-3 text-sm text-foreground">
-                  {sidebarContent.content}
-                </div>
+      {/* Sidebar */}
+      {sidebarContent && showPreferencesSidebar && (
+        <div
+          className="fixed top-0 left-0 w-full md:w-80 h-full bg-card border-r border-border z-50 md:z-30 overflow-hidden"
+        >
+          <div
+            ref={sidebarScrollRef}
+            className="h-full overflow-y-auto p-4 sm:p-6 pt-20"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'rgba(156, 163, 175, 0.5) transparent'
+            }}
+          >
+            <button
+              onClick={() => setShowPreferencesSidebar(false)}
+              className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center bg-card border border-border rounded-md shadow-sm hover:bg-accent transition-all"
+              aria-label="Close panel"
+            >
+              <svg
+                className="w-6 h-6 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {sidebarContent.title !== 'Coastal sailing' &&
+             sidebarContent.title !== 'Offshore sailing' &&
+             sidebarContent.title !== 'Extreme sailing' && (
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-card-foreground">
+                  {sidebarContent.title}
+                </h3>
               </div>
             )}
-          </div>
-        )}
 
-        {/* Toggle Button - Desktop only */}
-        {sidebarContent && (
-          <button
-            onClick={() => setShowPreferencesSidebar(!showPreferencesSidebar)}
-            className={`hidden md:flex absolute top-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all ${
-              showPreferencesSidebar ? 'left-[320px]' : 'left-4'
-            }`}
-            title={showPreferencesSidebar ? 'Close panel' : 'Open panel'}
-            aria-label={showPreferencesSidebar ? 'Close panel' : 'Open panel'}
-          >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              {showPreferencesSidebar ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
-                />
-              )}
-            </svg>
-          </button>
-        )}
-
-        {/* Main Content */}
-        <div className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 overflow-y-auto">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-            {isNewProfile ? 'Complete Your Profile' : 'My Profile'}
-          </h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            {isNewProfile 
-              ? 'Please complete your profile information to get started'
-              : profile?.roles && profile.roles.length > 0
-                ? `Manage your profile information as ${profile.roles.join(' and ')}`
-                : 'Manage your profile information'}
-          </p>
-          {profile && profile.profile_completion_percentage !== null && profile.profile_completion_percentage !== undefined && (
-            <div className="mt-2 space-y-3">
-              <div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>Profile Completion</span>
-                  <span>{profile.profile_completion_percentage}%</span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${profile.profile_completion_percentage}%` }}
-                  />
-                </div>
-              </div>
-              {profile.profile_completion_percentage < 100 && (
-                <MissingFieldsIndicator 
-                  variant="compact" 
-                  showTitle={false}
-                  profileData={{
-                    username: profile.username,
-                    full_name: profile.full_name,
-                    phone: profile.phone,
-                    sailing_experience: profile.sailing_experience,
-                    risk_level: profile.risk_level,
-                    skills: profile.skills,
-                    sailing_preferences: profile.sailing_preferences,
-                    roles: profile.roles || [],
-                  }}
-                />
-              )}
+            <div className="space-y-3 text-sm text-foreground">
+              {sidebarContent.content}
             </div>
-          )}
+          </div>
         </div>
+      )}
 
+      {/* Page Header */}
+      <div className="border-b border-border bg-background">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-foreground">
+              {isNewProfile ? 'Complete Your Profile' : 'Profile'}
+            </h1>
+            <Link
+              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
+              className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+            >
+              Cancel
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Completion - only if < 100% */}
+      {completionPercentage < 100 && (
+        <div className="border-b border-border bg-muted/30">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+              <span>Profile Completion</span>
+              <span>{completionPercentage}%</span>
+            </div>
+            <div className="w-full bg-muted rounded-full h-2">
+              <div
+                className="bg-primary h-2 rounded-full transition-all duration-300"
+                style={{ width: `${completionPercentage}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
+      <div className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${showPreferencesSidebar ? 'md:ml-80' : ''}`}>
         {error && (
           <div className="mb-6 bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
             {error}
@@ -772,624 +745,109 @@ function ProfilePageContent() {
           </div>
         )}
 
-        <div className="bg-card rounded-lg shadow p-4 sm:p-6">
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-            {/* Role Management */}
-            <div className="pb-6 border-b border-border">
-              <label className="block text-sm font-medium text-foreground mb-3">
-                I am a... <span className="text-muted-foreground">(select all that apply)</span>
-              </label>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.roles.includes('owner')}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          roles: [...prev.roles.filter(r => r !== 'owner'), 'owner'] as ('owner' | 'crew')[]
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          roles: prev.roles.filter(r => r !== 'owner') as ('owner' | 'crew')[]
-                        }));
-                      }
-                    }}
-                    className="mr-3 w-5 h-5"
-                  />
-                  <span className="text-sm font-medium">Boat Owner/Skipper</span>
-                </label>
-                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={formData.roles.includes('crew')}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFormData(prev => ({
-                          ...prev,
-                          roles: [...prev.roles.filter(r => r !== 'crew'), 'crew'] as ('owner' | 'crew')[]
-                        }));
-                      } else {
-                        setFormData(prev => ({
-                          ...prev,
-                          roles: prev.roles.filter(r => r !== 'crew') as ('owner' | 'crew')[]
-                        }));
-                      }
-                    }}
-                    className="mr-3 w-5 h-5"
-                  />
-                  <span className="text-sm font-medium">Crew Member</span>
-                </label>
-              </div>
-              {formData.roles.length === 0 && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Select at least one role to unlock features. You can be both an owner and crew member!
-                </p>
-              )}
-              {formData.roles.length > 0 && (
-                <div className="mt-3 p-3 bg-primary/10 border border-primary/20 rounded-md">
-                  <p className="text-sm text-foreground">
-                    <strong>Selected roles:</strong> {formData.roles.join(' and ')}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {formData.roles.includes('owner') && '• Create and manage boats and journeys'}
-                    {formData.roles.includes('owner') && formData.roles.includes('crew') && ' • '}
-                    {formData.roles.includes('crew') && '• Register for crew positions'}
-                  </p>
-                </div>
-              )}
-            </div>
+        <form onSubmit={handleSubmit}>
+          {/* Section 1: Personal Information */}
+          <CollapsibleSection
+            sectionNumber={1}
+            title={`${displayName}'s Personal Information`}
+            defaultOpen={true}
+          >
+            <PersonalInfoSection
+              formData={formData}
+              setFormData={setFormData}
+              userEmail={user?.email}
+              uploadingImage={uploadingImage}
+              handleImageUpload={handleImageUpload}
+              removeProfileImage={removeProfileImage}
+              isFieldMissing={isFieldMissing}
+            />
+          </CollapsibleSection>
 
-            {/* Remove the old single Role display field */}
-
-            {/* Profile Image Upload */}
-            <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Profile Image
-              </label>
-              <div className="relative">
-                {formData.profile_image_url ? (
-                  <div className="relative group">
-                    <img
-                      src={formData.profile_image_url}
-                      alt="Profile"
-                      className="w-32 h-32 rounded-full object-cover border-4 border-border"
-                    />
-                    <button
-                      type="button"
-                      onClick={removeProfileImage}
-                      className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-2 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                      aria-label="Remove profile image"
-                      title="Remove profile image"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-32 h-32 rounded-full border-4 border-dashed border-border flex items-center justify-center bg-muted">
-                    <svg className="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <label className="flex flex-col items-center justify-center w-full border-2 border-border border-dashed rounded-lg cursor-pointer hover:bg-accent transition-colors px-4 py-4 min-h-[120px] sm:min-h-[100px]">
-                <div className="flex flex-col items-center justify-center">
-                  <svg className="w-6 h-6 mb-2 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG, GIF up to 5MB</p>
-                </div>
-                <input
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    if (file) {
-                      handleImageUpload(file);
-                    }
-                  }}
-                  disabled={uploadingImage}
-                />
-              </label>
-              {uploadingImage && (
-                <p className="text-sm text-muted-foreground">Uploading image...</p>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <label htmlFor="full_name" className="block text-sm font-medium text-foreground mb-2">
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring ${
-                    isFieldMissing('full_name') ? 'border-primary/50 bg-primary/5' : 'border-border'
-                  }`}
-                  placeholder="John Doe"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
-                  Username
-                  {isFieldMissing('username') && (
-                    <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
-                      Please complete
-                    </span>
-                  )}
-                </label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className={`w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring ${
-                    isFieldMissing('username') ? 'border-primary/50 bg-primary/5' : 'border-border'
-                  }`}
-                  placeholder="johndoe"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
-                  Phone Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                  placeholder="+1 234 567 8900"
-                />
-              </div>
-            </div>
-
-            {/* Risk Level - Only visible for crew members */}
-            {(formData.roles.includes('crew') || (isNewProfile && (searchParams.get('role') === 'crew' || user?.user_metadata?.role === 'crew'))) && (
-              <div className="grid grid-cols-1 gap-4">
-                <div className={isFieldMissing('risk_level') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}>
-                  <RiskLevelSelector
-                  value={formData.risk_level}
-                  onChange={(risk_level) => {
-                    const normalizedRiskLevel: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] = 
-                      risk_level === null ? [] :
-                      Array.isArray(risk_level) ? risk_level :
-                      [risk_level];
-                    setFormData(prev => ({ ...prev, risk_level: normalizedRiskLevel }));
-                  }}
-                  showRequiredBadge={isFieldMissing('risk_level')}
-                  onInfoClick={(title, content) => {
-                    setSidebarContent({ title, content });
-                    setShowPreferencesSidebar(true);
-                    // Scroll to top of sidebar after opening
-                    setTimeout(() => {
-                      if (sidebarScrollRef.current) {
-                        sidebarScrollRef.current.scrollTop = 0;
-                      }
-                    }, 100);
-                  }}
-                  onClose={() => {
-                    setShowPreferencesSidebar(false);
-                    setSidebarContent(null);
-                  }}
-                />
-                </div>
-              </div>
-            )}
-
-            {/* Sailing Preferences - Only visible for crew members */}
-            {formData.roles.includes('crew') && (
-            <div>
-              <label htmlFor="sailing_preferences" className="block text-sm font-medium text-foreground mb-2">
-                Motivation and Sailing Preferences
-                {isFieldMissing('sailing_preferences') && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
-                    Please complete
-                  </span>
-                )}
-              </label>
-              <textarea
-                id="sailing_preferences"
-                name="sailing_preferences"
-                value={formData.sailing_preferences}
-                onChange={handleChange}
-                className={`w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y ${
-                  isFieldMissing('sailing_preferences') ? 'border-primary/50 bg-primary/5' : 'border-border'
-                }`}
-                /*
-                onFocus={() => {
-                  const hasOffshoreSailing = formData.risk_level.includes('Offshore sailing');
-                  
-                  setSidebarContent({
-                    title: 'Motivation and Sailing Preferences',
-                    content: (
-                      <>
-                        <p className="font-medium mb-3">Consider the following when describing your motivation and sailing preferences:</p>
-                        <ul className="space-y-3 list-none">
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Do you have any dietary restrictions, allergies, or preferences that could affect meal planning (e.g., vegetarian, gluten-free, or aversion to canned/freeze-dried food)?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('I have dietary restrictions or allergies: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Do you have any history of motion sickness or seasickness? If so, how do you manage it, and under what conditions does it worsen (e.g., high waves, enclosed spaces)?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('Regarding motion sickness: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Are there any physical limitations or health concerns we should know about or medications that require refrigeration?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('I have the following physical limitations or health concerns: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>What aspects of sailing excite you most, solitude, handling rough weather, stargazing at night, exploring ports, sightseeing or the camaraderie with the crew?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('What excites me most about sailing: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Are you looking for a more relaxed cruise and downtime, or an intense, performance-oriented sailing with watches, sail changes and/or navigation challenges?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('I prefer: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Do you prefer structured activities like learning knots and sail trim, or more free-form time to enjoy the ocean and socialize?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('Regarding activities, I prefer: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          <li className="relative group">
-                            <div className="flex items-start">
-                              <span className="mr-2 text-primary">•</span>
-                              <span className={bulletPointTextClass}>Are there any strong dislikes for you that would prevent joining the trip (e.g., lack of privacy, being cold/wet, bugs at anchor, long motoring in no wind, or crowded anchorages)?</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => appendToSailingPreferences('I would prefer to avoid: ')}
-                              className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                              title="Add to text field"
-                            >
-                              <div className={addButtonClass}>
-                                {addButtonIcon}
-                              </div>
-                            </button>
-                          </li>
-                          {hasOffshoreSailing && (
-                            <>
-                              <li className="relative group">
-                                <div className="flex items-start">
-                                  <span className="mr-2 text-primary">•</span>
-                                  <span className={bulletPointTextClass}>What draws you to offshore sailing (e.g., solitude, adventure, skill-building, camraderie / team activity?)</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => appendToSailingPreferences('What draws me to offshore sailing: ')}
-                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                  title="Add to text field"
-                                >
-                                  <div className={addButtonClass}>
-                                    {addButtonIcon}
-                                  </div>
-                                </button>
-                              </li>
-                              <li className="relative group">
-                                <div className="flex items-start">
-                                  <span className="mr-2 text-primary">•</span>
-                                  <span className={bulletPointTextClass}>How do you handle sleep deprivation or irregular schedules, such as night watches every few hours?</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => appendToSailingPreferences('Regarding sleep and watch schedules: ')}
-                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                  title="Add to text field"
-                                >
-                                  <div className={addButtonClass}>
-                                    {addButtonIcon}
-                                  </div>
-                                </button>
-                              </li>
-                              <li className="relative group">
-                                <div className="flex items-start">
-                                  <span className="mr-2 text-primary">•</span>
-                                  <span className={bulletPointTextClass}>What level of risk are you comfortable with—e.g., would you prefer to avoid passages with potential for storms, or are you okay with that as part of the adventure?</span>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => appendToSailingPreferences('My comfort level with risk: ')}
-                                  className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded"
-                                  title="Add to text field"
-                                >
-                                  <div className={addButtonClass}>
-                                    {addButtonIcon}
-                                  </div>
-                                </button>
-                              </li>
-                            </>
-                          )}
-                        </ul>
-                      </>
-                    ),
-                  });
-                  setShowPreferencesSidebar(true);
-                }}*/
-              />
-            </div>
-            )}
-
-            <div className="grid grid-cols-1 gap-4">
-              <div className={isFieldMissing('sailing_experience') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}>
-                <SkillLevelSelector
-                value={formData.sailing_experience}
-                onChange={(sailing_experience) => setFormData(prev => ({ ...prev, sailing_experience }))}
-                showRequiredBadge={isFieldMissing('sailing_experience')}
+          {/* Section 2: Sailing Preferences - CREW ROLE ONLY */}
+          {formData.roles.includes('crew') && (
+            <CollapsibleSection
+              sectionNumber={2}
+              title="Sailing Preferences"
+              defaultOpen={true}
+            >
+              <SailingPreferencesSection
+                formData={formData}
+                setFormData={setFormData}
+                isFieldMissing={isFieldMissing}
                 onInfoClick={(title, content) => {
                   setSidebarContent({ title, content });
                   setShowPreferencesSidebar(true);
-                  // Scroll to top of sidebar after opening
                   setTimeout(() => {
                     if (sidebarScrollRef.current) {
                       sidebarScrollRef.current.scrollTop = 0;
                     }
                   }, 100);
                 }}
-              />
-              </div>
-            </div>
-
-            {/* Skills Selection */}
-            <div className={`grid grid-cols-1 gap-4 ${isFieldMissing('skills') ? 'p-3 border border-primary/50 bg-primary/5 rounded-md' : ''}`}>
-              <div className="flex items-center mb-2">
-                <label 
-                  htmlFor="skills-section" 
-                  className="block text-sm font-medium text-foreground"
-                  onFocus={() => {
-                  // Determine user role
-                  const roleFromUrl = searchParams.get('role') as 'owner' | 'crew' | null;
-                  const roleFromMetadata = user?.user_metadata?.role as 'owner' | 'crew' | null;
-                  const role = profile?.role || roleFromUrl || roleFromMetadata || 'crew';
-                  
-                  // For owners, show all skills. For crew, show based on selected risk levels
-                  const isOwner = role === 'owner';
-                  const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
-                  const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
-                  
-                  setSidebarContent({
-                    title: 'Skills',
-                    content: (
-                      <>
-                        <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
-                        <ul className="space-y-3 list-none">
-                          {/* General skills - always shown */}
-                          {skillsConfig.general.map(skill => renderSkillItem(skill))}
-                          
-                          {/* Offshore sailing skills */}
-                          {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
-                          
-                          {/* Extreme sailing skills */}
-                          {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
-                        </ul>
-                      </>
-                    ),
-                  });
-                  setShowPreferencesSidebar(true);
+                onClose={() => {
+                  setShowPreferencesSidebar(false);
+                  setSidebarContent(null);
                 }}
-              >
-                Skills
-                {isFieldMissing('skills') && (
-                  <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
-                    Please complete
-                  </span>
-                )}
-              </label>
-              </div>
-              
-              {/* Display selected skills with editable descriptions */}
-              {formData.skills.length > 0 && (
-                <div className="space-y-3 mb-3">
-                  {formData.skills.map((skill) => {
-                    // Convert snake_case to Title Case for display
-                    const formatSkillName = (name: string) => {
-                      return name
-                        .split('_')
-                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                        .join(' ');
-                    };
-                    const displayName = formatSkillName(skill.skill_name);
-                    
-                    return (
-                      <div key={skill.skill_name} className="flex items-start gap-2 p-3 border border-border rounded-md bg-card">
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between mb-2">
-                            <label className="text-sm font-medium text-foreground">
-                              {displayName}
-                            </label>
-                            <button
-                              type="button"
-                              onClick={() => removeSkill(skill.skill_name)}
-                              className="text-red-500 hover:text-red-700 text-sm font-medium"
-                              title="Remove skill"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                          <textarea
-                            id={`skill-${skill.skill_name}`}
-                            value={skill.description}
-                            onChange={(e) => updateSkillDescription(skill.skill_name, e.target.value)}
-                            placeholder={`Describe your ${displayName.toLowerCase()} experience...`}
-                            rows={2}
-                            className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring text-sm"
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              
-              {/* Add Skills button - always shown */}
-              <button
-                type="button"
-                  onClick={() => {
-                    // Determine user role from form data
-                    const isOwner = formData.roles.includes('owner');
-                    const hasOffshoreSailing = isOwner || formData.risk_level.includes('Offshore sailing');
-                    const hasExtremeSailing = isOwner || formData.risk_level.includes('Extreme sailing');
-                    
-                    setSidebarContent({
-                      title: 'Skills',
-                      content: (
-                        <>
-                          <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
-                          <ul className="space-y-3 list-none">
-                            {/* General skills - always shown */}
-                            {skillsConfig.general.map(skill => renderSkillItem(skill))}
-                            
-                            {/* Offshore sailing skills */}
-                            {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
-                            
-                            {/* Extreme sailing skills */}
-                            {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
-                          </ul>
-                        </>
-                      ),
-                    });
-                    setShowPreferencesSidebar(true);
-                  }}
-                className="w-full px-4 py-3 min-h-[44px] border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Skills
-              </button>
-            </div>
-
-            <div>
-              <label htmlFor="certifications" className="block text-sm font-medium text-foreground mb-2">
-                Certifications & Qualifications
-              </label>
-              <textarea
-                id="certifications"
-                name="certifications"
-                value={formData.certifications}
-                onChange={handleChange}
-                rows={3}
-                className="w-full px-3 py-3 min-h-[100px] text-base sm:text-sm border border-border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
-                placeholder={
-                  formData.roles.includes('owner')
-                    ? 'List any relevant certifications, licenses, or qualifications'
-                    : 'List your sailing certifications, licenses, or qualifications (e.g., RYA, ASA, etc.)'
-                }
               />
-            </div>
+            </CollapsibleSection>
+          )}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 border-t">
-              <Link
-                href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
-                className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={saving}
-                className="px-4 py-3 min-h-[44px] bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-              >
-                {saving ? 'Saving...' : 'Save Profile'}
-              </button>
-            </div>
-          </form>
+          {/* Section 3: Experience and Skills */}
+          <CollapsibleSection
+            sectionNumber={formData.roles.includes('crew') ? 3 : 2}
+            title="Sailing Experience and Skills"
+            defaultOpen={true}
+          >
+            <ExperienceSkillsSection
+              formData={formData}
+              setFormData={setFormData}
+              isFieldMissing={isFieldMissing}
+              onInfoClick={(title, content) => {
+                setSidebarContent({ title, content });
+                setShowPreferencesSidebar(true);
+                setTimeout(() => {
+                  if (sidebarScrollRef.current) {
+                    sidebarScrollRef.current.scrollTop = 0;
+                  }
+                }, 100);
+              }}
+              onShowSkillsSidebar={showSkillsSidebar}
+            />
+          </CollapsibleSection>
 
-          
-        </div>
-      <Footer />
+          {/* Section 4: Notifications and Consents */}
+          <CollapsibleSection
+            sectionNumber={formData.roles.includes('crew') ? 4 : 3}
+            title="Notifications and Consents"
+            defaultOpen={false}
+          >
+            <NotificationsConsentsSection
+              consents={consents}
+              emailPrefs={emailPrefs}
+              isUpdating={isUpdatingConsents}
+              onConsentToggle={handleConsentToggle}
+              onEmailPrefToggle={handleEmailPrefToggle}
+            />
+          </CollapsibleSection>
+
+          {/* Save/Cancel buttons */}
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 mt-6 border-t border-border">
+            <Link
+              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
+              className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+            >
+              Cancel
+            </Link>
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-4 py-3 min-h-[44px] bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            >
+              {saving ? 'Saving...' : 'Save Profile'}
+            </button>
+          </div>
+        </form>
       </div>
-      
-      </main>
     </div>
-
   );
 }
 

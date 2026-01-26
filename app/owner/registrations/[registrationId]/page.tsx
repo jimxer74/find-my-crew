@@ -11,46 +11,9 @@ import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experienc
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
-
-// Collapsible Section Component
-const CollapsibleSection = ({
-  title,
-  children,
-  defaultOpen = true,
-  badge,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-  badge?: React.ReactNode;
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-
-  return (
-    <div className="bg-card rounded-lg shadow mb-6">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-6 flex items-center justify-between text-left hover:bg-accent/50 transition-colors rounded-t-lg"
-      >
-        <div className="flex items-center gap-3">
-          <h2 className="text-sm font-semibold text-muted-foreground">{title}</h2>
-          {badge}
-        </div>
-        <svg
-          className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-      {isOpen && <div className="px-6 pb-6">{children}</div>}
-    </div>
-  );
-};
 
 // Helper function to get risk level config
 const getRiskLevelConfig = (riskLevel: RiskLevel | null) => {
