@@ -56,16 +56,27 @@ export default function PrivacySettingsPage() {
     setLoading(true);
     const supabase = getSupabaseBrowserClient();
 
+
+    console.log('[Policy] reading user data:', user);
+
     try {
       // Fetch all user data in parallel
       const [profileRes, consentsRes, emailPrefsRes, boatsRes, registrationsRes, notificationsRes] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', user!.id).single(),
-        supabase.from('user_consents').select('*').eq('user_id', user!.id).single(),
-        supabase.from('email_preferences').select('*').eq('user_id', user!.id).single(),
+        supabase.from('profiles').select('*').eq('id', user!.id).maybeSingle(),
+        supabase.from('user_consents').select('*').eq('user_id', user!.id).maybeSingle(),
+        supabase.from('email_preferences').select('*').eq('user_id', user!.id).maybeSingle(),
         supabase.from('boats').select('id, name, created_at').eq('owner_id', user!.id),
         supabase.from('registrations').select('id, status, created_at, legs(name, journeys(name))').eq('user_id', user!.id),
         supabase.from('notifications').select('id, type, created_at').eq('user_id', user!.id).limit(10),
       ]);
+
+
+      console.log('[Policy] profileRes:', profileRes);
+      console.log('[Policy] consentsRes:', consentsRes);
+      console.log('[Policy] emailPrefsRes:', emailPrefsRes);
+      console.log('[Policy] boatsRes:', boatsRes);
+      console.log('[Policy] registrationsRes:', registrationsRes);
+      console.log('[Policy] notificationsRes:', notificationsRes);
 
       setUserData({
         profile: profileRes.data,
@@ -83,18 +94,18 @@ export default function PrivacySettingsPage() {
       });
     } catch (err) {
       console.error('Error loading user data:', err);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
   };
 
   const handleConsentToggle = async (consentType: 'ai_processing' | 'profile_sharing' | 'marketing') => {
-    if (!consents) return;
-
     setIsUpdating(true);
     setError(null);
 
-    const currentValue = consents[`${consentType}_consent` as keyof UserConsents] as boolean;
+    // If consents is null, default to false (API will create the record via upsert)
+    const currentValue = consents?.[`${consentType}_consent` as keyof UserConsents] as boolean ?? false;
     const newValue = !currentValue;
 
     try {
