@@ -1,10 +1,10 @@
 ---
 id: TASK-032
 title: New boat wizard
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-26 07:11'
-updated_date: '2026-01-26 07:31'
+updated_date: '2026-01-26 07:38'
 labels: []
 dependencies: []
 priority: high
@@ -28,3 +28,25 @@ Pages in wizard
 2. Boat edit form
 - User can verify if the data is correct and save new boat
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Order
+
+1. **Database**: Create migration 009_add_country_flag_to_boats.sql, update specs/tables.sql
+2. **Utility**: Create app/lib/country-flags.ts for country code to flag emoji conversion
+3. **LocationAutocomplete**: Extend Location type with countryCode, extract from Mapbox context
+4. **Step 1 Component**: Build app/components/manage/NewBoatWizardStep1.tsx
+5. **Step 2 Component**: Build app/components/manage/NewBoatWizardStep2.tsx
+6. **Main Wizard**: Build app/components/manage/NewBoatWizard.tsx with step navigation
+7. **Integration**: Update app/owner/boats/page.tsx to use wizard for new boats
+
+## Key Design Decisions
+
+- Modal-based wizard (consistent with existing patterns)
+- BoatFormModal.tsx remains UNCHANGED (used only for editing)
+- NewBoatWizard for creating new boats
+- Country flag auto-extracted from Mapbox port selection with manual override
+- Manual entry fallback when sailboat not found in search
+<!-- SECTION:PLAN:END -->
