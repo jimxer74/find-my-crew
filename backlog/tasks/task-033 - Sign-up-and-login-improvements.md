@@ -1,9 +1,10 @@
 ---
 id: TASK-033
 title: Sign-up and login improvements
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-26 12:19'
+updated_date: '2026-01-26 12:20'
 labels: []
 dependencies: []
 ---
