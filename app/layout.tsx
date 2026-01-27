@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FilterProvider } from "./contexts/FilterContext";
+import { NotificationProvider } from "./contexts/NotificationContext";
 import { ConsentSetupProvider } from "./contexts/ConsentSetupContext";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 
@@ -33,7 +34,11 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ConsentSetupProvider>
-            <FilterProvider>{children}</FilterProvider>
+            <FilterProvider>
+              <NotificationProvider>
+                {children}
+              </NotificationProvider>
+            </FilterProvider>
             <CookieConsentBanner />
           </ConsentSetupProvider>
         </AuthProvider>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { LogoWithText } from './LogoWithText';
 import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';
@@ -12,6 +13,8 @@ import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 export function Header() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
@@ -19,6 +22,56 @@ export function Header() {
   const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
+
+  // Close all dialogs when route changes
+  useEffect(() => {
+    setIsLoginModalOpen(false);
+    setIsSignupModalOpen(false);
+    setIsFiltersDialogOpen(false);
+    // Dispatch event to close all dialogs
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+    }
+  }, [pathname]);
+
+  // Listen for close all dialogs event
+  useEffect(() => {
+    const handleCloseAll = () => {
+      setIsLoginModalOpen(false);
+      setIsSignupModalOpen(false);
+      setIsFiltersDialogOpen(false);
+    };
+    window.addEventListener('closeAllDialogs', handleCloseAll);
+    return () => {
+      window.removeEventListener('closeAllDialogs', handleCloseAll);
+    };
+  }, []);
+
+  // Close all dialogs when any Link is clicked (global handler)
+  useEffect(() => {
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Check if click is on a Link or inside a Link (Next.js Link renders as <a>)
+      const link = target.closest('a[href]');
+      if (link) {
+        const href = link.getAttribute('href');
+        // Only handle internal links (not external links or anchors)
+        if (href && href.startsWith('/') && !href.startsWith('//')) {
+          // Close all dialogs immediately before navigation
+          setIsLoginModalOpen(false);
+          setIsSignupModalOpen(false);
+          setIsFiltersDialogOpen(false);
+          window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+        }
+      }
+    };
+
+    // Use capture phase to run before Link's onClick handlers
+    document.addEventListener('click', handleLinkClick, true);
+    return () => {
+      document.removeEventListener('click', handleLinkClick, true);
+    };
+  }, []);
 
   // Get user role for Filters button visibility
   useEffect(() => {
@@ -78,7 +131,7 @@ export function Header() {
 
   return (
     <>
-      <nav className="border-b border-border bg-card sticky top-0 z-40 shadow-sm">
+      <nav className="border-b border-border bg-card sticky top-0 z-[110] shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -90,7 +143,7 @@ export function Header() {
                   onClick={() => {
                     // On mobile, navigate to filters page; on desktop, open modal
                     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      window.location.href = '/filters';
+                      router.push('/filters');
                     } else {
                       setIsFiltersDialogOpen(true);
                     }

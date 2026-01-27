@@ -1,11 +1,30 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { NotificationCenter } from './NotificationCenter';
-import { useNotifications } from '@/app/hooks/useNotifications';
+import { useNotificationContext } from '@/app/contexts/NotificationContext';
 
 export function NotificationBell() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Close notifications when route changes
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
+
+  // Listen for close all dialogs event
+  useEffect(() => {
+    const handleCloseAll = () => {
+      setIsOpen(false);
+    };
+    window.addEventListener('closeAllDialogs', handleCloseAll);
+    return () => {
+      window.removeEventListener('closeAllDialogs', handleCloseAll);
+    };
+  }, []);
   const {
     notifications,
     unreadCount,
@@ -15,24 +34,18 @@ export function NotificationBell() {
     deleteNotification,
     loadMore,
     hasMore,
-    refresh,
-  } = useNotifications();
+  } = useNotificationContext();
 
   const handleToggle = useCallback(() => {
     // On mobile, navigate to notifications page; on desktop, toggle modal
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      window.location.href = '/notifications';
+      router.push('/notifications');
     } else {
-      setIsOpen((prev) => {
-        const newIsOpen = !prev;
-        // Refresh notifications when opening the panel
-        if (newIsOpen) {
-          refresh();
-        }
-        return newIsOpen;
-      });
+      setIsOpen((prev) => !prev);
+      // Don't refresh automatically - use cached notifications from state
+      // Notifications are already loaded and kept in sync via realtime updates
     }
-  }, [refresh]);
+  }, [router]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);

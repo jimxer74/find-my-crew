@@ -32,6 +32,8 @@ export function useNotifications(): UseNotificationsReturn {
   const [offset, setOffset] = useState(0);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isMountedRef = useRef(true);
+  const hasLoadedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async (reset = false) => {
@@ -102,33 +104,42 @@ export function useNotifications(): UseNotificationsReturn {
     if (!user) {
       setNotifications([]);
       setUnreadCount(0);
+      hasLoadedRef.current = false;
+      lastUserIdRef.current = null;
       return;
     }
 
-    // Initial fetch - call directly instead of using callback to avoid dependency issues
-    const doInitialFetch = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/notifications?limit=${NOTIFICATIONS_PER_PAGE}&offset=0`);
-        if (response.ok) {
-          const data = await response.json();
+    // Only fetch if user changed or if we haven't loaded yet
+    const shouldFetch = !hasLoadedRef.current || lastUserIdRef.current !== user.id;
+
+    if (shouldFetch) {
+      // Initial fetch - call directly instead of using callback to avoid dependency issues
+      const doInitialFetch = async () => {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`/api/notifications?limit=${NOTIFICATIONS_PER_PAGE}&offset=0`);
+          if (response.ok) {
+            const data = await response.json();
+            if (isMountedRef.current) {
+              setNotifications(data.notifications);
+              setUnreadCount(data.unread_count);
+              setOffset(NOTIFICATIONS_PER_PAGE);
+              setHasMore(data.notifications.length === NOTIFICATIONS_PER_PAGE);
+              hasLoadedRef.current = true;
+              lastUserIdRef.current = user.id;
+            }
+          }
+        } catch (err) {
+          console.error('[useNotifications] Initial fetch error:', err);
+        } finally {
           if (isMountedRef.current) {
-            setNotifications(data.notifications);
-            setUnreadCount(data.unread_count);
-            setOffset(NOTIFICATIONS_PER_PAGE);
-            setHasMore(data.notifications.length === NOTIFICATIONS_PER_PAGE);
+            setIsLoading(false);
           }
         }
-      } catch (err) {
-        console.error('[useNotifications] Initial fetch error:', err);
-      } finally {
-        if (isMountedRef.current) {
-          setIsLoading(false);
-        }
-      }
-    };
+      };
 
-    doInitialFetch();
+      doInitialFetch();
+    }
 
     // Set up Supabase Realtime subscription
     const supabase = getSupabaseBrowserClient();
@@ -290,9 +301,12 @@ export function useNotifications(): UseNotificationsReturn {
     await fetchNotifications(false);
   }, [hasMore, isLoading, fetchNotifications]);
 
-  // Manual refresh
+  // Manual refresh - resets cache and fetches fresh data
   const refresh = useCallback(async () => {
+    hasLoadedRef.current = false; // Reset cache flag to force fresh fetch
+    setOffset(0); // Reset offset
     await fetchNotifications(true);
+    hasLoadedRef.current = true; // Mark as loaded after refresh
   }, [fetchNotifications]);
 
   return {

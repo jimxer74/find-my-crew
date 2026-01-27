@@ -10,8 +10,16 @@ type LogoWithTextProps = {
 export function LogoWithText({ 
   className = ''
 }: LogoWithTextProps) {
+  const handleClick = (e: React.MouseEvent) => {
+    // Close all dialogs immediately when logo is clicked
+    e.stopPropagation();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+    }
+  };
+
   return (
-    <Link href="/" className={className}>
+    <Link href="/" className={className} onClick={handleClick}>
       <Image 
         src="/sailsmart8.png" 
         alt="SailSmart" 

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Header } from '@/app/components/Header';
 import { NotificationPageContent } from '@/app/components/notifications/NotificationCenter';
-import { useNotifications } from '@/app/hooks/useNotifications';
+import { useNotificationContext } from '@/app/contexts/NotificationContext';
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function NotificationsPage() {
     deleteNotification,
     loadMore,
     hasMore,
-  } = useNotifications();
+  } = useNotificationContext();
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

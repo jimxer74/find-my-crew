@@ -49,23 +49,24 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     onClose();
   };
 
+  // Don't render at all if not open - this prevents blocking
   if (!isOpen) return null;
 
   return (
     <>
-      {/* Backdrop - desktop only */}
+      {/* Backdrop */}
       <div
         className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-[90]"
         onClick={handleCancel}
       />
 
-      {/* Dialog - full page on mobile (like normal page), dropdown dialog on desktop */}
+      {/* Dialog - desktop only (mobile uses /filters page) */}
       <div
         ref={dialogRef}
-        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[600px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[30] md:z-[100] overflow-hidden flex flex-col"
+        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[600px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[105] overflow-hidden flex flex-col pointer-events-auto"
       >
-        {/* Header - only visible on desktop */}
-        <div className="hidden md:flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <h2 className="text-lg font-semibold text-foreground">Filters</h2>
           <button
             onClick={handleCancel}
