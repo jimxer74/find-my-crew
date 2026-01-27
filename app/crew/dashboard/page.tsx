@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Header } from '@/app/components/Header';
 import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 
@@ -25,7 +24,6 @@ export default function CrewDashboard() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Header />
       {/* Show profile completion prompt for signed-in users */}
       {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
       

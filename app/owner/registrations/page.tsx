@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Header } from '@/app/components/Header';
 import { formatDate } from '@/app/lib/dateFormat';
 import Link from 'next/link';
 import Image from 'next/image';

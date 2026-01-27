@@ -51,6 +51,10 @@ export function Header() {
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      // Skip if click is from navigation menu (it handles its own navigation)
+      if (target.closest('[data-navigation-menu]')) {
+        return;
+      }
       // Check if click is on a Link or inside a Link (Next.js Link renders as <a>)
       const link = target.closest('a[href]');
       if (link) {
@@ -131,7 +135,7 @@ export function Header() {
 
   return (
     <>
-      <nav className="border-b border-border bg-card sticky top-0 z-[110] shadow-sm">
+      <nav className="border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -187,8 +191,22 @@ export function Header() {
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
               <NavigationMenu
-                onOpenLogin={() => setIsLoginModalOpen(true)}
-                onOpenSignup={() => setIsSignupModalOpen(true)}
+                onOpenLogin={() => {
+                  // On mobile, navigate to login page; on desktop, open modal
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    router.push('/auth/login');
+                  } else {
+                    setIsLoginModalOpen(true);
+                  }
+                }}
+                onOpenSignup={() => {
+                  // On mobile, navigate to signup page; on desktop, open modal
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    router.push('/auth/signup');
+                  } else {
+                    setIsSignupModalOpen(true);
+                  }
+                }}
               />
             </div>
           </div>

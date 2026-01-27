@@ -1,4 +1,3 @@
-import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import Link from 'next/link';
 
@@ -17,7 +16,6 @@ export default async function PrivacyPolicyPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-      {!isStandalone && <Header />}
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <article className="prose prose-slate dark:prose-invert max-w-none">

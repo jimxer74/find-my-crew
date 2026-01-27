@@ -265,7 +265,12 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
   };
 
   // Helper function to handle navigation on mobile menu page
-  const handleNavClick = (href: string) => {
+  const handleNavClick = (href: string, e?: React.MouseEvent) => {
+    // Prevent default if event is provided (for Link components)
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     // Close dialog first
     onClose?.();
     // Dispatch event to close all dialogs
@@ -273,11 +278,14 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
       window.dispatchEvent(new CustomEvent('closeAllDialogs'));
     }
     // Navigate immediately - router.push will handle the navigation
-    router.push(href);
+    // Use setTimeout to ensure dialogs are closed before navigation
+    setTimeout(() => {
+      router.push(href);
+    }, 50);
   };
 
   return (
-    <div className="flex-1 overflow-y-auto py-2">
+    <div className="flex-1 overflow-y-auto py-2" data-navigation-menu>
       {loading ? (
         <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
       ) : user ? (
@@ -304,10 +312,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           ) : (
             <Link
               href="/profile"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick('/profile');
-              }}
+              onClick={(e) => handleNavClick('/profile', e)}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
             >
               <svg
@@ -359,10 +364,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               ) : (
                 <Link
                   href="/owner/boats"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick('/owner/boats');
-                  }}
+                  onClick={(e) => handleNavClick('/owner/boats', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -404,10 +406,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               ) : (
                 <Link
                   href="/owner/journeys"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick('/owner/journeys');
-                  }}
+                  onClick={(e) => handleNavClick('/owner/journeys', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -447,10 +446,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               ) : (
                 <Link
                   href="/owner/registrations"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick('/owner/registrations');
-                  }}
+                  onClick={(e) => handleNavClick('/owner/registrations', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -501,10 +497,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               ) : (
                 <Link
                   href="/crew/dashboard"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick('/crew/dashboard');
-                  }}
+                  onClick={(e) => handleNavClick('/crew/dashboard', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -545,10 +538,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               ) : (
                 <Link
                   href="/crew/registrations"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNavClick('/crew/registrations');
-                  }}
+                  onClick={(e) => handleNavClick('/crew/registrations', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -623,10 +613,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           ) : (
             <Link
               href="/crew/dashboard"
-              onClick={(e) => {
-                e.preventDefault();
-                handleNavClick('/crew/dashboard');
-              }}
+              onClick={(e) => handleNavClick('/crew/dashboard', e)}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
             >
               <svg
@@ -649,13 +636,27 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Divider */}
           <div className="border-t border-border my-1" />
 
-          {/* Sign in */}
-          <button
-            onClick={() => {
-              onClose?.();
-              onOpenLogin?.();
+          {/* Log in */}
+          <Link
+            href="/auth/login"
+            onClick={(e) => {
+              // On mobile (menu overlay or menu page), always navigate
+              // On desktop (dropdown menu), open modal instead
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+              if (isMobile || isMenuPage) {
+                // Let Link handle navigation naturally, but close menu first
+                onClose?.();
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+                }
+              } else {
+                // Desktop: prevent navigation and open modal
+                e.preventDefault();
+                onClose?.();
+                onOpenLogin?.();
+              }
             }}
-            className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
+            className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
           >
             <svg
               className="w-5 h-5 mr-3 text-muted-foreground"
@@ -668,8 +669,44 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             >
               <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
-            <span className="font-medium">Sign in</span>
-          </button>
+            <span className="font-medium">Log in</span>
+          </Link>
+          
+          {/* Sign up */}
+          <Link
+            href="/auth/signup"
+            onClick={(e) => {
+              // On mobile (menu overlay or menu page), always navigate
+              // On desktop (dropdown menu), open modal instead
+              const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+              if (isMobile || isMenuPage) {
+                // Let Link handle navigation naturally, but close menu first
+                onClose?.();
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+                }
+              } else {
+                // Desktop: prevent navigation and open modal
+                e.preventDefault();
+                onClose?.();
+                onOpenSignup?.();
+              }
+            }}
+            className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+          >
+            <svg
+              className="w-5 h-5 mr-3 text-muted-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            <span className="font-medium">Sign up</span>
+          </Link>
         </>
       )}
     </div>

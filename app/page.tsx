@@ -3,15 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Header } from './components/Header';
 import { useAuth } from './contexts/AuthContext';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
 import { Footer } from './components/Footer';
 import { getSupabaseBrowserClient } from './lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const { user } = useAuth();
+  const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [userRoles, setUserRoles] = useState<string[]>([]);
@@ -51,9 +52,6 @@ export default function Home() {
       />
       {/* Overlay for better text readability */}
       <div className="fixed inset-0 bg-black/10 backdrop-blur-[1px] -z-10"></div>
-      
-      {/* Navigation */}
-      <Header />
       
       {/* Content wrapper with relative positioning */}
       <div className="relative z-10">
@@ -234,7 +232,14 @@ export default function Home() {
             </Link>
           ) : (
             <button
-              onClick={() => setIsSignupModalOpen(true)}
+              onClick={() => {
+                // On mobile, navigate to signup page; on desktop, open modal
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  router.push('/auth/signup');
+                } else {
+                  setIsSignupModalOpen(true);
+                }
+              }}
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
               Sign up

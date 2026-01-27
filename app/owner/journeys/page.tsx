@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Header } from '@/app/components/Header';
 import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { AIGenerateJourneyModal } from '@/app/components/manage/AIGenerateJourneyModal';
 import { Pagination } from '@/app/components/ui/Pagination';
@@ -22,7 +21,6 @@ export default function JourneysPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
-  const [editingJourneyId, setEditingJourneyId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<'start_date' | 'created_at'>('start_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -218,7 +216,6 @@ export default function JourneysPage() {
   return (
     <FeatureGate feature="create_journey">
       <div className="min-h-screen bg-background">
-        <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
@@ -400,11 +397,8 @@ export default function JourneysPage() {
                       {/* Navigation Icons */}
                       <div className="flex items-center justify-center gap-2 mt-auto pt-4 border-t border-border">
                         {/* Edit Journey */}
-                        <button
-                          onClick={() => {
-                            setEditingJourneyId(journey.id);
-                            setIsModalOpen(true);
-                          }}
+                        <Link
+                          href={`/owner/journeys/${journey.id}/edit`}
                           className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
                           title="Edit journey"
                           aria-label="Edit journey"
@@ -422,7 +416,7 @@ export default function JourneysPage() {
                               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                             />
                           </svg>
-                        </button>
+                        </Link>
                         {/* Legs View */}
                         <Link
                           href={`/owner/journeys/${journey.id}/legs`}
@@ -510,13 +504,12 @@ export default function JourneysPage() {
             isOpen={isModalOpen}
             onClose={() => {
               setIsModalOpen(false);
-              setEditingJourneyId(null);
             }}
             onSuccess={() => {
               loadJourneys();
-              setCurrentPage(1); // Reset to first page after creating/editing
+              setCurrentPage(1); // Reset to first page after creating
             }}
-            journeyId={editingJourneyId}
+            journeyId={null}
             userId={user.id}
           />
           <AIGenerateJourneyModal

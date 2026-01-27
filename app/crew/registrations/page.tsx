@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Header } from '@/app/components/Header';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
@@ -165,7 +164,6 @@ export default function MyRegistrationsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">

@@ -47,7 +47,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-card p-4 sm:p-8 rounded-xl shadow-lg">
         <div>
           <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-card-foreground">
@@ -59,7 +59,7 @@ export default function SignUpPage() {
               href="/auth/login"
               className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
             >
-              sign in to your existing account
+              log in to your existing account
             </Link>
           </p>
         </div>

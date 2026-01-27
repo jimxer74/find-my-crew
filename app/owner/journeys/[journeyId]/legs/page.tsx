@@ -5,11 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Header } from '@/app/components/Header';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
-import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { LegFormModal } from '@/app/components/manage/LegFormModal';
+import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { toGeocode } from '@/app/lib/IGeoCode';
 import { formatDate } from '@/app/lib/dateFormat';
 
@@ -49,7 +48,6 @@ export default function LegsManagementPage() {
   const [journey, setJourney] = useState<Journey | null>(null);
   const [boatSpeed, setBoatSpeed] = useState<number | null>(null);
   const [boatCapacity, setBoatCapacity] = useState<number | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isLegModalOpen, setIsLegModalOpen] = useState(false);
   const [editingLegId, setEditingLegId] = useState<string | null>(null);
   const [isPaneOpen, setIsPaneOpen] = useState(true);
@@ -72,6 +70,7 @@ export default function LegsManagementPage() {
       loadLegs();
     }
   }, [user, authLoading, router, journeyId]);
+
 
   const loadJourney = async () => {
     if (!user || !journeyId) return;
@@ -319,9 +318,6 @@ export default function LegsManagementPage() {
     }
   };
 
-  const handleEditSuccess = () => {
-    loadJourney();
-  };
 
   const handleStartNewLeg = (lng: number, lat: number, name: string) => {
     // Create a new leg with the first waypoint
@@ -596,9 +592,12 @@ export default function LegsManagementPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Header />
-
+    <div className="h-[calc(100vh-4rem)] bg-background flex flex-col overflow-hidden relative">
+      {/* Profile Completion Banner - Overlay on top of map, below header */}
+      <div className="fixed top-16 left-0 right-0 z-[100]">
+        <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />
+      </div>
+      
       <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map Container - Always full width, stays in place */}
         <div className="absolute inset-0 w-full h-full">
@@ -799,8 +798,8 @@ export default function LegsManagementPage() {
               <div className="sticky bottom-0 border-t border-border bg-card py-2 px-4">
                 <div className="flex items-center justify-center gap-2">
                   {/* Edit Journey */}
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
+                  <Link
+                    href={`/owner/journeys/${journeyId}/edit`}
                     className="p-1 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
                     title="Edit journey"
                     aria-label="Edit journey"
@@ -818,7 +817,7 @@ export default function LegsManagementPage() {
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                       />
                     </svg>
-                  </button>
+                  </Link>
                   {/* Legs View (Current) */}
                   <div
                     className="p-1 text-primary rounded bg-primary/10"
@@ -889,16 +888,9 @@ export default function LegsManagementPage() {
 
       </main>
 
-      {/* Journey Edit Modal */}
+      {/* Leg Form Modal */}
       {user && journey && (
         <>
-          <JourneyFormModal
-            isOpen={isEditModalOpen}
-            onClose={() => setIsEditModalOpen(false)}
-            onSuccess={handleEditSuccess}
-            journeyId={journey.id}
-            userId={user.id}
-          />
           <LegFormModal
             isOpen={isLegModalOpen}
             onClose={() => {

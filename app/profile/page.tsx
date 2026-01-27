@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Header } from '@/app/components/Header';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
 import { UserConsents } from '@/app/types/consents';
 import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
@@ -636,7 +635,6 @@ function ProfilePageContent() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
         <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/3"></div>
@@ -650,7 +648,6 @@ function ProfilePageContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
 
       {/* Backdrop for mobile sidebar */}
       {showPreferencesSidebar && sidebarContent && (

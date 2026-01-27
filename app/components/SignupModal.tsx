@@ -59,12 +59,12 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-[90] flex items-center justify-center p-2 sm:p-4"
+        className="fixed inset-0 bg-black/50 z-[90] flex items-start justify-center p-2 sm:p-4 pt-20 sm:pt-24"
         onClick={onClose}
       >
         {/* Modal */}
         <div
-          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-md w-full max-h-[calc(100vh-5rem)] sm:max-h-[calc(100vh-6rem)] overflow-y-auto mt-0"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-4 sm:p-8">
@@ -93,7 +93,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
                 }}
                 className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
               >
-                sign in to your existing account
+                log in to your existing account
               </button>
             </p>
 

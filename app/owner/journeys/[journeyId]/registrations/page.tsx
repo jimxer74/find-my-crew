@@ -4,9 +4,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Header } from '@/app/components/Header';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
-import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
 import { formatDate } from '@/app/lib/dateFormat';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -115,7 +113,6 @@ export default function JourneyRegistrationsPage() {
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const hasFittedInitialBounds = useRef(false);
   const registrationCardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -865,8 +862,8 @@ export default function JourneyRegistrationsPage() {
               <div className="sticky bottom-0 border-t border-border bg-card py-2 px-4">
                 <div className="flex items-center justify-center gap-2">
                   {/* Edit Journey */}
-                  <button
-                    onClick={() => setIsEditModalOpen(true)}
+                  <Link
+                    href={`/owner/journeys/${journeyId}/edit`}
                     className="p-1 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
                     title="Edit journey"
                     aria-label="Edit journey"
@@ -884,7 +881,7 @@ export default function JourneyRegistrationsPage() {
                         d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                       />
                     </svg>
-                  </button>
+                  </Link>
                   {/* Legs View */}
                   <Link
                     href={`/owner/journeys/${journeyId}/legs`}
@@ -954,18 +951,6 @@ export default function JourneyRegistrationsPage() {
         </div>
       </main>
 
-      {/* Journey Edit Modal */}
-      {user && journey && (
-        <JourneyFormModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={() => {
-            loadJourney();
-          }}
-          journeyId={journey.id}
-          userId={user.id}
-        />
-      )}
     </div>
   );
 }

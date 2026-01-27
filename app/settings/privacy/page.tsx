@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Header } from '@/app/components/Header';
 import { Footer } from '@/app/components/Footer';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { UserConsents } from '@/app/types/consents';

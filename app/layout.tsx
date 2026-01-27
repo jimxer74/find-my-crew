@@ -6,6 +6,7 @@ import { FilterProvider } from "./contexts/FilterContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ConsentSetupProvider } from "./contexts/ConsentSetupContext";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
+import { Header } from "./components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,7 +37,10 @@ export default function RootLayout({
           <ConsentSetupProvider>
             <FilterProvider>
               <NotificationProvider>
-                {children}
+                <Header />
+                <div className="pt-16">
+                  {children}
+                </div>
               </NotificationProvider>
             </FilterProvider>
             <CookieConsentBanner />

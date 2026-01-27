@@ -6,7 +6,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Header } from '@/app/components/Header';
 import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
 import { NewBoatWizard } from '@/app/components/manage/NewBoatWizard';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
@@ -71,7 +70,6 @@ export default function BoatsPage() {
   return (
     <FeatureGate feature="create_boat">
       <div className="min-h-screen bg-background">
-        <Header />
 
         {/* Conditionally render wizard, boat form, or boats list */}
         {isWizardOpen && user ? (
