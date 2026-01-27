@@ -4,7 +4,7 @@ title: Light / Dark mode and sensitivity for user mode
 status: In Progress
 assignee: []
 created_date: '2026-01-27 15:10'
-updated_date: '2026-01-27 16:09'
+updated_date: '2026-01-27 16:15'
 labels:
   - ui
   - accessibility
@@ -40,14 +40,14 @@ The mobile version of the app is not readable when the user's device is set to d
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 App automatically detects and respects user's OS/device color scheme preference on first load
+- [x] #1 App automatically detects and respects user's OS/device color scheme preference on first load
 - [ ] #2 Dark mode is properly applied - all UI elements are readable with appropriate contrast
 - [ ] #3 Light mode remains fully functional with no regressions
-- [ ] #4 Users can manually override the automatic theme detection via a settings toggle
-- [ ] #5 Theme preference persists across browser sessions (localStorage)
+- [x] #4 Users can manually override the automatic theme detection via a settings toggle
+- [x] #5 Theme preference persists across browser sessions (localStorage)
 - [ ] #6 Theme preference syncs to user account when logged in (database)
-- [ ] #7 No flash of wrong theme on page load (FOUC prevention)
-- [ ] #8 Theme toggle is accessible from navigation menu on both mobile and desktop
+- [x] #7 No flash of wrong theme on page load (FOUC prevention)
+- [x] #8 Theme toggle is accessible from navigation menu on both mobile and desktop
 - [ ] #9 All existing components render correctly in both themes
 <!-- AC:END -->
 
@@ -388,4 +388,30 @@ Any iframes or external content won't respect app theme.
 3. **Scheduled theme** - Auto switch at sunset/sunrise
 - Implement this as configurable, so users can set scheduled dark / light switch on
 4. **Per-device sync** - Different preferences per device
+
+## Implementation Summary (2026-01-27)
+
+### Files Created
+- `app/components/ThemeScript.tsx` - FOUC prevention script that runs before React hydration
+- `app/contexts/ThemeContext.tsx` - Theme state management with localStorage persistence and system preference detection
+- `app/components/ui/ThemeToggle.tsx` - Segmented control and icon variants for theme selection
+
+### Files Modified
+- `app/layout.tsx` - Added ThemeProvider wrapper and ThemeScript in head
+- `app/globals.css` - Improved dark mode CSS variables, removed conflicting @media query
+- `app/components/NavigationMenu.tsx` - Added Appearance section with ThemeToggle for both logged-in and guest users
+
+### Features Implemented
+- Automatic detection of OS/device color scheme preference
+- Three theme options: Light, System (default), Dark
+- localStorage persistence across sessions
+- No flash of wrong theme on page load (FOUC prevention)
+- Theme toggle accessible in navigation menu for all users
+- Responsive segmented control (shows icons on mobile, icons+labels on desktop)
+
+### Remaining Work
+- AC #2 (Dark mode contrast): Requires visual testing across all components
+- AC #3 (Light mode regression): Requires testing
+- AC #6 (Database sync): Deferred to later phase
+- AC #9 (All components): Requires visual audit of each component
 <!-- SECTION:NOTES:END -->
