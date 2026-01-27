@@ -38,7 +38,7 @@ export default function RootLayout({
             <FilterProvider>
               <NotificationProvider>
                 <Header />
-                <div className="pt-16">
+                <div className="min-h-screen pt-16">
                   {children}
                 </div>
               </NotificationProvider>

@@ -23,7 +23,7 @@ export default function CrewDashboard() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="bg-background flex flex-col overflow-hidden h-[calc(100vh-4rem)]">
       {/* Show profile completion prompt for signed-in users */}
       {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
       
