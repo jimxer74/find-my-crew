@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
+import { ThemeToggle } from '@/app/components/ui/ThemeToggle';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;
@@ -568,6 +569,17 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Divider */}
           <div className="border-t border-border my-1" />
 
+          {/* Appearance / Theme */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              {/*<span className="text-sm font-medium text-foreground">Appearance</span>*/}
+              <ThemeToggle variant="segmented" />
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
           {/* Sign out */}
           <button
             onClick={handleLogout}
@@ -632,6 +644,17 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               <span className="font-medium">Browse Journeys</span>
             </Link>
           )}
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Appearance / Theme */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-foreground">Appearance</span>
+              <ThemeToggle variant="segmented" />
+            </div>
+          </div>
 
           {/* Divider */}
           <div className="border-t border-border my-1" />

@@ -5,8 +5,10 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { FilterProvider } from "./contexts/FilterContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ConsentSetupProvider } from "./contexts/ConsentSetupContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { Header } from "./components/Header";
+import { ThemeScript } from "./components/ThemeScript";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,23 +31,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <ConsentSetupProvider>
-            <FilterProvider>
-              <NotificationProvider>
-                <Header />
-                <div className="min-h-screen pt-16">
-                  {children}
-                </div>
-              </NotificationProvider>
-            </FilterProvider>
-            <CookieConsentBanner />
-          </ConsentSetupProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ConsentSetupProvider>
+              <FilterProvider>
+                <NotificationProvider>
+                  <Header />
+                  <div className="min-h-screen pt-16">
+                    {children}
+                  </div>
+                </NotificationProvider>
+              </FilterProvider>
+              <CookieConsentBanner />
+            </ConsentSetupProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
