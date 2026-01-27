@@ -6,8 +6,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import type { Notification } from '@/app/lib/notifications';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
-const NOTIFICATIONS_PER_PAGE = 20;
-const POLL_INTERVAL = 10000; // 10 seconds fallback polling
+const NOTIFICATIONS_PER_PAGE = 5;
+const POLL_INTERVAL = 60000; // 10 seconds fallback polling
 
 interface UseNotificationsReturn {
   notifications: Notification[];
@@ -208,11 +208,13 @@ export function useNotifications(): UseNotificationsReturn {
     const pollInterval = setInterval(async () => {
       if (!isMountedRef.current) return;
       try {
-        const response = await fetch('/api/notifications/unread-count');
+        //const response = await fetch('/api/notifications/unread-count');
+        const response = await fetch(`/api/notifications?limit=${NOTIFICATIONS_PER_PAGE}&offset=0`);
         if (response.ok) {
           const data = await response.json();
           if (isMountedRef.current) {
-            setUnreadCount(data.count);
+            setUnreadCount(data.unread_count);
+            setNotifications(data.notifications);
           }
         }
       } catch (err) {
