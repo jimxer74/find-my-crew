@@ -19,7 +19,7 @@ export function Header() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
-  const [userRole, setUserRole] = useState<'owner' | 'crew' | null>(null);
+  const [userRoles, setUserRoles] = useState<string[] | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
 
@@ -77,39 +77,39 @@ export function Header() {
     };
   }, []);
 
-  // Get user role for Filters button visibility
+  // Get user roles for Filters button visibility
   useEffect(() => {
     if (user) {
       setRoleLoading(true);
-      // Try to get role from user metadata first (faster, synchronous)
-      const roleFromMetadata = user.user_metadata?.role as 'owner' | 'crew' | null;
-      if (roleFromMetadata) {
-        setUserRole(roleFromMetadata);
+      // Try to get roles from user metadata first (faster, synchronous)
+      const rolesFromMetadata = user.user_metadata?.roles as string[] | null;
+      if (rolesFromMetadata && Array.isArray(rolesFromMetadata) && rolesFromMetadata.length > 0) {
+        setUserRoles(rolesFromMetadata);
         setRoleLoading(false);
         return; // Early return if we have metadata
       }
-      
+
       // Fetch from database if no metadata available
       const supabase = getSupabaseBrowserClient();
       supabase
         .from('profiles')
-        .select('role')
+        .select('roles')
         .eq('id', user.id)
         .single()
         .then(({ data, error }) => {
           if (error) {
             // If query fails, default to crew
-            setUserRole('crew');
-          } else if (data) {
-            setUserRole(data.role);
+            setUserRoles(['crew']);
+          } else if (data?.roles && data.roles.length > 0) {
+            setUserRoles(data.roles);
           } else {
             // If no profile exists yet, default to crew (most common case)
-            setUserRole('crew');
+            setUserRoles(['crew']);
           }
           setRoleLoading(false);
         });
     } else {
-      setUserRole(null);
+      setUserRoles(null);
       setRoleLoading(false);
     }
   }, [user]);
@@ -139,10 +139,10 @@ export function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <LogoWithText />
+              <LogoWithText userRole={userRoles?.[0] || ''}/>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              {user && (userRole === 'crew' || (userRole === null && roleLoading)) && (
+              {user && (userRoles?.includes('crew') || (userRoles === null && roleLoading)) && (
                 <button
                   onClick={() => {
                     // On mobile, navigate to filters page; on desktop, open modal

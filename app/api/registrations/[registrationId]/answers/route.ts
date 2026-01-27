@@ -59,7 +59,7 @@ export async function GET(
     // Check access: crew member owns registration OR owner owns journey
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 
@@ -161,7 +161,7 @@ export async function POST(
     // Verify user is a crew member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 

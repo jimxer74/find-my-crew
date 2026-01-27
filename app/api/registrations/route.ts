@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     // Verify user is a crew member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 

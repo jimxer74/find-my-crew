@@ -5,11 +5,12 @@ import Image from 'next/image';
 
 type LogoWithTextProps = {
   className?: string;
+  userRole?: string;
 };
 
-export function LogoWithText({ 
-  className = ''
-}: LogoWithTextProps) {
+export function LogoWithText({ className = '', userRole = ''
+}: LogoWithTextProps ) {
+  
   const handleClick = (e: React.MouseEvent) => {
     // Close all dialogs immediately when logo is clicked
     e.stopPropagation();
@@ -18,8 +19,10 @@ export function LogoWithText({
     }
   };
 
+  console.log("LogoWithText userRole:", userRole);
+
   return (
-    <Link href="/" className={className} onClick={handleClick}>
+    <Link href={userRole === '' ? '/' : userRole === 'owner' ? '/owner/journeys' : '/crew/dashboard'} className={className} onClick={handleClick}>
       <Image 
         src="/sailsmart8.png" 
         alt="SailSmart" 

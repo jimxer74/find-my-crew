@@ -104,7 +104,7 @@ export async function POST(
     // Verify user is journey owner (or allow system calls)
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 

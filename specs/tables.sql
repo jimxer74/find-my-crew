@@ -62,24 +62,28 @@ end$$;
 -- TABLE: profiles
 -- ============================================================================
 
--- Table definition
-create table if not exists public.profiles (
-  id          uuid not null references auth.users(id) primary key,
-  role        profile_type not null default 'crew',
-  username    text,
-  full_name   text,
-  email       text,          -- synced from auth.users via trigger for notification access
-  experience  text,          -- free text for now
-  certifications text,       -- free text or JSON later
-  phone       text,
-  sailing_experience integer,   -- Experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
-  risk_level  risk_level[] default '{}',   -- User preferred risk levels for sailing journeys (array)
-  skills      text[] default '{}',  -- User skills array - skill names from skills-config.json (e.g., "First Aid", "Navigation", "Night Sailing")
-  sailing_preferences text,  -- User sailing preferences and preferences description
-  created_at  timestamptz not null default now(),
-  updated_at  timestamptz not null default now()
+create table public.profiles (
+  id uuid not null,
+  full_name text null,
+  experience text null,
+  certifications text null,
+  phone text null,
+  created_at timestamp with time zone not null default now(),
+  updated_at timestamp with time zone not null default now(),
+  username text not null,
+  risk_level risk_level[] null default '{}'::risk_level[],
+  sailing_preferences text null,
+  skills text[] null default '{}'::text[],
+  sailing_experience integer null,
+  profile_image_url text null,
+  roles character varying(50) [] null default (array[]::character varying[])::character varying(50) [],
+  profile_completion_percentage integer null default 0,
+  profile_completed_at timestamp without time zone null,
+  email text null,
+  constraint profiles_pkey primary key (id),
+  constraint profiles_username_key unique (username),
+  constraint profiles_id_fkey foreign KEY (id) references auth.users (id)
 );
-
 -- Indexes
 create unique index if not exists profiles_user_id_key on public.profiles (id);
 create index if not exists idx_profiles_email on public.profiles(email);

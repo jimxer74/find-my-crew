@@ -37,7 +37,7 @@ export async function GET(
     // Verify user is a crew member
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 

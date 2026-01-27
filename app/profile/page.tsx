@@ -23,8 +23,7 @@ type SkillEntry = {
 
 type Profile = {
   id: string;
-  role?: 'owner' | 'crew';
-  roles?: string[];
+  roles: string[];
   username: string | null;
   full_name: string | null;
   certifications: string | null;
@@ -215,9 +214,7 @@ function ProfilePageContent() {
 
       const roles: ('owner' | 'crew')[] = data.roles && data.roles.length > 0
         ? (data.roles as ('owner' | 'crew')[])
-        : data.role
-          ? [data.role]
-          : [];
+        : [];
 
       setFormData({
         username: data.username || '',

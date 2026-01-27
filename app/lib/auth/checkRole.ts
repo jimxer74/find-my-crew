@@ -1,21 +1,9 @@
 /**
  * Check if a user has a specific role
- * Supports both old 'role' field and new 'roles' array for backward compatibility
+ * Uses the 'roles' array field from the profiles table
  */
-export function hasRole(profile: any, role: 'owner' | 'crew'): boolean {
-  if (!profile) return false;
-  
-  // Check new roles array first
-  if (profile.roles && Array.isArray(profile.roles)) {
-    return profile.roles.includes(role);
-  }
-  
-  // Fallback to old role field for backward compatibility
-  if (profile.role) {
-    return profile.role === role;
-  }
-  
-  return false;
+export function hasRole(profile: { roles?: string[] | null } | null | undefined, role: 'owner' | 'crew'): boolean {
+  return profile?.roles?.includes(role) ?? false;
 }
 
 /**

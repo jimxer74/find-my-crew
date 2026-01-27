@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     // Verify user is a crew member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role, skills, sailing_experience')
+      .select('roles, skills, sailing_experience')
       .eq('id', user.id)
       .single();
 

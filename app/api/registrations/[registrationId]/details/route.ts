@@ -38,7 +38,7 @@ export async function GET(
     // Verify user is an owner
     const { data: userProfile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 

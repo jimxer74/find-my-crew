@@ -6,7 +6,7 @@ export default async function DebugPage() {
 
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, role, username')
+    .select('id, roles, username')
     .limit(5);
 
   return (

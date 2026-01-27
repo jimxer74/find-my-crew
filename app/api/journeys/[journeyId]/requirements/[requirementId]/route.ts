@@ -38,7 +38,7 @@ export async function PUT(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 
@@ -214,7 +214,7 @@ export async function DELETE(
     // Verify user is an owner
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, role')
+      .select('roles')
       .eq('id', user.id)
       .single();
 
