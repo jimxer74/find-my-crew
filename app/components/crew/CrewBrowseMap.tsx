@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
@@ -10,6 +11,7 @@ import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage, checkExperienceLevelMatch } from '@/app/lib/skillMatching';
 
+    
 type Leg = {
   leg_id: string;
   leg_name: string;
@@ -102,6 +104,14 @@ export function CrewBrowseMap({
     name: string | null;
     coordinates: [number, number] | null;
   }>>>(new Map());
+
+
+  const approvedIconSize = 14;
+  const pendingIconSize = 14;
+  const unregisteredIconSize = 10;
+  const approvedTextColor = '#01B000';
+  const pendingTextColor = '#AEB000';
+  const unregisteredTextColor = '#22276E';
 
   // Function to create Mapbox-style pin marker icon with text
   const createPinMarkerIcon = (color: string, text: string): string => {
@@ -534,6 +544,9 @@ export function CrewBrowseMap({
     }
   }, [legs, mapLoaded, userRegistrations]);
 
+  const theme = useTheme();
+  const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
+
   useEffect(() => {
     // Only initialize map once
     if (!mapContainer.current || mapInitializedRef.current) return;
@@ -552,7 +565,7 @@ export function CrewBrowseMap({
 
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11', // Less colorful, muted style
+      style: mapStyle, // Less colorful, muted style
       center: initialCenter,
       zoom: initialZoom,
     });
@@ -871,16 +884,27 @@ export function CrewBrowseMap({
       // Load custom pin marker icons for registered legs
       if (!iconsLoadedRef.current && map.current) {
         try {
+
           // Load approved boat icon from public folder
+          //const approvedIcon = await new Promise<HTMLImageElement>((resolve, reject) => {
+          //  const img = new Image();
+          //  img.onload = () => resolve(img);
+          //  img.onerror = (err) => {
+          //    console.error('[CrewBrowseMap] Error loading boat_approved2.png:', err);
+          //    reject(err);
+          //  };
+          //  img.src = '/boat_approved2.png';
+          //});
+
+          // Create approved pin marker with green color and "A" text
+          /*
           const approvedIcon = await new Promise<HTMLImageElement>((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
-            img.onerror = (err) => {
-              console.error('[CrewBrowseMap] Error loading boat_approved2.png:', err);
-              reject(err);
-            };
-            img.src = '/boat_approved2.png';
+            img.onerror = reject;
+            img.src = createPinMarkerIcon('#31FF6D', 'A'); // green
           });
+
           map.current.addImage('pin-marker-approved', approvedIcon);
 
           // Create pending pin marker with yellow color and "P" text
@@ -891,6 +915,7 @@ export function CrewBrowseMap({
             img.src = createPinMarkerIcon('#eab308', 'P'); // yellow-500
           });
           map.current.addImage('pin-marker-pending', pendingIcon);
+*/
 
           iconsLoadedRef.current = true;
           console.log('[CrewBrowseMap] Custom pin marker icons loaded');
@@ -976,35 +1001,86 @@ export function CrewBrowseMap({
       // These will be added after icons are loaded, but we define them here
       // Approved registrations - boat_approved.png icon (larger than normal markers)
       // Uses separate non-clustered source so approved legs always show individually
+      
       map.current.addLayer({
         id: 'registered-approved',
+        type: 'circle',
+        source: 'approved-legs-source', // Use separate non-clustered source
+        layout: {
+          //'icon-image': 'pin-marker-approved',
+          //'icon-size': 0.8, // Pin marker size
+          //'icon-anchor': 'bottom',
+          //'icon-allow-overlap': true,
+        },
+        paint: {
+          'circle-color': approvedTextColor,
+          'circle-radius': approvedIconSize,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
+      });
+
+      map.current.addLayer({
+        id: 'registered-approved-text',
         type: 'symbol',
         source: 'approved-legs-source', // Use separate non-clustered source
         layout: {
-          'icon-image': 'pin-marker-approved',
-          'icon-size': 0.2,
-          'icon-anchor': 'center',
-          'icon-allow-overlap': true,
+          'text-field': 'Approved',
+          'text-font': ['Open Sans Bold'],          // fixed text
+          'text-size': 12,
+          'text-offset': [1.5, 0],
+          'text-anchor': 'left',
+        },
+        paint: {
+          'text-color': approvedTextColor, // green text
         },
       });
 
       // Pending registrations - orange pin marker with "P"
       map.current.addLayer({
         id: 'registered-pending',
-        type: 'symbol',
+        type: 'circle',
         source: 'legs-source',
         filter: [
           'all',
           ['!', ['has', 'point_count']],
           ['==', ['get', 'registration_status'], 'Pending approval'],
         ],
+        paint: {
+          'circle-color': pendingTextColor,
+          'circle-radius': pendingIconSize,
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#fff',
+        },
         layout: {
-          'icon-image': 'pin-marker-pending',
-          'icon-size': 0.8, // Pin marker size
-          'icon-anchor': 'bottom',
-          'icon-allow-overlap': true,
+          //'icon-image': 'pin-marker-pending',
+          //'icon-size': 0.8, // Pin marker size
+          //'icon-anchor': 'bottom',
+          //'icon-allow-overlap': true,
         },
       });
+      
+      map.current.addLayer({
+        id: 'registered-pending-text',
+        type: 'symbol',
+        source: 'legs-source', // Use separate non-clustered source
+        filter: [
+          'all',
+          ['!', ['has', 'point_count']],
+          ['==', ['get', 'registration_status'], 'Pending approval'],
+        ],
+        layout: {
+          'text-field': 'Pending approval',
+          'text-font': ['Open Sans Bold'],          // fixed text
+          'text-size': 12,
+          'text-offset': [1.5, 0],
+          'text-anchor': 'left',
+        },
+        paint: {
+          'text-color': pendingTextColor, 
+        },
+      });
+
 
       // Add unclustered point layer (individual leg markers for non-registered legs)
       // Color based on match percentage: green (80+), yellow (50-79), orange (25-49), red (<25)
@@ -1023,16 +1099,16 @@ export function CrewBrowseMap({
           'circle-color': [
             'case',
             ['==', ['get', 'experience_matches'], false],
-            '#ef4444', // red-500 - always red if experience level doesn't match
+            '#FF9494', // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
-            '#22c55e', // green-500
+            '#8FFF94', // green-500
             ['>=', ['get', 'match_percentage'], 50],
-            '#eab308', // yellow-500
+            '#F4FF93', // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
-            '#f97316', // orange-500
-            '#ef4444', // red-500
+            '#FFBD95', // orange-500
+            '#FF9494', // red-500
           ],
-          'circle-radius': 8,
+          'circle-radius': unregisteredIconSize,
           'circle-stroke-width': 2,
           'circle-stroke-color': '#fff',
         },
@@ -1214,7 +1290,7 @@ export function CrewBrowseMap({
           'line-cap': 'round',
         },
         paint: {
-          'line-color': '#22276E',
+          'line-color': '#01B000',
           'line-width': 4,
           'line-opacity': 0.9,
           // Note: Mapbox doesn't support true gradients, but we can use a gradient-like effect
@@ -1241,9 +1317,9 @@ export function CrewBrowseMap({
           'line-cap': 'round',
         },
         paint: {
-          'line-color': '#22276E',
-          'line-width': 3,
-          'line-opacity': 0.8,
+          'line-color': '#01B000',
+          'line-width': 4,
+          'line-opacity': 0.9,
           'line-dasharray': [2, 2], // Dashed line pattern
         },
       }, 'unclustered-point'); // Insert before unclustered-point layer
