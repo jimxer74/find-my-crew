@@ -227,7 +227,7 @@ export default function JourneysPage() {
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <button
               onClick={() => {
-                setEditingJourneyId(null);
+                setDeletingJourneyId(null);
                 setIsModalOpen(true);
               }}
               className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center gap-2 hover:opacity-90"
@@ -334,7 +334,7 @@ export default function JourneysPage() {
             <p className="text-muted-foreground mb-4">You haven't created any journeys yet.</p>
             <button
               onClick={() => {
-                setEditingJourneyId(null);
+                setDeletingJourneyId(null);
                 setIsModalOpen(true);
               }}
               className="font-medium text-primary hover:opacity-80"

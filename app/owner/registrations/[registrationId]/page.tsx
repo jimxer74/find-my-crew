@@ -310,7 +310,7 @@ export default function RegistrationDetailsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-muted rounded w-1/3"></div>
@@ -326,7 +326,7 @@ export default function RegistrationDetailsPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <Header />
+        
         <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <p className="text-red-800 font-medium">{error}</p>
@@ -348,7 +348,7 @@ export default function RegistrationDetailsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back link */}

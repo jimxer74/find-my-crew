@@ -593,10 +593,6 @@ export default function LegsManagementPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] bg-background flex flex-col overflow-hidden relative">
-      {/* Profile Completion Banner - Overlay on top of map, below header */}
-      <div className="fixed top-16 left-0 right-0 z-[100]">
-        <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />
-      </div>
       
       <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map Container - Always full width, stays in place */}

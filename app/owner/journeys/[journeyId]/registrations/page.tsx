@@ -563,8 +563,7 @@ export default function JourneyRegistrationsPage() {
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Header />
+    <div className="h-[calc(100vh-4rem)] bg-background flex flex-col overflow-hidden">
 
       <main className="flex-1 relative overflow-hidden min-h-0">
         {/* Map Container - Always full width, stays in place */}
