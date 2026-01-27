@@ -677,12 +677,12 @@ export function LegFormModal({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+        className="fixed inset-0 bg-black/50 z-50 flex justify-center pt-[5rem] px-4 pb-4"
         onClick={onClose}
       >
         {/* Modal */}
         <div
-          className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+          className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-6">
@@ -857,7 +857,7 @@ export function LegFormModal({
                       You can set a more strict requirement for this leg (higher level):
                     </p>
                   )}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="flex gap-4 overflow-x-auto pb-1 md:overflow-visible md:grid md:grid-cols-4 md:gap-4">
                     {getAllExperienceLevels().map((levelConfig) => {
                       const isJourneyLevel = journeyMinExperienceLevel === levelConfig.value;
                       const isLegSelected = minExperienceLevel === levelConfig.value;
@@ -882,7 +882,7 @@ export function LegFormModal({
                             setMinExperienceLevel(newValue);
                           }}
                           disabled={isDisabled}
-                          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+                          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col flex-shrink-0 min-w-[140px] ${
                             isSelected
                               ? isJourneyLevel
                                 ? 'border-primary bg-primary/10 opacity-75 cursor-not-allowed'

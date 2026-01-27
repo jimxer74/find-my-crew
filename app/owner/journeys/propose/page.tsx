@@ -1,17 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import { formatDate, formatDateShort } from '@/app/lib/dateFormat';
+import { Footer } from '@/app/components/Footer';
+import { FeatureGate } from '@/app/components/auth/FeatureGate';
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3440; // Earth's radius in nautical miles
+  const R = 3440;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
@@ -19,15 +23,14 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
-// Calculate duration in hours based on distance and speed
+// Calculate duration in hours
 function calculateDuration(distanceNM: number, speedKnots: number | null): number | null {
   if (!speedKnots || speedKnots <= 0) return null;
-  // Account for 70-80% efficiency due to conditions
   const effectiveSpeed = speedKnots * 0.75;
   return distanceNM / effectiveSpeed;
 }
 
-// Format duration as human-readable string
+// Format hours to readable string
 function formatDuration(hours: number | null): string {
   if (hours === null) return 'N/A';
   if (hours < 24) {
@@ -48,25 +51,15 @@ type Boat = {
   capacity?: number | null;
 };
 
-type AIGenerateJourneyModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  userId: string;
-};
-
-export function AIGenerateJourneyModal({ 
-  isOpen, 
-  onClose, 
-  onSuccess, 
-  userId 
-}: AIGenerateJourneyModalProps) {
+export default function ProposeJourneyPage() {
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
   const [boats, setBoats] = useState<Boat[]>([]);
   const [selectedBoatId, setSelectedBoatId] = useState('');
   const [selectedBoatSpeed, setSelectedBoatSpeed] = useState<number | null>(null);
-  const [startLocation, setStartLocation] = useState({ name: '', lat: 0, lng: 0 });
-  const [endLocation, setEndLocation] = useState({ name: '', lat: 0, lng: 0 });
+  const [startLocation, setStartLocation] = useState<Location>({ name: '', lat: 0, lng: 0 });
+  const [endLocation, setEndLocation] = useState<Location>({ name: '', lat: 0, lng: 0 });
   const [intermediateWaypoints, setIntermediateWaypoints] = useState<Location[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -77,44 +70,46 @@ export function AIGenerateJourneyModal({
   const [generatedJourney, setGeneratedJourney] = useState<any>(null);
   const [aiPrompt, setAiPrompt] = useState<string | null>(null);
 
-  // Load boats when modal opens and reset form
   useEffect(() => {
-    if (isOpen) {
+    if (user) {
       loadBoats();
-      // Reset form state when modal opens
-      setSelectedBoatId('');
-      setSelectedBoatSpeed(null);
-      setStartLocation({ name: '', lat: 0, lng: 0 });
-      setEndLocation({ name: '', lat: 0, lng: 0 });
-      setIntermediateWaypoints([]);
-      setStartDate('');
-      setEndDate('');
-      setUseSpeedPlanning(false);
-      setGeneratedJourney(null);
-      setAiPrompt(null);
-      setError(null);
+      resetForm();
     }
-  }, [isOpen]);
+  }, [user]);
+
+  const resetForm = () => {
+    setSelectedBoatId('');
+    setSelectedBoatSpeed(null);
+    setStartLocation({ name: '', lat: 0, lng: 0 });
+    setEndLocation({ name: '', lat: 0, lng: 0 });
+    setIntermediateWaypoints([]);
+    setStartDate('');
+    setEndDate('');
+    setUseSpeedPlanning(false);
+    setGeneratedJourney(null);
+    setAiPrompt(null);
+    setError(null);
+  };
 
   const loadBoats = async () => {
     const supabase = getSupabaseBrowserClient();
-    const { data, error: fetchError } = await supabase
+    const { data, error: boatsError } = await supabase
       .from('boats')
       .select('id, name, average_speed_knots, capacity')
-      .eq('owner_id', userId)
+      .eq('owner_id', user?.id)
       .order('name', { ascending: true });
 
-    if (fetchError) {
+    if (boatsError) {
+      console.error('Failed to load boats:', boatsError);
       setError('Failed to load boats');
     } else {
       setBoats(data || []);
     }
   };
 
-  // Load boat speed when boat is selected
   useEffect(() => {
     if (selectedBoatId) {
-      const selectedBoat = boats.find(b => b.id === selectedBoatId);
+      const selectedBoat = boats.find((boat) => boat.id === selectedBoatId);
       setSelectedBoatSpeed(selectedBoat?.average_speed_knots || null);
     } else {
       setSelectedBoatSpeed(null);
@@ -122,90 +117,61 @@ export function AIGenerateJourneyModal({
   }, [selectedBoatId, boats]);
 
   const handleGenerate = async () => {
-    // Clear any previous errors first
     setError(null);
 
-    // Validate all fields are filled
     if (!selectedBoatId || !startLocation.name || !endLocation.name) {
-      setError('Please fill in all fields');
+      setError('Please fill in all required fields');
       return;
     }
 
-    // Validate coordinates are set (user must select from autocomplete suggestions)
-    const hasValidStartCoords = startLocation.lat !== 0 && startLocation.lng !== 0;
-    const hasValidEndCoords = endLocation.lat !== 0 && endLocation.lng !== 0;
+    const validStart = startLocation.lat !== 0 && startLocation.lng !== 0;
+    const validEnd = endLocation.lat !== 0 && endLocation.lng !== 0;
 
-    if (!hasValidStartCoords) {
-      setError('Please select a valid start location from the autocomplete suggestions');
+    if (!validStart || !validEnd) {
+      setError('Select valid start and end locations from the suggestions');
       return;
     }
 
-    if (!hasValidEndCoords) {
-      setError('Please select a valid end location from the autocomplete suggestions');
+    const invalidWaypoint = intermediateWaypoints.some((wp) => wp.lat === 0 || wp.lng === 0);
+    if (invalidWaypoint) {
+      setError('Please select valid intermediate waypoints from the suggestions');
       return;
     }
 
-    // Validate intermediate waypoints have valid coordinates
-    const invalidWaypoints = intermediateWaypoints.filter(wp => wp.lat === 0 || wp.lng === 0);
-    if (invalidWaypoints.length > 0) {
-      setError('Please select valid locations for all intermediate waypoints from the autocomplete suggestions');
-      return;
-    }
-
-    // All validations passed, proceed with generation
     setGenerating(true);
     setError(null);
     setGeneratedJourney(null);
 
-    // Use coordinates from autocomplete
-    let startCoords = { lat: startLocation.lat, lng: startLocation.lng };
-    let endCoords = { lat: endLocation.lat, lng: endLocation.lng };
-
-    // Build waypoints array: start + intermediate + end
     const allWaypoints = [
-      {
-        name: startLocation.name,
-        lat: startCoords.lat,
-        lng: startCoords.lng,
-      },
-      ...intermediateWaypoints.map(wp => ({
-        name: wp.name,
-        lat: wp.lat,
-        lng: wp.lng,
-      })),
-      {
-        name: endLocation.name,
-        lat: endCoords.lat,
-        lng: endCoords.lng,
-      },
+      { name: startLocation.name, lat: startLocation.lat, lng: startLocation.lng },
+      ...intermediateWaypoints.map((wp) => ({ name: wp.name, lat: wp.lat, lng: wp.lng })),
+      { name: endLocation.name, lat: endLocation.lat, lng: endLocation.lng },
     ];
 
     try {
       const response = await fetch('/api/ai/generate-journey', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           boatId: selectedBoatId,
           startLocation: {
             name: startLocation.name,
-            lat: startCoords.lat,
-            lng: startCoords.lng,
+            lat: startLocation.lat,
+            lng: startLocation.lng,
           },
           endLocation: {
             name: endLocation.name,
-            lat: endCoords.lat,
-            lng: endCoords.lng,
+            lat: endLocation.lat,
+            lng: endLocation.lng,
           },
-          intermediateWaypoints: intermediateWaypoints.length > 0 ? intermediateWaypoints.map(wp => ({
+          intermediateWaypoints: intermediateWaypoints.length > 0 ? intermediateWaypoints.map((wp) => ({
             name: wp.name,
             lat: wp.lat,
             lng: wp.lng,
           })) : null,
           startDate: startDate || null,
           endDate: endDate || null,
-          useSpeedPlanning: useSpeedPlanning,
+          useSpeedPlanning,
           boatSpeed: selectedBoatSpeed || null,
         }),
       });
@@ -233,8 +199,6 @@ export function AIGenerateJourneyModal({
 
     try {
       const supabase = getSupabaseBrowserClient();
-
-      // Create the journey
       const journeyInsertData: any = {
         boat_id: selectedBoatId,
         name: generatedJourney.journeyName,
@@ -244,48 +208,8 @@ export function AIGenerateJourneyModal({
         ai_prompt: aiPrompt || null,
       };
 
-      // Add dates if provided
-      if (startDate) {
-        journeyInsertData.start_date = startDate;
-      }
-      if (endDate) {
-        journeyInsertData.end_date = endDate;
-      }
-
-      // Debug: Check authentication and boat ownership before insert
-      console.log('=== AI JOURNEY CREATION DEBUG ===');
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      console.log('Auth user:', authUser?.id);
-      console.log('Auth error:', authError);
-      console.log('Selected boat ID:', selectedBoatId);
-      
-      // Verify boat exists and belongs to user
-      if (selectedBoatId) {
-        const { data: boatData, error: boatError } = await supabase
-          .from('boats')
-          .select('id, name, owner_id')
-          .eq('id', selectedBoatId)
-          .single();
-        
-        console.log('Boat data:', boatData);
-        console.log('Boat error:', boatError);
-        console.log('Boat owner_id:', boatData?.owner_id);
-        console.log('Auth user id:', authUser?.id);
-        console.log('Boat belongs to user:', boatData?.owner_id === authUser?.id);
-        
-        if (boatError) {
-          console.error('Error fetching boat:', boatError);
-        }
-        if (!boatData) {
-          console.error('Boat not found with id:', selectedBoatId);
-        }
-        if (boatData && boatData.owner_id !== authUser?.id) {
-          console.error('Boat owner mismatch! Boat owner:', boatData.owner_id, 'Auth user:', authUser?.id);
-        }
-      }
-
-      console.log('Journey data to insert:', JSON.stringify(journeyInsertData, null, 2));
-      console.log('==================================');
+      if (startDate) journeyInsertData.start_date = startDate;
+      if (endDate) journeyInsertData.end_date = endDate;
 
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
@@ -293,49 +217,28 @@ export function AIGenerateJourneyModal({
         .select()
         .single();
 
-      console.log('Journey insert result data:', journeyData);
-      console.log('Journey insert error:', journeyError);
       if (journeyError) {
-        console.error('Journey insert error details:', {
-          message: journeyError.message,
-          details: journeyError.details,
-          hint: journeyError.hint,
-          code: journeyError.code,
-        });
+        throw journeyError;
       }
 
-      if (journeyError) throw journeyError;
+      const foundBoat = boats.find((boat) => boat.id === selectedBoatId);
+      const boatCapacity = foundBoat?.capacity || null;
+      const defaultCrewNeeded = boatCapacity && boatCapacity > 0 ? Math.max(0, boatCapacity - 1) : null;
 
-      // Get boat capacity for default crew_needed
-      const selectedBoat = boats.find(b => b.id === selectedBoatId);
-      const boatCapacity = selectedBoat?.capacity || null;
-      const defaultCrewNeeded = boatCapacity && boatCapacity > 0 
-        ? Math.max(0, boatCapacity - 1) // Default: capacity - 1 (owner/skipper)
-        : null;
-
-      // Create the legs
       for (const leg of generatedJourney.legs) {
         const legInsertData: any = {
           journey_id: journeyData.id,
           name: leg.name,
         };
 
-        // Add leg dates if provided (from speed-based planning)
-        if (leg.start_date) {
-          legInsertData.start_date = leg.start_date;
-        }
-        if (leg.end_date) {
-          legInsertData.end_date = leg.end_date;
-        }
-
-        // Set default crew_needed if not provided by AI
+        if (leg.start_date) legInsertData.start_date = leg.start_date;
+        if (leg.end_date) legInsertData.end_date = leg.end_date;
         if (leg.crew_needed !== undefined && leg.crew_needed !== null) {
           legInsertData.crew_needed = leg.crew_needed;
         } else if (defaultCrewNeeded !== null) {
           legInsertData.crew_needed = defaultCrewNeeded;
         }
 
-        // Insert leg first (without waypoints)
         const { data: newLeg, error: legError } = await supabase
           .from('legs')
           .insert(legInsertData)
@@ -343,11 +246,9 @@ export function AIGenerateJourneyModal({
           .single();
 
         if (legError) {
-          console.error('Error creating leg:', legError);
           throw legError;
         }
 
-        // Insert waypoints using RPC function with PostGIS support
         if (leg.waypoints && leg.waypoints.length > 0) {
           const { error: waypointsError } = await supabase.rpc('insert_leg_waypoints', {
             leg_id_param: newLeg.id,
@@ -360,77 +261,47 @@ export function AIGenerateJourneyModal({
           });
 
           if (waypointsError) {
-            console.error('Error inserting waypoints for leg:', waypointsError);
-            // Rollback: delete the leg if waypoints failed
             await supabase.from('legs').delete().eq('id', newLeg.id);
             throw waypointsError;
           }
         }
       }
 
-      // Call onSuccess callback
-      onSuccess();
-      
-      // Close the modal
-      onClose();
-      
-      // Navigate to the EditJourneyMap page for the newly created journey
+      resetForm();
       router.push(`/owner/journeys/${journeyData.id}/legs`);
-      
-      // Reset form
-      setSelectedBoatId('');
-      setSelectedBoatSpeed(null);
-      setStartLocation({ name: '', lat: 0, lng: 0 });
-      setEndLocation({ name: '', lat: 0, lng: 0 });
-      setIntermediateWaypoints([]);
-      setStartDate('');
-      setEndDate('');
-      setUseSpeedPlanning(false);
-      setGeneratedJourney(null);
     } catch (err: any) {
+      console.error('Failed to save AI journey:', err);
       setError(err.message || 'Failed to save journey');
     } finally {
       setLoading(false);
     }
   };
 
-
-  if (!isOpen) return null;
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
-      >
-        {/* Modal */}
-        <div
-          className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-card-foreground flex items-center gap-2">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                </svg>
-                Propose new Journey
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+    <FeatureGate feature="create_journey">
+      <div className="min-h-screen bg-background">
+        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+          <div>
+            <Link href="/owner/journeys" className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2">
+              ← Back to Journeys
+            </Link>
+            <h1 className="text-3xl font-semibold text-foreground mt-2">Propose Journey</h1>
+            <p className="text-sm text-muted-foreground">
+              Let AI sketch a multi-leg itinerary based on your preferred route and returns.
+            </p>
+          </div>
 
+          <div className="bg-card rounded-2xl shadow-lg border border-border p-6 md:p-8 space-y-6">
             {error && (
-              <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded mb-4">
+              <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
                 {error}
               </div>
             )}
@@ -438,17 +309,17 @@ export function AIGenerateJourneyModal({
             {!generatedJourney ? (
               <div className="space-y-4">
                 <div>
-                  <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
+                  <label htmlFor="boat-select" className="block text-sm font-medium text-foreground mb-1">
                     Boat *
                   </label>
                   <select
-                    id="boat_id"
+                    id="boat-select"
                     value={selectedBoatId}
                     onChange={(e) => {
                       setSelectedBoatId(e.target.value);
-                      setError(null); // Clear error when boat is selected
+                      setError(null);
                     }}
-                    className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                    className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                   >
                     <option value="">Select a boat</option>
                     {boats.map((boat) => (
@@ -459,7 +330,6 @@ export function AIGenerateJourneyModal({
                   </select>
                 </div>
 
-                {/* Start and End Location on same row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <LocationAutocomplete
                     id="start_location"
@@ -467,39 +337,33 @@ export function AIGenerateJourneyModal({
                     value={startLocation.name}
                     onChange={(location) => {
                       setStartLocation(location);
-                      setError(null); // Clear error when valid location is selected
+                      setError(null);
                     }}
                     onInputChange={(value) => {
-                      setStartLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
-                      setError(null); // Clear error when user starts typing
+                      setStartLocation({ name: value, lat: 0, lng: 0 });
+                      setError(null);
                     }}
                     placeholder="e.g., Barcelona, Spain"
-                    required
                   />
-
                   <LocationAutocomplete
                     id="end_location"
                     label="End Location"
                     value={endLocation.name}
                     onChange={(location) => {
                       setEndLocation(location);
-                      setError(null); // Clear error when valid location is selected
+                      setError(null);
                     }}
                     onInputChange={(value) => {
-                      setEndLocation({ name: value, lat: 0, lng: 0 }); // Reset coordinates when typing
-                      setError(null); // Clear error when user starts typing
+                      setEndLocation({ name: value, lat: 0, lng: 0 });
+                      setError(null);
                     }}
                     placeholder="e.g., Palma, Mallorca"
-                    required
                   />
                 </div>
 
-                {/* Intermediate Waypoints */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-foreground">
-                      Intermediate Waypoints
-                    </label>
+                    <label className="text-sm font-medium text-foreground">Intermediate Waypoints</label>
                     <button
                       type="button"
                       onClick={() => {
@@ -515,9 +379,7 @@ export function AIGenerateJourneyModal({
                     </button>
                   </div>
                   {intermediateWaypoints.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      Optional: Add intermediate waypoints to create a multi-stop journey
-                    </p>
+                    <p className="text-sm text-muted-foreground">Optional: Add stops along the route.</p>
                   ) : (
                     <div className="space-y-3">
                       {intermediateWaypoints.map((waypoint, index) => (
@@ -545,7 +407,7 @@ export function AIGenerateJourneyModal({
                           <button
                             type="button"
                             onClick={() => {
-                              const updated = intermediateWaypoints.filter((_, i) => i !== index);
+                              const updated = intermediateWaypoints.filter((_, idx) => idx !== index);
                               setIntermediateWaypoints(updated);
                               setError(null);
                             }}
@@ -562,42 +424,40 @@ export function AIGenerateJourneyModal({
                   )}
                 </div>
 
-                {/* Start and End Date on same row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="start_date" className="block text-sm font-medium text-foreground mb-1">
+                    <label htmlFor="proposal_start_date" className="block text-sm font-medium text-foreground mb-1">
                       Start Date
                     </label>
                     <input
                       type="date"
-                      id="start_date"
+                      id="proposal_start_date"
                       value={startDate}
                       onChange={(e) => {
                         setStartDate(e.target.value);
                         setError(null);
                       }}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                     />
                   </div>
                   <div>
-                    <label htmlFor="end_date" className="block text-sm font-medium text-foreground mb-1">
+                    <label htmlFor="proposal_end_date" className="block text-sm font-medium text-foreground mb-1">
                       End Date
                     </label>
                     <input
                       type="date"
-                      id="end_date"
+                      id="proposal_end_date"
                       value={endDate}
                       onChange={(e) => {
                         setEndDate(e.target.value);
                         setError(null);
                       }}
                       min={startDate || undefined}
-                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                     />
                   </div>
                 </div>
 
-                {/* Use boat average speed planning checkbox */}
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -611,16 +471,11 @@ export function AIGenerateJourneyModal({
                       className="rounded border-border"
                     />
                     <span className="text-sm text-foreground">
-                      Use boat average speed planning
-                      {selectedBoatSpeed && (
-                        <span className="text-xs text-muted-foreground ml-1">
-                          ({selectedBoatSpeed} knots)
-                        </span>
-                      )}
+                      Use boat average speed planning {selectedBoatSpeed && `(${selectedBoatSpeed} kt)`}
                     </span>
                   </label>
                   {useSpeedPlanning && (!selectedBoatSpeed || !startDate || !endDate) && (
-                    <p className="text-xs text-muted-foreground mt-1 ml-6">
+                    <p className="text-xs text-muted-foreground mt-1 ml-4">
                       {!selectedBoatSpeed && 'Boat speed is required. '}
                       {!startDate && 'Start date is required. '}
                       {!endDate && 'End date is required.'}
@@ -629,18 +484,17 @@ export function AIGenerateJourneyModal({
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                  <Link
+                    href="/owner/journeys"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition"
                   >
                     Cancel
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={handleGenerate}
                     disabled={generating || !selectedBoatId || !startLocation.name || !endLocation.name}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition"
                   >
                     {generating ? 'Generating...' : 'Generate Journey'}
                   </button>
@@ -648,7 +502,6 @@ export function AIGenerateJourneyModal({
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Disclaimer */}
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <div className="flex items-start gap-2">
                     <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -657,7 +510,7 @@ export function AIGenerateJourneyModal({
                     <div className="text-sm text-yellow-800 dark:text-yellow-200">
                       <p className="font-semibold mb-1">AI Generated Content Disclaimer</p>
                       <p>
-                        This journey and legs are generated automatically by AI. Please note that this does not negate the need for proper navigation and passage planning, weather routing and general good seamanship. Always use proper navigation tools, navigation charts and pilotage etc. for planning the passages.
+                        This journey and legs are generated automatically by AI. Please note that this does not eliminate the need for proper navigation, charting, or passage planning. Always validate and confirm routes before sailing.
                       </p>
                     </div>
                   </div>
@@ -668,26 +521,20 @@ export function AIGenerateJourneyModal({
                     Generated Journey: {generatedJourney.journeyName}
                   </h3>
                   {generatedJourney.description && (
-                    <p className="text-muted-foreground mb-4">{generatedJourney.description}</p>
+                    <p className="text-muted-foreground mb-4 text-sm">{generatedJourney.description}</p>
                   )}
-                  
-                  {/* Journey Dates */}
                   {(startDate || endDate) && (
                     <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                       {startDate && (
                         <div>
                           <span className="text-muted-foreground">Start Date: </span>
-                          <span className="font-medium text-card-foreground">
-                            {formatDate(startDate)}
-                          </span>
+                          <span className="font-medium text-card-foreground">{formatDate(startDate)}</span>
                         </div>
                       )}
                       {endDate && (
                         <div>
                           <span className="text-muted-foreground">End Date: </span>
-                          <span className="font-medium text-card-foreground">
-                            {formatDate(endDate)}
-                          </span>
+                          <span className="font-medium text-card-foreground">{formatDate(endDate)}</span>
                         </div>
                       )}
                     </div>
@@ -695,17 +542,15 @@ export function AIGenerateJourneyModal({
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-card-foreground mb-2">Legs:</h4>
+                  <h4 className="font-medium text-card-foreground mb-2">Legs</h4>
                   <div className="space-y-3">
                     {generatedJourney.legs.map((leg: any, idx: number) => {
-                      // Calculate distance and duration for this leg
                       let distanceNM: number | null = null;
                       let durationHours: number | null = null;
-                      
-                      if (leg.waypoints && leg.waypoints.length >= 2) {
+
+                      if (leg.waypoints?.length >= 2) {
                         const startWp = leg.waypoints[0];
                         const endWp = leg.waypoints[leg.waypoints.length - 1];
-                        
                         if (startWp?.geocode?.coordinates && endWp?.geocode?.coordinates) {
                           const [lng1, lat1] = startWp.geocode.coordinates;
                           const [lng2, lat2] = endWp.geocode.coordinates;
@@ -719,40 +564,32 @@ export function AIGenerateJourneyModal({
                           <div className="mb-2">
                             <p className="font-medium text-card-foreground">{leg.name}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {leg.waypoints.length} waypoint{leg.waypoints.length !== 1 ? 's' : ''}
+                              {leg.waypoints?.length || 0} waypoint{(leg.waypoints?.length || 0) !== 1 ? 's' : ''}
                             </p>
                           </div>
-                          
-                          {/* Leg Dates */}
+
                           {(leg.start_date || leg.end_date) && (
                             <div className="grid grid-cols-2 gap-3 mb-2 text-xs">
                               {leg.start_date && (
                                 <div>
                                   <span className="text-muted-foreground">Start: </span>
-                                  <span className="font-medium text-card-foreground">
-                                    {formatDateShort(leg.start_date)}
-                                  </span>
+                                  <span className="font-medium text-card-foreground">{formatDateShort(leg.start_date)}</span>
                                 </div>
                               )}
                               {leg.end_date && (
                                 <div>
                                   <span className="text-muted-foreground">End: </span>
-                                  <span className="font-medium text-card-foreground">
-                                    {formatDateShort(leg.end_date)}
-                                  </span>
+                                  <span className="font-medium text-card-foreground">{formatDateShort(leg.end_date)}</span>
                                 </div>
                               )}
                             </div>
                           )}
-                          
-                          {/* Distance and Duration */}
+
                           <div className="grid grid-cols-2 gap-3 text-xs pt-2 border-t border-border/50">
                             {distanceNM !== null && (
                               <div>
                                 <span className="text-muted-foreground">Distance: </span>
-                                <span className="font-medium text-card-foreground">
-                                  {Math.round(distanceNM)} nm
-                                </span>
+                                <span className="font-medium text-card-foreground">{Math.round(distanceNM)} nm</span>
                               </div>
                             )}
                             {durationHours !== null && (
@@ -761,9 +598,7 @@ export function AIGenerateJourneyModal({
                                 <span className="font-medium text-card-foreground">
                                   {formatDuration(durationHours)}
                                   {selectedBoatSpeed && distanceNM !== null && (
-                                    <span className="text-muted-foreground ml-1">
-                                      (@ {selectedBoatSpeed}kt)
-                                    </span>
+                                    <span className="text-muted-foreground ml-1">(@ {selectedBoatSpeed}kt)</span>
                                   )}
                                 </span>
                               </div>
@@ -782,7 +617,7 @@ export function AIGenerateJourneyModal({
                       setGeneratedJourney(null);
                       setError(null);
                     }}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition"
                   >
                     Regenerate
                   </button>
@@ -790,7 +625,7 @@ export function AIGenerateJourneyModal({
                     type="button"
                     onClick={handleAccept}
                     disabled={loading}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition"
                   >
                     {loading ? 'Saving...' : 'Accept & Create Journey'}
                   </button>
@@ -798,8 +633,9 @@ export function AIGenerateJourneyModal({
               </div>
             )}
           </div>
-        </div>
+        </main>
+        <Footer />
       </div>
-    </>
+    </FeatureGate>
   );
 }

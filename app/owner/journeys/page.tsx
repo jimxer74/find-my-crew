@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { JourneyFormModal } from '@/app/components/manage/JourneyFormModal';
-import { AIGenerateJourneyModal } from '@/app/components/manage/AIGenerateJourneyModal';
 import { Pagination } from '@/app/components/ui/Pagination';
 import { formatDate } from '@/app/lib/dateFormat';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
@@ -19,8 +17,6 @@ export default function JourneysPage() {
   const [journeys, setJourneys] = useState<any[]>([]);
   const [boats, setBoats] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<'start_date' | 'created_at'>('start_date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
@@ -225,29 +221,26 @@ export default function JourneysPage() {
 
         <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:gap-4">
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <button
-              onClick={() => {
-                setDeletingJourneyId(null);
-                setIsModalOpen(true);
-              }}
+            <Link
+              href="/owner/journeys/create"
               className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center gap-2 hover:opacity-90"
+              title="Create Journey"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
               </svg>
               Create Journey
-            </button>
-            <button
-              onClick={() => {
-                setIsAIModalOpen(true);
-              }}
+            </Link>
+            <Link
+              href="/owner/journeys/propose"
               className="bg-secondary text-secondary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 border border-border"
+              title="Propose Journey"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
               Propose Journey
-            </button>
+            </Link>
           </div>
           {(journeys.length > 0 || boats.length > 0) && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -330,18 +323,15 @@ export default function JourneysPage() {
         </div>
 
         {journeys.length === 0 ? (
-          <div className="bg-card rounded-lg shadow p-8 text-center">
-            <p className="text-muted-foreground mb-4">You haven't created any journeys yet.</p>
-            <button
-              onClick={() => {
-                setDeletingJourneyId(null);
-                setIsModalOpen(true);
-              }}
-              className="font-medium text-primary hover:opacity-80"
-            >
-              Create your first journey →
-            </button>
-          </div>
+            <div className="bg-card rounded-lg shadow p-8 text-center">
+              <p className="text-muted-foreground mb-4">You haven't created any journeys yet.</p>
+              <Link
+                href="/owner/journeys/create"
+                className="font-medium text-primary hover:opacity-80"
+              >
+                Create your first journey →
+              </Link>
+            </div>
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -496,35 +486,6 @@ export default function JourneysPage() {
         )}
       </main>
       <Footer />
-
-      {/* Journey Form Modal */}
-      {user && (
-        <>
-          <JourneyFormModal
-            isOpen={isModalOpen}
-            onClose={() => {
-              setIsModalOpen(false);
-            }}
-            onSuccess={() => {
-              loadJourneys();
-              setCurrentPage(1); // Reset to first page after creating
-            }}
-            journeyId={null}
-            userId={user.id}
-          />
-          <AIGenerateJourneyModal
-            isOpen={isAIModalOpen}
-            onClose={() => {
-              setIsAIModalOpen(false);
-            }}
-            onSuccess={() => {
-              loadJourneys();
-              setCurrentPage(1); // Reset to first page after creating
-            }}
-            userId={user.id}
-          />
-        </>
-      )}
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
