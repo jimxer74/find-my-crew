@@ -1,9 +1,10 @@
 ---
 id: TASK-034
 title: Profile page layout and improvements
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-26 19:22'
+updated_date: '2026-01-27 14:40'
 labels: []
 dependencies: []
 ---
