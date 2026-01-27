@@ -4,7 +4,7 @@ title: Light / Dark mode and sensitivity for user mode
 status: To Do
 assignee: []
 created_date: '2026-01-27 15:10'
-updated_date: '2026-01-27 15:13'
+updated_date: '2026-01-27 15:18'
 labels:
   - ui
   - accessibility
@@ -386,5 +386,6 @@ Any iframes or external content won't respect app theme.
 1. **Custom accent colors** - Let users pick primary color
 2. **High contrast mode** - For accessibility
 3. **Scheduled theme** - Auto switch at sunset/sunrise
+- Implement this as configurable, so users can set scheduled dark / light switch on
 4. **Per-device sync** - Different preferences per device
 <!-- SECTION:NOTES:END -->
