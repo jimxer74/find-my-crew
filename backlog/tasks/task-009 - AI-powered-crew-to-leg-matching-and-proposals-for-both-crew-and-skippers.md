@@ -4,7 +4,7 @@ title: AI powered crew to leg matching and proposals for both crew and skippers
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-01-27 14:52'
+updated_date: '2026-01-27 15:05'
 labels:
   - ai
   - feature
@@ -384,14 +384,14 @@ specs/
 ## Open Questions for Implementation
 
 1. **Should skipped matches reappear after X days?**
-   - Suggestion: Yes, after 7 days if leg still open
+Yes, matches should reapper after 7 days if leg still open
 
 2. **Max matches per user per day?**
-   - Suggestion: 10 for crew, 20 per leg for owners
+10 for crew, 5 per leg for owners
 
 3. **Should owners be able to "invite" crew directly?**
-   - Current plan: No, keep it mutual to reduce spam
+No not at first at least, keep it mutual to reduce spam
 
 4. **Match expiration policy?**
-   - Suggestion: Expire 24 hours before leg start_date
+Expire 24 hours before leg start_date
 <!-- SECTION:NOTES:END -->
