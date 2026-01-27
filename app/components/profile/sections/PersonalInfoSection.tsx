@@ -12,6 +12,7 @@ type FormData = {
   full_name: string;
   certifications: string;
   phone: string;
+  email: string;
   sailing_experience: ExperienceLevel | null;
   risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[];
   skills: SkillEntry[];
