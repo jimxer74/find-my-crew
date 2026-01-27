@@ -215,10 +215,10 @@ export default function CreateJourneyPage() {
             <p className="text-sm text-muted-foreground">
               Plan a new itinerary and configure the journey metadata before adding legs.
             </p>
-            {(currentJourneyCount > 0 || limit !== null) && (
+            {(currentJourneyCount > 0 || (limit !== null && Number.isFinite(limit))) && (
               <p className="text-xs text-muted-foreground mt-1">
-                Journeys used: {currentJourneyCount}
-                {typeof limit === 'number' ? ` / ${limit}` : ''}.
+                Journeys: {currentJourneyCount}
+                {typeof limit === 'number' && Number.isFinite(limit) ? ` / ${limit}` : ''}.
                 {limitReached ? ' Limit reached.' : ''}
               </p>
             )}

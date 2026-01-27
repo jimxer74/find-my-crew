@@ -9,6 +9,7 @@ import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAuto
 import { formatDate, formatDateShort } from '@/app/lib/dateFormat';
 import { Footer } from '@/app/components/Footer';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { WorkingIndicator } from '@/app/components/ui/WorkingIndicator.';
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

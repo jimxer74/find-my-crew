@@ -21,6 +21,15 @@ export async function canCreateBoat(
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
 
+  // If unlimited, skip the check
+  if (limits.maxBoatsPerUser === Infinity) {
+    return {
+      allowed: true,
+      current: 0,
+      limit: Infinity,
+    };
+  }
+
   const { count, error } = await supabase
     .from('boats')
     .select('*', { count: 'exact', head: true })
@@ -62,6 +71,15 @@ export async function canCreateJourney(
   userId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+
+  // If unlimited, skip the check
+  if (limits.maxJourneysPerUser === Infinity) {
+    return {
+      allowed: true,
+      current: 0,
+      limit: Infinity,
+    };
+  }
 
   // Count journeys owned by this user (via their boats)
   const { data, error } = await supabase
@@ -105,6 +123,15 @@ export async function canCreateLeg(
   journeyId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+
+  // If unlimited, skip the check
+  if (limits.maxLegsPerJourney === Infinity) {
+    return {
+      allowed: true,
+      current: 0,
+      limit: Infinity,
+    };
+  }
 
   const { count, error } = await supabase
     .from('legs')
@@ -196,6 +223,15 @@ export async function canCreateWaypoint(
   legId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+
+  // If unlimited, skip the check
+  if (limits.maxWaypointsPerLeg === Infinity) {
+    return {
+      allowed: true,
+      current: 0,
+      limit: Infinity,
+    };
+  }
 
   const { count, error } = await supabase
     .from('waypoints')

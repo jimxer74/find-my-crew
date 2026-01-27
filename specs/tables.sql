@@ -410,6 +410,72 @@ using (
   )
 );
 
+-- RPC Function: insert_leg_waypoints
+-- Inserts waypoints with PostGIS geometry conversion
+-- Uses SECURITY DEFINER to bypass RLS for atomic leg+waypoints creation
+create or replace function public.insert_leg_waypoints(
+  leg_id_param uuid,
+  waypoints_param jsonb
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  waypoint jsonb;
+  waypoint_index integer;
+  waypoint_name text;
+  waypoint_lng numeric;
+  waypoint_lat numeric;
+  boat_owner_id uuid;
+begin
+  -- Verify the leg exists and the caller owns the boat (authorization check)
+  select boats.owner_id into boat_owner_id
+  from legs
+  join journeys on journeys.id = legs.journey_id
+  join boats on boats.id = journeys.boat_id
+  where legs.id = leg_id_param;
+
+  if boat_owner_id is null then
+    raise exception 'Leg not found: %', leg_id_param;
+  end if;
+
+  if boat_owner_id != auth.uid() then
+    raise exception 'Unauthorized: You do not own this leg''s boat';
+  end if;
+
+  -- Delete existing waypoints for this leg (for updates)
+  delete from waypoints where leg_id = leg_id_param;
+
+  -- Insert each waypoint
+  for waypoint in select * from jsonb_array_elements(waypoints_param)
+  loop
+    waypoint_index := (waypoint->>'index')::integer;
+    waypoint_name := waypoint->>'name';
+    waypoint_lng := (waypoint->>'lng')::numeric;
+    waypoint_lat := (waypoint->>'lat')::numeric;
+
+    insert into waypoints (leg_id, index, name, location)
+    values (
+      leg_id_param,
+      waypoint_index,
+      waypoint_name,
+      ST_SetSRID(ST_MakePoint(waypoint_lng, waypoint_lat), 4326)
+    );
+  end loop;
+end;
+$$;
+
+grant execute on function public.insert_leg_waypoints(uuid, jsonb) to authenticated;
+
+comment on function public.insert_leg_waypoints is
+'Inserts waypoints for a leg with PostGIS geometry conversion.
+Parameters:
+  - leg_id_param: UUID of the leg
+  - waypoints_param: JSONB array of {index, name, lng, lat}
+Authorization: Caller must own the boat associated with the leg.';
+
 
 -- ============================================================================
 -- TABLE: registrations

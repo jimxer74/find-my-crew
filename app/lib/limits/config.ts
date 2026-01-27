@@ -26,28 +26,28 @@ const LIMITS_BY_RELEASE: Record<ReleaseType, ReleaseLimits> = {
     maxImagesPerBoat: 10,
   },
   production: {
-    maxBoatsPerUser: 10,
-    maxJourneysPerUser: 50,
-    maxLegsPerJourney: 50,
+    maxBoatsPerUser: Infinity,
+    maxJourneysPerUser: Infinity,
+    maxLegsPerJourney: Infinity,
     maxRegisteredUsers: Infinity,
-    maxWaypointsPerLeg: 100,
-    maxImagesPerBoat: 20,
+    maxWaypointsPerLeg: Infinity,
+    maxImagesPerBoat: Infinity,
   },
 };
 
 /**
  * Get the current release type from environment variable
- * Defaults to 'pilot' if not set
+ * Defaults to 'production' (no limits)
  */
 export function getReleaseType(): ReleaseType {
   const releaseType = process.env.RELEASE_TYPE?.toLowerCase();
 
-  if (releaseType === 'beta' || releaseType === 'production') {
+  if (releaseType === 'pilot' || releaseType === 'beta') {
     return releaseType;
   }
 
-  // Default to pilot for safety
-  return 'pilot';
+  // Default to production (no limits)
+  return 'production';
 }
 
 /**

@@ -226,6 +226,8 @@ ${allWaypoints.length > 2
     // Use centralized AI service
     let result;
     try {
+      console.log('Calling AI with Prompt:', prompt);
+
       result = await callAI({
         useCase: 'generate-journey',
         prompt,
@@ -246,6 +248,8 @@ ${allWaypoints.length > 2
     }
 
     const text = result.text;
+
+    console.log('AI Response:', text);
 
     // Parse the JSON response (remove markdown code blocks if present)
     let jsonText = text.trim();

@@ -94,12 +94,10 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   ],
   'generate-journey': [
     {
-      provider: 'deepseek',
-      models: [
-        'deepseek-reasoner', 'deepseek-chat'
-      ],
+      provider: 'gemini',
+      models: ['gemini-2.5-flash', 'gemini-3-flash'],
       temperature: 0.7,
-      maxTokens: 4000,
+      maxTokens: 20000,
     },
     {
       provider: 'groq',
@@ -109,13 +107,15 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
         'openai/gpt-oss-120b',
       ],
       temperature: 0.7,
-      maxTokens: 4000,
+      maxTokens: 20000,
     },
     {
       provider: 'deepseek',
-      models: ['deepseek-reasoner', 'deepseek-chat'],
+      models: [
+        'deepseek-reasoner', 'deepseek-chat'
+      ],
       temperature: 0.7,
-      maxTokens: 4000,
+      maxTokens: 20000,
     },
   ],
   'suggest-makers': [
