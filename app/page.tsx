@@ -234,11 +234,7 @@ export default function Home() {
             <button
               onClick={() => {
                 // On mobile, navigate to signup page; on desktop, open modal
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  router.push('/auth/signup');
-                } else {
                   setIsSignupModalOpen(true);
-                }
               }}
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >

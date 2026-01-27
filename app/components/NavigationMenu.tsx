@@ -645,10 +645,11 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               if (isMobile || isMenuPage) {
                 // Let Link handle navigation naturally, but close menu first
-                onClose?.();
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
-                }
+                //onClose?.();
+                //if (typeof window !== 'undefined') {
+                //  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+                //}
+                router.push('/auth/login');
               } else {
                 // Desktop: prevent navigation and open modal
                 e.preventDefault();
@@ -681,10 +682,11 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               if (isMobile || isMenuPage) {
                 // Let Link handle navigation naturally, but close menu first
-                onClose?.();
-                if (typeof window !== 'undefined') {
-                  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
-                }
+                //onClose?.();
+                //if (typeof window !== 'undefined') {
+                //  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
+                //}
+                router.push('/auth/signup');
               } else {
                 // Desktop: prevent navigation and open modal
                 e.preventDefault();
