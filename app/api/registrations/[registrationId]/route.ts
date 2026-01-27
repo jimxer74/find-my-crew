@@ -137,7 +137,7 @@ export async function PATCH(
 
       // Create notification (fire and forget)
       if (status === 'Approved') {
-        notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName)
+        notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, user.id)
           .then((result) => {
             if (result.error) {
               console.error('[Registration API] Failed to send approval notification:', result.error);
@@ -149,7 +149,7 @@ export async function PATCH(
             console.error('[Registration API] Error sending approval notification:', err);
           });
       } else if (status === 'Not approved') {
-        notifyRegistrationDenied(supabase, crewUserId, journeyId, journeyName, ownerName, notes)
+        notifyRegistrationDenied(supabase, crewUserId, journeyId, journeyName, ownerName, notes, user.id)
           .then((result) => {
             if (result.error) {
               console.error('[Registration API] Failed to send denial notification:', result.error);

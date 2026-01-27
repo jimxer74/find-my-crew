@@ -106,6 +106,10 @@ export function NotificationItem({
     }
   };
 
+  // Get sender avatar from metadata
+  const senderAvatarUrl = notification.metadata?.sender_avatar_url as string | undefined;
+  const senderName = notification.metadata?.sender_name as string | undefined;
+
   return (
     <div
       className={`group relative flex gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
@@ -113,14 +117,27 @@ export function NotificationItem({
       }`}
       onClick={handleClick}
     >
-      {/* Unread indicator 
-      {!notification.read && (
-        <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-blue-500" />
-      )}*/}
-
-      {/* Icon */}
-      <div className="flex-shrink-0 mt-0.5">
-        {getNotificationIcon(notification.type)}
+      {/* Avatar or Icon */}
+      <div className="flex-shrink-0 mt-0.5 relative">
+        {senderAvatarUrl ? (
+          <div className="relative">
+            <img
+              src={senderAvatarUrl}
+              alt={senderName || 'User'}
+              className="w-10 h-10 rounded-full object-cover border-2 border-border"
+            />
+            {/* Small type icon overlay */}
+            <div className="absolute -bottom-1 -right-1 bg-card rounded-full p-0.5 border border-border">
+              <div className="w-4 h-4">
+                {getNotificationIcon(notification.type)}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+            {getNotificationIcon(notification.type)}
+          </div>
+        )}
       </div>
 
       {/* Content */}

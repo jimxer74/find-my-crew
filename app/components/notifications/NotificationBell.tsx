@@ -19,14 +19,19 @@ export function NotificationBell() {
   } = useNotifications();
 
   const handleToggle = useCallback(() => {
-    setIsOpen((prev) => {
-      const newIsOpen = !prev;
-      // Refresh notifications when opening the panel
-      if (newIsOpen) {
-        refresh();
-      }
-      return newIsOpen;
-    });
+    // On mobile, navigate to notifications page; on desktop, toggle modal
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      window.location.href = '/notifications';
+    } else {
+      setIsOpen((prev) => {
+        const newIsOpen = !prev;
+        // Refresh notifications when opening the panel
+        if (newIsOpen) {
+          refresh();
+        }
+        return newIsOpen;
+      });
+    }
   }, [refresh]);
 
   const handleClose = useCallback(() => {

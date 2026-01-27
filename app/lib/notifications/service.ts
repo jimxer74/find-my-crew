@@ -52,6 +52,35 @@ async function getUserEmailFromProfiles(
   }
 }
 
+/**
+ * Gets a user's profile info (name and avatar) for notification metadata
+ */
+async function getUserProfileInfo(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ name: string | null; avatar_url: string | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name, username, profile_image_url')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error('[NotificationService] Error getting user profile info:', error);
+      return { name: null, avatar_url: null };
+    }
+
+    return {
+      name: data?.full_name || data?.username || null,
+      avatar_url: data?.profile_image_url || null,
+    };
+  } catch (err) {
+    console.error('[NotificationService] Failed to get user profile info:', err);
+    return { name: null, avatar_url: null };
+  }
+}
+
 // ============================================================================
 // Core CRUD Operations
 // ============================================================================
@@ -263,8 +292,19 @@ export async function notifyRegistrationApproved(
   crewUserId: string,
   journeyId: string,
   journeyName: string,
-  ownerName: string
+  ownerName: string,
+  ownerId?: string
 ): Promise<{ notification: Notification | null; error: string | null }> {
+  // Get owner profile info for avatar
+  let senderInfo = { name: ownerName, avatar_url: null as string | null };
+  if (ownerId) {
+    const profileInfo = await getUserProfileInfo(supabase, ownerId);
+    senderInfo = {
+      name: profileInfo.name || ownerName,
+      avatar_url: profileInfo.avatar_url,
+    };
+  }
+
   // Create in-app notification
   const result = await createNotification(supabase, {
     user_id: crewUserId,
@@ -276,6 +316,10 @@ export async function notifyRegistrationApproved(
       journey_id: journeyId,
       journey_name: journeyName,
       owner_name: ownerName,
+      owner_id: ownerId,
+      sender_id: ownerId,
+      sender_name: senderInfo.name,
+      sender_avatar_url: senderInfo.avatar_url,
     },
   });
 
@@ -316,11 +360,22 @@ export async function notifyRegistrationDenied(
   journeyId: string,
   journeyName: string,
   ownerName: string,
-  reason?: string
+  reason?: string,
+  ownerId?: string
 ): Promise<{ notification: Notification | null; error: string | null }> {
   const message = reason
     ? `Your registration for "${journeyName}" was not approved. Reason: ${reason}`
     : `Your registration for "${journeyName}" was not approved by ${ownerName}.`;
+
+  // Get owner profile info for avatar
+  let senderInfo = { name: ownerName, avatar_url: null as string | null };
+  if (ownerId) {
+    const profileInfo = await getUserProfileInfo(supabase, ownerId);
+    senderInfo = {
+      name: profileInfo.name || ownerName,
+      avatar_url: profileInfo.avatar_url,
+    };
+  }
 
   // Create in-app notification
   const result = await createNotification(supabase, {
@@ -333,7 +388,11 @@ export async function notifyRegistrationDenied(
       journey_id: journeyId,
       journey_name: journeyName,
       owner_name: ownerName,
+      owner_id: ownerId,
       reason,
+      sender_id: ownerId,
+      sender_name: senderInfo.name,
+      sender_avatar_url: senderInfo.avatar_url,
     },
   });
 
@@ -376,6 +435,9 @@ export async function notifyNewRegistration(
   crewName: string,
   crewId: string
 ): Promise<{ notification: Notification | null; error: string | null }> {
+  // Get crew profile info for avatar
+  const crewProfileInfo = await getUserProfileInfo(supabase, crewId);
+
   // Create in-app notification
   const result = await createNotification(supabase, {
     user_id: ownerUserId,
@@ -389,6 +451,9 @@ export async function notifyNewRegistration(
       journey_name: journeyName,
       crew_name: crewName,
       crew_id: crewId,
+      sender_id: crewId,
+      sender_name: crewProfileInfo.name || crewName,
+      sender_avatar_url: crewProfileInfo.avatar_url,
     },
   });
 

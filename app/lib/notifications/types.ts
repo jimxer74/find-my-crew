@@ -49,9 +49,15 @@ export interface NotificationMetadata {
   leg_name?: string;
   registration_id?: string;
   crew_name?: string;
+  crew_id?: string;
   owner_name?: string;
+  owner_id?: string;
   reason?: string;
   changes?: string[];
+  // Sender information for displaying avatar
+  sender_id?: string;
+  sender_name?: string;
+  sender_avatar_url?: string;
   [key: string]: unknown;
 }
 

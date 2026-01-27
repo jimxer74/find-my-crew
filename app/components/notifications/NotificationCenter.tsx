@@ -18,6 +18,18 @@ interface NotificationCenterProps {
   hasMore?: boolean;
 }
 
+interface NotificationPageContentProps {
+  onClose: () => void;
+  notifications: Notification[];
+  unreadCount: number;
+  isLoading: boolean;
+  onMarkAsRead: (id: string) => void;
+  onMarkAllAsRead: () => void;
+  onDelete: (id: string) => void;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+}
+
 export function NotificationCenter({
   isOpen,
   onClose,
@@ -33,9 +45,12 @@ export function NotificationCenter({
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close on click outside
+  // Close on click outside (desktop only)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Only handle click-outside on desktop (md breakpoint = 768px)
+      if (window.innerWidth < 768) return;
+
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         onClose();
       }
@@ -69,6 +84,72 @@ export function NotificationCenter({
 
   if (!isOpen) return null;
 
+  return (
+    <>
+      {/* Backdrop - desktop only */}
+      <div
+        className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-40"
+        onClick={onClose}
+      />
+
+      {/* Panel - full page on mobile (like normal page), dropdown dialog on desktop */}
+      <div
+        ref={panelRef}
+        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[400px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[30] md:z-50 overflow-hidden flex flex-col"
+      >
+        {/* Header - only visible on desktop */}
+        <div className="hidden md:flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+          <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+          <button
+            onClick={onClose}
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
+            aria-label="Close"
+          >
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Notification list */}
+        <NotificationPageContent
+          onClose={onClose}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          isLoading={isLoading}
+          onMarkAsRead={onMarkAsRead}
+          onMarkAllAsRead={onMarkAllAsRead}
+          onDelete={onDelete}
+          onLoadMore={onLoadMore}
+          hasMore={hasMore}
+        />
+      </div>
+    </>
+  );
+}
+
+// Content component that can be used in both modal and page modes
+export function NotificationPageContent({
+  onClose,
+  notifications,
+  unreadCount,
+  isLoading,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onDelete,
+  onLoadMore,
+  hasMore,
+}: NotificationPageContentProps) {
+  const router = useRouter();
+
   const handleNotificationClick = (notification: Notification) => {
     if (notification.link) {
       router.push(notification.link);
@@ -77,40 +158,15 @@ export function NotificationCenter({
   };
 
   return (
-    <>
-      {/* Backdrop for mobile */}
-      <div
-        className="fixed inset-0 bg-black/20 z-40 sm:hidden"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        className="absolute right-0 top-full mt-2 w-screen sm:w-96 max-w-[calc(100vw-1rem)] bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden"
-      >
-        {/* Header 
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-          {unreadCount > 0 && (
-            <button
-              onClick={onMarkAllAsRead}
-              className="text-sm text-primary hover:text-primary/80 transition-colors"
-            >
-              Mark all as read
-            </button>
-          )}
-        </div>*/}
-
-        {/* Notification list */}
-        <div className="max-h-[60vh] overflow-y-auto">
+    <div className="flex-1 overflow-y-auto">
           {isLoading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>
           ) : notifications.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
+            <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
               <svg
-                className="w-12 h-12 text-muted-foreground/50 mb-3"
+                className="w-16 h-16 text-muted-foreground/30 mb-4"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -122,8 +178,8 @@ export function NotificationCenter({
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 />
               </svg>
-              <p className="text-muted-foreground">No notifications yet</p>
-              <p className="text-sm text-muted-foreground/70 mt-1">
+              <p className="text-foreground font-medium">No notifications yet</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 We&apos;ll notify you when something happens
               </p>
             </div>
@@ -155,8 +211,6 @@ export function NotificationCenter({
               )}
             </>
           )}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }

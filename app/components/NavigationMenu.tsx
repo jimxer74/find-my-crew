@@ -12,15 +12,24 @@ type NavigationMenuProps = {
   onOpenSignup?: () => void;
 };
 
+type NavigationMenuContentProps = {
+  onClose?: () => void;
+  onOpenLogin?: () => void;
+  onOpenSignup?: () => void;
+};
+
 export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close menu when clicking outside
+  // Close menu when clicking outside (desktop only)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Only handle click-outside on desktop (md breakpoint = 768px)
+      if (window.innerWidth < 768) return;
+
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -32,6 +41,23 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen]);
 
@@ -51,14 +77,14 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
       setUserRoles([]);
       return;
     }
-    
+
     const supabase = getSupabaseBrowserClient();
     const { data } = await supabase
       .from('profiles')
       .select('roles')
       .eq('id', user.id)
       .single();
-    
+
     if (data && data.roles) {
       setUserRoles(data.roles);
     } else {
@@ -91,9 +117,16 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Hamburger Menu Button - All screen sizes */}
+      {/* Hamburger Menu Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          // On mobile, navigate to menu page; on desktop, toggle modal
+          if (typeof window !== 'undefined' && window.innerWidth < 768) {
+            router.push('/menu');
+          } else {
+            setIsOpen(!isOpen);
+          }
+        }}
         className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label="Toggle menu"
       >
@@ -114,248 +147,331 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
         </svg>
       </button>
 
-
-      {/* Mobile Overlay Menu */}
+      {/* Menu Panel */}
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - desktop only */}
           <div
-            className="fixed inset-0 bg-black/20 z-40"
+            className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-40"
             onClick={() => setIsOpen(false)}
           />
-          
-          {/* Menu */}
-          <div className="fixed md:absolute right-0 top-16 md:top-12 w-full sm:w-64 bg-card rounded-lg shadow-xl z-50 border border-border overflow-hidden md:rounded-lg">
-            <div className="py-2">
-              {loading ? (
-                <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
-              ) : user ? (
-                <>
-                  {/* My Profile */}
-                  <Link
-                    href="/profile"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-3 text-muted-foreground"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    <span className="font-medium">My Profile</span>
-                  </Link>
 
-                  {/* Divider */}
-                  <div className="border-t border-gray-200 my-1" />
-
-                  {/* Owner-specific menu items */}
-                  {userRoles.includes('owner') && (
-                    <>
-                      {/* For Skipper header */}
-                      <div className="px-4 py-2">
-                        <span className="text-[10px] font-medium text-muted-foreground">For Skipper:</span>
-                      </div>
-                      {/* My Boats */}
-                      <Link
-                        href="/owner/boats"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5 mr-3 text-muted-foreground"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <circle cx="12" cy="12" r="3" />
-                          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                        </svg>
-                        <span className="font-medium">My Boats</span>
-                      </Link>
-
-                      {/* My Journeys */}
-                      <Link
-                        href="/owner/journeys"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5 mr-3 text-muted-foreground"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                        </svg>
-                        <span className="font-medium">My Journeys</span>
-                      </Link>
-
-                      {/* My Crew */}
-                      <Link
-                        href="/owner/registrations"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5 mr-3 text-muted-foreground"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="font-medium">My Crew</span>
-                      </Link>
-                    </>
-                  )}
-
-                  {/* Crew-specific menu items */}
-                  {userRoles.includes('crew') && (
-                    <>
-                      {/* For Crew header */}
-                      <div className="px-4 py-2">
-                        <span className="text-[10px] font-medium text-muted-foreground">For Crew:</span>
-                      </div>
-                      {/* Browse Journeys */}
-                      <Link
-                        href="/crew/dashboard"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5 mr-3 text-muted-foreground"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <circle cx="12" cy="12" r="3" />
-                          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                        </svg>
-                        <span className="font-medium">Browse Journeys</span>
-                      </Link>
-                      {/* My Registrations */}
-                      <Link
-                        href="/crew/registrations"
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                      >
-                        <svg
-                          className="w-5 h-5 mr-3 text-muted-foreground"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span className="font-medium">My Registrations</span>
-                      </Link>
-                    </>
-                  )}
-
-                  {/* Show message if user has no roles */}
-                  {userRoles.length === 0 && (
-                    <div className="px-4 py-3 text-sm text-muted-foreground">
-                      Complete your profile and select roles to access features.
-                    </div>
-                  )}
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200 my-1" />
-
-                  {/* Sign out */}
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-3 text-muted-foreground"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="font-medium">Sign out</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  {/* Browse Journeys - Available to non-signed-in users */}
-                  <Link
-                    href="/crew/dashboard"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-3 text-muted-foreground"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <circle cx="12" cy="12" r="10" />
-                      <circle cx="12" cy="12" r="3" />
-                      <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-                    </svg>
-                    <span className="font-medium">Browse Journeys</span>
-                  </Link>
-
-                  {/* Divider */}
-                  <div className="border-t border-gray-200 my-1" />
-
-                  {/* Sign in */}
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      onOpenLogin?.();
-                    }}
-                    className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-3 text-muted-foreground"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    <span className="font-medium">Sign in</span>
-                  </button>
-                </>
-              )}
+          {/* Menu - full page on mobile (like normal page), dropdown dialog on desktop */}
+          <div className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[280px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[30] md:z-50 overflow-hidden flex flex-col">
+            {/* Header - only visible on desktop */}
+            <div className="hidden md:flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+              <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
+                aria-label="Close"
+              >
+                <svg
+                  className="w-5 h-5 text-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+
+            {/* Menu content */}
+            <NavigationMenuContent
+              onClose={() => setIsOpen(false)}
+              onOpenLogin={onOpenLogin}
+              onOpenSignup={onOpenSignup}
+            />
           </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Content component that can be used in both modal and page modes
+export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: NavigationMenuContentProps) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
+  // Get user roles for dashboard link
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+
+  const loadUserRoles = useCallback(async () => {
+    if (!user) {
+      setUserRoles([]);
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .single();
+
+    if (data && data.roles) {
+      setUserRoles(data.roles);
+    } else {
+      setUserRoles([]);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    loadUserRoles();
+  }, [loadUserRoles]);
+
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      loadUserRoles();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [loadUserRoles]);
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    onClose?.();
+    router.push('/');
+    router.refresh();
+  };
+
+  return (
+    <div className="flex-1 overflow-y-auto py-2">
+      {loading ? (
+        <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
+      ) : user ? (
+        <>
+          {/* My Profile */}
+          <Link
+            href="/profile"
+            onClick={onClose}
+            className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+          >
+            <svg
+              className="w-5 h-5 mr-3 text-muted-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span className="font-medium">My Profile</span>
+          </Link>
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Owner-specific menu items */}
+          {userRoles.includes('owner') && (
+            <>
+              {/* For Skipper header */}
+              <div className="px-4 py-2">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">For Skipper</span>
+              </div>
+              {/* My Boats */}
+              <Link
+                href="/owner/boats"
+                onClick={onClose}
+                className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-3 text-muted-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+                <span className="font-medium">My Boats</span>
+              </Link>
+
+              {/* My Journeys */}
+              <Link
+                href="/owner/journeys"
+                onClick={onClose}
+                className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-3 text-muted-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                <span className="font-medium">My Journeys</span>
+              </Link>
+
+              {/* My Crew */}
+              <Link
+                href="/owner/registrations"
+                onClick={onClose}
+                className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-3 text-muted-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="font-medium">My Crew</span>
+              </Link>
+            </>
+          )}
+
+          {/* Crew-specific menu items */}
+          {userRoles.includes('crew') && (
+            <>
+              {/* For Crew header */}
+              <div className="px-4 py-2">
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">For Crew</span>
+              </div>
+              {/* Browse Journeys */}
+              <Link
+                href="/crew/dashboard"
+                onClick={onClose}
+                className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-3 text-muted-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                </svg>
+                <span className="font-medium">Browse Journeys</span>
+              </Link>
+              {/* My Registrations */}
+              <Link
+                href="/crew/registrations"
+                onClick={onClose}
+                className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+              >
+                <svg
+                  className="w-5 h-5 mr-3 text-muted-foreground"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span className="font-medium">My Registrations</span>
+              </Link>
+            </>
+          )}
+
+          {/* Show message if user has no roles */}
+          {userRoles.length === 0 && (
+            <div className="px-4 py-3 text-sm text-muted-foreground">
+              Complete your profile and select roles to access features.
+            </div>
+          )}
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Sign out */}
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
+          >
+            <svg
+              className="w-5 h-5 mr-3 text-muted-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            <span className="font-medium">Sign out</span>
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Browse Journeys - Available to non-signed-in users */}
+          <Link
+            href="/crew/dashboard"
+            onClick={onClose}
+            className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+          >
+            <svg
+              className="w-5 h-5 mr-3 text-muted-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+            </svg>
+            <span className="font-medium">Browse Journeys</span>
+          </Link>
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Sign in */}
+          <button
+            onClick={() => {
+              onClose?.();
+              onOpenLogin?.();
+            }}
+            className="w-full flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors text-left"
+          >
+            <svg
+              className="w-5 h-5 mr-3 text-muted-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+            </svg>
+            <span className="font-medium">Sign in</span>
+          </button>
         </>
       )}
     </div>

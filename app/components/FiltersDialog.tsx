@@ -16,14 +16,89 @@ type FiltersDialogProps = {
   onClose: () => void;
 };
 
+type FiltersPageContentProps = {
+  onClose: () => void;
+};
+
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
 export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Close dialog when clicking outside (desktop only)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Only handle click-outside on desktop (md breakpoint = 768px)
+      if (window.innerWidth < 768) return;
+
+      if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  const handleCancel = () => {
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Backdrop - desktop only */}
+      <div
+        className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-[90]"
+        onClick={handleCancel}
+      />
+
+      {/* Dialog - full page on mobile (like normal page), dropdown dialog on desktop */}
+      <div
+        ref={dialogRef}
+        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[600px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[30] md:z-[100] overflow-hidden flex flex-col"
+      >
+        {/* Header - only visible on desktop */}
+        <div className="hidden md:flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+          <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+          <button
+            onClick={handleCancel}
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
+            aria-label="Close"
+          >
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <FiltersPageContent onClose={handleCancel} />
+      </div>
+    </>
+  );
+}
+
+// Content component that can be used in both modal and page modes
+export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
-  const dialogRef = useRef<HTMLDivElement>(null);
   const datePickerDialogRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
@@ -47,21 +122,19 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
 
   // Load user profile data and initialize temp state from filters
   useEffect(() => {
-    if (isOpen && user) {
+    if (user) {
       loadData();
     }
-  }, [isOpen, user]);
+  }, [user]);
 
-  // Initialize temp state from filters when dialog opens
+  // Initialize temp state from filters when component mounts or filters change
   useEffect(() => {
-    if (isOpen) {
-      setTempLocation(filters.location);
-      setTempLocationInput(filters.locationInput);
-      setTempRiskLevel(filters.riskLevel);
-      setTempExperienceLevel(filters.experienceLevel);
-      setTempDateRange(filters.dateRange);
-    }
-  }, [isOpen, filters]);
+    setTempLocation(filters.location);
+    setTempLocationInput(filters.locationInput);
+    setTempRiskLevel(filters.riskLevel);
+    setTempExperienceLevel(filters.experienceLevel);
+    setTempDateRange(filters.dateRange);
+  }, [filters]);
 
   const loadData = async () => {
     if (!user) return;
@@ -93,45 +166,12 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     }
   };
 
-  // Close dialog when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dialogRef.current && 
-        !dialogRef.current.contains(event.target as Node) &&
-        datePickerDialogRef.current &&
-        !datePickerDialogRef.current.contains(event.target as Node)
-      ) {
-        if (!isDatePickerOpen) {
-          // Revert temp state to current filters
-          setTempLocation(filters.location);
-          setTempLocationInput(filters.locationInput);
-          setTempRiskLevel(filters.riskLevel);
-          setTempExperienceLevel(filters.experienceLevel);
-          setTempDateRange(filters.dateRange);
-          setWarningMessage(null);
-          onClose();
-        }
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, isDatePickerOpen, filters, onClose]);
-
   // Close date picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         datePickerDialogRef.current && 
-        !datePickerDialogRef.current.contains(event.target as Node) &&
-        dialogRef.current &&
-        !dialogRef.current.contains(event.target as Node)
+        !datePickerDialogRef.current.contains(event.target as Node)
       ) {
         setIsDatePickerOpen(false);
       }
@@ -196,45 +236,11 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/20 z-[90]"
-        onClick={handleCancel}
-      />
-      
-      {/* Dialog */}
-      <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none p-2 sm:py-4">
-        <div
-          ref={dialogRef}
-          className="pointer-events-auto bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative w-full max-w-2xl max-h-[calc(100vh-1rem)] sm:max-h-[calc(100vh-2rem)] overflow-y-auto"
-        >
-          {/* Close button */}
-          <button
-            onClick={handleCancel}
-            className="absolute top-2 right-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
-            aria-label="Close"
-          >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-
-          {/* Title */}
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-4 sm:mb-6 pr-10 sm:pr-8">Filters</h2>
-
-          {loading ? (
+    <div className="flex-1 flex flex-col">
+      {/* Content - no overflow-y-auto, let parent handle scrolling in page mode */}
+      <div className="flex-1 p-4">
+        {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">Loading...</div>
             </div>
@@ -420,25 +426,25 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
                 />
               </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
-                <button
-                  onClick={handleCancel}
-                  className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
-                >
-                  Save and Search
-                </button>
-              </div>
             </div>
           )}
         </div>
+
+      {/* Action buttons - sticky footer */}
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 border-t border-border bg-card">
+        <button
+          onClick={handleCancel}
+          className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+        >
+          Save and Search
+        </button>
       </div>
-    </>
+    </div>
   );
 }

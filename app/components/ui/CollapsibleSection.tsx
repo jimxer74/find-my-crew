@@ -41,7 +41,7 @@ export function CollapsibleSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {isOpen && <div className="px-6 pb-6">{children}</div>}
+      {isOpen && <div className="px-6 pb-6 p-4">{children}</div>}
     </div>
   );
 }

@@ -391,12 +391,19 @@ export async function assessRegistrationWithAI(
   if (ownerId) {
     if (updateData.auto_approved) {
       // Notify crew member of approval
-      const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName);
+      const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, ownerId);
       if (crewNotifyResult.error) {
         console.error('[AI Assessment] Failed to send approval notification to crew:', crewNotifyResult.error);
       } else {
         console.log('[AI Assessment] Approval notification sent to crew:', crewUserId);
       }
+
+      // Get crew profile info for avatar
+      const { data: crewProfile } = await supabase
+        .from('profiles')
+        .select('profile_image_url')
+        .eq('id', crewUserId)
+        .single();
 
       // Notify owner that AI auto-approved the registration
       const ownerNotifyResult = await createNotification(supabase, {
@@ -413,6 +420,9 @@ export async function assessRegistrationWithAI(
           crew_id: crewUserId,
           match_score: assessment.match_score,
           recommendation: assessment.recommendation,
+          sender_id: crewUserId,
+          sender_name: crewName,
+          sender_avatar_url: crewProfile?.profile_image_url || null,
         },
       });
       if (ownerNotifyResult.error) {
@@ -421,6 +431,13 @@ export async function assessRegistrationWithAI(
         console.log('[AI Assessment] Auto-approval notification sent to owner:', ownerId);
       }
     } else {
+      // Get crew profile info for avatar
+      const { data: crewProfileForReview } = await supabase
+        .from('profiles')
+        .select('profile_image_url')
+        .eq('id', crewUserId)
+        .single();
+
       // Notify owner that manual review is needed
       const reviewNotifyResult = await createNotification(supabase, {
         user_id: ownerId,
@@ -436,6 +453,9 @@ export async function assessRegistrationWithAI(
           crew_id: crewUserId,
           match_score: assessment.match_score,
           recommendation: assessment.recommendation,
+          sender_id: crewUserId,
+          sender_name: crewName,
+          sender_avatar_url: crewProfileForReview?.profile_image_url || null,
         },
       });
       if (reviewNotifyResult.error) {
