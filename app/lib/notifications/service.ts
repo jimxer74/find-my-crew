@@ -319,7 +319,7 @@ export async function notifyRegistrationApproved(
       owner_id: ownerId,
       sender_id: ownerId,
       sender_name: senderInfo.name,
-      sender_avatar_url: senderInfo.avatar_url,
+      sender_avatar_url: senderInfo.avatar_url ?? undefined,
     },
   });
 
@@ -392,7 +392,7 @@ export async function notifyRegistrationDenied(
       reason,
       sender_id: ownerId,
       sender_name: senderInfo.name,
-      sender_avatar_url: senderInfo.avatar_url,
+      sender_avatar_url: senderInfo.avatar_url ?? undefined,
     },
   });
 
@@ -453,7 +453,7 @@ export async function notifyNewRegistration(
       crew_id: crewId,
       sender_id: crewId,
       sender_name: crewProfileInfo.name || crewName,
-      sender_avatar_url: crewProfileInfo.avatar_url,
+      sender_avatar_url: crewProfileInfo.avatar_url ?? undefined,
     },
   });
 
