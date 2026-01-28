@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type Waypoint = {
   index: number;
@@ -74,6 +75,10 @@ export function EditJourneyMap({
   const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
+  const theme = useTheme();
+  const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
+
+
   useEffect(() => {
     // Only initialize map once
     if (!mapContainer.current || mapInitializedRef.current) return;
@@ -86,13 +91,13 @@ export function EditJourneyMap({
     if (!accessToken) {
       console.error('MAPBOX_ACCESS_TOKEN is not set. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file');
       return;
-    }
-
+    }  
+  
     mapboxgl.accessToken = accessToken;
-
+  
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/light-v11', // Less colorful, muted style
+      style: mapStyle, // Less colorful, muted style
       center: initialCenter,
       zoom: initialZoom,
     });
