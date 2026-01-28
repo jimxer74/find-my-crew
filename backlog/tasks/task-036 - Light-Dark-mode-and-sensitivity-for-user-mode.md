@@ -1,10 +1,10 @@
 ---
 id: TASK-036
 title: Light / Dark mode and sensitivity for user mode
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-27 15:10'
-updated_date: '2026-01-27 16:15'
+updated_date: '2026-01-28 06:29'
 labels:
   - ui
   - accessibility
