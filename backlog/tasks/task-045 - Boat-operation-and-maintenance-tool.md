@@ -12,8 +12,6 @@ dependencies: []
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-A maintenance log and management system to help owner to manage boat and it's systems, sails, riggin, engine etc. This requires a some sort of Boat equipment and systems list or management capability as well as spare parts management solution. AI could be used to analyze maintenance needs and notify owner, for example overdure oil change or rig inspection.
-
 Proposal for Sailboat Management Tool
 As a sailboat owner, managing maintenance and operations can be overwhelming, especially with the unique demands of marine environments like saltwater corrosion, variable weather, and remote access. This proposal outlines a simple web/mobile-based tool designed for ease of use, focusing on core features to track, schedule, and log key aspects such as engine, rigging, spare parts, and overall boat operations. The tool should be intuitive, with a clean interface (e.g., dashboard home screen), offline capabilities for mobile use at sea, and cloud sync for data backup. It targets individual owners or small crews, avoiding complexity like enterprise integrations.
 The goal is to reduce downtime, prevent costly breakdowns, ensure safety compliance, and streamline record-keeping for insurance or resale. We'll structure it around modular sections, with user-friendly features like searchable databases, reminders via email/push notifications, and exportable reports (PDF/CSV). Development could use frameworks like React Native for cross-platform mobile/web compatibility, with a backend like Firebase for simplicity.
