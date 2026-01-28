@@ -29,25 +29,16 @@
       "name": "technical_skills",
       "infoText": "Do you have engine, electrical or other technically oriented skills?",
       "startingSentence": "My technical skills include: "
-    }
-  ],
-  "offshore": [
+    },
     {
       "name": "night_sailing",
       "infoText": "Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)",
       "startingSentence": "Regarding night sailing and watch systems: "
-    }
-  ],
-  "extreme": [
+    },
     {
       "name": "survival_skills",
       "infoText": "Have you trained in survival skills (e.g., cold-water immersion, crevasse rescue analogs for ice sailing, first aid in remote areas)? Any gaps we should address?",
       "startingSentence": "I have training in survival skills: "
-    },
-    {
-      "name": "firearms_training",
-      "infoText": "Do you have firearms training and license and/or experience with polar bear deterrents? (required in places like Svalbard/Greenland)",
-      "startingSentence": "Regarding firearms training and polar bear deterrents: "
     }
   ]
 }
