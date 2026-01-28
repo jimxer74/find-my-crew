@@ -25,6 +25,10 @@
   --input-background: #f3f3f5;
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
+  --100match: #0DFF00;
+  --50match: #E5FF00;
+  --25match: #ff9900;
+  --0match: #ff5454;
 }
 
 .dark {
@@ -48,6 +52,10 @@
   --input: oklch(0.22 0 0);
   --input-background: oklch(0.22 0 0);
   --ring: oklch(0.5 0 0);
+  --100match: #0DFF00;
+  --50match: #E5FF00;
+  --25match: #ff9900;
+  --0match: #ff5454;
 }
 
 /* Tailwind v4 theme tokens */

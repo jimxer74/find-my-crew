@@ -24,10 +24,10 @@ export function LogoWithText({ className = '', userRole = ''
   return (
     <Link href={userRole === '' ? '/' : userRole === 'owner' ? '/owner/journeys' : '/crew/dashboard'} className={className} onClick={handleClick}>
       <Image 
-        src="/sailsmart8.png" 
+        src="/sailsmart_new_tp.png" 
         alt="SailSmart" 
-        width={40} 
-        height={40}
+        width={58} 
+        height={58}
         priority
         className="object-contain rounded-md"
       />
