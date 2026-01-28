@@ -281,7 +281,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleConsentToggle('ai_processing')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  consents?.ai_processing_consent ? 'bg-primary' : 'bg-muted'
+                  consents?.ai_processing_consent ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
@@ -304,7 +304,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleConsentToggle('profile_sharing')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  consents?.profile_sharing_consent ? 'bg-primary' : 'bg-muted'
+                  consents?.profile_sharing_consent ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
@@ -327,7 +327,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleConsentToggle('marketing')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  consents?.marketing_consent ? 'bg-primary' : 'bg-muted'
+                  consents?.marketing_consent ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
@@ -360,7 +360,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleEmailPrefToggle('registration_updates')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  emailPrefs?.registration_updates ? 'bg-primary' : 'bg-muted'
+                  emailPrefs?.registration_updates ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
@@ -383,7 +383,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleEmailPrefToggle('journey_updates')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  emailPrefs?.journey_updates ? 'bg-primary' : 'bg-muted'
+                  emailPrefs?.journey_updates ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
@@ -406,7 +406,7 @@ export default function PrivacySettingsPage() {
                 onClick={() => handleEmailPrefToggle('profile_reminders')}
                 disabled={isUpdating}
                 className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                  emailPrefs?.profile_reminders ? 'bg-primary' : 'bg-muted'
+                  emailPrefs?.profile_reminders ? 'bg-green-500' : 'bg-muted'
                 } ${isUpdating ? 'opacity-50' : ''}`}
               >
                 <span
