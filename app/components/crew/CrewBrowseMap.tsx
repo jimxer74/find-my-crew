@@ -1310,6 +1310,13 @@ export function CrewBrowseMap({
           if (map.current.getLayer('registered-pending')) {
             map.current.removeLayer('registered-pending');
           }
+          if (map.current.getLayer('registered-approved-text')) {
+            map.current.removeLayer('registered-approved-text');
+          }
+          if (map.current.getLayer('registered-pending-text')) {
+            map.current.removeLayer('registered-pending-text');
+          }
+
           if (map.current.getLayer('leg-route-line')) {
             map.current.removeLayer('leg-route-line');
           }
