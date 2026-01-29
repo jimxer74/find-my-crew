@@ -7,6 +7,7 @@ created_date: '2026-01-29 13:51'
 updated_date: '2026-01-29 13:59'
 labels:
   - ai
+  - ui
 dependencies: []
 ---
 
