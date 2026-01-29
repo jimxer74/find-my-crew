@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { ExperienceLevel, getExperienceLevelConfig, getAllExperienceLevels } from '@/app/types/experience-levels';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type SkillLevelSelectorProps = {
   value: ExperienceLevel | null;
@@ -38,6 +39,8 @@ const getSkillLevelInfo = (level: ExperienceLevel): { title: string; content: Re
     ),
   };
 };
+
+
 
 export function SkillLevelSelector({ 
   value, 
@@ -84,6 +87,8 @@ export function SkillLevelSelector({
   const isProfileValue = (level: ExperienceLevel) => {
     return showProfileIndicator && profileValue === level;
   };
+
+  const theme = useTheme();
 
   return (
     <div className="w-full">
@@ -143,7 +148,7 @@ export function SkillLevelSelector({
               {/* Small icon first */}
                 <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex-shrink-0 relative">
                   <Image
-                    src={levelConfig.icon}
+                    src={levelConfig.icon + (theme.resolvedTheme === 'dark' ? "_dark.png" : ".png")}
                     alt={levelConfig.displayName}
                     fill
                     className={`object-contain transition-opacity ${

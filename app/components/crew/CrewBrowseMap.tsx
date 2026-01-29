@@ -734,7 +734,7 @@ export function CrewBrowseMap({
       if (!iconsLoadedRef.current && map.current) {
         try {
 
-          map.current.loadImage('/marker_approved.png',(error, image) => {
+          map.current.loadImage('/marker_approved_tp.png',(error, image) => {
             if (error) {
               console.error('[CrewBrowseMap] Error loading marker_approved.png:', error);
             } else {
@@ -845,7 +845,7 @@ export function CrewBrowseMap({
         source: 'approved-legs-source', // Use separate non-clustered source
         layout: {
           'icon-image': 'marker-approved',
-          'icon-size': 0.08, // Pin marker size
+          'icon-size': 0.09, // Pin marker size
           'icon-anchor': 'bottom',
           'icon-allow-overlap': true,
         },
@@ -859,7 +859,7 @@ export function CrewBrowseMap({
           'text-field': 'Approved',
           'text-font': ['Open Sans Bold'],          // fixed text
           'text-size': 12,
-          'text-offset': [0, -4.0],
+          'text-offset': [0, -4.5],
           'text-anchor': 'bottom',
         },
         paint: {
@@ -886,7 +886,7 @@ export function CrewBrowseMap({
         },*/
         layout: {
           'icon-image': 'marker-pending',
-          'icon-size': 0.08, // Pin marker size
+          'icon-size': 0.09, // Pin marker size
           'icon-anchor': 'bottom',
           'icon-allow-overlap': true,
         },
@@ -906,7 +906,7 @@ export function CrewBrowseMap({
           'text-field': 'Pending approval',
           'text-font': ['Open Sans Bold'],          // fixed text
           'text-size': 12,
-          'text-offset': [0, -4.0],
+          'text-offset': [0, -4.5],
           'text-anchor': 'bottom',
         },
         paint: {

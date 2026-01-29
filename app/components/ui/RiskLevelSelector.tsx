@@ -3,6 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -80,6 +81,7 @@ export function RiskLevelSelector({
   const valueArray = Array.isArray(value) ? value : value ? [value] : [];
   const profileArray = Array.isArray(profileValue) ? profileValue : profileValue ? [profileValue] : [];
   const isEmpty = valueArray.length === 0;
+  const theme = useTheme();
   
   const isSelected = (level: RiskLevel) => {
     if (singleSelect) {
@@ -201,7 +203,7 @@ export function RiskLevelSelector({
           <div className="flex items-center justify-center gap-1 sm:gap-1 md:gap-1">
             <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex-shrink-0 relative">
               <Image
-                src="/coastal_sailing2.png"
+                src={theme.resolvedTheme === 'dark' ? "/coastal_sailing_dark.png" : "/coastal_sailing.png"}
                 alt="Coastal sailing"
                 fill
                 className={`object-contain transition-opacity ${
@@ -239,7 +241,7 @@ export function RiskLevelSelector({
           <div className="flex items-center justify-center gap-1 sm:gap-1 md:gap-1">
             <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex-shrink-0 relative">
               <Image
-                src="/offshore_sailing2.png"
+                src={theme.resolvedTheme === 'dark' ? "/offshore_sailing_dark.png" : "/offshore_sailing.png"}
                 alt="Offshore sailing"
                 fill
                 className={`object-contain transition-opacity ${
@@ -277,7 +279,7 @@ export function RiskLevelSelector({
           <div className="flex items-center justify-center gap-1 sm:gap-1 md:gap-1">
           <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex-shrink-0 relative">
             <Image
-              src="/extreme_sailing2.png"
+              src={theme.resolvedTheme === 'dark' ? "/extreme_sailing_dark.png" : "/extreme_sailing.png"}
               alt="Extreme sailing"
               fill
               className={`object-contain transition-opacity ${

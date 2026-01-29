@@ -1,6 +1,7 @@
 'use client';
 
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { useTheme } from '@/app/contexts/ThemeContext';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 
 type SkillEntry = {
@@ -67,6 +68,8 @@ export function ExperienceSkillsSection({
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+
 
   return (
     <div className="space-y-6">
