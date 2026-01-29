@@ -95,7 +95,7 @@ export function SkillLevelSelector({
           </span>
         )}
       </label>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 md:gap-2">
         {levels.map((levelConfig) => {
           const isSelected = value === levelConfig.value;
           const isProfile = isProfileValue(levelConfig.value);
@@ -105,7 +105,7 @@ export function SkillLevelSelector({
               key={levelConfig.value}
               type="button"
               onClick={() => handleClick(levelConfig.value)}
-              className={`relative p-2 md:p-4 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+              className={`relative p-2 md:p-2 border-2 rounded-lg bg-card transition-all flex flex-col items-start ${
                 isSelected
                   ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
                   : 'border-border hover:border-primary/50 hover:bg-accent/50'
@@ -114,11 +114,12 @@ export function SkillLevelSelector({
               {/* Profile indicator badge */}
               {isProfile && (
                 <div className="absolute top-1 right-1 z-10">
-                  <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                  <div className="bg-gray-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
                     Profile
                   </div>
                 </div>
               )}
+              {/*
               <div className="flex items-center justify-center mb-1 md:mb-2 flex-shrink-0">
                 <h3 className={`font-semibold text-center leading-tight text-[10px] md:text-sm ${
                   isSelected ? 'text-primary font-bold' : 'text-card-foreground'
@@ -136,6 +137,32 @@ export function SkillLevelSelector({
                   }`}
                 />
               </div>
+              */}
+              <div className="flex items-center justify-center gap-1 sm:gap-1 md:gap-1">
+
+              {/* Small icon first */}
+                <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 flex-shrink-0 relative">
+                  <Image
+                    src={levelConfig.icon}
+                    alt={levelConfig.displayName}
+                    fill
+                    className={`object-contain transition-opacity ${
+                      isSelected ? 'opacity-100' : 'opacity-70'
+                    }`}
+                  />
+                </div>
+
+              {/* Text next to it */}
+                <h4
+                  className={`font-semibold leading-tight text-[10px] sm:text-xs md:text-xs text-left ${
+                    isSelected ? 'text-primary font-bold' : 'text-card-foreground'
+                  }`}
+                  >
+                  {levelConfig.displayName}
+                </h4>
+
+              </div>
+
             </button>
           );
         })}

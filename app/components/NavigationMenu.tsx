@@ -566,16 +566,6 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             </div>
           )}
 
-          {/* Divider */}
-          <div className="border-t border-border my-1" />
-
-          {/* Appearance / Theme */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              {/*<span className="text-sm font-medium text-foreground">Appearance</span>*/}
-              <ThemeToggle variant="segmented" />
-            </div>
-          </div>
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
@@ -598,6 +588,20 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             </svg>
             <span className="font-medium">Sign out</span>
           </button>
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Appearance / Theme */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-sm font-medium text-foreground">Appearance</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <ThemeToggle variant="segmented" />
+            </div>
+          </div>
+
         </>
       ) : (
         <>
@@ -644,17 +648,6 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               <span className="font-medium">Browse Journeys</span>
             </Link>
           )}
-
-          {/* Divider */}
-          <div className="border-t border-border my-1" />
-
-          {/* Appearance / Theme */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-foreground">Appearance</span>
-              <ThemeToggle variant="segmented" />
-            </div>
-          </div>
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
@@ -732,6 +725,20 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             </svg>
             <span className="font-medium">Sign up</span>
           </Link>
+
+          {/* Divider */}
+          <div className="border-t border-border my-1" />
+
+          {/* Appearance / Theme */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between pb-2">
+              <span className="text-sm font-medium text-foreground">Appearance</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <ThemeToggle variant="segmented"/>
+            </div>
+          </div>
+
         </>
       )}
     </div>

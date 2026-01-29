@@ -108,7 +108,7 @@ export function ThemeToggle({ variant = 'segmented', className = '' }: ThemeTogg
           aria-label={t.label}
         >
           {t.icon}
-          <span className="hidden sm:inline">{t.label}</span>
+          {/*<span className="hidden sm:inline">{t.label}</span>*/}
         </button>
       ))}
     </div>
