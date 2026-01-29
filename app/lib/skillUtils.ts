@@ -82,8 +82,6 @@ export function normalizeSkillNames(
 export function getAllCanonicalSkillNames(): string[] {
   const allSkills = [
     ...skillsConfig.general,
-    ...skillsConfig.offshore,
-    ...skillsConfig.extreme
   ];
   
   return allSkills.map(skill => skill.name); // Already in canonical format from config

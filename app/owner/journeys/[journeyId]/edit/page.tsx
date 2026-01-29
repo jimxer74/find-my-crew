@@ -396,8 +396,6 @@ export default function EditJourneyPage() {
                 {(() => {
                   const allSkills = [
                     ...skillsConfig.general,
-                    ...skillsConfig.offshore,
-                    ...skillsConfig.extreme
                   ];
                   const formatSkillName = (name: string) => {
                     return name

@@ -622,8 +622,6 @@ function ProfilePageContent() {
           <p className="font-medium mb-3">Click the "+" button to add skills to your profile:</p>
           <ul className="space-y-3 list-none">
             {skillsConfig.general.map(skill => renderSkillItem(skill))}
-            {hasOffshoreSailing && skillsConfig.offshore.map(skill => renderSkillItem(skill))}
-            {hasExtremeSailing && skillsConfig.extreme.map(skill => renderSkillItem(skill))}
           </ul>
         </>
       ),

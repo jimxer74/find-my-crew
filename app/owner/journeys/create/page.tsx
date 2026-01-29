@@ -353,8 +353,6 @@ export default function CreateJourneyPage() {
                   {(() => {
                     const allSkills = [
                       ...skillsConfig.general,
-                      ...skillsConfig.offshore,
-                      ...skillsConfig.extreme,
                     ];
                     const displaySkill = (name: string) =>
                       name

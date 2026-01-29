@@ -959,8 +959,6 @@ export function LegFormModal({
                       // Extract all unique skill names from all categories
                       const allSkills = [
                         ...skillsConfig.general,
-                        ...skillsConfig.offshore,
-                        ...skillsConfig.extreme
                       ];
                       // Convert snake_case to Title Case for display
                       const formatSkillName = (name: string) => {
