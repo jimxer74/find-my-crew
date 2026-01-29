@@ -391,104 +391,6 @@ export function CrewBrowseMap({
     if (approvedSource) {
       approvedSource.setData(approvedGeoJsonData);
     }
-
-    // Fetch waypoints for approved legs and update routes
-    const approvedLegs = legs.filter(leg => 
-      userRegistrations.get(leg.leg_id) === 'Approved' &&
-      leg.start_waypoint !== null &&
-      leg.end_waypoint !== null
-    );
-  
-
-    // Fetch waypoints for all approved legs
-    const fetchApprovedLegsWaypoints = async () => {
-      const waypointsMap = new Map<string, Array<{
-        id: string;
-        index: number;
-        name: string | null;
-        coordinates: [number, number] | null;
-      }>>();
-
-      // Fetch waypoints for each approved leg
-      const waypointPromises = approvedLegs.map(async (leg) => {
-        try {
-          const response = await fetch(`/api/legs/${leg.leg_id}/waypoints`);
-          if (response.ok) {
-            const data = await response.json();
-            waypointsMap.set(leg.leg_id, data.waypoints || []);
-          } else {
-            console.warn(`[CrewBrowseMap] Failed to fetch waypoints for leg ${leg.leg_id}`);
-            waypointsMap.set(leg.leg_id, []);
-          }
-        } catch (error) {
-          console.error(`[CrewBrowseMap] Error fetching waypoints for leg ${leg.leg_id}:`, error);
-          waypointsMap.set(leg.leg_id, []);
-        }
-      });
-
-      await Promise.all(waypointPromises);
-      approvedLegsWaypointsRef.current = waypointsMap;
-
-      // Create route features with all waypoints
-      const routeFeatures: GeoJSON.Feature<GeoJSON.LineString>[] = approvedLegs.map(leg => {
-        const waypoints = waypointsMap.get(leg.leg_id) || [];
-        
-        // Filter waypoints with valid coordinates and sort by index
-        const validWaypoints = waypoints
-          .filter(wp => wp.coordinates !== null)
-          .sort((a, b) => a.index - b.index);
-
-        // If we have waypoints, use them; otherwise fall back to start/end
-        let coordinates: [number, number][];
-        if (validWaypoints.length >= 2) {
-          coordinates = validWaypoints.map(wp => wp.coordinates!);
-        } else {
-          // Fallback to start and end waypoints if waypoints aren't loaded yet
-          coordinates = [
-            [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
-            [leg.end_waypoint!.lng, leg.end_waypoint!.lat],
-          ];
-        }
-
-        return {
-          type: 'Feature' as const,
-          geometry: {
-            type: 'LineString' as const,
-            coordinates,
-          },
-          properties: {
-            leg_id: leg.leg_id,
-          },
-        };
-      });
-
-      const approvedRoutesData: GeoJSON.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: routeFeatures,
-      };
-
-      // Update approved routes source if it exists (only after routeSourceAddedRef is true)
-      if (routeSourceAddedRef.current && map.current) {
-        const approvedRoutesSource = map.current.getSource('approved-legs-routes-source') as mapboxgl.GeoJSONSource;
-        if (approvedRoutesSource) {
-          approvedRoutesSource.setData(approvedRoutesData);
-        }
-      }
-    };
-
-    // Fetch waypoints and update routes
-    if (approvedLegs.length > 0 && routeSourceAddedRef.current) {
-      fetchApprovedLegsWaypoints();
-    } else if (routeSourceAddedRef.current && map.current) {
-      // Clear routes if no approved legs
-      const approvedRoutesSource = map.current.getSource('approved-legs-routes-source') as mapboxgl.GeoJSONSource;
-      if (approvedRoutesSource) {
-        approvedRoutesSource.setData({
-          type: 'FeatureCollection',
-          features: [],
-        });
-      }
-    }
   }, [legs, mapLoaded, userRegistrations]);
 
   const theme = useTheme();
@@ -1239,35 +1141,7 @@ export function CrewBrowseMap({
           // by using line-gradient with a color expression, or use multiple layers
         },
       }, 'unclustered-point'); // Insert before unclustered-point layer
-
-      // Add source for approved leg routes
-      map.current.addSource('approved-legs-routes-source', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [],
-        },
-      });
-
-      // Add solid route line layer for approved legs
-      map.current.addLayer({
-        id: 'approved-legs-routes-line',
-        type: 'line',
-        source: 'approved-legs-routes-source',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#01B000',
-          'line-width': 4,
-          'line-opacity': 0.9
-          //'line-dasharray': [2, 2], // Dashed line pattern
-        },
-      }, 'unclustered-point'); // Insert before unclustered-point layer
       
-
-
       routeSourceAddedRef.current = true;
       
       // Attach viewport handlers now that map is loaded
@@ -1321,9 +1195,6 @@ export function CrewBrowseMap({
           if (map.current.getLayer('leg-route-line')) {
             map.current.removeLayer('leg-route-line');
           }
-          if (map.current.getLayer('approved-legs-routes-line')) {
-            map.current.removeLayer('approved-legs-routes-line');
-          }
           // Remove icons
           if (map.current.hasImage('marker-approved')) {
             map.current.removeImage('marker-approved');
@@ -1340,9 +1211,6 @@ export function CrewBrowseMap({
           }
           if (map.current.getSource('leg-route-source')) {
             map.current.removeSource('leg-route-source');
-          }
-          if (map.current.getSource('approved-legs-routes-source')) {
-            map.current.removeSource('approved-legs-routes-source');
           }
           // Arrow layer removed - no longer needed
         } catch (error) {
@@ -1380,23 +1248,23 @@ export function CrewBrowseMap({
       return;
     }
 
-    // Clear previous route
     const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
-    if (routeSource) {
-      routeSource.setData({
-        type: 'FeatureCollection',
-        features: [],
-      });
-    }
+    if (!routeSource) return;
 
-    // If no leg selected or no waypoints, return
+    // Always clear previous route first
+    routeSource.setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+
     if (!selectedLeg || legWaypoints.length === 0) {
       console.log('[CrewBrowseMap] Route display skipped - no leg or waypoints');
       return;
     }
 
-    // Filter waypoints with valid coordinates
-    const validWaypoints = legWaypoints.filter(wp => wp.coordinates !== null);
+    const validWaypoints = legWaypoints
+      .filter(wp => wp.coordinates !== null)
+      .sort((a, b) => a.index - b.index);
     console.log('[CrewBrowseMap] Valid waypoints:', validWaypoints.length, 'out of', legWaypoints.length);
     
     if (validWaypoints.length < 2) {
@@ -1404,10 +1272,11 @@ export function CrewBrowseMap({
       return; // Need at least start and end
     }
 
-    // Create route line from all waypoints
     const coordinates = validWaypoints.map(wp => wp.coordinates!);
     console.log('[CrewBrowseMap] Creating route with coordinates:', coordinates);
     
+    const isApproved = userRegistrations.get(selectedLeg.leg_id) === 'Approved';
+
     const routeFeature: GeoJSON.Feature<GeoJSON.LineString> = {
       type: 'Feature',
       geometry: {
@@ -1417,18 +1286,16 @@ export function CrewBrowseMap({
       properties: {},
     };
 
-    // Update route source (reuse the routeSource variable from above)
-    if (routeSource) {
-      console.log('[CrewBrowseMap] Updating route source with feature');
-      routeSource.setData({
-        type: 'FeatureCollection',
-        features: [routeFeature],
-      });
-      
-    } else {
-      console.error('[CrewBrowseMap] Route source not found!');
-    }
+    routeSource.setData({
+      type: 'FeatureCollection',
+      features: [routeFeature],
+    });
 
+    // Optional: different style based on approval status
+    map.current.setPaintProperty('leg-route-line', 'line-color', isApproved ? '#01B000' : '#A3A3A3');
+    map.current.setPaintProperty('leg-route-line', 'line-width', isApproved ? 4 : 2);
+    map.current.setPaintProperty('leg-route-line', 'line-opacity', 0.9);
+    map.current.setPaintProperty('leg-route-line', 'line-dasharray', isApproved ? [1, 0] : [2, 2]); // Solid if approved, dashed otherwise
 
     // Calculate bounds to fit entire route
     const lngs = coordinates.map(coord => coord[0]);
@@ -1475,7 +1342,7 @@ export function CrewBrowseMap({
     setTimeout(() => {
       isFittingBoundsRef.current = false;
     }, 1100); // Slightly longer than animation duration
-  }, [selectedLeg, legWaypoints, mapLoaded]);
+  }, [selectedLeg, legWaypoints, mapLoaded, userRegistrations]);
 
   return (
     <div
