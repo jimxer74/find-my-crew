@@ -398,6 +398,7 @@ export function CrewBrowseMap({
       leg.start_waypoint !== null &&
       leg.end_waypoint !== null
     );
+  
 
     // Fetch waypoints for all approved legs
     const fetchApprovedLegsWaypoints = async () => {
@@ -947,7 +948,7 @@ export function CrewBrowseMap({
           'icon-allow-overlap': true,
         },
       });
-
+      // Add approved text layer
       map.current.addLayer({
         id: 'registered-approved-text',
         type: 'symbol',
@@ -1220,7 +1221,7 @@ export function CrewBrowseMap({
         },
       });
 
-      // Add route line layer with gradient to show direction
+      // Add route line layer
       map.current.addLayer({
         id: 'leg-route-line',
         type: 'line',
