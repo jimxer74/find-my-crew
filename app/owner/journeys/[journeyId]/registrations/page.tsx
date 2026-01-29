@@ -868,7 +868,7 @@ export default function JourneyRegistrationsPage() {
                     aria-label="Edit journey"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -889,7 +889,7 @@ export default function JourneyRegistrationsPage() {
                     aria-label="View legs"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -909,7 +909,7 @@ export default function JourneyRegistrationsPage() {
                     aria-label="Registrations (current)"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -930,7 +930,7 @@ export default function JourneyRegistrationsPage() {
                     aria-label="Back to journeys"
                   >
                     <svg
-                      className="w-4 h-4"
+                      className="w-5 h-5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

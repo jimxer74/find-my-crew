@@ -63,7 +63,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       {/* Dialog - desktop only (mobile uses /filters page) */}
       <div
         ref={dialogRef}
-        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[600px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[105] overflow-hidden flex flex-col pointer-events-auto"
+        className="overflow-y-auto fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[760px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg z-[105] overflow-hidden flex flex-col pointer-events-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
