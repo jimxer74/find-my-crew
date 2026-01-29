@@ -4,8 +4,9 @@ title: AI-powered multisearch for crew without profile
 status: To Do
 assignee: []
 created_date: '2026-01-28 20:24'
-updated_date: '2026-01-29 06:53'
-labels: []
+updated_date: '2026-01-29 13:58'
+labels:
+  - ai
 dependencies: []
 priority: high
 ---
