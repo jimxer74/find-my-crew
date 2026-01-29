@@ -4,7 +4,7 @@ title: AI-powered multisearch for crew without profile
 status: To Do
 assignee: []
 created_date: '2026-01-28 20:24'
-updated_date: '2026-01-29 06:47'
+updated_date: '2026-01-29 06:53'
 labels: []
 dependencies: []
 priority: high
@@ -17,7 +17,7 @@ An iterative AI-driven search capability that uses AI to find matches from the d
 
 AI could ask user to fill in the details, by prompting user to type in answers in free text field in the conversation. Or if better suited, AI coud prompt user to select options in more structured way if it makes sense for the scenario and needed information.
 
-Here are example scenrarios of prompts and iterative reasoning of the required background information:
+Here are example scenarios of for iterative reasoning of the required background information:
 
 Scenario 1:
 User: "I am thinking of buying a Swan 38 or Baltic 42DP and I would like find a possibility to sail with one of the boats mentioned. Trip can be anywhere in finnish or swedish baltic coast. Timeline for this would be anytime during the summer, I have full month of vacation in July but weekends are also possible during summer months."
@@ -29,11 +29,14 @@ User: "I'd like to find someone to teach me basics of sailing near Stockholm, an
 
 AI: Great!, sailing is nice way to spend time in nature and sea, I am happy you have chosen to start learning sailing. I would like to still know few things, are you available at weekdays for short trips or only weekends? Or would you prefer longer trips, perhaps when you are on vacation during the summer?
  
+I addition when user is given the information he / she is looking for AI would prompt if user wants to save the collected information as profile and display the summary of the profile to user, where user could then edit the information is needed and save and create a profile based on the gathered information.
 
 Above is just possible examples, aspects that AI needs to resolve and make sure there is enough information are:
 
 1. User goals and aspirations, why they are looking for sailing trip in first place? 
-2. What kind of sailing user is looking for, adventure, laid back holiday, challage, exitement,  learning, etc. offshore, high latitudes. Warm and sunny, diving, snorekling, swimming, or colder climates with nature and wildlife, people or solitude
-3. Very specific interests regarding the trip, location, time and availability, flexibility, a certain boat type or model, a certain size boat, small or big, luxury or classic
+2. What kind of sailing user is looking for? (adventure, laid back holiday, challage, exitement,  learning, etc. offshore, high latitudes. warm and sunny, diving, snorekling, swimming, or colder climates with nature and wildlife, people or solitude just as an example, the reasons behind cannot be pretermined, but can be of anything)
+3. Very specific interests regarding the trip (location, time and availability, flexibility, a certain boat type or model, a certain size boat, small or big, luxury or classic, again just as examples, solution must be able handle non-predeterministic scenarios)
 4. AI needs to be able to understand when there is enough information gathered to create a good matches in data.
+
+Main principle is that this needs to be non predeterministic and be based on the users input and AI needs to reason the answers and questions based on the context.
 <!-- SECTION:DESCRIPTION:END -->
