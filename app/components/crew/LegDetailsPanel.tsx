@@ -12,6 +12,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
 import { checkProfile } from '@/app/lib/profile/checkProfile';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -43,30 +44,33 @@ const normalizeRiskLevel = (riskLevel: string | string[] | null | undefined): Ri
   return null;
 };
 
+
 // Helper function to get risk level config
 const getRiskLevelConfig = (riskLevel: RiskLevel | null) => {
   if (!riskLevel) {
     return null;
   }
-  
+
+  const theme = useTheme();
+
   switch (riskLevel) {
     case 'Coastal sailing':
       return {
-        icon: '/coastal_sailing2.png',
+        icon: theme.resolvedTheme === 'dark' ? "/coastal_sailing_dark.png" : "/coastal_sailing.png",
         displayName: riskLevelsConfig.coastal_sailing.title,
         shortDescription: riskLevelsConfig.coastal_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.coastal_sailing.infoText,
       };
     case 'Offshore sailing':
       return {
-        icon: '/offshore_sailing2.png',
+        icon: theme.resolvedTheme === 'dark' ? "/offshore_sailing_dark.png" : "/offshore_sailing.png",
         displayName: riskLevelsConfig.offshore_sailing.title,
         shortDescription: riskLevelsConfig.offshore_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.offshore_sailing.infoText,
       };
     case 'Extreme sailing':
       return {
-        icon: '/extreme_sailing2.png',
+        icon: theme.resolvedTheme === 'dark' ? "/extreme_sailing_dark.png" : "/extreme_sailing.png",
         displayName: riskLevelsConfig.extreme_sailing.title,
         shortDescription: riskLevelsConfig.extreme_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.extreme_sailing.infoText,
@@ -726,6 +730,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     };
   }, [isOpen]);
 
+
+  const theme = useTheme();
   return (
     <>
       {/* Backdrop for mobile */}
@@ -1145,7 +1151,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 }`}>
                   <div className="relative w-16 h-16 flex-shrink-0">
                     <Image
-                      src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
+                      src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon + (theme.resolvedTheme === 'dark' ? "_dark.png" : ".png")}
                       alt={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                       fill
                       className="object-contain"
