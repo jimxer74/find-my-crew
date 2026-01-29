@@ -949,7 +949,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             ) : (
             /* Leg Details Content */
-            <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2">
+            <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2">              
                   {leg.boat_image_url && (
                     <div className="relative w-full h-82 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
