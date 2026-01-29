@@ -7,6 +7,7 @@ created_date: '2026-01-28 20:24'
 updated_date: '2026-01-29 13:58'
 labels:
   - ai
+  - feature
 dependencies: []
 priority: high
 ---
