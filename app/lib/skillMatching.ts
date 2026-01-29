@@ -68,10 +68,10 @@ export function calculateMatchPercentage(
  * @returns Tailwind CSS color classes
  */
 export function getMatchColorClass(percentage: number): string {
-  if (percentage >= 80) return 'bg-green-500 border-green-600';
+  if (percentage >= 80) return 'bg-green-300 border-green-600';
   if (percentage >= 50) return 'bg-yellow-500 border-yellow-600';
   if (percentage >= 25) return 'bg-orange-500 border-orange-600';
-  return 'bg-red-500 border-red-600';
+  return 'bg-red-300 border-red-600';
 }
 
 /**
