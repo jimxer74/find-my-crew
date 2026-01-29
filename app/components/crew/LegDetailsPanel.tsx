@@ -13,6 +13,7 @@ import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
 import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { MatchBadge } from '../ui/MatchBadge';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -752,6 +753,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         />
       )}
       
+      <div className="flex flex-col min-h-screen">
+
+
       {/* Panel - Left Side on desktop, Full Screen on mobile - Overlays the map */}
       <div
         className={`fixed top-16 md:top-16 left-0 right-0 md:right-auto bottom-0 md:bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-all duration-300 ease-out ${
@@ -766,7 +770,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden"
+            className="absolute top-4 right-8 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden"
             title="Close panel"
             aria-label="Close panel"
           >
@@ -790,7 +794,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex absolute top-4 right-8 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
@@ -837,6 +841,25 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {/* Content */}
         {!isMinimized && (
           <div className="overflow-y-auto h-full">
+              {leg.boat_image_url && (
+                <div className="relative w-full h-82 overflow-hidden flex-shrink-0">
+                  <Image
+                    src={leg.boat_image_url}
+                    alt={leg.boat_name}
+                    fill
+                    className="object-cover object-bottom"
+                    quality={85}
+                    priority={true}
+                  />
+                  <div className="absolute top-4 left-4 z-10">
+                      {leg.skill_match_percentage !== undefined && (
+                        <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
+                      )} 
+                  </div>
+                </div>
+              )}
+
+
             {/* Requirements Form - In pane */}
             {showRequirementsForm ? (
               <div className="p-6">
@@ -948,18 +971,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
               </div>
             ) : (
+
+
             /* Leg Details Content */
-            <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2">              
-                  {leg.boat_image_url && (
-                    <div className="relative w-full h-82 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={leg.boat_image_url}
-                        alt={leg.boat_name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
+            <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2 text-center">              
+       
 
             {/* Header */}
             <div>
@@ -989,7 +1005,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             )}
 
             {/* Start and End Points with Arrow */}
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-4">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-4 text-left">
               {/* Start Point */}
               <div className="flex flex-col justify-center">
                 {leg.start_waypoint ? (
@@ -1068,10 +1084,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Duration and Distance */}
             {distance !== null && (
-              <div className="grid grid-cols-[1fr_auto_1fr] gap-4 pt-3">
+              <div className="grid grid-cols-[1fr_auto_1fr] gap-4 pt-3 text-left">
                 {leg.boat_average_speed_knots && (
                   <div>
-                    <div className="text-xs text-muted-foreground mb-1">Distance / Duration</div>
+                    <div className="text-xs text-muted-foreground mb-1">Estimated Distance / Duration</div>
                     {/*}
                     <div className="text-sm font-medium text-foreground">
                       {duration.formatted}
@@ -1086,7 +1102,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 {leg.boat_average_speed_knots && <div></div>}
                 <div>
                   <div className="text-xs font-medium text-foreground mb-1">
-                    {Math.round(distance)} nm / {duration.formatted}
+                    {Math.round(distance)} nm / {duration.formatted} <span className="text-xs text-muted-foreground ml-1"> ({Math.round(distance)}nm @ {typeof leg.boat_average_speed_knots === 'string' ? parseFloat(leg.boat_average_speed_knots) : leg.boat_average_speed_knots}kt)</span>
                   </div>
                 </div>
               </div>
@@ -1220,31 +1236,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
               <div className="pt-4 border-t border-border">
-                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h3>
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
                 <div className="flex gap-3 items-start">
-                  {leg.boat_image_url && (
-                    <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
-                      <Image
-                        src={leg.boat_image_url}
-                        alt={leg.boat_name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-foreground mb-1">{leg.boat_name}</h4>
-                    {leg.boat_type && (
-                      <p className="text-xs text-muted-foreground mb-1">{leg.boat_type}</p>
-                    )}
-                    {(leg.boat_make || leg.boat_model) && (
-                      <p className="text-xs text-muted-foreground">
-                        {leg.boat_make && leg.boat_model 
-                          ? `${leg.boat_make} ${leg.boat_model}`
-                          : leg.boat_make || leg.boat_model || ''}
-                      </p>
-                    )}
-                  </div>
                   {/* Owner Avatar */}
                   {(leg.owner_name || leg.owner_image_url) && (
                     <div className="flex items-center gap-2 flex-shrink-0">
@@ -1419,7 +1412,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           </div>
         )}
       </div>
+      {/* Footer  sticky registration button*/}
 
+
+
+
+      </div>
       {/* Risk Level Info Dialog */}
       {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel) && (
         <>

@@ -39,14 +39,16 @@ export function SkillsMatchingDisplay({
       {showHeader && (
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-semibold text-muted-foreground">{headerText}</h3>
+          {/*
           {skillMatchPercentage !== undefined && hasUserSkills && (
             <MatchBadge percentage={skillMatchPercentage} size="sm" />
-          )}
+          )} 
+          */}
         </div>
       )}
 
       {showMatchBreakdown ? (
-        <div className={compact ? 'space-y-1.5' : 'space-y-2'}>
+        <div className={(compact ? 'space-y-1.5' : 'space-y-2') + ' text-left'}>
           {(() => {
             const { matching, missing } = getMatchingAndMissingSkills(userSkills, legSkills);
             return (

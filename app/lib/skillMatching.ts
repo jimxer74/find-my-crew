@@ -68,10 +68,10 @@ export function calculateMatchPercentage(
  * @returns Tailwind CSS color classes
  */
 export function getMatchColorClass(percentage: number): string {
-  if (percentage >= 80) return 'bg-green-300 border-green-600';
-  if (percentage >= 50) return 'bg-yellow-500 border-yellow-600';
-  if (percentage >= 25) return 'bg-orange-500 border-orange-600';
-  return 'bg-red-300 border-red-600';
+  if (percentage >= 80) return 'bg-green-300/80 border-green-600';
+  if (percentage >= 50) return 'bg-yellow-500/80 border-yellow-600';
+  if (percentage >= 25) return 'bg-orange-500/80 border-orange-600';
+  return 'bg-red-300/50 border-red-600';
 }
 
 /**
@@ -80,10 +80,10 @@ export function getMatchColorClass(percentage: number): string {
  * @returns Tailwind CSS text color classes
  */
 export function getMatchTextColorClass(percentage: number): string {
-  if (percentage >= 80) return 'text-green-700';
-  if (percentage >= 50) return 'text-yellow-700';
-  if (percentage >= 25) return 'text-orange-700';
-  return 'text-red-700';
+  if (percentage >= 80) return 'text-green-800';
+  if (percentage >= 50) return 'text-yellow-800';
+  if (percentage >= 25) return 'text-orange-800';
+  return 'text-red-800';
 }
 
 /**
