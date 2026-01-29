@@ -5,7 +5,8 @@ status: To Do
 assignee: []
 created_date: '2026-01-23 17:13'
 updated_date: '2026-01-29 13:55'
-labels: []
+labels:
+  - ai
 dependencies: []
 priority: high
 ordinal: 3000
