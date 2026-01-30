@@ -80,7 +80,8 @@ const matchBorderColors = {
   '0match': 'border-red-600',
   '25match': 'border-orange-600',
   '50match': 'border-yellow-600',
-  '80match': 'border-green-600',
+  '80match': 'border-green-500',
+
 };
 
 const matchBorderColorsHex = {
