@@ -1,6 +1,7 @@
 'use client';
 
-import { getMatchColorClass, getMatchTextColorClass } from '@/app/lib/skillMatching';
+//import { getMatchColorClass, getMatchTextColorClass } from '@/app/lib/skillMatching';
+
 
 interface MatchBadgeProps {
   percentage: number;
@@ -15,8 +16,6 @@ export function MatchBadge({
   size = 'md',
   className = '' 
 }: MatchBadgeProps) {
-  const colorClass = getMatchColorClass(percentage);
-  const textColorClass = getMatchTextColorClass(percentage);
   
   const sizeClasses = {
     sm: 'text-xs px-2 py-0.5',
@@ -26,7 +25,12 @@ export function MatchBadge({
 
   return (
     <span
-      className={`inline-flex items-center font-semibold rounded-full border-2 ${colorClass} ${textColorClass} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center font-semibold rounded-full border-2 ${
+        percentage >= 80 ? 'bg-green-300/80 border-green-500 text-green-800' :
+        percentage >= 50 ? 'bg-yellow-300/80 border-yellow-600 text-yellow-800' :
+        percentage >= 25 ? 'bg-orange-300/80 border-orange-600 text-orange-800' :
+        'bg-red-500/80 border-red-600 text-red-800'
+      } ${sizeClasses[size]} ${className}`}
       title={`${percentage}% skill match`}
     >
       {showLabel && (
