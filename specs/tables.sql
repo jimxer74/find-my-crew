@@ -490,6 +490,7 @@ create table if not exists public.registrations (
   notes        text,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
+  match_percentage numeric, -- match percentage between user skills and leg required skills, experience level, and risk level
 );
 
 -- Indexes

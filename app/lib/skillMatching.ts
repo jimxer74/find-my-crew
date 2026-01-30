@@ -6,11 +6,6 @@ import { toCanonicalSkillName } from './skillUtils';
 
 
 export const matchRiskLevel = (userRiskLevel: string[], legRiskLevel: string | null, journeyRiskLevel: string[] | null): boolean => { 
-  console.log('[skillMatching] Match risk level:', {
-    userRiskLevel,
-    legRiskLevel,
-    journeyRiskLevel,
-  });
 
   if (!userRiskLevel) return false;
   if (!legRiskLevel && !journeyRiskLevel) return true;

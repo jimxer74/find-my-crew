@@ -586,6 +586,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     const requestBody: {
       leg_id: string;
       notes: string | null;
+      match_percentage?: number | null;
       answers?: any[];
     } = {
       leg_id: leg.leg_id,
@@ -606,6 +607,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       answersLength: requestBody.answers?.length || 0,
       answers: requestBody.answers,
       answersToUseLength: answersToUse.length,
+      match_percentage: leg.skill_match_percentage,
       providedAnswers: providedAnswers !== undefined,
       requirementsAnswersLength: requirementsAnswers.length,
       hasRequirements,
@@ -775,7 +777,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-8 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden"
+            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden"
             title="Close panel"
             aria-label="Close panel"
           >

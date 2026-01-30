@@ -147,11 +147,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { leg_id, notes, answers } = body;
 
+    console.log(`[Registration API] RAW Body:`, body);
+
     // Validate required fields
     console.log(`[Registration API] Received registration request:`, {
       leg_id,
       hasNotes: !!notes,
       notesLength: notes?.length || 0,
+      match_percentage: body.match_percentage,
       hasAnswers: !!(answers && Array.isArray(answers)),
       answersLength: answers?.length || 0,
       bodyKeys: Object.keys(body),
@@ -449,6 +452,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         status: 'Pending approval',
         notes: notes || null,
+        match_percentage: body.match_percentage || 0,
       })
       .select()
       .single();
