@@ -1116,7 +1116,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
 
             <div className="flex items-center justify-between mb-1 border-t pt-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level Match</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
             </div>
             <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-2">
 
@@ -1213,7 +1213,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Skills */}
             <SkillsMatchingDisplay
-              headerText="Skills Match"            
+              headerText="Skills"            
               className="pt-4 border-t"
               legSkills={leg.skills || []}
               userSkills={userSkills}
