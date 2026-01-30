@@ -33,12 +33,15 @@ export function SkillsMatchingDisplay({
 
   const hasUserSkills = userSkills.length > 0;
   const showMatchBreakdown = hasUserSkills && skillMatchPercentage !== undefined;
+  const { matching, missing } = getMatchingAndMissingSkills(userSkills, legSkills);
 
   return (
+    
     <div className={className}>
       {showHeader && (
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center  mb-2">
           <h3 className="text-xs font-semibold text-muted-foreground">{headerText}</h3>
+          <span className="text-xs text-muted-foreground ml-1">({matching.length}/{legSkills.length})</span>
           {/*
           {skillMatchPercentage !== undefined && hasUserSkills && (
             <MatchBadge percentage={skillMatchPercentage} size="sm" />
@@ -50,21 +53,21 @@ export function SkillsMatchingDisplay({
       {showMatchBreakdown ? (
         <div className={(compact ? 'space-y-1.5' : 'space-y-2') + ' text-left'}>
           {(() => {
-            const { matching, missing } = getMatchingAndMissingSkills(userSkills, legSkills);
+            //const { matching, missing } = getMatchingAndMissingSkills(userSkills, legSkills);
             return (
               <>
                 {matching.length > 0 && (
                   <div>
-                    <p className={`${compact ? 'text-xs' : 'text-xs'} font-medium text-green-700 mb-1`}>
+                    {/*<p className={`${compact ? 'text-xs' : 'text-xs'} font-medium text-green-700 mb-1`}>
                       ✓ You have ({matching.length}/{legSkills.length}):
-                    </p>
+                    </p>*/}
                     <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
                       {(compact ? matching.slice(0, 3) : matching).map((skill, index) => (
                         <span
                           key={`match-${index}`}
-                          className={`px-2 ${compact ? 'py-0.5' : 'py-1'} bg-green-100 text-green-800 rounded-full text-xs border border-green-300`}
+                          className={`px-2 ${compact ? 'py-0.5' : 'py-1'} bg-green-300/80 border-green-500 text-green-800 rounded-full text-xs border`}
                         >
-                          {toDisplaySkillName(skill)}
+                          ✓ {toDisplaySkillName(skill)}
                         </span>
                       ))}
                       {compact && matching.length > 3 && (
@@ -75,16 +78,16 @@ export function SkillsMatchingDisplay({
                 )}
                 {missing.length > 0 && (
                   <div>
-                    <p className={`${compact ? 'text-xs' : 'text-xs'} font-medium text-orange-700 mb-1`}>
+                    {/*<p className={`${compact ? 'text-xs' : 'text-xs'} font-medium text-orange-700 mb-1`}>
                       ⚠ Missing ({missing.length}/{legSkills.length}):
-                    </p>
+                    </p>*/}
                     <div className={`flex flex-wrap ${compact ? 'gap-1' : 'gap-2'}`}>
                       {(compact ? missing.slice(0, 3) : missing).map((skill, index) => (
                         <span
                           key={`missing-${index}`}
-                          className={`px-2 ${compact ? 'py-0.5' : 'py-1'} bg-orange-100 text-orange-800 rounded-full text-xs border border-orange-300`}
+                          className={`px-2 ${compact ? 'py-0.5' : 'py-1'} bg-orange-300/80 border-orange-600 text-orange-800 rounded-full text-xs border`}
                         >
-                          {skill}
+                         ⚠ {skill}
                         </span>
                       ))}
                       {compact && missing.length > 3 && (

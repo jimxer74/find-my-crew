@@ -1227,6 +1227,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Skills */}
             <SkillsMatchingDisplay
+              headerText="Skills Match"            
               className="pt-4 border-t"
               legSkills={leg.skills || []}
               userSkills={userSkills}
@@ -1235,7 +1236,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
-              <div className="pt-4 border-t border-border">
+              <div className="pt-4 border-t border-border text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
                 <div className="flex gap-3 items-start">
                   {/* Owner Avatar */}
