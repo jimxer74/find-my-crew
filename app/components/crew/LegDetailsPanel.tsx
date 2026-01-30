@@ -1149,7 +1149,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                     {/* Warning message — now on its own row below */}
                     {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
-                      <p className="text-xs text-orange-300 mt-1 text-left">
+                      <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your risk level ({userRiskLevel?.join(', ')}) preferences do not match for this leg
                       </p>
                     )}
@@ -1198,7 +1198,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
                     {/* Warning message — now on its own row below */}
                     {leg.experience_level_matches === false && userExperienceLevel !== null && (
-                      <p className="text-xs text-orange-300 mt-1 text-left">
+                      <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement for this leg
                       </p>
                     )}
