@@ -9,7 +9,7 @@ import { LegMobileCard } from './LegMobileCard';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { calculateMatchPercentage, checkExperienceLevelMatch } from '@/app/lib/skillMatching';
+import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorClassForMap, getMatchColorForMap } from '@/app/lib/skillMatching';
 
     
 type Leg = {
@@ -932,30 +932,41 @@ export function CrewBrowseMap({
           'circle-color': [
             'case',
             ['==', ['get', 'experience_matches'], false],
-            '#FF9494', // red-500 - always red if experience level doesn't match
+            getMatchColorForMap(0), // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
-            '#0DFF00', // green-500
+            getMatchColorForMap(80), // green-500
             ['>=', ['get', 'match_percentage'], 50],
-            '#E5FF00', // yellow-500
+            getMatchColorForMap(50), // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
-            '#FFC500', // orange-500
-            '#FF9494', // red-500
+            getMatchColorForMap(25), // orange-500
+            getMatchColorForMap(0), // red-500
           ],
           //'circle-radius': unregisteredIconSize,
           'circle-radius': [
             'case',
             ['==', ['get', 'experience_matches'], false],
-            8, // red allways small
+            10, // red allways small
             ['>=', ['get', 'match_percentage'], 80],
             12, // green-500
             ['>=', ['get', 'match_percentage'], 50],
             10, // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
             10, // orange-500
-            8, // red-500
+            10, // red-500
           ],
           'circle-stroke-width': 2,
-          'circle-stroke-color': '#fff',
+          'circle-stroke-color': [
+            'case',
+            ['==', ['get', 'experience_matches'], false],
+            getMatchBorderColorForMap(0), // red-500 - always red if experience level doesn't match
+            ['>=', ['get', 'match_percentage'], 80],
+            getMatchBorderColorForMap(80), // green-500
+            ['>=', ['get', 'match_percentage'], 50],
+            getMatchBorderColorForMap(50), // yellow-500
+            ['>=', ['get', 'match_percentage'], 25],
+            getMatchBorderColorForMap(25), // orange-500
+            getMatchBorderColorForMap(0), // red-500
+          ],
         },
       });
 

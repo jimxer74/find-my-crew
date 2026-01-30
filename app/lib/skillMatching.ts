@@ -62,16 +62,68 @@ export function calculateMatchPercentage(
   return matchPercentage;
 }
 
+const matchBgColors = {
+  '0match': 'bg-red-500/80',
+  '25match': 'bg-orange-300/80',
+  '50match': 'bg-yellow-300/80',
+  '80match': 'bg-green-300/80',
+};
+
+const matchBgColorsHex = {
+  '0match': '#ef4444',
+  '25match': '#fdba74',
+  '50match': '#fde047',
+  '80match': '#22c55e',
+};
+
+const matchBorderColors = {
+  '0match': 'border-red-600',
+  '25match': 'border-orange-600',
+  '50match': 'border-yellow-600',
+  '80match': 'border-green-600',
+};
+
+const matchBorderColorsHex = {
+  '0match': '#dc2626',
+  '25match': '#ea580c',
+  '50match': '#ca8a04',
+  '80match': '#16a34a',
+};
+
 /**
  * Get color class for match percentage
  * @param percentage - Match percentage (0-100)
  * @returns Tailwind CSS color classes
  */
 export function getMatchColorClass(percentage: number): string {
-  if (percentage >= 80) return 'bg-green-300/80 border-green-600';
-  if (percentage >= 50) return 'bg-yellow-500/80 border-yellow-600';
-  if (percentage >= 25) return 'bg-orange-500/80 border-orange-600';
-  return 'bg-red-300/50 border-red-600';
+  if (percentage >= 80) return matchBgColors['80match'] + ' ' + matchBorderColors['80match'];
+  if (percentage >= 50) return matchBgColors['50match'] + ' ' + matchBorderColors['50match'];
+  if (percentage >= 25) return matchBgColors['25match'] + ' ' + matchBorderColors['25match'];
+  return matchBgColors['0match'] + ' ' + matchBorderColors['0match'];
+}
+
+/**
+ * Get color class for match percentage
+ * @param percentage - Match percentage (0-100)
+ * @returns Tailwind CSS color classes
+ */
+export function getMatchColorForMap(percentage: number): string {
+  if (percentage >= 80) return matchBgColorsHex['80match'];
+  if (percentage >= 50) return matchBgColorsHex['50match'];
+  if (percentage >= 25) return matchBgColorsHex['25match'];
+  return matchBgColorsHex['0match'];
+}
+
+/**
+ * Get color class for match percentage
+ * @param percentage - Match percentage (0-100)
+ * @returns Tailwind CSS color classes
+ */
+export function getMatchBorderColorForMap(percentage: number): string {
+  if (percentage >= 80) return matchBorderColorsHex['80match'];
+  if (percentage >= 50) return matchBorderColorsHex['50match'];
+  if (percentage >= 25) return matchBorderColorsHex['25match'];
+  return matchBorderColorsHex['0match'];
 }
 
 /**
