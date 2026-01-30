@@ -965,7 +965,7 @@ export function LegFormModal({
                         return (
                           <label 
                             key={skill.name} 
-                            className={`flex items-center gap-2 ${isReadOnly ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
+                            className={`flex items-center min-h-[44px] cursor-pointer p-2 border border-border rounded-md hover:bg-accent transition-colors gap-2 ${isReadOnly ? 'cursor-not-allowed opacity-75' : 'cursor-pointer'}`}
                           >
                             <input
                               type="checkbox"
