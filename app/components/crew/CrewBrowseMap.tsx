@@ -932,14 +932,14 @@ export function CrewBrowseMap({
           'circle-color': [
             'case',
             ['==', ['get', 'experience_matches'], false],
-            getMatchColorForMap(0), // red-500 - always red if experience level doesn't match
+            '#ef4444', // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
-            getMatchColorForMap(80), // green-500
+            '#22c55e', // green-500
             ['>=', ['get', 'match_percentage'], 50],
             '#ca8a04', // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
             '#fdba74', // orange-500
-            getMatchColorForMap(0), // red-500
+            '#ef4444', // red-500
           ],
           //'circle-radius': unregisteredIconSize,
           'circle-radius': [
@@ -958,14 +958,14 @@ export function CrewBrowseMap({
           'circle-stroke-color': [
             'case',
             ['==', ['get', 'experience_matches'], false],
-            getMatchBorderColorForMap(0), // red-500 - always red if experience level doesn't match
+            '#dc2626', // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
-            getMatchBorderColorForMap(80), // green-500
+            '#16a34a', // green-500
             ['>=', ['get', 'match_percentage'], 50],
-            getMatchBorderColorForMap(50), // yellow-500
+            '#ca8a04', // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
-            getMatchBorderColorForMap(25), // orange-500
-            getMatchBorderColorForMap(0), // red-500
+            '#ea580c', // orange-500
+            '#dc2626', // red-500
           ],
         },
       });
