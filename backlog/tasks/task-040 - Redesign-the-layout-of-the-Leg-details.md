@@ -1,9 +1,10 @@
 ---
 id: TASK-040
 title: Redesign the layout of the Leg details
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-28 07:32'
+updated_date: '2026-01-30 15:23'
 labels: []
 dependencies: []
 ---
