@@ -195,6 +195,9 @@ export default function MyRegistrationsPage() {
                 ? calculateMatchPercentage(
                     userSkills,
                     legSkills,
+                    null,
+                    registration.risk_level,
+                    null,
                     userExperienceLevel,
                     registration.min_experience_level
                   )
