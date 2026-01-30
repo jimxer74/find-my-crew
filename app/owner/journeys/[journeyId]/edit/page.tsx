@@ -406,7 +406,7 @@ export default function EditJourneyPage() {
                   return allSkills.map((skill) => {
                     const displayName = formatSkillName(skill.name);
                     return (
-                      <label key={skill.name} className="flex items-center gap-2 cursor-pointer">
+                      <label key={skill.name} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                         <input
                           type="checkbox"
                           checked={formData.skills.includes(displayName)}
@@ -478,7 +478,7 @@ export default function EditJourneyPage() {
                 Journey State *
               </label>
               <div className="space-y-2">
-                <label className="flex items-center">
+                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                   <input
                     type="radio"
                     name="state"
@@ -489,7 +489,7 @@ export default function EditJourneyPage() {
                   />
                   <span className="ml-2 text-sm text-foreground">In planning</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                   <input
                     type="radio"
                     name="state"
@@ -500,7 +500,7 @@ export default function EditJourneyPage() {
                   />
                   <span className="ml-2 text-sm text-foreground">Published</span>
                 </label>
-                <label className="flex items-center">
+                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                   <input
                     type="radio"
                     name="state"

@@ -1,9 +1,29 @@
 {
   "general": [
     {
-      "name": "first_aid",
-      "infoText": "Have you trained / do you have basic first aid skills?",
-      "startingSentence": "I have basic first aid training: "
+      "name": "safety_and_mob",
+      "infoText": "Are you familiar with general safety and man-overboard procedures, have you hade any training in these areas? (e.g., harness & tether use, jacklines, knowing emergency exits, EPIRB/PLB, quick-stop, Lifesling, hoisting back on board)",
+      "startingSentence": "My approach to safety on board is: "
+    },
+    {
+      "name": "heavy_weather",
+      "infoText": "Do you have experience or training in heavy weather sailing and storm tactics? (e.g., reefing early, storm tactics and sea anchors, drogues etc, heaving-to, running downwind in big seas)",
+      "startingSentence": "My experience in heavy weather includes: "
+    },
+    {
+      "name": "night_sailing",
+      "infoText": "Are you familiar with night sailing or watch systems, are you able to stand watch and navigate at night? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)",
+      "startingSentence": "Regarding night sailing and watch systems: "
+    },
+    {
+      "name": "watch_keeping",
+      "infoText": "Are you comfortable with watch-keeping routines? (e.g., standing solo or shared watches, fatigue management, hand-over procedures)",
+      "startingSentence": "Regarding watch-keeping: "
+    },
+    {
+      "name": "navigation",
+      "infoText": "What experience do you have with navigation, what kind of navigation systems do you have experience with? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, celestial navigation basics, radar interpretation and usage (MARPA/ARPA targets, collision avoidance), AIS integration, radar plotting in poor visibility, familiarity with ECDIS/chartplotter radar functions, radar reflector awareness)",
+      "startingSentence": "My navigation experience includes: "
     },
     {
       "name": "sailing_experience",
@@ -16,24 +36,29 @@
       "startingSentence": "I hold the following certifications: "
     },
     {
-      "name": "navigation",
-      "infoText": "What experience do you have with navigation? (e.g., reading charts, plotting courses, using GPS/chartplotter, dead reckoning, or celestial navigation basics?)",
-      "startingSentence": "My navigation experience includes: "
+      "name": "physical_fitness",
+      "infoText": "How would you rate your physical fitness and stamina for longer passages? (e.g., climbing on deck, handling sails in rough conditions, sleep deprivation tolerance)",
+      "startingSentence": "My physical fitness level for sailing is: "
+    },
+    {
+      "name": "seasickness_management",
+      "infoText": "How do you manage seasickness (or are you generally immune)? Any medication or strategies you use?",
+      "startingSentence": "Regarding seasickness: "
+    },
+    {
+      "name": "first_aid",
+      "infoText": "Have you trained or do you have basic first aid skills?",
+      "startingSentence": "I have basic first aid training: "
+    },
+    {
+      "name": "technical_skills",
+      "infoText": "Do you have engine, electrical, rigging or other technically oriented skills?",
+      "startingSentence": "My technical skills include: "
     },
     {
       "name": "cooking",
       "infoText": "Do you have cooking skills or motivation to cook if needed?",
       "startingSentence": "Regarding cooking skills: "
-    },
-    {
-      "name": "technical_skills",
-      "infoText": "Do you have engine, electrical or other technically oriented skills?",
-      "startingSentence": "My technical skills include: "
-    },
-    {
-      "name": "night_sailing",
-      "infoText": "Are you familiar with night sailing or watch systems? (e.g., standing watch, collision avoidance at night, lights/shapes, or using radar/AIS?)",
-      "startingSentence": "Regarding night sailing and watch systems: "
     },
     {
       "name": "survival_skills",

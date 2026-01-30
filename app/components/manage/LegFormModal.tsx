@@ -806,7 +806,7 @@ export function LegFormModal({
                     Risk Level
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                       <input
                         type="radio"
                         name="risk-level"
@@ -817,7 +817,7 @@ export function LegFormModal({
                       />
                       <span className="text-sm text-foreground">{riskLevelsConfig.coastal_sailing.title}</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                       <input
                         type="radio"
                         name="risk-level"
@@ -828,7 +828,7 @@ export function LegFormModal({
                       />
                       <span className="text-sm text-foreground">{riskLevelsConfig.offshore_sailing.title}</span>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                       <input
                         type="radio"
                         name="risk-level"
@@ -857,7 +857,7 @@ export function LegFormModal({
                       You can set a more strict requirement for this leg (higher level):
                     </p>
                   )}
-                  <div className="flex gap-4 overflow-x-auto pb-1 md:overflow-visible md:grid md:grid-cols-4 md:gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {getAllExperienceLevels().map((levelConfig) => {
                       const isJourneyLevel = journeyMinExperienceLevel === levelConfig.value;
                       const isLegSelected = minExperienceLevel === levelConfig.value;
@@ -867,10 +867,14 @@ export function LegFormModal({
                       const canSelect = journeyMinExperienceLevel === null || levelConfig.value >= journeyMinExperienceLevel;
                       
                       return (
-                        <button
-                          key={levelConfig.value}
-                          type="button"
-                          onClick={() => {
+                        <label 
+                           key={levelConfig.value}
+                           className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors">
+                        <input
+                          className="mr-3 w-5 h-5"
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
                             if (isDisabled) return; // Can't unselect journey level
                             if (!canSelect) {
                               setError(`Leg experience level must be ${getExperienceLevelConfig(journeyMinExperienceLevel!).displayName} or higher`);
@@ -882,15 +886,6 @@ export function LegFormModal({
                             setMinExperienceLevel(newValue);
                           }}
                           disabled={isDisabled}
-                          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col flex-shrink-0 min-w-[140px] ${
-                            isSelected
-                              ? isJourneyLevel
-                                ? 'border-primary bg-primary/10 opacity-75 cursor-not-allowed'
-                                : 'border-primary bg-primary/5'
-                              : canSelect
-                                ? 'border-border hover:border-primary/50'
-                                : 'border-border opacity-50 cursor-not-allowed'
-                          } ${isDisabled ? 'cursor-not-allowed' : ''}`}
                           title={
                             isJourneyLevel
                               ? `Journey minimum (read-only) - ${levelConfig.displayName}`
@@ -898,26 +893,9 @@ export function LegFormModal({
                                 ? `Must be ${getExperienceLevelConfig(journeyMinExperienceLevel!).displayName} or higher`
                                 : levelConfig.displayName
                           }
-                        >
-                          {isJourneyLevel && (
-                            <div className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded">
-                              Journey
-                            </div>
-                          )}
-                          <div className="flex items-center justify-center mb-2 flex-shrink-0">
-                            <h3 className="font-semibold text-card-foreground text-sm text-center">
-                              {levelConfig.displayName}
-                            </h3>
-                          </div>
-                          <div className="w-full flex-1 flex items-center justify-center relative min-h-0">
-                            <Image
-                              src={levelConfig.icon}
-                              alt={levelConfig.displayName}
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        </button>
+                        ></input>
+                          <span className="text-sm text-foreground">{levelConfig.displayName}</span>  
+                        </label>
                       );
                     })}
                   </div>
