@@ -936,9 +936,9 @@ export function CrewBrowseMap({
             ['>=', ['get', 'match_percentage'], 80],
             getMatchColorForMap(80), // green-500
             ['>=', ['get', 'match_percentage'], 50],
-            getMatchColorForMap(50), // yellow-500
+            '#ca8a04', // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
-            getMatchColorForMap(25), // orange-500
+            '#fdba74', // orange-500
             getMatchColorForMap(0), // red-500
           ],
           //'circle-radius': unregisteredIconSize,
