@@ -67,10 +67,10 @@ export function calculateMatchPercentage(
 // ────────────────────────────────────────────────
 
 const matchStyles = {
-  '0match':  'bg-red-500/80 border-red-600 text-red-800',
-  '25match': 'bg-orange-300/80 border-orange-600 text-orange-800',
-  '50match': 'bg-yellow-300/80 border-yellow-600 text-yellow-800',
-  '80match': 'bg-green-300/80 border-green-500 text-green-800',
+  '0match':  'bg-red-500/80 border-red-600',
+  '25match': 'bg-orange-300/80 border-orange-600',
+  '50match': 'bg-yellow-300/80 border-yellow-600',
+  '80match': 'bg-green-300/80 border-green-500',
 } as const;
 
 const matchHexColors = {

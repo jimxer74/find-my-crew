@@ -936,7 +936,7 @@ export function CrewBrowseMap({
             ['>=', ['get', 'match_percentage'], 80],
             '#22c55e', // green-500
             ['>=', ['get', 'match_percentage'], 50],
-            '#ca8a04', // yellow-500
+            '#fde047', // yellow-500
             ['>=', ['get', 'match_percentage'], 25],
             '#fdba74', // orange-500
             '#ef4444', // red-500
