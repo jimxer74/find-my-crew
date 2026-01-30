@@ -78,6 +78,7 @@ export function CrewBrowseMap({
   }>>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
+  const [userRiskLevel, setUserRiskLevel] = useState<('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null>(null);
   const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const { user } = useAuth();
@@ -97,6 +98,7 @@ export function CrewBrowseMap({
   const isFittingBoundsRef = useRef(false);
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
+  const userRiskLevelRef = useRef<('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null>(null);
   const iconsLoadedRef = useRef(false);
   const approvedLegsWaypointsRef = useRef<Map<string, Array<{
     id: string;
@@ -175,7 +177,7 @@ export function CrewBrowseMap({
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from('profiles')
-        .select('skills, sailing_experience')
+        .select('skills, sailing_experience, risk_level')
         .eq('id', user.id)
         .single();
 
@@ -187,6 +189,8 @@ export function CrewBrowseMap({
           userSkillsRef.current = [];
           setUserExperienceLevel(null);
           userExperienceLevelRef.current = null;
+          setUserRiskLevel(null);
+          userRiskLevelRef.current = null;
           return;
         }
         // Other errors should be logged
@@ -195,6 +199,8 @@ export function CrewBrowseMap({
         userSkillsRef.current = [];
         setUserExperienceLevel(null);
         userExperienceLevelRef.current = null;
+        setUserRiskLevel(null);
+        userRiskLevelRef.current = null;
         return;
       }
 
@@ -221,6 +227,16 @@ export function CrewBrowseMap({
       } else {
         setUserExperienceLevel(null);
         userExperienceLevelRef.current = null;
+      }
+
+      // Load risk level
+      if (data?.risk_level && Array.isArray(data.risk_level)) {
+        const parsedRiskLevel = data.risk_level;
+        setUserRiskLevel(parsedRiskLevel);
+        userRiskLevelRef.current = parsedRiskLevel;
+      } else {
+        setUserRiskLevel(null);
+        userRiskLevelRef.current = null;
       }
     };
 
@@ -1412,6 +1428,7 @@ export function CrewBrowseMap({
                   setSelectedLeg(null);
                 }}
                 userSkills={userSkills}
+                userRiskLevel={userRiskLevel}
                 userExperienceLevel={userExperienceLevel}
                 onRegistrationChange={() => {
                   // Could refresh data or show notification here
@@ -1427,6 +1444,7 @@ export function CrewBrowseMap({
               leg={selectedLeg}
               isOpen={!!selectedLeg}
               onClose={() => setSelectedLeg(null)}
+              userRiskLevel={userRiskLevel}
               userSkills={userSkills}
               userExperienceLevel={userExperienceLevel}
               onRegistrationChange={() => {
@@ -1440,3 +1458,5 @@ export function CrewBrowseMap({
     </div>
   );
 }
+
+

@@ -123,10 +123,11 @@ type LegDetailsPanelProps = {
   onClose: () => void;
   userSkills?: string[]; // User's skills for matching display
   userExperienceLevel?: number | null; // User's experience level for matching display
+  userRiskLevel?: string[] | null; // User's risk level for matching display
   onRegistrationChange?: () => void; // Callback when registration status changes
 };
 
-export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
+export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
@@ -200,6 +201,26 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [showRegistrationModal, setShowRegistrationModal] = useState(false);
   const [profileStatus, setProfileStatus] = useState<{ exists: boolean; hasRoles: boolean; completionPercentage: number } | null>(null);
+
+  
+  const matchRiskLevel = (userRiskLevel: string[], leg: Leg): boolean => { 
+    console.log('[LegDetailsPanel] Match risk level:', {
+      userRiskLevel,
+      legRiskLevel: leg.leg_risk_level,
+      journeyRiskLevel: leg.journey_risk_level,
+    });
+
+    if (!userRiskLevel) return false;
+    if (!leg.leg_risk_level && !leg.journey_risk_level) return true;
+  
+    // Check if user risk level matches leg risk level
+    if(userRiskLevel.includes(leg.leg_risk_level as string)) return true;
+    // Check if user risk level matches journey risk level
+    if(leg.journey_risk_level?.some(riskLevel => userRiskLevel.includes(riskLevel))) return true;
+
+    return false;
+  };
+  
 
   // Process risk level from leg and journey data (now provided by API)
   useEffect(() => {
@@ -1111,7 +1132,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
 
             <div className="flex items-center justify-between mb-1 border-t pt-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level Match</h3>
             </div>
             <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-2">
 
@@ -1121,7 +1142,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               return riskConfig ? (
                 <div>
 
-                  <div className="flex items-center gap-2 p-1 rounded-lg border bg-transparent border-transparent">
+                  <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
+                    matchRiskLevel(userRiskLevel || [], leg) === false 
+                    ? 'border-red-500' 
+                    : 'border-green-500'
+                   }`}>
+      
                     <div className="relative w-12 h-12 flex-shrink-0">
                       <Image
                         src={riskConfig.icon}
@@ -1135,29 +1161,19 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       <p className="text-foreground font-medium font-semibold">
                         {riskConfig.displayName}
                       </p>
-
-                      <button
-                        onClick={() => setIsRiskLevelDialogOpen(true)}
-                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-accent flex items-center justify-center min-w-[32px] min-h-[32px]"
-                        aria-label="Show risk level information"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </button>
                     </div>
                   </div>
-
+                    {/* Warning message — now on its own row below */}
+                    {matchRiskLevel(userRiskLevel || [], leg) === false && (
+                      <p className="text-xs text-red-700 mt-1 text-left">
+                        ⚠ Your risk level ({userRiskLevel?.join(', ')}) is below the requirement for this leg
+                      </p>
+                    )}
+                    {matchRiskLevel(userRiskLevel || [], leg) === true && (
+                      <p className="text-xs text-green-700 mt-1 text-left">
+                        ✓ Your risk level ({userRiskLevel?.join(', ')}) matches the requirement
+                      </p>
+                    )}
 
                 </div>
               ) : null;
@@ -1166,10 +1182,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Minimum Required Experience Level */}
             {leg.min_experience_level && (
               <div>
-                <div className={`flex items-center gap-2 p-1 rounded-lg border ${
+                <div onClick={() => setIsExperienceLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
                   leg.experience_level_matches === false 
-                    ? 'bg-red-50 border-red-300' 
-                    : 'bg-transparent border-transparent'
+                    ? 'border-red-500' 
+                    : 'border-green-500'
                 }`}>
                   {/* Icon */}
                   <div className="relative w-12 h-12 flex-shrink-0">
@@ -1192,33 +1208,19 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                       </p>
 
-                      <button
-                        onClick={() => setIsExperienceLevelDialogOpen(true)}
-                        className="text-muted-foreground hover:text-foreground transition-colors p-1.5 rounded-md hover:bg-accent flex items-center justify-center min-w-[32px] min-h-[32px]"
-                        aria-label="Show experience level information"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          strokeWidth="2"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </button>
                     </div>
 
                   </div>
                 </div>
                     {/* Warning message — now on its own row below */}
                     {leg.experience_level_matches === false && userExperienceLevel !== null && (
-                      <p className="text-xs text-red-700 mt-1">
-                        ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement
+                      <p className="text-xs text-red-700 mt-1 text-left">
+                        ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement for this leg
+                      </p>
+                    )}
+                    {leg.experience_level_matches === true && userExperienceLevel !== null && (
+                      <p className="text-xs text-green-700 mt-1 text-left">
+                        ✓ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) matches the requirement
                       </p>
                     )}
               </div>
