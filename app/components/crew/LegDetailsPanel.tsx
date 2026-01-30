@@ -1128,7 +1128,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
                   <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
                     matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false 
-                    ? 'border-red-500' 
+                    ? 'border-orange-300' 
                     : 'border-green-500'
                    }`}>
       
@@ -1149,8 +1149,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                     {/* Warning message — now on its own row below */}
                     {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
-                      <p className="text-xs text-red-700 mt-1 text-left">
-                        ⚠ Your risk level ({userRiskLevel?.join(', ')}) is below the requirement for this leg
+                      <p className="text-xs text-orange-300 mt-1 text-left">
+                        ⚠ Your risk level ({userRiskLevel?.join(', ')}) preferences do not match for this leg
                       </p>
                     )}
                     {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === true && (
@@ -1168,7 +1168,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               <div>
                 <div onClick={() => setIsExperienceLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
                   leg.experience_level_matches === false 
-                    ? 'border-red-500' 
+                    ? 'border-orange-300' 
                     : 'border-green-500'
                 }`}>
                   {/* Icon */}
@@ -1198,7 +1198,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
                     {/* Warning message — now on its own row below */}
                     {leg.experience_level_matches === false && userExperienceLevel !== null && (
-                      <p className="text-xs text-red-700 mt-1 text-left">
+                      <p className="text-xs text-orange-300 mt-1 text-left">
                         ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement for this leg
                       </p>
                     )}
