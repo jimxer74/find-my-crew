@@ -14,6 +14,7 @@ import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIn
 import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '../ui/MatchBadge';
+import { matchRiskLevel } from '@/app/lib/skillMatching';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -203,23 +204,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [profileStatus, setProfileStatus] = useState<{ exists: boolean; hasRoles: boolean; completionPercentage: number } | null>(null);
 
   
-  const matchRiskLevel = (userRiskLevel: string[], leg: Leg): boolean => { 
-    console.log('[LegDetailsPanel] Match risk level:', {
-      userRiskLevel,
-      legRiskLevel: leg.leg_risk_level,
-      journeyRiskLevel: leg.journey_risk_level,
-    });
-
-    if (!userRiskLevel) return false;
-    if (!leg.leg_risk_level && !leg.journey_risk_level) return true;
-  
-    // Check if user risk level matches leg risk level
-    if(userRiskLevel.includes(leg.leg_risk_level as string)) return true;
-    // Check if user risk level matches journey risk level
-    if(leg.journey_risk_level?.some(riskLevel => userRiskLevel.includes(riskLevel))) return true;
-
-    return false;
-  };
   
 
   // Process risk level from leg and journey data (now provided by API)
@@ -1143,7 +1127,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 <div>
 
                   <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
-                    matchRiskLevel(userRiskLevel || [], leg) === false 
+                    matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false 
                     ? 'border-red-500' 
                     : 'border-green-500'
                    }`}>
@@ -1164,12 +1148,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     </div>
                   </div>
                     {/* Warning message — now on its own row below */}
-                    {matchRiskLevel(userRiskLevel || [], leg) === false && (
+                    {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
                       <p className="text-xs text-red-700 mt-1 text-left">
                         ⚠ Your risk level ({userRiskLevel?.join(', ')}) is below the requirement for this leg
                       </p>
                     )}
-                    {matchRiskLevel(userRiskLevel || [], leg) === true && (
+                    {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === true && (
                       <p className="text-xs text-green-700 mt-1 text-left">
                         ✓ Your risk level ({userRiskLevel?.join(', ')}) matches the requirement
                       </p>

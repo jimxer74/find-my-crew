@@ -697,6 +697,9 @@ export function CrewBrowseMap({
               const matchPercentage = calculateMatchPercentage(
                 userSkillsRef.current,
                 leg.skills || [],
+                userRiskLevelRef.current as string[] | null,
+                leg.leg_risk_level as string | null,
+                leg.journey_risk_level as string[] | null || [],
                 userExperienceLevelRef.current,
                 leg.min_experience_level
               );

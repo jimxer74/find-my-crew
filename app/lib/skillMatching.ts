@@ -4,6 +4,25 @@
 
 import { toCanonicalSkillName } from './skillUtils';
 
+
+export const matchRiskLevel = (userRiskLevel: string[], legRiskLevel: string | null, journeyRiskLevel: string[] | null): boolean => { 
+  console.log('[skillMatching] Match risk level:', {
+    userRiskLevel,
+    legRiskLevel,
+    journeyRiskLevel,
+  });
+
+  if (!userRiskLevel) return false;
+  if (!legRiskLevel && !journeyRiskLevel) return true;
+
+  // Check if user risk level matches leg risk level
+  if(userRiskLevel.includes(legRiskLevel as string)) return true;
+  // Check if user risk level matches journey risk level
+  if(journeyRiskLevel?.some(riskLevel => userRiskLevel.includes(riskLevel))) return true;
+
+  return false;
+};
+
 /**
  * Calculate match percentage between user skills and leg required skills
  * @param userSkills - Array of user's skill names
@@ -16,15 +35,13 @@ import { toCanonicalSkillName } from './skillUtils';
 export function calculateMatchPercentage(
   userSkills: string[],
   legSkills: string[],
+  userRiskLevel: string[] | null,
+  legRiskLevel: string | null,
+  journeyRiskLevel: string[] | null,
   userExperienceLevel: number | null = null,
   legMinExperienceLevel: number | null = null
 ): number {
-  // If experience level doesn't match, always return 0 (non-matching)
-  if (legMinExperienceLevel !== null && userExperienceLevel !== null) {
-    if (userExperienceLevel < legMinExperienceLevel) {
-      return 0; // User's experience level is insufficient
-    }
-  }
+
 
   // If leg has no skill requirements, it's a perfect match
   if (legSkills.length === 0) {
@@ -47,7 +64,16 @@ export function calculateMatchPercentage(
   
   // Count how many leg skills the user has
   const matchingSkills = normalizedLegSkills.filter(skill => normalizedUserSkills.includes(skill));
-  const matchPercentage = Math.round((matchingSkills.length / normalizedLegSkills.length) * 100);
+
+  // Calculate matches to experience level and risk level
+  const matchExperienceLevel = checkExperienceLevelMatch(userExperienceLevel, legMinExperienceLevel);
+  const match = matchRiskLevel(userRiskLevel || [], legRiskLevel, journeyRiskLevel);
+  let legFactors = normalizedLegSkills.length + 2;
+  // Add if risk level or experience level matches
+  let userFactors = matchingSkills.length += matchExperienceLevel ? 1 : 0;
+  userFactors += match ? 1 : 0;
+
+  const matchPercentage = Math.round((userFactors / legFactors) * 100);
   
   // Debug logging
   if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
