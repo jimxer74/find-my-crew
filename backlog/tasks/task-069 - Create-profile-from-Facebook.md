@@ -4,7 +4,7 @@ title: Create profile from Facebook
 status: To Do
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 12:34'
+updated_date: '2026-01-31 12:38'
 labels:
   - feature
   - ai
@@ -24,7 +24,7 @@ When a user logs in via Facebook OAuth, capture extended profile data from Faceb
 
 This feature enhances the Facebook login flow to:
 1. Request extended Facebook permissions during OAuth
-2. Fetch available Facebook data (profile, posts, interests, etc.)
+2. Fetch available Facebook data (user profile image, profile with all data, posts, interests, etc.)
 3. Use AI to analyze the data and generate profile suggestions
 4. Present the proposed profile to the user for review/edit
 5. Save the approved profile
