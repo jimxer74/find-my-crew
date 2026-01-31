@@ -36,26 +36,49 @@ export async function GET(request: Request) {
     );
 
     const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
-      
+
     if (exchangeResult.error) {
       console.error('LOGIN CALLBACK, error exchanging code for session:', exchangeResult.error);
       return NextResponse.redirect(new URL('/', request.url));
     }
 
-      // Get user profile to determine redirect
+    // Get user and session info
     const { data: { user } } = await supabase.auth.getUser();
-    
+    const { data: { session } } = await supabase.auth.getSession();
+
     if (user) {
+      // Check if this is a Facebook login by looking at the provider
+      const isFacebookLogin = user.app_metadata?.provider === 'facebook' ||
+        user.identities?.some(identity => identity.provider === 'facebook');
+
       // Profile is optional - don't create automatically
       const { data: profile } = await supabase
         .from('profiles')
-        .select('roles')
+        .select('roles, username')
         .eq('id', user.id)
         .single();
 
+      // Check if user is new (no profile or incomplete profile)
+      const isNewUser = !profile || !profile.username;
+
+      // If new Facebook user, redirect to profile setup wizard with provider token
+      if (isFacebookLogin && isNewUser && session?.provider_token) {
+        // Store the Facebook access token in a secure, short-lived cookie for the profile setup page
+        const response = NextResponse.redirect(new URL('/profile-setup', request.url));
+        response.cookies.set('fb_access_token', session.provider_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 300, // 5 minutes - short-lived for security
+          path: '/',
+        });
+        console.log('LOGIN CALLBACK, new Facebook user - redirecting to profile setup');
+        return response;
+      }
+
       // Determine redirect based on profile and roles
       let redirectPath = '/'; // Default to home
-      
+
       if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
         if (profile.roles.includes('owner')) {
@@ -67,7 +90,7 @@ export async function GET(request: Request) {
       // If no profile or no roles, redirect to home (can browse limited)
       let url = new URL(redirectPath, request.url)
       console.log('LOGIN CALLBACK, user found', url);
-          
+
       return NextResponse.redirect(url);
     }
   }

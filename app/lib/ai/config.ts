@@ -8,13 +8,14 @@
 
 export type AIProvider = 'deepseek' | 'groq' | 'gemini';
 
-export type UseCase = 
+export type UseCase =
   | 'boat-details'           // Extracting comprehensive boat details
   | 'suggest-sailboats'      // Suggesting sailboat make/model names
   | 'generate-journey'        // Generating sailing journey plans
   | 'suggest-makers'         // Suggesting boat manufacturers
   | 'suggest-models'         // Suggesting boat models
-  | 'assess-registration';   // Assessing crew member registration match for automated approval
+  | 'assess-registration'    // Assessing crew member registration match for automated approval
+  | 'generate-profile';      // Generating profile suggestions from Facebook data
 
 export interface ModelConfig {
   provider: AIProvider;
@@ -195,6 +196,35 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       maxTokens: 2000,
     },
     // Note: Production will use more sophisticated models (e.g., GPT-4, Claude Opus)
+  ],
+  'generate-profile': [
+    {
+      // Gemini first for profile generation - good at understanding context
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-flash',
+        'gemini-3-flash',
+        'gemini-2.5-pro',
+      ],
+      temperature: 0.5, // Balanced for creative but accurate suggestions
+      maxTokens: 3000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.3-70b-versatile',
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'qwen/qwen3-32b',
+      ],
+      temperature: 0.5,
+      maxTokens: 3000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat', 'deepseek-reasoner'],
+      temperature: 0.5,
+      maxTokens: 3000,
+    },
   ],
 };
 
