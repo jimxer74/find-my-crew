@@ -4,7 +4,7 @@ title: Create profile from Facebook
 status: In Progress
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 12:52'
+updated_date: '2026-01-31 13:35'
 labels:
   - feature
   - ai
@@ -56,6 +56,7 @@ Supabase OAuth provides limited Facebook data. Extended Facebook data requires:
 - [x] #8 Works gracefully when Facebook data is limited or unavailable
 - [x] #9 Existing manual profile creation flow remains available as fallback
 - [x] #10 All Facebook data processing respects GDPR consent requirements
+- [ ] #11 Fix profile editing page UI to use common controls
 <!-- AC:END -->
 
 ## Implementation Plan
