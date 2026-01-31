@@ -8,6 +8,7 @@ export const maxDuration = 60; // Allow up to 60 seconds for AI responses
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
+    console.log('AI ASSISTANT CHAT, request:', request);
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
