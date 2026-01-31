@@ -4,7 +4,7 @@ title: Create profile from Facebook
 status: In Progress
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 13:35'
+updated_date: '2026-01-31 17:08'
 labels:
   - feature
   - ai
@@ -56,7 +56,7 @@ Supabase OAuth provides limited Facebook data. Extended Facebook data requires:
 - [x] #8 Works gracefully when Facebook data is limited or unavailable
 - [x] #9 Existing manual profile creation flow remains available as fallback
 - [x] #10 All Facebook data processing respects GDPR consent requirements
-- [ ] #11 Fix profile editing page UI to use common controls
+- [x] #11 Fix profile editing page UI to use common controls
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -298,6 +298,16 @@ The Facebook App needs to be configured with these permissions:
 - `user_likes` (requires Facebook App Review for production)
 
 Note: Extended permissions (user_posts, user_likes) require Facebook App Review before they work in production. During development, these work for app admins/testers only.
+
+## Profile UI Update (2026-01-31)
+
+Updated ProfileCreationWizard.tsx to use common UI controls:
+- Replaced inline radio buttons for experience level with `SkillLevelSelector` component
+- Replaced inline checkboxes for risk level with `RiskLevelSelector` component
+- Updated skills format from `string[]` to `SkillEntry[]` for consistency with profile page
+- Updated profile save logic to serialize skills to JSON strings
+
+This ensures visual consistency between the Facebook profile creation wizard and the regular profile editing page.
 <!-- SECTION:NOTES:END -->
 
 ## Definition of Done
