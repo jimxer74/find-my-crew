@@ -31,9 +31,14 @@ export async function GET(request: Request) {
       }
     );
 
-    await supabase.auth.exchangeCodeForSession(code);
-
-    // Get user profile to determine redirect
+    try {
+      await supabase.auth.exchangeCodeForSession(code);
+    } catch (error) {
+      console.error('LOGIN CALLBACK, error exchanging code for session:', error);
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+        
+      // Get user profile to determine redirect
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
