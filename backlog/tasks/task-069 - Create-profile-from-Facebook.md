@@ -4,7 +4,7 @@ title: Create profile from Facebook
 status: In Progress
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 12:43'
+updated_date: '2026-01-31 12:52'
 labels:
   - feature
   - ai
@@ -46,16 +46,16 @@ Supabase OAuth provides limited Facebook data. Extended Facebook data requires:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Facebook OAuth requests extended permissions (email, public_profile, user_posts, user_likes)
-- [ ] #2 User sees Facebook permission consent screen before data access
-- [ ] #3 System fetches available Facebook data via Graph API after login
-- [ ] #4 AI analyzes Facebook data and generates profile suggestions
-- [ ] #5 User is presented with a review/edit screen showing AI-generated profile
-- [ ] #6 User can modify any suggested field before saving
-- [ ] #7 Profile is only saved after explicit user confirmation
-- [ ] #8 Works gracefully when Facebook data is limited or unavailable
-- [ ] #9 Existing manual profile creation flow remains available as fallback
-- [ ] #10 All Facebook data processing respects GDPR consent requirements
+- [x] #1 Facebook OAuth requests extended permissions (email, public_profile, user_posts, user_likes)
+- [x] #2 User sees Facebook permission consent screen before data access
+- [x] #3 System fetches available Facebook data via Graph API after login
+- [x] #4 AI analyzes Facebook data and generates profile suggestions
+- [x] #5 User is presented with a review/edit screen showing AI-generated profile
+- [x] #6 User can modify any suggested field before saving
+- [x] #7 Profile is only saved after explicit user confirmation
+- [x] #8 Works gracefully when Facebook data is limited or unavailable
+- [x] #9 Existing manual profile creation flow remains available as fallback
+- [x] #10 All Facebook data processing respects GDPR consent requirements
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -230,14 +230,83 @@ app/
 - Environment variables for Facebook App credentials
 <!-- SECTION:PLAN:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Summary
+
+### Files Created
+
+**Facebook Integration:**
+- `app/lib/facebook/types.ts` - TypeScript interfaces for Facebook API responses and profile suggestions
+- `app/lib/facebook/graphApi.ts` - Facebook Graph API service with functions to fetch profile, posts, likes
+- `app/lib/facebook/index.ts` - Export barrel file
+- `app/api/facebook/fetch-data/route.ts` - API endpoint to fetch Facebook data using stored access token
+
+**AI Profile Generation:**
+- `app/api/ai/generate-profile/route.ts` - API endpoint that uses AI to analyze Facebook data and generate profile suggestions
+
+**Profile Setup UI:**
+- `app/components/profile/ProfileCreationWizard.tsx` - Multi-step wizard component for profile creation
+- `app/profile-setup/page.tsx` - Page that hosts the wizard
+
+### Files Modified
+
+**OAuth Configuration:**
+- `app/auth/login/page.tsx` - Added extended Facebook scopes (email, public_profile, user_posts, user_likes)
+- `app/auth/callback/route.ts` - Added detection of new Facebook users and redirect to profile-setup with access token stored in secure cookie
+
+**AI Configuration:**
+- `app/lib/ai/config.ts` - Added new 'generate-profile' use case with Gemini, Groq, and DeepSeek fallback
+
+### User Flow
+
+1. User clicks "Facebook" login button
+2. Facebook OAuth with extended permissions requested
+3. After successful auth, callback checks if user is new (no profile)
+4. New Facebook users are redirected to `/profile-setup` with access token in secure cookie
+5. Profile wizard:
+   - Asks for AI consent (optional)
+   - Fetches Facebook data (profile, posts, likes)
+   - If AI consent given, generates profile suggestions
+   - Shows review/edit form with suggestions
+   - User selects roles and saves profile
+6. Redirect to appropriate dashboard
+
+### Key Features
+
+- **Graceful degradation**: Works even if Facebook data or AI is unavailable
+- **User control**: All suggestions can be edited before saving
+- **Privacy-first**: AI processing requires explicit consent
+- **Secure token handling**: Facebook token stored in short-lived (5 min) httpOnly cookie
+
+### Environment Variables Required
+
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase URL (existing)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anon key (existing)
+- `GOOGLE_GEMINI_API_KEY` - For AI profile generation
+- `GROQ_API_KEY` - Fallback AI provider
+- `DEEPSEEK_API_KEY` - Fallback AI provider
+
+### Facebook App Configuration Required
+
+The Facebook App needs to be configured with these permissions:
+- `email` (usually auto-approved)
+- `public_profile` (usually auto-approved)
+- `user_posts` (requires Facebook App Review for production)
+- `user_likes` (requires Facebook App Review for production)
+
+Note: Extended permissions (user_posts, user_likes) require Facebook App Review before they work in production. During development, these work for app admins/testers only.
+<!-- SECTION:NOTES:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Facebook OAuth successfully requests and receives extended permissions
-- [ ] #2 Facebook Graph API service fetches user data server-side
-- [ ] #3 AI successfully generates profile suggestions from Facebook data
-- [ ] #4 Profile review wizard displays suggestions and allows editing
-- [ ] #5 User can save AI-generated profile after review
-- [ ] #6 Fallback to manual profile creation works when Facebook data unavailable
+- [x] #1 Facebook OAuth successfully requests and receives extended permissions
+- [x] #2 Facebook Graph API service fetches user data server-side
+- [x] #3 AI successfully generates profile suggestions from Facebook data
+- [x] #4 Profile review wizard displays suggestions and allows editing
+- [x] #5 User can save AI-generated profile after review
+- [x] #6 Fallback to manual profile creation works when Facebook data unavailable
 - [ ] #7 Integration tests cover happy path and error scenarios
 - [ ] #8 Migration file created and specs/tables.sql updated if schema changes needed
 <!-- DOD:END -->
