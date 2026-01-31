@@ -8,6 +8,7 @@ import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
 import { FiltersDialog } from './FiltersDialog';
 import { NotificationBell } from './notifications/NotificationBell';
+import { AssistantButton } from './ai/AssistantButton';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -188,6 +189,8 @@ export function Header() {
                   </span>
                 </button>
               )}
+              {/* AI Assistant - Only show for authenticated users */}
+              {user && <AssistantButton />}
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
               <NavigationMenu

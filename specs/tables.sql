@@ -744,6 +744,182 @@ with check (auth.uid() = user_id);
 
 
 -- ============================================================================
+-- TABLE: ai_conversations
+-- ============================================================================
+-- Stores conversation threads between users and the AI assistant
+
+create table if not exists public.ai_conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text, -- Auto-generated from first message or user-provided
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists idx_ai_conversations_user_id on public.ai_conversations(user_id);
+create index if not exists idx_ai_conversations_updated_at on public.ai_conversations(updated_at desc);
+
+-- Enable Row Level Security
+alter table ai_conversations enable row level security;
+
+-- Policies: Users can only access their own conversations
+create policy "Users can view own conversations"
+on ai_conversations for select
+using (auth.uid() = user_id);
+
+create policy "Users can create own conversations"
+on ai_conversations for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update own conversations"
+on ai_conversations for update
+using (auth.uid() = user_id);
+
+create policy "Users can delete own conversations"
+on ai_conversations for delete
+using (auth.uid() = user_id);
+
+-- Trigger for updated_at
+create or replace function update_ai_conversations_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trigger_ai_conversations_updated_at
+  before update on public.ai_conversations
+  for each row
+  execute function update_ai_conversations_updated_at();
+
+
+-- ============================================================================
+-- TABLE: ai_messages
+-- ============================================================================
+-- Stores individual messages within conversations
+
+create table if not exists public.ai_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.ai_conversations(id) on delete cascade,
+  role text not null check (role in ('user', 'assistant', 'system')),
+  content text not null,
+  metadata jsonb default '{}', -- Store tool calls, function results, etc.
+  created_at timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists idx_ai_messages_conversation_id on public.ai_messages(conversation_id);
+create index if not exists idx_ai_messages_conversation_created on public.ai_messages(conversation_id, created_at);
+
+-- Enable Row Level Security
+alter table ai_messages enable row level security;
+
+-- Policies: Users can access messages in their own conversations
+create policy "Users can view messages in own conversations"
+on ai_messages for select
+using (
+  exists (
+    select 1 from ai_conversations
+    where ai_conversations.id = ai_messages.conversation_id
+    and ai_conversations.user_id = auth.uid()
+  )
+);
+
+create policy "Users can create messages in own conversations"
+on ai_messages for insert
+with check (
+  exists (
+    select 1 from ai_conversations
+    where ai_conversations.id = ai_messages.conversation_id
+    and ai_conversations.user_id = auth.uid()
+  )
+);
+
+-- Messages are immutable - no update policy
+-- Delete cascades from conversation
+
+
+-- ============================================================================
+-- TABLE: ai_pending_actions
+-- ============================================================================
+-- Stores action suggestions from AI that await user approval
+
+create table if not exists public.ai_pending_actions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  conversation_id uuid references public.ai_conversations(id) on delete set null,
+  action_type text not null, -- 'register_for_leg', 'update_profile', 'create_journey', 'approve_registration', etc.
+  action_payload jsonb not null, -- Parameters for the action
+  explanation text not null, -- AI's explanation of why this action is suggested
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired')),
+  created_at timestamptz not null default now(),
+  resolved_at timestamptz
+);
+
+-- Indexes
+create index if not exists idx_ai_pending_actions_user_id on public.ai_pending_actions(user_id);
+create index if not exists idx_ai_pending_actions_status on public.ai_pending_actions(user_id, status) where status = 'pending';
+create index if not exists idx_ai_pending_actions_conversation on public.ai_pending_actions(conversation_id);
+
+-- Enable Row Level Security
+alter table ai_pending_actions enable row level security;
+
+-- Policies: Users can only access their own pending actions
+create policy "Users can view own pending actions"
+on ai_pending_actions for select
+using (auth.uid() = user_id);
+
+create policy "Users can create own pending actions"
+on ai_pending_actions for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update own pending actions"
+on ai_pending_actions for update
+using (auth.uid() = user_id);
+
+
+-- ============================================================================
+-- TABLE: ai_suggestions
+-- ============================================================================
+-- Stores proactive suggestions generated by the system (matching opportunities, etc.)
+
+create table if not exists public.ai_suggestions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  suggestion_type text not null, -- 'matching_leg', 'matching_crew', 'profile_improvement', 'journey_opportunity'
+  title text not null,
+  description text not null,
+  metadata jsonb default '{}', -- Related entity IDs (leg_id, journey_id), match scores, etc.
+  dismissed boolean default false,
+  created_at timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists idx_ai_suggestions_user_id on public.ai_suggestions(user_id);
+create index if not exists idx_ai_suggestions_active on public.ai_suggestions(user_id, dismissed) where dismissed = false;
+create index if not exists idx_ai_suggestions_type on public.ai_suggestions(user_id, suggestion_type);
+
+-- Enable Row Level Security
+alter table ai_suggestions enable row level security;
+
+-- Policies: Users can only access their own suggestions
+create policy "Users can view own suggestions"
+on ai_suggestions for select
+using (auth.uid() = user_id);
+
+create policy "Users can update own suggestions"
+on ai_suggestions for update
+using (auth.uid() = user_id);
+
+-- System can create suggestions (via service role or trigger)
+create policy "System can create suggestions"
+on ai_suggestions for insert
+with check (true); -- Controlled via service role key in application
+
+
+-- ============================================================================
 -- STORAGE POLICIES: boat-images bucket
 -- ============================================================================
 -- Note: First create the bucket in Supabase Dashboard > Storage > New bucket

@@ -6,9 +6,11 @@ import { FilterProvider } from "./contexts/FilterContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { ConsentSetupProvider } from "./contexts/ConsentSetupContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AssistantProvider } from "./contexts/AssistantContext";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { Header } from "./components/Header";
 import { ThemeScript } from "./components/ThemeScript";
+import { AssistantSidebar } from "./components/ai/AssistantSidebar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,10 +45,13 @@ export default function RootLayout({
             <ConsentSetupProvider>
               <FilterProvider>
                 <NotificationProvider>
-                  <Header />
-                  <div className="min-h-screen pt-16">
-                    {children}
-                  </div>
+                  <AssistantProvider>
+                    <Header />
+                    <div className="min-h-screen pt-16">
+                      {children}
+                    </div>
+                    <AssistantSidebar />
+                  </AssistantProvider>
                 </NotificationProvider>
               </FilterProvider>
               <CookieConsentBanner />

@@ -4,11 +4,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
-import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
+import { ExperienceLevel } from '@/app/types/experience-levels';
+import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 
 type WizardStep = 'loading' | 'consent' | 'fetching' | 'analyzing' | 'review' | 'saving' | 'complete' | 'error';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
+
+type SkillEntry = {
+  skill_name: string;
+  description: string;
+};
 
 interface ProfileFormData {
   username: string;
@@ -18,7 +25,7 @@ interface ProfileFormData {
   experience: string;
   certifications: string;
   sailing_preferences: string;
-  skills: string[];
+  skills: SkillEntry[];
   risk_level: RiskLevel[];
   roles: ('owner' | 'crew')[];
 }
@@ -43,8 +50,6 @@ export function ProfileCreationWizard() {
   });
   const [usernameError, setUsernameError] = useState<string | null>(null);
   const [aiConsent, setAiConsent] = useState(false);
-
-  const experienceLevels = getAllExperienceLevels();
 
   // Check if user has given AI consent and fetch Facebook data
   useEffect(() => {
@@ -142,6 +147,11 @@ export function ProfileCreationWizard() {
 
       // Apply suggestions to form
       const sugg = result.suggestion as ProfileSuggestion;
+      // Convert skills from string[] to SkillEntry[]
+      const skillEntries: SkillEntry[] = (sugg.skills || []).map((skill: string) => ({
+        skill_name: skill,
+        description: '',
+      }));
       setFormData({
         username: sugg.username || '',
         full_name: sugg.fullName || '',
@@ -150,7 +160,7 @@ export function ProfileCreationWizard() {
         experience: sugg.experience || '',
         certifications: sugg.certifications || '',
         sailing_preferences: sugg.sailingPreferences || '',
-        skills: sugg.skills || [],
+        skills: skillEntries,
         risk_level: (sugg.riskLevel || []).filter((r): r is RiskLevel =>
           ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(r)
         ),
@@ -236,7 +246,7 @@ export function ProfileCreationWizard() {
         throw new Error('Not authenticated');
       }
 
-      // Create the profile
+      // Create the profile - serialize skills to JSON strings
       const { error: profileError } = await supabase.from('profiles').insert({
         id: user.id,
         username: formData.username,
@@ -246,7 +256,7 @@ export function ProfileCreationWizard() {
         experience: formData.experience || null,
         certifications: formData.certifications || null,
         sailing_preferences: formData.sailing_preferences || null,
-        skills: formData.skills,
+        skills: formData.skills.map(skill => JSON.stringify(skill)),
         risk_level: formData.risk_level,
         roles: formData.roles,
         email: user.email,
@@ -556,45 +566,23 @@ export function ProfileCreationWizard() {
           </div>
         </div>
 
-        {/* Sailing Experience */}
+        {/* Sailing Experience - using common SkillLevelSelector */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Sailing Experience
-            {suggestion?.confidence.sailingExperience && suggestion.confidence.sailingExperience !== 'none' && (
-              <span className={`ml-2 text-xs px-2 py-0.5 rounded ${
+          {suggestion?.confidence.sailingExperience && suggestion.confidence.sailingExperience !== 'none' && (
+            <div className="mb-2">
+              <span className={`text-xs px-2 py-0.5 rounded ${
                 suggestion.confidence.sailingExperience === 'high' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                 suggestion.confidence.sailingExperience === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
                 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
               }`}>
                 AI confidence: {suggestion.confidence.sailingExperience}
               </span>
-            )}
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {experienceLevels.map((level) => (
-              <label
-                key={level.value}
-                className={`flex items-center p-3 border rounded-md cursor-pointer transition-colors ${
-                  formData.sailing_experience === level.value
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:bg-accent'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="sailing_experience"
-                  value={level.value}
-                  checked={formData.sailing_experience === level.value}
-                  onChange={() => setFormData(prev => ({ ...prev, sailing_experience: level.value as ExperienceLevel }))}
-                  className="mr-3"
-                />
-                <div>
-                  <span className="font-medium text-sm">{level.displayName}</span>
-                  <p className="text-xs text-muted-foreground">{level.description}</p>
-                </div>
-              </label>
-            ))}
-          </div>
+            </div>
+          )}
+          <SkillLevelSelector
+            value={formData.sailing_experience}
+            onChange={(value) => setFormData(prev => ({ ...prev, sailing_experience: value }))}
+          />
         </div>
 
         {/* Experience Description */}
@@ -627,37 +615,18 @@ export function ProfileCreationWizard() {
           />
         </div>
 
-        {/* Risk Level */}
+        {/* Risk Level - using common RiskLevelSelector */}
         <div>
-          <label className="block text-sm font-medium text-foreground mb-2">
-            Comfort with Sailing Types
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {(['Coastal sailing', 'Offshore sailing', 'Extreme sailing'] as RiskLevel[]).map((risk) => (
-              <label
-                key={risk}
-                className={`flex items-center px-4 py-2 border rounded-md cursor-pointer transition-colors ${
-                  formData.risk_level.includes(risk)
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border hover:bg-accent'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={formData.risk_level.includes(risk)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFormData(prev => ({ ...prev, risk_level: [...prev.risk_level, risk] }));
-                    } else {
-                      setFormData(prev => ({ ...prev, risk_level: prev.risk_level.filter(r => r !== risk) }));
-                    }
-                  }}
-                  className="mr-2"
-                />
-                <span className="text-sm">{risk}</span>
-              </label>
-            ))}
-          </div>
+          <RiskLevelSelector
+            value={formData.risk_level}
+            onChange={(value) => {
+              const normalizedRiskLevel: RiskLevel[] =
+                value === null ? [] :
+                Array.isArray(value) ? value :
+                [value];
+              setFormData(prev => ({ ...prev, risk_level: normalizedRiskLevel }));
+            }}
+          />
         </div>
       </div>
 
