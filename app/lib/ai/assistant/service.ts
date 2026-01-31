@@ -274,14 +274,19 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
   const toolCalls: ToolCall[] = [];
   let content = text;
 
-  // Find tool call blocks
-  const toolCallRegex = /```tool_call\s*\n?([\s\S]*?)```/g;
+  // Find tool call blocks (accept variations: tool_call, tool_calls, tool_code, json)
+  const toolCallRegex = /```(?:tool_calls?|tool_code|json)\s*\n?([\s\S]*?)```/g;
   let match;
 
   while ((match = toolCallRegex.exec(text)) !== null) {
-    log('Found tool_call block:', match[1].trim().substring(0, 200));
+    log('Found tool call block:', match[1].trim().substring(0, 200));
     try {
       const toolCallJson = JSON.parse(match[1].trim());
+      // Validate this is actually a tool call (must have name field)
+      if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+        log('Skipping JSON block - no valid "name" field');
+        continue;
+      }
       const toolCall = {
         id: `tc_${Date.now()}_${toolCalls.length}`,
         name: toolCallJson.name,

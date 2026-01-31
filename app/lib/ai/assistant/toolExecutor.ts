@@ -16,6 +16,20 @@ const log = (message: string, data?: unknown) => {
   }
 };
 
+/**
+ * Convert snake_case keys to camelCase
+ * This handles AI models that output snake_case instead of camelCase
+ */
+function normalizeArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(args)) {
+    // Convert snake_case to camelCase
+    const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    normalized[camelKey] = value;
+  }
+  return normalized;
+}
+
 interface ExecutorContext {
   supabase: SupabaseClient;
   userId: string;
@@ -30,10 +44,12 @@ export async function executeTool(
   toolCall: ToolCall,
   context: ExecutorContext
 ): Promise<ToolResult> {
-  const { name, arguments: args, id } = toolCall;
+  const { name, arguments: rawArgs, id } = toolCall;
   const { supabase, userId, userRoles, conversationId } = context;
 
-  log(`Executing tool: ${name}`, { id, args });
+  // Normalize arguments (convert snake_case to camelCase)
+  const args = normalizeArgs(rawArgs);
+  log(`Executing tool: ${name}`, { id, rawArgs, normalizedArgs: args });
 
   try {
     // Handle action tools (create pending action)

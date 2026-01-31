@@ -229,6 +229,23 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   ],
   'assistant-chat': [
     {
+      provider: 'groq',
+      models: [
+        'groq/compound',
+        'llama-3.1-8b-instant',
+        'llama-3.3-70b-versatile',
+        'qwen/qwen3-32b',
+        'groq/compound-mini',
+        'meta-llama/llama-guard-4-12b',
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'meta-llama/llama-4-maverick-17b-128e-instruct',
+        'openai/gpt-oss-120b',
+        'openai/gpt-oss-20b',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    {
       // Gemini for conversational AI - good at chat, large context window
       provider: 'gemini',
       models: [
@@ -237,16 +254,6 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
         'gemini-2.5-pro',
       ],
       temperature: 0.7, // Slightly creative for natural conversation
-      maxTokens: 4000,
-    },
-    {
-      provider: 'groq',
-      models: [
-        'llama-3.3-70b-versatile',
-        'meta-llama/llama-4-scout-17b-16e-instruct',
-        'qwen/qwen3-32b',
-      ],
-      temperature: 0.7,
       maxTokens: 4000,
     },
     {
