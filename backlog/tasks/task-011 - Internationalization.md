@@ -1,10 +1,10 @@
 ---
 id: TASK-011
 title: Internationalization
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-01-31 21:05'
+updated_date: '2026-01-31 21:06'
 labels:
   - i18n
   - infrastructure
@@ -58,7 +58,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 App supports locale-based routing (/en/, /fi/)
+- [x] #1 App supports locale-based routing (/en/, /fi/)
 - [ ] #2 All UI strings are externalized to translation files (no hardcoded text)
 - [ ] #3 Users can select their preferred language from a language switcher
 - [ ] #4 Language preference persists in localStorage and user profile (when logged in)
@@ -67,7 +67,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [ ] #7 Numbers and measurements display with locale-appropriate formatting
 - [ ] #8 Email notifications are sent in the user's preferred language
 - [ ] #9 Page metadata (titles, descriptions) are translated for SEO
-- [ ] #10 Fallback to English when translation is missing
+- [x] #10 Fallback to English when translation is missing
 - [ ] #11 Language switcher is accessible from header/navigation on all pages
 <!-- AC:END -->
 
@@ -825,4 +825,23 @@ next-intl uses ICU message format for:
 4. **Translation Memory** - Reuse common phrases
 5. **A/B Testing** - Test translation quality
 6. **Automated Translation** - ML for real-time translation
+
+## Phase 1 Implementation Complete (2026-01-31)
+
+First version implemented with support for:
+- **English (en)** - Default language
+- **Finnish (fi)** - First additional language
+
+### What was implemented:
+- next-intl integration with Next.js App Router
+- Locale-based routing (`/en/`, `/fi/`)
+- Message files structure (`messages/en.json`, `messages/fi.json`)
+- Middleware for locale detection
+- Basic language switcher component
+
+### Remaining work:
+- Complete string extraction for all components
+- User preference storage in database
+- Email localization
+- Full QA testing
 <!-- SECTION:NOTES:END -->
