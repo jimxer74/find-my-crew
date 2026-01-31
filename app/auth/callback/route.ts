@@ -48,9 +48,9 @@ export async function GET(request: Request) {
       if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
         if (profile.roles.includes('owner')) {
-          redirectPath = '/owner/boats';
+          redirectPath = window.location.origin + '/owner/journeys';
         } else if (profile.roles.includes('crew')) {
-          redirectPath = '/crew/dashboard';
+          redirectPath = window.location.origin + '/crew/dashboard';
         }
       }
       // If no profile or no roles, redirect to home (can browse limited)
