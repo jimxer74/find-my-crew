@@ -6,6 +6,8 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
 
+  console.log('LOGIN CALLBACK:', request);
+
   if (code) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -54,11 +56,15 @@ export async function GET(request: Request) {
         }
       }
       // If no profile or no roles, redirect to home (can browse limited)
-      
-      return NextResponse.redirect(new URL(redirectPath, request.url));
+      let url = new URL(redirectPath, request.url)
+      console.log('LOGIN CALLBACK, user found', url);
+          
+      return NextResponse.redirect(url);
     }
   }
+  let url = new URL('/', request.url)
+  console.log('LOGIN CALLBACK, code not found:', url);
 
   // Default redirect to home if something goes wrong
-  return NextResponse.redirect(new URL('/', request.url));
+  return NextResponse.redirect(url);
 }
