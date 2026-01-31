@@ -18,7 +18,7 @@ PROFILE FIELDS TO SUGGEST:
 - usernameAlternatives: 2-3 alternative username options
 - fullName: User's full name
 - sailingExperience: 1-4 scale (1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper) or null if unknown
-- experience: Free text description of sailing/maritime experience, or null
+- userDescription: Free text description of who the user is, their background, and interests
 - certifications: Any sailing certifications mentioned, or null
 - sailingPreferences: What type of sailing they might prefer, or null
 - skills: Array of relevant skills (e.g., "Navigation", "Weather Reading", "First Aid", "Cooking", "Communication")
@@ -41,7 +41,7 @@ Respond ONLY with a valid JSON object (no markdown, no explanation) in this exac
   "fullName": "string",
   "profileImageUrl": "string or null",
   "sailingExperience": "number 1-4 or null",
-  "experience": "string or null",
+  "userDescription": "string or null",
   "certifications": "string or null",
   "sailingPreferences": "string or null",
   "skills": ["string"],
@@ -112,7 +112,7 @@ function parseAIResponse(text: string): ProfileSuggestion {
     fullName: String(parsed.fullName || ''),
     profileImageUrl: parsed.profileImageUrl || null,
     sailingExperience: parsed.sailingExperience ? Number(parsed.sailingExperience) : null,
-    experience: parsed.experience || null,
+    userDescription: parsed.userDescription || null,
     certifications: parsed.certifications || null,
     sailingPreferences: parsed.sailingPreferences || null,
     skills: Array.isArray(parsed.skills) ? parsed.skills.map(String) : [],
@@ -140,7 +140,7 @@ function createFallbackSuggestion(facebookData: FacebookUserData): ProfileSugges
     fullName: name,
     profileImageUrl: facebookData.profilePictureUrl,
     sailingExperience: null,
-    experience: null,
+    userDescription: null,
     certifications: null,
     sailingPreferences: null,
     skills: [],

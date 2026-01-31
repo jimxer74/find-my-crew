@@ -67,7 +67,7 @@ export interface ProfileSuggestion {
   fullName: string;
   profileImageUrl: string | null;
   sailingExperience: number | null; // 1-4 scale
-  experience: string | null;
+  userDescription: string | null; // Free-text description of the user
   certifications: string | null;
   sailingPreferences: string | null;
   skills: string[];

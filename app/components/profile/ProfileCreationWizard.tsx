@@ -22,7 +22,7 @@ interface ProfileFormData {
   full_name: string;
   profile_image_url: string;
   sailing_experience: ExperienceLevel | null;
-  experience: string;
+  user_description: string;
   certifications: string;
   sailing_preferences: string;
   skills: SkillEntry[];
@@ -41,7 +41,7 @@ export function ProfileCreationWizard() {
     full_name: '',
     profile_image_url: '',
     sailing_experience: null,
-    experience: '',
+    user_description: '',
     certifications: '',
     sailing_preferences: '',
     skills: [],
@@ -157,7 +157,7 @@ export function ProfileCreationWizard() {
         full_name: sugg.fullName || '',
         profile_image_url: sugg.profileImageUrl || '',
         sailing_experience: sugg.sailingExperience as ExperienceLevel | null,
-        experience: sugg.experience || '',
+        user_description: sugg.userDescription || '',
         certifications: sugg.certifications || '',
         sailing_preferences: sugg.sailingPreferences || '',
         skills: skillEntries,
@@ -253,7 +253,7 @@ export function ProfileCreationWizard() {
         full_name: formData.full_name,
         profile_image_url: formData.profile_image_url,
         sailing_experience: formData.sailing_experience,
-        experience: formData.experience || null,
+        user_description: formData.user_description || null,
         certifications: formData.certifications || null,
         sailing_preferences: formData.sailing_preferences || null,
         skills: formData.skills.map(skill => JSON.stringify(skill)),
@@ -585,18 +585,18 @@ export function ProfileCreationWizard() {
           />
         </div>
 
-        {/* Experience Description */}
+        {/* User Description */}
         <div>
-          <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
-            Experience Description
+          <label htmlFor="user_description" className="block text-sm font-medium text-foreground mb-2">
+            About You
           </label>
           <textarea
-            id="experience"
-            value={formData.experience}
-            onChange={(e) => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+            id="user_description"
+            value={formData.user_description}
+            onChange={(e) => setFormData(prev => ({ ...prev, user_description: e.target.value }))}
             rows={3}
             className="w-full px-3 py-3 text-base border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Describe your sailing experience..."
+            placeholder="Tell us about yourself - your background, interests, and what brings you to sailing..."
           />
         </div>
 

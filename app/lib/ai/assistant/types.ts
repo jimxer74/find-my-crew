@@ -110,7 +110,7 @@ export interface UserContext {
     fullName: string | null;
     roles: string[];
     sailingExperience: number | null;
-    experience: string | null;
+    userDescription: string | null;
     certifications: string | null;
     skills: string[];
     riskLevel: string[];

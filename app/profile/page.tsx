@@ -26,6 +26,7 @@ type Profile = {
   roles: string[];
   username: string | null;
   full_name: string | null;
+  user_description: string | null;
   certifications: string | null;
   phone: string | null;
   sailing_experience: ExperienceLevel | null;
@@ -86,6 +87,7 @@ function ProfilePageContent() {
   const [formData, setFormData] = useState({
     username: '',
     full_name: '',
+    user_description: '',
     certifications: '',
     phone: '',
     email: user?.email || '',
@@ -174,6 +176,7 @@ function ProfilePageContent() {
         setFormData({
           username: usernameFromEmail,
           full_name: fullNameFromMetadata,
+          user_description: '',
           certifications: '',
           phone: '',
           email: user.email || '',
@@ -190,6 +193,7 @@ function ProfilePageContent() {
           roles: initialRoles,
           username: null,
           full_name: null,
+          user_description: null,
           certifications: null,
           phone: null,
           sailing_experience: null,
@@ -221,6 +225,7 @@ function ProfilePageContent() {
       setFormData({
         username: data.username || '',
         full_name: data.full_name || '',
+        user_description: data.user_description || '',
         certifications: data.certifications || '',
         phone: data.phone || '',
         email: user?.email || '',
@@ -274,6 +279,7 @@ function ProfilePageContent() {
           roles: roles,
           username: formData.username || null,
           full_name: formData.full_name || null,
+          user_description: formData.user_description || null,
           certifications: formData.certifications || null,
           phone: formData.phone || null,
           email: formData.email || null,
@@ -294,6 +300,7 @@ function ProfilePageContent() {
           roles: roles,
           username: formData.username || null,
           full_name: formData.full_name || null,
+          user_description: formData.user_description || null,
           certifications: formData.certifications || null,
           phone: formData.phone || null,
           email: formData.email || null,
@@ -326,6 +333,7 @@ function ProfilePageContent() {
           profile_completion_percentage: calculatedCompletion,
           username: formData.username || null,
           full_name: formData.full_name || null,
+          user_description: formData.user_description || null,
           phone: formData.phone || null,
           sailing_experience: formData.sailing_experience,
           risk_level: formData.risk_level,

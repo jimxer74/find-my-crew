@@ -65,7 +65,7 @@ end$$;
 create table public.profiles (
   id uuid not null,
   full_name text null,
-  experience text null,
+  user_description text null,  -- Free-text description of the user
   certifications text null,
   phone text null,
   created_at timestamp with time zone not null default now(),

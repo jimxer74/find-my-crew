@@ -23,6 +23,14 @@ import { executeTools } from './toolExecutor';
 const MAX_HISTORY_MESSAGES = 20;
 const MAX_TOOL_ITERATIONS = 5;
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[AI Assistant Service] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 /**
  * Main chat function - processes a message and returns AI response
  */
@@ -31,10 +39,15 @@ export async function chat(
   request: ChatRequest,
   options: AssistantOptions
 ): Promise<ChatResponse> {
+  log('=== Starting chat ===');
+  log('Request message:', request.message?.substring(0, 100) + (request.message?.length > 100 ? '...' : ''));
+  log('Options:', { userId: options.userId, conversationId: options.conversationId });
+
   const { userId, maxHistoryMessages = MAX_HISTORY_MESSAGES } = options;
   let { conversationId } = options;
 
   // Check AI consent
+  log('Checking AI consent...');
   const { data: consents } = await supabase
     .from('user_consents')
     .select('ai_processing_consent')
@@ -42,39 +55,58 @@ export async function chat(
     .single();
 
   if (!consents?.ai_processing_consent) {
+    log('AI consent not granted!');
     throw new Error('AI processing consent not granted. Please enable AI features in your settings.');
   }
+  log('AI consent verified');
 
   // Get or create conversation
   if (!conversationId && !request.conversationId) {
+    log('Creating new conversation...');
     const conversation = await createConversation(supabase, userId);
     conversationId = conversation.id;
+    log('New conversation created:', conversationId);
   } else {
     conversationId = conversationId || request.conversationId!;
+    log('Using existing conversation:', conversationId);
   }
 
   // Save user message
+  log('Saving user message...');
   const userMessage = await saveMessage(supabase, conversationId, {
     role: 'user',
     content: request.message,
     metadata: {},
   });
+  log('User message saved:', userMessage.id);
 
   // Get user context
+  log('Building user context...');
   const userContext = await getUserContext(supabase, userId);
+  log('User context built:', {
+    hasProfile: !!userContext.profile,
+    roles: userContext.profile?.roles,
+    boatCount: userContext.boats?.length,
+    registrationCount: userContext.recentRegistrations?.length,
+  });
 
   // Get conversation history
+  log('Loading conversation history...');
   const history = await getConversationHistory(supabase, conversationId, maxHistoryMessages);
+  log('History loaded:', { messageCount: history.length });
 
   // Get available tools based on user roles
   const userRoles = userContext.profile?.roles || [];
   const tools = getToolsForUser(userRoles);
+  log('Available tools:', tools.map(t => t.name));
 
   // Build messages for AI
   const systemPrompt = buildSystemPrompt(userContext);
   const messages = buildAIMessages(systemPrompt, history);
+  log('Built AI messages:', { totalMessages: messages.length });
 
   // Call AI with tool support
+  log('Processing AI with tools...');
   const aiResponse = await processAIWithTools(
     supabase,
     messages,
@@ -85,8 +117,14 @@ export async function chat(
       conversationId,
     }
   );
+  log('AI response received:', {
+    contentLength: aiResponse.content.length,
+    toolCallCount: aiResponse.toolCalls?.length || 0,
+    toolResultCount: aiResponse.toolResults?.length || 0,
+  });
 
   // Save assistant message
+  log('Saving assistant message...');
   const assistantMessage = await saveMessage(supabase, conversationId, {
     role: 'assistant',
     content: aiResponse.content,
@@ -95,20 +133,25 @@ export async function chat(
       toolResults: aiResponse.toolResults,
     },
   });
+  log('Assistant message saved:', assistantMessage.id);
 
   // Update conversation title if it's the first exchange
   if (history.length <= 1) {
+    log('Updating conversation title...');
     await updateConversationTitle(supabase, conversationId, request.message);
   }
 
   // Get any pending actions created during this chat
+  log('Checking for pending actions...');
   const { data: pendingActions } = await supabase
     .from('ai_pending_actions')
     .select('*')
     .eq('conversation_id', conversationId)
     .eq('status', 'pending')
     .order('created_at', { ascending: false });
+  log('Pending actions:', pendingActions?.length || 0);
 
+  log('=== Chat complete ===');
   return {
     conversationId,
     message: assistantMessage,
@@ -133,6 +176,7 @@ async function processAIWithTools(
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
 }> {
+  log('--- processAIWithTools started ---');
   const allToolCalls: ToolCall[] = [];
   const allToolResults: ToolResult[] = [];
   let currentMessages = [...messages];
@@ -140,6 +184,7 @@ async function processAIWithTools(
 
   while (iterations < MAX_TOOL_ITERATIONS) {
     iterations++;
+    log(`Tool iteration ${iterations}/${MAX_TOOL_ITERATIONS}`);
 
     // Build prompt with tool instructions
     const toolsDescription = tools.map(t => `- ${t.name}: ${t.description}`).join('\n');
@@ -162,15 +207,20 @@ You can make multiple tool calls in one response. After receiving tool results, 
     ];
 
     // Call AI
+    log('Calling AI service...');
     const result = await callAI({
       useCase: 'assistant-chat',
       prompt: messagesWithTools.map(m => `${m.role}: ${m.content}`).join('\n\n'),
     });
+    log('AI response received, length:', result.text.length);
+    log('AI raw response preview:', result.text.substring(0, 500) + (result.text.length > 500 ? '...' : ''));
 
     // Parse response for tool calls
     const { content, toolCalls } = parseToolCalls(result.text);
+    log('Parsed response:', { contentLength: content.length, toolCallCount: toolCalls.length });
 
     if (toolCalls.length === 0) {
+      log('No tool calls found, returning final response');
       // No tool calls, return final response
       return {
         content,
@@ -180,7 +230,9 @@ You can make multiple tool calls in one response. After receiving tool results, 
     }
 
     // Execute tool calls
+    log('Tool calls found:', toolCalls.map(tc => tc.name));
     allToolCalls.push(...toolCalls);
+    log('Executing tools...');
     const toolResults = await executeTools(toolCalls, {
       supabase,
       userId: context.userId,
@@ -188,6 +240,7 @@ You can make multiple tool calls in one response. After receiving tool results, 
       conversationId: context.conversationId,
     });
     allToolResults.push(...toolResults);
+    log('Tool execution complete:', toolResults.map(r => ({ name: r.name, hasError: !!r.error })));
 
     // Add tool results to messages for next iteration
     const toolResultsText = toolResults.map(r => {
@@ -201,9 +254,11 @@ You can make multiple tool calls in one response. After receiving tool results, 
       { role: 'assistant', content: result.text },
       { role: 'user', content: `Tool results:\n${toolResultsText}\n\nPlease provide your response to the user based on these results.` }
     );
+    log('Added tool results to messages, continuing iteration...');
   }
 
   // Max iterations reached
+  log('Max iterations reached! Returning fallback response.');
   return {
     content: "I apologize, but I wasn't able to complete your request. Please try again or rephrase your question.",
     toolCalls: allToolCalls.length > 0 ? allToolCalls : undefined,
@@ -215,6 +270,7 @@ You can make multiple tool calls in one response. After receiving tool results, 
  * Parse tool calls from AI response
  */
 function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] } {
+  log('Parsing tool calls from response...');
   const toolCalls: ToolCall[] = [];
   let content = text;
 
@@ -223,20 +279,25 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
   let match;
 
   while ((match = toolCallRegex.exec(text)) !== null) {
+    log('Found tool_call block:', match[1].trim().substring(0, 200));
     try {
       const toolCallJson = JSON.parse(match[1].trim());
-      toolCalls.push({
+      const toolCall = {
         id: `tc_${Date.now()}_${toolCalls.length}`,
         name: toolCallJson.name,
         arguments: toolCallJson.arguments || {},
-      });
+      };
+      toolCalls.push(toolCall);
+      log('Parsed tool call:', { name: toolCall.name, args: toolCall.arguments });
       // Remove tool call from content
       content = content.replace(match[0], '').trim();
-    } catch {
+    } catch (e) {
+      log('Failed to parse tool call JSON:', e);
       // Invalid JSON, skip
     }
   }
 
+  log(`Parsing complete: ${toolCalls.length} tool calls found`);
   return { content, toolCalls };
 }
 

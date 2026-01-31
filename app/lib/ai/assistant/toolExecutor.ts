@@ -8,6 +8,14 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[Tool Executor] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 interface ExecutorContext {
   supabase: SupabaseClient;
   userId: string;
@@ -25,10 +33,14 @@ export async function executeTool(
   const { name, arguments: args, id } = toolCall;
   const { supabase, userId, userRoles, conversationId } = context;
 
+  log(`Executing tool: ${name}`, { id, args });
+
   try {
     // Handle action tools (create pending action)
     if (isActionTool(name)) {
+      log(`Tool ${name} is an action tool, creating pending action...`);
       const pendingAction = await createPendingAction(name, args, context);
+      log(`Pending action created: ${pendingAction.id}`);
       return {
         toolCallId: id,
         name,
@@ -41,6 +53,7 @@ export async function executeTool(
     }
 
     // Handle data tools
+    log(`Executing data tool: ${name}`);
     let result: unknown;
 
     switch (name) {
@@ -108,12 +121,14 @@ export async function executeTool(
         throw new Error(`Unknown tool: ${name}`);
     }
 
+    log(`Tool ${name} completed successfully`, { resultKeys: result ? Object.keys(result as object) : null });
     return {
       toolCallId: id,
       name,
       result,
     };
   } catch (error: any) {
+    log(`Tool ${name} failed: ${error.message}`);
     return {
       toolCallId: id,
       name,
@@ -130,10 +145,12 @@ export async function executeTools(
   toolCalls: ToolCall[],
   context: ExecutorContext
 ): Promise<ToolResult[]> {
+  log(`Executing ${toolCalls.length} tool calls in parallel...`, toolCalls.map(tc => tc.name));
   // Execute tools in parallel where possible
   const results = await Promise.all(
     toolCalls.map(tc => executeTool(tc, context))
   );
+  log(`All tools completed`, { successCount: results.filter(r => !r.error).length, errorCount: results.filter(r => r.error).length });
   return results;
 }
 
@@ -567,7 +584,7 @@ async function analyzeCrewMatch(
         skills,
         risk_level,
         certifications,
-        experience
+        user_description
       )
     `)
     .eq('id', registrationId)
@@ -593,7 +610,7 @@ async function analyzeCrewMatch(
       experience: profile.sailing_experience,
       skills: profile.skills,
       certifications: profile.certifications,
-      experienceDescription: profile.experience,
+      userDescription: profile.user_description,
     },
     legRequirements: {
       name: leg.name,

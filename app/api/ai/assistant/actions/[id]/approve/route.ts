@@ -3,6 +3,14 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { executeAction } from '@/app/lib/ai/assistant';
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[API Approve Action] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
@@ -11,6 +19,7 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    log('=== Approving action ===', { actionId: id });
     const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,31 +59,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (fetchError || !action) {
+      log('Action not found:', id);
       return NextResponse.json(
         { error: 'Action not found' },
         { status: 404 }
       );
     }
 
+    log('Found action:', { actionType: action.action_type, status: action.status });
+
     // Execute the action
+    log('Executing action...');
     const result = await executeAction(action, {
       supabase,
       userId: user.id,
     });
 
     if (!result.success) {
+      log('Action execution failed:', result.error);
       return NextResponse.json(
         { error: result.message, code: result.error },
         { status: 400 }
       );
     }
 
+    log('=== Action approved and executed successfully ===');
     return NextResponse.json({
       success: true,
       message: result.message,
       data: result.data,
     });
   } catch (error: any) {
+    log('ERROR:', error.message);
     console.error('Approve action error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to approve action' },

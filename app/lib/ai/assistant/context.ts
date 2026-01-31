@@ -7,6 +7,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { UserContext } from './types';
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[Context Builder] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 /**
  * Fetch user context from the database
  */
@@ -14,27 +22,39 @@ export async function getUserContext(
   supabase: SupabaseClient,
   userId: string
 ): Promise<UserContext> {
+  log('--- getUserContext started ---', { userId });
+
   // Fetch profile
+  log('Fetching user profile...');
   const { data: profile } = await supabase
     .from('profiles')
-    .select('username, full_name, roles, sailing_experience, experience, certifications, skills, risk_level, sailing_preferences')
+    .select('username, full_name, roles, sailing_experience, user_description, certifications, skills, risk_level, sailing_preferences')
     .eq('id', userId)
     .single();
+
+  log('Profile fetched:', {
+    hasProfile: !!profile,
+    username: profile?.username,
+    roles: profile?.roles
+  });
 
   // Fetch boats if user is owner
   let boats: UserContext['boats'] = [];
   if (profile?.roles?.includes('owner')) {
+    log('User is owner, fetching boats...');
     const { data: boatsData } = await supabase
       .from('boats')
       .select('id, name, type, make, model')
       .eq('owner_id', userId)
       .limit(10);
     boats = boatsData || [];
+    log('Boats fetched:', { count: boats.length });
   }
 
   // Fetch recent registrations if user is crew
   let recentRegistrations: UserContext['recentRegistrations'] = [];
   if (profile?.roles?.includes('crew')) {
+    log('User is crew, fetching recent registrations...');
     const { data: registrationsData } = await supabase
       .from('registrations')
       .select(`
@@ -61,9 +81,11 @@ export async function getUserContext(
       status: r.status,
       createdAt: r.created_at,
     }));
+    log('Recent registrations fetched:', { count: recentRegistrations.length });
   }
 
   // Count pending actions
+  log('Counting pending actions and suggestions...');
   const { count: pendingActionsCount } = await supabase
     .from('ai_pending_actions')
     .select('*', { count: 'exact', head: true })
@@ -77,6 +99,9 @@ export async function getUserContext(
     .eq('user_id', userId)
     .eq('dismissed', false);
 
+  log('Context counts:', { pendingActionsCount, suggestionsCount });
+  log('--- getUserContext completed ---');
+
   return {
     userId,
     profile: profile ? {
@@ -84,7 +109,7 @@ export async function getUserContext(
       fullName: profile.full_name,
       roles: profile.roles || [],
       sailingExperience: profile.sailing_experience,
-      experience: profile.experience,
+      userDescription: profile.user_description,
       certifications: profile.certifications,
       skills: profile.skills || [],
       riskLevel: profile.risk_level || [],
@@ -101,6 +126,13 @@ export async function getUserContext(
  * Build the system prompt for the AI assistant
  */
 export function buildSystemPrompt(context: UserContext): string {
+  log('Building system prompt...', {
+    hasProfile: !!context.profile,
+    roles: context.profile?.roles,
+    boatCount: context.boats?.length,
+    registrationCount: context.recentRegistrations?.length
+  });
+
   const { profile, boats, recentRegistrations, pendingActionsCount, suggestionsCount } = context;
 
   let prompt = `You are a helpful AI assistant for "Find My Crew", a platform that connects sailing boat owners with crew members looking for sailing opportunities.

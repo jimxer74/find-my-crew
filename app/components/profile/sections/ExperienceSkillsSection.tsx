@@ -12,6 +12,7 @@ type SkillEntry = {
 type FormData = {
   username: string;
   full_name: string;
+  user_description: string;
   certifications: string;
   phone: string;
   email: string;

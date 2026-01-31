@@ -10,6 +10,7 @@ type SkillEntry = {
 type FormData = {
   username: string;
   full_name: string;
+  user_description: string;
   certifications: string;
   phone: string;
   email: string;
@@ -245,6 +246,25 @@ export function PersonalInfoSection({
             placeholder="+1 234 567 8900"
           />
         </div>
+      </div>
+
+      {/* About You / User Description */}
+      <div className="pt-6 border-t border-border">
+        <label htmlFor="user_description" className="block text-sm font-medium text-foreground mb-2">
+          About You
+        </label>
+        <textarea
+          id="user_description"
+          name="user_description"
+          value={formData.user_description}
+          onChange={handleChange}
+          rows={4}
+          className="w-full px-3 py-3 min-h-[120px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
+          placeholder="Tell us about yourself - your background, interests, and what brings you to sailing..."
+        />
+        <p className="mt-2 text-xs text-muted-foreground">
+          This helps boat owners and crew members get to know you better.
+        </p>
       </div>
     </div>
   );

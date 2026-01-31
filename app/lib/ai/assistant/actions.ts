@@ -7,6 +7,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AIPendingAction, ActionType } from './types';
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[Action Executor] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 interface ActionResult {
   success: boolean;
   message: string;
@@ -26,10 +34,12 @@ export async function executeAction(
   action: AIPendingAction,
   context: ActionContext
 ): Promise<ActionResult> {
+  log('--- executeAction started ---', { actionId: action.id, actionType: action.action_type });
   const { supabase, userId } = context;
 
   // Verify the action belongs to this user
   if (action.user_id !== userId) {
+    log('Authorization failed: action belongs to different user');
     return {
       success: false,
       message: 'Not authorized to execute this action',
@@ -39,6 +49,7 @@ export async function executeAction(
 
   // Verify action is pending
   if (action.status !== 'pending') {
+    log(`Invalid status: action is ${action.status}`);
     return {
       success: false,
       message: `Action is already ${action.status}`,
@@ -48,6 +59,7 @@ export async function executeAction(
 
   try {
     let result: ActionResult;
+    log(`Executing action type: ${action.action_type}`);
 
     switch (action.action_type) {
       case 'register_for_leg':
@@ -76,6 +88,7 @@ export async function executeAction(
 
     // Update action status
     if (result.success) {
+      log('Action succeeded, updating status to approved');
       await supabase
         .from('ai_pending_actions')
         .update({
@@ -83,10 +96,14 @@ export async function executeAction(
           resolved_at: new Date().toISOString(),
         })
         .eq('id', action.id);
+    } else {
+      log('Action failed:', result.error);
     }
 
+    log('--- executeAction completed ---', { success: result.success });
     return result;
   } catch (error: any) {
+    log('Action execution error:', error.message);
     return {
       success: false,
       message: error.message || 'Action execution failed',
@@ -102,6 +119,7 @@ export async function rejectAction(
   actionId: string,
   context: ActionContext
 ): Promise<ActionResult> {
+  log('--- rejectAction started ---', { actionId });
   const { supabase, userId } = context;
 
   const { data: action, error: fetchError } = await supabase
@@ -143,6 +161,7 @@ export async function rejectAction(
     .eq('id', actionId);
 
   if (updateError) {
+    log('Failed to update action status:', updateError);
     return {
       success: false,
       message: 'Failed to reject action',
@@ -150,6 +169,7 @@ export async function rejectAction(
     };
   }
 
+  log('Action rejected successfully');
   return {
     success: true,
     message: 'Action rejected',
@@ -250,7 +270,7 @@ async function executeUpdateProfile(
   const allowedFields = [
     'full_name',
     'sailing_experience',
-    'experience',
+    'user_description',
     'certifications',
     'sailing_preferences',
     'skills',

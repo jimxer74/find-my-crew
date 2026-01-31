@@ -7,6 +7,14 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SuggestionType } from './types';
 
+// Debug logging helper
+const DEBUG = true;
+const log = (message: string, data?: unknown) => {
+  if (DEBUG) {
+    console.log(`[Matching Service] ${message}`, data !== undefined ? data : '');
+  }
+};
+
 interface MatchResult {
   userId: string;
   score: number;
@@ -25,9 +33,11 @@ export async function findMatchingCrew(
     maxResults?: number;
   } = {}
 ): Promise<MatchResult[]> {
+  log('--- findMatchingCrew started ---', { legId, options });
   const { minScore = 50, maxResults = 20 } = options;
 
   // Get leg requirements
+  log('Fetching leg requirements...');
   const { data: leg } = await supabase
     .from('legs')
     .select(`
@@ -49,9 +59,11 @@ export async function findMatchingCrew(
     .single();
 
   if (!leg || (leg as any).journeys.state !== 'Published') {
+    log('Leg not found or journey not published');
     return [];
   }
 
+  log('Leg requirements:', { skills: leg.skills, riskLevel: leg.risk_level, minExperience: leg.min_experience_level });
   const ownerId = (leg as any).journeys.boats.owner_id;
   const requiredSkills = leg.skills || [];
   const legRiskLevel = leg.risk_level;
@@ -78,7 +90,12 @@ export async function findMatchingCrew(
     `)
     .contains('roles', ['crew']);
 
-  if (!crewProfiles) return [];
+  if (!crewProfiles) {
+    log('No crew profiles found');
+    return [];
+  }
+
+  log('Found potential crew members:', { count: crewProfiles.length });
 
   // Check AI consent for each user
   const { data: consents } = await supabase
@@ -87,9 +104,11 @@ export async function findMatchingCrew(
     .eq('ai_processing_consent', true);
 
   const usersWithConsent = new Set((consents || []).map(c => c.user_id));
+  log('Users with AI consent:', { count: usersWithConsent.size });
 
   // Calculate match scores
   const matches: MatchResult[] = [];
+  log('Calculating match scores...');
 
   for (const profile of crewProfiles) {
     // Skip if already registered or no AI consent
@@ -137,7 +156,9 @@ export async function findMatchingCrew(
 
   // Sort by score and limit results
   matches.sort((a, b) => b.score - a.score);
-  return matches.slice(0, maxResults);
+  const results = matches.slice(0, maxResults);
+  log('--- findMatchingCrew completed ---', { matchesFound: results.length });
+  return results;
 }
 
 /**
@@ -153,16 +174,23 @@ export async function findMatchingLegs(
     excludeRegistered?: boolean;
   } = {}
 ): Promise<Array<{ legId: string; score: number; reason: string }>> {
+  log('--- findMatchingLegs started ---', { userId, options });
   const { minScore = 50, maxResults = 10, excludeRegistered = true } = options;
 
   // Get user profile
+  log('Fetching user profile...');
   const { data: profile } = await supabase
     .from('profiles')
     .select('sailing_experience, skills, risk_level')
     .eq('id', userId)
     .single();
 
-  if (!profile) return [];
+  if (!profile) {
+    log('User profile not found');
+    return [];
+  }
+
+  log('User profile:', { experience: profile.sailing_experience, skills: profile.skills, riskLevels: profile.risk_level });
 
   // Check AI consent
   const { data: consent } = await supabase
@@ -171,7 +199,10 @@ export async function findMatchingLegs(
     .eq('user_id', userId)
     .single();
 
-  if (!consent?.ai_processing_consent) return [];
+  if (!consent?.ai_processing_consent) {
+    log('User does not have AI consent');
+    return [];
+  }
 
   // Get user's existing registrations
   let registeredLegIds = new Set<string>();
@@ -202,8 +233,12 @@ export async function findMatchingLegs(
     .eq('journeys.state', 'Published')
     .gt('crew_needed', 0);
 
-  if (!legs) return [];
+  if (!legs) {
+    log('No available legs found');
+    return [];
+  }
 
+  log('Found available legs:', { count: legs.length });
   const userSkills = profile.skills || [];
   const userRiskLevels = profile.risk_level || [];
   const userExperience = profile.sailing_experience || 1;
@@ -252,7 +287,9 @@ export async function findMatchingLegs(
   }
 
   matches.sort((a, b) => b.score - a.score);
-  return matches.slice(0, maxResults);
+  const results = matches.slice(0, maxResults);
+  log('--- findMatchingLegs completed ---', { matchesFound: results.length });
+  return results;
 }
 
 /**
@@ -263,7 +300,11 @@ export async function createMatchingSuggestions(
   matches: Array<{ userId: string; legId?: string; journeyId?: string; score: number; reason: string }>,
   suggestionType: SuggestionType
 ): Promise<number> {
-  if (matches.length === 0) return 0;
+  log('--- createMatchingSuggestions started ---', { matchCount: matches.length, suggestionType });
+  if (matches.length === 0) {
+    log('No matches to create suggestions for');
+    return 0;
+  }
 
   // Get leg/journey details for titles
   const legIds = matches.filter(m => m.legId).map(m => m.legId);
@@ -305,10 +346,12 @@ export async function createMatchingSuggestions(
     .select('id');
 
   if (error) {
+    log('Failed to create suggestions:', error);
     console.error('Failed to create suggestions:', error);
     return 0;
   }
 
+  log('--- createMatchingSuggestions completed ---', { suggestionsCreated: data?.length || 0 });
   return data?.length || 0;
 }
 
@@ -319,9 +362,13 @@ export async function generateSuggestionsForNewLeg(
   supabase: SupabaseClient,
   legId: string
 ): Promise<number> {
+  log('=== generateSuggestionsForNewLeg ===', { legId });
   const matches = await findMatchingCrew(supabase, legId);
 
-  if (matches.length === 0) return 0;
+  if (matches.length === 0) {
+    log('No matching crew found for new leg');
+    return 0;
+  }
 
   // Get leg details
   const { data: leg } = await supabase
@@ -348,9 +395,13 @@ export async function generateSuggestionsForUser(
   supabase: SupabaseClient,
   userId: string
 ): Promise<number> {
+  log('=== generateSuggestionsForUser ===', { userId });
   const matches = await findMatchingLegs(supabase, userId);
 
-  if (matches.length === 0) return 0;
+  if (matches.length === 0) {
+    log('No matching legs found for user');
+    return 0;
+  }
 
   const suggestions = matches.map(match => ({
     userId,
