@@ -1,10 +1,10 @@
 ---
 id: TASK-065
 title: AI assistant
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-01-31 07:29'
-updated_date: '2026-01-31 14:10'
+updated_date: '2026-01-31 18:21'
 labels:
   - feature
   - ai
