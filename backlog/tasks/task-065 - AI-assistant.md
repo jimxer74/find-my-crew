@@ -4,7 +4,7 @@ title: AI assistant
 status: In Progress
 assignee: []
 created_date: '2026-01-31 07:29'
-updated_date: '2026-01-31 20:43'
+updated_date: '2026-01-31 20:58'
 labels:
   - feature
   - ai
@@ -78,6 +78,8 @@ The AI assistant understands:
 - [x] #10 Works responsively on both desktop (sidebar) and mobile (full page)
 - [x] #11 Loading states shown during AI processing
 - [x] #12 Error handling for AI failures with graceful fallback
+- [ ] #13 Add a more optimized query, if user wants to find legs based on sailboat_category and/or make+model, allow synonyms e.g. catamaran = multihull
+- [ ] #14 When displaying content (e.g. legs, journeys etc.) as result of prompt, enable user to open them via link or button.
 <!-- AC:END -->
 
 ## Implementation Plan
