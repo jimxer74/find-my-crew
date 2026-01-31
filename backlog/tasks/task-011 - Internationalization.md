@@ -1,10 +1,10 @@
 ---
 id: TASK-011
-title: "Internationalization\r"
+title: Internationalization
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-01-27 15:33'
+updated_date: '2026-01-31 21:05'
 labels:
   - i18n
   - infrastructure
@@ -38,8 +38,8 @@ Currently, all UI text is hardcoded in English:
 
 ## Solution Overview
 Implement a comprehensive i18n system using `next-intl` that supports:
-- Multiple languages (starting with English, Spanish, French, German)
-- Locale-aware routing (`/en/`, `/es/`, `/fr/`, `/de/`)
+- Multiple languages (starting with English, Finnish)
+- Locale-aware routing (`/en/`, `/fi/`)
 - User language preference persistence
 - Automatic browser language detection
 - Localized date/time/number formatting
@@ -47,9 +47,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 
 ## Target Languages (Phase 1)
 1. **English (en)** - Default, current content
-2. **Spanish (es)** - Large sailing community in Mediterranean, Caribbean, South America
-3. **French (fr)** - Popular in Mediterranean, Caribbean
-4. **German (de)** - Strong sailing culture in Northern Europe
+2. **Finnish (fi)** - Strong sailing culture in Baltics and this would be possible area to pilot
 
 ## Content Categories
 - **UI Strings** - Buttons, labels, navigation, forms, errors
@@ -60,7 +58,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 App supports locale-based routing (/en/, /es/, /fr/, /de/)
+- [ ] #1 App supports locale-based routing (/en/, /fi/)
 - [ ] #2 All UI strings are externalized to translation files (no hardcoded text)
 - [ ] #3 Users can select their preferred language from a language switcher
 - [ ] #4 Language preference persists in localStorage and user profile (when logged in)
