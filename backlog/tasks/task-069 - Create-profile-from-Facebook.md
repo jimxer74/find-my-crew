@@ -1,10 +1,10 @@
 ---
 id: TASK-069
 title: Create profile from Facebook
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 12:39'
+updated_date: '2026-01-31 12:43'
 labels:
   - feature
   - ai
