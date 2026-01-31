@@ -3,9 +3,13 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code');
+  let next = searchParams.get('next') ?? '/'
+  if (!next.startsWith('/')) {
+    // if "next" is not a relative URL, use the default
+    next = '/'
+  }
   console.log('LOGIN CALLBACK:', request);
 
   if (code) {
@@ -31,13 +35,13 @@ export async function GET(request: Request) {
       }
     );
 
-    try {
-      await supabase.auth.exchangeCodeForSession(code);
-    } catch (error) {
-      console.error('LOGIN CALLBACK, error exchanging code for session:', error);
+    const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
+      
+    if (exchangeResult.error) {
+      console.error('LOGIN CALLBACK, error exchanging code for session:', exchangeResult.error);
       return NextResponse.redirect(new URL('/', request.url));
     }
-        
+
       // Get user profile to determine redirect
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -55,9 +59,9 @@ export async function GET(request: Request) {
       if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
         if (profile.roles.includes('owner')) {
-          redirectPath = '/owner/journeys';
+          redirectPath = origin + '/owner/journeys';
         } else if (profile.roles.includes('crew')) {
-          redirectPath = '/crew/dashboard';
+          redirectPath = origin + '/crew/dashboard';
         }
       }
       // If no profile or no roles, redirect to home (can browse limited)
@@ -67,7 +71,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(url);
     }
   }
-  let url = new URL('/', request.url)
+  let url = new URL(origin + '/', request.url)
   console.log('LOGIN CALLBACK, user not found:', url);
 
   // Default redirect to home if something goes wrong
