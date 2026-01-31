@@ -4,7 +4,7 @@ title: Create profile from Facebook
 status: To Do
 assignee: []
 created_date: '2026-01-31 08:01'
-updated_date: '2026-01-31 12:38'
+updated_date: '2026-01-31 12:39'
 labels:
   - feature
   - ai
@@ -34,7 +34,7 @@ This feature enhances the Facebook login flow to:
 **Current Architecture:**
 - Facebook OAuth via Supabase (basic authentication only)
 - Profile schema in `specs/tables.sql` with fields: username, full_name, sailing_experience, experience, certifications, sailing_preferences, skills, risk_level, roles
-- AI service infrastructure with multi-provider support (DeepSeek, Groq, Gemini)
+- AI service infrastructure with multi-provider support (DeepSeek, Groq, Gemini), use AI providers in priority order: Gemini, Groq, DeepSeek
 - Consent management system with audit logging
 
 **Key Challenge:**
