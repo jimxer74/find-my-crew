@@ -39,7 +39,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'search_legs',
-    description: 'Search for sailing legs (segments of journeys) that need crew. Use this to find specific sailing opportunities.',
+    description: 'Search for sailing legs (segments of journeys) that need crew. Use this when users are searching sailing opportunities in general',
     parameters: {
       type: 'object',
       properties: {

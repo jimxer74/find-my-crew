@@ -32,6 +32,8 @@ export {
   notifyLegUpdated,
   notifyProfileReminder,
   notifyAllApprovedCrew,
+  notifyFeedbackStatusChanged,
+  notifyFeedbackMilestone,
 } from './service';
 
 // Email service

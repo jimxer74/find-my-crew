@@ -566,6 +566,73 @@ export async function notifyProfileReminder(
   });
 }
 
+/**
+ * Creates a feedback status change notification
+ */
+export async function notifyFeedbackStatusChanged(
+  supabase: SupabaseClient,
+  userId: string,
+  feedbackId: string,
+  feedbackTitle: string,
+  oldStatus: string,
+  newStatus: string,
+  statusNote?: string
+): Promise<{ notification: Notification | null; error: string | null }> {
+  const statusLabels: Record<string, string> = {
+    'new': 'New',
+    'under_review': 'Under Review',
+    'planned': 'Planned',
+    'in_progress': 'In Progress',
+    'completed': 'Completed',
+    'declined': 'Declined',
+  };
+
+  const newStatusLabel = statusLabels[newStatus] || newStatus;
+  let message = `Your feedback "${feedbackTitle}" has been updated to "${newStatusLabel}".`;
+  if (statusNote) {
+    message += ` Note: ${statusNote}`;
+  }
+
+  return createNotification(supabase, {
+    user_id: userId,
+    type: NotificationType.FEEDBACK_STATUS_CHANGED,
+    title: 'Feedback Status Updated',
+    message,
+    link: `/feedback/${feedbackId}`,
+    metadata: {
+      feedback_id: feedbackId,
+      feedback_title: feedbackTitle,
+      old_status: oldStatus,
+      new_status: newStatus,
+      status_note: statusNote,
+    },
+  });
+}
+
+/**
+ * Creates a feedback milestone notification (when feedback reaches vote thresholds)
+ */
+export async function notifyFeedbackMilestone(
+  supabase: SupabaseClient,
+  userId: string,
+  feedbackId: string,
+  feedbackTitle: string,
+  milestone: number
+): Promise<{ notification: Notification | null; error: string | null }> {
+  return createNotification(supabase, {
+    user_id: userId,
+    type: NotificationType.FEEDBACK_MILESTONE,
+    title: 'Feedback Milestone Reached!',
+    message: `Your feedback "${feedbackTitle}" has reached ${milestone} upvotes! The community is interested in your idea.`,
+    link: `/feedback/${feedbackId}`,
+    metadata: {
+      feedback_id: feedbackId,
+      feedback_title: feedbackTitle,
+      milestone,
+    },
+  });
+}
+
 // ============================================================================
 // Batch Operations
 // ============================================================================

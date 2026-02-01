@@ -17,7 +17,13 @@ export function Footer() {
           </p>
 
           {/* Links */}
-          <nav className="flex gap-6 text-sm">
+          <nav className="flex flex-wrap justify-center gap-4 sm:gap-6 text-sm">
+            <Link
+              href="/feedback"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {t('feedback')}
+            </Link>
             <Link
               href="/privacy-policy"
               className="text-muted-foreground hover:text-foreground transition-colors"

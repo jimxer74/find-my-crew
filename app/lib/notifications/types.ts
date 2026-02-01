@@ -18,6 +18,8 @@ export enum NotificationType {
   PROFILE_REMINDER = 'profile_reminder',
   AI_AUTO_APPROVED = 'ai_auto_approved',
   AI_REVIEW_NEEDED = 'ai_review_needed',
+  FEEDBACK_STATUS_CHANGED = 'feedback_status_changed',
+  FEEDBACK_MILESTONE = 'feedback_milestone',
 }
 
 // ============================================================================
@@ -58,6 +60,13 @@ export interface NotificationMetadata {
   sender_id?: string;
   sender_name?: string;
   sender_avatar_url?: string;
+  // Feedback-related metadata
+  feedback_id?: string;
+  feedback_title?: string;
+  old_status?: string;
+  new_status?: string;
+  status_note?: string;
+  milestone?: number;
   [key: string]: unknown;
 }
 
