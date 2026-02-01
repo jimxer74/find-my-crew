@@ -1,10 +1,12 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { NotificationPageContent } from '@/app/components/notifications/NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
 
 export default function NotificationsPage() {
+  const t = useTranslations('notifications');
   const router = useRouter();
   const {
     notifications,
@@ -21,7 +23,7 @@ export default function NotificationsPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Mobile header */}
       <div className="md:hidden flex items-center px-4 py-3 border-b border-border bg-card">
-        <h1 className="text-lg font-semibold text-foreground">Notifications</h1>
+        <h1 className="text-lg font-semibold text-foreground">{t('title')}</h1>
       </div>
       <main className="flex-1 overflow-y-auto">
         <NotificationPageContent

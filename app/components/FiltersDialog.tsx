@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -23,6 +24,7 @@ type FiltersPageContentProps = {
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
 export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
+  const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
 
   // Close dialog when clicking outside (desktop only)
@@ -67,11 +69,11 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-          <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('filters')}</h2>
           <button
             onClick={handleCancel}
             className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
-            aria-label="Close"
+            aria-label={t('close')}
           >
             <svg
               className="w-5 h-5 text-foreground"
@@ -96,6 +98,8 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
 
 // Content component that can be used in both modal and page modes
 export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
+  const t = useTranslations('common');
+  const tFilters = useTranslations('journeys.browse.filters');
   const router = useRouter();
   const pathname = usePathname();
   const { user } = useAuth();
@@ -189,17 +193,17 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
 
   const formatDateRange = () => {
     if (!tempDateRange.start && !tempDateRange.end) {
-      return 'Availability';
+      return tFilters('availability');
     }
     if (tempDateRange.start && tempDateRange.end) {
-      const startStr = tempDateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      const endStr = tempDateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const startStr = tempDateRange.start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const endStr = tempDateRange.end.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       return `${startStr} - ${endStr}`;
     }
     if (tempDateRange.start) {
-      return tempDateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return tempDateRange.start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
-    return 'Availability';
+    return tFilters('availability');
   };
 
   const handleSave = () => {
@@ -243,14 +247,14 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
       <div className="flex-1 p-4">
         {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading...</div>
+              <div className="text-muted-foreground">{t('loading')}</div>
             </div>
           ) : (
             <div className="space-y-6">
               {/* Date Range Picker */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  Availability
+                  {tFilters('availability')}
                 </label>
                 <div className="relative group">
                   <button
@@ -340,7 +344,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                 <div className="relative">
                   <LocationAutocomplete
                     id="filter-location"
-                    label="Location"
+                    label={tFilters('location')}
                     value={tempLocationInput}
                     onChange={(loc) => {
                       setTempLocation(loc);
@@ -352,7 +356,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                         setTempLocation(null);
                       }
                     }}
-                    placeholder="Search for a location..."
+                    placeholder={tFilters('locationPlaceholder')}
                   />
                   {tempLocation && (
                     <button
@@ -437,13 +441,13 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
           onClick={handleCancel}
           className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
         >
-          Cancel
+          {t('cancel')}
         </button>
         <button
           onClick={handleSave}
           className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
         >
-          Save and Search
+          {tFilters('saveAndSearch')}
         </button>
       </div>
     </div>

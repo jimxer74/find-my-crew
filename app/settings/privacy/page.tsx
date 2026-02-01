@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Footer } from '@/app/components/Footer';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -18,6 +19,8 @@ type UserData = {
 };
 
 export default function PrivacySettingsPage() {
+  const t = useTranslations('settings.privacy');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -243,9 +246,9 @@ export default function PrivacySettingsPage() {
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-        <h1 className="text-2xl font-bold text-foreground mb-2">Privacy Settings</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t('title')}</h1>
         <p className="text-muted-foreground mb-8">
-          Manage your privacy preferences, export your data, or delete your account.
+          {t('subtitle')}
         </p>
 
         {/* Messages */}
@@ -262,19 +265,18 @@ export default function PrivacySettingsPage() {
 
         {/* Consent Management */}
         <section className="bg-card rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Consent Preferences</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('consentPreferences')}</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Control how your data is used. You can change these settings at any time.
+            {t('consentControlDesc')}
           </p>
 
           <div className="space-y-6">
             {/* AI Processing */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-foreground">AI-Powered Matching</p>
+                <p className="font-medium text-foreground">{t('aiProcessing')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Allow us to use AI to match your profile with sailing opportunities.
-                  Your profile data will be processed by our AI partner.
+                  {t('aiProcessingDesc')}
                 </p>
               </div>
               <button
@@ -295,9 +297,9 @@ export default function PrivacySettingsPage() {
             {/* Profile Sharing */}
             <div className="flex items-start justify-between gap-4 pt-4 border-t border-border">
               <div>
-                <p className="font-medium text-foreground">Profile Sharing</p>
+                <p className="font-medium text-foreground">{t('profileSharing')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Allow boat owners to view your profile when you apply for crew positions. Please note that without this consent, you are not able to register for journeys or legs.
+                  {t('profileSharingDesc')}
                 </p>
               </div>
               <button
@@ -318,9 +320,9 @@ export default function PrivacySettingsPage() {
             {/* Marketing */}
             <div className="flex items-start justify-between gap-4 pt-4 border-t border-border">
               <div>
-                <p className="font-medium text-foreground">Marketing Communications</p>
+                <p className="font-medium text-foreground">{t('marketing')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Receive emails about new features, tips, and sailing opportunities.
+                  {t('marketingDesc')}
                 </p>
               </div>
               <button
@@ -342,18 +344,18 @@ export default function PrivacySettingsPage() {
 
         {/* Email Preferences */}
         <section className="bg-card rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Email Notifications</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('emailNotifications')}</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Choose which email notifications you want to receive.
+            {t('emailNotificationsDesc')}
           </p>
 
           <div className="space-y-6">
             {/* Registration Updates */}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-foreground">Registration Updates</p>
+                <p className="font-medium text-foreground">{t('registrationUpdates')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when your crew applications are approved or denied.
+                  {t('registrationUpdatesDesc')}
                 </p>
               </div>
               <button
@@ -374,9 +376,9 @@ export default function PrivacySettingsPage() {
             {/* Journey Updates */}
             <div className="flex items-start justify-between gap-4 pt-4 border-t border-border">
               <div>
-                <p className="font-medium text-foreground">Journey Updates</p>
+                <p className="font-medium text-foreground">{t('journeyUpdates')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Get notified about changes to journeys you&apos;re registered for.
+                  {t('journeyUpdatesDesc')}
                 </p>
               </div>
               <button
@@ -397,9 +399,9 @@ export default function PrivacySettingsPage() {
             {/* Profile Reminders */}
             <div className="flex items-start justify-between gap-4 pt-4 border-t border-border">
               <div>
-                <p className="font-medium text-foreground">Profile Reminders</p>
+                <p className="font-medium text-foreground">{t('profileReminders')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Get reminded to complete your profile for better matching.
+                  {t('profileRemindersDesc')}
                 </p>
               </div>
               <button
@@ -421,25 +423,25 @@ export default function PrivacySettingsPage() {
 
         {/* View My Data */}
         <section className="bg-card rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Your Data</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('yourData')}</h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Here&apos;s a summary of the data we have about you.
+            {t('yourDataDesc')}
           </p>
 
           {userData && (
             <div className="space-y-4">
               {/* Profile */}
               <div className="p-4 bg-accent/50 rounded-lg">
-                <h3 className="font-medium text-foreground mb-2">Profile Information</h3>
+                <h3 className="font-medium text-foreground mb-2">{t('profileInfo')}</h3>
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="text-muted-foreground">Name:</div>
-                  <div className="text-foreground">{userData.profile?.full_name || 'Not set'}</div>
+                  <div className="text-muted-foreground">{t('name')}:</div>
+                  <div className="text-foreground">{userData.profile?.full_name || t('notSet')}</div>
                   <div className="text-muted-foreground">Email:</div>
                   <div className="text-foreground">{userData.profile?.email || user?.email}</div>
                   <div className="text-muted-foreground">Phone:</div>
-                  <div className="text-foreground">{userData.profile?.phone || 'Not set'}</div>
+                  <div className="text-foreground">{userData.profile?.phone || t('notSet')}</div>
                   <div className="text-muted-foreground">Username:</div>
-                  <div className="text-foreground">{userData.profile?.username || 'Not set'}</div>
+                  <div className="text-foreground">{userData.profile?.username || t('notSet')}</div>
                 </div>
               </div>
 
@@ -483,31 +485,30 @@ export default function PrivacySettingsPage() {
 
         {/* Export Data */}
         <section className="bg-card rounded-lg shadow p-6 mb-6">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Export Your Data</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">{t('exportData')}</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Download a copy of all your personal data in JSON format.
-            This includes your profile, boats, registrations, and consent history.
+            {t('exportDataDesc')}
           </p>
           <button
             onClick={handleExportData}
             disabled={isExporting}
             className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {isExporting ? 'Preparing download...' : 'Download My Data'}
+            {isExporting ? t('preparingDownload') : t('downloadMyData')}
           </button>
         </section>
 
         {/* Delete Account */}
         <section className="bg-card rounded-lg shadow p-6 border-2 border-red-200">
-          <h2 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h2>
+          <h2 className="text-lg font-semibold text-red-600 mb-4">{t('deleteAccount')}</h2>
           <p className="text-sm text-muted-foreground mb-4">
-            Permanently delete your account and all associated data. This action cannot be undone.
+            {t('deleteAccountDesc')}
           </p>
           <button
             onClick={() => setShowDeleteDialog(true)}
             className="px-6 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
           >
-            Delete My Account
+            {t('deleteMyAccount')}
           </button>
         </section>
 
@@ -524,18 +525,18 @@ export default function PrivacySettingsPage() {
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-card rounded-lg shadow-xl border border-border max-w-md w-full p-6">
-              <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
+              <h3 className="text-lg font-semibold text-red-600 mb-4">{t('deleteConfirmTitle')}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                This will permanently delete your account and all associated data including:
+                {t('deleteConfirmDesc')}
               </p>
               <ul className="text-sm text-muted-foreground mb-4 list-disc pl-5 space-y-1">
-                <li>Your profile and personal information</li>
-                <li>All boats and journeys you&apos;ve created</li>
-                <li>All registrations and applications</li>
-                <li>All notifications</li>
+                <li>{t('deleteConfirmItems.profile')}</li>
+                <li>{t('deleteConfirmItems.boats')}</li>
+                <li>{t('deleteConfirmItems.registrations')}</li>
+                <li>{t('deleteConfirmItems.notifications')}</li>
               </ul>
               <p className="text-sm font-medium text-foreground mb-4">
-                Type <span className="font-mono bg-muted px-1 rounded">DELETE MY ACCOUNT</span> to confirm:
+                {t('deleteConfirmType')}
               </p>
               <input
                 type="text"
@@ -554,14 +555,14 @@ export default function PrivacySettingsPage() {
                   disabled={isDeleting}
                   className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={handleDeleteAccount}
                   disabled={isDeleting || deleteConfirmation !== 'DELETE MY ACCOUNT'}
                   className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isDeleting ? 'Deleting...' : 'Permanently Delete'}
+                  {isDeleting ? t('deleting') : t('permanentlyDelete')}
                 </button>
               </div>
             </div>

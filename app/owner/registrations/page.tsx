@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { formatDate } from '@/app/lib/dateFormat';
 import Link from 'next/link';
@@ -75,6 +76,9 @@ type Leg = {
 };
 
 export default function AllRegistrationsPage() {
+  const t = useTranslations('registrations.allRegistrations');
+  const tStatus = useTranslations('registrations.status');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   
@@ -288,7 +292,7 @@ export default function AllRegistrationsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -298,8 +302,8 @@ export default function AllRegistrationsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">All Registrations</h1>
-          <p className="text-muted-foreground">Manage crew registrations across all your journeys</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         {/* Filters and Sorting */}
@@ -308,7 +312,7 @@ export default function AllRegistrationsPage() {
             {/* Status Filter */}
             <div>
               <label htmlFor="filter-status" className="block text-sm font-medium text-foreground mb-2">
-                Status
+                {t('status')}
               </label>
               <select
                 id="filter-status"
@@ -316,18 +320,18 @@ export default function AllRegistrationsPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="all">All Statuses</option>
-                <option value="Pending approval">Pending approval</option>
-                <option value="Approved">Approved</option>
-                <option value="Not approved">Not approved</option>
-                <option value="Cancelled">Cancelled</option>
+                <option value="all">{t('allStatuses')}</option>
+                <option value="Pending approval">{tStatus('pending')}</option>
+                <option value="Approved">{tStatus('approved')}</option>
+                <option value="Not approved">{tStatus('rejected')}</option>
+                <option value="Cancelled">{tStatus('cancelled')}</option>
               </select>
             </div>
 
             {/* Journey Filter */}
             <div>
               <label htmlFor="filter-journey" className="block text-sm font-medium text-foreground mb-2">
-                Journey
+                {t('journey')}
               </label>
               <select
                 id="filter-journey"
@@ -335,7 +339,7 @@ export default function AllRegistrationsPage() {
                 onChange={(e) => setFilterJourneyId(e.target.value)}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="all">All Journeys</option>
+                <option value="all">{t('allJourneys')}</option>
                 {journeys.map((journey) => (
                   <option key={journey.id} value={journey.id}>
                     {journey.name}
@@ -347,7 +351,7 @@ export default function AllRegistrationsPage() {
             {/* Leg Filter */}
             <div>
               <label htmlFor="filter-leg" className="block text-sm font-medium text-foreground mb-2">
-                Leg
+                {t('leg')}
               </label>
               <select
                 id="filter-leg"
@@ -356,7 +360,7 @@ export default function AllRegistrationsPage() {
                 disabled={filterJourneyId === 'all' || legs.length === 0}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="all">All Legs</option>
+                <option value="all">{t('allLegs')}</option>
                 {legs.map((leg) => (
                   <option key={leg.id} value={leg.id}>
                     {leg.name}
@@ -368,7 +372,7 @@ export default function AllRegistrationsPage() {
             {/* Sort By */}
             <div>
               <label htmlFor="sort-by" className="block text-sm font-medium text-foreground mb-2">
-                Sort By
+                {t('sortBy')}
               </label>
               <select
                 id="sort-by"
@@ -376,36 +380,36 @@ export default function AllRegistrationsPage() {
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="created_at">Registration Date</option>
-                <option value="updated_at">Last Updated</option>
-                <option value="status">Status</option>
-                <option value="journey_name">Journey Name</option>
-                <option value="leg_name">Leg Name</option>
+                <option value="created_at">{t('registrationDate')}</option>
+                <option value="updated_at">{t('lastUpdated')}</option>
+                <option value="status">{t('status')}</option>
+                <option value="journey_name">{t('journeyName')}</option>
+                <option value="leg_name">{t('legName')}</option>
               </select>
             </div>
           </div>
 
           {/* Sort Order */}
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">Sort Order:</label>
+            <label className="text-sm font-medium text-foreground">{t('sortOrder')}</label>
             <button
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
               className="px-3 py-1 border border-border bg-input-background rounded-md text-sm hover:bg-accent transition-colors flex items-center gap-1"
             >
-              {sortOrder === 'asc' ? '↑' : '↓'} {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              {sortOrder === 'asc' ? '↑' : '↓'} {sortOrder === 'asc' ? t('ascending') : t('descending')}
             </button>
           </div>
 
           {/* Results Count */}
           <div className="text-sm text-muted-foreground">
-            Showing {registrations.length} of {totalCount} {totalCount === 1 ? 'registration' : 'registrations'}
+            {t('showing', { count: registrations.length, total: totalCount })}
           </div>
         </div>
 
         {/* Registrations Grid */}
         {registrations.length === 0 ? (
           <div className="bg-card rounded-lg shadow p-8 text-center">
-            <p className="text-muted-foreground">No registrations found matching your filters.</p>
+            <p className="text-muted-foreground">{t('noMatchingRegistrations')}</p>
           </div>
         ) : (
           <>
@@ -460,9 +464,9 @@ export default function AllRegistrationsPage() {
 
                         {/* Registration Date */}
                         <div className="text-xs text-muted-foreground flex">
-                          <div>Registered: {formatDate(registration.created_at)}</div>
+                          <div>{t('registered')} {formatDate(registration.created_at)}</div>
                           {registration.updated_at !== registration.created_at && (
-                            <div>Updated: {formatDate(registration.updated_at)}</div>
+                            <div>{t('updated')} {formatDate(registration.updated_at)}</div>
                           )}
                         </div>
                       </div>
@@ -471,7 +475,7 @@ export default function AllRegistrationsPage() {
                     {/* Journey, Leg, and Dates */}
                     <div className="space-y-3 flex-1">
                       <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">Journey</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">{t('journey')}</p>
                         <Link 
                           href={`/owner/journeys/${journey.id}/legs`} 
                           className="text-sm font-medium text-primary hover:underline line-clamp-1 block"
@@ -482,7 +486,7 @@ export default function AllRegistrationsPage() {
                       
                       {/* Leg Name */}
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1">Leg</p>
+                        <p className="text-xs text-muted-foreground mb-1">{t('leg')}</p>
                         <p className="text-sm font-semibold text-foreground line-clamp-1">
                           {leg.name}
                         </p>
@@ -510,7 +514,7 @@ export default function AllRegistrationsPage() {
                                 {formatDate(leg.end_date)}
                               </div>
                             ) : (
-                              <div className="text-xs text-muted-foreground">No end date</div>
+                              <div className="text-xs text-muted-foreground">{t('noEndDate')}</div>
                             )}
                           </div>
                         </div>
@@ -541,17 +545,17 @@ export default function AllRegistrationsPage() {
                   disabled={currentPage === 1}
                   className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Previous
+                  {t('previous')}
                 </button>
                 <span className="text-sm text-muted-foreground">
-                  Page {currentPage} of {totalPages}
+                  {t('pageOf', { current: currentPage, total: totalPages })}
                 </span>
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                   className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Next
+                  {t('next')}
                 </button>
               </div>
             )}

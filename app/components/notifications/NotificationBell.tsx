@@ -2,10 +2,12 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { NotificationCenter } from './NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
 
 export function NotificationBell() {
+  const t = useTranslations('navigation');
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
@@ -57,7 +59,7 @@ export function NotificationBell() {
       <button
         onClick={handleToggle}
         className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-label={`${t('notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 import { ActionConfirmation } from './ActionConfirmation';
 
 export function AssistantChat() {
+  const t = useTranslations('assistant');
   const {
     messages,
     pendingActions,
@@ -73,23 +75,23 @@ export function AssistantChat() {
               </svg>
             </div>
             <h3 className="text-lg font-medium text-foreground mb-2">
-              Hi! I&apos;m your sailing assistant
+              {t('greeting')}
             </h3>
             <p className="text-sm max-w-xs mx-auto">
-              I can help you find sailing opportunities, manage your profile, and more. What would you like to do?
+              {t('greetingMessage')}
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
               <button
                 onClick={() => sendMessage("Show me sailing opportunities that match my profile")}
                 className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
               >
-                Find matching journeys
+                {t('findMatchingJourneys')}
               </button>
               <button
                 onClick={() => sendMessage("Help me improve my profile")}
                 className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
               >
-                Improve my profile
+                {t('improveProfile')}
               </button>
             </div>
           </div>
@@ -112,7 +114,7 @@ export function AssistantChat() {
               </div>
               {message.role === 'assistant' && message.metadata?.toolCalls && (
                 <div className="mt-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
-                  Used: {message.metadata.toolCalls.map(tc => tc.name).join(', ')}
+                  {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}
                 </div>
               )}
             </div>
@@ -128,7 +130,7 @@ export function AssistantChat() {
                   <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-2 h-2 bg-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span className="text-sm text-muted-foreground">Thinking...</span>
+                <span className="text-sm text-muted-foreground">{t('thinking')}</span>
               </div>
             </div>
           </div>
@@ -147,7 +149,7 @@ export function AssistantChat() {
       {relevantPendingActions.length > 0 && (
         <div className="border-t border-border p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/50">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Pending Actions
+            {t('pendingActions')}
           </p>
           {relevantPendingActions.map((action) => (
             <ActionConfirmation
@@ -168,7 +170,7 @@ export function AssistantChat() {
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask me anything..."
+            placeholder={t('placeholder')}
             disabled={isLoading}
             rows={1}
             className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"

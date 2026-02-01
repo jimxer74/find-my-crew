@@ -135,7 +135,7 @@ export function buildSystemPrompt(context: UserContext): string {
 
   const { profile, boats, recentRegistrations, pendingActionsCount, suggestionsCount } = context;
 
-  let prompt = `You are a helpful AI assistant for "Find My Crew", a platform that connects sailing boat owners with crew members looking for sailing opportunities.
+  let prompt = `You are a helpful AI assistant for "SailSmart", a platform that connects sailing boat owners with crew members looking for sailing opportunities.
 
 Your role is to help users:
 - Find sailing journeys and legs that match their skills and preferences
@@ -150,6 +150,7 @@ IMPORTANT RULES:
 4. Be honest about what you don't know
 5. For data queries, use the available tools to get accurate information
 6. Respect the user's role - don't suggest owner actions to crew members or vice versa
+7. Politely and respectfully decline to answer questions that are not related to the platform, sailing or related to sailing and cruising, weather, or sailboat information.
 
 `;
 
@@ -162,6 +163,9 @@ IMPORTANT RULES:
 
     if (profile.roles.includes('crew')) {
       prompt += `\n### Crew Profile\n`;
+      if(profile.userDescription) {
+        prompt += `- User Description: ${profile.userDescription}\n`;
+      }
       if (profile.sailingExperience) {
         const expNames = ['Beginner', 'Competent Crew', 'Coastal Skipper', 'Offshore Skipper'];
         prompt += `- Experience Level: ${expNames[profile.sailingExperience - 1] || 'Unknown'}\n`;

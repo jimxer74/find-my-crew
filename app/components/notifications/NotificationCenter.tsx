@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { NotificationItem } from './NotificationItem';
 import { type Notification } from '@/app/lib/notifications';
 
@@ -42,6 +43,8 @@ export function NotificationCenter({
   onLoadMore,
   hasMore,
 }: NotificationCenterProps) {
+  const t = useTranslations('notifications');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -100,11 +103,11 @@ export function NotificationCenter({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-          <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+          <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
           <button
             onClick={onClose}
             className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
-            aria-label="Close"
+            aria-label={tCommon('close')}
           >
             <svg
               className="w-5 h-5 text-foreground"
@@ -149,6 +152,8 @@ export function NotificationPageContent({
   onLoadMore,
   hasMore,
 }: NotificationPageContentProps) {
+  const t = useTranslations('notifications');
+  const tCommon = useTranslations('common');
   const router = useRouter();
 
   const handleNotificationClick = (notification: Notification) => {
@@ -187,9 +192,9 @@ export function NotificationPageContent({
                   d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                 />
               </svg>
-              <p className="text-foreground font-medium">No notifications yet</p>
+              <p className="text-foreground font-medium">{t('noNotificationsYet')}</p>
               <p className="text-sm text-muted-foreground mt-1">
-                We&apos;ll notify you when something happens
+                {t('notifyWhenHappens')}
               </p>
             </div>
           ) : (
@@ -214,7 +219,7 @@ export function NotificationPageContent({
                     disabled={isLoading}
                     className="w-full py-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
                   >
-                    {isLoading ? 'Loading...' : 'Load more'}
+                    {isLoading ? tCommon('loading') : t('loadMore')}
                   </button>
                 </div>
               )}

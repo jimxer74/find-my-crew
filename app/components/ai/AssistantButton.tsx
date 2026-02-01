@@ -2,9 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 
 export function AssistantButton() {
+  const t = useTranslations('navigation');
   const router = useRouter();
   const {
     toggleAssistant,
@@ -35,8 +37,8 @@ export function AssistantButton() {
     <button
       onClick={handleClick}
       className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-      aria-label={`AI Assistant${totalBadgeCount > 0 ? ` (${totalBadgeCount} items)` : ''}`}
-      title="AI Assistant"
+      aria-label={`${t('assistant')}${totalBadgeCount > 0 ? ` (${totalBadgeCount})` : ''}`}
+      title={t('assistant')}
     >
       {/* AI/Sparkles Icon */}
       <svg

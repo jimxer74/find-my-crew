@@ -3,10 +3,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/app/components/ui/ThemeToggle';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;
@@ -213,6 +215,9 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
 // Content component that can be used in both modal and page modes
 export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: NavigationMenuContentProps) {
+  const t = useTranslations('navigation');
+  const tAuth = useTranslations('auth');
+  const tSettings = useTranslations('settings');
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -287,8 +292,19 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
 
   return (
     <div className="flex-1 overflow-y-auto py-2" data-navigation-menu>
+      {/* Language Switcher - First item */}
+      <div className="px-4 py-2">
+        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
+      </div>
+      <div className="px-4 py-2">
+        <LanguageSwitcher variant="menu-item" onClose={onClose} />
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border my-1" />
+
       {loading ? (
-        <div className="px-4 py-3 text-sm text-muted-foreground">Loading...</div>
+        <div className="px-4 py-3 text-sm text-muted-foreground">{t('loading') || 'Loading...'}</div>
       ) : user ? (
         <>
           {/* My Profile */}
@@ -308,7 +324,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               >
                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span className="font-medium">My Profile</span>
+              <span className="font-medium">{t('myProfile')}</span>
             </button>
           ) : (
             <Link
@@ -327,7 +343,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               >
                 <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <span className="font-medium">My Profile</span>
+              <span className="font-medium">{t('myProfile')}</span>
             </Link>
           )}
 
@@ -339,7 +355,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             <>
               {/* For Skipper header */}
               <div className="px-4 py-2">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">For Skipper</span>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('forSkipper')}</span>
               </div>
               {/* My Boats */}
               {isMenuPage ? (
@@ -360,7 +376,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                     <circle cx="12" cy="12" r="3" />
                     <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  <span className="font-medium">My Boats</span>
+                  <span className="font-medium">{t('myBoats')}</span>
                 </button>
               ) : (
                 <Link
@@ -381,7 +397,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                     <circle cx="12" cy="12" r="3" />
                     <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  <span className="font-medium">My Boats</span>
+                  <span className="font-medium">{t('myBoats')}</span>
                 </Link>
               )}
 
@@ -402,7 +418,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
-                  <span className="font-medium">My Journeys</span>
+                  <span className="font-medium">{t('myJourneys')}</span>
                 </button>
               ) : (
                 <Link
@@ -421,7 +437,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
-                  <span className="font-medium">My Journeys</span>
+                  <span className="font-medium">{t('myJourneys')}</span>
                 </Link>
               )}
 
@@ -442,7 +458,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-medium">My Crew</span>
+                  <span className="font-medium">{t('myCrew')}</span>
                 </button>
               ) : (
                 <Link
@@ -461,7 +477,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-medium">My Crew</span>
+                  <span className="font-medium">{t('myCrew')}</span>
                 </Link>
               )}
             </>
@@ -472,7 +488,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             <>
               {/* For Crew header */}
               <div className="px-4 py-2">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">For Crew</span>
+                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('forCrew')}</span>
               </div>
               {/* Browse Journeys */}
               {isMenuPage ? (
@@ -493,7 +509,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                     <circle cx="12" cy="12" r="3" />
                     <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  <span className="font-medium">Browse Journeys</span>
+                  <span className="font-medium">{t('browseJourneys')}</span>
                 </button>
               ) : (
                 <Link
@@ -514,7 +530,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                     <circle cx="12" cy="12" r="3" />
                     <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                   </svg>
-                  <span className="font-medium">Browse Journeys</span>
+                  <span className="font-medium">{t('browseJourneys')}</span>
                 </Link>
               )}
               {/* My Registrations */}
@@ -534,7 +550,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-medium">My Registrations</span>
+                  <span className="font-medium">{t('myRegistrations')}</span>
                 </button>
               ) : (
                 <Link
@@ -553,7 +569,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                   >
                     <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <span className="font-medium">My Registrations</span>
+                  <span className="font-medium">{t('myRegistrations')}</span>
                 </Link>
               )}
             </>
@@ -562,7 +578,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Show message if user has no roles */}
           {userRoles.length === 0 && (
             <div className="px-4 py-3 text-sm text-muted-foreground">
-              Complete your profile and select roles to access features.
+              {t('completeProfile')}
             </div>
           )}
 
@@ -586,7 +602,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             >
               <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
             </svg>
-            <span className="font-medium">Sign out</span>
+            <span className="font-medium">{t('signOut')}</span>
           </button>
 
           {/* Divider */}
@@ -595,7 +611,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Appearance / Theme */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-between pb-2">
-              <span className="text-sm font-medium text-foreground">Appearance</span>
+              <span className="text-sm font-medium text-foreground">{t('appearance')}</span>
             </div>
             <div className="flex items-center justify-between">
               <ThemeToggle variant="segmented" />
@@ -624,7 +640,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              <span className="font-medium">Browse Journeys</span>
+              <span className="font-medium">{t('browseJourneys')}</span>
             </button>
           ) : (
             <Link
@@ -645,7 +661,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                 <circle cx="12" cy="12" r="3" />
                 <path d="M12 2v4M12 18v4M2 12h4M18 12h4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
               </svg>
-              <span className="font-medium">Browse Journeys</span>
+              <span className="font-medium">{t('browseJourneys')}</span>
             </Link>
           )}
 
@@ -660,11 +676,6 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               // On desktop (dropdown menu), open modal instead
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               if (isMobile || isMenuPage) {
-                // Let Link handle navigation naturally, but close menu first
-                //onClose?.();
-                //if (typeof window !== 'undefined') {
-                //  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
-                //}
                 router.push('/auth/login');
               } else {
                 // Desktop: prevent navigation and open modal
@@ -686,9 +697,9 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             >
               <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
             </svg>
-            <span className="font-medium">Log in</span>
+            <span className="font-medium">{t('login')}</span>
           </Link>
-          
+
           {/* Sign up */}
           <Link
             href="/auth/signup"
@@ -697,11 +708,6 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               // On desktop (dropdown menu), open modal instead
               const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
               if (isMobile || isMenuPage) {
-                // Let Link handle navigation naturally, but close menu first
-                //onClose?.();
-                //if (typeof window !== 'undefined') {
-                //  window.dispatchEvent(new CustomEvent('closeAllDialogs'));
-                //}
                 router.push('/auth/signup');
               } else {
                 // Desktop: prevent navigation and open modal
@@ -723,7 +729,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             >
               <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
             </svg>
-            <span className="font-medium">Sign up</span>
+            <span className="font-medium">{t('signUp')}</span>
           </Link>
 
           {/* Divider */}
@@ -732,7 +738,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Appearance / Theme */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-between pb-2">
-              <span className="text-sm font-medium text-foreground">Appearance</span>
+              <span className="text-sm font-medium text-foreground">{t('appearance')}</span>
             </div>
             <div className="flex items-center justify-between">
               <ThemeToggle variant="segmented"/>

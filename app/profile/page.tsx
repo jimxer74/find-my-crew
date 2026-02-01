@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
@@ -46,6 +47,8 @@ type EmailPreferences = {
 };
 
 function ProfilePageContent() {
+  const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -720,13 +723,13 @@ function ProfilePageContent() {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-foreground">
-              {isNewProfile ? 'Complete Your Profile' : 'Profile'}
+              {isNewProfile ? t('completeYourProfile') : t('profile')}
             </h1>
             <Link
               href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
               className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
             >
-              Cancel
+              {tCommon('cancel')}
             </Link>
           </div>
         </div>
@@ -737,7 +740,7 @@ function ProfilePageContent() {
         <div className="border-b border-border bg-muted/30">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-              <span>Profile Completion</span>
+              <span>{t('profileCompletion')}</span>
               <span>{completionPercentage}%</span>
             </div>
             <div className="w-full bg-muted rounded-full h-2">
@@ -760,14 +763,14 @@ function ProfilePageContent() {
 
         {success && (
           <div className="mb-6 bg-green-500/10 border border-green-500 text-green-700 px-4 py-3 rounded">
-            {isNewProfile ? 'Profile created successfully! Redirecting to dashboard...' : 'Profile updated successfully!'}
+            {isNewProfile ? t('profileCreatedSuccess') : t('profileUpdatedSuccess')}
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           {/* Section 1: Personal Information */}
           <CollapsibleSection
-            title={`Personal Information`}
+            title={t('sections.personal')}
             defaultOpen={false}
           >
             <PersonalInfoSection
@@ -784,7 +787,7 @@ function ProfilePageContent() {
           {/* Section 2: Sailing Preferences - CREW ROLE ONLY */}
           {formData.roles.includes('crew') && (
             <CollapsibleSection
-              title="Sailing Preferences"
+              title={t('sections.preferences')}
               defaultOpen={false}
             >
               <SailingPreferencesSection
@@ -810,7 +813,7 @@ function ProfilePageContent() {
 
           {/* Section 3: Experience and Skills */}
           <CollapsibleSection
-            title="Sailing Experience and Skills"
+            title={t('sections.sailingExperience')}
             defaultOpen={false}
           >
             <ExperienceSkillsSection
@@ -832,7 +835,7 @@ function ProfilePageContent() {
 
           {/* Section 4: Notifications and Consents */}
           <CollapsibleSection
-            title="Notifications and Consents"
+            title={t('sections.notifications')}
             defaultOpen={false}
           >
             <NotificationsConsentsSection
@@ -850,14 +853,14 @@ function ProfilePageContent() {
               href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
               className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
             >
-              Cancel
+              {tCommon('cancel')}
             </Link>
             <button
               type="submit"
               disabled={saving}
               className="px-4 py-3 min-h-[44px] bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
             >
-              {saving ? 'Saving...' : 'Save Profile'}
+              {saving ? t('saving') : t('save')}
             </button>
           </div>
         </form>
@@ -866,9 +869,13 @@ function ProfilePageContent() {
   );
 }
 
+function ProfilePageFallback() {
+  return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+}
+
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+    <Suspense fallback={<ProfilePageFallback />}>
       <ProfilePageContent />
     </Suspense>
   );

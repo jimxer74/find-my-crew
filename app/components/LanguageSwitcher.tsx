@@ -4,15 +4,19 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 interface LanguageSwitcherProps {
-  variant?: 'dropdown' | 'buttons';
+  variant?: 'dropdown' | 'buttons' | 'menu-item';
   className?: string;
+  onClose?: () => void;
 }
 
-export function LanguageSwitcher({ variant = 'dropdown', className = '' }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ variant = 'dropdown', className = '', onClose }: LanguageSwitcherProps) {
   const locale = useLocale() as Locale;
   const router = useRouter();
+  const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,12 +29,26 @@ export function LanguageSwitcher({ variant = 'dropdown', className = '' }: Langu
     // Also store in localStorage for persistence
     localStorage.setItem('preferred-locale', newLocale);
 
+    // If user is logged in, save to their profile
+    if (user) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        await supabase
+          .from('profiles')
+          .update({ language: newLocale })
+          .eq('id', user.id);
+      } catch (error) {
+        console.error('Failed to save language preference to profile:', error);
+      }
+    }
+
     // Refresh the page to apply new locale
     startTransition(() => {
       router.refresh();
     });
 
     setIsOpen(false);
+    onClose?.();
   };
 
   if (variant === 'buttons') {
@@ -51,6 +69,39 @@ export function LanguageSwitcher({ variant = 'dropdown', className = '' }: Langu
             {localeFlags[loc]}
           </button>
         ))}
+      </div>
+    );
+  }
+
+  if (variant === 'menu-item') {
+    return (
+      <div className={className}>
+        <div className="flex items-center gap-2 flex-wrap">
+          {locales.map((loc) => (
+            <button
+              key={loc}
+              onClick={() => handleChange(loc)}
+              disabled={isPending}
+              className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
+                loc === locale
+                  ? 'bg-accent font-medium'
+                  : 'hover:bg-accent text-muted-foreground'
+              } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
+            >
+              <span>{localeFlags[loc]}</span>
+              <span>{localeNames[loc]}</span>
+              {loc === locale && (
+                <svg className="w-4 h-4 ml-auto text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
     );
   }
