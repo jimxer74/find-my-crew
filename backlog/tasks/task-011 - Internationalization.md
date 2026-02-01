@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 07:18'
+updated_date: '2026-02-01 07:26'
 labels:
   - i18n
   - infrastructure
@@ -868,4 +868,31 @@ First version implemented with support for:
 - Add date/time formatting utilities
 - Sync language preference with user profile
 - Email localization
+
+## Continued Implementation (2026-02-01 continued)
+
+### Additional Pages Translated:
+- `app/components/Footer.tsx` - Footer with privacy links translated
+- `app/crew/dashboard/page.tsx` - Crew dashboard with sign-in banner
+- `app/crew/registrations/page.tsx` - Crew registrations page fully translated
+- `app/owner/boats/page.tsx` - Owner boats page fully translated
+- `app/owner/journeys/page.tsx` - Owner journeys page fully translated
+- `app/components/Header.tsx` - Filters button translated
+- `app/page.tsx` - Home page fully translated (hero, features, how it works, CTA)
+
+### Translation Keys Added:
+- `crewDashboard.*` - Sign-in banner texts
+- `home.howItWorks.*` - How it works section (3 steps)
+- `home.cta.*` - Call-to-action section
+- `home.forOwners.feature1-3` - Owner feature list items
+- `home.forCrew.feature1-3` - Crew feature list items
+- `journeys.*` - Journey management (create, sort, filter, delete)
+- `boats.*` - Additional boat management keys
+- `registrations.*` - Additional registration keys
+- `footer.privacySettings` - Privacy settings link
+
+### Progress Summary:
+- Core pages translated: Home, Login, Signup, Footer, Crew Dashboard, Crew Registrations, Owner Boats, Owner Journeys
+- Header filter button translated
+- Both en.json and fi.json fully synchronized
 <!-- SECTION:NOTES:END -->
