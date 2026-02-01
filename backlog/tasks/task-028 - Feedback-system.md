@@ -1,10 +1,10 @@
 ---
 id: TASK-028
 title: Feedback system
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-25 11:55'
-updated_date: '2026-01-27 15:23'
+updated_date: '2026-02-01 12:27'
 labels:
   - feature
   - community
