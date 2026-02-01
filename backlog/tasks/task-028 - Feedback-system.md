@@ -4,7 +4,7 @@ title: Feedback system
 status: In Progress
 assignee: []
 created_date: '2026-01-25 11:55'
-updated_date: '2026-02-01 12:27'
+updated_date: '2026-02-01 17:10'
 labels:
   - feature
   - community
@@ -50,16 +50,16 @@ A feedback system with:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Users can submit feedback with type (bug/feature/improvement/other), title, and optional description
-- [ ] #2 Users can browse all public feedback submissions in a searchable/filterable list
-- [ ] #3 Users can upvote or downvote feedback (one vote per user per item)
-- [ ] #4 Feedback items show vote count, submission date, and current status
-- [ ] #5 Admin/system can update feedback status (New, Under Review, Planned, In Progress, Completed, Declined)
-- [ ] #6 Feedback prompts appear at strategic moments (post-journey, after key actions) without being annoying
-- [ ] #7 Users can dismiss prompts and not see them again for a configurable period
-- [ ] #8 Users receive notification when their feedback status changes
-- [ ] #9 Feedback form is accessible from navigation menu and footer
-- [ ] #10 Mobile-friendly UI for all feedback features
+- [x] #1 Users can submit feedback with type (bug/feature/improvement/other), title, and optional description
+- [x] #2 Users can browse all public feedback submissions in a searchable/filterable list
+- [x] #3 Users can upvote or downvote feedback (one vote per user per item)
+- [x] #4 Feedback items show vote count, submission date, and current status
+- [x] #5 Admin/system can update feedback status (New, Under Review, Planned, In Progress, Completed, Declined)
+- [x] #6 Feedback prompts appear at strategic moments (post-journey, after key actions) without being annoying
+- [x] #7 Users can dismiss prompts and not see them again for a configurable period
+- [x] #8 Users receive notification when their feedback status changes
+- [x] #9 Feedback form is accessible from navigation menu and footer
+- [x] #10 Mobile-friendly UI for all feedback features
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -606,4 +606,50 @@ specs/
 5. **Release notes** - Announce when feedback is implemented
 6. **Gamification** - Badges for helpful feedback
 7. **Admin dashboard** - Manage feedback at scale
+
+## Implementation Completed (2026-02-01)
+
+### Files Created:
+
+**Database:**
+- `migrations/015_create_feedback_system.sql` - Database schema with feedback, votes, and dismissals tables
+- Updated `specs/tables.sql` with feedback tables
+
+**Types & Service:**
+- `app/lib/feedback/types.ts` - TypeScript types and enums
+- `app/lib/feedback/service.ts` - Server-side CRUD operations
+
+**API Endpoints:**
+- `app/api/feedback/route.ts` - GET (list), POST (create)
+- `app/api/feedback/my/route.ts` - GET (user's feedback)
+- `app/api/feedback/[id]/route.ts` - GET, PATCH, DELETE
+- `app/api/feedback/[id]/vote/route.ts` - POST (vote)
+- `app/api/feedback/prompts/route.ts` - GET (check prompts)
+- `app/api/feedback/prompts/dismiss/route.ts` - POST (dismiss)
+
+**UI Components:**
+- `app/components/feedback/TypeBadge.tsx`
+- `app/components/feedback/StatusBadge.tsx`
+- `app/components/feedback/VoteButtons.tsx`
+- `app/components/feedback/FeedbackCard.tsx`
+- `app/components/feedback/FeedbackModal.tsx`
+- `app/components/feedback/FeedbackList.tsx`
+- `app/components/feedback/FeedbackButton.tsx`
+- `app/components/feedback/FeedbackPrompt.tsx`
+- `app/components/feedback/index.ts`
+
+**Pages:**
+- `app/feedback/page.tsx` - Public feedback board
+- `app/feedback/my/page.tsx` - User's submissions
+- `app/feedback/[id]/page.tsx` - Detail view
+
+**Updated Files:**
+- `messages/en.json` - English translations
+- `messages/fi.json` - Finnish translations
+- `app/components/Footer.tsx` - Added feedback link
+- `app/components/NavigationMenu.tsx` - Added feedback link
+- `app/lib/notifications/types.ts` - Added FEEDBACK_STATUS_CHANGED and FEEDBACK_MILESTONE
+- `app/lib/notifications/service.ts` - Added notifyFeedbackStatusChanged and notifyFeedbackMilestone
+- `app/lib/notifications/index.ts` - Exported new functions
+- `app/components/notifications/NotificationItem.tsx` - Added icons for feedback notifications
 <!-- SECTION:NOTES:END -->
