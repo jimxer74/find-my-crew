@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 07:34'
+updated_date: '2026-02-01 07:37'
 labels:
   - i18n
   - infrastructure
@@ -73,6 +73,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [ ] #13 All badges are loczlized
 - [ ] #14 AI assistant is localized
 - [ ] #15 All the rest of pages are using localized values
+- [ ] #16 Language selection is moved from header to navigation menu as first item.
 <!-- AC:END -->
 
 ## Implementation Plan
