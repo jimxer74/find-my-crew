@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-01-31 21:06'
+updated_date: '2026-02-01 07:18'
 labels:
   - i18n
   - infrastructure
@@ -60,15 +60,15 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 <!-- AC:BEGIN -->
 - [x] #1 App supports locale-based routing (/en/, /fi/)
 - [ ] #2 All UI strings are externalized to translation files (no hardcoded text)
-- [ ] #3 Users can select their preferred language from a language switcher
+- [x] #3 Users can select their preferred language from a language switcher
 - [ ] #4 Language preference persists in localStorage and user profile (when logged in)
-- [ ] #5 New visitors see app in their browser's preferred language (Accept-Language detection)
+- [x] #5 New visitors see app in their browser's preferred language (Accept-Language detection)
 - [ ] #6 Dates and times display in locale-appropriate format
 - [ ] #7 Numbers and measurements display with locale-appropriate formatting
 - [ ] #8 Email notifications are sent in the user's preferred language
 - [ ] #9 Page metadata (titles, descriptions) are translated for SEO
 - [x] #10 Fallback to English when translation is missing
-- [ ] #11 Language switcher is accessible from header/navigation on all pages
+- [x] #11 Language switcher is accessible from header/navigation on all pages
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -844,4 +844,28 @@ First version implemented with support for:
 - User preference storage in database
 - Email localization
 - Full QA testing
+
+## Implementation Progress (2026-02-01)
+
+### Infrastructure Complete:
+- Created `i18n/config.ts` with locale definitions (en, fi)
+- Created `i18n/request.ts` for server-side locale detection
+- Created `messages/en.json` with comprehensive translations
+- Created `messages/fi.json` with Finnish translations
+- Updated `next.config.ts` with next-intl plugin
+- Updated `app/layout.tsx` with NextIntlClientProvider
+- Created `LanguageSwitcher.tsx` component
+- Added language switcher to Header
+- Created database migration for language preference
+
+### Pages Updated with i18n:
+- `app/auth/login/page.tsx` - Login page fully translated
+- `app/auth/signup/page.tsx` - Signup page fully translated
+- `app/page.tsx` - Home page partially translated
+
+### Remaining Work:
+- Continue translating remaining pages (journeys, boats, profile, etc.)
+- Add date/time formatting utilities
+- Sync language preference with user profile
+- Email localization
 <!-- SECTION:NOTES:END -->
