@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 07:37'
+updated_date: '2026-02-01 07:44'
 labels:
   - i18n
   - infrastructure
@@ -61,9 +61,9 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [x] #1 App supports locale-based routing (/en/, /fi/)
 - [ ] #2 All UI strings are externalized to translation files (no hardcoded text)
 - [x] #3 Users can select their preferred language from a language switcher
-- [ ] #4 Language preference persists in localStorage and user profile (when logged in)
+- [x] #4 Language preference persists in localStorage and user profile (when logged in)
 - [x] #5 New visitors see app in their browser's preferred language (Accept-Language detection)
-- [ ] #6 Dates and times display in locale-appropriate format
+- [x] #6 Dates and times display in locale-appropriate format
 - [ ] #7 Numbers and measurements display with locale-appropriate formatting
 - [ ] #8 Email notifications are sent in the user's preferred language
 - [ ] #9 Page metadata (titles, descriptions) are translated for SEO
@@ -73,7 +73,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [ ] #13 All badges are loczlized
 - [ ] #14 AI assistant is localized
 - [ ] #15 All the rest of pages are using localized values
-- [ ] #16 Language selection is moved from header to navigation menu as first item.
+- [x] #16 Language selection is moved from header to navigation menu as first item.
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -900,4 +900,49 @@ First version implemented with support for:
 - Core pages translated: Home, Login, Signup, Footer, Crew Dashboard, Crew Registrations, Owner Boats, Owner Journeys
 - Header filter button translated
 - Both en.json and fi.json fully synchronized
+
+## Progress Update (2026-02-01 continued)
+
+### Completed in this session:
+
+1. **Language Switcher moved to Navigation Menu (#16)**
+   - Added 'menu-item' variant to LanguageSwitcher component
+   - Integrated LanguageSwitcher as first item in NavigationMenuContent
+   - Removed LanguageSwitcher from Header.tsx
+   - Added Language section header using settings.language.title translation
+
+2. **Language preference persists (#4)**
+   - Already saving to localStorage (previous work)
+   - Added profile sync to LanguageSwitcher when user is logged in
+   - Uses getSupabaseBrowserClient to update profiles.language column
+
+3. **Locale-aware date formatting (#6)**
+   - Updated app/lib/dateFormat.ts with locale detection
+   - Added locale mapping (en -> en-US, fi -> fi-FI)
+   - Functions now read locale from cookie or localStorage
+   - Added formatDateTime() and formatTime() utilities
+
+4. **NavigationMenu translated**
+   - Added useTranslations hooks for navigation, auth, and settings
+   - Translated all menu item labels (My Profile, My Boats, My Journeys, etc.)
+   - Translated section headers (For Skipper, For Crew)
+   - Translated appearance, sign out, login, sign up
+
+5. **AssistantButton localized (#14 partial)**
+   - Added useTranslations for aria-label and title
+
+### Translation keys added:
+- navigation.forSkipper
+- navigation.forCrew
+- navigation.appearance
+- navigation.completeProfile
+- navigation.login
+- navigation.signUp
+- navigation.loading
+
+### Remaining work:
+- Profile page translation
+- Settings/Privacy page translation
+- Full AI assistant translation
+- Remaining pages
 <!-- SECTION:NOTES:END -->
