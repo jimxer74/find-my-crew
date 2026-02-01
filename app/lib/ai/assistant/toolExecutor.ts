@@ -188,6 +188,7 @@ async function searchJourneys(
       end_date,
       risk_level,
       skills,
+      min_experience_level,
       state,
       boats!inner (
         id,
@@ -206,8 +207,9 @@ async function searchJourneys(
   if (args.endDate) {
     query = query.lte('end_date', args.endDate);
   }
+  // Note: journey.risk_level is a scalar enum (not array), use eq for filtering
   if (args.riskLevel) {
-    query = query.contains('risk_level', [args.riskLevel]);
+    query = query.eq('risk_level', args.riskLevel);
   }
 
   const limit = (args.limit as number) || 10;
@@ -239,6 +241,9 @@ async function searchLegs(
         id,
         name,
         state,
+        skills,
+        risk_level,
+        min_experience_level,
         boats!inner (
           id,
           name,
@@ -273,7 +278,35 @@ async function searchLegs(
     legs = legs.filter(leg => (leg.crew_needed || 0) > 0);
   }
 
-  return { legs, count: legs.length };
+  // Transform legs to include computed fields matching get_legs_per_viewport logic:
+  // - combined_skills: union of journey.skills + leg.skills (deduplicated)
+  // - effective_risk_level: leg.risk_level if set, otherwise journey.risk_level
+  // - effective_min_experience_level: leg.min_experience_level if set, otherwise journey.min_experience_level
+  const transformedLegs = legs.map((leg: any) => {
+    const journey = leg.journeys;
+    const journeySkills = journey?.skills || [];
+    const legSkills = leg.skills || [];
+
+    // Combine skills (union, deduplicated, filter empty)
+    const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(
+      (s: string) => s && s.trim() !== ''
+    );
+
+    // Effective risk_level: leg's if set, otherwise journey's
+    const effectiveRiskLevel = leg.risk_level ?? journey?.risk_level ?? null;
+
+    // Effective min_experience_level: leg's if set, otherwise journey's
+    const effectiveMinExperienceLevel = leg.min_experience_level ?? journey?.min_experience_level ?? null;
+
+    return {
+      ...leg,
+      combined_skills: combinedSkills,
+      effective_risk_level: effectiveRiskLevel,
+      effective_min_experience_level: effectiveMinExperienceLevel,
+    };
+  });
+
+  return { legs: transformedLegs, count: transformedLegs.length };
 }
 
 async function getLegDetails(supabase: SupabaseClient, legId: string) {
@@ -289,6 +322,7 @@ async function getLegDetails(supabase: SupabaseClient, legId: string) {
         end_date,
         risk_level,
         skills,
+        min_experience_level,
         boats!inner (
           id,
           name,
@@ -310,6 +344,33 @@ async function getLegDetails(supabase: SupabaseClient, legId: string) {
     .single();
 
   if (error) throw error;
+
+  // Add computed fields matching get_legs_per_viewport logic
+  if (data) {
+    const leg = data as any;
+    const journey = leg.journeys;
+    const journeySkills = journey?.skills || [];
+    const legSkills = leg.skills || [];
+
+    // Combine skills (union, deduplicated, filter empty)
+    const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(
+      (s: string) => s && s.trim() !== ''
+    );
+
+    // Effective risk_level: leg's if set, otherwise journey's
+    const effectiveRiskLevel = leg.risk_level ?? journey?.risk_level ?? null;
+
+    // Effective min_experience_level: leg's if set, otherwise journey's
+    const effectiveMinExperienceLevel = leg.min_experience_level ?? journey?.min_experience_level ?? null;
+
+    return {
+      ...leg,
+      combined_skills: combinedSkills,
+      effective_risk_level: effectiveRiskLevel,
+      effective_min_experience_level: effectiveMinExperienceLevel,
+    };
+  }
+
   return data;
 }
 
@@ -337,13 +398,45 @@ async function getJourneyDetails(supabase: SupabaseClient, journeyId: string) {
         end_date,
         crew_needed,
         skills,
-        risk_level
+        risk_level,
+        min_experience_level
       )
     `)
     .eq('id', journeyId)
     .single();
 
   if (error) throw error;
+
+  // Add computed fields for each leg matching get_legs_per_viewport logic
+  if (data && data.legs) {
+    const journey = data as any;
+    const journeySkills = journey.skills || [];
+    const journeyRiskLevel = journey.risk_level;
+    const journeyMinExpLevel = journey.min_experience_level;
+
+    journey.legs = journey.legs.map((leg: any) => {
+      const legSkills = leg.skills || [];
+
+      // Combine skills (union, deduplicated, filter empty)
+      const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(
+        (s: string) => s && s.trim() !== ''
+      );
+
+      // Effective risk_level: leg's if set, otherwise journey's
+      const effectiveRiskLevel = leg.risk_level ?? journeyRiskLevel ?? null;
+
+      // Effective min_experience_level: leg's if set, otherwise journey's
+      const effectiveMinExperienceLevel = leg.min_experience_level ?? journeyMinExpLevel ?? null;
+
+      return {
+        ...leg,
+        combined_skills: combinedSkills,
+        effective_risk_level: effectiveRiskLevel,
+        effective_min_experience_level: effectiveMinExperienceLevel,
+      };
+    });
+  }
+
   return data;
 }
 
@@ -424,10 +517,20 @@ async function analyzeLegMatch(
     .eq('id', userId)
     .single();
 
-  // Get leg requirements
+  // Get leg requirements with journey data for combined/effective values
   const { data: leg } = await supabase
     .from('legs')
-    .select('name, skills, risk_level, min_experience_level')
+    .select(`
+      name,
+      skills,
+      risk_level,
+      min_experience_level,
+      journeys!inner (
+        skills,
+        risk_level,
+        min_experience_level
+      )
+    `)
     .eq('id', legId)
     .single();
 
@@ -435,25 +538,38 @@ async function analyzeLegMatch(
     throw new Error('Profile or leg not found');
   }
 
-  // Calculate match
-  const userSkills = profile.skills || [];
-  const requiredSkills = leg.skills || [];
-  const userRiskLevels = profile.risk_level || [];
-  const legRiskLevel = leg.risk_level;
+  const journey = (leg as any).journeys;
 
-  // Skills match
-  const matchingSkills = requiredSkills.filter((s: string) => userSkills.includes(s));
-  const skillsMatch = requiredSkills.length > 0
-    ? Math.round((matchingSkills.length / requiredSkills.length) * 100)
+  // Calculate combined skills (journey + leg, deduplicated, matching get_legs_per_viewport logic)
+  const journeySkills = journey?.skills || [];
+  const legSkills = (leg as any).skills || [];
+  const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(
+    (s: string) => s && s.trim() !== ''
+  );
+
+  // Effective risk_level: leg's if set, otherwise journey's (matching get_legs_per_viewport)
+  const effectiveRiskLevel = (leg as any).risk_level ?? journey?.risk_level ?? null;
+
+  // Effective min_experience_level: leg's if set, otherwise journey's (matching get_legs_per_viewport)
+  const effectiveMinExpLevel = (leg as any).min_experience_level ?? journey?.min_experience_level ?? null;
+
+  // Calculate match using effective/combined values
+  const userSkills = profile.skills || [];
+  const userRiskLevels = profile.risk_level || [];
+
+  // Skills match (using combined skills from journey + leg)
+  const matchingSkills = combinedSkills.filter((s: string) => userSkills.includes(s));
+  const skillsMatch = combinedSkills.length > 0
+    ? Math.round((matchingSkills.length / combinedSkills.length) * 100)
     : 100;
 
-  // Experience match
+  // Experience match (using effective min_experience_level)
   const userExp = profile.sailing_experience || 1;
-  const requiredExp = leg.min_experience_level || 1;
+  const requiredExp = effectiveMinExpLevel || 1;
   const experienceMatch = userExp >= requiredExp;
 
-  // Risk level match
-  const riskMatch = !legRiskLevel || userRiskLevels.includes(legRiskLevel);
+  // Risk level match (using effective risk_level)
+  const riskMatch = !effectiveRiskLevel || userRiskLevels.includes(effectiveRiskLevel);
 
   // Overall match
   const overallMatch = Math.round(
@@ -463,17 +579,26 @@ async function analyzeLegMatch(
   );
 
   return {
-    legName: leg.name,
+    legName: (leg as any).name,
     overallMatch,
     skillsMatch,
     matchingSkills,
-    missingSkills: requiredSkills.filter((s: string) => !userSkills.includes(s)),
+    missingSkills: combinedSkills.filter((s: string) => !userSkills.includes(s)),
     experienceMatch,
     userExperience: userExp,
     requiredExperience: requiredExp,
     riskMatch,
     userRiskLevels,
-    legRiskLevel,
+    effectiveRiskLevel,
+    // Include source info for transparency
+    legRiskLevel: (leg as any).risk_level,
+    journeyRiskLevel: journey?.risk_level,
+    legSkills: legSkills,
+    journeySkills: journeySkills,
+    combinedSkills,
+    legMinExperienceLevel: (leg as any).min_experience_level,
+    journeyMinExperienceLevel: journey?.min_experience_level,
+    effectiveMinExperienceLevel: effectiveMinExpLevel,
   };
 }
 
@@ -574,7 +699,7 @@ async function analyzeCrewMatch(
   userId: string,
   registrationId: string
 ) {
-  // Get registration with leg and crew profile
+  // Get registration with leg, journey, and crew profile for combined/effective values
   const { data: registration } = await supabase
     .from('registrations')
     .select(`
@@ -588,6 +713,9 @@ async function analyzeCrewMatch(
         risk_level,
         min_experience_level,
         journeys!inner (
+          skills,
+          risk_level,
+          min_experience_level,
           boats!inner (
             owner_id
           )
@@ -617,22 +745,44 @@ async function analyzeCrewMatch(
 
   const profile = (registration as any).profiles;
   const leg = (registration as any).legs;
+  const journey = leg.journeys;
 
-  // Return comprehensive analysis
+  // Calculate combined skills (journey + leg, matching get_legs_per_viewport logic)
+  const journeySkills = journey?.skills || [];
+  const legSkills = leg.skills || [];
+  const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(
+    (s: string) => s && s.trim() !== ''
+  );
+
+  // Effective risk_level: leg's if set, otherwise journey's
+  const effectiveRiskLevel = leg.risk_level ?? journey?.risk_level ?? null;
+
+  // Effective min_experience_level: leg's if set, otherwise journey's
+  const effectiveMinExperienceLevel = leg.min_experience_level ?? journey?.min_experience_level ?? null;
+
+  // Return comprehensive analysis with combined/effective values
   return {
     crewMember: {
       username: profile.username,
       fullName: profile.full_name,
       experience: profile.sailing_experience,
       skills: profile.skills,
+      riskLevels: profile.risk_level,
       certifications: profile.certifications,
       userDescription: profile.user_description,
     },
     legRequirements: {
       name: leg.name,
-      skills: leg.skills,
-      riskLevel: leg.risk_level,
-      minExperience: leg.min_experience_level,
+      // Include both raw and computed values for transparency
+      legSkills: legSkills,
+      journeySkills: journeySkills,
+      combinedSkills: combinedSkills,
+      legRiskLevel: leg.risk_level,
+      journeyRiskLevel: journey?.risk_level,
+      effectiveRiskLevel: effectiveRiskLevel,
+      legMinExperience: leg.min_experience_level,
+      journeyMinExperience: journey?.min_experience_level,
+      effectiveMinExperience: effectiveMinExperienceLevel,
     },
     matchPercentage: registration.match_percentage,
   };
