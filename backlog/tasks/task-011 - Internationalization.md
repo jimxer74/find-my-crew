@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 07:44'
+updated_date: '2026-02-01 12:07'
 labels:
   - i18n
   - infrastructure
@@ -945,4 +945,76 @@ First version implemented with support for:
 - Settings/Privacy page translation
 - Full AI assistant translation
 - Remaining pages
+
+## Additional Progress (2026-02-01 session 2)
+
+### Components Translated:
+
+1. **NotificationBell.tsx**
+   - Added useTranslations for aria-label
+
+2. **FiltersDialog.tsx**
+   - Translated header (Filters), close button
+   - Translated availability label, location label, location placeholder
+   - Translated Cancel and Save and Search buttons
+   - Updated date formatting to use locale-aware formatting
+
+3. **Profile page (app/profile/page.tsx)**
+   - Added useTranslations hooks
+   - Translated page header (Complete Your Profile / Profile)
+   - Translated Profile Completion label
+   - Translated success messages
+   - Translated all section titles (Personal Information, Sailing Preferences, Sailing Experience and Skills, Notifications and Consents)
+   - Translated Save/Cancel buttons
+
+4. **Privacy Settings page (app/settings/privacy/page.tsx)**
+   - Added useTranslations hooks
+   - Translated page title and subtitle
+   - Translated Consent Preferences section (AI Processing, Profile Sharing, Marketing)
+   - Translated Email Notifications section (Registration Updates, Journey Updates, Profile Reminders)
+   - Translated Your Data section
+   - Translated Export Data section
+   - Translated Delete Account section
+   - Translated delete confirmation dialog
+
+### Translation keys added:
+
+**journeys.browse.filters:**
+- availability
+- locationPlaceholder
+- saveAndSearch
+
+**profile:**
+- profile
+- completeYourProfile
+- save
+- saving
+- profileCompletion
+- profileCreatedSuccess
+- profileUpdatedSuccess
+- failedToLoadProfile
+- failedToSaveProfile
+- sections.sailingExperience
+- sections.notifications
+
+**settings.privacy (comprehensive):**
+- subtitle
+- aiProcessing, aiProcessingDesc
+- profileSharing, profileSharingDesc
+- consentPreferences, consentControlDesc
+- emailNotifications, emailNotificationsDesc
+- registrationUpdates, registrationUpdatesDesc
+- journeyUpdates, journeyUpdatesDesc
+- profileReminders, profileRemindersDesc
+- yourData, yourDataDesc
+- profileInfo, name, notSet
+- consentHistory, privacyPolicyAccepted, termsAccepted, notAccepted
+- exportData, exportDataDesc, downloadMyData, preparingDownload, dataDownloaded
+- deleteAccount, deleteAccountDesc, deleteMyAccount
+- deleteConfirmTitle, deleteConfirmDesc, deleteConfirmItems.*, deleteConfirmType
+- permanentlyDelete, deleting
+- failedToUpdate, failedToExport, failedToDelete
+
+### Summary:
+Major pages now translated: Home, Login, Signup, Footer, Header, Crew Dashboard, Crew Registrations, Owner Boats, Owner Journeys, Navigation Menu, Filters Dialog, Profile, Privacy Settings.
 <!-- SECTION:NOTES:END -->
