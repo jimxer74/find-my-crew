@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 12:07'
+updated_date: '2026-02-01 12:20'
 labels:
   - i18n
   - infrastructure
@@ -71,7 +71,7 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [x] #11 Language switcher is accessible from header/navigation on all pages
 - [ ] #12 All buttons are localized
 - [ ] #13 All badges are loczlized
-- [ ] #14 AI assistant is localized
+- [x] #14 AI assistant is localized
 - [ ] #15 All the rest of pages are using localized values
 - [x] #16 Language selection is moved from header to navigation menu as first item.
 <!-- AC:END -->
@@ -1017,4 +1017,42 @@ First version implemented with support for:
 
 ### Summary:
 Major pages now translated: Home, Login, Signup, Footer, Header, Crew Dashboard, Crew Registrations, Owner Boats, Owner Journeys, Navigation Menu, Filters Dialog, Profile, Privacy Settings.
+
+## Progress Update (2026-02-01 session 3)
+
+### Components Translated:
+
+1. **AI Assistant components (AC #14)**
+   - AssistantSidebar.tsx - title, newConversation, close, previousConversations, deleteConversation
+   - AssistantChat.tsx - greeting, greetingMessage, findMatchingJourneys, improveProfile, thinking, used, pendingActions, placeholder
+   - assistant/page.tsx - full page translation
+
+2. **NotificationCenter.tsx**
+   - title, close aria-label, noNotificationsYet, notifyWhenHappens, loadMore
+
+3. **notifications/page.tsx**
+   - Mobile header title translation
+
+4. **owner/dashboard/page.tsx**
+   - Loading text translation
+
+5. **owner/registrations/page.tsx (All Registrations)**
+   - Full page translation: title, subtitle, all filter labels, status options, sort options, pagination, results count
+
+### Translation keys added:
+
+**assistant:**
+- newConversation, close, previousConversations, deleteConversation
+- greeting, greetingMessage, findMatchingJourneys, improveProfile
+- thinking, used, pendingActions
+
+**notifications:**
+- noNotificationsYet, notifyWhenHappens, loadMore
+
+**registrations.allRegistrations:**
+- title, subtitle, allStatuses, allJourneys, allLegs
+- status, journey, leg, sortBy, sortOrder, ascending, descending
+- registrationDate, lastUpdated, journeyName, legName
+- showing, noMatchingRegistrations, registered, updated, noEndDate
+- previous, next, pageOf
 <!-- SECTION:NOTES:END -->
