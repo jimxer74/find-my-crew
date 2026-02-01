@@ -4,7 +4,7 @@ title: Internationalization
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 07:26'
+updated_date: '2026-02-01 07:34'
 labels:
   - i18n
   - infrastructure
@@ -69,6 +69,10 @@ Implement a comprehensive i18n system using `next-intl` that supports:
 - [ ] #9 Page metadata (titles, descriptions) are translated for SEO
 - [x] #10 Fallback to English when translation is missing
 - [x] #11 Language switcher is accessible from header/navigation on all pages
+- [ ] #12 All buttons are localized
+- [ ] #13 All badges are loczlized
+- [ ] #14 AI assistant is localized
+- [ ] #15 All the rest of pages are using localized values
 <!-- AC:END -->
 
 ## Implementation Plan
