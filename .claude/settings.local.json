@@ -8,7 +8,9 @@
       "mcp__backlog__task_list",
       "Bash(npm run build:*)",
       "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\OWNER\\\\Projects\\\\next-projects\\\\find-my-crew''; npm run lint 2>&1 | Select-Object -First 50\")",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Bash(where npm:*)",
+      "Bash(cmd.exe /c \"npm run build\")"
     ]
   }
 }

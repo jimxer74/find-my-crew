@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Pagination } from '@/app/components/ui/Pagination';
@@ -12,6 +13,8 @@ import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { Footer } from '@/app/components/Footer';
 
 export default function JourneysPage() {
+  const t = useTranslations('journeys');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [journeys, setJourneys] = useState<any[]>([]);
@@ -204,7 +207,7 @@ export default function JourneysPage() {
   if (authLoading || loading || hasOwnerRole === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -215,8 +218,8 @@ export default function JourneysPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">My Journeys & Legs</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage your journeys and their legs</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         <div className="mb-4 sm:mb-6 flex flex-col gap-3 sm:gap-4">
@@ -224,22 +227,22 @@ export default function JourneysPage() {
             <Link
               href="/owner/journeys/create"
               className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center gap-2 hover:opacity-90"
-              title="Create Journey"
+              title={t('createJourney')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
               </svg>
-              Create Journey
+              {t('createJourney')}
             </Link>
             <Link
               href="/owner/journeys/propose"
               className="bg-secondary text-secondary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center gap-2 hover:opacity-90 border border-border"
-              title="Propose Journey"
+              title={t('proposeJourney')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
-              Propose Journey
+              {t('proposeJourney')}
             </Link>
           </div>
           {(journeys.length > 0 || boats.length > 0) && (
@@ -249,7 +252,7 @@ export default function JourneysPage() {
                 {boats.length > 0 && (
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <label htmlFor="filter-boat" className="text-xs sm:text-sm text-muted-foreground">
-                      Boat:
+                      {t('boat')}:
                     </label>
                     <select
                       id="filter-boat"
@@ -257,7 +260,7 @@ export default function JourneysPage() {
                       onChange={(e) => handleFilterChange('boat', e.target.value)}
                       className="px-3 py-2 min-h-[44px] border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-sm"
                     >
-                      <option value="all">All Boats</option>
+                      <option value="all">{t('allBoats')}</option>
                       {boats.map((boat) => (
                         <option key={boat.id} value={boat.id}>
                           {boat.name}
@@ -268,7 +271,7 @@ export default function JourneysPage() {
                 )}
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                   <label htmlFor="filter-state" className="text-xs sm:text-sm text-muted-foreground">
-                    State:
+                    {t('state')}:
                   </label>
                   <select
                     id="filter-state"
@@ -276,17 +279,17 @@ export default function JourneysPage() {
                     onChange={(e) => handleFilterChange('state', e.target.value)}
                     className="px-3 py-2 min-h-[44px] border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-sm"
                   >
-                    <option value="all">All States</option>
-                    <option value="In planning">In planning</option>
-                    <option value="Published">Published</option>
-                    <option value="Archived">Archived</option>
+                    <option value="all">{t('allStates')}</option>
+                    <option value="In planning">{t('inPlanning')}</option>
+                    <option value="Published">{t('status.published')}</option>
+                    <option value="Archived">{t('status.archived')}</option>
                   </select>
                 </div>
               </div>
               {/* Sort */}
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto">
                 <label htmlFor="sort-select" className="text-xs sm:text-sm text-muted-foreground">
-                  Sort by:
+                  {t('sortBy')}:
                 </label>
                 <div className="flex items-center gap-2">
                   <select
@@ -295,8 +298,8 @@ export default function JourneysPage() {
                     onChange={(e) => handleSortChange(e.target.value as 'start_date' | 'created_at')}
                     className="px-3 py-2 min-h-[44px] border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-sm"
                   >
-                    <option value="start_date">Journey start date</option>
-                    <option value="created_at">Creation date</option>
+                    <option value="start_date">{t('journeyStartDate')}</option>
+                    <option value="created_at">{t('creationDate')}</option>
                   </select>
                   <button
                     onClick={() => {
@@ -324,12 +327,12 @@ export default function JourneysPage() {
 
         {journeys.length === 0 ? (
             <div className="bg-card rounded-lg shadow p-8 text-center">
-              <p className="text-muted-foreground mb-4">You haven't created any journeys yet.</p>
+              <p className="text-muted-foreground mb-4">{t('noJourneysYet')}</p>
               <Link
                 href="/owner/journeys/create"
                 className="font-medium text-primary hover:opacity-80"
               >
-                Create your first journey →
+                {t('createFirstJourney')}
               </Link>
             </div>
         ) : (
@@ -368,7 +371,7 @@ export default function JourneysPage() {
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
-                            AI generated
+                            {t('aiGenerated')}
                           </span>
                         )}
                       </div>
@@ -376,9 +379,9 @@ export default function JourneysPage() {
                       <div className="mb-4">
                         <h3 className="text-base font-semibold text-card-foreground mb-2">{journey.name}</h3>
                         <div className="text-sm text-muted-foreground space-y-1">
-                          {journey.boat_name && <p>Boat: {journey.boat_name}</p>}
-                          {journey.start_date && <p>Start: {formatDate(journey.start_date)}</p>}
-                          {journey.end_date && <p>End: {formatDate(journey.end_date)}</p>}
+                          {journey.boat_name && <p>{t('boat')}: {journey.boat_name}</p>}
+                          {journey.start_date && <p>{t('start')}: {formatDate(journey.start_date)}</p>}
+                          {journey.end_date && <p>{t('end')}: {formatDate(journey.end_date)}</p>}
                         </div>
                       </div>
                       {journey.description && (
@@ -390,8 +393,8 @@ export default function JourneysPage() {
                         <Link
                           href={`/owner/journeys/${journey.id}/edit`}
                           className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                          title="Edit journey"
-                          aria-label="Edit journey"
+                          title={t('editJourney')}
+                          aria-label={t('editJourney')}
                         >
                           <svg
                             className="w-5 h-5"
@@ -411,8 +414,8 @@ export default function JourneysPage() {
                         <Link
                           href={`/owner/journeys/${journey.id}/legs`}
                           className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                          title="View legs"
-                          aria-label="View legs"
+                          title={t('viewLegs')}
+                          aria-label={t('viewLegs')}
                         >
                           <svg
                             className="w-5 h-5"
@@ -432,8 +435,8 @@ export default function JourneysPage() {
                         <Link
                           href={`/owner/journeys/${journey.id}/registrations`}
                           className="p-1.5 text-foreground hover:text-primary transition-colors rounded hover:bg-accent"
-                          title="View registrations"
-                          aria-label="View registrations"
+                          title={t('viewRegistrations')}
+                          aria-label={t('viewRegistrations')}
                         >
                           <svg
                             className="w-5 h-5"
@@ -493,10 +496,10 @@ export default function JourneysPage() {
           <div className="bg-card rounded-lg shadow-xl max-w-md w-full" onClick={(e) => e.stopPropagation()}>
             <div className="p-6">
               <h3 className="text-lg font-semibold text-card-foreground mb-4">
-                Delete Journey?
+                {t('deleteJourney')}
               </h3>
               <p className="text-sm text-muted-foreground mb-6">
-                Are you sure you want to delete this journey? This will permanently delete the journey and all its legs. This action cannot be undone.
+                {t('deleteJourneyConfirm')}
               </p>
               <div className="flex justify-end gap-3">
                 <button
@@ -507,14 +510,14 @@ export default function JourneysPage() {
                   disabled={isDeleting}
                   className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {tCommon('cancel')}
                 </button>
                 <button
                   onClick={confirmDeleteJourney}
                   disabled={isDeleting}
                   className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                 >
-                  {isDeleting ? 'Deleting...' : 'Delete'}
+                  {isDeleting ? t('deleting') : tCommon('delete')}
                 </button>
               </div>
             </div>

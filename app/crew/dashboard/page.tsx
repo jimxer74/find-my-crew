@@ -3,11 +3,14 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 
 export default function CrewDashboard() {
+  const t = useTranslations('crewDashboard');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
@@ -17,7 +20,7 @@ export default function CrewDashboard() {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -26,7 +29,7 @@ export default function CrewDashboard() {
     <div className="bg-background flex flex-col overflow-hidden h-[calc(100vh-4rem)]">
       {/* Show profile completion prompt for signed-in users */}
       {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
-      
+
       {/* Show notification banner for non-signed-in users */}
       {!user && (
         <div className="bg-primary/10 border-b border-primary/20 px-4 py-3">
@@ -47,7 +50,7 @@ export default function CrewDashboard() {
               </svg>
               <div className="flex-1">
                 <p className="text-sm text-foreground font-medium">
-                  Sign in and complete your profile to see full journey details, dates, boat information, and skipper details
+                  {t('signInBanner')}
                 </p>
               </div>
             </div>
@@ -56,13 +59,13 @@ export default function CrewDashboard() {
                 href="/auth/login"
                 className="text-sm text-primary hover:underline font-medium px-3 py-1.5 rounded-md hover:bg-primary/10 transition-colors"
               >
-                Sign in
+                {t('signIn')}
               </Link>
               <Link
                 href="/auth/signup"
                 className="text-sm bg-primary text-primary-foreground font-medium px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity"
               >
-                Sign up
+                {t('signUp')}
               </Link>
             </div>
           </div>

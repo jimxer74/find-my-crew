@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 export default function LoginPage() {
+  const t = useTranslations('auth.login');
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +54,7 @@ export default function LoginPage() {
         router.refresh();
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid email or password');
+      setError(err.message || t('errors.invalidCredentials'));
     } finally {
       setLoading(false);
     }
@@ -82,15 +84,15 @@ export default function LoginPage() {
       <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-card p-4 sm:p-8 rounded-xl shadow-lg">
         <div>
           <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-card-foreground">
-            Log in to your account
+            {t('title')}
           </h2>
           <p className="mt-2 text-center text-xs sm:text-sm text-muted-foreground">
-            Or{' '}
+            {t('noAccount')}{' '}
             <Link
               href="/auth/signup"
               className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
             >
-              create a new account
+              {t('signUp')}
             </Link>
           </p>
         </div>
@@ -105,7 +107,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                Email address
+                {t('email')}
               </label>
               <input
                 id="email"
@@ -116,13 +118,13 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                Password
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -133,7 +135,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="••••••••"
+                placeholder={t('passwordPlaceholder')}
               />
             </div>
           </div>
@@ -144,7 +146,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full flex justify-center py-3 px-4 min-h-[44px] bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
             >
-              {loading ? 'Logging in...' : 'Log in'}
+              {loading ? t('submitting') : t('submit')}
             </button>
 
             <div className="relative">
@@ -152,7 +154,7 @@ export default function LoginPage() {
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-card text-muted-foreground">Or continue with</span>
+                <span className="px-2 bg-card text-muted-foreground">{t('orContinueWith')}</span>
               </div>
             </div>
 

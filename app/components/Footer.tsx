@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 
 export function Footer() {
+  const t = useTranslations('footer');
   const currentYear = new Date().getFullYear();
 
   return (
@@ -9,7 +13,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           {/* Copyright */}
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} SailSmart. All rights reserved.
+            {t('copyright', { year: currentYear })}
           </p>
 
           {/* Links */}
@@ -18,19 +22,19 @@ export function Footer() {
               href="/privacy-policy"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Privacy Policy
+              {t('legal.privacyPolicy')}
             </Link>
             <Link
               href="/terms-of-service"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Terms of Service
+              {t('legal.termsOfService')}
             </Link>
             <Link
               href="/settings/privacy"
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
-              Privacy Settings
+              {t('privacySettings')}
             </Link>
           </nav>
         </div>

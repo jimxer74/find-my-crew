@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 export default function SignUpPage() {
+  const t = useTranslations('auth.signup');
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,7 +42,7 @@ export default function SignUpPage() {
         router.refresh();
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred during signup');
+      setError(err.message || t('errors.emailAlreadyExists'));
     } finally {
       setLoading(false);
     }
@@ -51,15 +53,15 @@ export default function SignUpPage() {
       <div className="max-w-md w-full space-y-6 sm:space-y-8 bg-card p-4 sm:p-8 rounded-xl shadow-lg">
         <div>
           <h2 className="mt-4 sm:mt-6 text-center text-2xl sm:text-3xl font-extrabold text-card-foreground">
-            Create your account
+            {t('title')}
           </h2>
           <p className="mt-2 text-center text-xs sm:text-sm text-muted-foreground">
-            Or{' '}
+            {t('hasAccount')}{' '}
             <Link
               href="/auth/login"
               className="font-medium text-primary hover:opacity-80 min-h-[44px] inline-flex items-center"
             >
-              log in to your existing account
+              {t('login')}
             </Link>
           </p>
         </div>
@@ -74,7 +76,7 @@ export default function SignUpPage() {
           <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-foreground">
-                Full Name
+                {t('fullName')}
               </label>
               <input
                 id="fullName"
@@ -84,13 +86,13 @@ export default function SignUpPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="John Doe"
+                placeholder={t('fullNamePlaceholder')}
               />
             </div>
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground">
-                Email address
+                {t('email')}
               </label>
               <input
                 id="email"
@@ -101,13 +103,13 @@ export default function SignUpPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="you@example.com"
+                placeholder={t('emailPlaceholder')}
               />
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground">
-                Password
+                {t('password')}
               </label>
               <input
                 id="password"
@@ -118,7 +120,7 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-3 min-h-[44px] text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="••••••••"
+                placeholder={t('passwordPlaceholder')}
                 minLength={6}
               />
             </div>
@@ -130,12 +132,12 @@ export default function SignUpPage() {
               disabled={loading}
               className="w-full flex justify-center py-3 px-4 min-h-[44px] bg-primary text-primary-foreground rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90"
             >
-              {loading ? 'Creating account...' : 'Sign up'}
+              {loading ? t('submitting') : t('submit')}
             </button>
           </div>
 
           <p className="text-xs text-center text-muted-foreground">
-            By signing up, you agree to set up your privacy preferences after login.
+            {t('termsAgreement')}
           </p>
         </form>
       </div>

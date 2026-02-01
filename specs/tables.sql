@@ -80,7 +80,9 @@ create table public.profiles (
   profile_completion_percentage integer null default 0,
   profile_completed_at timestamp without time zone null,
   email text null,
+  language varchar(5) null default 'en',  -- User preferred language (en, fi)
   constraint profiles_pkey primary key (id),
+  constraint profiles_language_check check (language in ('en', 'fi')),
   constraint profiles_username_key unique (username),
   constraint profiles_id_fkey foreign KEY (id) references auth.users (id)
 );

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LogoWithText } from './LogoWithText';
 import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';
@@ -9,11 +10,13 @@ import { SignupModal } from './SignupModal';
 import { FiltersDialog } from './FiltersDialog';
 import { NotificationBell } from './notifications/NotificationBell';
 import { AssistantButton } from './ai/AssistantButton';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 export function Header() {
+  const t = useTranslations('common');
   const pathname = usePathname();
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -185,7 +188,7 @@ export function Header() {
                       ? 'text-foreground'
                       : 'text-muted-foreground'
                   }`}>
-                    Filters
+                    {t('filters')}
                   </span>
                 </button>
               )}
@@ -193,6 +196,8 @@ export function Header() {
               {user && <AssistantButton />}
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
+              {/* Language Switcher */}
+              <LanguageSwitcher variant="buttons" />
               <NavigationMenu
                 onOpenLogin={() => {
                   // On mobile, navigate to login page; on desktop, open modal

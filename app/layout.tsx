@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FilterProvider } from "./contexts/FilterContext";
@@ -23,41 +25,46 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SailSmart - Connect Boat Owners with Crew Members",
+  title: "Find My Crew - Connect Boat Owners with Crew Members",
   description: "Connect boat owners and skippers with potential crew members. Find your perfect crew or discover amazing sailing opportunities.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         <ThemeScript />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
-          <AuthProvider>
-            <ConsentSetupProvider>
-              <FilterProvider>
-                <NotificationProvider>
-                  <AssistantProvider>
-                    <Header />
-                    <div className="min-h-screen pt-16">
-                      {children}
-                    </div>
-                    <AssistantSidebar />
-                  </AssistantProvider>
-                </NotificationProvider>
-              </FilterProvider>
-              <CookieConsentBanner />
-            </ConsentSetupProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider>
+            <AuthProvider>
+              <ConsentSetupProvider>
+                <FilterProvider>
+                  <NotificationProvider>
+                    <AssistantProvider>
+                      <Header />
+                      <div className="min-h-screen pt-16">
+                        {children}
+                      </div>
+                      <AssistantSidebar />
+                    </AssistantProvider>
+                  </NotificationProvider>
+                </FilterProvider>
+                <CookieConsentBanner />
+              </ConsentSetupProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

@@ -1,0 +1,512 @@
+{
+  "common": {
+    "loading": "Ladataan...",
+    "error": "Tapahtui virhe",
+    "save": "Tallenna",
+    "saving": "Tallennetaan...",
+    "cancel": "Peruuta",
+    "delete": "Poista",
+    "edit": "Muokkaa",
+    "back": "Takaisin",
+    "next": "Seuraava",
+    "submit": "Lähetä",
+    "close": "Sulje",
+    "search": "Haku",
+    "filter": "Suodata",
+    "filters": "Suodattimet",
+    "apply": "Käytä",
+    "clear": "Tyhjennä",
+    "reset": "Nollaa",
+    "confirm": "Vahvista",
+    "yes": "Kyllä",
+    "no": "Ei",
+    "or": "tai",
+    "and": "ja",
+    "optional": "valinnainen",
+    "required": "pakollinen",
+    "viewAll": "Näytä kaikki",
+    "learnMore": "Lue lisää",
+    "noResults": "Ei tuloksia",
+    "tryAgain": "Yritä uudelleen",
+    "refresh": "Päivitä"
+  },
+  "auth": {
+    "login": {
+      "title": "Kirjaudu sisään",
+      "subtitle": "Tervetuloa takaisin! Syötä tunnuksesi.",
+      "email": "Sähköpostiosoite",
+      "emailPlaceholder": "Syötä sähköpostisi",
+      "password": "Salasana",
+      "passwordPlaceholder": "Syötä salasanasi",
+      "submit": "Kirjaudu",
+      "submitting": "Kirjaudutaan...",
+      "forgotPassword": "Unohditko salasanan?",
+      "noAccount": "Eikö sinulla ole tiliä?",
+      "signUp": "Rekisteröidy",
+      "orContinueWith": "Tai jatka",
+      "google": "Jatka Googlella",
+      "errors": {
+        "invalidCredentials": "Virheellinen sähköposti tai salasana",
+        "emailRequired": "Sähköposti vaaditaan",
+        "passwordRequired": "Salasana vaaditaan",
+        "tooManyAttempts": "Liian monta kirjautumisyritystä. Yritä myöhemmin uudelleen."
+      }
+    },
+    "signup": {
+      "title": "Luo tili",
+      "subtitle": "Liity Find My Crew -yhteisöön ja aloita purjehdusseikkailusi.",
+      "fullName": "Koko nimi",
+      "fullNamePlaceholder": "Syötä koko nimesi",
+      "email": "Sähköpostiosoite",
+      "emailPlaceholder": "Syötä sähköpostisi",
+      "password": "Salasana",
+      "passwordPlaceholder": "Luo salasana",
+      "confirmPassword": "Vahvista salasana",
+      "confirmPasswordPlaceholder": "Vahvista salasanasi",
+      "submit": "Rekisteröidy",
+      "submitting": "Luodaan tiliä...",
+      "hasAccount": "Onko sinulla jo tili?",
+      "login": "Kirjaudu",
+      "termsAgreement": "Rekisteröitymällä hyväksyt",
+      "termsOfService": "Käyttöehdot",
+      "privacyPolicy": "Tietosuojakäytännön",
+      "errors": {
+        "emailRequired": "Sähköposti vaaditaan",
+        "emailInvalid": "Syötä kelvollinen sähköpostiosoite",
+        "passwordRequired": "Salasana vaaditaan",
+        "passwordTooShort": "Salasanan on oltava vähintään 8 merkkiä",
+        "passwordsDoNotMatch": "Salasanat eivät täsmää",
+        "emailAlreadyExists": "Tämä sähköpostiosoite on jo käytössä"
+      }
+    },
+    "signOut": "Kirjaudu ulos",
+    "signOutConfirm": "Haluatko varmasti kirjautua ulos?"
+  },
+  "navigation": {
+    "home": "Etusivu",
+    "browseJourneys": "Selaa matkoja",
+    "myProfile": "Profiilini",
+    "myBoats": "Veneet",
+    "myJourneys": "Matkani",
+    "myCrew": "Miehistöni",
+    "myRegistrations": "Ilmoittautumiseni",
+    "settings": "Asetukset",
+    "privacy": "Tietosuoja-asetukset",
+    "signOut": "Kirjaudu ulos",
+    "menu": "Valikko",
+    "notifications": "Ilmoitukset",
+    "assistant": "AI-avustaja",
+    "ownerDashboard": "Omistajan hallintapaneeli",
+    "crewDashboard": "Miehistön hallintapaneeli"
+  },
+  "crewDashboard": {
+    "signInBanner": "Kirjaudu sisään ja täydennä profiilisi nähdäksesi täydet matkatiedot, päivämäärät, venetiedot ja kipparin tiedot",
+    "signIn": "Kirjaudu",
+    "signUp": "Rekisteröidy"
+  },
+  "home": {
+    "hero": {
+      "title": "Löydä täydellinen miehistö",
+      "subtitle": "Yhdistä veneiden omistajat kokeneiden miehistön jäsenten kanssa unohtumattomiin purjehdusseikkailuihin",
+      "browseJourneys": "Selaa matkoja",
+      "searchJourneys": "Hae matkoja",
+      "myJourneys": "Omat matkat",
+      "myCrew": "Miehistöni",
+      "myRegistrations": "Ilmoittautumiseni",
+      "signUp": "Aloita",
+      "login": "Kirjaudu"
+    },
+    "forOwners": {
+      "title": "Veneen omistajille",
+      "description": "Löydä kokeneita miehistön jäseniä purjehdusseikkailuihisi. Julkaise matkasi ja yhdistä purjehtijoiden kanssa maailmanlaajuisesti.",
+      "cta": "Aloita matkojen julkaisu",
+      "feature1": "Rekisteröi ja hallinnoi veneitäsi",
+      "feature2": "Suunnittele matkoja ja jaa osuuksiin",
+      "feature3": "Tarkista ja hyväksy miehistöhakemukset tai anna AI:n tehdä se puolestasi"
+    },
+    "forCrew": {
+      "title": "Miehistölle",
+      "description": "Löydä purjehdusmahdollisuuksia maailmanlaajuisesti. Selaa matkoja, täsmäytä taitosi ja liity upeisiin seikkailuihin.",
+      "cta": "Löydä seuraava seikkailusi",
+      "feature1": "Selaa saatavilla olevia matkoja ja osuuksia",
+      "feature2": "Suodata sijainnin, päivämäärien ja taitojen mukaan",
+      "feature3": "Hae mukaan unelmamatkaasi"
+    },
+    "howItWorks": {
+      "title": "Näin se toimii",
+      "step1": {
+        "title": "Rekisteröidy",
+        "description": "Luo tili omistajana/kipparina tai miehistön jäsenenä"
+      },
+      "step2": {
+        "title": "Yhdistä",
+        "description": "Omistajat julkaisevat matkoja, miehistön jäsenet selaavat ja hakevat"
+      },
+      "step3": {
+        "title": "Purjehdi yhdessä",
+        "description": "Omistajat hyväksyvät hakemukset ja olet valmis lähtemään merille!"
+      }
+    },
+    "cta": {
+      "title": "Valmiina aloittamaan seikkailusi?",
+      "descriptionOwner": "Luo ja julkaise tulevat matkasi ja kohteesi, ja anna AI:n auttaa sinua löytämään täydellinen miehistö.",
+      "descriptionCrew": "Unelmakohteet ja matkat ovat vain yhden klikkauksen päässä!"
+    },
+    "features": {
+      "matching": {
+        "title": "Älykäs täsmäytys",
+        "description": "AI-järjestelmämme yhdistää miehistön jäsenet matkoihin taitojen ja kokemuksen perusteella."
+      },
+      "verified": {
+        "title": "Vahvistetut profiilit",
+        "description": "Kaikki miehistön jäsenet ja veneiden omistajat on vahvistettu turvallisen purjehduskokemuksen takaamiseksi."
+      },
+      "global": {
+        "title": "Maailmanlaajuinen yhteisö",
+        "description": "Yhdistä purjehtijoiden kanssa ympäri maailmaa ja tutustu uusiin kohteisiin."
+      }
+    }
+  },
+  "journeys": {
+    "title": "Matkani ja osuudet",
+    "subtitle": "Hallinnoi matkojasi ja niiden osuuksia",
+    "createJourney": "Luo matka",
+    "proposeJourney": "Ehdota matkaa",
+    "noJourneysYet": "Et ole vielä luonut matkoja.",
+    "createFirstJourney": "Luo ensimmäinen matkasi →",
+    "aiGenerated": "AI-generoitu",
+    "boat": "Vene",
+    "start": "Alkaa",
+    "end": "Päättyy",
+    "state": "Tila",
+    "sortBy": "Järjestä",
+    "journeyStartDate": "Matkan aloituspäivä",
+    "creationDate": "Luontipäivä",
+    "allBoats": "Kaikki veneet",
+    "allStates": "Kaikki tilat",
+    "inPlanning": "Suunnitteilla",
+    "deleteJourney": "Poista matka?",
+    "deleteJourneyConfirm": "Haluatko varmasti poistaa tämän matkan? Tämä poistaa pysyvästi matkan ja kaikki sen osuudet. Toimintoa ei voi peruuttaa.",
+    "deleting": "Poistetaan...",
+    "editJourney": "Muokkaa matkaa",
+    "viewLegs": "Näytä osuudet",
+    "viewRegistrations": "Näytä ilmoittautumiset",
+    "browse": {
+      "title": "Selaa matkoja",
+      "subtitle": "Löydä seuraava purjehdusseikkailusi",
+      "noResults": "Matkoja ei löytynyt",
+      "noResultsDescription": "Kokeile säätää suodattimia tai tarkista myöhemmin uusia mahdollisuuksia.",
+      "filters": {
+        "location": "Sijainti",
+        "dateRange": "Ajanjakso",
+        "startDate": "Aloituspäivä",
+        "endDate": "Päättymispäivä",
+        "riskLevel": "Riskitaso",
+        "experienceLevel": "Kokemusaste",
+        "skills": "Vaaditut taidot",
+        "crewNeeded": "Miehistöä tarvitaan"
+      }
+    },
+    "card": {
+      "crewNeeded": "{count, plural, =0 {Miehistöä ei tarvita} =1 {1 miehistön jäsen tarvitaan} other {# miehistön jäsentä tarvitaan}}",
+      "legs": "{count, plural, =1 {1 osuus} other {# osuutta}}",
+      "viewDetails": "Näytä tiedot",
+      "register": "Ilmoittaudu",
+      "startDate": "Alkaa",
+      "endDate": "Päättyy",
+      "boat": "Vene"
+    },
+    "details": {
+      "title": "Matkan tiedot",
+      "description": "Kuvaus",
+      "requirements": "Vaatimukset",
+      "legs": "Matkan osuudet",
+      "boat": "Tietoa veneestä",
+      "owner": "Matkan omistaja",
+      "registerForLeg": "Ilmoittaudu tälle osuudelle",
+      "alreadyRegistered": "Olet jo ilmoittautunut"
+    },
+    "create": {
+      "title": "Luo matka",
+      "basicInfo": "Perustiedot",
+      "legs": "Matkan osuudet",
+      "requirements": "Vaatimukset",
+      "publish": "Julkaise matka",
+      "saveDraft": "Tallenna luonnos"
+    },
+    "status": {
+      "draft": "Luonnos",
+      "published": "Julkaistu",
+      "inProgress": "Käynnissä",
+      "completed": "Valmis",
+      "cancelled": "Peruutettu",
+      "archived": "Arkistoitu"
+    }
+  },
+  "legs": {
+    "title": "Matkan osuudet",
+    "add": "Lisää osuus",
+    "edit": "Muokkaa osuutta",
+    "delete": "Poista osuus",
+    "crewNeeded": "Miehistöä tarvitaan",
+    "skills": "Vaaditut taidot",
+    "riskLevel": "Riskitaso",
+    "experienceLevel": "Vähimmäiskokemus",
+    "waypoints": "Reittipiseet",
+    "startLocation": "Lähtöpaikka",
+    "endLocation": "Määränpää"
+  },
+  "boats": {
+    "title": "Veneet",
+    "subtitle": "Hallinnoi veneitäsi ja niiden tietoja",
+    "add": "Lisää vene",
+    "addNew": "+ Lisää uusi vene",
+    "edit": "Muokkaa venettä",
+    "editBoat": "Muokkaa venettä",
+    "delete": "Poista vene",
+    "noBoats": "Et ole vielä lisännyt veneitä",
+    "noBoatsYet": "Et ole vielä lisännyt veneitä.",
+    "addFirst": "Lisää ensimmäinen veneesi aloittaaksesi matkojen luomisen",
+    "addFirstBoat": "Lisää ensimmäinen veneesi →",
+    "viewJourneys": "Näytä matkat",
+    "homePort": "Kotisatama",
+    "specifications": {
+      "title": "Tekniset tiedot",
+      "length": "Pituus",
+      "beam": "Leveys",
+      "draft": "Syväys",
+      "displacement": "Uppouma",
+      "sailArea": "Purjepinta-ala",
+      "capacity": "Kapasiteetti",
+      "year": "Valmistusvuosi",
+      "make": "Merkki",
+      "model": "Malli",
+      "type": "Tyyppi",
+      "homePort": "Kotisatama"
+    },
+    "types": {
+      "sailboat": "Purjevene",
+      "catamaran": "Katamaraani",
+      "motorboat": "Moottorivene",
+      "yacht": "Jahti",
+      "other": "Muu"
+    },
+    "units": {
+      "meters": "m",
+      "feet": "ft",
+      "kilograms": "kg",
+      "pounds": "lbs",
+      "squareMeters": "m²",
+      "squareFeet": "ft²",
+      "knots": "kn"
+    }
+  },
+  "registrations": {
+    "title": "Ilmoittautumiseni",
+    "subtitle": "Tarkastele ja hallinnoi osuusilmoittautumisiasi",
+    "noRegistrations": "Et ole vielä ilmoittautunut yhteenkään matkaan",
+    "noLegsRegistered": "Et ole vielä ilmoittautunut yhteenkään osuuteen.",
+    "browseJourneys": "Selaa saatavilla olevia matkoja",
+    "browseLegs": "Selaa saatavilla olevia osuuksia →",
+    "registered": "Ilmoittautunut",
+    "boatAndSkipper": "Vene ja kippari",
+    "skipper": "Kippari",
+    "skills": "Taidot",
+    "aiAssessment": "AI-arvioinnin tiedot",
+    "autoApproved": "AI hyväksyi automaattisesti",
+    "aiScore": "AI-pisteet",
+    "status": {
+      "pending": "Odottaa hyväksyntää",
+      "approved": "Hyväksytty",
+      "rejected": "Ei hyväksytty",
+      "cancelled": "Peruutettu",
+      "withdrawn": "Peruutettu"
+    },
+    "actions": {
+      "cancel": "Peruuta ilmoittautuminen",
+      "withdraw": "Peru",
+      "approve": "Hyväksy",
+      "reject": "Hylkää"
+    },
+    "confirmCancel": "Haluatko varmasti peruuttaa tämän ilmoittautumisen?",
+    "ownerView": {
+      "title": "Miehistön ilmoittautumiset",
+      "noRegistrations": "Ei vielä miehistön ilmoittautumisia tälle matkalle",
+      "matchScore": "Täsmäyspisteet",
+      "viewProfile": "Näytä profiili",
+      "approveAll": "Hyväksy kaikki",
+      "rejectAll": "Hylkää kaikki"
+    }
+  },
+  "profile": {
+    "title": "Profiilini",
+    "edit": "Muokkaa profiilia",
+    "setup": {
+      "title": "Täydennä profiilisi",
+      "subtitle": "Kerro meille itsestäsi auttaaksesi löytämään parhaat täsmäykset",
+      "step": "Vaihe {current}/{total}"
+    },
+    "sections": {
+      "personal": "Henkilötiedot",
+      "experience": "Kokemus ja taidot",
+      "preferences": "Purjehdusmieltymykset"
+    },
+    "fields": {
+      "fullName": "Koko nimi",
+      "username": "Käyttäjänimi",
+      "email": "Sähköposti",
+      "phone": "Puhelinnumero",
+      "bio": "Tietoa sinusta",
+      "bioPlaceholder": "Kerro itsestäsi - taustastasi, kiinnostuksen kohteistasi ja mikä toi sinut purjehduksen pariin...",
+      "profileImage": "Profiilikuva",
+      "roles": "Olen...",
+      "roleOwner": "Veneen omistaja/Kippari",
+      "roleCrew": "Miehistön jäsen",
+      "rolesHelp": "Valitse vähintään yksi rooli. Voit olla molempia!",
+      "sailingExperience": "Purjehduskokemus",
+      "skills": "Taidot",
+      "skillsPlaceholder": "Kuvaile kokemustasi tästä taidosta...",
+      "certifications": "Sertifikaatit ja pätevyydet",
+      "certificationsPlaceholder": "Listaa purjehdussertifikaattisi, lupakirjasi tai pätevyytesi",
+      "riskLevel": "Purjehduksen mukavuustaso",
+      "sailingPreferences": "Motivaatio ja purjehdusmieltymykset",
+      "sailingPreferencesPlaceholder": "Kuvaile purjehdustavoitteitasi, millainen purjehdus innostaa sinua..."
+    },
+    "experienceLevels": {
+      "beginner": "Aloittelija",
+      "beginnerDesc": "Uusi purjehduksessa, innokas oppimaan perusteet",
+      "competent": "Pätevä miehistö",
+      "competentDesc": "Hallitsee useimmat miehistötehtävät, tuntee purjehdusterminologian",
+      "coastal": "Rannikko-kippari",
+      "coastalDesc": "Kokemusta rannikkonavigaatiosta ja kykyä toimia kipparinma päiväpurjehduksilla",
+      "offshore": "Avomeri-kippari",
+      "offshoreDesc": "Pätevä toimimaan kaukopurjehdusten kipparina ja johtamaan miehistöä"
+    },
+    "riskLevels": {
+      "coastal": "Rannikko-purjehdus",
+      "coastalDesc": "Päiväpurjehdukset ja lyhyet rannikkoretket",
+      "offshore": "Avomeri-purjehdus",
+      "offshoreDesc": "Monipäiväiset matkat, valtamerenylitykset",
+      "extreme": "Ääriolosuhteet",
+      "extremeDesc": "Korkeat leveyspiirit, kilpapurjehdus tai vaativat olosuhteet"
+    }
+  },
+  "notifications": {
+    "title": "Ilmoitukset",
+    "markAllRead": "Merkitse kaikki luetuiksi",
+    "noNotifications": "Ei ilmoituksia",
+    "settings": "Ilmoitusasetukset",
+    "types": {
+      "registration": "Ilmoittautumispäivitykset",
+      "journey": "Matkapäivitykset",
+      "message": "Viestit",
+      "system": "Järjestelmäilmoitukset"
+    },
+    "timeAgo": {
+      "justNow": "Juuri nyt",
+      "minutesAgo": "{count} min sitten",
+      "hoursAgo": "{count} t sitten",
+      "daysAgo": "{count} pv sitten",
+      "weeksAgo": "{count} vk sitten"
+    }
+  },
+  "assistant": {
+    "title": "AI-avustaja",
+    "placeholder": "Kysy mitä tahansa purjehdusmahdollisuuksista...",
+    "suggestions": {
+      "findJourneys": "Etsi taitoihini sopivia matkoja",
+      "updateProfile": "Auta minua päivittämään profiilini",
+      "checkRegistrations": "Tarkista ilmoittautumisteni tila"
+    },
+    "consent": {
+      "title": "Ota AI-avustaja käyttöön",
+      "description": "Käyttääksesi AI-avustajaa sinun on otettava AI-käsittely käyttöön tietosuoja-asetuksissa.",
+      "enable": "Ota AI-ominaisuudet käyttöön"
+    }
+  },
+  "settings": {
+    "title": "Asetukset",
+    "privacy": {
+      "title": "Tietosuoja-asetukset",
+      "dataProcessing": "Tietojenkäsittelysuostumus",
+      "dataProcessingDesc": "Salli meidän käsitellä tietojasi palveluidemme tarjoamiseksi",
+      "aiProcessing": "AI-ominaisuudet",
+      "aiProcessingDesc": "Ota käyttöön AI-tehosteiset ominaisuudet kuten älykäs täsmäytys ja AI-avustaja",
+      "analytics": "Analytiikka",
+      "analyticsDesc": "Auta meitä parantamaan sallimalla anonyymi käyttöanalytiikka",
+      "marketing": "Markkinointiviestintä",
+      "marketingDesc": "Vastaanota päivityksiä uusista ominaisuuksista ja purjehdusmahdollisuuksista"
+    },
+    "language": {
+      "title": "Kieli",
+      "select": "Valitse kieli",
+      "current": "Nykyinen: {language}"
+    }
+  },
+  "footer": {
+    "copyright": "© {year} Find My Crew. Kaikki oikeudet pidätetään.",
+    "tagline": "Yhdistämme purjehtijoita maailmanlaajuisesti",
+    "privacySettings": "Tietosuoja-asetukset",
+    "links": {
+      "about": "Tietoa meistä",
+      "contact": "Yhteystiedot",
+      "help": "Ohjekeskus",
+      "blog": "Blogi"
+    },
+    "legal": {
+      "privacyPolicy": "Tietosuojakäytäntö",
+      "termsOfService": "Käyttöehdot",
+      "cookiePolicy": "Evästekäytäntö"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Sivua ei löydy",
+      "description": "Etsimääsi sivua ei ole olemassa tai se on siirretty.",
+      "backHome": "Takaisin etusivulle"
+    },
+    "serverError": {
+      "title": "Jokin meni pieleen",
+      "description": "Sivun lataamisessa on ongelmia. Yritä uudelleen.",
+      "tryAgain": "Yritä uudelleen"
+    },
+    "unauthorized": {
+      "title": "Kirjautuminen vaaditaan",
+      "description": "Sinun on kirjauduttava sisään nähdäksesi tämän sivun.",
+      "signIn": "Kirjaudu sisään"
+    },
+    "forbidden": {
+      "title": "Pääsy estetty",
+      "description": "Sinulla ei ole oikeuksia nähdä tätä sivua.",
+      "backHome": "Takaisin etusivulle"
+    },
+    "network": {
+      "title": "Yhteysvirhe",
+      "description": "Tarkista internetyhteytesi ja yritä uudelleen."
+    },
+    "validation": {
+      "required": "Tämä kenttä on pakollinen",
+      "email": "Syötä kelvollinen sähköpostiosoite",
+      "minLength": "Vähintään {min} merkkiä",
+      "maxLength": "Enintään {max} merkkiä",
+      "passwordMismatch": "Salasanat eivät täsmää"
+    }
+  },
+  "dates": {
+    "today": "Tänään",
+    "yesterday": "Eilen",
+    "tomorrow": "Huomenna",
+    "formats": {
+      "short": "d.M.",
+      "medium": "d.M.yyyy",
+      "long": "d. MMMM yyyy",
+      "full": "EEEE d. MMMM yyyy"
+    }
+  },
+  "metadata": {
+    "title": "Find My Crew - Yhdistä purjehtijat maailmanlaajuisesti",
+    "description": "Liity maailmanlaajuiseen purjehdusyhteisöön. Löydä miehistöpaikkoja tai rekrytoi kokeneita purjehtijoita seuraavaan seikkailuusi.",
+    "ogTitle": "Find My Crew",
+    "ogDescription": "Yhdistä veneiden omistajat miehistön jäseniin unohtumattomiin purjehdusseikkailuihin."
+  }
+}

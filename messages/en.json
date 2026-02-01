@@ -1,0 +1,512 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "save": "Save",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "filters": "Filters",
+    "apply": "Apply",
+    "clear": "Clear",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and",
+    "optional": "optional",
+    "required": "required",
+    "viewAll": "View all",
+    "learnMore": "Learn more",
+    "noResults": "No results found",
+    "tryAgain": "Try again",
+    "refresh": "Refresh"
+  },
+  "auth": {
+    "login": {
+      "title": "Log in to your account",
+      "subtitle": "Welcome back! Please enter your credentials.",
+      "email": "Email address",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Enter your password",
+      "submit": "Log in",
+      "submitting": "Logging in...",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "orContinueWith": "Or continue with",
+      "google": "Continue with Google",
+      "errors": {
+        "invalidCredentials": "Invalid email or password",
+        "emailRequired": "Email is required",
+        "passwordRequired": "Password is required",
+        "tooManyAttempts": "Too many login attempts. Please try again later."
+      }
+    },
+    "signup": {
+      "title": "Create your account",
+      "subtitle": "Join Find My Crew and start your sailing adventure.",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter your full name",
+      "email": "Email address",
+      "emailPlaceholder": "Enter your email",
+      "password": "Password",
+      "passwordPlaceholder": "Create a password",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your password",
+      "submit": "Sign up",
+      "submitting": "Creating account...",
+      "hasAccount": "Already have an account?",
+      "login": "Log in",
+      "termsAgreement": "By signing up, you agree to our",
+      "termsOfService": "Terms of Service",
+      "privacyPolicy": "Privacy Policy",
+      "errors": {
+        "emailRequired": "Email is required",
+        "emailInvalid": "Please enter a valid email address",
+        "passwordRequired": "Password is required",
+        "passwordTooShort": "Password must be at least 8 characters",
+        "passwordsDoNotMatch": "Passwords do not match",
+        "emailAlreadyExists": "An account with this email already exists"
+      }
+    },
+    "signOut": "Sign out",
+    "signOutConfirm": "Are you sure you want to sign out?"
+  },
+  "navigation": {
+    "home": "Home",
+    "browseJourneys": "Browse Journeys",
+    "myProfile": "My Profile",
+    "myBoats": "My Boats",
+    "myJourneys": "My Journeys",
+    "myCrew": "My Crew",
+    "myRegistrations": "My Registrations",
+    "settings": "Settings",
+    "privacy": "Privacy Settings",
+    "signOut": "Sign out",
+    "menu": "Menu",
+    "notifications": "Notifications",
+    "assistant": "AI Assistant",
+    "ownerDashboard": "Owner Dashboard",
+    "crewDashboard": "Crew Dashboard"
+  },
+  "crewDashboard": {
+    "signInBanner": "Sign in and complete your profile to see full journey details, dates, boat information, and skipper details",
+    "signIn": "Sign in",
+    "signUp": "Sign up"
+  },
+  "home": {
+    "hero": {
+      "title": "Find Your Perfect Crew",
+      "subtitle": "Connect boat owners with experienced crew members for unforgettable sailing adventures",
+      "browseJourneys": "Browse Journeys",
+      "searchJourneys": "Search Journeys",
+      "myJourneys": "My Journeys",
+      "myCrew": "My Crew",
+      "myRegistrations": "My Registrations",
+      "signUp": "Get Started",
+      "login": "Log in"
+    },
+    "forOwners": {
+      "title": "For Boat Owners",
+      "description": "Find experienced crew members for your sailing adventures. Post your journeys and connect with sailors worldwide.",
+      "cta": "Start Posting Journeys",
+      "feature1": "Register and manage your boats",
+      "feature2": "Plan journeys and divide into legs",
+      "feature3": "Review and approve crew applications or let AI to do it for you"
+    },
+    "forCrew": {
+      "title": "For Crew Members",
+      "description": "Discover sailing opportunities worldwide. Browse journeys, match your skills, and join amazing adventures.",
+      "cta": "Find Your Next Adventure",
+      "feature1": "Browse available journeys and legs",
+      "feature2": "Filter by location, dates, and skills",
+      "feature3": "Apply to join your dream voyage"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Sign Up",
+        "description": "Create your account as an owner/skipper or crew member"
+      },
+      "step2": {
+        "title": "Connect",
+        "description": "Owners post journeys, crew members browse and apply"
+      },
+      "step3": {
+        "title": "Sail Together",
+        "description": "Owners approve applications and you're ready to set sail!"
+      }
+    },
+    "cta": {
+      "title": "Ready to Start Your Adventure?",
+      "descriptionOwner": "Create and publish your upcoming passages and destinations, and let AI assist you in finding the perfect crew.",
+      "descriptionCrew": "Your dream destinations and passages are just one click away!"
+    },
+    "features": {
+      "matching": {
+        "title": "Smart Matching",
+        "description": "Our AI-powered system matches crew members with journeys based on skills and experience."
+      },
+      "verified": {
+        "title": "Verified Profiles",
+        "description": "All crew members and boat owners are verified for a safe sailing experience."
+      },
+      "global": {
+        "title": "Global Community",
+        "description": "Connect with sailors from around the world and explore new destinations."
+      }
+    }
+  },
+  "journeys": {
+    "title": "My Journeys & Legs",
+    "subtitle": "Manage your journeys and their legs",
+    "createJourney": "Create Journey",
+    "proposeJourney": "Propose Journey",
+    "noJourneysYet": "You haven't created any journeys yet.",
+    "createFirstJourney": "Create your first journey →",
+    "aiGenerated": "AI generated",
+    "boat": "Boat",
+    "start": "Start",
+    "end": "End",
+    "state": "State",
+    "sortBy": "Sort by",
+    "journeyStartDate": "Journey start date",
+    "creationDate": "Creation date",
+    "allBoats": "All Boats",
+    "allStates": "All States",
+    "inPlanning": "In planning",
+    "deleteJourney": "Delete Journey?",
+    "deleteJourneyConfirm": "Are you sure you want to delete this journey? This will permanently delete the journey and all its legs. This action cannot be undone.",
+    "deleting": "Deleting...",
+    "editJourney": "Edit journey",
+    "viewLegs": "View legs",
+    "viewRegistrations": "View registrations",
+    "browse": {
+      "title": "Browse Journeys",
+      "subtitle": "Find your next sailing adventure",
+      "noResults": "No journeys found",
+      "noResultsDescription": "Try adjusting your filters or check back later for new opportunities.",
+      "filters": {
+        "location": "Location",
+        "dateRange": "Date Range",
+        "startDate": "Start Date",
+        "endDate": "End Date",
+        "riskLevel": "Risk Level",
+        "experienceLevel": "Experience Level",
+        "skills": "Required Skills",
+        "crewNeeded": "Crew Needed"
+      }
+    },
+    "card": {
+      "crewNeeded": "{count, plural, =0 {No crew needed} =1 {1 crew needed} other {# crew needed}}",
+      "legs": "{count, plural, =1 {1 leg} other {# legs}}",
+      "viewDetails": "View Details",
+      "register": "Register",
+      "startDate": "Starts",
+      "endDate": "Ends",
+      "boat": "Boat"
+    },
+    "details": {
+      "title": "Journey Details",
+      "description": "Description",
+      "requirements": "Requirements",
+      "legs": "Journey Legs",
+      "boat": "About the Boat",
+      "owner": "Journey Owner",
+      "registerForLeg": "Register for this leg",
+      "alreadyRegistered": "Already registered"
+    },
+    "create": {
+      "title": "Create Journey",
+      "basicInfo": "Basic Information",
+      "legs": "Journey Legs",
+      "requirements": "Requirements",
+      "publish": "Publish Journey",
+      "saveDraft": "Save as Draft"
+    },
+    "status": {
+      "draft": "Draft",
+      "published": "Published",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "archived": "Archived"
+    }
+  },
+  "legs": {
+    "title": "Journey Legs",
+    "add": "Add Leg",
+    "edit": "Edit Leg",
+    "delete": "Delete Leg",
+    "crewNeeded": "Crew Needed",
+    "skills": "Required Skills",
+    "riskLevel": "Risk Level",
+    "experienceLevel": "Minimum Experience",
+    "waypoints": "Waypoints",
+    "startLocation": "Start Location",
+    "endLocation": "End Location"
+  },
+  "boats": {
+    "title": "My Boats",
+    "subtitle": "Manage your boats and their details",
+    "add": "Add Boat",
+    "addNew": "+ Add New Boat",
+    "edit": "Edit Boat",
+    "editBoat": "Edit boat",
+    "delete": "Delete Boat",
+    "noBoats": "You haven't added any boats yet",
+    "noBoatsYet": "You haven't added any boats yet.",
+    "addFirst": "Add your first boat to start creating journeys",
+    "addFirstBoat": "Add your first boat →",
+    "viewJourneys": "View Journeys",
+    "homePort": "Home Port",
+    "specifications": {
+      "title": "Specifications",
+      "length": "Length",
+      "beam": "Beam",
+      "draft": "Draft",
+      "displacement": "Displacement",
+      "sailArea": "Sail Area",
+      "capacity": "Capacity",
+      "year": "Year Built",
+      "make": "Make",
+      "model": "Model",
+      "type": "Type",
+      "homePort": "Home Port"
+    },
+    "types": {
+      "sailboat": "Sailboat",
+      "catamaran": "Catamaran",
+      "motorboat": "Motorboat",
+      "yacht": "Yacht",
+      "other": "Other"
+    },
+    "units": {
+      "meters": "m",
+      "feet": "ft",
+      "kilograms": "kg",
+      "pounds": "lbs",
+      "squareMeters": "m²",
+      "squareFeet": "ft²",
+      "knots": "kn"
+    }
+  },
+  "registrations": {
+    "title": "My Registrations",
+    "subtitle": "View and manage your leg registrations",
+    "noRegistrations": "You haven't registered for any journeys yet",
+    "noLegsRegistered": "You haven't registered for any legs yet.",
+    "browseJourneys": "Browse available journeys",
+    "browseLegs": "Browse available legs →",
+    "registered": "Registered",
+    "boatAndSkipper": "Boat and Skipper",
+    "skipper": "Skipper",
+    "skills": "Skills",
+    "aiAssessment": "AI Assessment Details",
+    "autoApproved": "Auto-approved by AI",
+    "aiScore": "AI Score",
+    "status": {
+      "pending": "Pending Approval",
+      "approved": "Approved",
+      "rejected": "Not Approved",
+      "cancelled": "Cancelled",
+      "withdrawn": "Withdrawn"
+    },
+    "actions": {
+      "cancel": "Cancel Registration",
+      "withdraw": "Withdraw",
+      "approve": "Approve",
+      "reject": "Reject"
+    },
+    "confirmCancel": "Are you sure you want to cancel this registration?",
+    "ownerView": {
+      "title": "Crew Registrations",
+      "noRegistrations": "No crew registrations for this journey yet",
+      "matchScore": "Match Score",
+      "viewProfile": "View Profile",
+      "approveAll": "Approve All",
+      "rejectAll": "Reject All"
+    }
+  },
+  "profile": {
+    "title": "My Profile",
+    "edit": "Edit Profile",
+    "setup": {
+      "title": "Complete Your Profile",
+      "subtitle": "Tell us about yourself to help us find the best matches",
+      "step": "Step {current} of {total}"
+    },
+    "sections": {
+      "personal": "Personal Information",
+      "experience": "Experience & Skills",
+      "preferences": "Sailing Preferences"
+    },
+    "fields": {
+      "fullName": "Full Name",
+      "username": "Username",
+      "email": "Email",
+      "phone": "Phone Number",
+      "bio": "About You",
+      "bioPlaceholder": "Tell us about yourself - your background, interests, and what brings you to sailing...",
+      "profileImage": "Profile Image",
+      "roles": "I am a...",
+      "roleOwner": "Boat Owner/Skipper",
+      "roleCrew": "Crew Member",
+      "rolesHelp": "Select at least one role. You can be both!",
+      "sailingExperience": "Sailing Experience",
+      "skills": "Skills",
+      "skillsPlaceholder": "Describe your experience with this skill...",
+      "certifications": "Certifications & Qualifications",
+      "certificationsPlaceholder": "List your sailing certifications, licenses, or qualifications",
+      "riskLevel": "Sailing Comfort Level",
+      "sailingPreferences": "Motivation and Sailing Preferences",
+      "sailingPreferencesPlaceholder": "Describe your sailing goals, what kind of sailing excites you..."
+    },
+    "experienceLevels": {
+      "beginner": "Beginner",
+      "beginnerDesc": "New to sailing, eager to learn the basics",
+      "competent": "Competent Crew",
+      "competentDesc": "Can handle most crew duties, familiar with sailing terms",
+      "coastal": "Coastal Skipper",
+      "coastalDesc": "Experienced in coastal navigation and can skipper day sails",
+      "offshore": "Offshore Skipper",
+      "offshoreDesc": "Qualified to skipper offshore passages and lead crew"
+    },
+    "riskLevels": {
+      "coastal": "Coastal Sailing",
+      "coastalDesc": "Day sailing and short coastal trips",
+      "offshore": "Offshore Sailing",
+      "offshoreDesc": "Multi-day passages, ocean crossings",
+      "extreme": "Extreme Sailing",
+      "extremeDesc": "High-latitude, racing, or challenging conditions"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotifications": "No notifications",
+    "settings": "Notification Settings",
+    "types": {
+      "registration": "Registration Updates",
+      "journey": "Journey Updates",
+      "message": "Messages",
+      "system": "System Notifications"
+    },
+    "timeAgo": {
+      "justNow": "Just now",
+      "minutesAgo": "{count}m ago",
+      "hoursAgo": "{count}h ago",
+      "daysAgo": "{count}d ago",
+      "weeksAgo": "{count}w ago"
+    }
+  },
+  "assistant": {
+    "title": "AI Assistant",
+    "placeholder": "Ask me anything about sailing opportunities...",
+    "suggestions": {
+      "findJourneys": "Find journeys matching my skills",
+      "updateProfile": "Help me update my profile",
+      "checkRegistrations": "Check my registration status"
+    },
+    "consent": {
+      "title": "Enable AI Assistant",
+      "description": "To use the AI Assistant, you need to enable AI processing in your privacy settings.",
+      "enable": "Enable AI Features"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "privacy": {
+      "title": "Privacy Settings",
+      "dataProcessing": "Data Processing Consent",
+      "dataProcessingDesc": "Allow us to process your data to provide our services",
+      "aiProcessing": "AI Features",
+      "aiProcessingDesc": "Enable AI-powered features like smart matching and the AI assistant",
+      "analytics": "Analytics",
+      "analyticsDesc": "Help us improve by allowing anonymous usage analytics",
+      "marketing": "Marketing Communications",
+      "marketingDesc": "Receive updates about new features and sailing opportunities"
+    },
+    "language": {
+      "title": "Language",
+      "select": "Select Language",
+      "current": "Current: {language}"
+    }
+  },
+  "footer": {
+    "copyright": "© {year} Find My Crew. All rights reserved.",
+    "tagline": "Connecting sailors worldwide",
+    "privacySettings": "Privacy Settings",
+    "links": {
+      "about": "About Us",
+      "contact": "Contact",
+      "help": "Help Center",
+      "blog": "Blog"
+    },
+    "legal": {
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "cookiePolicy": "Cookie Policy"
+    }
+  },
+  "errors": {
+    "notFound": {
+      "title": "Page Not Found",
+      "description": "The page you're looking for doesn't exist or has been moved.",
+      "backHome": "Back to Home"
+    },
+    "serverError": {
+      "title": "Something Went Wrong",
+      "description": "We're having trouble loading this page. Please try again.",
+      "tryAgain": "Try Again"
+    },
+    "unauthorized": {
+      "title": "Sign In Required",
+      "description": "You need to be signed in to access this page.",
+      "signIn": "Sign In"
+    },
+    "forbidden": {
+      "title": "Access Denied",
+      "description": "You don't have permission to access this page.",
+      "backHome": "Back to Home"
+    },
+    "network": {
+      "title": "Connection Error",
+      "description": "Please check your internet connection and try again."
+    },
+    "validation": {
+      "required": "This field is required",
+      "email": "Please enter a valid email address",
+      "minLength": "Must be at least {min} characters",
+      "maxLength": "Must be at most {max} characters",
+      "passwordMismatch": "Passwords do not match"
+    }
+  },
+  "dates": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "formats": {
+      "short": "MMM d",
+      "medium": "MMM d, yyyy",
+      "long": "MMMM d, yyyy",
+      "full": "EEEE, MMMM d, yyyy"
+    }
+  },
+  "metadata": {
+    "title": "Find My Crew - Connect Sailors Worldwide",
+    "description": "Join the global sailing community. Find crew positions or recruit experienced sailors for your next adventure.",
+    "ogTitle": "Find My Crew",
+    "ogDescription": "Connect boat owners with crew members for unforgettable sailing adventures."
+  }
+}

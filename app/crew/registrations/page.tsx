@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
@@ -53,9 +54,11 @@ type RegistrationLeg = {
 };
 
 export default function MyRegistrationsPage() {
+  const t = useTranslations('registrations');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState<RegistrationLeg[]>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
@@ -149,7 +152,7 @@ export default function MyRegistrationsPage() {
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -167,18 +170,18 @@ export default function MyRegistrationsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">My Registrations</h1>
-          <p className="text-muted-foreground">View and manage your leg registrations</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         {registrations.length === 0 ? (
           <div className="bg-card rounded-lg shadow p-8 text-center">
-            <p className="text-muted-foreground">You haven't registered for any legs yet.</p>
+            <p className="text-muted-foreground">{t('noLegsRegistered')}</p>
             <a
               href="/crew/dashboard"
               className="mt-4 inline-block text-primary hover:underline"
             >
-              Browse available legs →
+              {t('browseLegs')}
             </a>
           </div>
         ) : (
@@ -234,18 +237,18 @@ export default function MyRegistrationsPage() {
                       {getStatusBadge(registration.registration_status)}
                       {registration.auto_approved && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-800 border border-green-300 rounded-full text-xs font-medium">
-                          Auto-approved by AI
+                          {t('autoApproved')}
                         </span>
                       )}
                       {registration.ai_match_score !== null && registration.ai_match_score !== undefined && (
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          registration.ai_match_score >= 80 
+                          registration.ai_match_score >= 80
                             ? 'bg-green-100 text-green-800 border border-green-300'
                             : registration.ai_match_score >= 50
                             ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
                             : 'bg-red-100 text-red-800 border border-red-300'
                         }`}>
-                          AI Score: {registration.ai_match_score}%
+                          {t('aiScore')}: {registration.ai_match_score}%
                         </span>
                       )}
                     </div>
@@ -267,7 +270,7 @@ export default function MyRegistrationsPage() {
 
                   {/* Boat and Skipper Info */}
                   <div className="mb-3 pt-3 border-t border-border">
-                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">Boat and Skipper</h4>
+                    <h4 className="text-xs font-semibold text-muted-foreground mb-2">{t('boatAndSkipper')}</h4>
                     <div className="flex gap-3 items-start">
                       {registration.boat_image_url && (
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
@@ -323,7 +326,7 @@ export default function MyRegistrationsPage() {
                           )}
                           {registration.owner_name && (
                             <div className="flex flex-col">
-                              <p className="text-xs font-medium text-foreground">Skipper:</p>
+                              <p className="text-xs font-medium text-foreground">{t('skipper')}:</p>
                               <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={registration.owner_name}>
                                 {registration.owner_name}
                               </p>
@@ -342,7 +345,7 @@ export default function MyRegistrationsPage() {
                         userSkills={userSkills}
                         skillMatchPercentage={displayMatchPercentage}
                         showHeader={true}
-                        headerText="Skills"
+                        headerText={t('skills')}
                         compact={true}
                       />
                     </div>
@@ -353,7 +356,7 @@ export default function MyRegistrationsPage() {
                     <div className="mt-3 pt-3 border-t border-border">
                       <details className="text-xs">
                         <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
-                          AI Assessment Details
+                          {t('aiAssessment')}
                         </summary>
                         <div className="mt-2 p-2 bg-accent/50 rounded text-muted-foreground">
                           {registration.ai_match_reasoning}
@@ -365,7 +368,7 @@ export default function MyRegistrationsPage() {
                   {/* Footer */}
                   <div className="mt-3 pt-3 border-t border-border">
                     <div className="text-xs text-muted-foreground">
-                      Registered: {new Date(registration.registration_created_at).toLocaleDateString()}
+                      {t('registered')}: {new Date(registration.registration_created_at).toLocaleDateString()}
                     </div>
                   </div>
                 </div>

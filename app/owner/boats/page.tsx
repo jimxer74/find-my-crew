@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
@@ -13,6 +14,8 @@ import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { Footer } from '@/app/components/Footer';
 
 export default function BoatsPage() {
+  const t = useTranslations('boats');
+  const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [boats, setBoats] = useState<any[]>([]);
@@ -62,7 +65,7 @@ export default function BoatsPage() {
   if (authLoading || loading || hasOwnerRole === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-xl">Loading...</div>
+        <div className="text-xl">{tCommon('loading')}</div>
       </div>
     );
   }
@@ -98,8 +101,8 @@ export default function BoatsPage() {
           <>
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
               <div className="mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">My Boats</h1>
-                <p className="text-sm sm:text-base text-muted-foreground">Manage your boats and their details</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">{t('subtitle')}</p>
               </div>
 
               <div className="mb-4 sm:mb-6">
@@ -107,19 +110,19 @@ export default function BoatsPage() {
                   onClick={() => setIsWizardOpen(true)}
                   className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center hover:opacity-90"
                 >
-                  + Add New Boat
+                  {t('addNew')}
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {boats.length === 0 ? (
                   <div className="bg-card rounded-lg shadow p-6 sm:p-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-sm sm:text-base">You haven't added any boats yet.</p>
+                    <p className="text-muted-foreground mb-4 text-sm sm:text-base">{t('noBoatsYet')}</p>
                     <button
                       onClick={() => setIsWizardOpen(true)}
                       className="font-medium text-sm sm:text-base text-primary hover:opacity-80 min-h-[44px] inline-flex items-center justify-center"
                     >
-                      Add your first boat →
+                      {t('addFirstBoat')}
                     </button>
                   </div>
                 ) : (
@@ -147,7 +150,7 @@ export default function BoatsPage() {
                             <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
                               <p>{boat.type}</p>
                               {boat.make && <p>{boat.make} {boat.model}</p>}
-                              {boat.home_port && <p>Home Port: {boat.home_port}</p>}
+                              {boat.home_port && <p>{t('homePort')}: {boat.home_port}</p>}
                             </div>
                           </div>
                         </div>
@@ -160,14 +163,14 @@ export default function BoatsPage() {
                           }}
                           className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] px-2 py-2 sm:py-0"
                         >
-                          Edit boat
+                          {t('editBoat')}
                         </button>
                         <span className="hidden sm:inline text-border">|</span>
                         <Link
                           href={`/owner/boats/${boat.id}/journeys`}
                           className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0"
                         >
-                          View Journeys
+                          {t('viewJourneys')}
                         </Link>
                       </div>
                     </div>

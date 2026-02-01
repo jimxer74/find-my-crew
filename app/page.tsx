@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { useAuth } from './contexts/AuthContext';
 import { LoginModal } from './components/LoginModal';
 import { SignupModal } from './components/SignupModal';
@@ -11,6 +12,9 @@ import { getSupabaseBrowserClient } from './lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const t = useTranslations('home');
+  const tNav = useTranslations('navigation');
+  const tAuth = useTranslations('auth');
   const { user } = useAuth();
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -60,12 +64,10 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 md:py-32">
           <div className="text-center">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg px-2">
-              Connect Boat Owners with
-              <span className="text-blue-300"> Crew Members</span>
+              {t('hero.title')}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-white/95 mb-6 sm:mb-8 max-w-2xl mx-auto drop-shadow-md px-2">
-            Whether you're a boat owner looking for crew or an adventurer seeking sailing opportunities, 
-            we make it easy to find your perfect match.
+              {t('hero.subtitle')}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2">
             {user ? (
@@ -75,7 +77,7 @@ export default function Home() {
                   href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/dashboard'}
                   className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
-                  {userRoles.includes('owner') ? 'My Journeys' : 'Search Journeys'}
+                  {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys')}
                 </Link>
 
                 {user && (
@@ -83,7 +85,7 @@ export default function Home() {
                     href={userRoles.includes('owner') ? '/owner/registrations' : '/crew/registrations'  }
                     className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                   >
-                    {userRoles.includes('owner') ?   'My Crew' : 'My Registrations'}
+                    {userRoles.includes('owner') ? t('hero.myCrew') : t('hero.myRegistrations')}
                   </Link>
                 )}
               </>
@@ -93,19 +95,19 @@ export default function Home() {
                   href="/crew/dashboard"
                   className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
-                  Browse Journeys
+                  {t('hero.browseJourneys')}
                 </Link>
                 <button
                   onClick={() => setIsSignupModalOpen(true)}
                   className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                 >
-                  Sign up
+                  {t('hero.signUp')}
                 </button>
                 <button
                   onClick={() => setIsLoginModalOpen(true)}
                   className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                 >
-                  Log in
+                  {t('hero.login')}
                 </button>
               </>
             )}
@@ -126,23 +128,22 @@ export default function Home() {
                 className="object-contain"
               />
             </div>
-            <h3 className="text-2xl font-bold text-card-foreground mb-4">For Boat Owners & Skippers</h3>
+            <h3 className="text-2xl font-bold text-card-foreground mb-4">{t('forOwners.title')}</h3>
             <p className="text-muted-foreground mb-6">
-              Need crew for your next voyage? Easily add your boat details and journey plans, 
-              break them into legs, and let AI to match with qualified crew members ready to join your adventure.
+              {t('forOwners.description')}
             </p>
             <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Register and manage your boats</span>
+                <span>{t('forOwners.feature1')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Plan journeys and divide into legs</span>
+                <span>{t('forOwners.feature2')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Review and approve crew applications or let AI to do it for you</span>
+                <span>{t('forOwners.feature3')}</span>
               </li>
             </ul>
           </div>
@@ -157,23 +158,22 @@ export default function Home() {
                 className="object-contain"
               />
             </div>
-            <h3 className="text-2xl font-bold text-card-foreground mb-4">For Crew Members</h3>
+            <h3 className="text-2xl font-bold text-card-foreground mb-4">{t('forCrew.title')}</h3>
             <p className="text-muted-foreground mb-6">
-              Looking for sailing opportunities? Browse available journeys, view detailed leg information, 
-              and apply to join voyages that match your skills and interests.
+              {t('forCrew.description')}
             </p>
             <ul className="space-y-3 text-muted-foreground">
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Browse available journeys and legs</span>
+                <span>{t('forCrew.feature1')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Filter by location, dates, and skills</span>
+                <span>{t('forCrew.feature2')}</span>
               </li>
               <li className="flex items-start">
                 <span className="mr-2 text-primary">✓</span>
-                <span>Apply to join your dream voyage</span>
+                <span>{t('forCrew.feature3')}</span>
               </li>
             </ul>
           </div>
@@ -182,33 +182,33 @@ export default function Home() {
 
       {/* How It Works */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-        <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mb-8 sm:mb-12 drop-shadow-lg px-2">How It Works</h3>
+        <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mb-8 sm:mb-12 drop-shadow-lg px-2">{t('howItWorks.title')}</h3>
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
               <span className="text-2xl font-bold text-white">1</span>
             </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">Sign Up</h4>
+            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step1.title')}</h4>
             <p className="text-white/90 drop-shadow-sm">
-              Create your account as an owner/skipper or crew member
+              {t('howItWorks.step1.description')}
             </p>
           </div>
           <div className="text-center">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
               <span className="text-2xl font-bold text-white">2</span>
             </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">Connect</h4>
+            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step2.title')}</h4>
             <p className="text-white/90 drop-shadow-sm">
-              Owners post journeys, crew members browse and apply
+              {t('howItWorks.step2.description')}
             </p>
           </div>
           <div className="text-center">
             <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
               <span className="text-2xl font-bold text-white">3</span>
             </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">Sail Together</h4>
+            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step3.title')}</h4>
             <p className="text-white/90 drop-shadow-sm">
-              Owners approve applications and you're ready to set sail!
+              {t('howItWorks.step3.description')}
             </p>
           </div>
         </div>
@@ -218,17 +218,17 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         <div className="rounded-2xl p-6 sm:p-12 text-center bg-primary">
           <h3 className="text-2xl sm:text-3xl font-bold text-primary-foreground mb-3 sm:mb-4 px-2">
-            Ready to Start Your Adventure?
+            {t('cta.title')}
           </h3>
           <p className="text-primary-foreground/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
-            {userRoles.includes('owner') ? 'Create and publish your upcoming passages and destinations, and let AI assist you in finding the perfect crew.' : 'Your dream destinations and passages are just one click away!'}
+            {userRoles.includes('owner') ? t('cta.descriptionOwner') : t('cta.descriptionCrew')}
           </p>
           {user ? (
             <Link
-              href={userRoles.includes('onwer') ? '/owner/journeys' : '/crew/dashboard' }
+              href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/dashboard' }
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
-              {userRoles.includes('onwer') ? 'My Journeys' : 'Search Journeys' }
+              {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys') }
             </Link>
           ) : (
             <button
@@ -238,7 +238,7 @@ export default function Home() {
               }}
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
-              Sign up
+              {t('hero.signUp')}
             </button>
           )}
         </div>
