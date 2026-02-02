@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-02-01 20:49'
-updated_date: '2026-02-02 07:00'
+updated_date: '2026-02-02 07:20'
 labels: []
 dependencies: []
 ---
@@ -264,6 +264,42 @@ Update `buildSystemPrompt` to guide AI on when to use location-based search:
 - Test combined departure + arrival location searches
 - Test with additional filters (dates, skills, etc.)
 - Run the migration on the database
+
+## Refactoring: AI-Only Geocoding (2026-02-02)
+
+**Problem Identified:**
+Mapbox Search Box API cannot understand ambiguous/contextual location descriptions like "southern Spain", "Scandinavia", "Atlantic coast", "west Caribbean". These fail silently or return wrong results.
+
+**Solution Implemented:**
+Replaced Mapbox geocoding with AI-provided bounding box coordinates. The AI model has better geographic context understanding and can:
+1. Interpret ambiguous regional descriptions
+2. Ask for clarification when truly ambiguous
+3. Provide human-readable descriptions of search areas
+
+**Changes Made:**
+
+1. **tools.ts** - Updated `search_legs_by_location` parameters:
+   - Removed: `departureLocation`, `arrivalLocation` (string names)
+   - Added: `departureBbox`, `arrivalBbox` (coordinate objects with minLng, minLat, maxLng, maxLat)
+   - Added: `departureDescription`, `arrivalDescription` (human-readable area descriptions)
+
+2. **toolExecutor.ts** - Simplified `searchLegsByLocation`:
+   - Removed Mapbox geocoding calls
+   - Uses AI-provided bbox directly
+   - Added `isValidBbox()` validation function
+   - Returns descriptions in response for user feedback
+
+3. **context.ts** - Enhanced system prompt with:
+   - Instructions for AI to provide coordinates
+   - Reference coordinates for common sailing areas (Mediterranean, Atlantic, Caribbean, Northern Europe)
+   - Guidance on when to ask for clarification
+   - Margin guidelines for different location types
+
+**Benefits:**
+- Handles "southern Spain", "west Caribbean", "Scandinavia" correctly
+- No external API dependency for geocoding
+- Faster response (no Mapbox API calls)
+- Better user feedback with area descriptions
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
