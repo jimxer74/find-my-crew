@@ -473,6 +473,7 @@
     "greetingMessageOwner": "Voin auttaa sinua luomaan matkoja, hallitsemaan veneitäsi ja paljon muuta. Mitä haluaisit tehdä?",
     "findMatchingJourneys": "Etsi sopivia matkoja",
     "improveProfile": "Paranna profiiliani",
+    "findByDepartureLocation": "Etsi purjehdusmatkoja lähtöpaikasta",
     "createJourney": "Luo uusi matka",
     "addBoat": "Lisää vene",
     "thinking": "Mietin...",

@@ -90,11 +90,11 @@ function getContextAwareSuggestions(userRoles: string[] | null, sendMessage: (me
         className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
       >
         {t('findMatchingJourneys')}
-      </button>, <button key="improveProfile"
-        onClick={() => sendMessage("Help me improve my profile")}
+      </button>, <button key="findByDepartureLocation"
+        onClick={() => sendMessage("I would like to find sailing trips departing from:")}
         className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
       >
-        {t('improveProfile')}
+        {t('findByDepartureLocation')}
       </button>])
     } else if(userRoles.includes('owner')) {
       return ([<button key="createJourney"
