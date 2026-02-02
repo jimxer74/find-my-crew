@@ -1,10 +1,10 @@
 ---
 id: TASK-011
 title: Internationalization
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-01 12:20'
+updated_date: '2026-02-02 16:00'
 labels:
   - i18n
   - infrastructure
