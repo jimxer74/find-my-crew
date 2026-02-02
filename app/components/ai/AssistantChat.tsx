@@ -12,51 +12,79 @@ import { useUserRoles } from '@/app/contexts/UserRoleContext';
 /**
  * Parse message content and render inline leg references as clickable links.
  * Format: [[leg:UUID:Name]] -> clickable link to /crew/dashboard?legId=UUID
+ * Format: [[register:UUID:Name]] -> badge link to open registration form
  */
 function renderMessageWithLegLinks(
   content: string,
-  onLegClick: (legId: string) => void
+  onLegClick: (legId: string) => void,
+  onRegisterClick: (legId: string) => void
 ): React.ReactNode {
-  // Regex to match [[leg:UUID:Name]] pattern
-  const legRefRegex = /\[\[leg:([a-f0-9-]+):([^\]]+)\]\]/gi;
+  // Combined regex to match both [[leg:UUID:Name]] and [[register:UUID:Name]] patterns
+  const refRegex = /\[\[(leg|register):([a-f0-9-]+):([^\]]+)\]\]/gi;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
   let match;
   let keyIndex = 0;
 
-  while ((match = legRefRegex.exec(content)) !== null) {
+  while ((match = refRegex.exec(content)) !== null) {
     // Add text before this match
     if (match.index > lastIndex) {
       parts.push(content.slice(lastIndex, match.index));
     }
 
-    const legId = match[1];
-    const legName = match[2];
+    const type = match[1].toLowerCase(); // 'leg' or 'register'
+    const legId = match[2];
+    const legName = match[3];
 
-    // Add clickable leg link
-    parts.push(
-      <button
-        key={`leg-${keyIndex++}`}
-        onClick={() => onLegClick(legId)}
-        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors font-medium"
-        title={`View ${legName}`}
-      >
-        <svg
-          className="w-3 h-3"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+    if (type === 'register') {
+      // Registration questions badge
+      parts.push(
+        <button
+          key={`register-${keyIndex++}`}
+          onClick={() => onRegisterClick(legId)}
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 rounded-full transition-colors font-medium text-sm"
+          title={`Register for ${legName}`}
         >
-          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        {legName}
-      </button>
-    );
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Register: {legName}
+        </button>
+      );
+    } else {
+      // Regular leg link
+      parts.push(
+        <button
+          key={`leg-${keyIndex++}`}
+          onClick={() => onLegClick(legId)}
+          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors font-medium"
+          title={`View ${legName}`}
+        >
+          <svg
+            className="w-3 h-3"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          {legName}
+        </button>
+      );
+    }
 
     lastIndex = match.index + match[0].length;
   }
@@ -121,7 +149,10 @@ export function AssistantChat() {
     pendingActions,
     isLoading,
     error,
+    errorDetails,
     sendMessage,
+    retryLastMessage,
+    clearError,
     approveAction,
     rejectAction,
   } = useAssistant();
@@ -134,6 +165,11 @@ export function AssistantChat() {
   const handleLegClick = (legId: string) => {
     // Use router.push with full page refresh to ensure the new legId is processed
     window.location.href = `/crew/dashboard?legId=${legId}`;
+  };
+
+  // Handle clicking on a register reference - navigate to dashboard and open registration form
+  const handleRegisterClick = (legId: string) => {
+    window.location.href = `/crew/dashboard?legId=${legId}&register=true`;
   };
 
   // Auto-scroll to bottom when messages change
@@ -216,7 +252,7 @@ export function AssistantChat() {
             >
               <div className="text-sm whitespace-pre-wrap break-words">
                 {message.role === 'assistant'
-                  ? renderMessageWithLegLinks(message.content, handleLegClick)
+                  ? renderMessageWithLegLinks(message.content, handleLegClick, handleRegisterClick)
                   : message.content}
               </div>
               {message.role === 'assistant' && message.metadata?.toolCalls && (
@@ -273,8 +309,72 @@ export function AssistantChat() {
         )}
 
         {error && (
-          <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-lg px-4 py-3 text-sm">
-            {error}
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg px-4 py-3">
+            <div className="flex items-start gap-3">
+              {/* Error icon */}
+              <div className="flex-shrink-0 mt-0.5">
+                {errorDetails?.type === 'network_error' ? (
+                  <svg className="w-5 h-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+                  </svg>
+                ) : errorDetails?.type === 'rate_limit' ? (
+                  <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : errorDetails?.type === 'timeout' ? (
+                  <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                )}
+              </div>
+
+              {/* Error content */}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-destructive font-medium">
+                  {errorDetails?.type === 'rate_limit' ? 'Service Busy' :
+                   errorDetails?.type === 'timeout' ? 'Request Timeout' :
+                   errorDetails?.type === 'network_error' ? 'Connection Error' :
+                   errorDetails?.type === 'service_unavailable' ? 'Service Unavailable' :
+                   'Something Went Wrong'}
+                </p>
+                <p className="text-sm text-destructive/80 mt-1">
+                  {error}
+                </p>
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 mt-3">
+                  {errorDetails?.canRetry && (
+                    <button
+                      onClick={() => retryLastMessage()}
+                      disabled={isLoading}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors disabled:opacity-50"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                      Try Again
+                    </button>
+                  )}
+                  <button
+                    onClick={() => clearError()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+
+                {/* Retry timer hint for rate limits */}
+                {errorDetails?.type === 'rate_limit' && errorDetails?.retryAfter && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Please wait {errorDetails.retryAfter} seconds before trying again.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

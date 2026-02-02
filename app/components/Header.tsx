@@ -158,7 +158,7 @@ export function Header() {
                       setIsFiltersDialogOpen(true);
                     }
                   }}
-                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] rounded-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                  className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
                   aria-label={`Filters${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
                 >
                   <div className="relative">
@@ -180,18 +180,11 @@ export function Header() {
                     </svg>
                     {/* Active filters badge */}
                     {getActiveFiltersCount() > 0 && (
-                      <span className="absolute top-0 right-0 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-medium text-white bg-red-500 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                      <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-medium text-white bg-blue-900 rounded-full transform translate-x-1/2 -translate-y-1/2">
                         {getActiveFiltersCount() > 99 ? '99+' : getActiveFiltersCount()}
                       </span>
                     )}
                   </div>
-                  <span className={`text-sm font-medium hidden sm:inline ${
-                    hasActiveFilters()
-                      ? 'text-foreground'
-                      : 'text-muted-foreground'
-                  }`}>
-                    {t('filters')}
-                  </span>
                 </button>
               )}
               {/* AI Assistant - Only show for authenticated users */}

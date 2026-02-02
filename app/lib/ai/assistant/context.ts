@@ -176,7 +176,7 @@ For both departure AND arrival:
 - Resolve the bounding box of the departure and arrival locations based on user's requested location, if location is not clear, ask for clarification.
 - Assume a departure location if only one location is mentioned without direction words. 
 - Return the bounding box coordinates in the format: {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}
-- Ensure the enough padding is added to the bounding box coordinates to include the entire region.
+- Ensure the enough padding is added to the bounding box coordinates to include the entire region, the smaller the region, the more padding should be added.
 - Return only what is being asked for, either departureBbox or arrivalBbox, or both if it is requested by user.
 
 Example workflow:
@@ -279,7 +279,26 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
   prompt += `- Include the leg reference at the START of each leg description\n`;
   prompt += `- Use the exact leg ID from the search results\n`;
   prompt += `- Include the leg name in the reference\n`;
-  prompt += `- This allows users to click directly on each leg to view details\n`;
+  prompt += `- This allows users to click directly on each leg to view details\n\n`;
+
+  // Add registration badge formatting guidance
+  prompt += `## REGISTRATION QUESTIONS BADGE (IMPORTANT)\n\n`;
+  prompt += `When the \`get_leg_registration_info\` tool returns:\n`;
+  prompt += `- \`hasRequirements: true\` (journey has registration questions)\n`;
+  prompt += `- \`autoApprovalEnabled: true\` (AI auto-approval is enabled)\n\n`;
+  prompt += `You should include a REGISTRATION BADGE to help users quickly access the registration form.\n\n`;
+  prompt += `Use this format: \`[[register:LEG_UUID:Leg Name]]\`\n\n`;
+  prompt += `Example response:\n`;
+  prompt += `"This leg has registration questions that help the captain find the best crew match. `;
+  prompt += `Your answers will be reviewed by AI for faster approval.\n\n`;
+  prompt += `[[register:abc-123:Barcelona to Mallorca]]\n"\n\n`;
+  prompt += `**When to use the registration badge:**\n`;
+  prompt += `- After calling \`get_leg_registration_info\` and finding \`hasRequirements\` AND \`autoApprovalEnabled\` are both true\n`;
+  prompt += `- When recommending legs that have registration questions with auto-approval\n`;
+  prompt += `- The badge provides a direct link to the registration form with questions\n\n`;
+  prompt += `**Badge vs Leg Reference:**\n`;
+  prompt += `- \`[[leg:UUID:Name]]\` - View leg details (always use this to show leg info)\n`;
+  prompt += `- \`[[register:UUID:Name]]\` - Opens registration form directly (use when hasRequirements && autoApprovalEnabled)\n`;
 
   return prompt;
 }

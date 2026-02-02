@@ -3,6 +3,13 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { AIConversation, AIMessage, AIPendingAction, AISuggestion } from '@/app/lib/ai/assistant/types';
 
+interface AIError {
+  message: string;
+  type: 'rate_limit' | 'timeout' | 'network_error' | 'config_error' | 'service_unavailable' | 'quota_exceeded' | 'consent_required' | 'unknown_error';
+  retryAfter?: number; // seconds to wait before retry
+  canRetry: boolean;
+}
+
 interface AssistantState {
   isOpen: boolean;
   isMobile: boolean;
@@ -13,6 +20,8 @@ interface AssistantState {
   suggestions: AISuggestion[];
   isLoading: boolean;
   error: string | null;
+  errorDetails: AIError | null;
+  lastFailedMessage: string | null; // Store last message for retry
 }
 
 interface AssistantContextType extends AssistantState {
@@ -21,6 +30,8 @@ interface AssistantContextType extends AssistantState {
   toggleAssistant: () => void;
   setCurrentConversation: (id: string | null) => void;
   sendMessage: (message: string) => Promise<void>;
+  retryLastMessage: () => Promise<void>;
+  clearError: () => void;
   loadConversations: () => Promise<void>;
   loadConversation: (id: string) => Promise<void>;
   createNewConversation: () => void;
@@ -47,6 +58,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     suggestions: [],
     isLoading: false,
     error: null,
+    errorDetails: null,
+    lastFailedMessage: null,
   });
 
   const openAssistant = useCallback(() => {
@@ -127,7 +140,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = useCallback(async (message: string) => {
     try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
+      setState(prev => ({
+        ...prev,
+        isLoading: true,
+        error: null,
+        errorDetails: null,
+        lastFailedMessage: null
+      }));
 
       // Add optimistic user message
       const tempUserMessage: AIMessage = {
@@ -155,7 +174,29 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to send message');
+
+        // Determine if error is retryable
+        const retryableTypes = ['rate_limit', 'timeout', 'network_error', 'service_unavailable'];
+        const errorType = errorData.errorType || 'unknown_error';
+        const canRetry = retryableTypes.includes(errorType);
+
+        const errorDetails: AIError = {
+          message: errorData.userMessage || errorData.error || 'Failed to send message',
+          type: errorType,
+          retryAfter: errorData.retryAfter,
+          canRetry
+        };
+
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: errorDetails.message,
+          errorDetails,
+          lastFailedMessage: canRetry ? message : null,
+          // Remove the temp message on error
+          messages: prev.messages.filter(m => !m.id.startsWith('temp-')),
+        }));
+        return;
       }
 
       const data = await response.json();
@@ -177,21 +218,48 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           messages: [...messagesWithoutTemp, userMessage, data.message],
           pendingActions: data.pendingActions || prev.pendingActions,
           isLoading: false,
+          error: null,
+          errorDetails: null,
+          lastFailedMessage: null,
         };
       });
 
       // Reload conversations to update the list
       loadConversations();
     } catch (error: any) {
+      // Handle network-level errors (fetch failed, etc.)
+      const errorDetails: AIError = {
+        message: 'Unable to connect to the AI service. Please check your internet connection.',
+        type: 'network_error',
+        canRetry: true
+      };
+
       setState(prev => ({
         ...prev,
         isLoading: false,
-        error: error.message || 'Failed to send message',
+        error: errorDetails.message,
+        errorDetails,
+        lastFailedMessage: message,
         // Remove the temp message on error
         messages: prev.messages.filter(m => !m.id.startsWith('temp-')),
       }));
     }
   }, [state.currentConversationId, loadConversations]);
+
+  const retryLastMessage = useCallback(async () => {
+    if (state.lastFailedMessage) {
+      await sendMessage(state.lastFailedMessage);
+    }
+  }, [state.lastFailedMessage, sendMessage]);
+
+  const clearError = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      error: null,
+      errorDetails: null,
+      lastFailedMessage: null,
+    }));
+  }, []);
 
   const loadPendingActions = useCallback(async () => {
     try {
@@ -272,6 +340,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     toggleAssistant,
     setCurrentConversation,
     sendMessage,
+    retryLastMessage,
+    clearError,
     loadConversations,
     loadConversation,
     createNewConversation,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate } from '@/app/lib/dateFormat';
@@ -126,9 +126,10 @@ type LegDetailsPanelProps = {
   userExperienceLevel?: number | null; // User's experience level for matching display
   userRiskLevel?: string[] | null; // User's risk level for matching display
   onRegistrationChange?: () => void; // Callback when registration status changes
+  initialOpenRegistration?: boolean; // Auto-open registration form when panel loads
 };
 
-export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange }: LegDetailsPanelProps) {
+export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange, initialOpenRegistration = false }: LegDetailsPanelProps) {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
@@ -353,6 +354,24 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
     checkProfileSharingConsent();
   }, [user]);
+
+  // Auto-open registration form when initialOpenRegistration is true
+  const initialRegistrationTriggeredRef = useRef(false);
+  useEffect(() => {
+    // Only trigger once per panel open
+    if (initialOpenRegistration && isOpen && user && !initialRegistrationTriggeredRef.current && !registrationStatus) {
+      initialRegistrationTriggeredRef.current = true;
+      // Delay slightly to allow consent checks to complete
+      const timer = setTimeout(() => {
+        handleRegister();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    // Reset the ref when panel closes
+    if (!isOpen) {
+      initialRegistrationTriggeredRef.current = false;
+    }
+  }, [initialOpenRegistration, isOpen, user, registrationStatus]);
 
   // Check if journey has requirements when register button is clicked
   const checkRequirements = async () => {
@@ -847,29 +866,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
         {/* Content */}
         {!isMinimized && (
-          <div className="overflow-y-auto h-full">
-              {leg.boat_image_url && (
-                <div className="relative w-full h-82 overflow-hidden flex-shrink-0">
-                  <Image
-                    src={leg.boat_image_url}
-                    alt={leg.boat_name}
-                    fill
-                    className="object-cover object-bottom"
-                    quality={85}
-                    priority={true}
-                  />
-                  <div className="absolute top-4 left-4 z-10">
-                      {leg.skill_match_percentage !== undefined && (
-                        <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
-                      )} 
-                  </div>
-                </div>
-              )}
-
-
+          <>
             {/* Requirements Form - In pane */}
             {showRequirementsForm ? (
-              <div className="p-6">
+              <div className="h-full">
                 <RegistrationRequirementsForm
                   journeyId={leg.journey_id}
                   legName={leg.leg_name}
@@ -887,101 +887,127 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             ) : showRegistrationModal && !hasRequirements ? (
               /* Registration Form - In pane - Only show if NO requirements exist */
-              <div className="p-4 sm:p-6 space-y-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">Register for Leg</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
-                  </p>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Additional Notes (Optional)
-                  </label>
-                  <textarea
-                    value={registrationNotes}
-                    onChange={(e) => setRegistrationNotes(e.target.value)}
-                    placeholder="Tell the owner why you're interested in this leg..."
-                    className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                    rows={4}
-                    maxLength={500}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {registrationNotes.length}/500 characters
-                  </p>
-                </div>
-
-                {registrationError && (
-                  <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
-                    {registrationError}
+              <div className="flex flex-col h-full">
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Register for Leg</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
+                    </p>
                   </div>
-                )}
 
-                <div className="flex gap-3 justify-end pt-4 border-t border-border">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowRegistrationModal(false);
-                      setRegistrationNotes('');
-                      setRequirementsAnswers([]);
-                      setRegistrationError(null);
-                    }}
-                    disabled={isRegistering}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      // Double-check requirements before allowing submission
-                      // This prevents race conditions
-                      if (hasRequirements) {
-                        console.error(`[LegDetailsPanel] ❌ Cannot submit from regular modal: Requirements exist (state check)`);
-                        setRegistrationError('Please complete the required questions first');
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      Additional Notes (Optional)
+                    </label>
+                    <textarea
+                      value={registrationNotes}
+                      onChange={(e) => setRegistrationNotes(e.target.value)}
+                      placeholder="Tell the owner why you're interested in this leg..."
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      rows={4}
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {registrationNotes.length}/500 characters
+                    </p>
+                  </div>
+
+                  {registrationError && (
+                    <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                      {registrationError}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sticky footer */}
+                <div className="flex-shrink-0 border-t border-border bg-card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
                         setShowRegistrationModal(false);
-                        setShowRequirementsForm(true);
-                        return;
-                      }
-                      
-                      // Additional safety: Verify no requirements exist before submitting
-                      try {
-                        const verifyResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
-                          signal: AbortSignal.timeout(3000),
-                        });
-                        if (verifyResponse.ok) {
-                          const verifyData = await verifyResponse.json();
-                          const verifyReqs = verifyData.requirements || [];
-                          if (verifyReqs.length > 0) {
-                            console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${verifyReqs.length}) - verification check`);
-                            setRegistrationError('Please complete the required questions first');
-                            setShowRegistrationModal(false);
-                            setShowRequirementsForm(true);
-                            setHasRequirements(true);
-                            return;
-                          }
+                        setRegistrationNotes('');
+                        setRequirementsAnswers([]);
+                        setRegistrationError(null);
+                      }}
+                      disabled={isRegistering}
+                      className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Double-check requirements before allowing submission
+                        // This prevents race conditions
+                        if (hasRequirements) {
+                          console.error(`[LegDetailsPanel] ❌ Cannot submit from regular modal: Requirements exist (state check)`);
+                          setRegistrationError('Please complete the required questions first');
+                          setShowRegistrationModal(false);
+                          setShowRequirementsForm(true);
+                          return;
                         }
-                      } catch (verifyError) {
-                        console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, verifyError);
-                        // Continue if verification fails - don't block user
-                      }
-                      
-                      // Only call handleSubmitRegistration if we're sure there are no requirements
-                      handleSubmitRegistration();
-                    }}
-                    disabled={isRegistering || hasRequirements}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isRegistering ? 'Registering...' : hasRequirements ? 'Complete Questions First' : 'Submit Registration'}
-                  </button>
+
+                        // Additional safety: Verify no requirements exist before submitting
+                        try {
+                          const verifyResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+                            signal: AbortSignal.timeout(3000),
+                          });
+                          if (verifyResponse.ok) {
+                            const verifyData = await verifyResponse.json();
+                            const verifyReqs = verifyData.requirements || [];
+                            if (verifyReqs.length > 0) {
+                              console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${verifyReqs.length}) - verification check`);
+                              setRegistrationError('Please complete the required questions first');
+                              setShowRegistrationModal(false);
+                              setShowRequirementsForm(true);
+                              setHasRequirements(true);
+                              return;
+                            }
+                          }
+                        } catch (verifyError) {
+                          console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, verifyError);
+                          // Continue if verification fails - don't block user
+                        }
+
+                        // Only call handleSubmitRegistration if we're sure there are no requirements
+                        handleSubmitRegistration();
+                      }}
+                      disabled={isRegistering || hasRequirements}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isRegistering ? 'Registering...' : hasRequirements ? 'Complete Questions First' : 'Submit Registration'}
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
+            /* Leg Details Content with Sticky Footer */
+            <div className="flex flex-col h-full">
+              {/* Scrollable Content Area */}
+              <div className="flex-1 overflow-y-auto">
+                {/* Boat Image */}
+                {leg.boat_image_url && (
+                  <div className="relative w-full h-48 overflow-hidden">
+                    <Image
+                      src={leg.boat_image_url}
+                      alt={leg.boat_name}
+                      fill
+                      className="object-cover object-bottom"
+                      quality={85}
+                      priority={true}
+                    />
+                    <div className="absolute top-4 left-4 z-10">
+                      {leg.skill_match_percentage !== undefined && (
+                        <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
+                      )}
+                    </div>
+                  </div>
+                )}
 
-
-            /* Leg Details Content */
-            <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2 text-center">              
+                <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2 text-center">              
        
 
             {/* Header */}
@@ -1224,7 +1250,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
-              <div className="pt-4 border-t border-border text-left">
+              <div className="pt-4 border-t border-border text-left pb-4">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
                 <div className="flex gap-3 items-start">
                   {/* Owner Avatar */}
@@ -1269,9 +1295,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
               </div>
             )}
+                </div>
+                {/* End of Leg Details Content */}
+              </div>
+              {/* End of Scrollable Content Area */}
 
-            {/* Registration Section */}
-            <div className="pt-4 border-t border-border">
+              {/* Sticky Footer - Registration Section */}
+              <div className="flex-shrink-0 border-t border-border bg-card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
               {!user ? (
                 <div className="space-y-3">
                   <LimitedAccessIndicator 
@@ -1395,17 +1425,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   {registrationError}
                 </div>
               )}
-            </div>
+              </div>
             </div>
             )}
-          </div>
+          </>
         )}
       </div>
-      {/* Footer  sticky registration button*/}
-
-
-
-
       </div>
       {/* Risk Level Info Dialog */}
       {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel) && (

@@ -54,6 +54,7 @@ type CrewBrowseMapProps = {
   initialCenter?: [number, number]; // [lng, lat]
   initialZoom?: number;
   initialLegId?: string | null; // Pre-select a leg by ID
+  initialOpenRegistration?: boolean; // Auto-open registration form when leg is loaded
 };
 
 /**
@@ -85,6 +86,7 @@ export function CrewBrowseMap({
   initialCenter = [0, 20], // Default to center of world
   initialZoom = 2,
   initialLegId,
+  initialOpenRegistration = false,
 }: CrewBrowseMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -1591,10 +1593,11 @@ export function CrewBrowseMap({
                   // Could refresh data or show notification here
                   console.log('Registration status changed');
                 }}
+                initialOpenRegistration={initialOpenRegistration}
               />
             </div>
           )}
-          
+
           {/* Desktop: Side panel */}
           <div className="hidden md:block">
             <LegDetailsPanel
@@ -1608,6 +1611,7 @@ export function CrewBrowseMap({
                 // Could refresh data or show notification here
                 console.log('Registration status changed');
               }}
+              initialOpenRegistration={initialOpenRegistration}
             />
           </div>
         </>

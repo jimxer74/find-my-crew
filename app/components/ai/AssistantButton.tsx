@@ -33,7 +33,7 @@ export function AssistantButton({ userRoles }: { userRoles: string[] | null }) {
     }
   };
 
-  return (
+  return ( userRoles?.includes('crew') ? (
     <button
       onClick={handleClick}
       className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
@@ -55,10 +55,12 @@ export function AssistantButton({ userRoles }: { userRoles: string[] | null }) {
 
       {/* Badge for suggestions/actions count */}
       {totalBadgeCount > 0 && (
-        <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-primary rounded-full">
+        <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-blue-900 rounded-full">
           {totalBadgeCount > 99 ? '99+' : totalBadgeCount}
         </span>
       )}
     </button>
+  ) : 
+  <></>
   );
 }

@@ -15,6 +15,7 @@ export default function CrewDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialLegId = searchParams.get('legId');
+  const openRegistration = searchParams.get('register') === 'true';
 
   // Allow non-signed-in users to browse journeys with limited information
   // No redirect to login - they can browse but will see limited details
@@ -78,6 +79,7 @@ export default function CrewDashboard() {
         <CrewBrowseMap
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
           initialLegId={initialLegId}
+          initialOpenRegistration={openRegistration}
         />
       </main>
     </div>

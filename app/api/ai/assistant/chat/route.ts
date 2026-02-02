@@ -97,16 +97,116 @@ export async function POST(request: NextRequest) {
     log('ERROR in chat route:', error.message);
     console.error('AI Assistant chat error:', error);
 
-    // Handle specific errors
-    if (error.message?.includes('consent')) {
+    // Classify and handle specific errors with user-friendly messages
+    const errorMessage = error.message || '';
+    const errorName = error.name || '';
+
+    // Consent errors
+    if (errorMessage.includes('consent')) {
       return NextResponse.json(
-        { error: error.message },
+        {
+          error: error.message,
+          errorType: 'consent_required',
+          userMessage: 'AI processing consent is required. Please update your privacy settings to use the assistant.'
+        },
         { status: 403 }
       );
     }
 
+    // Rate limit errors
+    if (errorMessage.includes('rate limit') ||
+        errorMessage.includes('rate_limit') ||
+        errorMessage.includes('429') ||
+        errorMessage.includes('too many requests')) {
+      return NextResponse.json(
+        {
+          error: 'AI service rate limit exceeded',
+          errorType: 'rate_limit',
+          userMessage: 'The AI service is currently busy. Please wait a moment and try again.',
+          retryAfter: 30
+        },
+        { status: 429 }
+      );
+    }
+
+    // Timeout errors
+    if (errorMessage.includes('timeout') ||
+        errorName === 'AbortError' ||
+        errorName === 'TimeoutError') {
+      return NextResponse.json(
+        {
+          error: 'AI service timeout',
+          errorType: 'timeout',
+          userMessage: 'The AI service took too long to respond. Please try again.'
+        },
+        { status: 504 }
+      );
+    }
+
+    // Network errors
+    if (errorMessage.includes('fetch failed') ||
+        errorMessage.includes('network') ||
+        errorMessage.includes('ECONNREFUSED') ||
+        errorMessage.includes('ENOTFOUND') ||
+        errorName === 'TypeError') {
+      return NextResponse.json(
+        {
+          error: 'AI service connection failed',
+          errorType: 'network_error',
+          userMessage: 'Unable to connect to the AI service. Please check your internet connection and try again.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // API key / configuration errors
+    if (errorMessage.includes('API key') ||
+        errorMessage.includes('not configured') ||
+        errorMessage.includes('unauthorized') ||
+        errorMessage.includes('401')) {
+      return NextResponse.json(
+        {
+          error: 'AI service configuration error',
+          errorType: 'config_error',
+          userMessage: 'The AI service is temporarily unavailable. Our team has been notified.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // All providers failed
+    if (errorMessage.includes('All AI providers failed')) {
+      return NextResponse.json(
+        {
+          error: 'All AI services unavailable',
+          errorType: 'service_unavailable',
+          userMessage: 'All AI services are currently unavailable. Please try again in a few minutes.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // Quota / billing errors
+    if (errorMessage.includes('quota') ||
+        errorMessage.includes('billing') ||
+        errorMessage.includes('insufficient')) {
+      return NextResponse.json(
+        {
+          error: 'AI service quota exceeded',
+          errorType: 'quota_exceeded',
+          userMessage: 'The AI service limit has been reached. Please try again later.'
+        },
+        { status: 503 }
+      );
+    }
+
+    // Generic server error
     return NextResponse.json(
-      { error: error.message || 'Failed to process message' },
+      {
+        error: errorMessage || 'Failed to process message',
+        errorType: 'unknown_error',
+        userMessage: 'Something went wrong with the AI assistant. Please try again.'
+      },
       { status: 500 }
     );
   }

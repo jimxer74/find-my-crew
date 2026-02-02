@@ -217,8 +217,11 @@ export function RegistrationRequirementsForm({
   const showConsentNotification = autoApprovalEnabled && hasAIConsent === false && !checkingConsent;
 
   return (
-    <div className="space-y-4">
-      <div className="mb-4">
+    <div className="flex flex-col h-full">
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-4">
+        <div className="mb-4">
         <h3 className="text-lg font-semibold text-foreground mb-2">
           Registration Questions
         </h3>
@@ -384,24 +387,30 @@ export function RegistrationRequirementsForm({
           {registrationError}
         </div>
       )}
+        </div>
+      </div>
+      {/* End of Scrollable Content */}
 
-      <div className="flex gap-3 justify-end pt-4 border-t border-border">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isRegistering}
-          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isRegistering}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isRegistering ? 'Registering...' : 'Submit Registration'}
-        </button>
+      {/* Sticky Footer */}
+      <div className="flex-shrink-0 border-t border-border bg-card p-6 pt-4">
+        <div className="flex gap-3 justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isRegistering}
+            className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isRegistering}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isRegistering ? 'Registering...' : 'Submit Registration'}
+          </button>
+        </div>
       </div>
     </div>
   );
