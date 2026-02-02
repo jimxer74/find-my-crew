@@ -8,6 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
 import { BoundingBox, describeBbox } from './geocoding';
+import { getLocationBbox, listRegions, getCategories } from './locations';
 
 // Debug logging helper
 const DEBUG = true;
@@ -136,6 +137,14 @@ export async function executeTool(
           throw new Error('This action requires owner role');
         }
         result = await analyzeCrewMatch(supabase, userId, args.registrationId as string);
+        break;
+
+      case 'get_location_bounding_box':
+        result = handleGetLocationBoundingBox(args);
+        break;
+
+      case 'get_leg_registration_info':
+        result = await getLegRegistrationInfo(supabase, args.legId as string);
         break;
 
       default:
@@ -843,6 +852,128 @@ function isPointInBbox(lng: number, lat: number, bbox: BoundingBox): boolean {
     lat >= bbox.minLat &&
     lat <= bbox.maxLat
   );
+}
+
+/**
+ * Handle get_location_bounding_box tool
+ * Resolves location names to bounding box coordinates
+ */
+function handleGetLocationBoundingBox(args: Record<string, unknown>): {
+  found: boolean;
+  bbox?: BoundingBox;
+  name?: string;
+  description?: string;
+  aliases?: string[];
+  category?: string;
+  regions?: { name: string; category: string; aliases: string[] }[];
+  categories?: string[];
+  message?: string;
+} {
+  // If listCategory is provided, list all regions in that category
+  if (args.listCategory) {
+    const category = args.listCategory as 'mediterranean' | 'atlantic' | 'caribbean' | 'northern_europe' | 'pacific';
+    const regions = listRegions(category);
+    return {
+      found: true,
+      regions,
+      message: `Found ${regions.length} regions in the ${category.replace('_', ' ')} category.`,
+    };
+  }
+
+  // If no query provided, list all categories
+  if (!args.query || typeof args.query !== 'string' || args.query.trim() === '') {
+    const categories = getCategories();
+    return {
+      found: false,
+      categories,
+      message: 'No query provided. Available categories: ' + categories.join(', ') + '. Use listCategory to see regions in each category, or provide a query to search for a specific location.',
+    };
+  }
+
+  const query = args.query as string;
+  const result = getLocationBbox(query);
+
+  if (!result) {
+    // No match found - provide helpful suggestions
+    const categories = getCategories();
+    return {
+      found: false,
+      message: `No matching location found for "${query}". Try a more specific name (e.g., "Barcelona", "Canary Islands", "BVI") or use listCategory to browse available regions. Categories: ${categories.join(', ')}.`,
+      categories,
+    };
+  }
+
+  log('Location bbox resolved:', { query, result: result.name });
+
+  return {
+    found: true,
+    bbox: result.bbox,
+    name: result.name,
+    description: result.description,
+    aliases: result.aliases,
+    category: result.category,
+    message: `Found "${result.name}" - use these coordinates with search_legs_by_location.`,
+  };
+}
+
+/**
+ * Get registration requirements and auto-approval settings for a leg
+ */
+async function getLegRegistrationInfo(supabase: SupabaseClient, legId: string) {
+  // 1. Get leg with journey info
+  const { data: leg, error: legError } = await supabase
+    .from('legs')
+    .select(`
+      id,
+      name,
+      journey_id,
+      journeys!inner (
+        id,
+        name,
+        auto_approval_enabled,
+        auto_approval_threshold
+      )
+    `)
+    .eq('id', legId)
+    .single();
+
+  if (legError || !leg) {
+    throw new Error('Leg not found');
+  }
+
+  const journey = (leg as any).journeys;
+
+  // 2. Get journey requirements
+  const { data: requirements, error: reqError } = await supabase
+    .from('journey_requirements')
+    .select('id, question_text, question_type, is_required, options')
+    .eq('journey_id', journey.id)
+    .order('order', { ascending: true });
+
+  if (reqError) {
+    throw new Error('Failed to fetch requirements');
+  }
+
+  const hasRequirements = requirements && requirements.length > 0;
+
+  return {
+    legId,
+    legName: leg.name,
+    journeyId: journey.id,
+    journeyName: journey.name,
+    hasRequirements,
+    requirementsCount: requirements?.length || 0,
+    requirements: requirements || [],
+    autoApprovalEnabled: journey.auto_approval_enabled === true,
+    autoApprovalThreshold: journey.auto_approval_threshold || 80,
+    // Guidance for AI
+    registrationMethod: hasRequirements
+      ? 'ui_form'
+      : 'assistant_action',
+    message: hasRequirements
+      ? 'This leg requires answering registration questions. Direct the user to complete registration through the leg details page in the UI.'
+      : 'No requirements. You can use suggest_register_for_leg to register the user.',
+  };
 }
 
 async function getLegDetails(supabase: SupabaseClient, legId: string) {

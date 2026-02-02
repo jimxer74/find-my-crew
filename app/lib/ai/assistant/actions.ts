@@ -187,6 +187,28 @@ async function executeRegisterForLeg(
   const { supabase, userId } = context;
   const { legId } = action.action_payload as { legId: string };
 
+  // Check if journey has requirements - if so, reject and guide to UI
+  const { data: legForRequirements } = await supabase
+    .from('legs')
+    .select('journey_id')
+    .eq('id', legId)
+    .single();
+
+  if (legForRequirements) {
+    const { count: requirementCount } = await supabase
+      .from('journey_requirements')
+      .select('*', { count: 'exact', head: true })
+      .eq('journey_id', legForRequirements.journey_id);
+
+    if (requirementCount && requirementCount > 0) {
+      return {
+        success: false,
+        message: 'This leg requires answering registration questions. Please complete registration through the leg details page where you can fill out the required form.',
+        error: 'REQUIRES_FORM_REGISTRATION',
+      };
+    }
+  }
+
   // Check if already registered
   const { data: existing } = await supabase
     .from('registrations')

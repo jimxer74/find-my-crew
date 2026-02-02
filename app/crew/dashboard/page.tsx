@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -13,6 +13,8 @@ export default function CrewDashboard() {
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialLegId = searchParams.get('legId');
 
   // Allow non-signed-in users to browse journeys with limited information
   // No redirect to login - they can browse but will see limited details
@@ -73,7 +75,10 @@ export default function CrewDashboard() {
       )}
 
       <main className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
-        <CrewBrowseMap style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
+        <CrewBrowseMap
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+          initialLegId={initialLegId}
+        />
       </main>
     </div>
   );

@@ -15,12 +15,14 @@ import {
   ToolCall,
   ToolResult,
   UserContext,
+  LegReference,
 } from './types';
 import { getUserContext, buildSystemPrompt } from './context';
 import { getToolsForUser, toolsToOpenAIFormat } from './tools';
 import { executeTools } from './toolExecutor';
 
 const MAX_HISTORY_MESSAGES = 20;
+const MAX_LEG_REFERENCES = 6; // Limit displayed leg links to avoid clutter
 /**
  * Maximum number of tool iterations
  * This is the maximum number of times the AI will try to use tools to complete the user's request
@@ -128,6 +130,10 @@ export async function chat(
     toolResultCount: aiResponse.toolResults?.length || 0,
   });
 
+  // Extract leg references from tool results
+  const legReferences = extractLegReferences(aiResponse.toolResults || []);
+  log('Extracted leg references:', legReferences.length);
+
   // Save assistant message
   log('Saving assistant message...');
   const assistantMessage = await saveMessage(supabase, conversationId, {
@@ -136,6 +142,7 @@ export async function chat(
     metadata: {
       toolCalls: aiResponse.toolCalls,
       toolResults: aiResponse.toolResults,
+      legReferences: legReferences.length > 0 ? legReferences : undefined,
     },
   });
   log('Assistant message saved:', assistantMessage.id);
@@ -208,7 +215,7 @@ CRITICAL RULES FOR TOOL CALLS:
 2. The "reason" parameter must be a non-empty string explaining why you're making this suggestion
 3. Never omit required parameters - missing parameters will cause the tool to fail
 
-Try to solve the user's request in one go, if not possible, make multiple tool calls. After receiving tool results, provide your final response to the user.
+You can make multiple tool calls, but try limit it to one or two if possible. After receiving tool results, provide your final response to the user.
 `;
 
     // Add tool instructions to system message
@@ -317,6 +324,60 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
 
   log(`Parsing complete: ${toolCalls.length} tool calls found`);
   return { content, toolCalls };
+}
+
+/**
+ * Extract leg references from tool results
+ * Looks for legs returned by search_legs and search_legs_by_location tools
+ */
+function extractLegReferences(toolResults: ToolResult[]): LegReference[] {
+  const refs: LegReference[] = [];
+  const seenIds = new Set<string>();
+
+  for (const result of toolResults) {
+    // Only process leg search tools
+    if (result.name !== 'search_legs' && result.name !== 'search_legs_by_location') {
+      continue;
+    }
+
+    // Skip if there was an error
+    if (result.error || !result.result) {
+      continue;
+    }
+
+    const data = result.result as { legs?: any[] };
+    if (!data?.legs || !Array.isArray(data.legs)) {
+      continue;
+    }
+
+    for (const leg of data.legs) {
+      // Skip if we've already seen this leg
+      if (!leg.id || seenIds.has(leg.id)) {
+        continue;
+      }
+      seenIds.add(leg.id);
+
+      const ref: LegReference = {
+        id: leg.id,
+        name: leg.name || 'Unnamed leg',
+      };
+
+      // Extract boat name from journeys relationship
+      if (leg.journeys?.boats?.name) {
+        ref.boatName = leg.journeys.boats.name;
+      }
+
+      refs.push(ref);
+
+      // Limit the number of references to avoid clutter
+      if (refs.length >= MAX_LEG_REFERENCES) {
+        log(`Reached max leg references limit (${MAX_LEG_REFERENCES})`);
+        return refs;
+      }
+    }
+  }
+
+  return refs;
 }
 
 /**

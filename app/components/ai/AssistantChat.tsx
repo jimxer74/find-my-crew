@@ -5,6 +5,71 @@ import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 import { ActionConfirmation } from './ActionConfirmation';
 
+/**
+ * Parse message content and render inline leg references as clickable links.
+ * Format: [[leg:UUID:Name]] -> clickable link to /crew/dashboard?legId=UUID
+ */
+function renderMessageWithLegLinks(
+  content: string,
+  onLegClick: (legId: string) => void
+): React.ReactNode {
+  // Regex to match [[leg:UUID:Name]] pattern
+  const legRefRegex = /\[\[leg:([a-f0-9-]+):([^\]]+)\]\]/gi;
+
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyIndex = 0;
+
+  while ((match = legRefRegex.exec(content)) !== null) {
+    // Add text before this match
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index));
+    }
+
+    const legId = match[1];
+    const legName = match[2];
+
+    // Add clickable leg link
+    parts.push(
+      <button
+        key={`leg-${keyIndex++}`}
+        onClick={() => onLegClick(legId)}
+        className="inline-flex items-center gap-1 px-1.5 py-0.5 text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors font-medium"
+        title={`View ${legName}`}
+      >
+        <svg
+          className="w-3 h-3"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        {legName}
+      </button>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text after last match
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex));
+  }
+
+  // If no matches found, return original content
+  if (parts.length === 0) {
+    return content;
+  }
+
+  return parts;
+}
+
 export function AssistantChat() {
   const t = useTranslations('assistant');
   const {
@@ -20,6 +85,12 @@ export function AssistantChat() {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Handle clicking on a leg reference - navigate to dashboard with the legId
+  const handleLegClick = (legId: string) => {
+    // Use router.push with full page refresh to ensure the new legId is processed
+    window.location.href = `/crew/dashboard?legId=${legId}`;
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -110,11 +181,42 @@ export function AssistantChat() {
               }`}
             >
               <div className="text-sm whitespace-pre-wrap break-words">
-                {message.content}
+                {message.role === 'assistant'
+                  ? renderMessageWithLegLinks(message.content, handleLegClick)
+                  : message.content}
               </div>
               {message.role === 'assistant' && message.metadata?.toolCalls && (
                 <div className="mt-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
                   {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}
+                </div>
+              )}
+              {/* Fallback: Show leg references at bottom if AI didn't use inline format */}
+              {message.role === 'assistant' &&
+               message.metadata?.legReferences &&
+               message.metadata.legReferences.length > 0 &&
+               !message.content.includes('[[leg:') && (
+                <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
+                  {message.metadata.legReferences.map((leg) => (
+                    <button
+                      key={leg.id}
+                      onClick={() => handleLegClick(leg.id)}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+                    >
+                      <svg
+                        className="w-3 h-3"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {leg.name}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>

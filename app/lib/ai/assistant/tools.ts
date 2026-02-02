@@ -274,13 +274,47 @@ export const DATA_TOOLS: ToolDefinition[] = [
       required: ['registrationId'],
     },
   },
+  // Location lookup tool
+  {
+    name: 'get_location_bounding_box',
+    description: 'Look up the bounding box coordinates for a named sailing region. Use this BEFORE calling search_legs_by_location to get the correct bbox coordinates for a location. Returns coordinates for well-known sailing destinations (Mediterranean regions, Caribbean islands, Atlantic waypoints, etc.). Example: {"query": "Barcelona"} returns the bbox for Barcelona area.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The location name to look up (e.g., "Barcelona", "Canary Islands", "BVI", "Mediterranean")',
+        },
+        listCategory: {
+          type: 'string',
+          description: 'Optional: Instead of searching, list all regions in a category. Valid values: mediterranean, atlantic, caribbean, northern_europe, pacific',
+          enum: ['mediterranean', 'atlantic', 'caribbean', 'northern_europe', 'pacific'],
+        },
+      },
+    },
+  },
+  // Registration info tool
+  {
+    name: 'get_leg_registration_info',
+    description: 'Get registration requirements and auto-approval settings for a leg. Call this BEFORE suggesting registration to check if the user needs to complete a form with questions. If hasRequirements is true, direct user to the leg details page to register instead of using suggest_register_for_leg.',
+    parameters: {
+      type: 'object',
+      properties: {
+        legId: {
+          type: 'string',
+          description: 'The ID of the leg to check registration info for',
+        },
+      },
+      required: ['legId'],
+    },
+  },
 ];
 
 // Action suggestion tools - these create pending actions that require user approval
 export const ACTION_TOOLS: ToolDefinition[] = [
   {
     name: 'suggest_register_for_leg',
-    description: 'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve. IMPORTANT: Both legId and reason parameters are REQUIRED. Example: {"name": "suggest_register_for_leg", "arguments": {"legId": "uuid-here", "reason": "This leg matches your experience level and sailing preferences"}}',
+    description: 'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve. IMPORTANT: Before calling this, use get_leg_registration_info to check if the leg has registration requirements. If hasRequirements is true, do NOT use this tool - instead direct the user to complete registration via the leg details page in the UI. Only use this tool for legs WITHOUT requirements. Both legId and reason parameters are REQUIRED. Example: {"name": "suggest_register_for_leg", "arguments": {"legId": "uuid-here", "reason": "This leg matches your experience level and sailing preferences"}}',
     parameters: {
       type: 'object',
       properties: {

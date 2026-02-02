@@ -20,11 +20,18 @@ export interface AIMessage {
   created_at: string;
 }
 
+export interface LegReference {
+  id: string;
+  name: string;
+  boatName?: string;
+}
+
 export interface MessageMetadata {
   toolCalls?: ToolCall[];
   toolResults?: ToolResult[];
   pendingActionId?: string;
   error?: string;
+  legReferences?: LegReference[];
 }
 
 export interface AIPendingAction {

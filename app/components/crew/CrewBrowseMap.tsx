@@ -53,13 +53,38 @@ type CrewBrowseMapProps = {
   style?: React.CSSProperties;
   initialCenter?: [number, number]; // [lng, lat]
   initialZoom?: number;
+  initialLegId?: string | null; // Pre-select a leg by ID
 };
+
+/**
+ * Extract coordinates from a PostGIS geometry response
+ */
+function extractCoordinatesFromLocation(location: any): { lng: number; lat: number } | null {
+  try {
+    if (typeof location === 'string') {
+      if (location.startsWith('{')) {
+        const geoJson = JSON.parse(location);
+        if (geoJson.coordinates) {
+          return { lng: geoJson.coordinates[0], lat: geoJson.coordinates[1] };
+        }
+      }
+    } else if (location?.coordinates) {
+      return { lng: location.coordinates[0], lat: location.coordinates[1] };
+    } else if (location?.x !== undefined && location?.y !== undefined) {
+      return { lng: location.x, lat: location.y };
+    }
+  } catch (e) {
+    console.error('[CrewBrowseMap] Failed to extract coordinates:', e);
+  }
+  return null;
+}
 
 export function CrewBrowseMap({
   className = '',
   style,
   initialCenter = [0, 20], // Default to center of world
   initialZoom = 2,
+  initialLegId,
 }: CrewBrowseMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -114,6 +139,7 @@ export function CrewBrowseMap({
   const approvedTextColor = '#01B000';
   const pendingTextColor = '#AEB000';
   const unregisteredTextColor = '#22276E';
+  const initialLegIdProcessedRef = useRef<string | null>(null);
 
   
   // Helper function to check if viewport has changed significantly
@@ -335,6 +361,88 @@ export function CrewBrowseMap({
     });
     triggerDataReload();
   }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.dateRange, lastUpdated, triggerDataReload]);
+
+  // Handle initialLegId - fetch and select the leg when provided or changed
+  useEffect(() => {
+    // Skip if no initialLegId
+    if (!initialLegId) return;
+
+    // Skip if we already processed this exact legId
+    if (initialLegIdProcessedRef.current === initialLegId) return;
+
+    // Wait for map to be ready
+    if (!mapLoaded) return;
+
+    const fetchAndSelectLeg = async () => {
+      // Track which legId we're processing (not just boolean)
+      initialLegIdProcessedRef.current = initialLegId;
+      console.log('[CrewBrowseMap] Fetching initial leg:', initialLegId);
+
+      try {
+        // Fetch leg details from API - now returns data in Leg format directly
+        const response = await fetch(`/api/legs/${initialLegId}`);
+        if (!response.ok) {
+          console.error('[CrewBrowseMap] Failed to fetch initial leg:', response.status);
+          return;
+        }
+
+        const legData = await response.json();
+        console.log('[CrewBrowseMap] Initial leg data received:', legData);
+
+        if (!legData) return;
+
+        // API now returns data in the correct Leg format
+        const leg: Leg = {
+          leg_id: legData.leg_id,
+          leg_name: legData.leg_name,
+          leg_description: legData.leg_description,
+          journey_id: legData.journey_id,
+          journey_name: legData.journey_name,
+          start_date: legData.start_date,
+          end_date: legData.end_date,
+          crew_needed: legData.crew_needed,
+          leg_risk_level: legData.leg_risk_level,
+          journey_risk_level: legData.journey_risk_level,
+          skills: legData.skills || [],
+          boat_id: legData.boat_id,
+          boat_name: legData.boat_name,
+          boat_type: legData.boat_type,
+          boat_image_url: legData.boat_image_url,
+          boat_average_speed_knots: legData.boat_average_speed_knots,
+          boat_make: legData.boat_make,
+          boat_model: legData.boat_model,
+          owner_name: legData.owner_name,
+          owner_image_url: legData.owner_image_url,
+          min_experience_level: legData.min_experience_level,
+          start_waypoint: legData.start_waypoint,
+          end_waypoint: legData.end_waypoint,
+        };
+
+        // Set the selected leg
+        setSelectedLeg(leg);
+
+        // Fetch waypoints for the route display
+        const waypointsResponse = await fetch(`/api/legs/${initialLegId}/waypoints`);
+        if (waypointsResponse.ok) {
+          const waypointsData = await waypointsResponse.json();
+          setLegWaypoints(waypointsData.waypoints || []);
+        }
+
+        // Fly to the leg location if we have coordinates
+        if (leg.start_waypoint && map.current) {
+          map.current.flyTo({
+            center: [leg.start_waypoint.lng, leg.start_waypoint.lat],
+            zoom: 8,
+            duration: 1500,
+          });
+        }
+      } catch (error) {
+        console.error('[CrewBrowseMap] Error fetching initial leg:', error);
+      }
+    };
+
+    fetchAndSelectLeg();
+  }, [initialLegId, mapLoaded]);
 
   // Update GeoJSON source when legs change
   useEffect(() => {
@@ -1025,25 +1133,71 @@ export function CrewBrowseMap({
         const features = map.current!.queryRenderedFeatures(e.point, {
           layers: ['unclustered-point', 'registered-approved', 'registered-pending'],
         });
-        
+
         if (features.length > 0) {
           const legId = features[0].properties!.leg_id;
-          // Find the leg in our legs map
-          const leg = legsMapRef.current.get(legId);
+          console.log('[CrewBrowseMap] Marker clicked, legId:', legId);
+
+          // Clear previous selection first to prevent focusing on old leg
+          setSelectedLeg(null);
+          setLegWaypoints([]);
+          setShowFullPanelOnMobile(false);
+
+          // Small delay to ensure state is cleared
+          await new Promise(resolve => setTimeout(resolve, 50));
+
+          // Find the leg in our legs map first (cached data)
+          let leg = legsMapRef.current.get(legId);
+
+          // If not found in cache, fetch from API
+          if (!leg) {
+            console.log('[CrewBrowseMap] Leg not in cache, fetching from API:', legId);
+            try {
+              const response = await fetch(`/api/legs/${legId}`);
+              if (response.ok) {
+                const legData = await response.json();
+                // API returns data in Leg format
+                leg = {
+                  leg_id: legData.leg_id,
+                  leg_name: legData.leg_name,
+                  leg_description: legData.leg_description,
+                  journey_id: legData.journey_id,
+                  journey_name: legData.journey_name,
+                  start_date: legData.start_date,
+                  end_date: legData.end_date,
+                  crew_needed: legData.crew_needed,
+                  leg_risk_level: legData.leg_risk_level,
+                  journey_risk_level: legData.journey_risk_level,
+                  skills: legData.skills || [],
+                  boat_id: legData.boat_id,
+                  boat_name: legData.boat_name,
+                  boat_type: legData.boat_type,
+                  boat_image_url: legData.boat_image_url,
+                  boat_average_speed_knots: legData.boat_average_speed_knots,
+                  boat_make: legData.boat_make,
+                  boat_model: legData.boat_model,
+                  owner_name: legData.owner_name,
+                  owner_image_url: legData.owner_image_url,
+                  min_experience_level: legData.min_experience_level,
+                  start_waypoint: legData.start_waypoint,
+                  end_waypoint: legData.end_waypoint,
+                };
+              } else {
+                console.error('[CrewBrowseMap] Failed to fetch leg from API:', response.status);
+                return;
+              }
+            } catch (error) {
+              console.error('[CrewBrowseMap] Error fetching leg from API:', error);
+              return;
+            }
+          }
+
           if (leg) {
             console.log('[CrewBrowseMap] Leg selected:', legId);
-            
-            // Clear previous selection first to prevent focusing on old leg
-            setSelectedLeg(null);
-            setLegWaypoints([]);
-            setShowFullPanelOnMobile(false);
-            
-            // Small delay to ensure state is cleared
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
+
             // Set new leg and fetch waypoints
             setSelectedLeg(leg);
-            
+
             // Fetch waypoints for this leg
             try {
               console.log('[CrewBrowseMap] Fetching waypoints for leg:', legId);
