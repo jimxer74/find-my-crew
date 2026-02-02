@@ -3,10 +3,10 @@ id: TASK-072
 title: >-
   AI-assistant enhancement: Location based sailing opportunities matching for
   crew
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-01 20:49'
-updated_date: '2026-02-02 07:20'
+updated_date: '2026-02-02 07:46'
 labels: []
 dependencies: []
 ---
