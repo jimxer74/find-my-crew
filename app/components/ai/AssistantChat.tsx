@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 import { ActionConfirmation } from './ActionConfirmation';
+import { useUserRoles } from '@/app/contexts/UserRoleContext';
+
+
+
 
 /**
  * Parse message content and render inline leg references as clickable links.
@@ -69,9 +73,49 @@ function renderMessageWithLegLinks(
 
   return parts;
 }
+/**
+ * 
+ * @returns Context aware suggestions for the assistant
+ */
+function getContextAwareSuggestions(userRoles: string[] | null, sendMessage: (message: string) => void, t: any): React.ReactNode[] {
+  console.log("AssistantChat roles:", userRoles);
+
+  if(!userRoles) {
+    return [];
+  }
+
+  if(userRoles.includes('crew')) {
+      return ([<button key="findMatchingJourneys"
+        onClick={() => sendMessage("Show me sailing opportunities that match my profile")}
+        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+      >
+        {t('findMatchingJourneys')}
+      </button>, <button key="improveProfile"
+        onClick={() => sendMessage("Help me improve my profile")}
+        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+      >
+        {t('improveProfile')}
+      </button>])
+    } else if(userRoles.includes('owner')) {
+      return ([<button key="createJourney"
+        onClick={() => sendMessage("Create a new journey")}
+        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+      >
+        {t('createJourney')}
+      </button>, <button key="addBoat"
+        onClick={() => sendMessage("Add a new boat")}
+        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+      >
+        {t('addBoat')}
+      </button>])
+  }
+  return [];
+}
 
 export function AssistantChat() {
   const t = useTranslations('assistant');
+  const { userRoles } = useUserRoles();
+
   const {
     messages,
     pendingActions,
@@ -126,6 +170,7 @@ export function AssistantChat() {
     a => a.status === 'pending'
   );
 
+
   return (
     <div className="flex flex-col h-full">
       {/* Messages area */}
@@ -149,21 +194,10 @@ export function AssistantChat() {
               {t('greeting')}
             </h3>
             <p className="text-sm max-w-xs mx-auto">
-              {t('greetingMessage')}
+              {userRoles?.includes('owner') ? t('greetingMessageOwner') : t('greetingMessageCrew')}
             </p>
             <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <button
-                onClick={() => sendMessage("Show me sailing opportunities that match my profile")}
-                className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-              >
-                {t('findMatchingJourneys')}
-              </button>
-              <button
-                onClick={() => sendMessage("Help me improve my profile")}
-                className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-              >
-                {t('improveProfile')}
-              </button>
+              {getContextAwareSuggestions(userRoles, sendMessage, t)}
             </div>
           </div>
         )}

@@ -13,6 +13,7 @@ import { AssistantButton } from './ai/AssistantButton';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useUserRoles } from '@/app/contexts/UserRoleContext';
 
 export function Header() {
   const t = useTranslations('common');
@@ -22,7 +23,6 @@ export function Header() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
-  const [userRoles, setUserRoles] = useState<string[] | null>(null);
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
 
@@ -81,6 +81,7 @@ export function Header() {
   }, []);
 
   // Get user roles for Filters button visibility
+  /*
   useEffect(() => {
     if (user) {
       setRoleLoading(true);
@@ -116,7 +117,7 @@ export function Header() {
       setRoleLoading(false);
     }
   }, [user]);
-
+*/
 
   const hasActiveFilters = () => {
     return !!(
@@ -135,6 +136,8 @@ export function Header() {
     if (filters.dateRange.start || filters.dateRange.end) count++;
     return count;
   };
+
+  const { userRoles } = useUserRoles();
 
   return (
     <>
@@ -192,7 +195,7 @@ export function Header() {
                 </button>
               )}
               {/* AI Assistant - Only show for authenticated users */}
-              {user && <AssistantButton />}
+              {user && <AssistantButton userRoles={userRoles}/>}
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
               <NavigationMenu

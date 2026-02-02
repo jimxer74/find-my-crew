@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 
-export function AssistantButton() {
+export function AssistantButton({ userRoles }: { userRoles: string[] | null }) {
   const t = useTranslations('navigation');
   const router = useRouter();
   const {

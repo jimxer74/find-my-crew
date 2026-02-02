@@ -13,6 +13,7 @@ import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { Header } from "./components/Header";
 import { ThemeScript } from "./components/ThemeScript";
 import { AssistantSidebar } from "./components/ai/AssistantSidebar";
+import { UserRolesProvider } from "./contexts/UserRoleContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +49,7 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider>
             <AuthProvider>
+              <UserRolesProvider>
               <ConsentSetupProvider>
                 <FilterProvider>
                   <NotificationProvider>
@@ -62,6 +64,7 @@ export default async function RootLayout({
                 </FilterProvider>
                 <CookieConsentBanner />
               </ConsentSetupProvider>
+              </UserRolesProvider>
             </AuthProvider>
           </ThemeProvider>
         </NextIntlClientProvider>
