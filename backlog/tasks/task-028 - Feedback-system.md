@@ -411,7 +411,7 @@ Status: {old_status} → {new_status}
 
 View details: {link}
 
-Thank you for helping us improve Find My Crew!
+Thank you for helping us improve SailSmart!
 ```
 
 ---

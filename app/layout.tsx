@@ -26,7 +26,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Find My Crew - Connect Boat Owners with Crew Members",
+  title: "SailSmart - Connect Boat Owners with Crew Members",
   description: "Connect boat owners and skippers with potential crew members. Find your perfect crew or discover amazing sailing opportunities.",
 };
 

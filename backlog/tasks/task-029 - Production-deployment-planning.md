@@ -13,7 +13,7 @@ priority: high
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Plan and implementation for making Find My Crew ready for pilot production deployment with configurable limits, CI/CD pipeline, and security hardening.
+Plan and implementation for making SailSmart ready for pilot production deployment with configurable limits, CI/CD pipeline, and security hardening.
 
 ## Architecture (Pilot)
 

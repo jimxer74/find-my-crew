@@ -1,7 +1,7 @@
 import { ProfileCreationWizard } from '@/app/components/profile/ProfileCreationWizard';
 
 export const metadata = {
-  title: 'Set Up Your Profile | Find My Crew',
+  title: 'Set Up Your Profile | SailSmart',
   description: 'Complete your sailing profile to start finding crew positions or boat owners.',
 };
 

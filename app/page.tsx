@@ -55,16 +55,24 @@ export default function Home() {
         }}
       />
       {/* Overlay for better text readability */}
-      <div className="fixed inset-0 bg-black/10 backdrop-blur-[1px] -z-10"></div>
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] -z-10"></div>
       
       {/* Content wrapper with relative positioning */}
       <div className="relative z-10">
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 md:py-32">
-          <div className="text-center">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 md:py-14">
+          <div className="text-center items-center justify-center flex flex-col">
+          <Image
+                src="/sailsmart_new_tp_dark.png"
+                alt="SailSmart"
+                width={220}
+                height={220}
+                className="object-contain drop-shadow-lg mb-4"
+              />
+
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg px-2">
-              {t('hero.title')}
+              {userRoles.includes('owner') ? t('hero.titleOwner') : t('hero.titleCrew')}
             </h2>
             <p className="text-base sm:text-lg md:text-xl text-white/95 mb-6 sm:mb-8 max-w-2xl mx-auto drop-shadow-md px-2">
               {t('hero.subtitle')}
@@ -116,13 +124,13 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="grid md:grid-cols-2 gap-6 sm:gap-12 lg:gap-16">
           {/* For Owners */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
+          <div className="bg-card/90 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
             <div className="w-16 h-16 mb-4 relative">
               <Image
-                src="/boat2.png"
+                src="/sailsmart_new_logo_blue.png"
                 alt="Boat Owner"
                 fill
                 className="object-contain"
@@ -149,10 +157,10 @@ export default function Home() {
           </div>
 
           {/* For Crew */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
+          <div className="bg-card/90 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
             <div className="w-16 h-16 mb-4 relative">
               <Image
-                src="/seaman2.png"
+                src="/sailor_transparent.png"
                 alt="Crew Member"
                 fill
                 className="object-contain"
@@ -216,7 +224,7 @@ export default function Home() {
 
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-        <div className="rounded-2xl p-6 sm:p-12 text-center bg-primary">
+        <div className="rounded-2xl p-6 sm:p-12 text-center bg-primary/80">
           <h3 className="text-2xl sm:text-3xl font-bold text-primary-foreground mb-3 sm:mb-4 px-2">
             {t('cta.title')}
           </h3>

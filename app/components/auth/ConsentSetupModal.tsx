@@ -142,7 +142,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
               Set Up Your Preferences
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Please review and set your privacy preferences to continue using Find My Crew.
+              Please review and set your privacy preferences to continue using SailSmart.
             </p>
           </div>
 
@@ -199,7 +199,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
                   </Link>
                 </span>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Understand the rules and guidelines for using Find My Crew.
+                  Understand the rules and guidelines for using SailSmart.
                 </p>
               </div>
             </label>

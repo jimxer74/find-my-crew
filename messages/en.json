@@ -54,7 +54,7 @@
     },
     "signup": {
       "title": "Create your account",
-      "subtitle": "Join Find My Crew and start your sailing adventure.",
+      "subtitle": "Join SailSmart and start your sailing adventure.",
       "fullName": "Full Name",
       "fullNamePlaceholder": "Enter your full name",
       "email": "Email address",
@@ -114,45 +114,46 @@
   },
   "home": {
     "hero": {
-      "title": "Find Your Perfect Crew",
+      "titleOwner": "Find Your Perfect Crew",
+      "titleCrew": "Find Your Next Sailing Adventure",
       "subtitle": "Connect boat owners with experienced crew members for unforgettable sailing adventures",
       "browseJourneys": "Browse Journeys",
       "searchJourneys": "Search Journeys",
-      "myJourneys": "My Journeys",
-      "myCrew": "My Crew",
+      "myJourneys": "Create Journeys",
+      "myCrew": "Manage Crew",
       "myRegistrations": "My Registrations",
       "signUp": "Get Started",
       "login": "Log in"
     },
     "forOwners": {
       "title": "For Boat Owners",
-      "description": "Find experienced crew members for your sailing adventures. Post your journeys and connect with sailors worldwide.",
+      "description": "Find experienced crew members for your sailing adventures. Post your journeys and connect with sailors worldwide and let AI find the perfect crew for you automatically.",
       "cta": "Start Posting Journeys",
-      "feature1": "Register and manage your boats",
-      "feature2": "Plan journeys and divide into legs",
-      "feature3": "Review and approve crew applications or let AI to do it for you"
+      "feature1": "Register and manage your sailboat",
+      "feature2": "Plan journeys and legs",
+      "feature3": "Automatch crew members or review and approve applications - you choose!"
     },
     "forCrew": {
       "title": "For Crew Members",
       "description": "Discover sailing opportunities worldwide. Browse journeys, match your skills, and join amazing adventures.",
       "cta": "Find Your Next Adventure",
-      "feature1": "Browse available journeys and legs",
-      "feature2": "Filter by location, dates, and skills",
-      "feature3": "Apply to join your dream voyage"
+      "feature1": "Setup your sailing profile",
+      "feature2": "Browse, search and SailSmart discover sailing opportunities worldwide based on your preferences",
+      "feature3": "Apply to join your dream voyage and get immediate feedback for eligibility"
     },
     "howItWorks": {
       "title": "How It Works",
       "step1": {
         "title": "Sign Up",
-        "description": "Create your account as an owner/skipper or crew member"
+        "description": "Create your account as an owner/skipper or crew member and setup your sailing profile"
       },
       "step2": {
         "title": "Connect",
-        "description": "Owners post journeys, crew members browse and apply"
+        "description": "Owners post journeys, crew members discover and apply"
       },
       "step3": {
         "title": "Sail Together",
-        "description": "Owners approve applications and you're ready to set sail!"
+        "description": "AI or Owners approve applications and you're ready to set sail!"
       }
     },
     "cta": {
@@ -554,7 +555,7 @@
     }
   },
   "footer": {
-    "copyright": "© {year} Find My Crew. All rights reserved.",
+    "copyright": "© {year} SailSmart. All rights reserved.",
     "tagline": "Connecting sailors worldwide",
     "privacySettings": "Privacy Settings",
     "feedback": "Feedback",
@@ -615,9 +616,9 @@
     }
   },
   "metadata": {
-    "title": "Find My Crew - Connect Sailors Worldwide",
+    "title": "SailSmart - Connect Sailors Worldwide",
     "description": "Join the global sailing community. Find crew positions or recruit experienced sailors for your next adventure.",
-    "ogTitle": "Find My Crew",
+    "ogTitle": "SailSmart",
     "ogDescription": "Connect boat owners with crew members for unforgettable sailing adventures."
   },
   "feedback": {
@@ -674,7 +675,7 @@
     "noDescription": "No description provided.",
     "statusNote": "Status Note",
     "generalPromptTitle": "Help us improve!",
-    "generalPromptMessage": "Have ideas for making Find My Crew better? We'd love to hear from you.",
+    "generalPromptMessage": "Have ideas for making SailSmart better? We'd love to hear from you.",
     "postJourneyPromptTitle": "How was your journey?",
     "postJourneyPromptMessage": "You recently completed \"{journeyName}\". Share your feedback to help us improve!",
     "maybeLater": "Maybe later",

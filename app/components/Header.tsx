@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 import { LogoWithText } from './LogoWithText';
 import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';
@@ -146,6 +147,12 @@ export function Header() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <LogoWithText userRole={userRoles?.[0] || ''}/>
+              <Link
+                href="/feedback"
+                className="ml-2 px-2 py-0.5 text-xs font-semibold bg-yellow-400 text-yellow-900 rounded-full hover:bg-yellow-500 transition-colors"
+              >
+                Beta
+              </Link>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               {user && (userRoles?.includes('crew') || (userRoles === null && roleLoading)) && (

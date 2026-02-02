@@ -15,7 +15,7 @@ priority: high
 <!-- SECTION:DESCRIPTION:BEGIN -->
 # Production Deployment Guide - Step-by-Step Instructions
 
-This guide provides comprehensive instructions for deploying Find My Crew to staging and production environments.
+This guide provides comprehensive instructions for deploying SailSmart to staging and production environments.
 
 ---
 

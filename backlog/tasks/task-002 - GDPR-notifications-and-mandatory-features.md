@@ -14,7 +14,7 @@ ordinal: 1000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Implement comprehensive GDPR compliance features for the Find My Crew application, including consent management during signup, data subject rights (view, export, delete data), and legal pages.
+Implement comprehensive GDPR compliance features for the SailSmart application, including consent management during signup, data subject rights (view, export, delete data), and legal pages.
 
 ## Current State Analysis
 - Profile data collected: name, email, phone, sailing experience, skills, risk preferences, sailing preferences (includes health/dietary info), certifications, profile image

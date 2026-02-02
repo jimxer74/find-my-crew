@@ -54,7 +54,7 @@
     },
     "signup": {
       "title": "Luo tili",
-      "subtitle": "Liity Find My Crew -yhteisöön ja aloita purjehdusseikkailusi.",
+      "subtitle": "Liity SailSmart -yhteisöön ja aloita purjehdusseikkailusi.",
       "fullName": "Koko nimi",
       "fullNamePlaceholder": "Syötä koko nimesi",
       "email": "Sähköpostiosoite",
@@ -114,13 +114,14 @@
   },
   "home": {
     "hero": {
-      "title": "Löydä täydellinen miehistö",
-      "subtitle": "Yhdistä veneiden omistajat kokeneiden miehistön jäsenten kanssa unohtumattomiin purjehdusseikkailuihin",
+      "titleOwner": "Puuttuuko sinulta gasti seuraavalle purjehdusmatkalle?",
+      "titleCrew": "Etsikö seuraavaa purjehdusseikkailua?",
+      "subtitle": "Yhdistä veneiden omistajat ja seikkalijat ja jaa unohtumattomia purjehdusseikkailuja miehistön kanssa",
       "browseJourneys": "Selaa matkoja",
       "searchJourneys": "Hae matkoja",
-      "myJourneys": "Omat matkat",
+      "myJourneys": "Suunnittele purjehduksia",
       "myCrew": "Miehistöni",
-      "myRegistrations": "Ilmoittautumiseni",
+      "myRegistrations": "Ilmoittautumiset",
       "signUp": "Aloita",
       "login": "Kirjaudu"
     },
@@ -554,7 +555,7 @@
     }
   },
   "footer": {
-    "copyright": "© {year} Find My Crew. Kaikki oikeudet pidätetään.",
+    "copyright": "© {year} SailSmart. Kaikki oikeudet pidätetään.",
     "tagline": "Yhdistämme purjehtijoita maailmanlaajuisesti",
     "privacySettings": "Tietosuoja-asetukset",
     "feedback": "Palaute",
@@ -615,9 +616,9 @@
     }
   },
   "metadata": {
-    "title": "Find My Crew - Yhdistä purjehtijat maailmanlaajuisesti",
+    "title": "SailSmart - Yhdistä purjehtijat maailmanlaajuisesti",
     "description": "Liity maailmanlaajuiseen purjehdusyhteisöön. Löydä miehistöpaikkoja tai rekrytoi kokeneita purjehtijoita seuraavaan seikkailuusi.",
-    "ogTitle": "Find My Crew",
+    "ogTitle": "SailSmart",
     "ogDescription": "Yhdistä veneiden omistajat miehistön jäseniin unohtumattomiin purjehdusseikkailuihin."
   },
   "feedback": {
@@ -674,7 +675,7 @@
     "noDescription": "Ei kuvausta.",
     "statusNote": "Tilahuomautus",
     "generalPromptTitle": "Auta meitä parantamaan!",
-    "generalPromptMessage": "Onko sinulla ideoita Find My Crew:n parantamiseksi? Haluaisimme kuulla sinusta.",
+    "generalPromptMessage": "Onko sinulla ideoita SailSmart:n parantamiseksi? Haluaisimme kuulla sinusta.",
     "postJourneyPromptTitle": "Miten matkasi sujui?",
     "postJourneyPromptMessage": "Olet äskettäin suorittanut matkan \"{journeyName}\". Jaa palautteesi auttaaksesi meitä parantamaan!",
     "maybeLater": "Ehkä myöhemmin",

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Rate Limiting Middleware for Find My Crew
+ * Rate Limiting Middleware for SailSmart
  *
  * This implementation uses in-memory rate limiting which works for single-instance deployments.
  * For production with multiple instances, use Vercel KV or Upstash Redis:
