@@ -75,16 +75,21 @@ export interface SuggestionMetadata {
 }
 
 // Tool calling types
+export interface ToolParameterProperty {
+  type: string;
+  description: string;
+  enum?: string[];
+  // Support nested object properties (for complex types like bounding boxes)
+  properties?: Record<string, ToolParameterProperty>;
+  required?: string[];
+}
+
 export interface ToolDefinition {
   name: string;
   description: string;
   parameters: {
     type: 'object';
-    properties: Record<string, {
-      type: string;
-      description: string;
-      enum?: string[];
-    }>;
+    properties: Record<string, ToolParameterProperty>;
     required?: string[];
   };
 }

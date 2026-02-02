@@ -13,7 +13,7 @@ import { ToolDefinition } from './types';
 export const DATA_TOOLS: ToolDefinition[] = [
   {
     name: 'search_journeys',
-    description: 'Search for published sailing journeys. Use this when the user wants to find trips or journeys to join.',
+    description: 'Search for published sailing journeys or voyages. Use this when user wants to find long sailing journeys that span multiple legs, typically taking several weeks or months to complete.',
     parameters: {
       type: 'object',
       properties: {
@@ -39,7 +39,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'search_legs',
-    description: 'Search for sailing legs (segments of journeys) that need crew. Use this when users are searching sailing opportunities in general',
+    description: 'Search for sailing opportunities or sailing legs or passages. Use this for general searches without specific location requirements. For location-based searches (e.g., "from Barcelona", "to Caribbean"), use search_legs_by_location instead.',
     parameters: {
       type: 'object',
       properties: {
@@ -58,6 +58,73 @@ export const DATA_TOOLS: ToolDefinition[] = [
         skillsRequired: {
           type: 'string',
           description: 'Comma-separated list of required skills to filter by',
+        },
+        crewNeeded: {
+          type: 'boolean',
+          description: 'Only show legs that still need crew (default true)',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of results to return (default 10)',
+        },
+      },
+    },
+  },
+  {
+    name: 'search_legs_by_location',
+    description: 'Search for sailing legs by geographic location using bounding box coordinates. Use this when user mentions specific places, regions, or areas for departure or arrival. YOU must determine the appropriate bounding box coordinates for the location. IMPORTANT: Use nested departureBbox/arrivalBbox objects with numeric coordinates. Example: {"departureBbox": {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}, "departureDescription": "Western Mediterranean"}',
+    parameters: {
+      type: 'object',
+      properties: {
+        departureBbox: {
+          type: 'object',
+          description: 'Bounding box for departure/start area. Provide coordinates that encompass the region the user is referring to. Add reasonable margins (~50-100km for cities, larger for regions).',
+          properties: {
+            minLng: { type: 'number', description: 'Western boundary (longitude)' },
+            minLat: { type: 'number', description: 'Southern boundary (latitude)' },
+            maxLng: { type: 'number', description: 'Eastern boundary (longitude)' },
+            maxLat: { type: 'number', description: 'Northern boundary (latitude)' },
+          },
+          required: ['minLng', 'minLat', 'maxLng', 'maxLat'],
+        },
+        departureDescription: {
+          type: 'string',
+          description: 'Human-readable description of the departure area being searched (e.g., "Barcelona and surrounding area", "Southern coast of Spain from Málaga to Almería")',
+        },
+        arrivalBbox: {
+          type: 'object',
+          description: 'Bounding box for arrival/destination area. Provide coordinates that encompass the region the user is referring to.',
+          properties: {
+            minLng: { type: 'number', description: 'Western boundary (longitude)' },
+            minLat: { type: 'number', description: 'Southern boundary (latitude)' },
+            maxLng: { type: 'number', description: 'Eastern boundary (longitude)' },
+            maxLat: { type: 'number', description: 'Northern boundary (latitude)' },
+          },
+          required: ['minLng', 'minLat', 'maxLng', 'maxLat'],
+        },
+        arrivalDescription: {
+          type: 'string',
+          description: 'Human-readable description of the arrival area being searched (e.g., "Canary Islands", "Western Caribbean including Jamaica and Cayman Islands")',
+        },
+        startDate: {
+          type: 'string',
+          description: 'Filter legs starting after this date (ISO format YYYY-MM-DD)',
+        },
+        endDate: {
+          type: 'string',
+          description: 'Filter legs ending before this date (ISO format YYYY-MM-DD)',
+        },
+        skillsRequired: {
+          type: 'string',
+          description: 'Comma-separated list of required skills to filter by',
+        },
+        riskLevels: {
+          type: 'string',
+          description: 'Comma-separated risk levels to filter by (Coastal sailing, Offshore sailing, Extreme sailing)',
+        },
+        minExperienceLevel: {
+          type: 'number',
+          description: 'User experience level for matching: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper. Only returns legs where user qualifies.',
         },
         crewNeeded: {
           type: 'boolean',
@@ -213,17 +280,17 @@ export const DATA_TOOLS: ToolDefinition[] = [
 export const ACTION_TOOLS: ToolDefinition[] = [
   {
     name: 'suggest_register_for_leg',
-    description: 'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve.',
+    description: 'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve. IMPORTANT: Both legId and reason parameters are REQUIRED. Example: {"name": "suggest_register_for_leg", "arguments": {"legId": "uuid-here", "reason": "This leg matches your experience level and sailing preferences"}}',
     parameters: {
       type: 'object',
       properties: {
         legId: {
           type: 'string',
-          description: 'The ID of the leg to register for',
+          description: 'REQUIRED: The UUID of the leg to register for',
         },
         reason: {
           type: 'string',
-          description: 'Explanation of why this leg is a good match for the user',
+          description: 'REQUIRED: A detailed explanation of why this leg is a good match for the user (e.g., experience match, location preference, timing)',
         },
       },
       required: ['legId', 'reason'],
@@ -231,17 +298,17 @@ export const ACTION_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'suggest_profile_update',
-    description: 'Suggest updates to the user\'s profile. Creates a pending action that the user must approve.',
+    description: 'Suggest updates to the user\'s profile. Creates a pending action that the user must approve. IMPORTANT: Both updates and reason parameters are REQUIRED. Example: {"name": "suggest_profile_update", "arguments": {"updates": {"skills": ["navigation", "first_aid"]}, "reason": "Adding these skills will help you qualify for more sailing opportunities"}}',
     parameters: {
       type: 'object',
       properties: {
         updates: {
-          type: 'string',
-          description: 'JSON object with field names and new values to suggest',
+          type: 'object',
+          description: 'REQUIRED: Object containing profile field names and their new values. Valid fields: skills (array), sailing_experience (number 1-4), risk_level (array), certifications (string), user_description (string)',
         },
         reason: {
           type: 'string',
-          description: 'Explanation of why these updates are recommended',
+          description: 'REQUIRED: Explanation of why these profile updates are recommended and how they will benefit the user',
         },
       },
       required: ['updates', 'reason'],
@@ -249,17 +316,17 @@ export const ACTION_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'suggest_approve_registration',
-    description: 'Suggest approving a crew registration. Only available for journey owners. Creates a pending action.',
+    description: 'Suggest approving a crew registration. Only available for journey owners. Creates a pending action. IMPORTANT: Both registrationId and reason parameters are REQUIRED.',
     parameters: {
       type: 'object',
       properties: {
         registrationId: {
           type: 'string',
-          description: 'The ID of the registration to approve',
+          description: 'REQUIRED: The UUID of the registration to approve',
         },
         reason: {
           type: 'string',
-          description: 'Explanation of why this crew member should be approved',
+          description: 'REQUIRED: Detailed explanation of why this crew member should be approved (e.g., skills match, experience level)',
         },
       },
       required: ['registrationId', 'reason'],
@@ -267,17 +334,17 @@ export const ACTION_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'suggest_reject_registration',
-    description: 'Suggest rejecting a crew registration. Only available for journey owners. Creates a pending action.',
+    description: 'Suggest rejecting a crew registration. Only available for journey owners. Creates a pending action. IMPORTANT: Both registrationId and reason parameters are REQUIRED.',
     parameters: {
       type: 'object',
       properties: {
         registrationId: {
           type: 'string',
-          description: 'The ID of the registration to reject',
+          description: 'REQUIRED: The UUID of the registration to reject',
         },
         reason: {
           type: 'string',
-          description: 'Explanation of why this crew member should be rejected',
+          description: 'REQUIRED: Explanation of why this crew member should be rejected (be constructive and professional)',
         },
       },
       required: ['registrationId', 'reason'],

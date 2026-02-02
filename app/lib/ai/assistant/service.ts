@@ -21,6 +21,11 @@ import { getToolsForUser, toolsToOpenAIFormat } from './tools';
 import { executeTools } from './toolExecutor';
 
 const MAX_HISTORY_MESSAGES = 20;
+/**
+ * Maximum number of tool iterations
+ * This is the maximum number of times the AI will try to use tools to complete the user's request
+ * Set to 5 to allow recovery from format mistakes on first attempts
+ */
 const MAX_TOOL_ITERATIONS = 5;
 
 // Debug logging helper
@@ -186,6 +191,7 @@ async function processAIWithTools(
     iterations++;
     log(`Tool iteration ${iterations}/${MAX_TOOL_ITERATIONS}`);
 
+
     // Build prompt with tool instructions
     const toolsDescription = tools.map(t => `- ${t.name}: ${t.description}`).join('\n');
     const toolPrompt = `
@@ -197,7 +203,12 @@ To use a tool, respond with a JSON block like this:
 {"name": "tool_name", "arguments": {"arg1": "value1"}}
 \`\`\`
 
-You can make multiple tool calls in one response. After receiving tool results, provide your final response to the user.
+CRITICAL RULES FOR TOOL CALLS:
+1. Action tools (suggest_register_for_leg, suggest_profile_update, etc.) ALWAYS require BOTH the action parameter AND a "reason" parameter
+2. The "reason" parameter must be a non-empty string explaining why you're making this suggestion
+3. Never omit required parameters - missing parameters will cause the tool to fail
+
+Try to solve the user's request in one go, if not possible, make multiple tool calls. After receiving tool results, provide your final response to the user.
 `;
 
     // Add tool instructions to system message
@@ -207,7 +218,9 @@ You can make multiple tool calls in one response. After receiving tool results, 
     ];
 
     // Call AI
-    log('Calling AI service...');
+    log('Calling AI service...', { prompt: toolPrompt });
+    log('Messages with tools:', {message: messagesWithTools});
+
     const result = await callAI({
       useCase: 'assistant-chat',
       prompt: messagesWithTools.map(m => `${m.role}: ${m.content}`).join('\n\n'),
