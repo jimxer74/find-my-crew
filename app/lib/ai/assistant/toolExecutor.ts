@@ -140,7 +140,7 @@ export async function executeTool(
         break;
 
       case 'get_location_bounding_box':
-        result = handleGetLocationBoundingBox(args);
+        //result = handleGetLocationBoundingBox(args);
         break;
 
       case 'get_leg_registration_info':
@@ -871,7 +871,7 @@ function handleGetLocationBoundingBox(args: Record<string, unknown>): {
 } {
   // If listCategory is provided, list all regions in that category
   if (args.listCategory) {
-    const category = args.listCategory as 'mediterranean' | 'atlantic' | 'caribbean' | 'northern_europe' | 'pacific';
+    const category = args.listCategory as 'mediterranean' | 'atlantic' | 'caribbean' | 'northern_europe' | 'pacific' | 'indian_ocean' | 'south_america' | 'arctic' | 'antarctic';
     const regions = listRegions(category);
     return {
       found: true,

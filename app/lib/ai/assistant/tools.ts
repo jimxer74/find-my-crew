@@ -274,10 +274,11 @@ export const DATA_TOOLS: ToolDefinition[] = [
       required: ['registrationId'],
     },
   },
+  /*
   // Location lookup tool
   {
     name: 'get_location_bounding_box',
-    description: 'Look up the bounding box coordinates for a named sailing region. Use this BEFORE calling search_legs_by_location to get the correct bbox coordinates for a location. Returns coordinates for well-known sailing destinations (Mediterranean regions, Caribbean islands, Atlantic waypoints, etc.). Example: {"query": "Barcelona"} returns the bbox for Barcelona area.',
+    description: 'Look up the bounding box coordinates for a named sailing region. Use this tool if you are not able to resolve the bounding box coordinates for a location by yourself. Returns coordinates for well-known sailing destinations (Mediterranean regions, Caribbean islands, Atlantic waypoints, etc.). Example: {"query": "Barcelona"} returns the bbox for Barcelona area.',
     parameters: {
       type: 'object',
       properties: {
@@ -292,7 +293,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
         },
       },
     },
-  },
+  },*/
   // Registration info tool
   {
     name: 'get_leg_registration_info',

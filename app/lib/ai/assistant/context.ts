@@ -173,18 +173,19 @@ For both departure AND arrival:
 - If only one location is mentioned without direction words, assume it's departure and use \`departureBbox\`
 
 **Getting Bounding Box Coordinates:**
-Use the \`get_location_bounding_box\` tool to resolve location names to coordinates. This tool supports:
-- Common sailing destinations (Mediterranean, Caribbean, Atlantic waypoints, Northern Europe, Pacific)
-- Aliases and variations (e.g., "BVI", "the Med", "Canaries")
-- Category browsing (use \`listCategory\` to see all regions in a category)
+- Resolve the bounding box of the departure and arrival locations based on user's requested location, if location is not clear, ask for clarification.
+- Assume a departure location if only one location is mentioned without direction words. 
+- Return the bounding box coordinates in the format: {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}
+- Ensure the enough padding is added to the bounding box coordinates to include the entire region.
+- Return only what is being asked for, either departureBbox or arrivalBbox, or both if it is requested by user.
 
 Example workflow:
 1. User says "Show me legs from Barcelona"
-2. Call \`get_location_bounding_box\` with \`{"query": "Barcelona"}\`
+2. Resolve the bounding box of the departure location "Barcelona", use the format: {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}
 3. Use the returned bbox in \`search_legs_by_location\`
 
 **Handling Ambiguous Locations:**
-If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clarification or use \`get_location_bounding_box\` with \`listCategory\` to help the user choose.
+If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clarification to help the user choose.
 
 **Always include departureDescription or arrivalDescription** to explain what area you searched.
 
