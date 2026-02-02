@@ -3,7 +3,7 @@ id: TASK-072
 title: >-
   AI-assistant enhancement: Location based sailing opportunities matching for
   crew
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-01 20:49'
 updated_date: '2026-02-02 05:51'
@@ -265,6 +265,42 @@ Update `buildSystemPrompt` to guide AI on when to use location-based search:
 - Test with additional filters (dates, skills, etc.)
 - Run the migration on the database
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Summary
+
+Implemented location-based search capability for the AI assistant, allowing users to find sailing opportunities by geographic location (e.g., "legs from Barcelona to Caribbean").
+
+## Changes
+
+### New Files
+- **`app/lib/ai/assistant/geocoding.ts`** - Geocoding service using Mapbox Search Box API
+  - Converts location names to coordinates and bounding boxes
+  - Automatic margin calculation based on location type
+  - Session token management for API efficiency
+
+- **`migrations/016_add_find_legs_by_location_rpc.sql`** - PostGIS stored procedure
+  - Efficient spatial queries using ST_Within
+  - Supports filtering by departure and/or arrival bounding boxes
+
+### Modified Files
+- **`app/lib/ai/assistant/tools.ts`** - Added `search_legs_by_location` tool
+- **`app/lib/ai/assistant/toolExecutor.ts`** - Implemented spatial query execution
+- **`app/lib/ai/assistant/context.ts`** - Updated system prompt with location search guidance
+
+## Features
+- Search by departure location ("from Barcelona")
+- Search by arrival location ("to Caribbean")
+- Search by both locations ("from Mediterranean to Atlantic")
+- Combine with other filters (dates, skills, experience level, risk levels)
+- Returns location context (start/end waypoint names)
+- Graceful error handling for invalid locations
+
+## Deployment Notes
+Run migration `016_add_find_legs_by_location_rpc.sql` to create the `find_legs_by_location` RPC function for optimal performance. The fallback in-memory filtering will work without the migration but is less efficient.
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
