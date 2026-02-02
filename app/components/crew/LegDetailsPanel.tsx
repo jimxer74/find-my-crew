@@ -1000,7 +1000,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       priority={true}
                     />
                     <div className="absolute top-4 left-4 z-10">
-                      {leg.skill_match_percentage !== undefined && (
+                      {user && leg.skill_match_percentage !== undefined && (
                         <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
                       )}
                     </div>
@@ -1156,8 +1156,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
                   <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
                     matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false 
-                    ? 'border-orange-300' 
-                    : 'border-green-500'
+                    ? user ? 'border-orange-300' : 'border-grey-300' 
+                    : user ? 'border-green-500' : 'border-grey-300'
                    }`}>
       
                     <div className="relative w-12 h-12 flex-shrink-0">
@@ -1176,7 +1176,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     </div>
                   </div>
                     {/* Warning message — now on its own row below */}
-                    {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
+                    {user && matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
                       <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your risk level ({userRiskLevel?.join(', ')}) preferences do not match for this leg
                       </p>
@@ -1196,8 +1196,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               <div>
                 <div onClick={() => setIsExperienceLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
                   leg.experience_level_matches === false 
-                    ? 'border-orange-300' 
-                    : 'border-green-500'
+                    ? user ? 'border-orange-300' : 'border-grey-300' 
+                    : user ? 'border-green-500' : 'border-grey-300'
                 }`}>
                   {/* Icon */}
                   <div className="relative w-12 h-12 flex-shrink-0">
@@ -1225,12 +1225,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                 </div>
                     {/* Warning message — now on its own row below */}
-                    {leg.experience_level_matches === false && userExperienceLevel !== null && (
+                    {user && leg.experience_level_matches === false && userExperienceLevel !== null && (
                       <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement for this leg
                       </p>
                     )}
-                    {leg.experience_level_matches === true && userExperienceLevel !== null && (
+                    {user && leg.experience_level_matches === true && userExperienceLevel !== null && (
                       <p className="text-xs text-green-700 mt-1 text-left">
                         ✓ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) matches the requirement
                       </p>
@@ -1446,14 +1446,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               {/* Header */}
               <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
-                    <Image
-                      src={getRiskLevelConfig(effectiveRiskLevel)!.icon}
-                      alt={getRiskLevelConfig(effectiveRiskLevel)!.displayName}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
                   <h2 className="text-base sm:text-lg font-semibold text-foreground">
                     {getRiskLevelConfig(effectiveRiskLevel)!.displayName}
                   </h2>
@@ -1502,19 +1494,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             onClick={() => setIsExperienceLevelDialogOpen(false)}
           />
           {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 mt-8">
             <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
               {/* Header */}
               <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="relative w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
-                    <Image
-                      src={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).icon}
-                      alt={getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
                   <h2 className="text-base sm:text-lg font-semibold text-foreground">
                     {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
                   </h2>

@@ -292,16 +292,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
 
   return (
     <div className="flex-1 overflow-y-auto py-2" data-navigation-menu>
-      {/* Language Switcher - First item */}
-      <div className="px-4 py-2">
-        <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
-      </div>
-      <div className="px-4 py-2">
-        <LanguageSwitcher variant="menu-item" onClose={onClose} />
-      </div>
 
-      {/* Divider */}
-      <div className="border-t border-border my-1" />
 
       {loading ? (
         <div className="px-4 py-3 text-sm text-muted-foreground">{t('loading') || 'Loading...'}</div>
@@ -586,7 +577,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           <div className="border-t border-border my-1" />
 
           {/* Feedback */}
-          {isMenuPage ? (
+          { user && isMenuPage ? (
             <button
               onClick={() => handleNavClick('/feedback')}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
@@ -604,7 +595,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               </svg>
               <span className="font-medium">{t('feedback')}</span>
             </button>
-          ) : (
+          ) : user && (
             <Link
               href="/feedback"
               onClick={(e) => handleNavClick('/feedback', e)}
@@ -708,7 +699,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           )}
 
           {/* Feedback - Available to non-signed-in users */}
-          {isMenuPage ? (
+          { user && isMenuPage ? (
             <button
               onClick={() => handleNavClick('/feedback')}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
@@ -726,7 +717,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               </svg>
               <span className="font-medium">{t('feedback')}</span>
             </button>
-          ) : (
+          ) : user && (
             <Link
               href="/feedback"
               onClick={(e) => handleNavClick('/feedback', e)}
@@ -820,13 +811,20 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           {/* Appearance / Theme */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-between pb-2">
-              <span className="text-sm font-medium text-foreground">{t('appearance')}</span>
+              <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('appearance')}</span>
             </div>
             <div className="flex items-center justify-between">
               <ThemeToggle variant="segmented"/>
             </div>
           </div>
 
+          {/* Language Switcher - First item */}
+          <div className="px-4 py-2">
+            <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
+          </div>
+          <div className="px-4">
+            <LanguageSwitcher variant="menu-item" onClose={onClose} />
+          </div>
         </>
       )}
     </div>

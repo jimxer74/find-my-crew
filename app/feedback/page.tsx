@@ -5,11 +5,14 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { FeedbackList } from '@/app/components/feedback/FeedbackList';
 import { FeedbackButton } from '@/app/components/feedback/FeedbackButton';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function FeedbackPage() {
   const t = useTranslations('feedback');
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
+  const router  = useRouter();
 
   if (authLoading) {
     return (
@@ -18,6 +21,13 @@ export default function FeedbackPage() {
       </div>
     );
   }
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, authLoading, router]);
 
   return (
     <div className="min-h-screen bg-background">
