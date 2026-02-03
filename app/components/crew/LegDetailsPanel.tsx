@@ -1361,9 +1361,9 @@ transition-all"
 
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
-              <div className="pt-4 border-t border-border text-left pb-2">
+              <div className="pt-2 border-t border-border text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
-                <div className="flex gap-3 items-start pb-2">
+                <div className="flex gap-2 items-start pb-2">
                   {/* Owner Avatar */}
                   {(leg.owner_name || leg.owner_image_url) && (
                     <div className="flex items-center gap-4 flex-shrink-0">
