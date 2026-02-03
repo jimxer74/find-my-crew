@@ -1425,8 +1425,10 @@ transition-all"
                 {/* Journey Description Section */}
                 {(journeyDescription || isLoadingDescription) && (
                   <div className="pt-4 border-t border-border text-left pb-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">Journey Description</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">Journey details</h3>
                     <div className="relative">
+                    <p className="text-muted-foreground mb-2">{leg.journey_name}</p>
+
                       {isLoadingDescription ? (
                         <div className="w-full h-12 flex items-center justify-center bg-muted rounded">
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>
@@ -1434,6 +1436,7 @@ transition-all"
                       ) : (
                         <>
                           {!showFullDescription ? (
+                            
                             <p className="text-sm text-foreground whitespace-pre-wrap">
                               {journeyDescription && journeyDescription.length > 100
                                 ? journeyDescription.substring(0, 100) + '...'
