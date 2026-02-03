@@ -4,7 +4,7 @@ title: Journey cost management
 status: To Do
 assignee: []
 created_date: '2026-01-30 15:22'
-updated_date: '2026-02-03 17:22'
+updated_date: '2026-02-03 17:54'
 labels: []
 dependencies: []
 ---
@@ -55,7 +55,7 @@ Implement a comprehensive cost management system for journeys and legs that supp
 2. **Owner Covers All Costs** - Free passage for crew
 3. **Crew Pays a Fee** - Fixed daily/total fee
 4. **Delivery/Paid Crew** - Professional crew receives compensation
-5. **To be Agreed** - Undefined model for later negotiation
+5. **Not defined** - Undefined model for later negotiation
 
 ### Cost Categories to Track
 - **Provisioning**: Food, water, supplies
