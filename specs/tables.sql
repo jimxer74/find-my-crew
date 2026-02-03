@@ -205,6 +205,7 @@ create table if not exists public.journeys (
   state        journey_state not null default 'In planning',
   is_ai_generated boolean default false,
   ai_prompt    text,
+  images       text[] default '{}',  -- store image URLs from Supabase Storage
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -1152,7 +1153,7 @@ create policy "Authenticated users can upload boat images"
 on storage.objects for insert
 to authenticated
 with check (
-  bucket_id = 'boat-images' 
+  bucket_id = 'boat-images'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
 
@@ -1167,11 +1168,11 @@ create policy "Users can update their own boat images"
 on storage.objects for update
 to authenticated
 using (
-  bucket_id = 'boat-images' 
+  bucket_id = 'boat-images'
   and (storage.foldername(name))[1] = auth.uid()::text
 )
 with check (
-  bucket_id = 'boat-images' 
+  bucket_id = 'boat-images'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
 
@@ -1180,7 +1181,50 @@ create policy "Users can delete their own boat images"
 on storage.objects for delete
 to authenticated
 using (
-  bucket_id = 'boat-images' 
+  bucket_id = 'boat-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- ============================================================================
+-- STORAGE POLICIES: journey-images bucket
+-- ============================================================================
+-- Note: First create the bucket in Supabase Dashboard > Storage > New bucket
+-- Name: journey-images, Public: true
+
+-- Allow authenticated users to upload images to their own folder
+create policy "Authenticated users can upload journey images"
+on storage.objects for insert
+to authenticated
+with check (
+  bucket_id = 'journey-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow public to view journey images
+create policy "Public can view journey images"
+on storage.objects for select
+to public
+using (bucket_id = 'journey-images');
+
+-- Allow users to update their own images
+create policy "Users can update their own journey images"
+on storage.objects for update
+to authenticated
+using (
+  bucket_id = 'journey-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'journey-images'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to delete their own images
+create policy "Users can delete their own journey images"
+on storage.objects for delete
+to authenticated
+using (
+  bucket_id = 'journey-images'
   and (storage.foldername(name))[1] = auth.uid()::text
 );
 

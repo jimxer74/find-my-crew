@@ -821,7 +821,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           <button
             onClick={() => setIsMinimized(true)}
             className="hidden md:flex 
-absolute top-4 -right-7 -z-1 
+absolute top-50 -right-7 -z-1 
 bg-card 
 border border-border 
 rounded-none md:rounded-r-md    ← this is the key change
@@ -835,7 +835,7 @@ transition-all"
             aria-label="Minimize panel"
           >
             <svg
-              className="w-3 h-5 text-foreground"
+              className="w-4 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -854,12 +854,12 @@ transition-all"
         {isOpen && isMinimized && (
           <button
             onClick={() => setIsMinimized(false)}
-            className="hidden md:flex absolute top-4 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-2 min-w-[8px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex absolute top-50 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-2 min-w-[8px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Maximize panel"
             aria-label="Maximize panel"
           >
             <svg
-              className="w-3 h-5 text-foreground"
+              className="w-4 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
