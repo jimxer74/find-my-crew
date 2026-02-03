@@ -1257,7 +1257,7 @@ transition-all"
             <div className="flex items-center justify-between mb-1 border-t pt-4">
                     <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
             </div>
-            <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-2">
+            <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-3">
 
             {/* Risk Level and Experience level*/}
             {(() => {
@@ -1265,7 +1265,7 @@ transition-all"
               return riskConfig ? (
                 <div>
 
-                  <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
+                  <div onClick={() => setIsRiskLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-3 p-2 rounded-lg border-2 text-left ${
                     matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false 
                     ? user ? 'border-orange-300' : 'border-grey-300' 
                     : user ? 'border-green-500' : 'border-grey-300'
@@ -1305,7 +1305,7 @@ transition-all"
             {/* Minimum Required Experience Level */}
             {leg.min_experience_level && (
               <div>
-                <div onClick={() => setIsExperienceLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-2 p-1 rounded-lg border-2 text-left ${
+                <div onClick={() => setIsExperienceLevelDialogOpen(true)} className={`cursor-pointer flex items-center gap-3 p-2 rounded-lg border-2 text-left ${
                   leg.experience_level_matches === false 
                     ? user ? 'border-orange-300' : 'border-grey-300' 
                     : user ? 'border-green-500' : 'border-grey-300'
@@ -1363,10 +1363,10 @@ transition-all"
             {profileStatus?.exists && (
               <div className="pt-2 border-t border-border text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
-                <div className="flex gap-2 items-start pb-2">
+                <div className="flex gap-3 items-start pb-2">
                   {/* Owner Avatar */}
                   {(leg.owner_name || leg.owner_image_url) && (
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-3 flex-shrink-0">
                       {leg.owner_image_url ? (
                         <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-border">
                           <Image
@@ -1406,8 +1406,8 @@ transition-all"
                 </div>
                 <div className="pt-2 border-t border-border text-left">
                   <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat</h3>
-                  <div className="flex gap-4 items-start">
-                    <div className="flex items-center gap-2 flex-shrink-0 relative w-16 h-16 rounded-full">
+                  <div className="flex gap-3 items-start">
+                    <div className="flex items-center gap-3 flex-shrink-0 relative w-16 h-16 rounded-full">
                       <Image
                         src={leg?.boat_image_url || ''}
                         alt={leg?.boat_name || 'Boat'}
