@@ -11,6 +11,7 @@ import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@/app/lib/skillMatching';
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
+import { CostModel } from '@/app/types/cost-models';
 
     
 type Leg = {
@@ -24,6 +25,8 @@ type Leg = {
   crew_needed: number | null;
   leg_risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
   journey_risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null;
+  cost_model: CostModel | null;
+  journey_images: string[];
   skills: string[];
   boat_id: string;
   boat_name: string;
@@ -406,6 +409,8 @@ export function CrewBrowseMap({
           crew_needed: legData.crew_needed,
           leg_risk_level: legData.leg_risk_level,
           journey_risk_level: legData.journey_risk_level,
+          cost_model: legData.cost_model || null,
+          journey_images: legData.journey_images || [],
           skills: legData.skills || [],
           boat_id: legData.boat_id,
           boat_name: legData.boat_name,
@@ -1171,6 +1176,8 @@ export function CrewBrowseMap({
                   crew_needed: legData.crew_needed,
                   leg_risk_level: legData.leg_risk_level,
                   journey_risk_level: legData.journey_risk_level,
+                  cost_model: legData.cost_model || null,
+                  journey_images: legData.journey_images || [],
                   skills: legData.skills || [],
                   boat_id: legData.boat_id,
                   boat_name: legData.boat_name,

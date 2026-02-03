@@ -189,7 +189,7 @@ export async function GET(request: NextRequest) {
       // This ensures compatibility even if migration hasn't been run yet
       const { normalizeSkillNames } = require('@/app/lib/skillUtils');
       // Type assertion for nested Supabase join
-      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
+      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; images: string[]; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
       const journeySkills = normalizeSkillNames(journey?.skills || []);
       const legSkills = normalizeSkillNames(leg.skills || []);
 
