@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
       }
     );
 
+
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -198,6 +199,8 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+    
+    console.log('API-AI: Generating profile for user:', user?.id);
 
     // Check user's AI processing consent
     const { data: consents } = await supabase
@@ -240,7 +243,6 @@ export async function POST(request: NextRequest) {
         suggestion.profileImageUrl = facebookData.profilePictureUrl;
       }
 
-
       console.log('AI profile generation successful:', suggestion);
       return NextResponse.json({
         success: true,
@@ -254,7 +256,6 @@ export async function POST(request: NextRequest) {
       // Return a fallback suggestion based on basic Facebook data
       const fallbackSuggestion = createFallbackSuggestion(facebookData);
 
-      console.log('AI profile generation fallback successful:', fallbackSuggestion);
       return NextResponse.json({
         success: true,
         suggestion: fallbackSuggestion,
