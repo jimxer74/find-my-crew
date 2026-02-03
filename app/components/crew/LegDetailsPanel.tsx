@@ -138,6 +138,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
   const [journeyImages, setJourneyImages] = useState<string[]>([]);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [journeyDescription, setJourneyDescription] = useState<string | null>(null);
+  const [isLoadingDescription, setIsLoadingDescription] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -243,6 +246,52 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     };
 
     fetchJourneyImages();
+  }, [isOpen, leg.journey_id]);
+
+  // Fetch journey description when panel opens
+  useEffect(() => {
+    if (!isOpen || !leg.journey_id) {
+      setJourneyDescription(null);
+      return;
+    }
+
+    const fetchJourneyDescription = async () => {
+      setIsLoadingDescription(true);
+      console.log(`[LegDetailsPanel] Fetching journey description for journey ${leg.journey_id}`);
+      try {
+        const response = await fetch(`/api/journeys/${leg.journey_id}/details`, {
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        console.log(`[LegDetailsPanel] Journey fetch response status: ${response.status}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`[LegDetailsPanel] Journey fetch response data:`, data);
+          const description = data.journey_description || null;
+          setJourneyDescription(description);
+          console.log(`[LegDetailsPanel] Fetched journey description for journey ${leg.journey_id}:`, description);
+        } else {
+          console.warn(`[LegDetailsPanel] Failed to fetch journey description: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.warn(`[LegDetailsPanel] Error response text:`, errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            console.warn(`[LegDetailsPanel] Error response JSON:`, errorData);
+          } catch (e) {
+            console.warn(`[LegDetailsPanel] Error response not JSON:`, errorText);
+          }
+          setJourneyDescription(null);
+        }
+      } catch (error) {
+        console.error(`[LegDetailsPanel] Error fetching journey description:`, error);
+        setJourneyDescription(null);
+      } finally {
+        setIsLoadingDescription(false);
+      }
+    };
+
+    fetchJourneyDescription();
   }, [isOpen, leg.journey_id]);
 
   // Process risk level from leg and journey data (now provided by API)
@@ -1372,6 +1421,49 @@ transition-all"
                 </div>
               </div>
             )}
+
+                {/* Journey Description Section */}
+                {(journeyDescription || isLoadingDescription) && (
+                  <div className="pt-4 border-t border-border text-left pb-4">
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">Journey Description</h3>
+                    <div className="relative">
+                      {isLoadingDescription ? (
+                        <div className="w-full h-12 flex items-center justify-center bg-muted rounded">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>
+                        </div>
+                      ) : (
+                        <>
+                          {!showFullDescription ? (
+                            <p className="text-sm text-foreground whitespace-pre-wrap">
+                              {journeyDescription && journeyDescription.length > 100
+                                ? journeyDescription.substring(0, 100) + '...'
+                                : journeyDescription}
+                              {journeyDescription && journeyDescription.length > 100 && (
+                                <button
+                                  onClick={() => setShowFullDescription(true)}
+                                  className="ml-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                                >
+                                  Show more
+                                </button>
+                              )}
+                            </p>
+                          ) : (
+                            <div className="text-sm text-foreground whitespace-pre-wrap">
+                              {journeyDescription}
+                              <button
+                                onClick={() => setShowFullDescription(false)}
+                                className="ml-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                              >
+                                Show less
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 </div>
                 {/* End of Leg Details Content */}
               </div>
