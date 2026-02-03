@@ -820,12 +820,22 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex absolute top-4 right-8 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex 
+absolute top-4 -right-7 -z-1 
+bg-card 
+border border-border 
+rounded-none md:rounded-r-md    ← this is the key change
+p-2 
+min-w-[8px] min-h-[44px] 
+items-center justify-center 
+shadow-md 
+hover:bg-accent 
+transition-all"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
             <svg
-              className="w-5 h-5 text-foreground"
+              className="w-3 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -834,7 +844,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                d="M15 18l-6-6 6-6"
               />
             </svg>
           </button>
@@ -844,12 +854,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && isMinimized && (
           <button
             onClick={() => setIsMinimized(false)}
-            className="hidden md:flex absolute top-4 left-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex absolute top-4 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-2 min-w-[8px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Maximize panel"
             aria-label="Maximize panel"
           >
             <svg
-              className="w-5 h-5 text-foreground"
+              className="w-3 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -858,7 +868,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                d="M13 5l7 7-7 7"
               />
             </svg>
           </button>

@@ -29,12 +29,9 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
   const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  // Close dialog when clicking outside (desktop only)
+  // Close dialog when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only handle click-outside on desktop (md breakpoint = 768px)
-      if (window.innerWidth < 768) return;
-
       const target = event.target as Node;
       // Don't close if clicking on the button or the dialog
       if (buttonRef?.current?.contains(target) || dialogRef.current?.contains(target)) {
@@ -51,6 +48,23 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, onClose, buttonRef]);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
 
   const handleCancel = () => {
     onClose();

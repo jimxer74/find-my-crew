@@ -46,12 +46,9 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
     };
   }, []);
 
-  // Close menu when clicking outside (desktop only)
+  // Close menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only handle click-outside on desktop (md breakpoint = 768px)
-      if (window.innerWidth < 768) return;
-
       const target = event.target as Node;
       // Don't close if clicking on the button or the panel
       if (buttonRef.current?.contains(target) || panelRef.current?.contains(target)) {
@@ -214,27 +211,31 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
   const router = useRouter();
   const pathname = usePathname();
   const isMenuPage = pathname === '/menu';
-  
-  // Get user roles for dashboard link
+
+  // Get user roles and profile data
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [fullName, setFullName] = useState<string>('');
 
   const loadUserRoles = useCallback(async () => {
     if (!user) {
       setUserRoles([]);
+      setFullName('');
       return;
     }
 
     const supabase = getSupabaseBrowserClient();
     const { data } = await supabase
       .from('profiles')
-      .select('roles')
+      .select('roles, full_name')
       .eq('id', user.id)
       .single();
 
-    if (data && data.roles) {
-      setUserRoles(data.roles);
+    if (data) {
+      setUserRoles(data.roles || []);
+      setFullName(data.full_name || '');
     } else {
       setUserRoles([]);
+      setFullName('');
     }
   }, [user]);
 
@@ -260,6 +261,15 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
     onClose?.();
     router.push('/');
     router.refresh();
+  };
+
+  // Helper function to get initials from full name
+  const getInitials = (name: string): string => {
+    if (!name || !name.trim()) return '?';
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
   // Helper function to handle navigation on mobile menu page
@@ -296,18 +306,11 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               onClick={() => handleNavClick('/profile')}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
             >
-              <svg
-                className="w-5 h-5 mr-3 text-muted-foreground"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="font-medium">{t('myProfile')}</span>
+              {/* Avatar with initials */}
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
+                {getInitials(fullName)}
+              </div>
+              <span className="font-medium truncate">{fullName || t('myProfile')}</span>
             </button>
           ) : (
             <Link
@@ -315,18 +318,11 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
               onClick={(e) => handleNavClick('/profile', e)}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
             >
-              <svg
-                className="w-5 h-5 mr-3 text-muted-foreground"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <span className="font-medium">{t('myProfile')}</span>
+              {/* Avatar with initials */}
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
+                {getInitials(fullName)}
+              </div>
+              <span className="font-medium truncate">{fullName || t('myProfile')}</span>
             </Link>
           )}
 
@@ -338,7 +334,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             <>
               {/* For Skipper header */}
               <div className="px-4 py-2">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('forSkipper')}</span>
+                <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('forSkipper')}</span>
               </div>
               {/* My Boats */}
               {isMenuPage ? (
@@ -471,7 +467,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
             <>
               {/* For Crew header */}
               <div className="px-4 py-2">
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{t('forCrew')}</span>
+                <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('forCrew')}</span>
               </div>
               {/* Browse Journeys */}
               {isMenuPage ? (
@@ -632,11 +628,18 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
+          {/* Language Switcher - LAst item */}
+          <div className="px-4 py-2">
+            <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
+          </div>
+          <div className="px-4">
+            <LanguageSwitcher variant="menu-item" onClose={onClose} />
+          </div>
 
           {/* Appearance / Theme */}
           <div className="px-4 py-3">
             <div className="flex items-center justify-between pb-2">
-              <span className="text-sm font-medium text-foreground">{t('appearance')}</span>
+              <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('appearance')}</span>
             </div>
             <div className="flex items-center justify-between">
               <ThemeToggle variant="segmented" />
@@ -799,24 +802,24 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
-
-          {/* Appearance / Theme */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between pb-2">
-              <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('appearance')}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <ThemeToggle variant="segmented"/>
-            </div>
-          </div>
-
-          {/* Language Switcher - First item */}
+          {/* Language Switcher - LAst item */}
           <div className="px-4 py-2">
             <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
           </div>
           <div className="px-4">
             <LanguageSwitcher variant="menu-item" onClose={onClose} />
           </div>
+
+          {/* Appearance / Theme */}
+          <div className="px-4 py-3">
+            <div className="flex items-center justify-between pb-2">
+            <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{t('appearance')}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <ThemeToggle variant="segmented"/>
+            </div>
+          </div>
+
         </>
       )}
     </div>

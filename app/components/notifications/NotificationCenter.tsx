@@ -51,12 +51,9 @@ export function NotificationCenter({
   const router = useRouter();
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close on click outside (desktop only)
+  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only handle click-outside on desktop (md breakpoint = 768px)
-      if (window.innerWidth < 768) return;
-
       const target = event.target as Node;
       // Don't close if clicking on the button or the panel
       if (buttonRef?.current?.contains(target) || panelRef.current?.contains(target)) {

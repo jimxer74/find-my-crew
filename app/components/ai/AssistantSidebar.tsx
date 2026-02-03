@@ -29,12 +29,9 @@ export function AssistantSidebar() {
     }
   }, [isOpen, loadConversations]);
 
-  // Close on click outside (desktop only)
+  // Close on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Only handle click-outside on desktop (md breakpoint = 768px)
-      if (window.innerWidth < 768) return;
-
       const target = event.target as Node;
       // Don't close if clicking on the button or the panel
       if (buttonRef?.current?.contains(target) || panelRef.current?.contains(target)) {
@@ -43,14 +40,14 @@ export function AssistantSidebar() {
       closeAssistant();
     };
 
-    if (isOpen && !isMobile) {
+    if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, isMobile, closeAssistant, buttonRef]);
+  }, [isOpen, closeAssistant, buttonRef]);
 
   // Close on Escape key
   useEffect(() => {
@@ -60,14 +57,14 @@ export function AssistantSidebar() {
       }
     };
 
-    if (isOpen && !isMobile) {
+    if (isOpen) {
       document.addEventListener('keydown', handleKeyDown);
     }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, isMobile, closeAssistant]);
+  }, [isOpen, closeAssistant]);
 
   // Don't render when closed
   if (!isOpen) {
