@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
+import { useSwipeable } from 'react-swipeable';
+
 
 interface ImageCarouselProps {
   images: string[];
@@ -121,10 +123,19 @@ export function ImageCarousel({
 
   const currentImage = images[currentIndex];
 
+  const handlers = useSwipeable({
+    onSwipedLeft: nextImage,
+    onSwipedRight: prevImage,
+    trackMouse: true,        // also enables mouse drag
+    delta: 35,               // sensitivity
+    preventScrollOnSwipe: true,
+  });
+  
+
   return (
     <>
       {/* Main Carousel */}
-      <div className={`relative group ${className}`}>
+      <div className={`relative group ${className}`} {...handlers}>
         {/* Image Container */}
         <div
           //className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden cursor-pointer"
@@ -183,13 +194,13 @@ export function ImageCarousel({
         </div>
 
         {/* Image Counter */}
-        {/*
+        
         {images.length > 1 && (
-          <div className="absolute top-52 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute top-52 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-1 rounded">
             {currentIndex + 1} / {images.length}
           </div>
         )}
-        */} 
+         
 
         {/* Thumbnails */}
         {showThumbnails && images.length > 1 && (
