@@ -10,6 +10,9 @@ import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RequirementsManager } from '@/app/components/manage/RequirementsManager';
 import { ImageUpload } from '@/app/components/ui/ImageUpload';
 import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
+import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
+import { CostModelSelector } from '@/app/components/ui/CostModelSelector';
+import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
@@ -27,6 +30,7 @@ type Journey = {
   end_date: string;
   description: string;
   risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
+  cost_model: CostModel | null;
   skills: string[];
   min_experience_level: ExperienceLevel | null;
   state: JourneyState;
@@ -50,6 +54,7 @@ export default function EditJourneyPage() {
     end_date: '',
     description: '',
     risk_level: null,
+    cost_model: null,
     skills: [],
     min_experience_level: 1,
     state: 'In planning',
@@ -132,6 +137,7 @@ export default function EditJourneyPage() {
         end_date: data.end_date ? new Date(data.end_date).toISOString().split('T')[0] : '',
         description: data.description || '',
         risk_level: riskLevel,
+        cost_model: data.cost_model || null,
         skills: displaySkills,
         min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1,
         state: data.state || 'In planning',
@@ -220,6 +226,7 @@ export default function EditJourneyPage() {
       end_date: formData.end_date || null,
       description: formData.description || null,
       risk_level: formData.risk_level || [],
+      cost_model: formData.cost_model || 'Not defined',
       skills: normalizedSkills,
       min_experience_level: formData.min_experience_level || 1,
       state: formData.state,
@@ -374,16 +381,17 @@ export default function EditJourneyPage() {
           <h1 className="text-2xl font-bold text-card-foreground">Edit Journey</h1>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
               {error}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Journey Name */}
-            <div className="md:col-span-2 md:grid md:grid-cols-3 md:gap-4">
+          {/* Basic Information Section */}
+          <CollapsibleSection title="Basic Information" sectionNumber={1}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Journey Name */}
               <div className="md:col-span-2">
                 <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
                   Journey Name *
@@ -400,6 +408,203 @@ export default function EditJourneyPage() {
                 />
               </div>
 
+              {/* Boat Selection */}
+              <div>
+                <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
+                  Boat *
+                </label>
+                <select
+                  id="boat_id"
+                  name="boat_id"
+                  required
+                  value={formData.boat_id}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                >
+                  <option value="">Select a boat</option>
+                  {boats.map((boat) => (
+                    <option key={boat.id} value={boat.id}>
+                      {boat.name}
+                    </option>
+                  ))}
+                </select>
+                {boats.length === 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    You need to create a boat first before creating a journey.
+                  </p>
+                )}
+              </div>
+
+              {/* Start Date */}
+              <div>
+                <label htmlFor="start_date" className="block text-sm font-medium text-foreground mb-1">
+                  Start Date
+                </label>
+                <input
+                  type="date"
+                  id="start_date"
+                  name="start_date"
+                  value={formData.start_date}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                />
+              </div>
+
+              {/* End Date */}
+              <div>
+                <label htmlFor="end_date" className="block text-sm font-medium text-foreground mb-1">
+                  End Date
+                </label>
+                <input
+                  type="date"
+                  id="end_date"
+                  name="end_date"
+                  value={formData.end_date}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="md:col-span-3">
+                <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  name="description"
+                  rows={4}
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                  placeholder="Describe your journey..."
+                />
+              </div>
+
+              {/* Journey State */}
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Journey State *
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="state"
+                      value="In planning"
+                      checked={formData.state === 'In planning'}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-primary border-border focus:ring-ring"
+                    />
+                    <span className="ml-2 text-sm text-foreground">In planning</span>
+                  </label>
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="state"
+                      value="Published"
+                      checked={formData.state === 'Published'}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-primary border-border focus:ring-ring"
+                    />
+                    <span className="ml-2 text-sm text-foreground">Published</span>
+                  </label>
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="state"
+                      value="Archived"
+                      checked={formData.state === 'Archived'}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-primary border-border focus:ring-ring"
+                    />
+                    <span className="ml-2 text-sm text-foreground">Archived</span>
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Published journeys are visible to everyone. In planning and archived journeys are only visible to you.
+                </p>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Cost Management Section */}
+          <CollapsibleSection title="Cost Management" sectionNumber={2}>
+            <CostModelSelector
+              value={formData.cost_model || null}
+              onChange={(cost_model) => setFormData(prev => ({ ...prev, cost_model }))}
+            />
+          </CollapsibleSection>
+
+          {/* Skills & Experience Section */}
+          <CollapsibleSection title="Skills & Experience" sectionNumber={3}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Risk Level Selection */}
+              <div className="md:col-span-2">
+                <RiskLevelSelector
+                  value={formData.risk_level}
+                  onChange={(risk_level) => {
+                    const singleValue = Array.isArray(risk_level)
+                      ? (risk_level.length > 0 ? risk_level[0] : null)
+                      : risk_level;
+                    setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
+                  }}
+                  singleSelect={true}
+                />
+              </div>
+
+              {/* Minimum Required Experience Level */}
+              <div className="md:col-span-2">
+                <SkillLevelSelector
+                  value={formData.min_experience_level}
+                  onChange={(min_experience_level) => setFormData(prev => ({ ...prev, min_experience_level }))}
+                />
+              </div>
+
+              {/* Skills */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Required Skills
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {(() => {
+                    const allSkills = [
+                      ...skillsConfig.general,
+                    ];
+                    const formatSkillName = (name: string) => {
+                      return name
+                        .split('_')
+                        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ');
+                    };
+                    return allSkills.map((skill) => {
+                      const displayName = formatSkillName(skill.name);
+                      return (
+                        <label key={skill.name} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                          <input
+                            type="checkbox"
+                            checked={formData.skills.includes(displayName)}
+                            onChange={(e) => {
+                              const newSkills = e.target.checked
+                                ? [...formData.skills, displayName]
+                                : formData.skills.filter(s => s !== displayName);
+                              setFormData(prev => ({ ...prev, skills: newSkills }));
+                            }}
+                            className="rounded border-border"
+                          />
+                          <span className="text-sm text-foreground">{displayName}</span>
+                        </label>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Boat & Images Section */}
+          <CollapsibleSection title="Boat & Images" sectionNumber={4}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Boat Selection */}
               <div className="md:col-span-1">
                 <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
@@ -428,229 +633,72 @@ export default function EditJourneyPage() {
               </div>
             </div>
 
-            {/* Risk Level Selection */}
-            <div className="md:col-span-2">
-              <RiskLevelSelector
-                value={formData.risk_level}
-                onChange={(risk_level) => {
-                  const singleValue = Array.isArray(risk_level) 
-                    ? (risk_level.length > 0 ? risk_level[0] : null)
-                    : risk_level;
-                  setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
-                }}
-                singleSelect={true}
-              />
-            </div>
+            {/* Journey Images Section */}
+            {journeyId && (
+              <div className="border-t border-border pt-4 mt-4">
+                <h3 className="text-lg font-semibold text-foreground mb-4">Journey Images</h3>
 
-            {/* Minimum Required Experience Level */}
-            <div className="md:col-span-2">
-              <SkillLevelSelector
-                value={formData.min_experience_level}
-                onChange={(min_experience_level) => setFormData(prev => ({ ...prev, min_experience_level }))}
-              />
-            </div>
-
-            {/* Skills */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Required Skills
-              </label>
-              <div className="flex flex-wrap gap-3">
-                {(() => {
-                  const allSkills = [
-                    ...skillsConfig.general,
-                  ];
-                  const formatSkillName = (name: string) => {
-                    return name
-                      .split('_')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                      .join(' ');
-                  };
-                  return allSkills.map((skill) => {
-                    const displayName = formatSkillName(skill.name);
-                    return (
-                      <label key={skill.name} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.skills.includes(displayName)}
-                          onChange={(e) => {
-                            const newSkills = e.target.checked
-                              ? [...formData.skills, displayName]
-                              : formData.skills.filter(s => s !== displayName);
-                            setFormData(prev => ({ ...prev, skills: newSkills }));
-                          }}
-                          className="rounded border-border"
-                        />
-                        <span className="text-sm text-foreground">{displayName}</span>
-                      </label>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-
-            {/* Start Date */}
-            <div>
-              <label htmlFor="start_date" className="block text-sm font-medium text-foreground mb-1">
-                Start Date
-              </label>
-              <input
-                type="date"
-                id="start_date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-              />
-            </div>
-
-            {/* End Date */}
-            <div>
-              <label htmlFor="end_date" className="block text-sm font-medium text-foreground mb-1">
-                End Date
-              </label>
-              <input
-                type="date"
-                id="end_date"
-                name="end_date"
-                value={formData.end_date}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-              />
-            </div>
-
-            {/* Description */}
-            <div className="md:col-span-2">
-              <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                rows={4}
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                placeholder="Describe your journey..."
-              />
-            </div>
-
-            {/* Journey State */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-foreground mb-2">
-                Journey State *
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
-                  <input
-                    type="radio"
-                    name="state"
-                    value="In planning"
-                    checked={formData.state === 'In planning'}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-primary border-border focus:ring-ring"
+                {/* Image Upload */}
+                <div className="mb-4">
+                  <ImageUpload
+                    onUpload={handleImageUpload}
+                    onError={(error) => setError(error)}
+                    maxFiles={10}
+                    maxSize={5}
+                    userId={user?.id || ''}
+                    bucketName="journey-images"
                   />
-                  <span className="ml-2 text-sm text-foreground">In planning</span>
-                </label>
-                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
-                  <input
-                    type="radio"
-                    name="state"
-                    value="Published"
-                    checked={formData.state === 'Published'}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-primary border-border focus:ring-ring"
-                  />
-                  <span className="ml-2 text-sm text-foreground">Published</span>
-                </label>
-                <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
-                  <input
-                    type="radio"
-                    name="state"
-                    value="Archived"
-                    checked={formData.state === 'Archived'}
-                    onChange={handleChange}
-                    className="w-4 h-4 text-primary border-border focus:ring-ring"
-                  />
-                  <span className="ml-2 text-sm text-foreground">Archived</span>
-                </label>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Published journeys are visible to everyone. In planning and archived journeys are only visible to you.
-              </p>
-            </div>
-          </div>
-
-          {/* Requirements Manager */}
-          {journeyId && (
-            <RequirementsManager
-              journeyId={journeyId}
-              onRequirementsChange={() => {
-                // Optionally reload journey data or refresh UI
-              }}
-            />
-          )}
-
-          {/* Journey Images Section */}
-          {journeyId && (
-            <div className="border-t border-border pt-4 mt-4">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Journey Images</h3>
-
-              {/* Image Upload */}
-              <div className="mb-4">
-                <ImageUpload
-                  onUpload={handleImageUpload}
-                  onError={(error) => setError(error)}
-                  maxFiles={10}
-                  maxSize={5}
-                  userId={user?.id || ''}
-                  bucketName="journey-images"
-                />
-              </div>
-
-              {/* Image Carousel Preview */}
-              {journeyImages.length > 0 && (
-                <div className="space-y-4">
-                  {/*<ImageCarousel
-                    images={journeyImages}
-                    alt="Journey"
-                    className="w-full"
-                    showThumbnails={true}
-                    autoPlay={false}
-                  />*/}
-                  <div className="flex flex-wrap gap-2">
-                    {journeyImages.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
-                        <Image
-                          src={imageUrl}
-                          alt={`Journey image ${index + 1}`}
-                          width={80}
-                          height={80}
-                          className="w-32 h-24 object-cover rounded-md border border-border"
-                        />
-                        <button
-                          onClick={() => handleRemoveImage(index)}
-                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          aria-label={`Remove image ${index + 1}`}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {journeyImages.length} image(s) uploaded
-                  </p>
                 </div>
-              )}
 
-              {journeyImages.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4">
-                  No images uploaded yet. Add images to showcase your journey.
-                </p>
-              )}
-            </div>
-          )}
+                {/* Image Preview */}
+                {journeyImages.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                      {journeyImages.map((imageUrl, index) => (
+                        <div key={index} className="relative group">
+                          <Image
+                            src={imageUrl}
+                            alt={`Journey image ${index + 1}`}
+                            width={80}
+                            height={80}
+                            className="w-32 h-24 object-cover rounded-md border border-border"
+                          />
+                          <button
+                            onClick={() => handleRemoveImage(index)}
+                            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            aria-label={`Remove image ${index + 1}`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {journeyImages.length} image(s) uploaded
+                    </p>
+                  </div>
+                )}
+
+                {journeyImages.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4">
+                    No images uploaded yet. Add images to showcase your journey.
+                  </p>
+                )}
+              </div>
+            )}
+          </CollapsibleSection>
+
+          {/* Requirements Manager Section */}
+          <CollapsibleSection title="Requirements" sectionNumber={5}>
+            {journeyId && (
+              <RequirementsManager
+                journeyId={journeyId}
+                onRequirementsChange={() => {
+                  // Optionally reload journey data or refresh UI
+                }}
+              />
+            )}
+          </CollapsibleSection>
 
           {/* Form Actions */}
           <div className="flex justify-between items-center pt-4 border-t border-border mt-6">

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
+import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -14,6 +15,8 @@ import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIn
 import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '../ui/MatchBadge';
+import { CostModelBadge } from '../ui/CostModelBadge';
+import { CostModelIcon } from '../ui/CostModelIcon';
 import { matchRiskLevel } from '@/app/lib/skillMatching';
 import { ImageCarousel } from '../ui/ImageCarousel';
 
@@ -94,6 +97,8 @@ type Leg = {
   crew_needed: number | null;
   leg_risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
   journey_risk_level: ('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null;
+  cost_model: CostModel | null;
+  journey_images: string[];
   skills: string[];
   boat_id: string;
   boat_name: string;
@@ -117,7 +122,6 @@ type Leg = {
     lat: number;
     name: string | null;
   } | null;
-  journey_images?: string[]; // New field for journey images
 };
 
 type LegDetailsPanelProps = {
@@ -137,7 +141,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
   const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
   const [journeyImages, setJourneyImages] = useState<string[]>([]);
-  const [isLoadingImages, setIsLoadingImages] = useState(false);
   const [journeyDescription, setJourneyDescription] = useState<string | null>(null);
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -214,39 +217,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   
   
 
-  // Fetch journey images when panel opens
+  // Initialize journey images from leg data when leg changes
   useEffect(() => {
-    if (!isOpen || !leg.journey_id) {
+    if (leg.journey_images && leg.journey_images.length > 0) {
+      setJourneyImages(leg.journey_images);
+    } else {
       setJourneyImages([]);
-      return;
     }
-
-    const fetchJourneyImages = async () => {
-      setIsLoadingImages(true);
-      try {
-        const response = await fetch(`/api/journeys/${leg.journey_id}/images`, {
-          signal: AbortSignal.timeout(10000), // 10 second timeout
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const images = data.images || [];
-          setJourneyImages(images);
-          console.log(`[LegDetailsPanel] Fetched ${images.length} journey images for journey ${leg.journey_id}`);
-        } else {
-          console.warn(`[LegDetailsPanel] Failed to fetch journey images: ${response.status}`);
-          setJourneyImages([]);
-        }
-      } catch (error) {
-        console.error(`[LegDetailsPanel] Error fetching journey images:`, error);
-        setJourneyImages([]);
-      } finally {
-        setIsLoadingImages(false);
-      }
-    };
-
-    fetchJourneyImages();
-  }, [isOpen, leg.journey_id]);
+  }, [leg.journey_images]);
 
   // Fetch journey description when panel opens
   useEffect(() => {
@@ -1090,22 +1068,29 @@ transition-all"
                   <div className="space-y-4">
                     {/* Combined Image Carousel */}
                     <div className="relative w-full h-60 overflow-hidden rounded-b-lg">
-                      {isLoadingImages ? (
-                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
-                        </div>
-                      ) : (
-                        <ImageCarousel
-                          images={[
-                            ...(leg.boat_image_url ? [leg.boat_image_url] : []),
-                            ...journeyImages
-                          ]}
-                          alt={`${leg.boat_name} and journey images`}
-                          className="object-cover object-bottom"
-                          showThumbnails={true}
-                          autoPlay={false}
-                        />
-                      )}
+                      <ImageCarousel
+                        images={[
+                          ...(leg.boat_image_url ? [leg.boat_image_url] : []),
+                          ...journeyImages
+                        ]}
+                        alt={`${leg.boat_name} and journey images`}
+                        className="object-cover object-bottom"
+                        showThumbnails={true}
+                        autoPlay={false}
+                      />
+
+                      {/* Match Percentage Badge Only */}
+                      <div className="absolute top-3 left-3">
+                        {/* Match Percentage Badge */}
+                        {leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                          <MatchBadge
+                            percentage={leg.skill_match_percentage}
+                            showLabel={true}
+                            size="sm"
+                            className="shadow-lg"
+                          />
+                        )}
+                      </div>
                     </div>
 
                   </div>
@@ -1114,6 +1099,19 @@ transition-all"
                   <div className="relative w-full h-48 overflow-hidden rounded-lg bg-muted">
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-sm text-muted-foreground">No images available</span>
+                    </div>
+
+                    {/* Match Percentage Badge for fallback image */}
+                    <div className="absolute top-3 left-3">
+                      {/* Match Percentage Badge */}
+                      {leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                        <MatchBadge
+                          percentage={leg.skill_match_percentage}
+                          showLabel={true}
+                          size="sm"
+                          className="shadow-lg"
+                        />
+                      )}
                     </div>
                   </div>
                 )}
@@ -1362,47 +1360,51 @@ transition-all"
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
               <div className="pt-2 border-t border-border text-left">
-                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
-                <div className="flex gap-3 items-start pb-2">
-                  {/* Owner Avatar */}
-                  {(leg.owner_name || leg.owner_image_url) && (
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      {leg.owner_image_url ? (
-                        <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-border">
-                          <Image
-                            src={leg.owner_image_url}
-                            alt={leg.owner_name || 'Owner'}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center">
-                          <svg
-                            className="w-8 h-8 text-muted-foreground"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                <div className="grid grid-cols-2 gap-4 mb-2">
+                  <h3 className="text-xs font-semibold text-muted-foreground">Skipper / Owner</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-6 items-start pb-2">
+                  {/* Owner Avatar and Name */}
+                  <div className="flex items-start gap-3">
+                    {(leg.owner_name || leg.owner_image_url) && (
+                      <>
+                        {leg.owner_image_url ? (
+                          <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-border flex-shrink-0">
+                            <Image
+                              src={leg.owner_image_url}
+                              alt={leg.owner_name || 'Owner'}
+                              fill
+                              className="object-cover"
                             />
-                          </svg>
-                        </div>
-                      )}
-                      {leg.owner_name && (
-                        <div className="flex flex-col">
-                          <p className="text-xs font-medium text-foreground">Skipper:</p>
-                          <p className="text-xs text-muted-foreground max-w-[100px] truncate" title={leg.owner_name}>
-                            {leg.owner_name}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-muted border-2 border-border flex items-center justify-center flex-shrink-0">
+                            <svg
+                              className="w-8 h-8 text-muted-foreground"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                        {leg.owner_name && (
+                          <div className="flex flex-col justify-center">
+                            <p className="text-xs font-medium text-foreground">Skipper:</p>
+                            <p className="text-xs text-muted-foreground max-w-[150px] truncate" title={leg.owner_name}>
+                              {leg.owner_name}
+                            </p>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
                 <div className="pt-2 border-t border-border text-left">
                   <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat</h3>
@@ -1432,6 +1434,34 @@ transition-all"
                 </div>
             )}
 
+            {/* Journey Costs Section */}
+            {leg.cost_model && leg.cost_model !== 'Not defined' && (
+              <div className="pt-2 border-t border-border text-left">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-3">Journey costs</h3>
+                <div className="flex items-start gap-3">
+                  <div className="relative w-16 h-16 flex-shrink-0">
+                    <Image
+                       src={getCostModelConfig(leg.cost_model).icon}
+                       alt={getCostModelConfig(leg.cost_model).displayName}
+                       fill
+                       className="object-contain"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-foreground font-medium font-semibold">
+                      {getCostModelConfig(leg.cost_model).displayName}
+                    </p>
+                    {/*<p className="text-xs text-muted-foreground mb-2">
+                      {getCostModelConfig(leg.cost_model).description}
+                    </p>*/}
+                    <p className="text-xs text-muted-foreground italic">
+                      {getCostModelConfig(leg.cost_model).details}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
                 {/* Journey Description Section */}
                 {(journeyDescription || isLoadingDescription) && (
                   <div className="pt-4 border-t border-border text-left pb-4">
@@ -1446,7 +1476,7 @@ transition-all"
                       ) : (
                         <>
                           {!showFullDescription ? (
-                            
+
                             <p className="text-sm text-foreground whitespace-pre-wrap">
                               {journeyDescription && journeyDescription.length > 100
                                 ? journeyDescription.substring(0, 100) + '...'

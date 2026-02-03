@@ -77,6 +77,8 @@ export async function GET(request: NextRequest) {
           id,
           name,
           skills,
+          cost_model,
+          images,
           boat_id,
           boats!inner (
             id,
@@ -187,10 +189,10 @@ export async function GET(request: NextRequest) {
       // This ensures compatibility even if migration hasn't been run yet
       const { normalizeSkillNames } = require('@/app/lib/skillUtils');
       // Type assertion for nested Supabase join
-      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
+      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
       const journeySkills = normalizeSkillNames(journey?.skills || []);
       const legSkills = normalizeSkillNames(leg.skills || []);
-      
+
       const combinedSkills = [
         ...new Set([
           ...journeySkills,
@@ -237,6 +239,7 @@ export async function GET(request: NextRequest) {
         end_date: leg.end_date,
         crew_needed: leg.crew_needed,
         risk_level: leg.risk_level,
+        cost_model: journey?.cost_model || null,
         skills: combinedSkills,
         boat_id: journey?.boats?.id || '',
         boat_name: journey?.boats?.name || 'Unknown Boat',
@@ -252,6 +255,7 @@ export async function GET(request: NextRequest) {
         min_experience_level: leg.min_experience_level,
         skill_match_percentage: skillMatchPercentage,
         experience_level_matches: experienceLevelMatches,
+        journey_images: journey?.images || [],
         start_waypoint: transformWaypoint(startWaypoint),
         end_waypoint: transformWaypoint(endWaypoint),
       };

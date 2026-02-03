@@ -49,6 +49,20 @@ begin
   end if;
 end$$;
 
+-- Cost model enum
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'cost_model') then
+    create type cost_model as enum (
+      'Shared contribution',
+      'Owner covers all costs',
+      'Crew pays a fee',
+      'Delivery/paid crew',
+      'Not defined'
+    );
+  end if;
+end$$;
+
 -- Sailboat category enum
 do $$
 begin
@@ -202,6 +216,7 @@ create table if not exists public.journeys (
   risk_level   risk_level[] default '{}',
   skills       text[] default '{}',  -- Required skills for this journey (array of skill names)
   min_experience_level integer,  -- Minimum required experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
+  cost_model   cost_model default 'Not defined',
   state        journey_state not null default 'In planning',
   is_ai_generated boolean default false,
   ai_prompt    text,

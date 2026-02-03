@@ -44,6 +44,8 @@ export async function GET(
           name,
           risk_level,
           min_experience_level,
+          cost_model,
+          images,
           skills,
           state,
           boats (
@@ -170,6 +172,8 @@ export async function GET(
       crew_needed: data.crew_needed,
       leg_risk_level: data.risk_level,
       journey_risk_level: journeyData?.risk_level ? [journeyData.risk_level] : null,
+      cost_model: journeyData?.cost_model || null,
+      journey_images: journeyData?.images || [],
       skills: normalizeSkillNames(combinedSkills),
       boat_id: boatData?.id || '',
       boat_name: boatData?.name || '',
