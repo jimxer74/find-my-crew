@@ -240,6 +240,8 @@ export async function POST(request: NextRequest) {
         suggestion.profileImageUrl = facebookData.profilePictureUrl;
       }
 
+
+      console.log('AI profile generation successful:', suggestion);
       return NextResponse.json({
         success: true,
         suggestion,
@@ -252,6 +254,7 @@ export async function POST(request: NextRequest) {
       // Return a fallback suggestion based on basic Facebook data
       const fallbackSuggestion = createFallbackSuggestion(facebookData);
 
+      console.log('AI profile generation fallback successful:', fallbackSuggestion);
       return NextResponse.json({
         success: true,
         suggestion: fallbackSuggestion,
