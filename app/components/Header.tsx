@@ -60,6 +60,10 @@ export function Header() {
       if (target.closest('[data-navigation-menu]')) {
         return;
       }
+      // Skip if click is from dialog close buttons
+      if (target.closest('button[aria-label="Close"]')) {
+        return;
+      }
       // Check if click is on a Link or inside a Link (Next.js Link renders as <a>)
       const link = target.closest('a[href]');
       if (link) {

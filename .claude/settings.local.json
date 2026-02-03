@@ -11,7 +11,8 @@
       "Bash(npm run lint)",
       "Bash(where npm:*)",
       "Bash(cmd.exe /c \"npm run build\")",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(ls:*)"
     ]
   }
 }
