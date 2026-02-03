@@ -18,7 +18,7 @@ interface NotificationCenterProps {
   onDelete: (id: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
-  buttonRef?: React.RefObject<HTMLButtonElement>;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 }
 
 interface NotificationPageContentProps {

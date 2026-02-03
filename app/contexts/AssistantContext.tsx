@@ -28,7 +28,7 @@ interface AssistantContextType extends AssistantState {
   openAssistant: () => void;
   closeAssistant: () => void;
   toggleAssistant: () => void;
-  buttonRef: RefObject<HTMLButtonElement>;
+  buttonRef: RefObject<HTMLButtonElement | null>;
   setCurrentConversation: (id: string | null) => void;
   sendMessage: (message: string) => Promise<void>;
   retryLastMessage: () => Promise<void>;

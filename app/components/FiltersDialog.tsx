@@ -16,7 +16,7 @@ import { ExperienceLevel } from '@/app/types/experience-levels';
 type FiltersDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  buttonRef?: React.RefObject<HTMLButtonElement>;
+  buttonRef?: React.RefObject<HTMLButtonElement | null>;
 };
 
 type FiltersPageContentProps = {
