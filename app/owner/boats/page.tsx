@@ -99,85 +99,114 @@ export default function BoatsPage() {
           />
         ) : (
           <>
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-              <div className="mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
-                <p className="text-sm sm:text-base text-muted-foreground">{t('subtitle')}</p>
+<main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+  <div className="mb-6 sm:mb-8">
+    <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+    <p className="text-sm sm:text-base text-muted-foreground">{t('subtitle')}</p>
+  </div>
+
+  <div className="mb-6 sm:mb-8">
+    <button
+      onClick={() => setIsWizardOpen(true)}
+      className="bg-primary text-primary-foreground px-5 sm:px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity min-h-[44px] inline-flex items-center justify-center"
+    >
+      {t('addNew')}
+    </button>
+  </div>
+
+  {boats.length === 0 ? (
+    <div className="bg-card rounded-lg shadow p-6 sm:p-8 text-center">
+      <p className="text-muted-foreground mb-4 text-sm sm:text-base">{t('noBoatsYet')}</p>
+      <button
+        onClick={() => setIsWizardOpen(true)}
+        className="text-primary hover:text-primary/90 font-medium text-sm sm:text-base"
+      >
+        {t('addFirstBoat')}
+      </button>
+    </div>
+  ) : (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+      {boats.map((boat) => (
+        <div
+          key={boat.id}
+          className="bg-card rounded-lg shadow-md overflow-hidden flex flex-col h-full min-h-[180px]"
+        >
+          <div className="flex flex-row flex-1">
+            {/* Image – always on left */}
+            {boat.images && boat.images.length > 0 ? (
+              <div className="flex-shrink-0 w-32 sm:w-36 md:w-40">
+                <Image
+                  src={boat.images[0]}
+                  alt={boat.name}
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              </div>
+            ) : (
+              <div className="flex-shrink-0 w-32 sm:w-36 md:w-40 bg-muted flex items-center justify-center">
+                <span className="text-muted-foreground text-xl font-medium">
+                  {boat.name?.slice(0, 2).toUpperCase() || '?'}
+                </span>
+              </div>
+            )}
+
+            {/* Content */}
+            <div className="flex-1 flex flex-col p-4 sm:p-5">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-card-foreground mb-1.5 line-clamp-1">
+                  {boat.name}
+                </h3>
+                <div className="text-sm text-muted-foreground space-y-1">
+                  <p className="line-clamp-1">{boat.type}</p>
+                  {boat.make && boat.model && (
+                    <p className="line-clamp-1">
+                      {boat.make} {boat.model}
+                    </p>
+                  )}
+                  {boat.home_port && (
+                    <p className="line-clamp-1">
+                      {t('homePort')}: {boat.home_port}
+                    </p>
+                  )}
+                </div>
               </div>
 
-              <div className="mb-4 sm:mb-6">
+              {/* Edit button – bottom, centered */}
+              <div className="pt-3 mt-auto border-t border-border">
                 <button
-                  onClick={() => setIsWizardOpen(true)}
-                  className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 sm:py-3 min-h-[44px] rounded-lg transition-opacity font-medium inline-flex items-center justify-center hover:opacity-90"
+                  onClick={() => {
+                    setEditingBoatId(boat.id);
+                    setIsModalOpen(true);
+                  }}
+                  className="mx-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  title="Edit boat"
+                  aria-label="Edit boat"
                 >
-                  {t('addNew')}
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                  <span>{t('edit')}</span>
                 </button>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                {boats.length === 0 ? (
-                  <div className="bg-card rounded-lg shadow p-6 sm:p-8 text-center">
-                    <p className="text-muted-foreground mb-4 text-sm sm:text-base">{t('noBoatsYet')}</p>
-                    <button
-                      onClick={() => setIsWizardOpen(true)}
-                      className="font-medium text-sm sm:text-base text-primary hover:opacity-80 min-h-[44px] inline-flex items-center justify-center"
-                    >
-                      {t('addFirstBoat')}
-                    </button>
-                  </div>
-                ) : (
-                  boats.map((boat) => (
-                    <div key={boat.id} className="bg-card rounded-lg shadow-md p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        {/* Boat Image */}
-                        {boat.images && boat.images.length > 0 && (
-                          <div className="flex-shrink-0 w-full sm:w-32">
-                            <Image
-                              src={boat.images[0]}
-                              alt={boat.name}
-                              width={128}
-                              height={128}
-                              className="w-full sm:w-32 h-32 object-cover rounded-lg border border-border"
-                              unoptimized
-                            />
-                          </div>
-                        )}
-
-                        {/* Boat Details */}
-                        <div className="flex-1 min-h-[128px] sm:h-32 flex flex-col justify-between">
-                          <div>
-                            <h3 className="text-lg sm:text-xl font-semibold text-card-foreground mb-2">{boat.name}</h3>
-                            <div className="text-xs sm:text-sm text-muted-foreground space-y-1">
-                              <p>{boat.type}</p>
-                              {boat.make && <p>{boat.make} {boat.model}</p>}
-                              {boat.home_port && <p>{t('homePort')}: {boat.home_port}</p>}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingBoatId(boat.id);
-                            setIsModalOpen(true);
-                          }}
-                          className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] px-2 py-2 sm:py-0"
-                        >
-                          {t('editBoat')}
-                        </button>
-                        <span className="hidden sm:inline text-border">|</span>
-                        <Link
-                          href={`/owner/boats/${boat.id}/journeys`}
-                          className="font-medium text-sm text-primary hover:opacity-80 min-h-[44px] flex items-center px-2 py-2 sm:py-0"
-                        >
-                          {t('viewJourneys')}
-                        </Link>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </main>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )}
+</main>
             <Footer />
           </>
         )}

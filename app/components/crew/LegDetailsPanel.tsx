@@ -1108,21 +1108,6 @@ transition-all"
                       )}
                     </div>
 
-                    {/* Image Source Labels */}
-                    {/*
-                    {(leg.boat_image_url && journeyImages && journeyImages.length > 0) && (
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-primary rounded-full" />
-                          Boat Image
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-secondary rounded-full" />
-                          Journey Images
-                        </span>
-                      </div>
-                    )}
-                    */}
                   </div>
                 ) : (
                   // Fallback when no images available
@@ -1376,14 +1361,14 @@ transition-all"
 
             {/* Boat Info - Only show if profile*/}
             {profileStatus?.exists && (
-              <div className="pt-4 border-t border-border text-left pb-4">
+              <div className="pt-4 border-t border-border text-left pb-2">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Skipper / Owner</h3>
-                <div className="flex gap-3 items-start">
+                <div className="flex gap-3 items-start pb-2">
                   {/* Owner Avatar */}
                   {(leg.owner_name || leg.owner_image_url) && (
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-4 flex-shrink-0">
                       {leg.owner_image_url ? (
-                        <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-border">
+                        <div className="relative w-16 h-16 rounded-lg overflow-hidden border-2 border-border">
                           <Image
                             src={leg.owner_image_url}
                             alt={leg.owner_name || 'Owner'}
@@ -1419,7 +1404,32 @@ transition-all"
                     </div>
                   )}
                 </div>
-              </div>
+                <div className="pt-2 border-t border-border text-left">
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat</h3>
+                  <div className="flex gap-4 items-start">
+                    <div className="flex items-center gap-2 flex-shrink-0 relative w-16 h-16 rounded-full">
+                      <Image
+                        src={leg?.boat_image_url || ''}
+                        alt={leg?.boat_name || 'Boat'}
+                        fill
+                        className="object-cover w-16 h-16 rounded-lg"
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-foreground font-medium font-semibold">
+                        {leg?.boat_name || 'Boat'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {leg?.boat_type || 'Boat type'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {leg?.boat_make || 'Boat make'}
+                        {leg?.boat_model || 'Boat model'}
+                      </p>
+                    </div>
+                   </div>
+                  </div>
+                </div>
             )}
 
                 {/* Journey Description Section */}
