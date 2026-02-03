@@ -102,6 +102,8 @@ function parseAIResponse(text: string): ProfileSuggestion {
   // Try to extract JSON from the response (handle potential markdown wrapping)
   let jsonText = text.trim();
 
+  console.log('API-GENERATE-PROFILE: AI response:', jsonText);
+
   // Remove markdown code blocks if present
   if (jsonText.startsWith('```json')) {
     jsonText = jsonText.slice(7);

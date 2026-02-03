@@ -56,4 +56,4 @@ You MUST read the overview resource to understand the complete workflow. The inf
 1. **NEVER** use fixed full-screen overlays (`fixed inset-0`) that cover the header
 2. **ALWAYS** render page content below the header, not on top of it
 3. For multi-step wizards or forms, replace the main content area while keeping the header visible
-4. Modal dialogs for editing (like `BoatFormModal`) are acceptable as they are temporary overlays, but full-page experiences should keep the header visible
+4. **PROPOSE** generalization and creation or refactoring existing functionalities and ui into reusable components
