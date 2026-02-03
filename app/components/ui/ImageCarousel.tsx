@@ -129,7 +129,7 @@ export function ImageCarousel({
         <div
           //className="relative w-full h-64 sm:h-80 md:h-96 overflow-hidden cursor-pointer"
           className="relative w-full h-60 overflow-hidden"
-          onClick={images.length > 1 ? openModal : undefined}
+          //onClick={images.length > 1 ? openModal : undefined}
         >
           <Image
             src={currentImage}
@@ -146,12 +146,13 @@ export function ImageCarousel({
           />
 
           {/* Overlay for single image */}
-          {/*}
+          {/*
           {images.length === 1 && (
             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
               <ZoomIn className="w-8 h-8 text-white" />
             </div>
-          )}*/}
+          )}
+          */}
 
           {/* Navigation Arrows */}
           {images.length > 1 && (
@@ -161,7 +162,7 @@ export function ImageCarousel({
                   e.stopPropagation();
                   prevImage();
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/75"
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/75 cursor-pointer"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -171,21 +172,24 @@ export function ImageCarousel({
                   e.stopPropagation();
                   nextImage();
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/75"
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-all hover:bg-black/75 cursor-pointer"
                 aria-label="Next image"
               >
                 <ChevronRight className="w-6 h-6" />
               </button>
             </>
+            
           )}
         </div>
 
         {/* Image Counter */}
+        {/*
         {images.length > 1 && (
-          <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute top-52 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
             {currentIndex + 1} / {images.length}
           </div>
         )}
+        */} 
 
         {/* Thumbnails */}
         {showThumbnails && images.length > 1 && (
@@ -194,7 +198,7 @@ export function ImageCarousel({
               <button
                 key={index}
                 onClick={() => goToImage(index)}
-                className={`flex-shrink-0 relative w-20 h-16 rounded-md overflow-hidden border-2 transition-all ${
+                className={`flex-shrink-0 relative w-20 h-16 rounded-md overflow-hidden border-2 transition-all cursor-pointer${
                   index === currentIndex ? 'border-primary' : 'border-transparent hover:border-muted'
                 }`}
                 aria-label={`View image ${index + 1}`}
@@ -227,7 +231,7 @@ export function ImageCarousel({
             {/* Close Button */}
             <button
               onClick={closeModal}
-              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors"
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors cursor-pointer"
               aria-label="Close modal"
             >
               <X className="w-8 h-8" />

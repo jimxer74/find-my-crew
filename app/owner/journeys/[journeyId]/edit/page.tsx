@@ -611,13 +611,13 @@ export default function EditJourneyPage() {
               {/* Image Carousel Preview */}
               {journeyImages.length > 0 && (
                 <div className="space-y-4">
-                  <ImageCarousel
+                  {/*<ImageCarousel
                     images={journeyImages}
                     alt="Journey"
                     className="w-full"
                     showThumbnails={true}
                     autoPlay={false}
-                  />
+                  />*/}
                   <div className="flex flex-wrap gap-2">
                     {journeyImages.map((imageUrl, index) => (
                       <div key={index} className="relative group">
@@ -625,8 +625,8 @@ export default function EditJourneyPage() {
                           src={imageUrl}
                           alt={`Journey image ${index + 1}`}
                           width={80}
-                          height={64}
-                          className="w-20 h-16 object-cover rounded-md border border-border"
+                          height={80}
+                          className="w-32 h-24 object-cover rounded-md border border-border"
                         />
                         <button
                           onClick={() => handleRemoveImage(index)}
