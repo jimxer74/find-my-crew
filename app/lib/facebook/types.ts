@@ -70,11 +70,23 @@ export interface ProfileSuggestion {
   userDescription: string | null; // Free-text description of the user
   certifications: string | null;
   sailingPreferences: string | null;
-  skills: string[];
+  
+  skills: { skill: 
+    'safety_and_mob' | 
+    'heavy_weather'|
+    'night_sailing'|
+    'watch_keeping'|
+    'navigation'|
+    'sailing_experience'|
+    'certifications'|
+    'physical_fitness'|
+    'technical_skills'|
+    '|first_aid'|
+    'seasickness_management'; description: string }[];
+
   riskLevel: string[];
   confidence: {
     sailingExperience: 'high' | 'medium' | 'low' | 'none';
-    skills: 'high' | 'medium' | 'low' | 'none';
     overall: 'high' | 'medium' | 'low' | 'none';
   };
   reasoning: string; // AI's explanation of how suggestions were derived

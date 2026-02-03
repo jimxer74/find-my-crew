@@ -147,11 +147,13 @@ export function ProfileCreationWizard() {
 
       // Apply suggestions to form
       const sugg = result.suggestion as ProfileSuggestion;
+
       // Convert skills from string[] to SkillEntry[]
-      const skillEntries: SkillEntry[] = (sugg.skills || []).map((skill: string) => ({
-        skill_name: skill,
-        description: '',
+      const skillEntries: SkillEntry[] = (sugg.skills || []).map((skill: { skill: string; description: string }) => ({
+        skill_name: skill.skill,
+        description: skill.description,
       }));
+
       setFormData({
         username: sugg.username || '',
         full_name: sugg.fullName || '',

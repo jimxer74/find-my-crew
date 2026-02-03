@@ -21,7 +21,7 @@ PROFILE FIELDS TO SUGGEST:
 - userDescription: Free text description of who the user is, their background, and interests
 - certifications: Any sailing certifications mentioned, or null
 - sailingPreferences: What type of sailing they might prefer, or null
-- skills: Array of relevant skills (e.g., "Navigation", "Weather Reading", "First Aid", "Cooking", "Communication")
+- skills: Array of relevant skills. Use these exact skill categories and add a text description per each of the skill (safety_and_mob, heavy_weather, night_sailing, watch_keeping, navigation, sailing_experience, certifications, physical_fitness)
 - riskLevel: Array from ["Coastal sailing", "Offshore sailing", "Extreme sailing"] based on apparent comfort level
 
 CONFIDENCE LEVELS:
@@ -44,11 +44,23 @@ Respond ONLY with a valid JSON object (no markdown, no explanation) in this exac
   "userDescription": "string or null",
   "certifications": "string or null",
   "sailingPreferences": "string or null",
-  "skills": ["string"],
+
+  "skills": [{"skill": 
+    "safety_and_mob"|
+    "heavy_weather"|
+    "night_sailing"|
+    "watch_keeping"|
+    "navigation"|
+    "sailing_experience"|
+    "certifications"|
+    "physical_fitness"|
+    "technical_skills"|
+    "first_aid"|"seasickness_management", "description": "string"}],
+
   "riskLevel": ["string"],
+
   "confidence": {
     "sailingExperience": "high|medium|low|none",
-    "skills": "high|medium|low|none",
     "overall": "high|medium|low|none"
   },
   "reasoning": "Brief explanation of how you derived these suggestions"
@@ -61,7 +73,7 @@ function buildPrompt(facebookData: FacebookUserData): string {
       name: facebookData.profile.name,
       firstName: facebookData.profile.first_name,
       lastName: facebookData.profile.last_name,
-      email: facebookData.profile.email,
+      //email: facebookData.profile.email,
     } : null,
     profilePictureUrl: facebookData.profilePictureUrl,
     recentPosts: facebookData.posts.slice(0, 20).map(post => ({
@@ -115,13 +127,19 @@ function parseAIResponse(text: string): ProfileSuggestion {
     userDescription: parsed.userDescription || null,
     certifications: parsed.certifications || null,
     sailingPreferences: parsed.sailingPreferences || null,
-    skills: Array.isArray(parsed.skills) ? parsed.skills.map(String) : [],
+
+    skills: Array.isArray(parsed.skills) ? parsed.skills.map((skill: { skill: string; description: string }) => ({
+      skill: skill.skill,
+      description: skill.description,
+    })) : [],
+
     riskLevel: Array.isArray(parsed.riskLevel) ? parsed.riskLevel.map(String) : [],
+
     confidence: {
       sailingExperience: parsed.confidence?.sailingExperience || 'none',
-      skills: parsed.confidence?.skills || 'none',
       overall: parsed.confidence?.overall || 'none',
     },
+    
     reasoning: String(parsed.reasoning || 'No reasoning provided'),
   };
 }
@@ -144,10 +162,9 @@ function createFallbackSuggestion(facebookData: FacebookUserData): ProfileSugges
     certifications: null,
     sailingPreferences: null,
     skills: [],
-    riskLevel: [],
+    riskLevel: ['Coastal sailing'],
     confidence: {
       sailingExperience: 'none',
-      skills: 'none',
       overall: 'none',
     },
     reasoning: 'AI analysis unavailable. Please fill in your sailing experience manually.',
