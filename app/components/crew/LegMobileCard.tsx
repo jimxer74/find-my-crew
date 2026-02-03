@@ -65,6 +65,29 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
       className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md md:hidden"
       onClick={onClick}
     >
+      {/* Close Button Overlay on Image */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClose();
+        }}
+        className="absolute -top-12 right-0 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden cursor-pointer"
+        aria-label="Close"
+      >
+        <svg
+          className="w-6 h-6 text-foreground"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          strokeWidth="2"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M6 18L18 6M6 6l12 12"
+          />
+        </svg>
+      </button>
       <div className="bg-card rounded-lg shadow-xl border border-border flex items-stretch overflow-hidden">
         {/* Boat Image Container - No padding on left, top, or bottom */}
         <div className="relative flex-shrink-0 flex items-stretch" style={{ width: '96px' }}>
@@ -79,29 +102,6 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
                   borderRadius: '0.5rem 0 0 0.5rem',
                 }}
               />
-              {/* Close Button Overlay on Image */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onClose();
-                }}
-                className="absolute top-2 left-2 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-gray-700 hover:text-gray-900 hover:bg-white transition-colors shadow-sm z-10"
-                aria-label="Close"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth="2.5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
             </div>
           ) : (
             <div className="relative w-full flex-1 bg-muted flex items-center justify-center overflow-hidden" style={{ borderRadius: '0.5rem 0 0 0.5rem' }}>
@@ -148,7 +148,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
         {/* Content */}
         <div className="flex-1 min-w-0 px-3 py-2 flex flex-col">
           {/* Top Section: Boat Info (Left) and Skipper (Right) */}
-          <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex grid grid-cols-2 gap-2 mb-2">
             {/* Boat Information - Left Side */}
             {leg.boat_name && (
               <div className="flex-1 min-w-0">
@@ -231,7 +231,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
           <div className="flex items-start gap-2">
             {/* Start Location */}
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-xs text-card-foreground leading-tight">
+              <div className="font-normal text-xs text-card-foreground leading-tight">
                 {formatLocationName(leg.start_waypoint?.name || null)}
               </div>
               {leg.start_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
@@ -242,13 +242,13 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
             </div>
 
             {/* Arrow */}
-            <div className="flex-shrink-0 text-card-foreground flex items-center self-stretch">
+            <div className="flex-shrink-0 text-card-foreground flex items-center self-stretch pl-2 pr-2">
               <span className="text-base">→</span>
             </div>
 
             {/* End Location */}
-            <div className="flex-1 min-w-0 text-right">
-              <div className="font-semibold text-xs text-card-foreground leading-tight">
+            <div className="flex-1 min-w-0 text-left">
+              <div className="font-normal text-xs text-card-foreground leading-tight">
                 {formatLocationName(leg.end_waypoint?.name || null)}
               </div>
               {leg.end_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
