@@ -8,10 +8,14 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RequirementsManager } from '@/app/components/manage/RequirementsManager';
+import { ImageUpload } from '@/app/components/ui/ImageUpload';
+import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import { Footer } from '@/app/components/Footer';
+import Image from 'next/image';
+import { X } from 'lucide-react';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
@@ -50,6 +54,8 @@ export default function EditJourneyPage() {
     min_experience_level: 1,
     state: 'In planning',
   });
+  const [journeyImages, setJourneyImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [boats, setBoats] = useState<Boat[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +114,7 @@ export default function EditJourneyPage() {
     if (data) {
       // Convert skills from canonical format (snake_case) to display format (Title Case) for UI
       const displaySkills = (data.skills || []).map(toDisplaySkillName);
-      
+
       // Handle risk_level: if it's an array (old format), take the first value; if single value, use it; otherwise null
       let riskLevel: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null = null;
       if (data.risk_level) {
@@ -118,7 +124,7 @@ export default function EditJourneyPage() {
           riskLevel = data.risk_level as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
         }
       }
-      
+
       setFormData({
         boat_id: data.boat_id || '',
         name: data.name || '',
@@ -130,6 +136,9 @@ export default function EditJourneyPage() {
         min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1,
         state: data.state || 'In planning',
       });
+
+      // Set journey images
+      setJourneyImages(data.images || []);
     }
     setIsLoadingJourney(false);
   };
@@ -214,6 +223,7 @@ export default function EditJourneyPage() {
       skills: normalizedSkills,
       min_experience_level: formData.min_experience_level || 1,
       state: formData.state,
+      images: journeyImages,
       updated_at: new Date().toISOString(),
     };
 
@@ -280,6 +290,59 @@ export default function EditJourneyPage() {
       setError(err.message || 'Failed to delete journey');
       setIsDeleting(false);
       setShowDeleteConfirm(false);
+    }
+  };
+
+  const handleImageUpload = async (urls: string[]) => {
+    setUploadingImages(true);
+    try {
+      const currentImages = journeyImages || [];
+      const newImages = [...currentImages, ...urls];
+
+      setJourneyImages(newImages);
+
+      // Update journey with new images
+      const supabase = getSupabaseBrowserClient();
+      const { error: updateError } = await supabase
+        .from('journeys')
+        .update({
+          images: newImages,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', journeyId);
+
+      if (updateError) {
+        throw updateError;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const handleRemoveImage = async (index: number) => {
+    const supabase = getSupabaseBrowserClient();
+
+    const newImages = journeyImages.filter((_, i) => i !== index);
+    setJourneyImages(newImages);
+
+    try {
+      const { error: updateError } = await supabase
+        .from('journeys')
+        .update({
+          images: newImages,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', journeyId);
+
+      if (updateError) {
+        throw updateError;
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to remove image');
+      // Revert state on error
+      setJourneyImages(journeyImages);
     }
   };
 
@@ -526,6 +589,67 @@ export default function EditJourneyPage() {
                 // Optionally reload journey data or refresh UI
               }}
             />
+          )}
+
+          {/* Journey Images Section */}
+          {journeyId && (
+            <div className="border-t border-border pt-4 mt-4">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Journey Images</h3>
+
+              {/* Image Upload */}
+              <div className="mb-4">
+                <ImageUpload
+                  onUpload={handleImageUpload}
+                  onError={(error) => setError(error)}
+                  maxFiles={10}
+                  maxSize={5}
+                  userId={user?.id || ''}
+                  bucketName="journey-images"
+                />
+              </div>
+
+              {/* Image Carousel Preview */}
+              {journeyImages.length > 0 && (
+                <div className="space-y-4">
+                  <ImageCarousel
+                    images={journeyImages}
+                    alt="Journey"
+                    className="w-full"
+                    showThumbnails={true}
+                    autoPlay={false}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    {journeyImages.map((imageUrl, index) => (
+                      <div key={index} className="relative group">
+                        <Image
+                          src={imageUrl}
+                          alt={`Journey image ${index + 1}`}
+                          width={80}
+                          height={64}
+                          className="w-20 h-16 object-cover rounded-md border border-border"
+                        />
+                        <button
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label={`Remove image ${index + 1}`}
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {journeyImages.length} image(s) uploaded
+                  </p>
+                </div>
+              )}
+
+              {journeyImages.length === 0 && (
+                <p className="text-sm text-muted-foreground py-4">
+                  No images uploaded yet. Add images to showcase your journey.
+                </p>
+              )}
+            </div>
           )}
 
           {/* Form Actions */}

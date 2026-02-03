@@ -15,6 +15,7 @@ import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '../ui/MatchBadge';
 import { matchRiskLevel } from '@/app/lib/skillMatching';
+import { ImageCarousel } from '../ui/ImageCarousel';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -116,6 +117,7 @@ type Leg = {
     lat: number;
     name: string | null;
   } | null;
+  journey_images?: string[]; // New field for journey images
 };
 
 type LegDetailsPanelProps = {
@@ -134,6 +136,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
   const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
+  const [journeyImages, setJourneyImages] = useState<string[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -206,6 +210,40 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   
   
+
+  // Fetch journey images when panel opens
+  useEffect(() => {
+    if (!isOpen || !leg.journey_id) {
+      setJourneyImages([]);
+      return;
+    }
+
+    const fetchJourneyImages = async () => {
+      setIsLoadingImages(true);
+      try {
+        const response = await fetch(`/api/journeys/${leg.journey_id}/images`, {
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const images = data.images || [];
+          setJourneyImages(images);
+          console.log(`[LegDetailsPanel] Fetched ${images.length} journey images for journey ${leg.journey_id}`);
+        } else {
+          console.warn(`[LegDetailsPanel] Failed to fetch journey images: ${response.status}`);
+          setJourneyImages([]);
+        }
+      } catch (error) {
+        console.error(`[LegDetailsPanel] Error fetching journey images:`, error);
+        setJourneyImages([]);
+      } finally {
+        setIsLoadingImages(false);
+      }
+    };
+
+    fetchJourneyImages();
+  }, [isOpen, leg.journey_id]);
 
   // Process risk level from leg and journey data (now provided by API)
   useEffect(() => {
@@ -999,20 +1037,49 @@ transition-all"
               {/* Scrollable Content Area */}
               <div className="flex-1 overflow-y-auto">
                 {/* Boat Image */}
-                {leg.boat_image_url && (
-                  <div className="relative w-full h-48 overflow-hidden">
-                    <Image
-                      src={leg.boat_image_url}
-                      alt={leg.boat_name}
-                      fill
-                      className="object-cover object-bottom"
-                      quality={85}
-                      priority={true}
-                    />
-                    <div className="absolute top-4 left-4 z-10">
-                      {user && leg.skill_match_percentage !== undefined && (
-                        <MatchBadge percentage={leg.skill_match_percentage} size="sm" />
+                {leg.boat_image_url || (journeyImages && journeyImages.length > 0) ? (
+                  <div className="space-y-4">
+                    {/* Combined Image Carousel */}
+                    <div className="relative w-full h-60 overflow-hidden rounded-b-lg">
+                      {isLoadingImages ? (
+                        <div className="w-full h-full flex items-center justify-center bg-muted">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground"></div>
+                        </div>
+                      ) : (
+                        <ImageCarousel
+                          images={[
+                            ...(leg.boat_image_url ? [leg.boat_image_url] : []),
+                            ...journeyImages
+                          ]}
+                          alt={`${leg.boat_name} and journey images`}
+                          className="object-cover object-bottom"
+                          showThumbnails={true}
+                          autoPlay={false}
+                        />
                       )}
+                    </div>
+
+                    {/* Image Source Labels */}
+                    {/*
+                    {(leg.boat_image_url && journeyImages && journeyImages.length > 0) && (
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-primary rounded-full" />
+                          Boat Image
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-secondary rounded-full" />
+                          Journey Images
+                        </span>
+                      </div>
+                    )}
+                    */}
+                  </div>
+                ) : (
+                  // Fallback when no images available
+                  <div className="relative w-full h-48 overflow-hidden rounded-lg bg-muted">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-sm text-muted-foreground">No images available</span>
                     </div>
                   </div>
                 )}
