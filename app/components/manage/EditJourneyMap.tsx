@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { splitLineAtAntimeridian } from '@/app/lib/postgis-helpers';
 
 type Waypoint = {
   index: number;
@@ -439,15 +440,14 @@ export function EditJourneyMap({
       
       if (!source) {
         // Create new source for this leg
+        // Use splitLineAtAntimeridian to handle routes crossing the 180° longitude
+        const geometry = splitLineAtAntimeridian(coordinates);
         map.current?.addSource(sourceId, {
           type: 'geojson',
           data: {
             type: 'Feature',
             properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: coordinates,
-            },
+            geometry,
           },
         });
 
@@ -502,13 +502,12 @@ export function EditJourneyMap({
         routeSourcesRef.current.set(legId, sourceId);
       } else {
         // Update existing source
+        // Use splitLineAtAntimeridian to handle routes crossing the 180° longitude
+        const geometry = splitLineAtAntimeridian(coordinates);
         source.setData({
           type: 'Feature',
           properties: {},
-          geometry: {
-            type: 'LineString',
-            coordinates: coordinates,
-          },
+          geometry,
         });
 
         // Update line color and width based on selection

@@ -1841,3 +1841,943 @@ LogoWithText userRole:
  GET /api/legs/viewport?min_lng=-112.50427669530278&min_lat=17.153297060307594&max_lng=24.173752032531524&max_lat=53.76512188979967 200 in 181ms (compile: 3ms, proxy.ts: 3ms, render: 176ms)
  GET /api/legs/viewport?min_lng=-104.58242193778317&min_lat=7.456975905493522&max_lng=55.072159318209856&max_lat=62.35969640029623 200 in 160ms (compile: 3ms, proxy.ts: 3ms, render: 154ms)
  GET /api/legs/viewport?min_lng=-77.20186750601457&min_lat=8.987748536952097&max_lng=85.94133947378981&max_lat=65.3255265042562 200 in 146ms (compile: 3ms, proxy.ts: 3ms, render: 139ms)
+ GET /auth/login 200 in 55ms (compile: 18ms, render: 37ms)
+ GET /crew/dashboard 200 in 163ms (compile: 129ms, render: 35ms)
+ GET /crew/dashboard 200 in 44ms (compile: 9ms, render: 35ms)
+ GET /api/ai/assistant/actions 200 in 534ms (compile: 11ms, proxy.ts: 8ms, render: 515ms)
+ GET /api/ai/assistant/suggestions 200 in 544ms (compile: 9ms, proxy.ts: 8ms, render: 528ms)
+ GET /api/notifications?limit=5&offset=0 200 in 666ms (compile: 20ms, proxy.ts: 8ms, render: 639ms)
+ GET /api/ai/assistant/actions 200 in 230ms (compile: 7ms, proxy.ts: 4ms, render: 220ms)
+ GET /api/ai/assistant/suggestions 200 in 372ms (compile: 11ms, proxy.ts: 7ms, render: 353ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 193ms (compile: 3ms, proxy.ts: 2ms, render: 188ms)
+ GET / 200 in 70ms (compile: 35ms, render: 36ms)
+ GET /api/legs/viewport?min_lng=-91.76178191943207&min_lat=-1.1101888181328974&max_lng=107.22936521118368&max_lat=81.26192382933206 200 in 271ms (compile: 5ms, proxy.ts: 4ms, render: 262ms)
+ GET /api/ai/assistant/conversations 200 in 497ms (compile: 7ms, proxy.ts: 8ms, render: 482ms)
+ GET /profile 200 in 53ms (compile: 17ms, render: 36ms)
+ GET /api/ai/assistant/conversations 200 in 364ms (compile: 3ms, proxy.ts: 2ms, render: 359ms)
+ GET / 200 in 21ms (compile: 8ms, render: 13ms)
+ GET /crew/dashboard 200 in 46ms (compile: 14ms, render: 32ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 331ms (compile: 3ms, proxy.ts: 3ms, render: 325ms)
+ GET /profile 200 in 24ms (compile: 10ms, render: 14ms)
+ GET /api/notifications?limit=5&offset=0 200 in 700ms (compile: 10ms, proxy.ts: 2ms, render: 687ms)
+ GET /crew/dashboard 200 in 26ms (compile: 11ms, render: 15ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 162ms (compile: 3ms, proxy.ts: 4ms, render: 156ms)
+ GET /api/legs/viewport?min_lng=-88.58209314466188&min_lat=-0.6968633086248559&max_lng=104.5906516201054&max_lat=76.56043204267911 200 in 169ms (compile: 3ms, proxy.ts: 2ms, render: 164ms)
+ GET /api/legs/viewport?min_lng=-70.95548388773054&min_lat=17.295173728582938&max_lng=105.50882603087598&max_lat=74.70753986156981 200 in 207ms (compile: 3ms, proxy.ts: 4ms, render: 199ms)
+ GET /api/legs/viewport?min_lng=-62.410488096962155&min_lat=22.28067306349874&max_lng=103.26708950799957&max_lat=69.33521065146738 200 in 151ms (compile: 2ms, proxy.ts: 2ms, render: 147ms)
+ GET /profile 200 in 31ms (compile: 12ms, render: 19ms)
+ GET /api/ai/assistant/conversations 200 in 442ms (compile: 3ms, proxy.ts: 3ms, render: 436ms)
+ GET /api/ai/assistant/conversations 200 in 319ms (compile: 3ms, proxy.ts: 2ms, render: 314ms)
+ GET /api/ai/assistant/conversations 200 in 339ms (compile: 3ms, proxy.ts: 4ms, render: 332ms)
+ GET /api/notifications?limit=5&offset=0 200 in 524ms (compile: 8ms, proxy.ts: 2ms, render: 514ms)
+ GET /api/ai/assistant/conversations 200 in 449ms (compile: 4ms, proxy.ts: 2ms, render: 443ms)
+ GET /api/ai/assistant/conversations 200 in 257ms (compile: 4ms, proxy.ts: 3ms, render: 250ms)
+ GET /api/ai/assistant/conversations 200 in 456ms (compile: 4ms, proxy.ts: 3ms, render: 449ms)
+ GET /api/notifications?limit=5&offset=0 200 in 699ms (compile: 8ms, proxy.ts: 4ms, render: 687ms)
+ GET /menu 200 in 167ms (compile: 138ms, render: 30ms)
+ GET / 200 in 21ms (compile: 7ms, render: 15ms)
+ GET /api/ai/assistant/conversations 200 in 510ms (compile: 7ms, proxy.ts: 9ms, render: 493ms)
+ GET /api/ai/assistant/conversations 200 in 361ms (compile: 11ms, proxy.ts: 4ms, render: 346ms)
+ GET /api/notifications?limit=5&offset=0 200 in 619ms (compile: 15ms, proxy.ts: 4ms, render: 600ms)
+ GET /crew/dashboard 200 in 64ms (compile: 16ms, render: 48ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 394ms (compile: 4ms, proxy.ts: 5ms, render: 386ms)
+ GET /api/ai/assistant/conversations 200 in 425ms (compile: 6ms, proxy.ts: 4ms, render: 415ms)
+ GET /api/ai/assistant/conversations 200 in 458ms (compile: 5ms, proxy.ts: 5ms, render: 449ms)
+ GET /api/ai/assistant/conversations 200 in 309ms (compile: 6ms, proxy.ts: 3ms, render: 301ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '2ff535d1-8c3c-438a-a155-1856a1420702' },
+    Symbol(async_id_symbol): 1522121,
+    Symbol(trigger_async_id_symbol): 1522113
+  },
+  resolvedParams: { legId: '2ff535d1-8c3c-438a-a155-1856a1420702' },
+  legId: '2ff535d1-8c3c-438a-a155-1856a1420702'
+}
+ GET /api/legs/2ff535d1-8c3c-438a-a155-1856a1420702/waypoints 200 in 286ms (compile: 15ms, proxy.ts: 4ms, render: 267ms)
+ GET /api/legs/viewport?min_lng=-76.4962591531058&min_lat=8.124721767221999&max_lng=60.710076153105376&max_lat=48.80213772884301 200 in 179ms (compile: 6ms, proxy.ts: 3ms, render: 170ms)
+ GET /api/notifications?limit=5&offset=0 200 in 612ms (compile: 8ms, proxy.ts: 4ms, render: 600ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 670ms (compile: 15ms, render: 655ms)
+ GET /api/ai/assistant/actions 200 in 420ms (compile: 15ms, proxy.ts: 6ms, render: 399ms)
+ GET /api/ai/assistant/suggestions 200 in 436ms (compile: 26ms, proxy.ts: 6ms, render: 404ms)
+ GET /api/ai/assistant/actions 200 in 320ms (compile: 8ms, proxy.ts: 5ms, render: 307ms)
+ GET /api/ai/assistant/suggestions 200 in 325ms (compile: 13ms, proxy.ts: 5ms, render: 306ms)
+ GET /api/notifications?limit=5&offset=0 200 in 724ms (compile: 11ms, proxy.ts: 3ms, render: 709ms)
+ GET /api/notifications?limit=5&offset=0 200 in 368ms (compile: 13ms, proxy.ts: 9ms, render: 346ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 211ms (compile: 3ms, proxy.ts: 3ms, render: 206ms)
+ GET /api/notifications?limit=5&offset=0 200 in 570ms (compile: 10ms, proxy.ts: 3ms, render: 557ms)
+ GET /api/legs/viewport?min_lng=-73.91549088225655&min_lat=8.593249529132834&max_lng=94.74557113693731&max_lat=70.0732949483342 200 in 170ms (compile: 3ms, proxy.ts: 2ms, render: 166ms)
+ GET /api/legs/viewport?min_lng=-44.552883688110796&min_lat=27.67886709372746&max_lng=68.11099833810226&max_lat=58.350334974493705 200 in 172ms (compile: 4ms, proxy.ts: 3ms, render: 165ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196' },
+    Symbol(async_id_symbol): 1545994,
+    Symbol(trigger_async_id_symbol): 1545986
+  },
+  resolvedParams: { legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196' },
+  legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196'
+}
+ GET /api/legs/d59eb77f-a6e6-4e24-ba81-17f88957f196/waypoints 200 in 164ms (compile: 25ms, proxy.ts: 11ms, render: 128ms)
+ GET /api/legs/viewport?min_lng=-81.17834678168133&min_lat=6.5433483189079595&max_lng=70.64431778168142&max_lat=55.87592866656675 200 in 185ms (compile: 4ms, proxy.ts: 2ms, render: 178ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 78ms (compile: 19ms, render: 59ms)
+ GET /api/ai/assistant/actions 200 in 415ms (compile: 10ms, proxy.ts: 7ms, render: 397ms)
+ GET /api/ai/assistant/suggestions 200 in 429ms (compile: 9ms, proxy.ts: 5ms, render: 415ms)
+ GET /api/notifications?limit=5&offset=0 200 in 526ms (compile: 9ms, proxy.ts: 2ms, render: 515ms)
+ GET /api/ai/assistant/actions 200 in 282ms (compile: 15ms, proxy.ts: 9ms, render: 258ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 134ms (compile: 3ms, proxy.ts: 2ms, render: 130ms)
+ GET /api/notifications?limit=5&offset=0 200 in 522ms (compile: 16ms, proxy.ts: 3ms, render: 502ms)
+ GET /api/notifications?limit=5&offset=0 200 in 568ms (compile: 18ms, proxy.ts: 4ms, render: 546ms)
+ GET /api/notifications?limit=5&offset=0 200 in 729ms (compile: 11ms, proxy.ts: 3ms, render: 716ms)
+ GET /api/notifications?limit=5&offset=0 200 in 817ms (compile: 10ms, proxy.ts: 3ms, render: 804ms)
+ GET /api/notifications?limit=5&offset=0 200 in 661ms (compile: 12ms, proxy.ts: 4ms, render: 645ms)
+ GET /api/notifications?limit=5&offset=0 200 in 717ms (compile: 10ms, proxy.ts: 3ms, render: 704ms)
+ GET /api/notifications?limit=5&offset=0 200 in 734ms (compile: 9ms, proxy.ts: 2ms, render: 723ms)
+ GET /api/notifications?limit=5&offset=0 200 in 708ms (compile: 10ms, proxy.ts: 7ms, render: 691ms)
+ GET /api/notifications?limit=5&offset=0 200 in 806ms (compile: 10ms, proxy.ts: 3ms, render: 793ms)
+✓ Compiled in 149ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 743ms (compile: 228ms, render: 515ms)
+ GET /api/ai/assistant/suggestions 200 in 417ms (compile: 5ms, proxy.ts: 4ms, render: 408ms)
+ GET /api/ai/assistant/actions 200 in 432ms (compile: 9ms, proxy.ts: 4ms, render: 418ms)
+ GET /api/notifications?limit=5&offset=0 200 in 527ms (compile: 10ms, proxy.ts: 3ms, render: 514ms)
+ GET /api/ai/assistant/suggestions 200 in 282ms (compile: 15ms, proxy.ts: 7ms, render: 259ms)
+ GET /api/ai/assistant/actions 200 in 313ms (compile: 40ms, proxy.ts: 6ms, render: 266ms)
+ GET /api/notifications?limit=5&offset=0 200 in 481ms (compile: 10ms, proxy.ts: 3ms, render: 469ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 189ms (compile: 3ms, proxy.ts: 4ms, render: 182ms)
+ GET /api/notifications?limit=5&offset=0 200 in 658ms (compile: 15ms, proxy.ts: 3ms, render: 640ms)
+ GET / 200 in 171ms (compile: 140ms, render: 31ms)
+ GET /crew/dashboard 200 in 37ms (compile: 11ms, render: 26ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 319ms (compile: 3ms, proxy.ts: 3ms, render: 314ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1591467,
+    Symbol(trigger_async_id_symbol): 1591459
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 205ms (compile: 18ms, proxy.ts: 3ms, render: 185ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133 200 in 215ms (compile: 4ms, proxy.ts: 2ms, render: 209ms)
+ GET / 200 in 26ms (compile: 6ms, render: 20ms)
+ GET /api/notifications?limit=5&offset=0 200 in 734ms (compile: 14ms, proxy.ts: 2ms, render: 717ms)
+ GET /menu 200 in 153ms (compile: 126ms, render: 28ms)
+ GET /menu 200 in 21ms (compile: 7ms, render: 14ms)
+ GET / 200 in 22ms (compile: 9ms, render: 13ms)
+ GET / 200 in 37ms (compile: 15ms, render: 22ms)
+ GET /crew/dashboard 200 in 51ms (compile: 15ms, render: 36ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 360ms (compile: 4ms, proxy.ts: 2ms, render: 354ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1601804,
+    Symbol(trigger_async_id_symbol): 1601796
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 148ms (compile: 16ms, proxy.ts: 2ms, render: 130ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133 200 in 206ms (compile: 3ms, proxy.ts: 2ms, render: 201ms)
+ GET /api/notifications?limit=5&offset=0 200 in 733ms (compile: 11ms, proxy.ts: 3ms, render: 719ms)
+ GET /api/notifications?limit=5&offset=0 200 in 786ms (compile: 7ms, proxy.ts: 3ms, render: 776ms)
+✓ Compiled in 152ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 490ms (compile: 121ms, render: 369ms)
+ GET /api/ai/assistant/actions 200 in 421ms (compile: 10ms, proxy.ts: 3ms, render: 408ms)
+ GET /api/ai/assistant/suggestions 200 in 430ms (compile: 5ms, proxy.ts: 4ms, render: 421ms)
+ GET /api/notifications?limit=5&offset=0 200 in 605ms (compile: 6ms, proxy.ts: 3ms, render: 596ms)
+ GET /api/ai/assistant/actions 200 in 301ms (compile: 27ms, proxy.ts: 11ms, render: 262ms)
+ GET /api/ai/assistant/suggestions 200 in 300ms (compile: 43ms, proxy.ts: 13ms, render: 244ms)
+ GET /api/notifications?limit=5&offset=0 200 in 373ms (compile: 8ms, proxy.ts: 3ms, render: 362ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 190ms (compile: 3ms, proxy.ts: 4ms, render: 183ms)
+ GET /api/notifications?limit=5&offset=0 200 in 452ms (compile: 5ms, proxy.ts: 3ms, render: 444ms)
+ GET / 200 in 134ms (compile: 110ms, render: 24ms)
+✓ Compiled in 300ms
+✓ Compiled in 295ms
+LogoWithText userRole: 
+ GET / 200 in 1245ms (compile: 532ms, render: 713ms)
+ GET /api/ai/assistant/actions 200 in 490ms (compile: 37ms, proxy.ts: 18ms, render: 436ms)
+ GET /api/ai/assistant/suggestions 200 in 511ms (compile: 33ms, proxy.ts: 13ms, render: 464ms)
+ GET /api/ai/assistant/actions 200 in 313ms (compile: 7ms, proxy.ts: 12ms, render: 294ms)
+ GET /api/ai/assistant/suggestions 200 in 303ms (compile: 19ms, proxy.ts: 3ms, render: 281ms)
+ GET /api/notifications?limit=5&offset=0 200 in 828ms (compile: 83ms, proxy.ts: 15ms, render: 730ms)
+ GET /api/notifications?limit=5&offset=0 200 in 466ms (compile: 13ms, proxy.ts: 2ms, render: 450ms)
+ GET /api/notifications?limit=5&offset=0 200 in 834ms (compile: 21ms, proxy.ts: 4ms, render: 809ms)
+✓ Compiled in 321ms
+ GET /api/notifications?limit=5&offset=0 200 in 764ms (compile: 5ms, proxy.ts: 4ms, render: 755ms)
+✓ Compiled in 413ms
+LogoWithText userRole: 
+ GET / 200 in 1116ms (compile: 478ms, render: 639ms)
+ GET /api/ai/assistant/actions 200 in 520ms (compile: 34ms, proxy.ts: 22ms, render: 464ms)
+ GET /api/ai/assistant/suggestions 200 in 533ms (compile: 25ms, proxy.ts: 25ms, render: 483ms)
+ GET /api/notifications?limit=5&offset=0 200 in 667ms (compile: 67ms, proxy.ts: 20ms, render: 580ms)
+ GET /api/ai/assistant/actions 200 in 314ms (compile: 16ms, proxy.ts: 13ms, render: 285ms)
+ GET /api/ai/assistant/suggestions 200 in 324ms (compile: 17ms, proxy.ts: 9ms, render: 298ms)
+ GET /api/notifications?limit=5&offset=0 200 in 530ms (compile: 19ms, proxy.ts: 8ms, render: 503ms)
+ GET /api/notifications?limit=5&offset=0 200 in 510ms (compile: 19ms, proxy.ts: 8ms, render: 483ms)
+ GET / 200 in 37ms (compile: 10ms, render: 27ms)
+ GET /crew/dashboard 200 in 253ms (compile: 196ms, render: 57ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 382ms (compile: 3ms, proxy.ts: 3ms, render: 376ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1659502,
+    Symbol(trigger_async_id_symbol): 1659494
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 325ms (compile: 16ms, proxy.ts: 3ms, render: 306ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133 200 in 222ms (compile: 3ms, proxy.ts: 2ms, render: 216ms)
+ GET /api/notifications?limit=5&offset=0 200 in 586ms (compile: 8ms, proxy.ts: 2ms, render: 576ms)
+ GET /api/ai/assistant/conversations 200 in 399ms (compile: 6ms, proxy.ts: 4ms, render: 389ms)
+ GET /api/legs/viewport?min_lng=-29.97712674937293&min_lat=38.64307463435523&max_lng=26.294110749373147&max_lat=61.076436692384476 200 in 264ms (compile: 2ms, proxy.ts: 2ms, render: 259ms)
+ GET /api/notifications?limit=5&offset=0 200 in 542ms (compile: 5ms, proxy.ts: 3ms, render: 534ms)
+ GET /menu 200 in 154ms (compile: 125ms, render: 30ms)
+ GET /menu 200 in 25ms (compile: 6ms, render: 19ms)
+ GET / 200 in 19ms (compile: 6ms, render: 13ms)
+ GET /crew/dashboard 200 in 30ms (compile: 6ms, render: 24ms)
+ GET /api/legs/viewport?min_lng=-72.94425166885979&min_lat=-22.34323181364165&max_lng=72.94425166885983&max_lat=48.27789324280292 200 in 307ms (compile: 3ms, proxy.ts: 3ms, render: 302ms)
+ GET /api/legs/viewport?min_lng=-101.52058161525046&min_lat=-11.342678528239176&max_lng=75.63507488354907&max_lat=64.53960716279698 200 in 185ms (compile: 2ms, proxy.ts: 2ms, render: 181ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1675461,
+    Symbol(trigger_async_id_symbol): 1675453
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 146ms (compile: 18ms, proxy.ts: 4ms, render: 125ms)
+ GET /api/legs/viewport?min_lng=-70.38442324417619&min_lat=21.575709901125748&max_lng=66.70140724417831&max_lat=70.60467848830788 200 in 162ms (compile: 2ms, proxy.ts: 3ms, render: 157ms)
+ GET /menu 200 in 26ms (compile: 12ms, render: 13ms)
+ GET /menu 200 in 19ms (compile: 6ms, render: 13ms)
+ GET / 200 in 19ms (compile: 6ms, render: 13ms)
+ GET /api/notifications?limit=5&offset=0 200 in 845ms (compile: 7ms, proxy.ts: 3ms, render: 835ms)
+ GET / 200 in 29ms (compile: 9ms, render: 21ms)
+ GET /crew/dashboard 200 in 41ms (compile: 13ms, render: 27ms)
+ GET /api/legs/viewport?min_lng=-73.03786414477895&min_lat=-10.20197402373222&max_lng=73.03786414477901&max_lat=48.27050238462783 200 in 328ms (compile: 3ms, proxy.ts: 3ms, render: 322ms)
+ GET / 200 in 26ms (compile: 12ms, render: 15ms)
+ GET / 200 in 38ms (compile: 10ms, render: 28ms)
+ GET / 200 in 74ms (compile: 24ms, render: 51ms)
+ GET / 200 in 71ms (compile: 21ms, render: 50ms)
+✓ Compiled in 177ms
+LogoWithText userRole: 
+ GET / 200 in 727ms (compile: 328ms, render: 399ms)
+✓ Compiled in 308ms
+LogoWithText userRole: 
+ GET / 200 in 1452ms (compile: 333ms, render: 1119ms)
+✓ Compiled in 395ms
+LogoWithText userRole: 
+ GET / 200 in 1253ms (compile: 547ms, render: 706ms)
+✓ Compiled in 298ms
+LogoWithText userRole: 
+ GET / 200 in 1291ms (compile: 442ms, render: 849ms)
+✓ Compiled in 442ms
+✓ Compiled in 145ms
+LogoWithText userRole: 
+ GET / 200 in 116ms (compile: 18ms, render: 98ms)
+✓ Compiled in 354ms
+✓ Compiled in 428ms
+ GET / 200 in 280ms (compile: 237ms, render: 43ms)
+ GET / 200 in 41ms (compile: 9ms, render: 32ms)
+ GET /crew/dashboard 200 in 239ms (compile: 189ms, render: 50ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 521ms (compile: 2ms, proxy.ts: 4ms, render: 515ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1728822,
+    Symbol(trigger_async_id_symbol): 1728814
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 364ms (compile: 13ms, proxy.ts: 3ms, render: 348ms)
+ GET /api/legs/viewport?min_lng=-83.37451244844809&min_lat=13.588544537941772&max_lng=79.69149644844828&max_lat=66.18168771206163 200 in 285ms (compile: 6ms, proxy.ts: 3ms, render: 275ms)
+✓ Compiled in 172ms
+ GET / 200 in 191ms (compile: 153ms, render: 38ms)
+ GET /crew/dashboard 200 in 348ms (compile: 284ms, render: 64ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 349ms (compile: 3ms, proxy.ts: 2ms, render: 344ms)
+✓ Compiled in 158ms
+✓ Compiled in 156ms
+✓ Compiled in 147ms
+✓ Compiled in 309ms
+ GET /auth/login 200 in 243ms (compile: 208ms, render: 36ms)
+ GET / 200 in 23ms (compile: 9ms, render: 13ms)
+✓ Compiled in 171ms
+✓ Compiled in 213ms
+ GET /crew/dashboard 200 in 278ms (compile: 224ms, render: 53ms)
+LogoWithText userRole: 
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 743ms (compile: 3ms, proxy.ts: 4ms, render: 735ms)
+ GET /crew/dashboard 200 in 488ms (compile: 16ms, render: 472ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 223ms (compile: 3ms, proxy.ts: 5ms, render: 215ms)
+✓ Compiled in 162ms
+✓ Compiled in 198ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 590ms (compile: 175ms, render: 415ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 485ms (compile: 11ms, proxy.ts: 5ms, render: 469ms)
+ GET /api/legs/viewport?min_lng=-25.51371199963657&min_lat=-12.006670483993915&max_lng=87.67567226607116&max_lat=25.20462204105634 200 in 345ms (compile: 5ms, proxy.ts: 3ms, render: 337ms)
+ GET /api/legs/viewport?min_lng=-69.8714512229696&min_lat=-13.410671359970962&max_lng=71.72924431548063&max_lat=46.337416810256855 200 in 205ms (compile: 3ms, proxy.ts: 3ms, render: 199ms)
+✓ Compiled in 269ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 495ms (compile: 157ms, render: 339ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 372ms (compile: 2ms, proxy.ts: 3ms, render: 366ms)
+ GET / 200 in 150ms (compile: 114ms, render: 36ms)
+ GET /crew/dashboard 200 in 49ms (compile: 23ms, render: 26ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645 200 in 452ms (compile: 4ms, proxy.ts: 5ms, render: 443ms)
+ GET /api/legs/viewport?min_lng=-108.1035720909872&min_lat=-0.11754928249897034&max_lng=74.59933207416464&max_lat=72.10945884319628 200 in 219ms (compile: 3ms, proxy.ts: 2ms, render: 214ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1773585,
+    Symbol(trigger_async_id_symbol): 1773577
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 304ms (compile: 14ms, proxy.ts: 3ms, render: 287ms)
+ GET /api/legs/viewport?min_lng=-83.37451244844809&min_lat=13.588544537941772&max_lng=79.69149644844828&max_lat=66.18168771206163 200 in 282ms (compile: 3ms, proxy.ts: 2ms, render: 277ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6' },
+    Symbol(async_id_symbol): 1776428,
+    Symbol(trigger_async_id_symbol): 1776420
+  },
+  resolvedParams: { legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6' },
+  legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6'
+}
+ GET /api/legs/e7237510-704f-4d99-b11e-016b8a6fb8d6/waypoints 200 in 188ms (compile: 22ms, proxy.ts: 6ms, render: 160ms)
+ GET /auth/login 200 in 153ms (compile: 126ms, render: 27ms)
+ GET /crew/dashboard 200 in 22ms (compile: 7ms, render: 15ms)
+ GET /crew/dashboard 200 in 35ms (compile: 9ms, render: 26ms)
+ GET /api/ai/assistant/actions 200 in 424ms (compile: 8ms, proxy.ts: 6ms, render: 410ms)
+ GET /api/ai/assistant/suggestions 200 in 489ms (compile: 27ms, proxy.ts: 6ms, render: 456ms)
+ GET /api/notifications?limit=5&offset=0 200 in 643ms (compile: 14ms, proxy.ts: 6ms, render: 623ms)
+ GET /api/ai/assistant/actions 200 in 310ms (compile: 8ms, proxy.ts: 7ms, render: 295ms)
+ GET /api/ai/assistant/suggestions 200 in 299ms (compile: 8ms, proxy.ts: 15ms, render: 277ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 213ms (compile: 3ms, proxy.ts: 2ms, render: 208ms)
+ GET /api/ai/assistant/conversations 200 in 378ms (compile: 4ms, proxy.ts: 3ms, render: 371ms)
+ GET /api/ai/assistant/conversations 200 in 442ms (compile: 6ms, proxy.ts: 3ms, render: 433ms)
+ GET /api/ai/assistant/conversations 200 in 328ms (compile: 5ms, proxy.ts: 3ms, render: 320ms)
+ GET /api/ai/assistant/conversations 200 in 415ms (compile: 8ms, proxy.ts: 3ms, render: 405ms)
+ GET /api/notifications?limit=5&offset=0 200 in 944ms (compile: 10ms, proxy.ts: 2ms, render: 932ms)
+ GET /api/notifications?limit=5&offset=0 200 in 720ms (compile: 9ms, proxy.ts: 3ms, render: 708ms)
+ GET /api/notifications?limit=5&offset=0 200 in 675ms (compile: 12ms, proxy.ts: 2ms, render: 661ms)
+ GET /api/notifications?limit=5&offset=0 200 in 698ms (compile: 9ms, proxy.ts: 3ms, render: 685ms)
+ GET /api/notifications?limit=5&offset=0 200 in 707ms (compile: 9ms, proxy.ts: 2ms, render: 696ms)
+✓ Compiled in 172ms
+✓ Compiled in 776ms
+ GET /api/ai/assistant/suggestions 200 in 481ms (compile: 24ms, proxy.ts: 6ms, render: 452ms)
+ GET /api/ai/assistant/actions 200 in 482ms (compile: 15ms, proxy.ts: 5ms, render: 462ms)
+✓ Compiled in 162ms
+✓ Compiled in 231ms
+ GET /api/notifications?limit=5&offset=0 200 in 649ms (compile: 9ms, proxy.ts: 3ms, render: 637ms)
+✓ Compiled in 178ms
+✓ Compiled in 228ms
+ GET /api/legs/viewport?min_lng=-145.59479088063117&min_lat=-26.545511193411947&max_lng=17.90320294452016&max_lat=63.72192213550133 200 in 435ms (compile: 6ms, proxy.ts: 3ms, render: 426ms)
+ GET /api/legs/viewport?min_lng=-180&min_lat=-27.392634664442703&max_lng=-68.87627380143726&max_lat=56.236406920448246 200 in 270ms (compile: 3ms, proxy.ts: 4ms, render: 264ms)
+ GET /api/legs/viewport?min_lng=99.78757732959639&min_lat=-29.994184024676244&max_lng=180&max_lat=51.67859598755558 200 in 214ms (compile: 9ms, proxy.ts: 2ms, render: 204ms)
+✓ Compiled in 194ms
+✓ Compiled in 218ms
+ GET /api/notifications?limit=5&offset=0 200 in 709ms (compile: 8ms, proxy.ts: 4ms, render: 697ms)
+✓ Compiled in 292ms
+✓ Compiled in 181ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 525ms (compile: 151ms, render: 374ms)
+ GET /api/ai/assistant/suggestions 200 in 400ms (compile: 4ms, proxy.ts: 4ms, render: 392ms)
+ GET /api/ai/assistant/actions 200 in 424ms (compile: 8ms, proxy.ts: 4ms, render: 412ms)
+ GET /api/notifications?limit=5&offset=0 200 in 558ms (compile: 6ms, proxy.ts: 3ms, render: 548ms)
+ GET /api/ai/assistant/suggestions 200 in 267ms (compile: 8ms, proxy.ts: 5ms, render: 255ms)
+ GET /api/ai/assistant/actions 200 in 359ms (compile: 26ms, proxy.ts: 7ms, render: 327ms)
+ GET /api/notifications?limit=5&offset=0 200 in 371ms (compile: 9ms, proxy.ts: 11ms, render: 351ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 179ms (compile: 5ms, proxy.ts: 5ms, render: 170ms)
+ GET /api/notifications?limit=5&offset=0 200 in 583ms (compile: 12ms, proxy.ts: 3ms, render: 567ms)
+ GET /api/legs/viewport?min_lng=-49.18003663977788&min_lat=-10.202423518423146&max_lng=91.40747191139099&max_lat=44.69881199378406 200 in 194ms (compile: 2ms, proxy.ts: 2ms, render: 190ms)
+ GET /api/ai/assistant/conversations 200 in 427ms (compile: 4ms, proxy.ts: 3ms, render: 420ms)
+ GET /api/ai/assistant/conversations 200 in 250ms (compile: 4ms, proxy.ts: 3ms, render: 244ms)
+ GET /api/ai/assistant/conversations 200 in 503ms (compile: 6ms, proxy.ts: 3ms, render: 495ms)
+ GET /api/ai/assistant/conversations 200 in 1234ms (compile: 4ms, proxy.ts: 4ms, render: 1226ms)
+ GET /api/notifications?limit=5&offset=0 200 in 728ms (compile: 5ms, proxy.ts: 4ms, render: 720ms)
+✓ Compiled in 160ms
+✓ Compiled in 312ms
+✓ Compiled in 241ms
+✓ Compiled in 154ms
+ GET /api/ai/assistant/conversations 200 in 430ms (compile: 4ms, proxy.ts: 3ms, render: 423ms)
+ GET /api/ai/assistant/conversations 200 in 391ms (compile: 4ms, proxy.ts: 3ms, render: 385ms)
+ GET /api/ai/assistant/conversations 200 in 324ms (compile: 4ms, proxy.ts: 3ms, render: 317ms)
+ GET /api/ai/assistant/conversations 200 in 331ms (compile: 4ms, proxy.ts: 3ms, render: 324ms)
+ GET /api/ai/assistant/conversations 200 in 364ms (compile: 3ms, proxy.ts: 3ms, render: 358ms)
+ GET /api/ai/assistant/conversations 200 in 246ms (compile: 4ms, proxy.ts: 3ms, render: 239ms)
+ GET /api/notifications?limit=5&offset=0 200 in 558ms (compile: 9ms, proxy.ts: 3ms, render: 546ms)
+ GET /api/ai/assistant/conversations 200 in 297ms (compile: 2ms, proxy.ts: 2ms, render: 293ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 566ms (compile: 125ms, render: 441ms)
+ GET /api/ai/assistant/suggestions 200 in 272ms (compile: 6ms, proxy.ts: 6ms, render: 260ms)
+ GET /api/ai/assistant/actions 200 in 523ms (compile: 15ms, proxy.ts: 5ms, render: 502ms)
+ GET /api/notifications?limit=5&offset=0 200 in 597ms (compile: 7ms, proxy.ts: 3ms, render: 587ms)
+ GET /api/ai/assistant/suggestions 200 in 391ms (compile: 10ms, proxy.ts: 5ms, render: 375ms)
+ GET /api/notifications?limit=5&offset=0 200 in 411ms (compile: 7ms, proxy.ts: 4ms, render: 400ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 262ms (compile: 3ms, proxy.ts: 2ms, render: 257ms)
+ GET /api/notifications?limit=5&offset=0 200 in 535ms (compile: 7ms, proxy.ts: 2ms, render: 525ms)
+ GET /api/notifications?limit=5&offset=0 200 in 677ms (compile: 11ms, proxy.ts: 4ms, render: 662ms)
+ GET /api/legs/viewport?min_lng=-64.54152645171243&min_lat=-10.593403803014638&max_lng=93.98473632343388&max_lat=57.54576887701282 200 in 350ms (compile: 3ms, proxy.ts: 2ms, render: 345ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 1862781,
+    Symbol(trigger_async_id_symbol): 1862773
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 208ms (compile: 15ms, proxy.ts: 3ms, render: 190ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133 200 in 186ms (compile: 3ms, proxy.ts: 3ms, render: 181ms)
+ GET /api/notifications?limit=5&offset=0 200 in 740ms (compile: 13ms, proxy.ts: 3ms, render: 724ms)
+ GET /api/ai/assistant/conversations 200 in 459ms (compile: 5ms, proxy.ts: 3ms, render: 451ms)
+ GET /api/ai/assistant/conversations 200 in 289ms (compile: 6ms, proxy.ts: 3ms, render: 280ms)
+ GET /api/ai/assistant/conversations 200 in 305ms (compile: 3ms, proxy.ts: 3ms, render: 298ms)
+✓ Compiled in 261ms
+ GET /crew/dashboard 500 in 734ms (compile: 512ms, render: 222ms)
+ GET /crew/dashboard 200 in 716ms (compile: 659ms, render: 57ms)
+LogoWithText userRole: 
+LogoWithText userRole: 
+LogoWithText userRole: 
+LogoWithText userRole: 
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 163ms (compile: 22ms, render: 141ms)
+ GET /api/ai/assistant/suggestions 200 in 386ms (compile: 7ms, proxy.ts: 5ms, render: 374ms)
+ GET /api/ai/assistant/actions 200 in 476ms (compile: 11ms, proxy.ts: 6ms, render: 459ms)
+ GET /api/notifications?limit=5&offset=0 200 in 574ms (compile: 8ms, proxy.ts: 3ms, render: 562ms)
+ GET /api/ai/assistant/suggestions 200 in 309ms (compile: 17ms, proxy.ts: 9ms, render: 283ms)
+ GET /api/ai/assistant/actions 200 in 315ms (compile: 11ms, proxy.ts: 10ms, render: 293ms)
+ GET /api/notifications?limit=5&offset=0 200 in 518ms (compile: 23ms, proxy.ts: 3ms, render: 492ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 203ms (compile: 4ms, proxy.ts: 3ms, render: 197ms)
+ GET /api/notifications?limit=5&offset=0 200 in 478ms (compile: 11ms, proxy.ts: 3ms, render: 464ms)
+✓ Compiled in 157ms
+✓ Compiled in 261ms
+ GET /api/ai/assistant/conversations 200 in 409ms (compile: 3ms, proxy.ts: 5ms, render: 401ms)
+ GET / 200 in 179ms (compile: 151ms, render: 28ms)
+ GET /api/ai/assistant/conversations 200 in 430ms (compile: 13ms, proxy.ts: 14ms, render: 402ms)
+ GET /api/ai/assistant/conversations 200 in 339ms (compile: 4ms, proxy.ts: 7ms, render: 329ms)
+ GET /api/ai/assistant/conversations 200 in 282ms (compile: 5ms, proxy.ts: 11ms, render: 266ms)
+ GET /api/ai/assistant/conversations 200 in 412ms (compile: 5ms, proxy.ts: 10ms, render: 397ms)
+ GET /api/ai/assistant/conversations 200 in 315ms (compile: 4ms, proxy.ts: 11ms, render: 300ms)
+ GET /api/ai/assistant/conversations 200 in 308ms (compile: 3ms, proxy.ts: 7ms, render: 298ms)
+ GET /api/ai/assistant/conversations 200 in 296ms (compile: 8ms, proxy.ts: 7ms, render: 281ms)
+ GET /api/ai/assistant/conversations 200 in 263ms (compile: 6ms, proxy.ts: 8ms, render: 249ms)
+ GET /api/ai/assistant/conversations 200 in 399ms (compile: 11ms, proxy.ts: 4ms, render: 384ms)
+✓ Compiled in 548ms
+ GET /api/ai/assistant/conversations 200 in 373ms (compile: 33ms, proxy.ts: 7ms, render: 333ms)
+LogoWithText userRole: 
+ GET / 200 in 1514ms (compile: 261ms, render: 1253ms)
+ GET /api/notifications?limit=5&offset=0 200 in 755ms (compile: 48ms, proxy.ts: 23ms, render: 684ms)
+ GET /api/notifications?limit=5&offset=0 200 in 526ms (compile: 20ms, proxy.ts: 7ms, render: 498ms)
+ GET /api/notifications?limit=5&offset=0 200 in 585ms (compile: 16ms, proxy.ts: 3ms, render: 567ms)
+✓ Compiled in 389ms
+✓ Compiled in 261ms
+✓ Compiled in 326ms
+ GET /api/ai/assistant/conversations 200 in 488ms (compile: 5ms, proxy.ts: 7ms, render: 476ms)
+LogoWithText userRole: 
+ GET / 200 in 724ms (compile: 294ms, render: 430ms)
+ GET /api/ai/assistant/suggestions 200 in 315ms (compile: 23ms, proxy.ts: 10ms, render: 282ms)
+ GET /api/ai/assistant/actions 200 in 581ms (compile: 33ms, proxy.ts: 15ms, render: 533ms)
+ GET /api/ai/assistant/suggestions 200 in 281ms (compile: 12ms, proxy.ts: 3ms, render: 266ms)
+ GET /api/notifications?limit=5&offset=0 200 in 685ms (compile: 57ms, proxy.ts: 5ms, render: 623ms)
+ GET /api/ai/assistant/actions 200 in 295ms (compile: 12ms, proxy.ts: 5ms, render: 278ms)
+ GET /api/notifications?limit=5&offset=0 200 in 430ms (compile: 15ms, proxy.ts: 3ms, render: 412ms)
+ GET /api/notifications?limit=5&offset=0 200 in 612ms (compile: 16ms, proxy.ts: 3ms, render: 593ms)
+LogoWithText userRole: 
+ GET / 200 in 99ms (compile: 14ms, render: 85ms)
+ GET /api/ai/assistant/suggestions 200 in 449ms (compile: 16ms, proxy.ts: 15ms, render: 417ms)
+ GET /api/ai/assistant/actions 200 in 458ms (compile: 25ms, proxy.ts: 12ms, render: 421ms)
+ GET /api/notifications?limit=5&offset=0 200 in 572ms (compile: 46ms, proxy.ts: 7ms, render: 519ms)
+ GET /api/ai/assistant/suggestions 200 in 284ms (compile: 16ms, proxy.ts: 15ms, render: 254ms)
+ GET /api/ai/assistant/actions 200 in 285ms (compile: 18ms, proxy.ts: 11ms, render: 256ms)
+ GET /api/notifications?limit=5&offset=0 200 in 466ms (compile: 8ms, proxy.ts: 11ms, render: 447ms)
+ GET /api/notifications?limit=5&offset=0 200 in 468ms (compile: 11ms, proxy.ts: 6ms, render: 451ms)
+ GET /api/ai/assistant/conversations 200 in 283ms (compile: 7ms, proxy.ts: 2ms, render: 273ms)
+✓ Compiled in 479ms
+ GET /api/notifications?limit=5&offset=0 200 in 699ms (compile: 16ms, proxy.ts: 3ms, render: 680ms)
+✓ Compiled in 632ms
+✓ Compiled in 221ms
+LogoWithText userRole: 
+ GET / 500 in 684ms (compile: 283ms, render: 401ms)
+✓ Compiled in 223ms
+LogoWithText userRole: 
+ GET / 200 in 768ms (compile: 303ms, render: 465ms)
+ GET /api/ai/assistant/suggestions 200 in 607ms (compile: 68ms, proxy.ts: 17ms, render: 522ms)
+ GET /api/ai/assistant/actions 200 in 609ms (compile: 105ms, proxy.ts: 31ms, render: 473ms)
+ GET /api/notifications?limit=5&offset=0 200 in 739ms (compile: 115ms, proxy.ts: 39ms, render: 584ms)
+ GET /api/ai/assistant/actions 200 in 303ms (compile: 26ms, proxy.ts: 10ms, render: 267ms)
+ GET /api/ai/assistant/suggestions 200 in 318ms (compile: 17ms, proxy.ts: 4ms, render: 297ms)
+ GET /api/notifications?limit=5&offset=0 200 in 430ms (compile: 16ms, proxy.ts: 10ms, render: 404ms)
+ GET /api/notifications?limit=5&offset=0 200 in 511ms (compile: 15ms, proxy.ts: 7ms, render: 489ms)
+✓ Compiled in 433ms
+✓ Compiled in 286ms
+✓ Compiled in 285ms
+ GET /api/ai/assistant/conversations 200 in 487ms (compile: 5ms, proxy.ts: 5ms, render: 477ms)
+✓ Compiled in 284ms
+✓ Compiled in 420ms
+ GET /api/notifications?limit=5&offset=0 200 in 815ms (compile: 29ms, proxy.ts: 3ms, render: 783ms)
+ GET /api/ai/assistant/conversations 200 in 335ms (compile: 14ms, proxy.ts: 14ms, render: 306ms)
+ GET /api/ai/assistant/conversations 200 in 308ms (compile: 3ms, proxy.ts: 7ms, render: 298ms)
+✓ Compiled in 382ms
+ GET /crew/dashboard 200 in 619ms (compile: 487ms, render: 132ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 370ms (compile: 4ms, proxy.ts: 6ms, render: 360ms)
+ GET /api/ai/assistant/conversations 200 in 393ms (compile: 4ms, proxy.ts: 4ms, render: 386ms)
+ GET /api/ai/assistant/conversations 200 in 397ms (compile: 4ms, proxy.ts: 3ms, render: 390ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 383ms (compile: 10ms, render: 373ms)
+ GET /api/ai/assistant/suggestions 200 in 289ms (compile: 14ms, proxy.ts: 12ms, render: 262ms)
+ GET /api/ai/assistant/actions 200 in 424ms (compile: 18ms, proxy.ts: 10ms, render: 396ms)
+ GET /api/ai/assistant/suggestions 200 in 250ms (compile: 5ms, proxy.ts: 7ms, render: 238ms)
+ GET /api/notifications?limit=5&offset=0 200 in 574ms (compile: 27ms, proxy.ts: 12ms, render: 535ms)
+ GET /api/ai/assistant/actions 200 in 287ms (compile: 10ms, proxy.ts: 9ms, render: 268ms)
+ GET /api/notifications?limit=5&offset=0 200 in 384ms (compile: 13ms, proxy.ts: 3ms, render: 369ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 199ms (compile: 3ms, proxy.ts: 2ms, render: 193ms)
+ GET /api/notifications?limit=5&offset=0 200 in 495ms (compile: 9ms, proxy.ts: 2ms, render: 484ms)
+ GET /api/ai/assistant/conversations 200 in 368ms (compile: 2ms, proxy.ts: 2ms, render: 364ms)
+ GET /api/ai/assistant/conversations 200 in 323ms (compile: 4ms, proxy.ts: 3ms, render: 316ms)
+✓ Compiled in 181ms
+ GET /crew/dashboard 200 in 510ms (compile: 185ms, render: 326ms)
+ GET /crew/dashboard 200 in 268ms (compile: 9ms, render: 258ms)
+ GET /crew/dashboard 200 in 273ms (compile: 9ms, render: 264ms)
+ GET /crew/dashboard 200 in 268ms (compile: 14ms, render: 254ms)
+ GET /crew/dashboard 200 in 261ms (compile: 17ms, render: 244ms)
+ GET /crew/dashboard 200 in 245ms (compile: 14ms, render: 231ms)
+ GET /crew/dashboard 200 in 282ms (compile: 11ms, render: 271ms)
+ GET /crew/dashboard 200 in 238ms (compile: 13ms, render: 225ms)
+ GET /crew/dashboard 200 in 238ms (compile: 13ms, render: 225ms)
+ GET /crew/dashboard 200 in 228ms (compile: 11ms, render: 217ms)
+ GET /crew/dashboard 200 in 225ms (compile: 10ms, render: 215ms)
+ GET /crew/dashboard 200 in 228ms (compile: 13ms, render: 215ms)
+ GET /crew/dashboard 200 in 247ms (compile: 11ms, render: 236ms)
+ GET /crew/dashboard 200 in 199ms (compile: 12ms, render: 187ms)
+ GET /crew/dashboard 200 in 158ms (compile: 13ms, render: 146ms)
+ GET /crew/dashboard 200 in 116ms (compile: 10ms, render: 106ms)
+ GET /crew/dashboard 200 in 76ms (compile: 23ms, render: 53ms)
+ GET /api/notifications?limit=5&offset=0 200 in 623ms (compile: 10ms, proxy.ts: 4ms, render: 608ms)
+✓ Compiled in 282ms
+ GET /crew/dashboard 200 in 640ms (compile: 209ms, render: 431ms)
+ GET /crew/dashboard 200 in 357ms (compile: 15ms, render: 341ms)
+ GET /crew/dashboard 200 in 353ms (compile: 16ms, render: 337ms)
+ GET /crew/dashboard 200 in 331ms (compile: 23ms, render: 309ms)
+ GET /crew/dashboard 200 in 330ms (compile: 16ms, render: 315ms)
+ GET /crew/dashboard 200 in 321ms (compile: 21ms, render: 299ms)
+ GET /crew/dashboard 200 in 379ms (compile: 17ms, render: 361ms)
+ GET /crew/dashboard 200 in 322ms (compile: 15ms, render: 307ms)
+ GET /crew/dashboard 200 in 315ms (compile: 13ms, render: 302ms)
+ GET /crew/dashboard 200 in 291ms (compile: 17ms, render: 274ms)
+ GET /crew/dashboard 200 in 279ms (compile: 18ms, render: 262ms)
+ GET /crew/dashboard 200 in 262ms (compile: 13ms, render: 249ms)
+ GET /crew/dashboard 200 in 266ms (compile: 13ms, render: 253ms)
+ GET /crew/dashboard 200 in 219ms (compile: 16ms, render: 203ms)
+ GET /crew/dashboard 200 in 174ms (compile: 16ms, render: 158ms)
+ GET /crew/dashboard 200 in 125ms (compile: 13ms, render: 112ms)
+ GET /crew/dashboard 200 in 76ms (compile: 15ms, render: 61ms)
+✓ Compiled in 163ms
+✓ Compiled in 444ms
+✓ Compiled in 244ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 662ms (compile: 171ms, render: 491ms)
+ GET /api/ai/assistant/suggestions 200 in 382ms (compile: 9ms, proxy.ts: 6ms, render: 367ms)
+ GET /api/ai/assistant/actions 200 in 397ms (compile: 12ms, proxy.ts: 5ms, render: 380ms)
+ GET /api/ai/assistant/suggestions 200 in 247ms (compile: 4ms, proxy.ts: 4ms, render: 238ms)
+ GET /api/ai/assistant/actions 200 in 289ms (compile: 4ms, proxy.ts: 6ms, render: 278ms)
+ GET /api/notifications?limit=5&offset=0 200 in 646ms (compile: 15ms, proxy.ts: 5ms, render: 626ms)
+ GET /api/notifications?limit=5&offset=0 200 in 370ms (compile: 15ms, proxy.ts: 3ms, render: 351ms)
+ GET /api/notifications?limit=5&offset=0 200 in 499ms (compile: 11ms, proxy.ts: 3ms, render: 484ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 179ms (compile: 3ms, proxy.ts: 2ms, render: 174ms)
+ GET /api/ai/assistant/conversations 200 in 310ms (compile: 5ms, proxy.ts: 3ms, render: 303ms)
+✓ Compiled in 538ms
+ GET /api/ai/assistant/conversations 200 in 534ms (compile: 3ms, proxy.ts: 7ms, render: 524ms)
+ GET /api/ai/assistant/conversations 200 in 306ms (compile: 3ms, proxy.ts: 7ms, render: 295ms)
+ GET /api/ai/assistant/conversations 200 in 300ms (compile: 5ms, proxy.ts: 4ms, render: 292ms)
+✓ Compiled in 266ms
+ GET /api/ai/assistant/conversations 200 in 284ms (compile: 5ms, proxy.ts: 4ms, render: 275ms)
+ GET /api/ai/assistant/conversations 200 in 288ms (compile: 15ms, proxy.ts: 4ms, render: 269ms)
+✓ Compiled in 288ms
+✓ Compiled in 165ms
+ GET /api/notifications?limit=5&offset=0 200 in 736ms (compile: 8ms, proxy.ts: 3ms, render: 725ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 546ms (compile: 145ms, render: 401ms)
+ GET /api/ai/assistant/actions 200 in 417ms (compile: 10ms, proxy.ts: 6ms, render: 402ms)
+ GET /api/ai/assistant/suggestions 200 in 486ms (compile: 5ms, proxy.ts: 5ms, render: 475ms)
+ GET /api/notifications?limit=5&offset=0 200 in 570ms (compile: 20ms, proxy.ts: 4ms, render: 545ms)
+ GET /api/ai/assistant/actions 200 in 294ms (compile: 5ms, proxy.ts: 3ms, render: 286ms)
+ GET /api/ai/assistant/suggestions 200 in 312ms (compile: 5ms, proxy.ts: 9ms, render: 299ms)
+ GET /api/notifications?limit=5&offset=0 200 in 540ms (compile: 16ms, proxy.ts: 7ms, render: 518ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 269ms (compile: 4ms, proxy.ts: 3ms, render: 262ms)
+ GET /api/notifications?limit=5&offset=0 200 in 434ms (compile: 8ms, proxy.ts: 2ms, render: 424ms)
+ GET /api/ai/assistant/conversations 200 in 288ms (compile: 4ms, proxy.ts: 3ms, render: 281ms)
+ GET /api/ai/assistant/conversations 200 in 385ms (compile: 3ms, proxy.ts: 4ms, render: 379ms)
+ GET /api/ai/assistant/conversations 200 in 297ms (compile: 6ms, proxy.ts: 12ms, render: 279ms)
+ GET /api/ai/assistant/conversations 200 in 362ms (compile: 4ms, proxy.ts: 4ms, render: 354ms)
+ GET /api/ai/assistant/conversations 200 in 407ms (compile: 4ms, proxy.ts: 3ms, render: 401ms)
+ GET /api/ai/assistant/conversations 200 in 296ms (compile: 3ms, proxy.ts: 4ms, render: 289ms)
+ GET / 200 in 166ms (compile: 123ms, render: 43ms)
+ GET /crew/dashboard 200 in 41ms (compile: 14ms, render: 27ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 284ms (compile: 3ms, proxy.ts: 2ms, render: 279ms)
+ GET /api/legs/viewport?min_lng=-96.14383830900752&min_lat=-0.9221194694995347&max_lng=104.292248622839&max_lat=81.63074641013762 200 in 249ms (compile: 2ms, proxy.ts: 2ms, render: 245ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 2121106,
+    Symbol(trigger_async_id_symbol): 2121098
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 182ms (compile: 27ms, proxy.ts: 4ms, render: 151ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133 200 in 148ms (compile: 3ms, proxy.ts: 3ms, render: 141ms)
+ GET /api/legs/viewport?min_lng=-85.36063171744505&min_lat=16.100031828884852&max_lng=89.34145396807924&max_lat=72.40073802623911 200 in 172ms (compile: 3ms, proxy.ts: 3ms, render: 165ms)
+ GET /api/notifications?limit=5&offset=0 200 in 586ms (compile: 7ms, proxy.ts: 2ms, render: 577ms)
+ GET /api/ai/assistant/conversations 200 in 373ms (compile: 5ms, proxy.ts: 3ms, render: 365ms)
+ GET /api/ai/assistant/conversations 200 in 257ms (compile: 5ms, proxy.ts: 4ms, render: 248ms)
+ GET /api/ai/assistant/conversations 200 in 316ms (compile: 3ms, proxy.ts: 2ms, render: 311ms)
+✓ Compiled in 276ms
+ GET /api/legs/viewport?min_lng=-54.13186121898299&min_lat=18.128125643463363&max_lng=126.10528243189708&max_lat=76.18580513969309 200 in 154ms (compile: 4ms, proxy.ts: 3ms, render: 147ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26' },
+    Symbol(async_id_symbol): 2131974,
+    Symbol(trigger_async_id_symbol): 2131966
+  },
+  resolvedParams: { legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26' },
+  legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26'
+}
+ GET /api/legs/55ab9e47-778c-47a5-ac99-6dd3c4737a26/waypoints 200 in 317ms (compile: 23ms, proxy.ts: 4ms, render: 291ms)
+ GET /api/legs/viewport?min_lng=2.161391331311563&min_lat=66.0296268375148&max_lng=31.714559717964562&max_lat=70.13485483154338 200 in 169ms (compile: 9ms, proxy.ts: 4ms, render: 156ms)
+ GET /api/legs/viewport?min_lng=-25.01188014924844&min_lat=60.76745899271674&max_lng=39.176334627945835&max_lat=70.79613673939332 200 in 124ms (compile: 3ms, proxy.ts: 5ms, render: 116ms)
+ GET /api/legs/viewport?min_lng=-34.37455878438709&min_lat=60.097116055688645&max_lng=29.618471134129607&max_lat=70.3037831756694 200 in 166ms (compile: 8ms, proxy.ts: 4ms, render: 154ms)
+ GET /api/legs/viewport?min_lng=-48.991185993018235&min_lat=58.153184239098806&max_lng=14.447022988414602&max_lat=68.86308552669206 200 in 145ms (compile: 8ms, proxy.ts: 3ms, render: 133ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6' },
+    Symbol(async_id_symbol): 2137394,
+    Symbol(trigger_async_id_symbol): 2137386
+  },
+  resolvedParams: { legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6' },
+  legId: 'e7237510-704f-4d99-b11e-016b8a6fb8d6'
+}
+ GET /api/legs/e7237510-704f-4d99-b11e-016b8a6fb8d6/waypoints 200 in 182ms (compile: 25ms, proxy.ts: 3ms, render: 153ms)
+ GET /api/legs/viewport?min_lng=-99.43407276190523&min_lat=12.372442337045285&max_lng=68.36747372406057&max_lat=67.45741707020278 200 in 129ms (compile: 4ms, proxy.ts: 2ms, render: 123ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 451ms (compile: 120ms, render: 331ms)
+ GET /api/ai/assistant/actions 200 in 429ms (compile: 9ms, proxy.ts: 3ms, render: 416ms)
+ GET /api/ai/assistant/suggestions 200 in 438ms (compile: 4ms, proxy.ts: 4ms, render: 430ms)
+ GET /api/notifications?limit=5&offset=0 200 in 590ms (compile: 11ms, proxy.ts: 3ms, render: 576ms)
+ GET /api/ai/assistant/actions 200 in 300ms (compile: 9ms, proxy.ts: 13ms, render: 279ms)
+ GET /api/ai/assistant/suggestions 200 in 309ms (compile: 24ms, proxy.ts: 12ms, render: 272ms)
+ GET /api/notifications?limit=5&offset=0 200 in 421ms (compile: 17ms, proxy.ts: 4ms, render: 400ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 160ms (compile: 3ms, proxy.ts: 4ms, render: 152ms)
+ GET /api/notifications?limit=5&offset=0 200 in 539ms (compile: 5ms, proxy.ts: 4ms, render: 530ms)
+ GET /api/ai/assistant/conversations 200 in 390ms (compile: 4ms, proxy.ts: 3ms, render: 383ms)
+ GET /api/ai/assistant/conversations 200 in 276ms (compile: 3ms, proxy.ts: 2ms, render: 271ms)
+ GET /api/notifications?limit=5&offset=0 200 in 773ms (compile: 5ms, proxy.ts: 2ms, render: 766ms)
+✓ Compiled in 221ms
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196' },
+    Symbol(async_id_symbol): 2162228,
+    Symbol(trigger_async_id_symbol): 2162220
+  },
+  resolvedParams: { legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196' },
+  legId: 'd59eb77f-a6e6-4e24-ba81-17f88957f196'
+}
+ GET /api/legs/viewport?min_lng=-180&min_lat=4.9916067151168875&max_lng=180&max_lat=90 200 in 422ms (compile: 4ms, proxy.ts: 3ms, render: 414ms)
+ GET /api/legs/d59eb77f-a6e6-4e24-ba81-17f88957f196/waypoints 200 in 290ms (compile: 26ms, proxy.ts: 4ms, render: 261ms)
+ GET /api/legs/viewport?min_lng=-81.17834678168133&min_lat=6.5433483189079595&max_lng=70.64431778168142&max_lat=55.87592866656675 200 in 186ms (compile: 6ms, proxy.ts: 3ms, render: 177ms)
+✓ Compiled in 230ms
+ GET /api/ai/assistant/conversations 200 in 482ms (compile: 4ms, proxy.ts: 5ms, render: 473ms)
+✓ Compiled in 612ms
+ GET /api/ai/assistant/actions 200 in 495ms (compile: 9ms, proxy.ts: 15ms, render: 472ms)
+ GET /api/ai/assistant/suggestions 200 in 515ms (compile: 8ms, proxy.ts: 17ms, render: 490ms)
+ GET /api/ai/assistant/suggestions 200 in 241ms (compile: 6ms, proxy.ts: 3ms, render: 232ms)
+ GET /api/ai/assistant/actions 200 in 272ms (compile: 3ms, proxy.ts: 3ms, render: 265ms)
+ GET /api/ai/assistant/suggestions 200 in 301ms (compile: 3ms, proxy.ts: 3ms, render: 295ms)
+ GET /api/ai/assistant/actions 200 in 274ms (compile: 3ms, proxy.ts: 3ms, render: 268ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 536ms (compile: 136ms, render: 399ms)
+ GET /api/ai/assistant/suggestions 200 in 291ms (compile: 7ms, proxy.ts: 4ms, render: 281ms)
+ GET /api/ai/assistant/actions 200 in 294ms (compile: 10ms, proxy.ts: 5ms, render: 279ms)
+ GET /api/notifications?limit=5&offset=0 200 in 537ms (compile: 6ms, proxy.ts: 3ms, render: 528ms)
+ GET /api/ai/assistant/suggestions 200 in 300ms (compile: 25ms, proxy.ts: 12ms, render: 263ms)
+ GET /api/notifications?limit=5&offset=0 200 in 491ms (compile: 8ms, proxy.ts: 3ms, render: 481ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 187ms (compile: 2ms, proxy.ts: 2ms, render: 183ms)
+ GET /api/notifications?limit=5&offset=0 200 in 531ms (compile: 12ms, proxy.ts: 5ms, render: 514ms)
+ GET /api/legs/viewport?min_lng=-41.45313935041298&min_lat=-1.9830195030791344&max_lng=129.0222497240007&max_lat=60.416232332633854 200 in 261ms (compile: 4ms, proxy.ts: 3ms, render: 255ms)
+ GET /api/legs/viewport?min_lng=-76.56474948296785&min_lat=10.311269164006646&max_lng=118.15648809371578&max_lat=77.30898028172123 200 in 284ms (compile: 1999µs, proxy.ts: 3ms, render: 280ms)
+✓ Compiled in 208ms
+✓ Compiled in 332ms
+ GET /api/legs/viewport?min_lng=-180&min_lat=7.169538334179904&max_lng=180&max_lat=90 200 in 300ms (compile: 7ms, proxy.ts: 5ms, render: 288ms)
+ GET /api/legs/viewport?min_lng=-64.94316430606602&min_lat=-1.3834555320192692&max_lng=145.21968535709283&max_lat=81.70237382372565 200 in 155ms (compile: 3ms, proxy.ts: 3ms, render: 150ms)
+ GET /api/legs/viewport?min_lng=-94.54823251995094&min_lat=12.67156120687416&max_lng=121.77053611476407&max_lat=82.24435378328462 200 in 279ms (compile: 3ms, proxy.ts: 4ms, render: 272ms)
+✓ Compiled in 164ms
+LogoWithText userRole: 
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 102ms (compile: 10ms, render: 91ms)
+ GET /api/notifications?limit=5&offset=0 200 in 656ms (compile: 27ms, proxy.ts: 5ms, render: 623ms)
+ GET /api/notifications?limit=5&offset=0 200 in 509ms (compile: 18ms, proxy.ts: 3ms, render: 488ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 137ms (compile: 3ms, proxy.ts: 2ms, render: 132ms)
+ GET /api/notifications?limit=5&offset=0 200 in 522ms (compile: 7ms, proxy.ts: 3ms, render: 512ms)
+✓ Compiled in 247ms
+LogoWithText userRole: 
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 128ms (compile: 18ms, render: 110ms)
+ GET /api/notifications?limit=5&offset=0 200 in 533ms (compile: 37ms, proxy.ts: 6ms, render: 490ms)
+ GET /api/notifications?limit=5&offset=0 200 in 543ms (compile: 29ms, proxy.ts: 9ms, render: 505ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 198ms (compile: 2ms, proxy.ts: 2ms, render: 193ms)
+ GET /api/notifications?limit=5&offset=0 200 in 447ms (compile: 10ms, proxy.ts: 2ms, render: 434ms)
+✓ Compiled in 159ms
+LogoWithText userRole: 
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 147ms (compile: 10ms, render: 137ms)
+ GET /api/notifications?limit=5&offset=0 200 in 571ms (compile: 18ms, proxy.ts: 5ms, render: 549ms)
+ GET /api/notifications?limit=5&offset=0 200 in 508ms (compile: 11ms, proxy.ts: 7ms, render: 490ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 171ms (compile: 3ms, proxy.ts: 3ms, render: 165ms)
+ GET /api/notifications?limit=5&offset=0 200 in 496ms (compile: 6ms, proxy.ts: 2ms, render: 488ms)
+✓ Compiled in 153ms
+ GET /api/ai/assistant/suggestions 200 in 322ms (compile: 5ms, proxy.ts: 4ms, render: 313ms)
+ GET /api/ai/assistant/actions 200 in 387ms (compile: 12ms, proxy.ts: 4ms, render: 371ms)
+ GET /api/ai/assistant/conversations 200 in 456ms (compile: 4ms, proxy.ts: 3ms, render: 449ms)
+ GET /api/ai/assistant/conversations 200 in 364ms (compile: 3ms, proxy.ts: 2ms, render: 359ms)
+ GET /api/ai/assistant/conversations 200 in 330ms (compile: 4ms, proxy.ts: 5ms, render: 322ms)
+✓ Compiled in 167ms
+ GET /api/ai/assistant/conversations 200 in 601ms (compile: 4ms, proxy.ts: 4ms, render: 593ms)
+ GET /api/ai/assistant/conversations 200 in 254ms (compile: 3ms, proxy.ts: 2ms, render: 249ms)
+✓ Compiled in 173ms
+ GET /api/ai/assistant/conversations 200 in 364ms (compile: 5ms, proxy.ts: 5ms, render: 355ms)
+ GET /api/ai/assistant/conversations 200 in 316ms (compile: 3ms, proxy.ts: 6ms, render: 308ms)
+ GET /api/ai/assistant/conversations 200 in 320ms (compile: 3ms, proxy.ts: 4ms, render: 313ms)
+✓ Compiled in 207ms
+ GET /api/legs/viewport?min_lng=-68.25571407449397&min_lat=-37.23116615097417&max_lng=68.2557132895929&max_lat=42.9105580424318 200 in 308ms (compile: 2ms, proxy.ts: 2ms, render: 303ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 178ms (compile: 4ms, proxy.ts: 5ms, render: 169ms)
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 588ms (compile: 142ms, render: 446ms)
+ GET /api/notifications?limit=5&offset=0 200 in 607ms (compile: 16ms, proxy.ts: 6ms, render: 585ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 145ms (compile: 2ms, proxy.ts: 3ms, render: 139ms)
+ GET /api/notifications?limit=5&offset=0 200 in 482ms (compile: 14ms, proxy.ts: 3ms, render: 466ms)
+ GET /api/notifications?limit=5&offset=0 200 in 474ms (compile: 15ms, proxy.ts: 3ms, render: 457ms)
+ GET /api/notifications?limit=5&offset=0 200 in 707ms (compile: 6ms, proxy.ts: 4ms, render: 697ms)
+ GET /api/notifications?limit=5&offset=0 200 in 950ms (compile: 10ms, proxy.ts: 4ms, render: 936ms)
+✓ Compiled in 191ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 568ms (compile: 173ms, render: 396ms)
+ GET /api/ai/assistant/actions 200 in 428ms (compile: 9ms, proxy.ts: 5ms, render: 415ms)
+ GET /api/ai/assistant/suggestions 200 in 487ms (compile: 5ms, proxy.ts: 5ms, render: 476ms)
+ GET /api/notifications?limit=5&offset=0 200 in 546ms (compile: 7ms, proxy.ts: 3ms, render: 536ms)
+ GET /api/ai/assistant/suggestions 200 in 278ms (compile: 6ms, proxy.ts: 4ms, render: 268ms)
+ GET /api/ai/assistant/actions 200 in 364ms (compile: 16ms, proxy.ts: 5ms, render: 344ms)
+ GET /api/notifications?limit=5&offset=0 200 in 382ms (compile: 14ms, proxy.ts: 3ms, render: 365ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 172ms (compile: 3ms, proxy.ts: 5ms, render: 165ms)
+ GET /api/notifications?limit=5&offset=0 200 in 477ms (compile: 11ms, proxy.ts: 3ms, render: 463ms)
+ GET /api/ai/assistant/conversations 200 in 436ms (compile: 3ms, proxy.ts: 3ms, render: 430ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396&min_experience_level=1&risk_levels=Offshore+sailing%2CCoastal+sailing 200 in 380ms (compile: 2ms, proxy.ts: 3ms, render: 375ms)
+ GET /api/legs/viewport?min_lng=-92.28160177909963&min_lat=5.621690899874608&max_lng=108.71768065245595&max_lat=75.85094071045827&min_experience_level=1&risk_levels=Offshore+sailing%2CCoastal+sailing 200 in 206ms (compile: 2ms, proxy.ts: 2ms, render: 201ms)
+ GET /api/legs/viewport?min_lng=-132.20419194743212&min_lat=-1.8315689032538813&max_lng=75.96229937106335&max_lat=80.81629051727555&min_experience_level=1&risk_levels=Offshore+sailing%2CCoastal+sailing 200 in 214ms (compile: 5ms, proxy.ts: 2ms, render: 206ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+    Symbol(async_id_symbol): 2301376,
+    Symbol(trigger_async_id_symbol): 2301368
+  },
+  resolvedParams: { legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca' },
+  legId: '6d5bf238-52d5-46a0-ab45-43afbf9d26ca'
+}
+ GET /api/legs/6d5bf238-52d5-46a0-ab45-43afbf9d26ca/waypoints 200 in 204ms (compile: 14ms, proxy.ts: 4ms, render: 186ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133&min_experience_level=1&risk_levels=Offshore+sailing%2CCoastal+sailing 200 in 151ms (compile: 3ms, proxy.ts: 2ms, render: 146ms)
+ GET /api/legs/viewport?min_lng=-84.72058188201537&min_lat=12.670609801469425&max_lng=81.03756588201526&max_lat=66.19915895736133&min_experience_level=1&risk_levels=Coastal+sailing 200 in 326ms (compile: 3ms, proxy.ts: 2ms, render: 321ms)
+ GET /api/legs/viewport?min_lng=-74.54468945101856&min_lat=15.558195452678163&max_lng=98.70845841664988&max_lat=71.40587532312975&min_experience_level=1&risk_levels=Coastal+sailing 200 in 210ms (compile: 3ms, proxy.ts: 3ms, render: 205ms)
+ GET /api/legs/viewport?min_lng=-43.05040409882068&min_lat=34.42992767328087&max_lng=77.6863896701056&max_lat=63.85615763285955&min_experience_level=1&risk_levels=Coastal+sailing 200 in 162ms (compile: 3ms, proxy.ts: 2ms, render: 157ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '1432e125-dde8-499c-ae9f-aa38273fd662' },
+    Symbol(async_id_symbol): 2308308,
+    Symbol(trigger_async_id_symbol): 2308300
+  },
+  resolvedParams: { legId: '1432e125-dde8-499c-ae9f-aa38273fd662' },
+  legId: '1432e125-dde8-499c-ae9f-aa38273fd662'
+}
+ GET /api/legs/1432e125-dde8-499c-ae9f-aa38273fd662/waypoints 200 in 175ms (compile: 28ms, proxy.ts: 3ms, render: 144ms)
+ GET /api/legs/viewport?min_lng=-5.9187160259217535&min_lat=55.02136233297509&max_lng=45.34616517370239&max_lat=64.62243241797057&min_experience_level=1&risk_levels=Coastal+sailing 200 in 244ms (compile: 7ms, proxy.ts: 4ms, render: 232ms)
+ GET /api/legs/viewport?min_lng=-23.563560825417767&min_lat=49.79962655580428&max_lng=59.73199275067509&max_lat=66.40873330045625&min_experience_level=1&risk_levels=Coastal+sailing 200 in 130ms (compile: 4ms, proxy.ts: 3ms, render: 124ms)
+ GET /api/notifications?limit=5&offset=0 200 in 707ms (compile: 7ms, proxy.ts: 3ms, render: 697ms)
+ GET /api/ai/assistant/conversations 200 in 396ms (compile: 5ms, proxy.ts: 3ms, render: 388ms)
+ GET /api/legs/viewport?min_lng=-57.96948805918302&min_lat=37.67065110585912&max_lng=84.09391843580977&max_lat=70.80054796174511&min_experience_level=1&risk_levels=Coastal+sailing 200 in 147ms (compile: 4ms, proxy.ts: 3ms, render: 141ms)
+ GET /api/ai/assistant/conversations 200 in 317ms (compile: 4ms, proxy.ts: 3ms, render: 309ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'b1c64996-8cb8-412d-8058-b186431feac1' },
+    Symbol(async_id_symbol): 2318950,
+    Symbol(trigger_async_id_symbol): 2318942
+  },
+  resolvedParams: { legId: 'b1c64996-8cb8-412d-8058-b186431feac1' },
+  legId: 'b1c64996-8cb8-412d-8058-b186431feac1'
+}
+ GET /api/legs/b1c64996-8cb8-412d-8058-b186431feac1/waypoints 200 in 273ms (compile: 15ms, proxy.ts: 3ms, render: 255ms)
+ GET /api/legs/viewport?min_lng=15.228469279399093&min_lat=62.63314767188146&max_lng=31.640542806165968&max_lat=65.27005751362043&min_experience_level=1&risk_levels=Coastal+sailing 200 in 148ms (compile: 7ms, proxy.ts: 3ms, render: 139ms)
+ GET /api/legs/viewport?min_lng=-43.12340980660997&min_lat=45.749641978024556&max_lng=64.71680946964005&max_lat=68.30407632318818&min_experience_level=1&risk_levels=Coastal+sailing 200 in 131ms (compile: 7ms, proxy.ts: 3ms, render: 120ms)
+✓ Compiled in 201ms
+ GET /api/legs/viewport?min_lng=-72.09610717255953&min_lat=32.64497323279872&max_lng=81.69052282974098&max_lat=70.88189141534528&min_experience_level=1&risk_levels=Coastal+sailing 200 in 270ms (compile: 3ms, proxy.ts: 3ms, render: 264ms)
+ GET /api/legs/viewport?min_lng=-90.29333658677501&min_lat=21.870984804635867&max_lng=69.82762883202975&max_lat=65.7496305689877&min_experience_level=1&risk_levels=Coastal+sailing 200 in 206ms (compile: 21ms, proxy.ts: 6ms, render: 180ms)
+✓ Compiled in 251ms
+ GET /api/notifications?limit=5&offset=0 200 in 711ms (compile: 18ms, proxy.ts: 3ms, render: 690ms)
+ GET /api/legs/viewport?min_lng=-76.26953349690257&min_lat=20.98428667350929&max_lng=81.70686683161955&max_lat=64.47173824023082&min_experience_level=1&risk_levels=Coastal+sailing 200 in 155ms (compile: 4ms, proxy.ts: 4ms, render: 148ms)
+✓ Compiled in 173ms
+ GET /api/legs/viewport?min_lng=-76.26953349690257&min_lat=20.98428667350929&max_lng=81.70686683161955&max_lat=64.47173824023082&min_experience_level=1&risk_levels=Coastal+sailing 200 in 281ms (compile: 5ms, proxy.ts: 4ms, render: 272ms)
+✓ Compiled in 256ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 1244ms (compile: 190ms, render: 1054ms)
+ GET /api/ai/assistant/suggestions 200 in 396ms (compile: 6ms, proxy.ts: 5ms, render: 384ms)
+ GET /api/ai/assistant/actions 200 in 398ms (compile: 11ms, proxy.ts: 6ms, render: 382ms)
+ GET /api/notifications?limit=5&offset=0 200 in 588ms (compile: 7ms, proxy.ts: 4ms, render: 577ms)
+ GET /api/ai/assistant/suggestions 200 in 288ms (compile: 21ms, proxy.ts: 6ms, render: 261ms)
+ GET /api/ai/assistant/actions 200 in 288ms (compile: 5ms, proxy.ts: 4ms, render: 279ms)
+ GET /api/notifications?limit=5&offset=0 200 in 410ms (compile: 17ms, proxy.ts: 4ms, render: 389ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396&min_experience_level=1&risk_levels=Coastal+sailing 200 in 141ms (compile: 6ms, proxy.ts: 3ms, render: 132ms)
+ GET /api/notifications?limit=5&offset=0 200 in 519ms (compile: 11ms, proxy.ts: 3ms, render: 504ms)
+✓ Compiled in 207ms
+ GET /api/notifications?limit=5&offset=0 200 in 726ms (compile: 13ms, proxy.ts: 4ms, render: 709ms)
+✓ Compiled in 146ms
+LogoWithText userRole: 
+ GET /crew/dashboard 200 in 489ms (compile: 131ms, render: 357ms)
+ GET /api/ai/assistant/suggestions 200 in 412ms (compile: 8ms, proxy.ts: 5ms, render: 399ms)
+ GET /api/ai/assistant/actions 200 in 419ms (compile: 10ms, proxy.ts: 6ms, render: 403ms)
+ GET /api/notifications?limit=5&offset=0 200 in 514ms (compile: 11ms, proxy.ts: 4ms, render: 500ms)
+ GET /api/ai/assistant/actions 200 in 283ms (compile: 22ms, proxy.ts: 19ms, render: 242ms)
+ GET /api/ai/assistant/suggestions 200 in 289ms (compile: 26ms, proxy.ts: 8ms, render: 256ms)
+ GET /api/notifications?limit=5&offset=0 200 in 464ms (compile: 14ms, proxy.ts: 4ms, render: 446ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396&min_experience_level=1&risk_levels=Coastal+sailing 200 in 207ms (compile: 6ms, proxy.ts: 2ms, render: 199ms)
+ GET /api/notifications?limit=5&offset=0 200 in 468ms (compile: 7ms, proxy.ts: 2ms, render: 458ms)
+✓ Compiled in 248ms
+✓ Compiled in 195ms
+ GET /api/notifications?limit=5&offset=0 200 in 649ms (compile: 6ms, proxy.ts: 3ms, render: 640ms)
+ GET /api/notifications?limit=5&offset=0 200 in 655ms (compile: 15ms, proxy.ts: 4ms, render: 636ms)
+✓ Compiled in 131ms
+ GET /api/ai/assistant/conversations 200 in 343ms (compile: 5ms, proxy.ts: 3ms, render: 335ms)
+ GET /api/ai/assistant/conversations 200 in 351ms (compile: 4ms, proxy.ts: 3ms, render: 344ms)
+ GET /api/ai/assistant/conversations 200 in 393ms (compile: 3ms, proxy.ts: 8ms, render: 383ms)
+ GET /api/ai/assistant/conversations 200 in 305ms (compile: 4ms, proxy.ts: 3ms, render: 297ms)
+ GET /api/ai/assistant/conversations 200 in 474ms (compile: 4ms, proxy.ts: 3ms, render: 466ms)
+ GET /api/ai/assistant/conversations 200 in 648ms (compile: 2ms, proxy.ts: 2ms, render: 643ms)
+ GET /api/ai/assistant/conversations 200 in 328ms (compile: 4ms, proxy.ts: 5ms, render: 319ms)
+ GET /api/ai/assistant/conversations 200 in 321ms (compile: 3ms, proxy.ts: 4ms, render: 315ms)
+ GET /api/ai/assistant/conversations 200 in 416ms (compile: 4ms, proxy.ts: 3ms, render: 409ms)
+ GET /api/ai/assistant/conversations 200 in 304ms (compile: 3ms, proxy.ts: 4ms, render: 298ms)
+ GET /api/notifications?limit=5&offset=0 200 in 752ms (compile: 9ms, proxy.ts: 6ms, render: 737ms)
+ GET /api/legs/viewport?min_lng=-69.46086755348841&min_lat=-10.208466016726092&max_lng=105.83526270960584&max_lat=69.93325817667989&min_experience_level=1&risk_levels=Coastal+sailing 200 in 316ms (compile: 3ms, proxy.ts: 2ms, render: 311ms)
+ GET /api/legs/viewport?min_lng=-79.63926220842554&min_lat=0.08599400686927083&max_lng=128.40324635240336&max_lat=83.60709195049546&min_experience_level=1&risk_levels=Coastal+sailing 200 in 291ms (compile: 2ms, proxy.ts: 3ms, render: 286ms)
+ GET /api/legs/viewport?min_lng=-180&min_lat=4.299146984828084&max_lng=180&max_lat=90&min_experience_level=1&risk_levels=Coastal+sailing 200 in 187ms (compile: 3ms, proxy.ts: 3ms, render: 181ms)
+ GET /api/legs/viewport?min_lng=-62.56357787599731&min_lat=12.334322033265238&max_lng=107.61095709322353&max_lat=70.84549779043672&min_experience_level=1&risk_levels=Coastal+sailing 200 in 267ms (compile: 2ms, proxy.ts: 2ms, render: 262ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26' },
+    Symbol(async_id_symbol): 2386730,
+    Symbol(trigger_async_id_symbol): 2386722
+  },
+  resolvedParams: { legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26' },
+  legId: '55ab9e47-778c-47a5-ac99-6dd3c4737a26'
+}
+ GET /api/legs/55ab9e47-778c-47a5-ac99-6dd3c4737a26/waypoints 200 in 229ms (compile: 20ms, proxy.ts: 3ms, render: 207ms)
+ GET /api/legs/viewport?min_lng=4.769570832370334&min_lat=66.64861830320169&max_lng=28.594070167629212&max_lat=69.91186602890332&min_experience_level=1&risk_levels=Coastal+sailing 200 in 186ms (compile: 2ms, proxy.ts: 3ms, render: 180ms)
+ GET /api/legs/viewport?min_lng=9.781715781259805&min_lat=66.97405542192627&max_lng=33.596729919464394&max_lat=70.19346120027959&min_experience_level=1&risk_levels=Coastal+sailing 200 in 176ms (compile: 3ms, proxy.ts: 2ms, render: 171ms)
+ GET /api/ai/assistant/conversations 200 in 262ms (compile: 4ms, proxy.ts: 5ms, render: 253ms)
+ GET / 200 in 164ms (compile: 137ms, render: 27ms)
+ GET /api/ai/assistant/conversations 200 in 457ms (compile: 10ms, proxy.ts: 3ms, render: 443ms)
+ GET /crew/dashboard 200 in 253ms (compile: 201ms, render: 52ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396&min_experience_level=1&risk_levels=Coastal+sailing 200 in 326ms (compile: 3ms, proxy.ts: 2ms, render: 321ms)
+ GET /api/ai/assistant/conversations 200 in 285ms (compile: 5ms, proxy.ts: 3ms, render: 277ms)
+ GET /api/legs/viewport?min_lng=-88.03505728883343&min_lat=-3.1825104567965212&max_lng=101.21522548156582&max_lat=77.19094053012827&min_experience_level=1&risk_levels=Coastal+sailing 200 in 373ms (compile: 2ms, proxy.ts: 3ms, render: 368ms)
+ GET /api/legs/viewport?min_lng=-72.64017213657036&min_lat=-0.38479146230737626&max_lng=86.1475746388029&max_lat=60.270682115061845&min_experience_level=1&risk_levels=Coastal+sailing 200 in 146ms (compile: 2ms, proxy.ts: 2ms, render: 142ms)
+ GET /api/legs/viewport?min_lng=-78.89608169260913&min_lat=-10.378623240144506&max_lng=92.40348419480694&max_lat=60.37845058240214&min_experience_level=1&risk_levels=Coastal+sailing 200 in 199ms (compile: 3ms, proxy.ts: 2ms, render: 193ms)
+ GET /filters 200 in 199ms (compile: 183ms, render: 16ms)
+ GET /assistant 200 in 72ms (compile: 57ms, render: 16ms)
+ GET /api/ai/assistant/conversations 200 in 279ms (compile: 4ms, proxy.ts: 3ms, render: 273ms)
+ GET /api/ai/assistant/conversations 200 in 322ms (compile: 3ms, proxy.ts: 2ms, render: 317ms)
+ GET /notifications 200 in 168ms (compile: 145ms, render: 23ms)
+ GET /menu 200 in 158ms (compile: 113ms, render: 45ms)
+ GET /api/notifications?limit=5&offset=0 200 in 512ms (compile: 7ms, proxy.ts: 6ms, render: 499ms)
+ GET / 200 in 24ms (compile: 7ms, render: 16ms)
+ GET /menu 200 in 21ms (compile: 6ms, render: 15ms)
+ GET /notifications 200 in 22ms (compile: 6ms, render: 16ms)
+ GET /assistant 200 in 19ms (compile: 6ms, render: 13ms)
+ GET /api/ai/assistant/conversations 200 in 448ms (compile: 3ms, proxy.ts: 3ms, render: 441ms)
+ GET /api/ai/assistant/conversations 200 in 242ms (compile: 3ms, proxy.ts: 3ms, render: 237ms)
+ GET /filters 200 in 23ms (compile: 6ms, render: 17ms)
+ GET / 200 in 18ms (compile: 6ms, render: 12ms)
+ GET /api/notifications?limit=5&offset=0 200 in 776ms (compile: 6ms, proxy.ts: 2ms, render: 768ms)
+✓ Compiled in 158ms
+ GET /api/notifications?limit=5&offset=0 200 in 610ms (compile: 6ms, proxy.ts: 2ms, render: 602ms)
+✓ Compiled in 161ms
+✓ Compiled in 154ms
+✓ Compiled in 157ms
+✓ Compiled in 176ms
+✓ Compiled in 266ms
+✓ Compiled in 238ms
+✓ Compiled in 251ms
+✓ Compiled in 228ms
+ GET /api/notifications?limit=5&offset=0 200 in 619ms (compile: 8ms, proxy.ts: 3ms, render: 608ms)
+ GET /api/notifications?limit=5&offset=0 200 in 720ms (compile: 26ms, proxy.ts: 8ms, render: 686ms)
+LogoWithText userRole: 
+ GET / 200 in 407ms (compile: 173ms, render: 235ms)
+ GET /api/ai/assistant/suggestions 200 in 269ms (compile: 7ms, proxy.ts: 6ms, render: 256ms)
+ GET /api/ai/assistant/actions 200 in 400ms (compile: 13ms, proxy.ts: 6ms, render: 382ms)
+ GET /api/ai/assistant/suggestions 200 in 246ms (compile: 3ms, proxy.ts: 2ms, render: 241ms)
+ GET /api/notifications?limit=5&offset=0 200 in 594ms (compile: 26ms, proxy.ts: 6ms, render: 562ms)
+ GET /api/ai/assistant/actions 200 in 307ms (compile: 3ms, proxy.ts: 2ms, render: 303ms)
+ GET /api/notifications?limit=5&offset=0 200 in 372ms (compile: 6ms, proxy.ts: 3ms, render: 363ms)
+ GET /api/notifications?limit=5&offset=0 200 in 583ms (compile: 8ms, proxy.ts: 2ms, render: 573ms)
+ GET /api/ai/assistant/conversations 200 in 345ms (compile: 3ms, proxy.ts: 2ms, render: 341ms)
+ GET /api/ai/assistant/conversations 200 in 392ms (compile: 5ms, proxy.ts: 1982µs, render: 385ms)
+ GET / 200 in 38ms (compile: 8ms, render: 30ms)
+ GET /crew/dashboard 200 in 211ms (compile: 173ms, render: 37ms)
+ GET /api/legs/viewport?min_lng=-72.94425166885979&min_lat=-22.34323181364165&max_lng=72.94425166885983&max_lat=48.27789324280292&min_experience_level=1&risk_levels=Coastal+sailing 200 in 327ms (compile: 2ms, proxy.ts: 2ms, render: 322ms)
+ GET /api/ai/assistant/conversations 200 in 367ms (compile: 3ms, proxy.ts: 2ms, render: 361ms)
+ GET / 200 in 21ms (compile: 7ms, render: 14ms)
+ GET /api/ai/assistant/conversations 200 in 517ms (compile: 8ms, proxy.ts: 4ms, render: 505ms)
+ GET /api/ai/assistant/conversations 200 in 305ms (compile: 3ms, proxy.ts: 6ms, render: 295ms)
+ GET /api/notifications?limit=5&offset=0 200 in 705ms (compile: 14ms, proxy.ts: 5ms, render: 686ms)
+LogoWithText userRole: 
+ GET / 200 in 209ms (compile: 17ms, render: 192ms)
+ GET /api/ai/assistant/suggestions 200 in 459ms (compile: 14ms, proxy.ts: 12ms, render: 433ms)
+ GET /api/ai/assistant/actions 200 in 470ms (compile: 22ms, proxy.ts: 15ms, render: 433ms)
+ GET /api/notifications?limit=5&offset=0 200 in 581ms (compile: 38ms, proxy.ts: 15ms, render: 528ms)
+ GET /api/ai/assistant/actions 200 in 283ms (compile: 5ms, proxy.ts: 17ms, render: 261ms)
+ GET /api/ai/assistant/suggestions 200 in 394ms (compile: 18ms, proxy.ts: 10ms, render: 365ms)
+ GET /api/notifications?limit=5&offset=0 200 in 460ms (compile: 31ms, proxy.ts: 12ms, render: 417ms)
+ GET /api/notifications?limit=5&offset=0 200 in 607ms (compile: 32ms, proxy.ts: 10ms, render: 566ms)
+ GET / 200 in 40ms (compile: 13ms, render: 26ms)
+ GET / 200 in 48ms (compile: 11ms, render: 37ms)
+ GET / 200 in 49ms (compile: 16ms, render: 33ms)
+ GET /crew/dashboard 200 in 48ms (compile: 15ms, render: 33ms)
+ GET /api/legs/viewport?min_lng=-75.66230570147275&min_lat=-21.73454305056346&max_lng=75.66230570147286&max_lat=54.161943922339645&min_experience_level=1&risk_levels=Coastal+sailing 200 in 336ms (compile: 2ms, proxy.ts: 2ms, render: 332ms)
+ GET /crew/dashboard 200 in 22ms (compile: 9ms, render: 14ms)
+ GET / 200 in 21ms (compile: 9ms, render: 12ms)
+LogoWithText userRole: 
+ GET / 200 in 101ms (compile: 14ms, render: 87ms)
+ GET /crew/dashboard 200 in 69ms (compile: 20ms, render: 49ms)
+ GET /crew/dashboard 200 in 75ms (compile: 17ms, render: 58ms)
+ GET /api/ai/assistant/actions 200 in 1280ms (compile: 34ms, proxy.ts: 12ms, render: 1233ms)
+ GET /api/ai/assistant/suggestions 200 in 1306ms (compile: 25ms, proxy.ts: 10ms, render: 1272ms)
+ GET /api/notifications?limit=5&offset=0 200 in 1458ms (compile: 42ms, proxy.ts: 20ms, render: 1397ms)
+ GET /api/ai/assistant/actions 200 in 258ms (compile: 4ms, proxy.ts: 4ms, render: 250ms)
+ GET /api/ai/assistant/suggestions 200 in 308ms (compile: 10ms, proxy.ts: 15ms, render: 283ms)
+ GET /api/legs/viewport?min_lng=-78.39343451016438&min_lat=-31.00845024420866&max_lng=78.39343451016464&max_lat=60.07086209670396 200 in 634ms (compile: 11ms, proxy.ts: 4ms, render: 620ms)
+ GET /api/legs/viewport?min_lng=-83.63043793785936&min_lat=-5.36835083512058&max_lng=100.98716657835564&max_lat=74.77337335828543 200 in 218ms (compile: 3ms, proxy.ts: 2ms, render: 213ms)
+ GET /api/legs/viewport?min_lng=-72.31840016037071&min_lat=12.890168201125832&max_lng=106.08497692200717&max_lat=76.65545356151856 200 in 244ms (compile: 3ms, proxy.ts: 2ms, render: 239ms)
+[Waypoints API] Received params: {
+  params: Promise {
+    { legId: 'b1c64996-8cb8-412d-8058-b186431feac1' },
+    Symbol(async_id_symbol): 2501870,
+    Symbol(trigger_async_id_symbol): 2501862
+  },
+  resolvedParams: { legId: 'b1c64996-8cb8-412d-8058-b186431feac1' },
+  legId: 'b1c64996-8cb8-412d-8058-b186431feac1'
+}
+ GET /api/legs/b1c64996-8cb8-412d-8058-b186431feac1/waypoints 200 in 173ms (compile: 15ms, proxy.ts: 2ms, render: 155ms)
+ GET /api/legs/viewport?min_lng=15.687298191248317&min_lat=62.71303506199317&max_lng=31.38820180875709&max_lat=65.23183338299808 200 in 134ms (compile: 2ms, proxy.ts: 2ms, render: 129ms)
+ GET /api/ai/assistant/conversations 200 in 263ms (compile: 4ms, proxy.ts: 3ms, render: 256ms)
+ GET /api/ai/assistant/conversations 200 in 450ms (compile: 3ms, proxy.ts: 4ms, render: 443ms)
+ GET /api/legs/viewport?min_lng=17.801404484765186&min_lat=62.97387847003483&max_lng=29.274095515235786&max_lat=65.06901734498288 200 in 352ms (compile: 3ms, proxy.ts: 4ms, render: 346ms)

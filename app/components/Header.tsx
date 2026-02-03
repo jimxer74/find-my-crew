@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -26,6 +26,7 @@ export function Header() {
   const { filters, updateFilters } = useFilters();
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
+  const filtersButtonRef = useRef<HTMLButtonElement>(null);
 
   // Close all dialogs when route changes
   useEffect(() => {
@@ -157,13 +158,10 @@ export function Header() {
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               {user && (userRoles?.includes('crew') || (userRoles === null && roleLoading)) && (
                 <button
+                  ref={filtersButtonRef}
                   onClick={() => {
-                    // On mobile, navigate to filters page; on desktop, open modal
-                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      router.push('/filters');
-                    } else {
-                      setIsFiltersDialogOpen(true);
-                    }
+                    // Toggle panel on both mobile and desktop
+                    setIsFiltersDialogOpen(!isFiltersDialogOpen);
                   }}
                   className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
                   aria-label={`Filters${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
@@ -178,15 +176,21 @@ export function Header() {
                       viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
-                      <line x1="4" y1="6" x2="16" y2="6" />
-                      <circle cx="19" cy="6" r="2" fill="none" />
-                      <line x1="4" y1="12" x2="16" y2="12" />
-                      <circle cx="5" cy="12" r="2" fill="none" />
-                      <line x1="4" y1="18" x2="16" y2="18" />
-                      <circle cx="19" cy="18" r="2" fill="none" />
+                      {isFiltersDialogOpen ? (
+                        <path d="M6 18L18 6M6 6l12 12" />
+                      ) : (
+                        <>
+                          <line x1="4" y1="6" x2="16" y2="6" />
+                          <circle cx="19" cy="6" r="2" fill="none" />
+                          <line x1="4" y1="12" x2="16" y2="12" />
+                          <circle cx="5" cy="12" r="2" fill="none" />
+                          <line x1="4" y1="18" x2="16" y2="18" />
+                          <circle cx="19" cy="18" r="2" fill="none" />
+                        </>
+                      )}
                     </svg>
-                    {/* Active filters badge */}
-                    {getActiveFiltersCount() > 0 && (
+                    {/* Active filters badge - only show when closed */}
+                    {!isFiltersDialogOpen && getActiveFiltersCount() > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-medium text-white bg-blue-900 rounded-full transform translate-x-1/2 -translate-y-1/2">
                         {getActiveFiltersCount() > 99 ? '99+' : getActiveFiltersCount()}
                       </span>
@@ -239,6 +243,7 @@ export function Header() {
       <FiltersDialog
         isOpen={isFiltersDialogOpen}
         onClose={() => setIsFiltersDialogOpen(false)}
+        buttonRef={filtersButtonRef}
       />
     </>
   );

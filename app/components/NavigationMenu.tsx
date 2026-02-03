@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -26,7 +27,8 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close menu when route changes
   useEffect(() => {
@@ -50,9 +52,12 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
       // Only handle click-outside on desktop (md breakpoint = 768px)
       if (window.innerWidth < 768) return;
 
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      // Don't close if clicking on the button or the panel
+      if (buttonRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
       }
+      setIsOpen(false);
     };
 
     if (isOpen) {
@@ -136,16 +141,13 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
   }, [isOpen, loadUserRoles]);
 
   return (
-    <div className="relative" ref={menuRef}>
+    <div>
       {/* Hamburger Menu Button */}
       <button
+        ref={buttonRef}
         onClick={() => {
-          // On mobile, navigate to menu page; on desktop, toggle modal
-          if (typeof window !== 'undefined' && window.innerWidth < 768) {
-            router.push('/menu');
-          } else {
-            setIsOpen(!isOpen);
-          }
+          // Toggle panel on both mobile and desktop
+          setIsOpen(!isOpen);
         }}
         className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
         aria-label="Toggle menu"
@@ -167,47 +169,37 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
         </svg>
       </button>
 
-      {/* Menu Panel - only render when open */}
-      {isOpen && (
-        <>
-          {/* Backdrop - desktop only */}
-          <div
-            className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-40"
-            onClick={() => setIsOpen(false)}
-          />
+      {/* Menu Panel - only render when open, use portal to render outside Header DOM */}
+      {isOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          ref={panelRef}
+          className="fixed top-16 bottom-0 right-0 w-full md:w-60 lg:w-80 bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
+            {/* Close button - mobile only */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+          </div>
 
-          {/* Menu - full page on mobile (like normal page), dropdown dialog on desktop */}
-          <div className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[280px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[105] overflow-hidden flex flex-col pointer-events-auto">
-            {/* Header - only visible on desktop */}
-            <div className="hidden md:flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-              <h2 className="text-lg font-semibold text-foreground">Menu</h2>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
-                aria-label="Close"
-              >
-                <svg
-                  className="w-5 h-5 text-foreground"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Menu content */}
+          {/* Menu content - scrollable */}
+          <div className="flex-1 overflow-y-auto">
             <NavigationMenuContent
               onClose={() => setIsOpen(false)}
               onOpenLogin={onOpenLogin}
               onOpenSignup={onOpenSignup}
             />
           </div>
-        </>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -291,7 +283,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
   };
 
   return (
-    <div className="flex-1 overflow-y-auto py-2" data-navigation-menu>
+    <div className="bg-card py-2" data-navigation-menu>
 
 
       {loading ? (

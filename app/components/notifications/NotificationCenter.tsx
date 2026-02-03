@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { NotificationItem } from './NotificationItem';
@@ -17,6 +18,7 @@ interface NotificationCenterProps {
   onDelete: (id: string) => void;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  buttonRef?: React.RefObject<HTMLButtonElement>;
 }
 
 interface NotificationPageContentProps {
@@ -42,6 +44,7 @@ export function NotificationCenter({
   onDelete,
   onLoadMore,
   hasMore,
+  buttonRef,
 }: NotificationCenterProps) {
   const t = useTranslations('notifications');
   const tCommon = useTranslations('common');
@@ -54,9 +57,12 @@ export function NotificationCenter({
       // Only handle click-outside on desktop (md breakpoint = 768px)
       if (window.innerWidth < 768) return;
 
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+      // Don't close if clicking on the button or the panel
+      if (buttonRef?.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
       }
+      onClose();
     };
 
     if (isOpen) {
@@ -66,7 +72,7 @@ export function NotificationCenter({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, buttonRef]);
 
   // Close on Escape key
   useEffect(() => {
@@ -88,42 +94,31 @@ export function NotificationCenter({
   // Don't render at all if not open - this prevents blocking
   if (!isOpen) return null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-40"
-        onClick={onClose}
-      />
+  // Use portal to render outside Header DOM
+  if (typeof document === 'undefined') return null;
 
-      {/* Panel - desktop only (mobile uses /notifications page) */}
-      <div
-        ref={panelRef}
-        className="fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[400px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg md:shadow-lg z-[105] overflow-hidden flex flex-col pointer-events-auto"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-          <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
-            aria-label={tCommon('close')}
-          >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+  return createPortal(
+    <div
+      ref={panelRef}
+      className="fixed top-16 bottom-0 right-0 w-full md:w-80 lg:w-96 bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
+        {/* Close button - mobile only */}
+        <button
+          onClick={onClose}
+          className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+          aria-label="Close"
+        >
+          <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <h2 className="text-lg font-semibold text-foreground">{t('title')}</h2>
+      </div>
 
-        {/* Notification list */}
+      {/* Notification list - scrollable */}
+      <div className="flex-1 overflow-y-auto">
         <NotificationPageContent
           onClose={onClose}
           notifications={notifications}
@@ -136,7 +131,8 @@ export function NotificationCenter({
           hasMore={hasMore}
         />
       </div>
-    </>
+    </div>,
+    document.body
   );
 }
 
@@ -172,8 +168,8 @@ export function NotificationPageContent({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto">
-          {isLoading && notifications.length === 0 ? (
+    <div>
+      {isLoading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
             </div>

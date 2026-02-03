@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, ReactNode, RefObject } from 'react';
 import { AIConversation, AIMessage, AIPendingAction, AISuggestion } from '@/app/lib/ai/assistant/types';
 
 interface AIError {
@@ -28,6 +28,7 @@ interface AssistantContextType extends AssistantState {
   openAssistant: () => void;
   closeAssistant: () => void;
   toggleAssistant: () => void;
+  buttonRef: RefObject<HTMLButtonElement>;
   setCurrentConversation: (id: string | null) => void;
   sendMessage: (message: string) => Promise<void>;
   retryLastMessage: () => Promise<void>;
@@ -48,6 +49,7 @@ interface AssistantContextType extends AssistantState {
 const AssistantContext = createContext<AssistantContextType | null>(null);
 
 export function AssistantProvider({ children }: { children: ReactNode }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [state, setState] = useState<AssistantState>({
     isOpen: false,
     isMobile: false,
@@ -338,6 +340,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     openAssistant,
     closeAssistant,
     toggleAssistant,
+    buttonRef,
     setCurrentConversation,
     sendMessage,
     retryLastMessage,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -15,6 +16,7 @@ import { ExperienceLevel } from '@/app/types/experience-levels';
 type FiltersDialogProps = {
   isOpen: boolean;
   onClose: () => void;
+  buttonRef?: React.RefObject<HTMLButtonElement>;
 };
 
 type FiltersPageContentProps = {
@@ -23,7 +25,7 @@ type FiltersPageContentProps = {
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
-export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
+export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps) {
   const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -33,9 +35,12 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
       // Only handle click-outside on desktop (md breakpoint = 768px)
       if (window.innerWidth < 768) return;
 
-      if (dialogRef.current && !dialogRef.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+      // Don't close if clicking on the button or the dialog
+      if (buttonRef?.current?.contains(target) || dialogRef.current?.contains(target)) {
+        return;
       }
+      onClose();
     };
 
     if (isOpen) {
@@ -45,7 +50,7 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, buttonRef]);
 
   const handleCancel = () => {
     onClose();
@@ -54,45 +59,35 @@ export function FiltersDialog({ isOpen, onClose }: FiltersDialogProps) {
   // Don't render at all if not open - this prevents blocking
   if (!isOpen) return null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="hidden md:block fixed inset-0 top-[4rem] bg-black/20 z-[90]"
-        onClick={handleCancel}
-      />
+  // Use portal to render outside Header DOM
+  if (typeof document === 'undefined') return null;
 
-      {/* Dialog - desktop only (mobile uses /filters page) */}
-      <div
-        ref={dialogRef}
-        className="overflow-y-auto fixed left-0 right-0 md:left-auto md:right-4 top-[4rem] md:top-[5rem] w-full md:w-[760px] h-[calc(100vh-4rem)] md:h-auto md:max-h-[calc(100vh-6rem)] bg-background md:bg-card md:border md:border-border md:rounded-lg z-[105] overflow-hidden flex flex-col pointer-events-auto"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-          <h2 className="text-lg font-semibold text-foreground">{t('filters')}</h2>
-          <button
-            onClick={handleCancel}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
-            aria-label={t('close')}
-          >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+  return createPortal(
+    <div
+      ref={dialogRef}
+      className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-[28rem] bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+    >
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
+        {/* Close button - mobile only */}
+        <button
+          onClick={onClose}
+          className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+          aria-label="Close"
+        >
+          <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+        <h2 className="text-lg font-semibold text-foreground">{t('filters')}</h2>
+      </div>
 
-        {/* Content */}
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-y-auto">
         <FiltersPageContent onClose={handleCancel} />
       </div>
-    </>
+    </div>,
+    document.body
   );
 }
 

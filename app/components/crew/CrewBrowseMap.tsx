@@ -10,6 +10,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@/app/lib/skillMatching';
+import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 
     
 type Leg = {
@@ -1460,15 +1461,14 @@ export function CrewBrowseMap({
 
     const coordinates = validWaypoints.map(wp => wp.coordinates!);
     console.log('[CrewBrowseMap] Creating route with coordinates:', coordinates);
-    
+
     const isApproved = userRegistrations.get(selectedLeg.leg_id) === 'Approved';
 
-    const routeFeature: GeoJSON.Feature<GeoJSON.LineString> = {
+    // Use splitLineAtAntimeridian to handle routes crossing the 180° longitude
+    const geometry = splitLineAtAntimeridian(coordinates);
+    const routeFeature: GeoJSON.Feature<GeoJSON.LineString | GeoJSON.MultiLineString> = {
       type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: coordinates,
-      },
+      geometry,
       properties: {},
     };
 
@@ -1483,24 +1483,24 @@ export function CrewBrowseMap({
     map.current.setPaintProperty('leg-route-line', 'line-opacity', 0.9);
     map.current.setPaintProperty('leg-route-line', 'line-dasharray', isApproved ? [1, 0] : [2, 2]); // Solid if approved, dashed otherwise
 
-    // Calculate bounds to fit entire route
-    const lngs = coordinates.map(coord => coord[0]);
-    const lats = coordinates.map(coord => coord[1]);
-    
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
+    // Calculate bounds to fit entire route (handles antimeridian crossing)
+    const calculatedBounds = calculateBoundsWithAntimeridian(coordinates);
+    if (!calculatedBounds) {
+      console.log('[CrewBrowseMap] Could not calculate bounds');
+      return;
+    }
+
+    const [[minLng, minLat], [maxLng, maxLat]] = calculatedBounds;
 
     // Add padding
     const padding = 0.1; // 10% padding
-    const lngDiff = maxLng - minLng;
+    const lngDiff = Math.abs(maxLng - minLng);
     const latDiff = maxLat - minLat;
-    
+
     // Handle edge case where all waypoints are at the same location
     const finalLngDiff = lngDiff === 0 ? 0.01 : lngDiff;
     const finalLatDiff = latDiff === 0 ? 0.01 : latDiff;
-    
+
     const bounds = new mapboxgl.LngLatBounds(
       [minLng - finalLngDiff * padding, minLat - finalLatDiff * padding],
       [maxLng + finalLngDiff * padding, maxLat + finalLatDiff * padding]

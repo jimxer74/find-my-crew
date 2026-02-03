@@ -181,7 +181,7 @@ export function RiskLevelSelector({
           </span>
         )}
       </label>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-2 auto-rows-fr items-start">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:gap-2 auto-rows-fr items-start">
         {/* Coastal sailing */}
         <button
           type="button"
