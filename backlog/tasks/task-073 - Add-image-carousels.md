@@ -1,7 +1,7 @@
 ---
 id: TASK-073
 title: Add image carousels
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-02-02 21:11'
 updated_date: '2026-02-03 10:18'
