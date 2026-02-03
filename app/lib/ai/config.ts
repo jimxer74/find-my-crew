@@ -208,7 +208,7 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
         'gemini-2.5-pro',
       ],
       temperature: 0.5, // Balanced for creative but accurate suggestions
-      maxTokens: 3000,
+      maxTokens: 10000,
     },
     {
       provider: 'groq',
@@ -218,13 +218,13 @@ export const AI_CONFIG: Record<UseCase, ModelConfig[]> = {
         'qwen/qwen3-32b',
       ],
       temperature: 0.5,
-      maxTokens: 3000,
+      maxTokens: 10000,
     },
     {
       provider: 'deepseek',
       models: ['deepseek-chat', 'deepseek-reasoner'],
       temperature: 0.5,
-      maxTokens: 3000,
+      maxTokens: 10000,
     },
   ],
   'assistant-chat': [

@@ -45,17 +45,7 @@ Respond ONLY with a valid JSON object (no markdown, no explanation) in this exac
   "certifications": "string or null",
   "sailingPreferences": "string or null",
 
-  "skills": [{"skill": 
-    "safety_and_mob"|
-    "heavy_weather"|
-    "night_sailing"|
-    "watch_keeping"|
-    "navigation"|
-    "sailing_experience"|
-    "certifications"|
-    "physical_fitness"|
-    "technical_skills"|
-    "first_aid"|"seasickness_management", "description": "string"}],
+  "skills": [{"skill": "string", "description": "string"}],
 
   "riskLevel": ["string"],
 
@@ -115,7 +105,33 @@ function parseAIResponse(text: string): ProfileSuggestion {
   }
   jsonText = jsonText.trim();
 
-  const parsed = JSON.parse(jsonText);
+  let parsed: any;
+
+  try {
+    // First attempt to parse the JSON
+    parsed = JSON.parse(jsonText);
+  } catch (jsonError) {
+    console.error('JSON parsing failed:', jsonError);
+    console.error('Problematic JSON text:', jsonText);
+
+    // Try to fix common JSON issues
+    try {
+      // Fix unterminated strings by attempting to find and close them
+      let fixedJson = jsonText;
+
+      // Look for common patterns that cause unterminated strings
+      // This is a basic fix - in production you might want more sophisticated error recovery
+      fixedJson = fixedJson.replace(/,\s*}/g, '}'); // Remove trailing commas before closing braces
+      fixedJson = fixedJson.replace(/,\s*]/g, ']'); // Remove trailing commas before closing brackets
+
+      // Try to parse again
+      parsed = JSON.parse(fixedJson);
+      console.log('Successfully fixed and parsed JSON');
+    } catch (fixError) {
+      console.error('Failed to fix JSON:', fixError);
+      throw new Error(`JSON parsing failed and could not be automatically fixed: ${fixError}`);
+    }
+  }
 
   // Validate and normalize the response
   return {
@@ -141,7 +157,7 @@ function parseAIResponse(text: string): ProfileSuggestion {
       sailingExperience: parsed.confidence?.sailingExperience || 'none',
       overall: parsed.confidence?.overall || 'none',
     },
-    
+
     reasoning: String(parsed.reasoning || 'No reasoning provided'),
   };
 }
@@ -238,7 +254,17 @@ export async function POST(request: NextRequest) {
         prompt,
       });
 
-      const suggestion = parseAIResponse(aiResult.text);
+      let suggestion: ProfileSuggestion;
+
+      try {
+        suggestion = parseAIResponse(aiResult.text);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', parseError);
+        console.error('Raw AI response:', aiResult.text);
+
+        // Return a fallback suggestion based on basic Facebook data
+        suggestion = createFallbackSuggestion(facebookData);
+      }
 
       // Add the profile image URL from Facebook if not already set
       if (!suggestion.profileImageUrl && facebookData.profilePictureUrl) {
