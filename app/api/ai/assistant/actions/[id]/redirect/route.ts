@@ -56,12 +56,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Mark action as redirected
+    // Mark action as immediately completed
     const { error: updateError } = await supabase
       .from('ai_pending_actions')
       .update({
-        status: 'approved',
-        resolved_at: new Date().toISOString()
+        status: 'approved'
       })
       .eq('id', id)
       .eq('user_id', user.id);

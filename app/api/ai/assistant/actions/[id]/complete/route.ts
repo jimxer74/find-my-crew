@@ -56,13 +56,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Only allow completion of redirected actions
-    if (action.status !== 'redirected') {
-      return NextResponse.json(
-        { error: 'Action is not in redirected status' },
-        { status: 400 }
-      );
-    }
 
     // Mark action as completed (approved)
     const { error: updateError } = await supabase

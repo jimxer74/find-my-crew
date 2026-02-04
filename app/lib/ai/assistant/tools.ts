@@ -313,6 +313,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
 
 // Action suggestion tools - these create pending actions that require user approval
 export const ACTION_TOOLS: ToolDefinition[] = [
+  /*
   {
     name: 'suggest_register_for_leg',
     description: 'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve. IMPORTANT: Before calling this, use get_leg_registration_info to check if the leg has registration requirements. If hasRequirements is true, do NOT use this tool - instead direct the user to complete registration via the leg details page in the UI. Only use this tool for legs WITHOUT requirements. Both legId and reason parameters are REQUIRED. Example: {"name": "suggest_register_for_leg", "arguments": {"legId": "uuid-here", "reason": "This leg matches your experience level and sailing preferences"}}',
@@ -330,7 +331,7 @@ export const ACTION_TOOLS: ToolDefinition[] = [
       },
       required: ['legId', 'reason'],
     },
-  },
+  },*/
   {
     name: 'suggest_profile_update_user_description',
     description: 'Suggest updating the user description field in the user\'s profile. Creates a pending action that the user must approve. AI should identify that user description could be improved but must NOT create content - only suggest the field and ask user for the new description. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_user_description", "arguments": {"reason": "Your user description is currently empty, which may reduce your chances of being selected for sailing opportunities. A well-written description helps captains understand your sailing interests and goals.", "suggestedField": "user_description"}}',

@@ -419,27 +419,27 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     console.log('redirectToProfile called for action:', action.id, 'type:', action.action_type);
 
     try {
-      // Mark action as redirected in the database
+      // Mark action as approved in the database
       const response = await fetch(`/api/ai/assistant/actions/${action.id}/redirect`, {
         method: 'POST',
       });
 
       if (response.ok) {
-        console.log('Successfully marked action as redirected:', action.id);
+        console.log('Successfully marked action as approved:', action.id);
 
         // Update local state immediately
         setState(prev => ({
           ...prev,
           pendingActions: prev.pendingActions.map(a =>
-            a.id === action.id ? { ...a, status: 'redirected' as const } : a
+            a.id === action.id ? { ...a, status: 'approved' as const } : a
           )
         }));
       } else {
-        console.warn('Failed to mark action as redirected:', response.status, response.statusText);
+        console.warn('Failed to mark action as approved:', response.status, response.statusText);
         // Still proceed with redirect even if API call fails
       }
     } catch (error) {
-      console.error('Error marking action as redirected:', error);
+      console.error('Error marking action as approved:', error);
       // Still proceed with redirect even if API call fails
     }
 
@@ -685,143 +685,6 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Profile update action completion logic
-  const markActionCompleted = useCallback(async (actionId: string) => {
-    console.log('markActionCompleted called for action:', actionId);
-    try {
-      const response = await fetch(`/api/ai/assistant/actions/${actionId}/complete`, {
-        method: 'POST',
-      });
-
-      console.log('API response status:', response.status);
-      if (response.ok) {
-        console.log('API call successful, updating local state');
-        // Update local state
-        setState(prev => {
-          const newState = {
-            ...prev,
-            pendingActions: prev.pendingActions.map(action =>
-              action.id === actionId
-                ? { ...action, status: 'approved' as const, resolved_at: new Date().toISOString() }
-                : action
-            )
-          };
-          console.log('New state created, pending actions:', newState.pendingActions);
-          return newState;
-        });
-
-        // Reload pending actions to ensure UI updates
-        await loadPendingActions();
-      } else {
-        console.error('API call failed:', response.status);
-        const errorText = await response.text();
-        console.error('API error response:', errorText);
-      }
-    } catch (error) {
-      console.error('Error marking action as completed:', error);
-    }
-  }, [loadPendingActions]);
-
-  const checkProfileUpdatedAction = useCallback(async (action: AIPendingAction, updatedFields?: string[]) => {
-    console.log('checkProfileUpdatedAction called for action:', action.id, 'field:', action.profile_field, 'updatedFields:', updatedFields);
-    if (!action.profile_field) {
-      console.log('Action has no profile_field, skipping');
-      return;
-    }
-
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) {
-        console.log('No user found');
-        return;
-      }
-
-      // If we have updated fields from the event, check if our field was updated
-      if (updatedFields && updatedFields.includes(action.profile_field)) {
-        console.log('Field was explicitly updated, marking as completed:', action.profile_field);
-        // Field was explicitly updated, mark as completed
-        await markActionCompleted(action.id);
-        return;
-      }
-
-      console.log('Using fallback validation for field:', action.profile_field);
-      // Fallback: check if field has meaningful content
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select(action.profile_field)
-        .eq('id', user.id)
-        .single();
-
-      if (!profile) {
-        console.log('No profile found');
-        return;
-      }
-
-      const fieldValue = profile[action.profile_field as keyof typeof profile];
-      console.log('Field value:', fieldValue);
-      const hasMeaningfulContent = fieldValue &&
-        (typeof fieldValue === 'string' ? fieldValue.trim().length > 0 : true) &&
-        (Array.isArray(fieldValue) ? fieldValue.length > 0 : true);
-
-      console.log('Has meaningful content:', hasMeaningfulContent);
-      if (hasMeaningfulContent) {
-        console.log('Marking action as completed via fallback');
-        // Mark action as completed
-        await markActionCompleted(action.id);
-      } else {
-        console.log('Field does not have meaningful content, not marking as completed');
-      }
-    } catch (error) {
-      console.error('Error checking profile update:', error);
-    }
-  }, [markActionCompleted]);
-
-  // Profile update listener
-  useEffect(() => {
-    const handleProfileUpdated = async (event: CustomEvent<{ updatedFields: string[]; timestamp: number }>) => {
-      console.log('Received profileUpdated event:', event.detail);
-      try {
-        // Reload pending actions to get current state
-        await loadPendingActions();
-        console.log('Reloaded pending actions:', state.pendingActions);
-
-        // Check all actions, not just redirected ones (for debugging)
-        const allProfileActions = state.pendingActions.filter(
-          a => a.profile_field
-        );
-        console.log('Found all profile actions:', allProfileActions);
-
-        // Get redirected actions that might be completed
-        const redirectedActions = state.pendingActions.filter(
-          a => a.status === 'redirected' && a.profile_field
-        );
-        console.log('Found redirected actions:', redirectedActions);
-
-        if (redirectedActions.length > 0) {
-          // Check which actions can be marked as completed
-          for (const action of redirectedActions) {
-            console.log('Checking action:', action.id, 'for field:', action.profile_field);
-            await checkProfileUpdatedAction(action, event.detail?.updatedFields);
-          }
-        } else {
-          console.log('No redirected actions found. Checking if actions are in pending state...');
-          const pendingProfileActions = state.pendingActions.filter(
-            a => a.status === 'pending' && a.profile_field
-          );
-          console.log('Pending profile actions:', pendingProfileActions);
-        }
-      } catch (error) {
-        console.error('Error handling profile update:', error);
-      }
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdated);
-
-    return () => {
-      window.removeEventListener('profileUpdated', handleProfileUpdated);
-    };
-  }, [loadPendingActions, state.pendingActions, checkProfileUpdatedAction]);
 
   // Periodic cleanup of expired actions
   useEffect(() => {
@@ -842,7 +705,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
             resolved_at: new Date().toISOString()
           })
           .eq('user_id', user.id)
-          .eq('status', 'redirected')
+          .eq('status', 'pending')
           .lt('created_at', sevenDaysAgo.toISOString());
 
         if (error) {

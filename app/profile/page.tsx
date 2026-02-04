@@ -354,69 +354,6 @@ function ProfilePageContent() {
     const supabase = getSupabaseBrowserClient();
     const roles = formData.roles || [];
 
-    // Track which fields were updated (for action completion)
-    const updatedFields: string[] = [];
-
-    console.log('Original profile:', profile);
-    console.log('Form data:', formData);
-
-    // Compare with original profile to detect changes
-    const originalProfile = profile;
-    if (originalProfile) {
-      if (originalProfile.username !== formData.username) {
-        console.log('Username changed:', originalProfile.username, '->', formData.username);
-        updatedFields.push('username');
-      }
-      if (originalProfile.full_name !== formData.full_name) {
-        console.log('Full name changed:', originalProfile.full_name, '->', formData.full_name);
-        updatedFields.push('full_name');
-      }
-      if (originalProfile.user_description !== formData.user_description) {
-        console.log('User description changed:', originalProfile.user_description, '->', formData.user_description);
-        updatedFields.push('user_description');
-      }
-      if (originalProfile.certifications !== formData.certifications) {
-        console.log('Certifications changed:', originalProfile.certifications, '->', formData.certifications);
-        updatedFields.push('certifications');
-      }
-      if (originalProfile.phone !== formData.phone) {
-        console.log('Phone changed:', originalProfile.phone, '->', formData.phone);
-        updatedFields.push('phone');
-      }
-      if (originalProfile.sailing_experience !== formData.sailing_experience) {
-        console.log('Sailing experience changed:', originalProfile.sailing_experience, '->', formData.sailing_experience);
-        updatedFields.push('sailing_experience');
-      }
-      if (JSON.stringify(originalProfile.risk_level) !== JSON.stringify(formData.risk_level)) {
-        console.log('Risk level changed:', originalProfile.risk_level, '->', formData.risk_level);
-        updatedFields.push('risk_level');
-      }
-      if (JSON.stringify(originalProfile.skills) !== JSON.stringify(formData.skills.map(s => JSON.stringify(s)))) {
-        console.log('Skills changed:', originalProfile.skills, '->', formData.skills);
-        updatedFields.push('skills');
-      }
-      if (originalProfile.sailing_preferences !== formData.sailing_preferences) {
-        console.log('Sailing preferences changed:', originalProfile.sailing_preferences, '->', formData.sailing_preferences);
-        updatedFields.push('sailing_preferences');
-      }
-      if (JSON.stringify(originalProfile.roles) !== JSON.stringify(formData.roles)) {
-        console.log('Roles changed:', originalProfile.roles, '->', formData.roles);
-        updatedFields.push('roles');
-      }
-    } else {
-      console.log('No original profile found, assuming all fields are new');
-      // If no original profile, assume all fields are being set for the first time
-      if (formData.username) updatedFields.push('username');
-      if (formData.full_name) updatedFields.push('full_name');
-      if (formData.user_description) updatedFields.push('user_description');
-      if (formData.certifications) updatedFields.push('certifications');
-      if (formData.phone) updatedFields.push('phone');
-      if (formData.sailing_experience) updatedFields.push('sailing_experience');
-      if (formData.risk_level?.length > 0) updatedFields.push('risk_level');
-      if (formData.skills?.length > 0) updatedFields.push('skills');
-      if (formData.sailing_preferences) updatedFields.push('sailing_preferences');
-      if (formData.roles?.length > 0) updatedFields.push('roles');
-    }
 
     let error: any = null;
 
@@ -497,17 +434,6 @@ function ProfilePageContent() {
 
       setTimeout(() => setSuccess(false), 3000);
       setSaving(false);
-
-      // Enhanced profile update event with field information
-      if (typeof window !== 'undefined') {
-        console.log('Dispatching profileUpdated event with fields:', updatedFields);
-        window.dispatchEvent(new CustomEvent('profileUpdated', {
-          detail: {
-            updatedFields,
-            timestamp: Date.now()
-          }
-        }));
-      }
 
       router.refresh();
 
