@@ -885,22 +885,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex 
-absolute top-50 -right-7 -z-1 
-bg-card 
-border border-border 
-rounded-none md:rounded-r-md    ← this is the key change
-p-2 
-min-w-[8px] min-h-[44px] 
-items-center justify-center 
-shadow-md 
-hover:bg-accent 
-transition-all"
+            className="hidden md:flex w-6 h-8
+    absolute top-1/2 -right-4 -translate-y-1/2   ← key changes for perfect vertical centering
+    bg-card 
+    border border-border 
+    rounded-none md:rounded-r-md
+    -z-10 
+    items-center justify-center 
+    shadow-md 
+    hover:bg-accent 
+    transition-all"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
             <svg
-              className="w-4 h-5 text-foreground"
+              className="w-5 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -919,12 +918,12 @@ transition-all"
         {isOpen && isMinimized && (
           <button
             onClick={() => setIsMinimized(false)}
-            className="hidden md:flex absolute top-50 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-2 min-w-[8px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex w-6 h-8 absolute top-1/2 -translate-y-1/2 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-0.5 items-center justify-center shadow-sm hover:bg-accent transition-all"
             title="Maximize panel"
             aria-label="Maximize panel"
           >
             <svg
-              className="w-4 h-5 text-foreground"
+              className="w-5 h-5 text-foreground"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

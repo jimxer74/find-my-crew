@@ -1,0 +1,44 @@
+{
+    "levels": [
+      {
+        "value": 1,
+        "name": "Aloittelija",
+        "displayName": "Aloittelija",
+        "icon": "/Beginner",
+        "description": "Vähäinen tai olematon kokemus purjeveneillä (0–10–15 päivää yhteensä)",
+        "infoText": "Vähäinen tai olematon kokemus purjeveneillä (0–10–15 päivää yhteensä)\n\nOn saattanut osallistua lyhyelle tutustumispurjehdukselle tai \"kokeile purjehdusta\" -päivälle\n\nYmmärtää hyvin perusasioita (mikä on peräsin/tiimi, tuulen suunta, purjehdussuunnat) mutta ei osaa vielä soveltaa niitä itsenäisesti\n\nPystyy olemaan avuksi tiiviissä valvonnassa (vinssejen pyörittäminen, skuuttien pitely, perus turvallisuustietoisuus)\n\nEi pysty kipparoimaan edes pienintä purjevenettä itsenäisesti",
+        "typicalEquivalents": "RYA Competent Crew -aloitus / ASA 101 -aloitus / \"Vihreä aloittelija\"",
+        "note": "Tällä tasolla keskitytään turvallisuuteen tutustumiseen, sanastoon ja totutteluun vesillä oloon."
+      },
+      {
+        "value": 2,
+        "name": "Pätevä miehistön jäsen",
+        "displayName": "Pätevä Miehistö",
+        "icon": "/Competent_crew",
+        "description": "Noin 10–50 päivää vesillä (sekoitus miehistö- ja peräsimenhallintaa)",
+        "infoText": "Noin 10–50 päivää vesillä (sekoitus miehistö- ja peräsimenhallintaa)\n\nOsaa aktiivisesti toimia miehistössä useimmilla purjehdussuunnilla, hoitaa perusliikkeet (kääntyminen kautta tuulen, gybaus, reivaus), auttaa kiinnittymisessä/poistumisessa, ymmärtää perus meriliikennesäännöt\n\nOn kipparoinut pieniä veneitä (jollia tai päiväpurjehtijia alle 30 jalkaa) kevyissä tai kohtalaisissa olosuhteissa tutuilla, suojaisilla vesillä päiväsaikaan\n\nPystyy ottamaan peräsimen haltuunsa lyhyeksi aikaa valvonnassa isommillakin risteilyveneillä",
+        "typicalEquivalents": "RYA Day Skipper käytännön + jonkin verran mailia / ASA 104 Basic Coastal Cruising / NauticEd Skipper Level I–II / International Bareboat Skipper (entry level)",
+        "note": "Tämä on taso \"Pystyn viemään kavereita turvallisesti viikonloppupurjehdukselle hyvissä olosuhteissa\"."
+      },
+      {
+        "value": 3,
+        "name": "Rannikkokippari",
+        "displayName": "Rannikkokippari",
+        "icon": "/Coastal_skipper",
+        "description": "50–150+ päivää vesillä, joista vähintään puolet kipparina/aluksen päällikkönä",
+        "infoText": "50–150+ päivää vesillä, joista vähintään puolet kipparina/aluksen päällikkönä\n\nMukavasti kipparoi 30–45 jalan risteilyveneitä bareboat-charter-kipparina\n\nOsaa suunnitella ja toteuttaa rannikkopurjehduksia (päivä- ja yöpurjehdukset), hoitaa satamapaikalle kiinnittymisen vastatuulessa/virtauksessa, reivaa ajoissa, hallitsee kovien kelien taktiikkaa kohtalaisissa ja navakoissa olosuhteissa (noin 25–30 solmuun asti)\n\nHyvät tiedot navigoinnista (elektroninen + perinteinen), sään tulkinnasta, luotsauksesta ja hätätilanteiden käsittelystä",
+        "typicalEquivalents": "RYA Coastal Skipper / Yachtmaster Coastal / IYT Bareboat Skipper + kokemusta / NauticEd Bareboat Charter Master Level III–IV / Useimpien charter-yhtiöiden \"Level 2–3 Qualified Skipper\" -luokitus",
+        "note": "Tämä on yleisin taso itsevarmalle vapaa-ajan bareboat-charter-purjehdukselle Välimerellä, Karibialla ym."
+      },
+      {
+        "value": 4,
+        "name": "Avoimen meren kippari",
+        "displayName": "Avoimen Meren Kippari",
+        "icon": "/Offshore_skipper",
+        "description": "150–500+ päivää vesillä (usein useita satoja), joista valtaosa kipparina",
+        "infoText": "150–500+ päivää vesillä (usein useita satoja), joista valtaosa kipparina\n\nLaaja kokemus purjeveneiden kipparoimisesta haastavissa olosuhteissa — kovat tuulet (yli 30 solmua), isot aallot, rankat kelit, pitkät avomeripurjehdukset (monipäiväiset/yöpurjehdukset), valtamerialukset\n\nErittäin vahva kokonaisvaltainen merenkulkuosaaminen: edistynyt veneen käsittely (myös myrskypurjeilla tai paljailla mastoilla), kovien kelien taktiikat, väliaikaiskorjaukset, ihminen yli laidan kovassa kelissä, pitkän matkan navigointi & reititys, miehistön johtaminen stressaavissa tilanteissa\n\nOn todennäköisesti tehnyt pitkiä avomeripurjehduksia (esim. Atlantin ylitys, usean viikon matkat)",
+        "typicalEquivalents": "RYA Yachtmaster Offshore / Ocean / IYT Yachtmaster Offshore / NauticEd Captain rank + Level V / Charter-yhtiön \"Expert Level\" -luokitus + todistettu avomerikokemus",
+        "note": "Tämä taso edustaa vakavasti otettavia, vuosien kokemuksella purjehtivia kippareita, jotka voivat viedä venettä lähes minne tahansa ja melkein missä tahansa olosuhteissa pitäen turvallisuusmarginaalit korkealla. Monet charter-yhtiöt ja purjehdusyhteisöt käyttävät samankaltaisia 3–5 tason järjestelmiä, mutta tämä 4-tasoinen jako vastaa hyvin etenemistä: \"ei koskaan purjehtinut\" → \"ystävät mukaan viikonlopuksi\" → \"varma charter-kippari\" → \"kokenut avomeripurjehtija\"."
+      }
+    ]
+  }

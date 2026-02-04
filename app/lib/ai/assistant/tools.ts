@@ -332,21 +332,126 @@ export const ACTION_TOOLS: ToolDefinition[] = [
     },
   },
   {
-    name: 'suggest_profile_update',
-    description: 'Suggest updates to the user\'s profile. Creates a pending action that the user must approve. IMPORTANT: Both updates and reason parameters are REQUIRED. Example: {"name": "suggest_profile_update", "arguments": {"updates": {"skills": ["navigation", "first_aid"]}, "reason": "Adding these skills will help you qualify for more sailing opportunities"}}',
+    name: 'suggest_profile_update_user_description',
+    description: 'Suggest updating the user description field in the user\'s profile. Creates a pending action that the user must approve. AI should identify that user description could be improved but must NOT create content - only suggest the field and ask user for the new description. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_user_description", "arguments": {"reason": "Your user description is currently empty, which may reduce your chances of being selected for sailing opportunities. A well-written description helps captains understand your sailing interests and goals.", "suggestedField": "user_description"}}',
     parameters: {
       type: 'object',
       properties: {
-        updates: {
-          type: 'object',
-          description: 'REQUIRED: Object containing profile field names and their new values. Valid fields: skills (array), sailing_experience (number 1-4), risk_level (array), certifications (string), user_description (string)',
-        },
         reason: {
           type: 'string',
-          description: 'REQUIRED: Explanation of why these profile updates are recommended and how they will benefit the user',
+          description: 'REQUIRED: Explanation of why the user description should be updated and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "user_description". This field is fixed for this tool.',
+          enum: ['user_description'],
         },
       },
-      required: ['updates', 'reason'],
+      required: ['reason', 'suggestedField'],
+    },
+  },
+  {
+    name: 'suggest_profile_update_certifications',
+    description: 'Suggest updating the certifications field in the user\'s profile. Creates a pending action that the user must approve. AI should identify that certifications could be improved but must NOT create content - only suggest the field and ask user for the new description. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_certifications", "arguments": {"reason": "Adding certifications will help you qualify for more sailing opportunities that require specific qualifications.", "suggestedField": "certifications"}}',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'REQUIRED: Explanation of why the certifications field should be updated and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "certifications". This field is fixed for this tool.',
+          enum: ['certifications'],
+        },
+      },
+      required: ['reason', 'suggestedField'],
+    },
+  },
+  {
+    name: 'suggest_profile_update_risk_level',
+    description: 'Suggest updating the risk level field in the user\'s profile. Creates a pending action that the user must approve. AI should identify that risk level could be improved but must NOT create content - only suggest the field and ask user for the new description. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_risk_level", "arguments": {"reason": "Updating your risk level preferences will help match you with sailing opportunities that align with your comfort level.", "suggestedField": "risk_level"}}',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'REQUIRED: Explanation of why the risk level field should be updated and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "risk_level". This field is fixed for this tool.',
+          enum: ['risk_level'],
+        },
+      },
+      required: ['reason', 'suggestedField'],
+    },
+  },
+  {
+    name: 'suggest_profile_update_sailing_preferences',
+    description: 'Suggest updating the sailing preferences field in the user\'s profile. Creates a pending action that the user must approve. AI should identify that sailing preferences could be improved but must NOT create content - only suggest the field and ask user for the new description. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_sailing_preferences", "arguments": {"reason": "Your sailing preferences are currently empty, which may reduce your chances of being matched with suitable sailing opportunities. Adding your preferences helps captains understand what type of sailing experiences you\'re interested in.", "suggestedField": "sailing_preferences"}}',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'REQUIRED: Explanation of why the sailing preferences field should be updated and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "sailing_preferences". This field is fixed for this tool.',
+          enum: ['sailing_preferences'],
+        },
+      },
+      required: ['reason', 'suggestedField'],
+    },
+  },
+  
+  {
+    name: 'suggest_profile_update_skills',
+    description: 'Suggest updating the skills field in the user\'s profile. Creates a pending action that the user must approve. AI should identify specific skills that could be added but must NOT create content - only suggest the field and ask user for the new skills. This tool is for iterative refinement of skills. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_skills", "arguments": {"reason": "Adding sailing-related skills will help you qualify for more sailing opportunities.", "suggestedField": "skills"}}',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'REQUIRED: Explanation of why the skills field should be updated and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "skills". This field is fixed for this tool.',
+          enum: ['skills'],
+        },
+      },
+      required: ['reason', 'suggestedField'],
+    },
+  },
+  {
+    name: 'suggest_skills_refinement',
+    description: 'Suggest iterative refinement for specific skills in the user\'s profile. Creates a pending action that the user must approve. AI should identify specific skills that could be improved and suggest asking the user for better descriptions. This tool enables iterative refinement where AI suggests improvements to existing skills. IMPORTANT: Both reason, suggestedField, and targetSkills parameters are REQUIRED. After approval, the user will provide descriptions for the specified skills, which will then be used to update the profile. Example: {"name": "suggest_skills_refinement", "arguments": {"reason": "Your navigation skill description could be more detailed to help captains understand your specific navigation capabilities.", "suggestedField": "skills", "targetSkills": ["navigation", "piloting"]}}',
+    parameters: {
+      type: 'object',
+      properties: {
+        reason: {
+          type: 'string',
+          description: 'REQUIRED: Explanation of why these specific skills should be refined and how it will benefit the user',
+        },
+        suggestedField: {
+          type: 'string',
+          description: 'REQUIRED: Must be "skills". This field is fixed for this tool.',
+          enum: ['skills'],
+        },
+        targetSkills: {
+          type: 'array',
+          description: 'REQUIRED: Array of specific skill names that should be refined',
+          items: {
+            type: 'string',
+            description: 'Name of a specific skill to refine',
+          },
+        },
+      },
+      required: ['reason', 'suggestedField', 'targetSkills'],
     },
   },
   {

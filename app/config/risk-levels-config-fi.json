@@ -1,0 +1,295 @@
+{
+    "coastal_sailing": {
+      "name": "coastal_sailing",
+      "title": "Rannikkopurjehdus",
+      "infoText": "Rannikkopurjehdus on yksi helpoimmin lähestyttävistä ja nautinnollisimmista tavoista kokea purjehdusta. Se tarkoittaa yleensä purjehdusta rantaviivojen, lahtien, salmien, saarten tai suurten järvien/merialueiden lähellä, suhteellisen lähellä maata – usein näköetäisyydellä rannikosta tai vain muutaman tunnin päässä turvallisista satamista, ankkuripaikoista tai venesatamista. Matkat ovat tavallisesti päiväpurjehduksia, viikonlopun yliyöpymisiä tai useamman päivän hyppyjä satamasta toiseen, kattaen noin 20–150 meripeninkulmaa viikossa, sisältäen usein pysähdyksiä tutkimiseen, uimiseen, ateriointiin maissa tai nähtävyyksien katseluun.\n\nToisin kuin todellisissa avomeripurjehduksissa (joissa apu voi olla päiviä tai viikkoja poissa), rannikkopurjehdus tarjoaa sekoituksen suojaisia vesiä (esim. lahdet, salmet, saaristoalueet kuten San Juan -saaret, Chesapeake Bay, Florida Keys tai Mainen rannikko) ja satunnaisia lyhyitä avovesiylityksiä saarten tai niemien välillä. Kyse on enemmän rentoutuneesta tutkimisesta, uusien satamien, rantojen, pikkukaupunkien ja ankkuripaikkojen löytämisestä kuin pitkistä eristyneistä jaksoista tai ääriolosuhteista. Säähän voi varautua helpommin (lyhyiden ennusteiden avulla), ja tarvittaessa voi hakeutua suojaan nopeasti. Monet kuvailevat sitä \"makeaksi pisteeksi\" perhepurjehdukselle, oppimiselle tai rennolle seikkailulle – runsaasti purjehdusnautintoa ilman täyttä sinimeripurjehduksen sitoutumista.",
+      "typicalExperience": {
+        "title": "Tyypillinen kokemus",
+        "items": [
+          {
+            "label": "Päivärytmi",
+            "text": "Purjehditaan tai moottoroidaan päiväsaikaan (yleensä 4–8 tuntia), ankkuroidaan tai kiinnitytään illalla rentoutumista, illallisia tai lyhyitä retkiä varten. Yöt ovat yleensä rauhallisia suojaisissa paikoissa, kevyttä keinuntaa eikä jatkuvaa liikettä."
+          },
+          {
+            "label": "Vaihtelu",
+            "text": "Sekoitus ylös- ja alamäkipurjehdusta, kanavien kautta tackaamista, vilkkaiden alueiden liikenteen väistelyä ja maisemien/eläimistön ihailua. Sosiaalinen puoli korostuu: yhdessä kokkaaminen, lautapelit kannelta, illat venesatamissa."
+          },
+          {
+            "label": "Mukavuus",
+            "text": "Helppo pääsy tuoreeseen ruokaan, suihkuihin, Wi-Fiin ja täydennyksiin. Vähemmän tarvetta raskaalle varustautumiselle tai omavaraisuudelle."
+          },
+          {
+            "label": "Tunnelma",
+            "text": "Seikkailullinen mutta anteeksiantava – erinomainen itseluottamuksen rakentamiseen, koska turvallisuuteen voi palata nopeasti."
+          }
+        ]
+      },
+      "mainRisks": {
+        "title": "Tärkeimmät riskit",
+        "intro": "Vaikka rannikkopurjehdus on yleensä turvallisempaa ja vähemmän vaativaa kuin avomeripurjehdus (läheisyyden ja leudompien olosuhteiden ansiosta), siihenkin liittyy todellisia vaaroja – etenkin vilkkailla tai vaihtelevilla vesillä. Riskit liittyvät usein enemmän paikallisiin yllättäviin tilanteisiin kuin pitkittyneisiin ääriolosuhteisiin.",
+        "items": [
+          {
+            "label": "Sää ja merenkäynti",
+            "text": "Äkilliset ukkoskuurot, voimakkaat iltapäivän merituulet, sumu tai lyhytjaksoinen aallokko matalilla alueilla (esim. kovaa lyöntiä järvillä tai tietyillä lahdilla). Ukkosmyrskyt tai rintamat voivat tulla nopeasti."
+          },
+          {
+            "label": "Navigointivaarat",
+            "text": "Karille ajaminen hiekkasärkille, kallioille, matalikoihin tai merkitsemättömille esteille; voimakkaat vuorovedet/virtaukset salmissa tai poukamissa; vilkkaat laivaväylät tai lauttaliikenne törmäysvaaran aiheuttajana."
+          },
+          {
+            "label": "Ihminen yli laidan (MOB)",
+            "text": "Yleisempää kiinnittymisen, ankkuroinnin tai puuskittaisessa tuulessa; nopea pelastus mahdollista lähellä rantaa, mutta kylmä vesi tai virtaukset lisäävät kiireellisyyttä."
+          },
+          {
+            "label": "Laitteistovika",
+            "text": "Moottoriongelmat tyydyttävässä tuulessa, takilaongelmat liikkeissä tai akkujen tyhjeneminen ahtaissa tiloissa."
+          },
+          {
+            "label": "Ihmistekijät",
+            "text": "Väsymys pitkien päivien jälkeen, alkoholi (merkittävä veneilyonnettomuuksien syy), huono harkinta muuttuvissa olosuhteissa tai kokemattomuus ahtaissa venesatamissa tuulessa kiinnittymisessä."
+          },
+          {
+            "label": "Ympäristö",
+            "text": "Kylmä/märkä sää, joka voi johtaa paleltumiseen (erityisesti keväällä/syksyllä), tai pienet vammat vinsseistä, puomista tai liukastumisesta kannella."
+          },
+          {
+            "label": "Muut",
+            "text": "Karilleajo on yleistä mutta harvoin katastrofaalista, jos vuorovesi mahdollistaa irtoamisen; törmäykset roskaan tai muihin veneisiin ruuhkaisilla alueilla."
+          }
+        ],
+        "conclusion": "Kaiken kaikkiaan rannikkoriskit ovat hallittavissa hyvällä suunnittelulla – monet ovat ennaltaehkäistävissä valmistautumisella, ja apu ( hinauspalvelut, pelastus) on yleensä enintään muutaman tunnin päässä."
+      },
+      "skillsNeeded": {
+        "title": "Tarvittavat taidot",
+        "intro": "Rannikkopurjehdus palkitsee vahvat perustaidoilla sekä paikallistuntemuksella. Äärimmäistä asiantuntemusta ei tarvita, mutta osaaminen lisää turvallisuutta ja nautintoa. Monet purjehtijat aloittavat peruskoulutuksilla (esim. ASA 103 Coastal Cruising tai RYA Day Skipper / Coastal Skipper) ja kartuttavat kokemusta harjoittelemalla.",
+        "items": [
+          {
+            "label": "Perusveneen käsittely",
+            "text": "Ohjaus purjeilla/moottorilla, kääntyminen, reivaus, purjeiden trimmaus tehokkuuden vuoksi ja nopeuden hallinta vaihtelevissa tuulissa (jopa noin 20 solmuun asti kohtuullisissa oloissa)."
+          },
+          {
+            "label": "Kiinnittyminen ja ankkurointi",
+            "text": "Satamaan/moorinkiin tulo tuulessa/virtauksessa, köysien ja puskupehmusteiden käyttö, poijujen tarttuminen ja turvallinen ankkurointi (mukaan lukien pituus, asettaminen ja nosto)."
+          },
+          {
+            "label": "Navigointi ja luotsaus",
+            "text": "Kartanlukutaito, GPS/chartplotterin käyttö, peräluotsaus, poijujen/valojen ymmärtäminen, luotsaus (maamerkkeihin perustuva navigointi) ja vuorovesien/virtausten perusosaaminen."
+          },
+          {
+            "label": "Sään tulkinta",
+            "text": "Ennusteiden tarkistus, paikallisten vaikutusten tunnistaminen (esim. tuulen kiihtyminen niemien ympärillä, merituulet) ja päätökset lähdöstä/pysymisestä."
+          },
+          {
+            "label": "Turvallisuuden perusteet",
+            "text": "Ihminen yli laidan -pelastustekniikat, pelastusliivien/valjaiden käyttö tarpeen mukaan, meriliikennesääntöjen tuntemus, ensiapu perusteet ja hätätilanteiden toimintatavat (esim. VHF, soihtujen käyttö)."
+          },
+          {
+            "label": "Merenkulkutaito",
+            "text": "Solmujen sidonta (paalusolmu, ristisolmu ym.), perushuolto (moottorin tarkistus, purjeiden hoito) ja hyvä miehistöviestintä/vuorojärjestys useamman päivän matkoilla."
+          },
+          {
+            "label": "Tilannetaju",
+            "text": "Sopeutuminen liikenteeseen, matalan vedessä liikkumisen huomioiminen ja joustava suunnittelu (rannikolla reittiä vaihdetaan usein lennosta)."
+          }
+        ],
+        "conclusion": "Pidemmillä rannikkomatkoilla lisätään varustautumista, yöpurjehduksen perusteita (jos mukana) ja itsevarmuutta ahtaissa vesissä. Kokeilupäivä tai lyhyt kurssi paljastaa nopeasti, mitä pitää harjoitella – monet kipparit sanovat, että rannikkokokemus on paras opettaja turvalliseen kehittymiseen.",
+        "finalNote": "Lyhyesti sanottuna rannikkopurjehdus on palkitsevaa, maisemallista ja helposti lähestyttävää – se tarjoaa seikkailua turvaverkon kanssa. Hyvällä valmistautumisella ja veden kunnioituksella riskit pysyvät pieninä ja hauskuus suurena!"
+      }
+    },
+    "offshore_sailing": {
+      "name": "offshore_sailing",
+      "title": "Avomeripurjehdus",
+      "infoText": "Avomeripurjehdus (tunnetaan myös nimellä sinimeri- tai valtameri-purjehdus) tarkoittaa matkoja, joissa ollaan kaukana maasta – tyypillisesti poissa näkyvistä rannikosta pitkiä aikoja, usein päiviä viikkoihin tai jopa kuukausia valtamerialuksilla (esim. Atlantin pasaatituulireitit kuten ARC, Tyynenmeren ylitykset tai pidemmät retket). Apu, satama tai täydennys voivat olla päiviä tai kauemmin poissa, joten omavaraisuus on välttämätöntä. Toisin kuin rannikkopurjehduksen lyhyet hypyt ja tiheä maayhteys, avomerellä sitoudutaan avoimeen valtamereen ja kohdataan sää ja olosuhteet ilman nopeita pakoreittejä.\n\nSitä kuvataan usein syvälliseksi, uppouttavaksi kokemukseksi: meren loputon tyhjyys, jatkuva liike, tähtitaivaan alla vietetyt yövahdit, pasaatituulten rytmi ja satojen tai tuhansien meripeninkulmien kulkeminen purjein. Monille se on meditatiivista ja innostavaa – vapautta arjesta, syviä miehistösiteitä yhteisistä vahtivuoroista ja haasteista sekä iloa saapumisesta pitkän matkan jälkeen. Se on kuitenkin myös vaativaa: epäsäännöllisen unen aiheuttama väsymys, veneen jatkuvan liikkeen fyysinen rasitus ja eristyneisyyden sekä arvaamattomuuden henkinen kuormitus.",
+      "typicalExperience": {
+        "title": "Tyypillinen kokemus",
+        "items": [
+          {
+            "label": "Päivärytmi",
+            "text": "Jäsennelty vahtijärjestelmä (esim. 3–4 h päällä, 6–8 h vapaata), jatkuva purjeiden trimmaus, navigointitarkistukset, ruokien valmistus kallistuvassa keittiössä ja venejärjestelmien hallinta. Meripäivät sulautuvat yhteen; maalle saapuminen tuo valtavaa helpotusta ja iloa."
+          },
+          {
+            "label": "Olosuhteet",
+            "text": "Tasaiset valtameriaallot (usein 2–5 m tai enemmän), myötätuuli/puolisivuinen purjehdus vallitsee (toisin kuin rannikon vastatuulipainotteisuus), mahdollisuus koviin keloihin (30–50+ solmun puuskat, isot aallot) ja vaihteleviin tuulimalloihin kaukana rannikosta."
+          },
+          {
+            "label": "Mukavuus",
+            "text": "Rajoitettu: pienemmät vesi- ja polttoainesäiliöt, tuore ruoka loppuu viikon jälkeen, jatkuva liike (ruoanlaitto, nukkuminen ja liikkuminen vaikeampaa), ahtaat yhteistilat ja ei helppoja maihinnousuja."
+          },
+          {
+            "label": "Tunnelma",
+            "text": "Seikkailullinen ja sitoutunut – enemmän kestävyydestä, tiimityöstä ja omavaraisuudesta kuin rennosta tutkimisesta. Erinomainen taitojen kehittämiseen, mutta testaa kärsivällisyyttä ja kestävyyttä."
+          }
+        ]
+      },
+      "mainRisks": {
+        "title": "Tärkeimmät riskit",
+        "intro": "Avomeririskit ovat korkeampia etäisyyden, pitkän altistuksen ja rajallisen avun vuoksi. Vaikka modernit veneet ja varusteet ovat tehneet siitä turvallisempaa kuin ennen, onnettomuuksia tapahtuu edelleen (esim. ohjausviat, kaatumiset tai lääketieteelliset hätätilanteet johtavat hylkäämisiin).",
+        "items": [
+          {
+            "label": "Kova sää ja merenkäynti",
+            "text": "Puuskat, ukkoskuurot, jättiaalto, pitkittyneet myrskyt aiheuttaen kaatumisia, mastoon menetyksiä tai kaatumisvaaran; väsymys pahentaa virheitä."
+          },
+          {
+            "label": "Laitteistovika",
+            "text": "Ohjaus- tai takilavaurio (yleisin hylkäämisen syy), moottoriongelmat (kriittisiä tyyntyessä tai vaaratilanteessa), sähkö/akkuongelmat tai veden sisäänpääsy."
+          },
+          {
+            "label": "Ihminen yli laidan (MOB)",
+            "text": "Paljon vaikeampi pelastaa isoissa aalloissa/pimeässä; paleltumisriski kylmissä vesissä."
+          },
+          {
+            "label": "Lääketieteelliset hätätilanteet",
+            "text": " umpilisäkkeen tulehdus, vammat tai sairaudet ilman nopeaa evakuointia; pelastusoperaatio voi kestää päiviä."
+          },
+          {
+            "label": "Navigointi/törmäys",
+            "text": "Roska (kontit, valaat, puut), laivaliikenne väylillä tai huono näkyvyys (sumu, yö); väsymys johtaa vahtivuorojen laiminlyönteihin."
+          },
+          {
+            "label": "Eristyneisyys ja ihmistekijät",
+            "text": "Unenpuute aiheuttaa virheitä, miehistökonfliktit ahtaudessa tai henkinen rasitus (ahdistus, pelko kovassa kelissä)."
+          },
+          {
+            "label": "Muut",
+            "text": "Palo/tulva, karilleajo tuntemattomille esteille lähellä maata tai tarvikkeiden loppuminen viivästyksissä."
+          }
+        ],
+        "conclusion": "Monet riskit lievittyvät valmistautumisella, mutta keskeinen ero rannikkoon on avun kaukaisuus – itsepelastus tai kestäminen on usein ainoa vaihtoehto."
+      },
+      "skillsNeeded": {
+        "title": "Tarvittavat taidot",
+        "intro": "Avomerellä tarvitaan todistettua osaamista veneen käsittelyssä, navigoinnissa, sääosaamisessa ja hätätilanteissa. Monilla kipparilla on oltava todennettua kokemusta (esim. aiempia avomerimatkoja, RYA Yachtmaster Offshore -tasoa tai referenssejä) ennen pidempien matkojen miehistöön ottamista.",
+        "items": [
+          {
+            "label": "Edistynyt veneen käsittely",
+            "text": "Kovien kelien taktiikat (reivaus ajoissa, myrskypurjeet, pysähtyminen tuuleen), veneen hallinta isoissa aalloissa ja peräsimen/purjeiden tasapaino vaihtelevissa oloissa (jopa 40+ solmuun)."
+          },
+          {
+            "label": "Navigointi ja reititys",
+            "text": "Pitkän matkan suunnittelu, sään mukaan reititys, tähtinavigoinnin perusteet (varmuuskopio), GPS/chartplotter-osaaminen ja kaukana rannikosta olevien virtausten/vuorovesien ymmärtäminen."
+          },
+          {
+            "label": "Vahtivuorot ja turvallisuus",
+            "text": "Jäsennelty vahtijärjestelmä, MOB-pelastus kovissa oloissa, turvavarusteiden käyttö (valjaat, EPIRB, pelastuslautta) ja hätätilanteiden toimintatavat (mayday, hylkääminen).",
+            "label": "Huolto ja omavaraisuus",
+            "text": "Peruskorjaukset (takila, moottori, sähkö), väliaikaisratkaisut ja järjestelmien hallinta (vesi, polttoaine, akut) pitkiä aikoja."
+          },
+          {
+            "label": "Sää ja merenkulkutaito",
+            "text": "Ennusteiden tulkinta, sääkuvioiden tunnistaminen, kovien kelien valmistautuminen ja päätöksenteko (milloin viivyttää, milloin jatkaa)."
+          },
+          {
+            "label": "Fyysinen ja henkinen kestävyys",
+            "text": "Kestävyys pitkille matkoille, väsymyksen hallinta ja keskittyminen yksitoikkoisissa tai stressaavissa oloissa."
+          }
+        ],
+        "conclusion": "Monet avomeripurjehtijat sanovat, että paras valmistautuminen on kokemus – aloitetaan lyhyemmistä matkoista ja edetään asteittain. Oikealla valmistautumisella, moderneilla veneillä ja kokeneella johtamisella avomeripurjehdus tarjoaa uskomatonta seikkailua – mutta meren kunnioitus ja turvallisuusmarginaalit ovat välttämättömiä.",
+        "finalNote": "Avomeripurjehdus on mullistava kokemus – vaativa mutta syvästi palkitseva niille, jotka ovat valmiita ottamaan vastaan avoimen valtameren haasteen."
+      }
+    },
+    "extreme_sailing": {
+      "name": "extreme_sailing",
+      "title": "Äärimmäinen purjehdus",
+      "infoText": "Äärimmäinen purjehdus kattaa naparetket, korkeiden leveysasteiden matkat (esim. Arktis/Antarktis) tai muut erittäin vaativat ympäristöt, jotka edellyttävät erikoistuneita taitoja, varusteita ja kokemusta. Nämä ovat purjehduksen raskaimpia muotoja – usein mukana jäätä, äärimmäistä kylmyyttä, eristyneisyyttä (viikkoja apuun pääsyyn) ja olosuhteita, jotka koettelevat sekä venettä että miehistöä äärirajoille.\n\nEsimerkkejä ovat: Luoteisväylän kulkeminen, Huippuvuoret, Grönlanti, Antarktiksen retket, Cape Hornin kierto rankoissa oloissa tai korkeiden leveysasteiden tutkimusmatkat. Nämä houkuttelevat kokeneita purjehtijoita, jotka etsivät äärimmäistä seikkailua, mutta vaativat huolellista valmistautumista, erikoisveneitä (usein metalli/jäävahvistettu) ja todistettua osaamista.",
+      "typicalExperience": {
+        "title": "Tyypillinen kokemus",
+        "items": [
+          {
+            "label": "Päivärytmi",
+            "text": "Voimakas vahtijärjestelmä, jatkuva valppaus jään/vaaran suhteen, äärimmäisen kylmyyden hallinta (kannella työskentely raskaassa varustuksessa) ja sopeutuminen 24 tunnin valoon tai pimeyteen (napaseudut)."
+          },
+          {
+            "label": "Olosuhteet",
+            "text": "Jää (lohkareet, ahtojää, jäävuoret), äärimmäinen kylmyys (vesi lähellä jäätymispistettä), puuskat (50–100+ solmua), sumu/lumi/myrskyt ja arvaamattomat säämuutokset."
+          },
+          {
+            "label": "Mukavuus",
+            "text": "Minimaalinen: raskaat kylmävarusteet, rajoitettu tuore ruoka, jatkuva valppaus ja eristyneisyys (viikkoja apuun pääsyyn)."
+          },
+          {
+            "label": "Tunnelma",
+            "text": "Äärimmäinen seikkailu ja haaste – niille, jotka etsivät vaativimpia purjehduskokemuksia, usein tieteellisin, tutkimuksellisin tai henkilökohtaisin saavutustavoittein."
+          }
+        ]
+      },
+      "mainRisks": {
+        "title": "Tärkeimmät riskit",
+        "intro": "Nämä ympäristöt moninkertaistavat avomeririskit etäisyyden (pelastus voi kestää päiviä/viikkoja), kylmyyden (paleltuminen nopeaa) ja jään (rakenteelliset vauriot mahdollisia) vuoksi. Modernit Polar Code -säännöt auttavat, mutta onnettomuuksia tapahtuu silti (esim. karilleajot, jäävangit).",
+        "items": [
+          {
+            "label": "Jääriskit",
+            "text": "Törmäykset jäävuoriin/lohkareisiin aiheuttaen runko- tai peräsinvaurioita; ahtojään paine vangitsee tai murskaa veneen; merkitsemättömät matalikot jään alla."
+          },
+          {
+            "label": "Äärimmäinen sää",
+            "text": "Puuskat (50–100+ solmua), jättiaalto, napapohjoiset (äkilliset voimakkaat myrskyt), sumu/lumi/myrskyt heikentävät näkyvyyttä ja arvaamattomat muutokset."
+          },
+          {
+            "label": "Kylmyyteen liittyvät",
+            "text": "Paleltuminen veteen joutumisesta (lähellä 0 °C), paleltumat tai kylmäshokki; raskaat varusteet lisäävät väsymys- ja loukkaantumisriskiä."
+          },
+          {
+            "label": "Navigointi/karilleajo",
+            "text": "Huonot/epätarkat kartat, magneettiset poikkeamat napaseuduilla, voimakkaat virtaukset/vuorovedet ja heikko näkyvyys johtavat karilleajoon tai vaaroihin."
+          },
+          {
+            "label": "Eristyneisyys/lääketieteelliset",
+            "text": "Viikkoja apuun pääsyyn; vammat, umpilisäkkeen tulehdus tai sairaudet muuttuvat hengenvaarallisiksi ilman evakuointimahdollisuutta."
+          },
+          {
+            "label": "Eläimistö/ympäristö",
+            "text": "Jääkarhuhyökkäykset (Arktis), tiukat ei-jälkeä -säännöt (Antarktis) tai biosuojelun rikkomukset tuontilajien leviämisen kautta."
+          },
+          {
+            "label": "Ihmistekijät",
+            "text": "Äärimmäinen väsymys, unirytmin häiriöt (jatkuva valo/pimeys), henkinen rasitus (eristyneisyys, pelko) tai miehistökonfliktit ahtaissa tiloissa."
+          },
+          {
+            "label": "Muut",
+            "text": "Palo/tulva syrjäseuduilla, polttoaine/moottoriongelmat ilman täydennystä tai veneen epävakaus jään kertymästä."
+          }
+        ],
+        "conclusion": "Riskit lievittyvät erikoistuneilla veneillä (usein metalli/jäävahvistettu), huolellisella suunnittelulla ja kokemuksella – mutta virhemarginaali on minimaalinen."
+      },
+      "skillsNeeded": {
+        "title": "Tarvittavat taidot",
+        "intro": "Avomeren perustaitojen lisäksi nämä vaativat todistettua napaseutujen/korkeiden leveysasteiden osaamista, erikoiskoulutusta ja kestävyyttä. Monilla retkillä vaaditaan todennettua kokemusta, lääkärintodistusta ja joskus Polar Code -vaatimuksiin liittyviä pätevyyksiä.",
+        "items": [
+          {
+            "label": "Jäänavigointi ja luotsaus",
+            "text": "Jääkarttojen/satelliittidatan tulkinta, jään lajikkeiden havainnointi/välttäminen (lohkareet, bergy bits, ahtojää), väylien/kanavien navigointi ja tutkan käyttö jään paikantamiseen."
+          },
+          {
+            "label": "Kova sää ja selviytyminen kylmässä",
+            "text": "Edistyneet myrskytaktiikat isoissa aalloissa/jäässä, kylmävesipelastusharjoitukset, paleltumisen ehkäisy/hoito ja pelastuspukujen/immersiovarusteiden käyttö."
+          },
+          {
+            "label": "Erikoistunut veneen käsittely",
+            "text": "Kannella työskentely paksuissa kylmävarusteissa, jäänpoisto vakauden ylläpitämiseksi, Zodiacin ajo jäässä/tuulessa/aalloissa ja köysien/ankkurien käsittely jäätävissä oloissa."
+          },
+          {
+            "label": "Navigoinnin ääriolosuhteet",
+            "text": "Tutka/AIS liikenteen/jään seuraamiseen, kompassin poikkeaman käsittely napaseuduilla, huono kartoitus ja 24 h valo/pimeys -rutiinit."
+          },
+          {
+            "label": "Huolto/omavaraisuus",
+            "text": "Korjaukset pakkasessa (moottori, takila, rungon paikkaus), väliaikaisratkaisut ja järjestelmien hallinta (lämmitys, jäänpoisto) rajoitetuilla varaosilla."
+          },
+          {
+            "label": "Turvallisuus/hätätilanteet",
+            "text": "Napa-alueille räätälöity koulutus (kylmävesiselviytyminen, jääkarhuaseistus Arktiksella, edistynyt ensiapu syrjäseuduilla), vahinkojen torjunta ja EPIRB/satelliittiviestinnän käyttö."
+          },
+          {
+            "label": "Retki- ja pehmeät taidot",
+            "text": "Eläinhavainnointiprotokollat (etäisyydet, biosuojaus), ympäristövaatimusten noudattaminen (esim. IAATO Antarktiksella), tiimin johtaminen eristyksissä ja henkinen kestävyys pitkittyneessä stressissä."
+          },
+          {
+            "label": "Fyysinen ja henkinen kunto",
+            "text": "Korkea kestävyys vaativiin tehtäviin kylmässä, väsymyksen ja ahtauden sietokyky sekä nopea sopeutuminen muuttuviin suunnitelmiin."
+          }
+        ],
+        "conclusion": "Todellisilla retkillä kipparit vaativat usein aiempia korkeiden leveysasteiden maileja, referenssejä napamatkoilta ja kokeilua kylmissä/märissä oloissa. Erikoistuneet veneet (esim. alumiini/teräsrunko) ja varusteet ovat välttämättömiä. Huolellisella valmistautumisella, ympäristön kunnioituksella ja kokeneella johtamisella nämä matkat tarjoavat vertaansa vailla olevaa seikkailua – mutta turvallisuus ja tiimin sopivuus ovat täysin neuvottelemattomia näissä ankarissa äärirajoilla!",
+        "finalNote": "Äärimmäinen purjehdus edustaa merenkulun osaamisen suurinta koetusta – varattu kokeneille purjehtijoille, jotka etsivät seikkailua maailman vaativimmilla vesillä."
+      }
+    }
+  }

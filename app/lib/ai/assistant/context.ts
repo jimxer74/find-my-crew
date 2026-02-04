@@ -253,17 +253,53 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
 
   // Add action tool guidance
   prompt += `## ACTION TOOL GUIDANCE (CRITICAL)\n\n`;
-  prompt += `When using action tools (\`suggest_register_for_leg\`, \`suggest_profile_update\`, etc.), ALL parameters are REQUIRED.\n\n`;
+  prompt += `When using action tools, ALL parameters are REQUIRED. Follow these strict guidelines:\n\n`;
+
+  prompt += `**CRITICAL: NEVER SUGGEST UPDATES TO SENSITIVE IDENTITY FIELDS**\n`;
+  prompt += `NEVER use profile update tools for: username, full_name, phone, or email. These are core identity fields that should only be changed through dedicated account management.\n\n`;
 
   prompt += `**suggest_register_for_leg** - BOTH \`legId\` AND \`reason\` are required:\n`;
   prompt += `\`\`\`tool_call\n`;
   prompt += `{"name": "suggest_register_for_leg", "arguments": {"legId": "uuid-of-the-leg", "reason": "This leg matches your offshore experience and preference for challenging sailing. The departure date aligns with your availability."}}\n`;
   prompt += `\`\`\`\n\n`;
 
-  prompt += `**suggest_profile_update** - BOTH \`updates\` AND \`reason\` are required:\n`;
+  prompt += `**Field-specific profile update tools** - Use these INSTEAD of the old bulk suggest_profile_update:\n\n`;
+  prompt += `**suggest_profile_update_user_description** - BOTH \`reason\` AND \`suggestedField\` are required:\n`;
   prompt += `\`\`\`tool_call\n`;
-  prompt += `{"name": "suggest_profile_update", "arguments": {"updates": {"skills": ["navigation", "first_aid"], "sailing_experience": 3}, "reason": "Adding navigation and first aid skills will help you qualify for more offshore passages."}}\n`;
+  prompt += `{"name": "suggest_profile_update_user_description", "arguments": {"reason": "Your user description is currently empty, which may reduce your chances of being selected for sailing opportunities. A well-written description helps captains understand your sailing interests and goals.", "suggestedField": "user_description"}}\n`;
   prompt += `\`\`\`\n\n`;
+
+  prompt += `**suggest_profile_update_certifications** - BOTH \`reason\` AND \`suggestedField\` are required:\n`;
+  prompt += `\`\`\`tool_call\n`;
+  prompt += `{"name": "suggest_profile_update_certifications", "arguments": {"reason": "Adding certifications will help you qualify for more sailing opportunities that require specific qualifications.", "suggestedField": "certifications"}}\n`;
+  prompt += `\`\`\`\n\n`;
+
+  prompt += `**suggest_profile_update_risk_level** - BOTH \`reason\` AND \`suggestedField\` are required:\n`;
+  prompt += `\`\`\`tool_call\n`;
+  prompt += `{"name": "suggest_profile_update_risk_level", "arguments": {"reason": "Updating your risk level preferences will help match you with sailing opportunities that align with your comfort level.", "suggestedField": "risk_level"}}\n`;
+  prompt += `\`\`\`\n\n`;
+
+  prompt += `**suggest_profile_update_sailing_preferences** - BOTH \`reason\` AND \`suggestedField\` are required:\n`;
+  prompt += `\`\`\`tool_call\n`;
+  prompt += `{"name": "suggest_profile_update_sailing_preferences", "arguments": {"reason": "Your sailing preferences are currently empty, which may reduce your chances of being matched with suitable sailing opportunities. Adding your preferences helps captains understand what type of sailing experiences you're interested in.", "suggestedField": "sailing_preferences"}}\n`;
+  prompt += `\`\`\`\n\n`;
+
+  prompt += `**suggest_profile_update_skills** - BOTH \`reason\` AND \`suggestedField\` are required:\n`;
+  prompt += `\`\`\`tool_call\n`;
+  prompt += `{"name": "suggest_profile_update_skills", "arguments": {"reason": "Adding sailing-related skills will help you qualify for more sailing opportunities.", "suggestedField": "skills"}}\n`;
+  prompt += `\`\`\`\n\n`;
+
+  prompt += `**suggest_skills_refinement** - Use for iterative skill refinement:\n`;
+  prompt += `\`\`\`tool_call\n`;
+  prompt += `{"name": "suggest_skills_refinement", "arguments": {"reason": "Your navigation skill description could be more detailed to help captains understand your specific navigation capabilities.", "suggestedField": "skills", "targetSkills": ["navigation", "piloting"]}}\n`;
+  prompt += `\`\`\`\n\n`;
+
+  prompt += `**CRITICAL RULES FOR PROFILE UPDATES:**\n`;
+  prompt += `1. AI MUST NEVER create content - only suggest fields that need updating\n`;
+  prompt += `2. User MUST provide all actual content for updates\n`;
+  prompt += `3. AI can iteratively refine user-provided content but never assumes values\n`;
+  prompt += `4. Each field gets its own specific suggestion tool\n`;
+  prompt += `5. Skills have special iterative refinement workflow\n\n`;
 
   prompt += `**NEVER omit the \`reason\` parameter** - it explains to the user why you're making the suggestion.\n\n`;
 

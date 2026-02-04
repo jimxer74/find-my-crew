@@ -1,10 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 import { ActionConfirmation } from './ActionConfirmation';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
+import { ActionFeedback } from './ActionFeedback';
+import { TextInputModal } from './TextInputModal';
+import { MultiSelectInputModal } from './MultiSelectInputModal';
+import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 
 
 
@@ -142,24 +147,94 @@ function getContextAwareSuggestions(userRoles: string[] | null, sendMessage: (me
 
 export function AssistantChat() {
   const t = useTranslations('assistant');
+  const router = useRouter();
   const { userRoles } = useUserRoles();
 
   const {
+    isOpen,
     messages,
     pendingActions,
     isLoading,
     error,
     errorDetails,
+    lastActionResult,
+    activeInputModal,
+    clearError,
+    clearActionResult,
     sendMessage,
     retryLastMessage,
-    clearError,
     approveAction,
     rejectAction,
+    hideInputModal,
+    submitInput,
+    closeAssistant, // ✅ Added closeAssistant
+    redirectToProfile,
   } = useAssistant();
 
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Mobile detection
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Bottom sheet state for mobile
+  const [bottomSheetHeight, setBottomSheetHeight] = useState(200); // Default height in px
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+  const dragStartHeight = useRef(0);
+
+  // Auto-dismiss action result after 5 seconds
+  useEffect(() => {
+    if (lastActionResult) {
+      const timer = setTimeout(() => {
+        clearActionResult();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastActionResult, clearActionResult]);
+
+  // Drag handlers for mobile bottom sheet
+  const handleDragStart = (clientY: number) => {
+    if (!isMobile) return;
+    setIsDragging(true);
+    dragStartY.current = clientY;
+    dragStartHeight.current = bottomSheetHeight;
+  };
+
+  const handleDragMove = (clientY: number) => {
+    if (!isMobile || !isDragging) return;
+    const deltaY = clientY - dragStartY.current;
+    const newHeight = Math.max(120, Math.min(400, dragStartHeight.current - deltaY));
+    setBottomSheetHeight(newHeight);
+  };
+
+  const handleDragEnd = () => {
+    if (!isMobile) return;
+    setIsDragging(false);
+  };
+
+  // Add global mouse/touch event listeners for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => handleDragMove(e.clientY);
+    const handleTouchMove = (e: TouchEvent) => handleDragMove(e.touches[0].clientY);
+    const handleMouseUp = () => handleDragEnd();
+    const handleTouchEnd = () => handleDragEnd();
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchend', handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isDragging, isMobile]);
 
   // Handle clicking on a leg reference - navigate to dashboard with the legId
   const handleLegClick = (legId: string) => {
@@ -209,6 +284,9 @@ export function AssistantChat() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Only render assistant content when open */}
+      {isOpen && (
+        <>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && !isLoading && (
@@ -381,8 +459,8 @@ export function AssistantChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Pending actions */}
-      {relevantPendingActions.length > 0 && (
+      {/* Pending actions (Desktop) */}
+      {!isMobile && relevantPendingActions.length > 0 && (
         <div className="border-t border-border p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/50">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {t('pendingActions')}
@@ -393,43 +471,120 @@ export function AssistantChat() {
               action={action}
               onApprove={() => approveAction(action.id)}
               onReject={() => rejectAction(action.id)}
+              onRedirectToProfile={(action) => {
+                // For profile update actions, use the proper redirect method
+                redirectToProfile(action);
+              }}
             />
           ))}
         </div>
       )}
 
-      {/* Input area */}
-      <div className="border-t border-border p-4 bg-card">
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <textarea
-            ref={inputRef}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={t('placeholder')}
-            disabled={isLoading}
-            rows={1}
-            className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"
-          />
-          <button
-            type="submit"
-            disabled={!inputValue.trim() || isLoading}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+      {/* Mobile Bottom Sheet */}
+      {isMobile && isOpen && relevantPendingActions.length > 0 && (
+        <div
+          className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-50"
+          style={{ height: `${bottomSheetHeight}px` }}
+        >
+          {/* Drag Handle */}
+          <div
+            className="flex justify-center py-2 cursor-ns-resize hover:bg-muted/50 transition-colors"
+            onMouseDown={(e) => handleDragStart(e.clientY)}
+            onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+            <div className="w-12 h-1 bg-border rounded-full" />
+          </div>
+
+          {/* Content */}
+          <div className="p-4 space-y-2 max-h-[calc(100%-60px)] overflow-y-auto">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              {t('pendingActions')}
+            </p>
+            {relevantPendingActions.map((action) => (
+              <ActionConfirmation
+                key={action.id}
+                action={action}
+                onApprove={() => approveAction(action.id)}
+                onReject={() => rejectAction(action.id)}
+                onRedirectToProfile={(action) => {
+                  // For profile update actions, use the proper redirect method
+                  redirectToProfile(action);
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Input area - Hide when pending actions exist */}
+      {relevantPendingActions.length === 0 && (
+        <div className="border-t border-border p-4 bg-card">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <textarea
+              ref={inputRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t('placeholder')}
+              disabled={isLoading}
+              rows={1}
+              className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"
+            />
+            <button
+              type="submit"
+              disabled={!inputValue.trim() || isLoading}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
             >
-              <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </form>
-      </div>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Action feedback */}
+      <ActionFeedback
+        result={lastActionResult}
+        onDismiss={clearActionResult}
+      />
+
+      {/* Input Modals */}
+      {activeInputModal && (
+        <>
+          {activeInputModal.type === 'text' && (
+            <TextInputModal
+              action={activeInputModal.action}
+              onSubmit={(value) => submitInput(activeInputModal.actionId, value)}
+              onCancel={hideInputModal}
+            />
+          )}
+          {activeInputModal.type === 'text_array' && (
+            <MultiSelectInputModal
+              action={activeInputModal.action}
+              onSubmit={(value) => submitInput(activeInputModal.actionId, value)}
+              onCancel={hideInputModal}
+            />
+          )}
+          {activeInputModal.type === 'select' && (
+            <MultiSelectInputModal
+              action={activeInputModal.action}
+              onSubmit={(value) => submitInput(activeInputModal.actionId, value)}
+              onCancel={hideInputModal}
+            />
+          )}
+        </>
+      )}
+        </>
+      )}
     </div>
   );
 }

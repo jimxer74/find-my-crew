@@ -13,7 +13,23 @@
       "Bash(cmd.exe /c \"npm run build\")",
       "Bash(python:*)",
       "Bash(ls:*)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(npm test:*)",
+      "Bash(yarn test:*)",
+      "Bash(pnpm test:*)",
+      "Bash(node_modules/.bin/vitest run --testPathPattern=assistant --testNamePattern=\"tool call parsing\")",
+      "Bash(node test_tool_parsing.js:*)",
+      "Bash(/cygdrive/c/Program Files/nodejs/npm run build)",
+      "Bash(export PATH=\"/c/Program Files/nodejs:$PATH\")",
+      "Bash(npm run dev:*)",
+      "Bash(pnpm --version:*)",
+      "Bash(start \"\" \"C:\\\\Users\\\\OWNER\\\\Projects\\\\next-projects\\\\find-my-crew\\\\test-highlighting.html\")",
+      "Bash(del \"C:\\\\Users\\\\OWNER\\\\Projects\\\\next-projects\\\\find-my-crew\\\\test-highlighting.html\")",
+      "Bash(node:*)",
+      "Bash(./node_modules/.bin/next build:*)",
+      "Bash(npm run test:*)",
+      "Bash(/cygdrive/c/Program\\\\ Files/nodejs/node.exe:*)",
+      "Bash(psql:*)"
     ]
   }
 }

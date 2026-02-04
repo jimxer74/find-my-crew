@@ -1456,6 +1456,92 @@ async function analyzeCrewMatch(
 }
 
 // ============================================================================
+// Helper functions for input metadata
+// ============================================================================
+
+/**
+ * Get input prompt for profile update actions
+ */
+function getInputPrompt(actionType: ActionType): string | undefined {
+  switch (actionType) {
+    case 'update_profile_user_description':
+      return 'What would you like your new user description to be?';
+    case 'update_profile_certifications':
+      return 'What certifications would you like to add or update?';
+    case 'update_profile_risk_level':
+      return 'Which risk levels would you like to select?';
+    case 'update_profile_sailing_preferences':
+      return 'What sailing preferences would you like to update?';
+    case 'update_profile_skills':
+      return 'Which skills would you like to add or update?';
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Get input type for profile update actions
+ */
+function getInputType(actionType: ActionType): 'text' | 'text_array' | 'select' | undefined {
+  switch (actionType) {
+    case 'update_profile_user_description':
+    case 'update_profile_certifications':
+    case 'update_profile_sailing_preferences':
+      return 'text';
+    case 'update_profile_risk_level':
+    case 'update_profile_skills':
+      return 'select';
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Get input options for select-type inputs
+ */
+function getInputOptions(actionType: ActionType): string[] | undefined {
+  switch (actionType) {
+    case 'update_profile_risk_level':
+      return ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+    case 'update_profile_skills':
+      return [
+        'Navigation',
+        'Sailing',
+        'Engine Maintenance',
+        'Electronics',
+        'Cooking',
+        'First Aid',
+        'Photography',
+        'Teaching'
+      ];
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Get profile field mapping for profile update actions
+ */
+function getProfileField(actionType: ActionType): string | undefined {
+  switch (actionType) {
+    case 'update_profile_user_description':
+      return 'user_description';
+    case 'update_profile_certifications':
+      return 'certifications';
+    case 'update_profile_risk_level':
+      return 'risk_level';
+    case 'update_profile_sailing_preferences':
+      return 'sailing_preferences';
+    case 'update_profile_skills':
+      return 'skills';
+    case 'refine_skills':
+      return 'skills';
+    default:
+      return undefined;
+  }
+}
+
+// ============================================================================
 // Action Creation
 // ============================================================================
 
@@ -1469,7 +1555,12 @@ async function createPendingAction(
   // Map tool name to action type
   const actionTypeMap: Record<string, ActionType> = {
     suggest_register_for_leg: 'register_for_leg',
-    suggest_profile_update: 'update_profile',
+    suggest_profile_update_user_description: 'update_profile_user_description',
+    suggest_profile_update_certifications: 'update_profile_certifications',
+    suggest_profile_update_risk_level: 'update_profile_risk_level',
+    suggest_profile_update_sailing_preferences: 'update_profile_sailing_preferences',
+    suggest_profile_update_skills: 'update_profile_skills',
+    suggest_skills_refinement: 'refine_skills',
     suggest_approve_registration: 'approve_registration',
     suggest_reject_registration: 'reject_registration',
   };
@@ -1496,49 +1587,41 @@ async function createPendingAction(
       explanation = args.reason as string;
       break;
 
-    case 'suggest_profile_update': {
+    case 'suggest_profile_update_user_description':
+    case 'suggest_profile_update_certifications':
+    case 'suggest_profile_update_risk_level':
+    case 'suggest_profile_update_sailing_preferences':
+    case 'suggest_profile_update_skills': {
       // Validate required parameters
       if (!args.reason || typeof args.reason !== 'string' || args.reason.trim() === '') {
-        throw new Error('Missing required parameter: reason. Please provide an explanation of why these profile updates are recommended.');
+        throw new Error('Missing required parameter: reason. Please provide an explanation of why this profile field should be updated.');
+      }
+      if (!args.suggestedField) {
+        throw new Error('Missing required parameter: suggestedField. Please specify which field to update.');
       }
 
-      // Handle updates parameter - can be JSON string or object
-      let updates: Record<string, unknown>;
-      if (!args.updates) {
-        // Check if AI sent fields directly instead of in an "updates" wrapper
-        // Common case: AI sends {skills: [...], reason: "..."} instead of {updates: "{...}", reason: "..."}
-        const knownProfileFields = ['skills', 'sailing_experience', 'risk_level', 'certifications', 'user_description', 'bio'];
-        const directFields: Record<string, unknown> = {};
-        let hasDirectFields = false;
+      // For suggestion tools, do NOT include newValue - user should provide it when approving
+      payload = { suggestedField: args.suggestedField };
+      explanation = args.reason as string;
+      break;
+    }
 
-        for (const field of knownProfileFields) {
-          if (args[field] !== undefined) {
-            directFields[field] = args[field];
-            hasDirectFields = true;
-          }
-        }
-
-        if (hasDirectFields) {
-          updates = directFields;
-          log('Normalized direct profile fields to updates object:', updates);
-        } else {
-          throw new Error('Missing required parameter: updates. Please provide a JSON object with the profile fields and values to update.');
-        }
-      } else if (typeof args.updates === 'string') {
-        // Parse JSON string
-        try {
-          updates = JSON.parse(args.updates);
-        } catch (e) {
-          throw new Error(`Invalid updates parameter: could not parse JSON string. Error: ${(e as Error).message}`);
-        }
-      } else if (typeof args.updates === 'object' && args.updates !== null) {
-        // Already an object, use directly
-        updates = args.updates as Record<string, unknown>;
-      } else {
-        throw new Error('Invalid updates parameter: must be a JSON string or object.');
+    case 'suggest_skills_refinement': {
+      // Validate required parameters
+      if (!args.reason || typeof args.reason !== 'string' || args.reason.trim() === '') {
+        throw new Error('Missing required parameter: reason. Please provide an explanation of why these skills should be refined.');
+      }
+      if (!args.suggestedField || args.suggestedField !== 'skills') {
+        throw new Error('Missing required parameter: suggestedField must be "skills".');
+      }
+      if (!args.targetSkills || !Array.isArray(args.targetSkills) || args.targetSkills.length === 0) {
+        throw new Error('Missing required parameter: targetSkills. Please provide an array of skill names to refine.');
       }
 
-      payload = { updates };
+      payload = {
+        targetSkills: args.targetSkills,
+        userProvidedDescriptions: args.userProvidedDescriptions
+      };
       explanation = args.reason as string;
       break;
     }
@@ -1560,7 +1643,25 @@ async function createPendingAction(
       throw new Error(`Unhandled action tool: ${toolName}`);
   }
 
-  // Create pending action
+  // Determine field-specific metadata for new action types
+  let fieldType: string | null = null;
+  let suggestedValue: string | null = null;
+
+  if (actionType.startsWith('update_profile_')) {
+    fieldType = actionType.replace('update_profile_', '');
+    if (payload.newValue !== undefined) {
+      suggestedValue = typeof payload.newValue === 'string'
+        ? payload.newValue
+        : JSON.stringify(payload.newValue);
+    }
+  } else if (actionType === 'refine_skills' && payload.targetSkills) {
+    fieldType = 'skills';
+    suggestedValue = Array.isArray(payload.targetSkills)
+      ? payload.targetSkills.join(', ')
+      : JSON.stringify(payload.targetSkills);
+  }
+
+  // Create pending action with input metadata for profile update actions
   const { data, error } = await supabase
     .from('ai_pending_actions')
     .insert({
@@ -1570,6 +1671,14 @@ async function createPendingAction(
       action_payload: payload,
       explanation,
       status: 'pending',
+      field_type: fieldType,
+      suggested_value: suggestedValue,
+      // Add input metadata for profile update actions
+      input_prompt: getInputPrompt(actionType),
+      input_type: getInputType(actionType),
+      input_options: getInputOptions(actionType),
+      // Add profile field mapping for profile update actions
+      profile_field: getProfileField(actionType),
     })
     .select()
     .single();

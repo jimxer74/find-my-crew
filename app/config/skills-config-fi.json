@@ -1,0 +1,69 @@
+{
+    "general": [
+      {
+        "name": "safety_and_mob",
+        "infoText": "Oletko perehtynyt yleiseen turvallisuuteen ja ihminen yli laidan -menettelyihin, oletko saanut koulutusta näissä asioissa? (esim. valjaiden ja taluttimen käyttö, jacklines-turva köydet, hätäpoistumistiet, EPIRB/PLB, quick-stop, Lifesling, takaisin kyytiin nostaminen)",
+        "startingSentence": "Turvallisuusasenteeni aluksella on: "
+      },
+      {
+        "name": "heavy_weather",
+        "infoText": "Onko sinulla kokemusta tai koulutusta kovan sään purjehduksesta ja myrskytaktiikoista? (esim. reivaus ajoissa, myrskytaktiikat, meriankkurit, ajaa myötätuuleen isoissa aalloissa, heaving-to)",
+        "startingSentence": "Kokemukseni kovista kelistä sisältää: "
+      },
+      {
+        "name": "night_sailing",
+        "infoText": "Oletko perehtynyt yöpurjehdukseen tai vahtijärjestelmiin, pystytkö seisomaan vahtia ja navigoimaan yöllä? (esim. vahdin pito, törmäyksen välttäminen yöllä, valot/muodot, tutkan/AIS:n käyttö?)",
+        "startingSentence": "Yöpurjehdukseen ja vahtijärjestelmiin liittyen: "
+      },
+      {
+        "name": "watch_keeping",
+        "infoText": "Oletko mukava vahtivuorojen pitämisessä? (esim. soolovahti tai jaetut vuorot, väsymyksen hallinta, vahtivuoron luovutusmenettelyt)",
+        "startingSentence": "Vahtivuoroihin liittyen: "
+      },
+      {
+        "name": "navigation",
+        "infoText": "Millainen navigointikokemus sinulla on, millaisia navigointijärjestelmiä olet käyttänyt? (esim. karttojen lukeminen, reittien plottaus, GPS/chartplotter, peräluotsaus, tähtinavigoinnin perusteet, tutkan tulkinta ja käyttö (MARPA/ARPA kohteet, törmäyksen välttäminen), AIS-integraatio, tutka plottaus huonossa näkyvyydessä, ECDIS/chartplotter-tutkaominaisuuksien tuntemus, tutkaheijastimen merkitys)",
+        "startingSentence": "Navigointikokemukseeni kuuluu: "
+      },
+      {
+        "name": "sailing_experience",
+        "infoText": "Millainen purjehduskokemuksesi on? (esim. vuosia/mailia, venetyypit – yksirunko, katamaraani, jolla – sekä purjehditut alueet: rannikko, avomeri, valtamerialukset?)",
+        "startingSentence": "Purjehduskokemukseeni kuuluu: "
+      },
+      {
+        "name": "certifications",
+        "infoText": "Mitkä pätevyydet tai sertifikaatit sinulla on? (esim. RYA Competent Crew, Day Skipper, Coastal Skipper/Yachtmaster; ASA vastaavat; International Certificate of Competence (ICC); Powerboat Level 2; VHF-radio pätevyys?)",
+        "startingSentence": "Minulla on seuraavat pätevyydet: "
+      },
+      {
+        "name": "physical_fitness",
+        "infoText": "Miten arvioisit fyysistä kuntoasi ja kestävyyttäsi pitkillä matkoilla? (esim. kannella kiipeäminen, purjeiden käsittely kovassa kelissä, unenpuutteen sietokyky)",
+        "startingSentence": "Fyysinen kuntotasoni purjehdukseen on: "
+      },
+      {
+        "name": "seasickness_management",
+        "infoText": "Miten hallitset merisairautta (tai oletko yleensä immuuni)? Mitä lääkkeitä tai keinoja käytät?",
+        "startingSentence": "Merisairauteen liittyen: "
+      },
+      {
+        "name": "first_aid",
+        "infoText": "Onko sinulla ensiapukoulutusta tai perustaitoja ensiavusta?",
+        "startingSentence": "Minulla on ensiapukoulutusta seuraavasti: "
+      },
+      {
+        "name": "technical_skills",
+        "infoText": "Onko sinulla moottori-, sähkö-, takila- tai muita teknisiä taitoja?",
+        "startingSentence": "Tekniset taitoni sisältävät: "
+      },
+      {
+        "name": "cooking",
+        "infoText": "Onko sinulla ruoanlaittotaitoja tai motivaatiota kokata tarvittaessa?",
+        "startingSentence": "Ruoanlaittotaitoihini liittyen: "
+      },
+      {
+        "name": "survival_skills",
+        "infoText": "Oletko saanut koulutusta selviytymistaidoissa? (esim. kylmävesiupotusharjoittelu, jääpurjehduksen halkeamapelastusvastineet, ensiapu syrjäseuduilla) Onko jotain aukkoja, joihin tulisi kiinnittää huomiota?",
+        "startingSentence": "Selviytymiskoulutustani on: "
+      }
+    ]
+  }

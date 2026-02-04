@@ -136,6 +136,7 @@ export function ExperienceSkillsSection({
 
         {/* Add Skills button */}
         <button
+          id="skill-add-button"
           type="button"
           onClick={onShowSkillsSidebar}
           className="w-full px-4 py-3 min-h-[44px] border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"

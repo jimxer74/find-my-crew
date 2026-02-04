@@ -210,6 +210,14 @@ To use a tool, respond with a JSON block like this:
 {"name": "tool_name", "arguments": {"arg1": "value1"}}
 \`\`\`
 
+Alternative tool call formats are also supported:
+<|tool_call_start|>[{"name": "tool_name", "arguments": {"arg1": "value1"}}]<|tool_call_end|>
+<|tool_call|>{"name": "tool_name", "arguments": {"arg1": "value1"}}<|/tool_call|>
+<|start|>tool_name<|end|>
+<tool_name>{"name": "tool_name", "arguments": {"arg1": "value1"}}</tool_name>
+
+**PREFERRED FORMAT:** Use the \`\`\`tool_call\`\`\` code block format for best compatibility.
+
 CRITICAL RULES FOR TOOL CALLS:
 1. Action tools (suggest_register_for_leg, suggest_profile_update, etc.) ALWAYS require BOTH the action parameter AND a "reason" parameter
 2. The "reason" parameter must be a non-empty string explaining why you're making this suggestion
@@ -294,7 +302,7 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
   const toolCalls: ToolCall[] = [];
   let content = text;
 
-  // Find tool call blocks (accept variations: tool_call, tool_calls, tool_code, json)
+  // Method 1: Find tool call blocks with code block format (```tool_calls?|tool_code|json)
   const toolCallRegex = /```(?:tool_calls?|tool_code|json)\s*\n?([\s\S]*?)```/g;
   let match;
 
@@ -317,9 +325,384 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
       // Remove tool call from content
       content = content.replace(match[0], '').trim();
     } catch (e) {
-      log('Failed to parse tool call JSON:', e);
+      log('Failed to parse tool call JSON, trying to fix truncated JSON:', e);
+      // Try to fix truncated JSON by adding missing closing braces
+      let fixedJson = match[1].trim();
+      try {
+        // Try to fix common truncation issues
+        // Add missing closing braces/brackets
+        let openBraces = (fixedJson.match(/\{/g) || []).length;
+        let closeBraces = (fixedJson.match(/\}/g) || []).length;
+        let openBrackets = (fixedJson.match(/\[/g) || []).length;
+        let closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+        // Add missing closing braces
+        while (closeBraces < openBraces) {
+          fixedJson += '}';
+          closeBraces++;
+        }
+        while (closeBrackets < openBrackets) {
+          fixedJson += ']';
+          closeBrackets++;
+        }
+
+        // Remove trailing comma before closing brace/bracket
+        fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+
+        const toolCallJson = JSON.parse(fixedJson);
+        // Validate this is actually a tool call (must have name field)
+        if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+          log('Skipping fixed JSON block - no valid "name" field');
+          continue;
+        }
+        const toolCall = {
+          id: `tc_${Date.now()}_${toolCalls.length}`,
+          name: toolCallJson.name,
+          arguments: toolCallJson.arguments || {},
+        };
+        toolCalls.push(toolCall);
+        log('Parsed fixed tool call:', { name: toolCall.name, args: toolCall.arguments });
+        // Remove tool call from content
+        content = content.replace(match[0], '').trim();
+      } catch (fixError) {
+        log('Failed to fix truncated JSON:', fixError);
+        // Still invalid, skip
+      }
+    }
+  }
+
+  // Method 2: Find tool call format with <|tool_call_start|> and <|tool_call_end|>
+  const toolCallStartRegex = /<\|tool_call_start\|>\[(.*?)\]<\|tool_call_end\|>/g;
+  let startMatch;
+
+  while ((startMatch = toolCallStartRegex.exec(text)) !== null) {
+    log('Found tool call with <|> format:', startMatch[1].trim().substring(0, 200));
+    try {
+      // Extract the content between [] and parse as JSON
+      const toolCallContent = startMatch[1].trim();
+
+      // Handle case where content might be wrapped in quotes or have extra formatting
+      let cleanContent = toolCallContent;
+      if (cleanContent.startsWith('"') && cleanContent.endsWith('"')) {
+        cleanContent = cleanContent.slice(1, -1);
+      }
+
+      // Additional cleanup for malformed JSON that might include text before/after
+      // Look for the first { and last } to extract JSON object
+      let jsonContent = cleanContent;
+      const firstBrace = jsonContent.indexOf('{');
+      const lastBrace = jsonContent.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonContent = jsonContent.substring(firstBrace, lastBrace + 1);
+      } else {
+        // If no JSON braces found, this is not a tool call - skip it
+        log('Skipping <|> format - no JSON structure found in content');
+        continue;
+      }
+
+      let toolCallJson;
+      try {
+        toolCallJson = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log('Failed to parse JSON, trying to fix truncated JSON:', jsonError);
+        // Try to fix truncated JSON by adding missing closing braces
+        let fixedJson = jsonContent;
+        try {
+          // Try to fix common truncation issues
+          // Add missing closing braces/brackets
+          let openBraces = (fixedJson.match(/\{/g) || []).length;
+          let closeBraces = (fixedJson.match(/\}/g) || []).length;
+          let openBrackets = (fixedJson.match(/\[/g) || []).length;
+          let closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+          // Add missing closing braces
+          while (closeBraces < openBraces) {
+            fixedJson += '}';
+            closeBraces++;
+          }
+          while (closeBrackets < openBrackets) {
+            fixedJson += ']';
+            closeBrackets++;
+          }
+
+          // Remove trailing comma before closing brace/bracket
+          fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+
+          toolCallJson = JSON.parse(fixedJson);
+        } catch (fixError) {
+          log('Failed to fix truncated JSON, trying to extract valid JSON object:', fixError);
+          // Try to extract a valid JSON object from the text
+          const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              toolCallJson = JSON.parse(jsonMatch[0]);
+            } catch (nestedError) {
+              log('Still failed to parse extracted JSON:', nestedError);
+              // If we still can't parse JSON, this is not a valid tool call
+              log('Skipping <|> format - content is not valid JSON');
+              continue;
+            }
+          } else {
+            log('No valid JSON object found in content');
+            // If no JSON pattern found, this is not a valid tool call
+            log('Skipping <|> format - content is not valid JSON');
+            continue;
+          }
+        }
+      }
+
+      // Validate this is actually a tool call (must have name field)
+      if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+        log('Skipping <|> format - no valid "name" field');
+        continue;
+      }
+      const toolCall = {
+        id: `tc_${Date.now()}_${toolCalls.length}`,
+        name: toolCallJson.name,
+        arguments: toolCallJson.arguments || {},
+      };
+      toolCalls.push(toolCall);
+      log('Parsed <|> tool call:', { name: toolCall.name, args: toolCall.arguments });
+      // Remove tool call from content
+      content = content.replace(startMatch[0], '').trim();
+    } catch (e) {
+      log('Failed to parse <|> tool call JSON:', e);
       // Invalid JSON, skip
     }
+  }
+
+  // Method 3: Find tool call format with just <|tool_call|> tags
+  const toolCallTagRegex = /<\|tool_call\|>([\s\S]*?)<\|\/tool_call\|>/g;
+  let tagMatch;
+
+  while ((tagMatch = toolCallTagRegex.exec(text)) !== null) {
+    log('Found tool call with <|tool_call|> tags:', tagMatch[1].trim().substring(0, 200));
+    try {
+      let jsonContent = tagMatch[1].trim();
+
+      // Look for the first { and last } to extract JSON object
+      let cleanJsonContent = jsonContent;
+      const firstBrace = cleanJsonContent.indexOf('{');
+      const lastBrace = cleanJsonContent.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        cleanJsonContent = cleanJsonContent.substring(firstBrace, lastBrace + 1);
+      }
+
+      let toolCallJson;
+      try {
+        toolCallJson = JSON.parse(cleanJsonContent);
+      } catch (jsonError) {
+        log('Failed to parse JSON in <|tool_call|> tags, trying to fix truncated JSON:', jsonError);
+        // Try to fix truncated JSON by adding missing closing braces
+        let fixedJson = cleanJsonContent;
+        try {
+          // Try to fix common truncation issues
+          // Add missing closing braces/brackets
+          let openBraces = (fixedJson.match(/\{/g) || []).length;
+          let closeBraces = (fixedJson.match(/\}/g) || []).length;
+          let openBrackets = (fixedJson.match(/\[/g) || []).length;
+          let closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+          // Add missing closing braces
+          while (closeBraces < openBraces) {
+            fixedJson += '}';
+            closeBraces++;
+          }
+          while (closeBrackets < openBrackets) {
+            fixedJson += ']';
+            closeBrackets++;
+          }
+
+          // Remove trailing comma before closing brace/bracket
+          fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+
+          toolCallJson = JSON.parse(fixedJson);
+        } catch (fixError) {
+          log('Failed to fix truncated JSON in <|tool_call|> tags, trying to extract valid JSON object:', fixError);
+          // Try to extract a valid JSON object from the text
+          const jsonMatch = cleanJsonContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              toolCallJson = JSON.parse(jsonMatch[0]);
+            } catch (nestedError) {
+              log('Still failed to parse extracted JSON in <|tool_call|> tags:', nestedError);
+              continue;
+            }
+          } else {
+            log('No valid JSON object found in <|tool_call|> tags content');
+            continue;
+          }
+        }
+      }
+
+      // Validate this is actually a tool call (must have name field)
+      if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+        log('Skipping <|tool_call|> format - no valid "name" field');
+        continue;
+      }
+      const toolCall = {
+        id: `tc_${Date.now()}_${toolCalls.length}`,
+        name: toolCallJson.name,
+        arguments: toolCallJson.arguments || {},
+      };
+      toolCalls.push(toolCall);
+      log('Parsed <|tool_call|> tool call:', { name: toolCall.name, args: toolCall.arguments });
+      // Remove tool call from content
+      content = content.replace(tagMatch[0], '').trim();
+    } catch (e) {
+      log('Failed to parse <|tool_call|> JSON:', e);
+      // Invalid JSON, skip
+    }
+  }
+
+  // Method 4: OpenRouter specific format - try common OpenRouter patterns
+  // Pattern 1: <|start|>tool_name<|end|>
+  const openRouterStartEndRegex = /<\|start\|>(\w+)<\|end\|>/g;
+  let openRouterMatch;
+
+  while ((openRouterMatch = openRouterStartEndRegex.exec(text)) !== null) {
+    const toolName = openRouterMatch[1];
+    log('Found OpenRouter start/end pattern:', toolName);
+
+    // Look for JSON arguments in the surrounding context
+    // This is a heuristic approach since OpenRouter format doesn't always include arguments in the same pattern
+    const beforeMatch = text.substring(0, openRouterMatch.index);
+    const afterMatch = text.substring(openRouterMatch.index + openRouterMatch[0].length);
+
+    // Try to find JSON in the text before or after the pattern
+    let jsonContent = null;
+
+    // Look for JSON before the pattern
+    const beforeJsonMatch = beforeMatch.match(/(\{[\s\S]*?\})\s*$/);
+    if (beforeJsonMatch) {
+      jsonContent = beforeJsonMatch[1];
+    } else {
+      // Look for JSON after the pattern
+      const afterJsonMatch = afterMatch.match(/^\s*(\{[\s\S]*?\})/);
+      if (afterJsonMatch) {
+        jsonContent = afterJsonMatch[1];
+      }
+    }
+
+    let toolCallJson;
+    if (jsonContent) {
+      try {
+        toolCallJson = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log('Failed to parse JSON for OpenRouter format, trying to fix truncated JSON:', jsonError);
+        // Try to fix truncated JSON
+        let fixedJson = jsonContent;
+        try {
+          // Try to fix common truncation issues
+          let openBraces = (fixedJson.match(/\{/g) || []).length;
+          let closeBraces = (fixedJson.match(/\}/g) || []).length;
+          let openBrackets = (fixedJson.match(/\[/g) || []).length;
+          let closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+          // Add missing closing braces
+          while (closeBraces < openBraces) {
+            fixedJson += '}';
+            closeBraces++;
+          }
+          while (closeBrackets < openBrackets) {
+            fixedJson += ']';
+            closeBrackets++;
+          }
+
+          // Remove trailing comma before closing brace/bracket
+          fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+
+          toolCallJson = JSON.parse(fixedJson);
+        } catch (fixError) {
+          log('Failed to fix truncated JSON for OpenRouter format:', fixError);
+          // Create tool call with just the name if no arguments found
+          toolCallJson = { name: toolName };
+        }
+      }
+    } else {
+      // No JSON found, create tool call with just the name
+      toolCallJson = { name: toolName };
+    }
+
+    // Validate this is actually a tool call (must have name field)
+    if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+      log('Skipping OpenRouter format - no valid "name" field');
+      continue;
+    }
+
+    const toolCall = {
+      id: `tc_${Date.now()}_${toolCalls.length}`,
+      name: toolCallJson.name,
+      arguments: toolCallJson.arguments || {},
+    };
+    toolCalls.push(toolCall);
+    log('Parsed OpenRouter tool call:', { name: toolCall.name, args: toolCall.arguments });
+
+    // Remove tool call from content
+    content = content.replace(openRouterMatch[0], '').trim();
+  }
+
+  // Pattern 2: <tool_name>arguments</tool_name> format
+  const openRouterTagRegex = /<(\w+)>([\s\S]*?)<\/\1>/g;
+  let tagPatternMatch;
+
+  while ((tagPatternMatch = openRouterTagRegex.exec(text)) !== null) {
+    const toolName = tagPatternMatch[1];
+    const contentStr = tagPatternMatch[2].trim();
+    log('Found OpenRouter tag pattern:', toolName);
+
+    let toolCallJson;
+    try {
+      // Try to parse the content as JSON
+      toolCallJson = JSON.parse(contentStr);
+    } catch (jsonError) {
+      log('Failed to parse JSON in OpenRouter tag format, trying to fix truncated JSON:', jsonError);
+      // Try to fix truncated JSON
+      let fixedJson = contentStr;
+      try {
+        // Try to fix common truncation issues
+        let openBraces = (fixedJson.match(/\{/g) || []).length;
+        let closeBraces = (fixedJson.match(/\}/g) || []).length;
+        let openBrackets = (fixedJson.match(/\[/g) || []).length;
+        let closeBrackets = (fixedJson.match(/\]/g) || []).length;
+
+        // Add missing closing braces
+        while (closeBraces < openBraces) {
+          fixedJson += '}';
+          closeBraces++;
+        }
+        while (closeBrackets < openBrackets) {
+          fixedJson += ']';
+          closeBrackets++;
+        }
+
+        // Remove trailing comma before closing brace/bracket
+        fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+
+        toolCallJson = JSON.parse(fixedJson);
+      } catch (fixError) {
+        log('Failed to fix truncated JSON in OpenRouter tag format:', fixError);
+        // Create tool call with just the name if no arguments found
+        toolCallJson = { name: toolName };
+      }
+    }
+
+    // Validate this is actually a tool call (must have name field)
+    if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+      log('Skipping OpenRouter tag format - no valid "name" field');
+      continue;
+    }
+
+    const toolCall = {
+      id: `tc_${Date.now()}_${toolCalls.length}`,
+      name: toolCallJson.name,
+      arguments: toolCallJson.arguments || {},
+    };
+    toolCalls.push(toolCall);
+    log('Parsed OpenRouter tag tool call:', { name: toolCall.name, args: toolCall.arguments });
+
+    // Remove tool call from content
+    content = content.replace(tagPatternMatch[0], '').trim();
   }
 
   log(`Parsing complete: ${toolCalls.length} tool calls found`);

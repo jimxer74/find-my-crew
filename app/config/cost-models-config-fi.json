@@ -1,0 +1,49 @@
+{
+    "costModels": [
+      {
+        "name": "Yhteinen kustannusjako",
+        "displayName": "Yhteinen Osuus",
+        "icon": "/shared-costs-tp",
+        "description": "Miehistön jäsenet jakavat matkan kustannukset suhteellisesti",
+        "details": "Kaikki miehistön jäsenet osallistuvat matkan kuluihin sovituissa suhteissa.",
+        "color": "blue",
+        "abbreviation": "YHTEINEN"
+      },
+      {
+        "name": "Omistaja maksaa kaiken",
+        "displayName": "Omistaja Kattaa Kaiken",
+        "icon": "/owner-covers-all-tp",
+        "description": "Veneen omistaja maksaa kaikki matkan kulut",
+        "details": "Veneen omistaja vastaa taloudellisesti kaikista matkan kuluista. Miehistön jäsenet osallistuvat osaamisellaan ja ajallaan rahan sijaan.",
+        "color": "green",
+        "abbreviation": "OMISTAJA"
+      },
+      {
+        "name": "Miehistö maksaa kiinteän maksun",
+        "displayName": "Miehistö Maksaa Maksun",
+        "icon": "/crew-pays-fee-tp",
+        "description": "Miehistön jäsenet maksavat kiinteän maksun tai päivähinnan osallistumisesta",
+        "details": "Jokainen miehistön jäsen maksaa ennalta sovitun kiinteän maksun tai päivähinnan osallistuakseen matkalle. Tämä kattaa heidän osuutensa kuluista ja korvaa kokemuksesta.",
+        "color": "orange",
+        "abbreviation": "MAKSU"
+      },
+      {
+        "name": "Toimitus / palkattu miehistö",
+        "displayName": "Ammattimainen Toimitus / Palkattu Miehistö",
+        "icon": "/delivery-paid-crew-tp",
+        "description": "Ammattimainen miehistö palkataan ja maksetaan matkasta",
+        "details": "Ammattitaitoisia miehistön jäseniä palkataan ja heille maksetaan korvaus asiantuntemuksesta ja palveluksista matkan aikana.",
+        "color": "purple",
+        "abbreviation": "PALKATTU"
+      },
+      {
+        "name": "Ei määritelty",
+        "displayName": "Ei Määritelty",
+        "icon": "not-defined",
+        "description": "Kustannusmallia ei ole vielä määritelty",
+        "details": "Kustannusjärjestelyä ei ole vielä määritelty. Se voidaan sopia myöhemmin omistajan ja miehistön jäsenten kesken.",
+        "color": "gray",
+        "abbreviation": "TBD"
+      }
+    ]
+  }

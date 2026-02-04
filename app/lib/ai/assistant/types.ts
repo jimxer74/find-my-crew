@@ -41,9 +41,26 @@ export interface AIPendingAction {
   action_type: ActionType;
   action_payload: Record<string, unknown>;
   explanation: string;
-  status: 'pending' | 'approved' | 'rejected' | 'expired';
+  status: 'pending' | 'approved' | 'awaiting_input' | 'rejected' | 'expired' | 'redirected';
   created_at: string;
   resolved_at: string | null;
+
+  // NEW FIELDS: Input collection support
+  input_prompt?: string;        // "What would you like your new user description to be?"
+  input_type?: 'text' | 'text_array' | 'select'; // Type of input needed
+  input_options?: string[];     // For select inputs (e.g., risk levels)
+  awaiting_user_input?: boolean; // Flag for input collection state
+
+  // NEW FIELDS: Profile action metadata
+  profile_section?: 'personal' | 'preferences' | 'experience' | 'notifications';
+  profile_field?: string;
+  ai_highlight_text?: string;
+}
+
+export interface ProfileActionMetadata {
+  section: 'personal' | 'preferences' | 'experience' | 'notifications';
+  field: string; // e.g., 'user_description', 'certifications', etc.
+  highlightText: string; // Text to show as AI suggestion context
 }
 
 export interface AISuggestion {
@@ -60,10 +77,23 @@ export interface AISuggestion {
 // Action types
 export type ActionType =
   | 'register_for_leg'
-  | 'update_profile'
+  | 'update_profile_user_description'
+  | 'update_profile_certifications'
+  | 'update_profile_risk_level'
+  | 'update_profile_sailing_preferences'
+  | 'update_profile_skills'
+  | 'refine_skills'
   | 'create_journey'
   | 'approve_registration'
-  | 'reject_registration';
+  | 'reject_registration'
+  | 'suggest_profile_update_user_description';
+
+export interface SkillsRefinementPayload {
+  targetSkills: string[];
+  currentSkills: string[];
+  suggestedImprovements?: Record<string, string>;
+  userProvidedDescriptions?: Record<string, string>;
+}
 
 // Suggestion types
 export type SuggestionType =
@@ -89,6 +119,8 @@ export interface ToolParameterProperty {
   // Support nested object properties (for complex types like bounding boxes)
   properties?: Record<string, ToolParameterProperty>;
   required?: string[];
+  // Support array types
+  items?: ToolParameterProperty;
 }
 
 export interface ToolDefinition {

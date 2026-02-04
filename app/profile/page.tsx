@@ -47,6 +47,48 @@ type EmailPreferences = {
 };
 
 function ProfilePageContent() {
+  // Add CSS-in-JS styles for AI-focused fields
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .ai-focused-field {
+        outline: 2px solid #3b82f6;
+        outline-offset: 2px;
+        background-color: #dbeafe;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        animation: pulse 2s infinite;
+      }
+
+      .ai-focused-section {
+        outline: 3px solid #3b82f6;
+        outline-offset: 2px;
+        box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.2);
+        animation: pulse 2s infinite;
+      }
+
+      .ai-highlighted-section h2 {
+        animation: highlightPulse 3s ease-in-out;
+      }
+
+      @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+        70% { box-shadow: 0 0 0 12px rgba(59, 130, 246, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+      }
+
+      @keyframes highlightPulse {
+        0% { transform: scaleX(1); }
+        50% { transform: scaleX(1.05); }
+        100% { transform: scaleX(1); }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
   const t = useTranslations('profile');
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
@@ -69,6 +111,20 @@ function ProfilePageContent() {
   const [consents, setConsents] = useState<UserConsents | null>(null);
   const [emailPrefs, setEmailPrefs] = useState<EmailPreferences | null>(null);
   const [isUpdatingConsents, setIsUpdatingConsents] = useState(false);
+
+  // AI assistant redirect support - new state
+  const [aiTargetSection, setAiTargetSection] = useState<string | null>(null);
+  const [aiTargetField, setAiTargetField] = useState<string | null>(null);
+  const [aiActionId, setAiActionId] = useState<string | null>(null);
+  const [aiFocusedField, setAiFocusedField] = useState<string | null>(null);
+
+  // Section control state for AI redirect
+  const [sectionStates, setSectionStates] = useState<Record<string, boolean>>({
+    personal: false,
+    preferences: false,
+    experience: false,
+    notifications: false,
+  });
 
   // Scroll to top when sidebar content changes
   useEffect(() => {
@@ -155,6 +211,32 @@ function ProfilePageContent() {
       loadConsentsAndPreferences();
     }
   }, [user, authLoading, router]);
+
+  // Handle AI assistant redirect query parameters
+  useEffect(() => {
+    if (searchParams && user) {
+      const section = searchParams.get('section');
+      const field = searchParams.get('field');
+      const aiActionIdParam = searchParams.get('aiActionId');
+
+      if (section && field) {
+        setAiTargetSection(section);
+        setAiTargetField(field);
+        setAiActionId(aiActionIdParam);
+
+        // Auto-expand the target section
+        setSectionStates(prev => ({
+          ...prev,
+          [section]: true
+        }));
+
+        // Focus the target field
+        setTimeout(() => {
+          focusTargetField(field);
+        }, 300);
+      }
+    }
+  }, [searchParams, user]);
 
   const loadProfile = async () => {
     if (!user) return;
@@ -272,6 +354,70 @@ function ProfilePageContent() {
     const supabase = getSupabaseBrowserClient();
     const roles = formData.roles || [];
 
+    // Track which fields were updated (for action completion)
+    const updatedFields: string[] = [];
+
+    console.log('Original profile:', profile);
+    console.log('Form data:', formData);
+
+    // Compare with original profile to detect changes
+    const originalProfile = profile;
+    if (originalProfile) {
+      if (originalProfile.username !== formData.username) {
+        console.log('Username changed:', originalProfile.username, '->', formData.username);
+        updatedFields.push('username');
+      }
+      if (originalProfile.full_name !== formData.full_name) {
+        console.log('Full name changed:', originalProfile.full_name, '->', formData.full_name);
+        updatedFields.push('full_name');
+      }
+      if (originalProfile.user_description !== formData.user_description) {
+        console.log('User description changed:', originalProfile.user_description, '->', formData.user_description);
+        updatedFields.push('user_description');
+      }
+      if (originalProfile.certifications !== formData.certifications) {
+        console.log('Certifications changed:', originalProfile.certifications, '->', formData.certifications);
+        updatedFields.push('certifications');
+      }
+      if (originalProfile.phone !== formData.phone) {
+        console.log('Phone changed:', originalProfile.phone, '->', formData.phone);
+        updatedFields.push('phone');
+      }
+      if (originalProfile.sailing_experience !== formData.sailing_experience) {
+        console.log('Sailing experience changed:', originalProfile.sailing_experience, '->', formData.sailing_experience);
+        updatedFields.push('sailing_experience');
+      }
+      if (JSON.stringify(originalProfile.risk_level) !== JSON.stringify(formData.risk_level)) {
+        console.log('Risk level changed:', originalProfile.risk_level, '->', formData.risk_level);
+        updatedFields.push('risk_level');
+      }
+      if (JSON.stringify(originalProfile.skills) !== JSON.stringify(formData.skills.map(s => JSON.stringify(s)))) {
+        console.log('Skills changed:', originalProfile.skills, '->', formData.skills);
+        updatedFields.push('skills');
+      }
+      if (originalProfile.sailing_preferences !== formData.sailing_preferences) {
+        console.log('Sailing preferences changed:', originalProfile.sailing_preferences, '->', formData.sailing_preferences);
+        updatedFields.push('sailing_preferences');
+      }
+      if (JSON.stringify(originalProfile.roles) !== JSON.stringify(formData.roles)) {
+        console.log('Roles changed:', originalProfile.roles, '->', formData.roles);
+        updatedFields.push('roles');
+      }
+    } else {
+      console.log('No original profile found, assuming all fields are new');
+      // If no original profile, assume all fields are being set for the first time
+      if (formData.username) updatedFields.push('username');
+      if (formData.full_name) updatedFields.push('full_name');
+      if (formData.user_description) updatedFields.push('user_description');
+      if (formData.certifications) updatedFields.push('certifications');
+      if (formData.phone) updatedFields.push('phone');
+      if (formData.sailing_experience) updatedFields.push('sailing_experience');
+      if (formData.risk_level?.length > 0) updatedFields.push('risk_level');
+      if (formData.skills?.length > 0) updatedFields.push('skills');
+      if (formData.sailing_preferences) updatedFields.push('sailing_preferences');
+      if (formData.roles?.length > 0) updatedFields.push('roles');
+    }
+
     let error: any = null;
 
     if (isNewProfile) {
@@ -352,8 +498,15 @@ function ProfilePageContent() {
       setTimeout(() => setSuccess(false), 3000);
       setSaving(false);
 
+      // Enhanced profile update event with field information
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('profileUpdated'));
+        console.log('Dispatching profileUpdated event with fields:', updatedFields);
+        window.dispatchEvent(new CustomEvent('profileUpdated', {
+          detail: {
+            updatedFields,
+            timestamp: Date.now()
+          }
+        }));
       }
 
       router.refresh();
@@ -429,6 +582,115 @@ function ProfilePageContent() {
       setError('Failed to update email preference. Please try again.');
     } finally {
       setIsUpdatingConsents(false);
+    }
+  };
+
+  // Handle AI-focused field highlighting
+  const focusTargetField = (fieldId: string) => {
+    // Map profile field names to actual HTML element IDs
+    const fieldIdMap: Record<string, string> = {
+      'user_description': 'user_description',
+      'certifications': 'certifications',
+      'risk_level': 'risk_level', // This might be a checkbox group
+      'sailing_preferences': 'sailing_preferences',
+      'skills': 'skills', // This might be a list of skill inputs
+      'full_name': 'full_name',
+      'username': 'username',
+      'phone': 'phone',
+      'sailing_experience': 'sailing_experience'
+    };
+
+    const actualFieldId = fieldIdMap[fieldId] || fieldId;
+    let element = document.getElementById(actualFieldId);
+
+    // For skills, try to find the first skill input or the "Add Skills" button
+    if (fieldId === 'skills') {
+      element = document.getElementById('skill-add-button') || document.querySelector('[id^="skill-"]') as HTMLElement;
+    }
+
+    // For risk level, find the first risk level button
+    if (fieldId === 'risk_level') {
+      element = Array.from(document.querySelectorAll('button')).find(btn =>
+        btn.textContent?.includes('Coastal sailing') ||
+        btn.textContent?.includes('Offshore sailing') ||
+        btn.textContent?.includes('Extreme sailing')
+      ) as HTMLElement;
+
+      // Fallback: find by label
+      if (!element) {
+        const label = document.querySelector('label') as HTMLElement;
+        if (label && label.textContent?.includes('Risk Level')) {
+          element = label.nextElementSibling as HTMLElement || label.parentElement?.querySelector('button') as HTMLElement;
+        }
+      }
+    }
+
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (element.focus) element.focus();
+      setAiFocusedField(actualFieldId);
+
+      // Add highlight class to the element
+      element.classList.add('ai-focused-field');
+
+      // Also highlight the parent section/card if it exists
+      let parentSection = element.closest('.bg-card.rounded-lg.shadow');
+      if (!parentSection) {
+        parentSection = element.closest('.space-y-6') || element.closest('form');
+      }
+      if (parentSection) {
+        parentSection.classList.add('ai-focused-section');
+      }
+
+      // Remove highlights after 5 seconds
+      setTimeout(() => {
+        element.classList.remove('ai-focused-field');
+        if (parentSection) {
+          parentSection.classList.remove('ai-focused-section');
+        }
+        setAiFocusedField(null);
+      }, 5000);
+    } else {
+      // Try to find the field by name or other selectors
+      const elements = document.querySelectorAll(`[name="${fieldId}"], [data-field="${fieldId}"], [id*="${fieldId}"]`);
+      if (elements.length > 0) {
+        const firstElement = elements[0] as HTMLElement;
+        firstElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (firstElement.focus) firstElement.focus();
+        setAiFocusedField(fieldId);
+
+        // Add highlight class
+        firstElement.classList.add('ai-focused-field');
+
+        // Also highlight the parent section/card
+        let parentSection = firstElement.closest('.bg-card.rounded-lg.shadow');
+        if (!parentSection) {
+          parentSection = firstElement.closest('.space-y-6') || firstElement.closest('form');
+        }
+        if (parentSection) {
+          parentSection.classList.add('ai-focused-section');
+        }
+
+        // Remove highlights after 5 seconds
+        setTimeout(() => {
+          firstElement.classList.remove('ai-focused-field');
+          if (parentSection) {
+            parentSection.classList.remove('ai-focused-section');
+          }
+          setAiFocusedField(null);
+        }, 5000);
+      }
+    }
+
+    // Open the section that contains this field
+    if (fieldId === 'username' || fieldId === 'full_name' || fieldId === 'user_description' || fieldId === 'certifications' || fieldId === 'phone') {
+      setSectionStates(prev => ({ ...prev, personal: true }));
+    } else if (fieldId === 'sailing_preferences' || fieldId === 'risk_level') {
+      setSectionStates(prev => ({ ...prev, preferences: true }));
+    } else if (fieldId === 'sailing_experience' || fieldId === 'skills') {
+      setSectionStates(prev => ({ ...prev, experience: true }));
+    } else if (fieldId === 'email' || fieldId === 'registration_updates' || fieldId === 'journey_updates' || fieldId === 'profile_reminders') {
+      setSectionStates(prev => ({ ...prev, notifications: true }));
     }
   };
 
@@ -753,6 +1015,40 @@ function ProfilePageContent() {
         </div>
       )}
 
+      {/* AI Assistant Redirect Banner */}
+      {aiTargetSection && aiTargetField && (
+        <div className="border-b border-border bg-blue-500/10">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-500 text-white rounded-full p-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="font-medium text-foreground">AI Assistant Suggestion</h3>
+                <p className="text-sm text-muted-foreground">
+                  Update your {aiTargetField.replace('_', ' ')} in the {aiTargetSection} section to improve your profile.
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setAiTargetSection(null);
+                  setAiTargetField(null);
+                  setAiActionId(null);
+                  setAiFocusedField(null);
+                }}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <div className={`max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ${showPreferencesSidebar ? 'md:ml-80' : ''}`}>
         {error && (
@@ -772,6 +1068,9 @@ function ProfilePageContent() {
           <CollapsibleSection
             title={t('sections.personal')}
             defaultOpen={false}
+            isOpen={sectionStates.personal}
+            onOpenChange={(isOpen) => setSectionStates(prev => ({ ...prev, personal: isOpen }))}
+            highlighted={aiTargetSection === 'personal'}
           >
             <PersonalInfoSection
               formData={formData}
@@ -789,6 +1088,9 @@ function ProfilePageContent() {
             <CollapsibleSection
               title={t('sections.preferences')}
               defaultOpen={false}
+              isOpen={sectionStates.preferences}
+              onOpenChange={(isOpen) => setSectionStates(prev => ({ ...prev, preferences: isOpen }))}
+              highlighted={aiTargetSection === 'preferences'}
             >
               <SailingPreferencesSection
                 formData={formData}
@@ -815,6 +1117,9 @@ function ProfilePageContent() {
           <CollapsibleSection
             title={t('sections.sailingExperience')}
             defaultOpen={false}
+            isOpen={sectionStates.experience}
+            onOpenChange={(isOpen) => setSectionStates(prev => ({ ...prev, experience: isOpen }))}
+            highlighted={aiTargetSection === 'experience'}
           >
             <ExperienceSkillsSection
               formData={formData}
@@ -837,6 +1142,9 @@ function ProfilePageContent() {
           <CollapsibleSection
             title={t('sections.notifications')}
             defaultOpen={false}
+            isOpen={sectionStates.notifications}
+            onOpenChange={(isOpen) => setSectionStates(prev => ({ ...prev, notifications: isOpen }))}
+            highlighted={aiTargetSection === 'notifications'}
           >
             <NotificationsConsentsSection
               consents={consents}

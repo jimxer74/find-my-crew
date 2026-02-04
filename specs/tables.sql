@@ -868,18 +868,29 @@ create table if not exists public.ai_pending_actions (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   conversation_id uuid references public.ai_conversations(id) on delete set null,
-  action_type text not null, -- 'register_for_leg', 'update_profile', 'create_journey', 'approve_registration', etc.
-  action_payload jsonb not null, -- Parameters for the action
+  action_type text not null, -- 'register_for_leg', 'update_profile_user_description', 'update_profile_certifications', etc.
+  action_payload jsonb not null, -- Parameters for the action (supports both old bulk format and new field-specific format)
   explanation text not null, -- AI's explanation of why this action is suggested
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired')),
   created_at timestamptz not null default now(),
-  resolved_at timestamptz
+  resolved_at timestamptz,
+  -- New fields for better field-specific action support
+  field_type text, -- For profile updates: the specific field being updated (user_description, certifications, etc.)
+  suggested_value text, -- For profile updates: the suggested value (for display purposes)
+  input_prompt text, -- Prompt to show user when collecting input (e.g., "Please provide your sailing experience level")
+  input_options text[], -- Options for multi-select or select input types (e.g., skill options, risk levels)
+  input_type text check (input_type in ('text', 'text_array', 'select')), -- Type of input required
+  profile_field text -- Specifies which profile field this action relates to (e.g., user_description, certifications, risk_level, sailing_preferences, skills)
+                     -- Used for automatic action completion when users update their profile fields
 );
 
 -- Indexes
 create index if not exists idx_ai_pending_actions_user_id on public.ai_pending_actions(user_id);
 create index if not exists idx_ai_pending_actions_status on public.ai_pending_actions(user_id, status) where status = 'pending';
 create index if not exists idx_ai_pending_actions_conversation on public.ai_pending_actions(conversation_id);
+create index if not exists idx_ai_pending_actions_field_type on public.ai_pending_actions(field_type) where field_type is not null;
+create index if not exists idx_ai_pending_actions_action_type on public.ai_pending_actions(action_type);
+create index if not exists idx_ai_pending_actions_profile_field on public.ai_pending_actions(profile_field) where profile_field is not null;
 
 -- Enable Row Level Security
 alter table ai_pending_actions enable row level security;
