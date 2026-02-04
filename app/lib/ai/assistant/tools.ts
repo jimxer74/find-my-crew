@@ -242,6 +242,10 @@ export const DATA_TOOLS: ToolDefinition[] = [
           type: 'string',
           description: 'Filter by home port location',
         },
+        makeModel: {
+          type: 'string',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+        },
         includeImages: {
           type: 'boolean',
           description: 'Include boat image URLs',

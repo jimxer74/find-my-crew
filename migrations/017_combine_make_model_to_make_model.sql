@@ -1,6 +1,6 @@
 -- Migration: Combine make and model fields into make_model field
 -- This migration adds a new make_model column, populates it with concatenated make/model values,
--- adds an index for performance, and updates RLS policies if needed.
+-- adds an index for performance, drops the old separate columns, and updates RLS policies if needed.
 
 -- Add new make_model column
 ALTER TABLE boats ADD COLUMN make_model TEXT;
@@ -18,6 +18,10 @@ UPDATE boats SET make_model = TRIM(make_model) WHERE make_model IS NOT NULL;
 
 -- Add index on make_model for performance
 CREATE INDEX IF NOT EXISTS boats_make_model_idx ON boats (make_model);
+
+-- **CRITICAL**: Drop the old separate columns since we now use the combined field
+ALTER TABLE boats DROP COLUMN IF EXISTS make;
+ALTER TABLE boats DROP COLUMN IF EXISTS model;
 
 -- Update RLS policies - no changes needed for basic policies as they remain the same
 -- Owners can still insert/update/delete their boats, public can still select all boats

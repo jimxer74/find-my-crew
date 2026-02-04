@@ -164,8 +164,7 @@ export interface UserContext {
     id: string;
     name: string;
     type: string | null;
-    make: string | null;
-    model: string | null;
+    make_model: string | null;
   }[];
   recentRegistrations?: {
     id: string;

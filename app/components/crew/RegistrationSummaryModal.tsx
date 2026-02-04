@@ -432,9 +432,7 @@ export function RegistrationSummaryModal({
                         )}
                         {(data.boat.make || data.boat.model) && (
                           <p className="text-sm text-muted-foreground">
-                            {data.boat.make && data.boat.model
-                              ? `${data.boat.make} ${data.boat.model}`
-                              : data.boat.make || data.boat.model || ''}
+                            {data.boat.make && data.boat.model ? `${data.boat.make} ${data.boat.model}` : data.boat.make || data.boat.model || ''}
                           </p>
                         )}
                       </div>

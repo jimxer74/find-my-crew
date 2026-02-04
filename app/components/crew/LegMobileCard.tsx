@@ -157,7 +157,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
                 </div>
                 {(leg.boat_make || leg.boat_model) && (
                   <div className="text-xs text-muted-foreground leading-tight truncate">
-                    {leg.boat_make && leg.boat_model ? `${leg.boat_make} ${leg.boat_model}` : leg.boat_make || leg.boat_model}
+                    {leg.boat_make && leg.boat_model ? `${leg.boat_make} ${leg.boat_model}` : leg.boat_make || leg.boat_model || ''}
                   </div>
                 )}
               </div>

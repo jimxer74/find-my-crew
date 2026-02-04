@@ -31,8 +31,7 @@ SELECT
   b.id,
   b.name,
   b.type,
-  b.make,
-  b.model,
+  b.make_model,
   b.capacity,
   b.home_port,
   b.country_flag,
@@ -52,7 +51,7 @@ SELECT
 FROM boats b
 INNER JOIN journeys j ON j.boat_id = b.id
 WHERE j.state = 'Published'
-GROUP BY b.id, b.name, b.type, b.make, b.model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
+GROUP BY b.id, b.name, b.type, b.make_model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
 LIMIT 10;
 
 -- Test 3: Filter by boat type (for crew user)
@@ -60,8 +59,7 @@ SELECT
   b.id,
   b.name,
   b.type,
-  b.make,
-  b.model,
+  b.make_model,
   b.capacity,
   b.home_port,
   b.country_flag,
@@ -82,7 +80,7 @@ FROM boats b
 INNER JOIN journeys j ON j.boat_id = b.id
 WHERE j.state = 'Published'
   AND b.type = 'Coastal cruisers'
-GROUP BY b.id, b.name, b.type, b.make, b.model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
+GROUP BY b.id, b.name, b.type, b.make_model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
 LIMIT 5;
 
 -- Test 4: Filter by home port (for crew user)
@@ -90,8 +88,7 @@ SELECT
   b.id,
   b.name,
   b.type,
-  b.make,
-  b.model,
+  b.make_model,
   b.capacity,
   b.home_port,
   b.country_flag,
@@ -112,7 +109,7 @@ FROM boats b
 INNER JOIN journeys j ON j.boat_id = b.id
 WHERE j.state = 'Published'
   AND b.home_port ILIKE '%Mediterranean%'
-GROUP BY b.id, b.name, b.type, b.make, b.model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
+GROUP BY b.id, b.name, b.type, b.make_model, b.capacity, b.home_port, b.country_flag, b.loa_m, b.lwl_m, b.beam_m, b.max_draft_m, b.displcmt_m, b.sail_area_sqm, b.sa_displ_ratio, b.ballast_displ_ratio, b.characteristics, b.capabilities, b.accommodations, b.images
 LIMIT 10;
 
 -- Test 5: Check RLS policy compliance

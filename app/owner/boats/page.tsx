@@ -160,9 +160,9 @@ export default function BoatsPage() {
                 </h3>
                 <div className="text-sm text-muted-foreground space-y-1">
                   <p className="line-clamp-1">{boat.type}</p>
-                  {boat.make && boat.model && (
+                  {boat.make_model && (
                     <p className="line-clamp-1">
-                      {boat.make} {boat.model}
+                      {boat.make_model}
                     </p>
                   )}
                   {boat.home_port && (

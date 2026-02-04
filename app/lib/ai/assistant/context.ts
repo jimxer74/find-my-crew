@@ -44,7 +44,7 @@ export async function getUserContext(
     log('User is owner, fetching boats...');
     const { data: boatsData } = await supabase
       .from('boats')
-      .select('id, name, type, make, model')
+      .select('id, name, type, make_model')
       .eq('owner_id', userId)
       .limit(10);
     boats = boatsData || [];
@@ -222,8 +222,8 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
       prompt += `\n### Owner's Boats\n`;
       boats.forEach(boat => {
         prompt += `- ${boat.name}`;
-        if (boat.make || boat.model) {
-          prompt += ` (${[boat.make, boat.model].filter(Boolean).join(' ')})`;
+        if (boat.make_model) {
+          prompt += ` (${boat.make_model})`;
         }
         prompt += `\n`;
       });

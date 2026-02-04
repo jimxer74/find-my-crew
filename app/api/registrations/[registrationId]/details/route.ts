@@ -88,8 +88,7 @@ export async function GET(
               id,
               name,
               type,
-              make,
-              model,
+              make_model,
               images,
               average_speed_knots,
               owner_id
@@ -134,8 +133,7 @@ export async function GET(
           id: string;
           name: string;
           type: string;
-          make: string;
-          model: string;
+          make_model: string;
           images: string[];
           average_speed_knots: number;
           owner_id: string;
@@ -329,8 +327,7 @@ export async function GET(
         id: legs.journeys.boats.id,
         name: legs.journeys.boats.name,
         type: legs.journeys.boats.type,
-        make: legs.journeys.boats.make,
-        model: legs.journeys.boats.model,
+        make_model: legs.journeys.boats.make_model,
         image_url: legs.journeys.boats.images?.[0] || null,
         average_speed_knots: legs.journeys.boats.average_speed_knots,
       },

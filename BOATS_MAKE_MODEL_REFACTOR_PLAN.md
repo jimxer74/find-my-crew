@@ -19,9 +19,11 @@ From codebase exploration, the current situation is:
 ### 1. Database Changes
 
 - [ ] Verify existing `make_model` field is properly populated and indexed
-- [ ] Check for any separate `make`/`model` columns and ensure they don't exist
+- [ ] **CRITICAL**: Remove separate `make` and `model` columns from boats table (they still exist in database but not in schema)
 - [ ] Confirm migration 017 has been applied correctly
 - [ ] Ensure `boats_make_model_idx` index exists for performance
+- [ ] Update migration 017 to DROP the old make/model columns
+- [ ] Update migration 009 to use `boat_make_model` instead of separate fields
 
 ### 2. UI Logic Code Changes
 
@@ -145,11 +147,14 @@ if (boat.make_model) {
 
 ## Migration Strategy
 
-### Phase 1: Database Verification (30 minutes)
+### Phase 1: Database Cleanup (45 minutes) - UPDATED
+
+- [ ] **CRITICAL**: Drop separate `make` and `model` columns from boats table
+- [ ] Update migration 017 to include DROP COLUMN statements for old columns
+- [ ] Update migration 009 to use `boat_make_model` instead of separate fields
 - [ ] Verify `make_model` field contains correct data
-- [ ] Check if any separate `make`/`model` columns exist and contain data
-- [ ] Confirm migration 017 has been applied correctly
-- [ ] Verify index `boats_make_model_idx` exists
+- [ ] Confirm index `boats_make_model_idx` exists
+- [ ] Test that boats table only has `make_model` field
 
 ### Phase 2: UI Logic Updates (3-4 hours)
 - [ ] Update RegistrationSummaryModal.tsx conditional logic
@@ -188,6 +193,8 @@ if (boat.make_model) {
 
 ### Data Integrity Testing
 - [ ] Verify no data loss during transition
+- [ ] Test that separate make/model columns are properly removed
+- [ ] Test that make_model field contains correct concatenated data
 - [ ] Test edge cases (null values, empty strings, special characters)
 - [ ] Verify existing migration 017 works correctly
 - [ ] Test rollback scenarios
@@ -221,6 +228,10 @@ if (boat.make_model) {
 - [ ] Complex conditional rendering logic simplified to use single field
 - [ ] API responses use consistent field naming
 - [ ] AI assistant context uses combined field
+- [ ] **CRITICAL**: Separate make/model columns removed from boats table
+- [ ] Database functions use `boat_make_model` instead of separate fields
+- [ ] Migration 017 updated to include DROP COLUMN statements
+- [ ] Migration 009 updated to use combined field
 - [ ] No broken functionality in boat management features
 - [ ] Performance maintained or improved
 - [ ] Data integrity preserved throughout transition

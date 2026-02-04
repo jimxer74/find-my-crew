@@ -84,8 +84,7 @@ export async function GET(request: NextRequest) {
             id,
             name,
             type,
-            make,
-            model,
+            make_model,
             images,
             average_speed_knots,
             owner_id
@@ -189,7 +188,7 @@ export async function GET(request: NextRequest) {
       // This ensures compatibility even if migration hasn't been run yet
       const { normalizeSkillNames } = require('@/app/lib/skillUtils');
       // Type assertion for nested Supabase join
-      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; images: string[]; boat_id: string; boats: { id: string; name: string; type: string; make: string; model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
+      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; images: string[]; boat_id: string; boats: { id: string; name: string; type: string; make_model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
       const journeySkills = normalizeSkillNames(journey?.skills || []);
       const legSkills = normalizeSkillNames(leg.skills || []);
 
@@ -244,8 +243,7 @@ export async function GET(request: NextRequest) {
         boat_id: journey?.boats?.id || '',
         boat_name: journey?.boats?.name || 'Unknown Boat',
         boat_type: journey?.boats?.type || null,
-        boat_make: journey?.boats?.make || null,
-        boat_model: journey?.boats?.model || null,
+        boat_make_model: journey?.boats?.make_model || null,
         boat_image_url: journey?.boats?.images && journey.boats.images.length > 0
           ? journey.boats.images[0]
           : null,

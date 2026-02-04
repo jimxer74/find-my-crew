@@ -289,9 +289,7 @@ export default function MyRegistrationsPage() {
                         )}
                         {(registration.boat_make || registration.boat_model) && (
                           <p className="text-xs text-muted-foreground">
-                            {registration.boat_make && registration.boat_model 
-                              ? `${registration.boat_make} ${registration.boat_model}`
-                              : registration.boat_make || registration.boat_model || ''}
+                            {registration.boat_make && registration.boat_model ? `${registration.boat_make} ${registration.boat_model}` : registration.boat_make || registration.boat_model || ''}
                           </p>
                         )}
                       </div>

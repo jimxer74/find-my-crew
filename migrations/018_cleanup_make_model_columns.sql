@@ -1,10 +1,18 @@
--- Migration: Add cost_model to get_legs_in_viewport function
--- This adds the cost_model field to the viewport query results and updates to use combined make_model field
+-- Migration: Clean up separate make/model columns from boats table
+-- This migration drops the old separate make and model columns since we now use the combined make_model field
 
--- Drop the existing function first since we're changing the return type
+-- Drop the old separate columns if they exist
+ALTER TABLE boats DROP COLUMN IF EXISTS make;
+ALTER TABLE boats DROP COLUMN IF EXISTS model;
+
+-- Verify the boats_make_model_idx index exists (create if missing)
+CREATE INDEX IF NOT EXISTS boats_make_model_idx ON boats (make_model);
+
+-- Update the get_legs_in_viewport function to use the correct combined field
+-- Drop the existing function first since we're changing the field references
 DROP FUNCTION IF EXISTS public.get_legs_in_viewport(double precision, double precision, double precision, double precision, date, date, risk_level[], text[], integer);
 
--- Create the function with the updated return type
+-- Recreate the function with updated field references
 CREATE FUNCTION public.get_legs_in_viewport(
   min_lng double precision,
   min_lat double precision,

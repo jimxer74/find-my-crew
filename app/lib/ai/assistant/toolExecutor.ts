@@ -1181,7 +1181,7 @@ async function fetchAllBoats(
   userId: string,
   args: Record<string, unknown>
 ) {
-  const { limit = 50, includePerformance = false, boatType, homePort, includeImages = true } = args;
+  const { limit = 50, includePerformance = false, boatType, homePort, makeModel, includeImages = true } = args;
 
   // Check if user is owner
   const { data: profile } = await supabase
@@ -1192,20 +1192,31 @@ async function fetchAllBoats(
 
   const isOwner = profile?.roles?.includes('owner');
 
-  let query = supabase.from('boats').select('*');
+  let query = supabase.from('boats').select('id, name, type, make_model, capacity, home_port, country_flag, loa_m, lwl_m, beam_m, max_draft_m, displcmt_m, ballast_kg, sail_area_sqm, average_speed_knots, link_to_specs, images, characteristics, capabilities, accommodations, sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch, created_at, updated_at');
 
   if (isOwner) {
     // Owners see their own boats
     query = query.eq('owner_id', userId);
   } else {
     // Crew see boats with published journeys
-    query = query
-      .select(`
-        boats.*,
-        journeys!inner(id, state)
-      `)
-      .eq('journeys.state', 'Published')
-      .not('journeys.id', 'is', null);
+    // Use a subquery approach to filter boats that have published journeys
+    const publishedBoatIds = await supabase
+      .from('journeys')
+      .select('boat_id')
+      .eq('state', 'Published')
+      .not('boat_id', 'is', null);
+
+    if (publishedBoatIds.error) {
+      throw publishedBoatIds.error;
+    }
+
+    const boatIds = publishedBoatIds.data?.map(j => j.boat_id) || [];
+    if (boatIds.length === 0) {
+      // No published journeys, return empty result
+      return { boats: [], count: 0, totalCount: 0, userType: 'crew' };
+    }
+
+    query = query.in('id', boatIds);
   }
 
   // Apply filters
@@ -1214,6 +1225,9 @@ async function fetchAllBoats(
   }
   if (homePort) {
     query = query.ilike('home_port', `%${homePort}%`);
+  }
+  if (makeModel) {
+    query = query.ilike('make_model', `%${makeModel}%`);
   }
 
   // Apply limit (with proper type casting)
@@ -1225,39 +1239,41 @@ async function fetchAllBoats(
 
   // Filter out sensitive fields based on permissions and includeImages setting
   const filteredBoats = (data || []).map(boat => {
+    // Handle both direct boat objects (for owners) and joined boat objects (for crew)
+    const boatData = (boat as any).boats || boat;
+
     const result: any = {
-      id: boat.id,
-      name: boat.name,
-      type: boat.type,
-      make: boat.make,
-      model: boat.model,
-      capacity: boat.capacity,
-      home_port: boat.home_port,
-      country_flag: boat.country_flag,
+      id: boatData.id,
+      name: boatData.name,
+      type: boatData.type,
+      make_model: boatData.make_model,
+      capacity: boatData.capacity,
+      home_port: boatData.home_port,
+      country_flag: boatData.country_flag,
     };
 
     // Always include basic performance metrics
-    if (boat.loa_m) result.loa_m = boat.loa_m;
-    if (boat.lwl_m) result.lwl_m = boat.lwl_m;
-    if (boat.beam_m) result.beam_m = boat.beam_m;
-    if (boat.max_draft_m) result.max_draft_m = boat.max_draft_m;
-    if (boat.displcmt_m) result.displcmt_m = boat.displcmt_m;
+    if (boatData.loa_m) result.loa_m = boatData.loa_m;
+    if (boatData.lwl_m) result.lwl_m = boatData.lwl_m;
+    if (boatData.beam_m) result.beam_m = boatData.beam_m;
+    if (boatData.max_draft_m) result.max_draft_m = boatData.max_draft_m;
+    if (boatData.displcmt_m) result.displcmt_m = boatData.displcmt_m;
 
     // Include detailed performance metrics only if requested
     if (includePerformance) {
-      if (boat.sail_area_sqm) result.sail_area_sqm = boat.sail_area_sqm;
-      if (boat.average_speed_knots) result.average_speed_knots = boat.average_speed_knots;
-      if (boat.sa_displ_ratio) result.sa_displ_ratio = boat.sa_displ_ratio;
-      if (boat.ballast_displ_ratio) result.ballast_displ_ratio = boat.ballast_displ_ratio;
-      if (boat.displ_len_ratio) result.displ_len_ratio = boat.displ_len_ratio;
-      if (boat.cbr) result.cbr = boat.cbr;
-      if (boat.hsc) result.hsc = boat.hsc;
-      if (boat.dsf) result.dsf = boat.dsf;
+      if (boatData.sail_area_sqm) result.sail_area_sqm = boatData.sail_area_sqm;
+      if (boatData.average_speed_knots) result.average_speed_knots = boatData.average_speed_knots;
+      if (boatData.sa_displ_ratio) result.sa_displ_ratio = boatData.sa_displ_ratio;
+      if (boatData.ballast_displ_ratio) result.ballast_displ_ratio = boatData.ballast_displ_ratio;
+      if (boatData.displ_len_ratio) result.displ_len_ratio = boatData.displ_len_ratio;
+      if (boatData.cbr) result.cbr = boatData.cbr;
+      if (boatData.hsc) result.hsc = boatData.hsc;
+      if (boatData.dsf) result.dsf = boatData.dsf;
     }
 
     // Include descriptions
-    if (boat.characteristics) result.characteristics = boat.characteristics;
-    if (boat.capabilities) result.capabilities = boat.capabilities;
+    if (boatData.characteristics) result.characteristics = boatData.characteristics;
+    if (boatData.capabilities) result.capabilities = boatData.capabilities;
     if (boat.accommodations) result.accommodations = boat.accommodations;
 
     // Include images if requested
@@ -1266,8 +1282,8 @@ async function fetchAllBoats(
     }
 
     // For crew, include journey count for context
-    if (!isOwner && boat.journeys) {
-      result.published_journeys_count = boat.journeys.length;
+    if (!isOwner && (boat as any).journeys) {
+      result.published_journeys_count = (boat as any).journeys.length;
     }
 
     return result;

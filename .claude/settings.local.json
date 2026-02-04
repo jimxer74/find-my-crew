@@ -29,7 +29,11 @@
       "Bash(./node_modules/.bin/next build:*)",
       "Bash(npm run test:*)",
       "Bash(/cygdrive/c/Program\\\\ Files/nodejs/node.exe:*)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(supabase status:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsx:*)",
+      "Bash(del:*)"
     ]
   }
 }
