@@ -1,10 +1,10 @@
 ---
 id: TASK-080
 title: AI profile update suggestions and actions
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-04 07:52'
-updated_date: '2026-02-04 08:01'
+updated_date: '2026-02-04 13:59'
 labels: []
 dependencies: []
 ---
