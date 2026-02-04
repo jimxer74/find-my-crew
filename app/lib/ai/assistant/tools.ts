@@ -219,6 +219,36 @@ export const DATA_TOOLS: ToolDefinition[] = [
       required: ['legId'],
     },
   },
+  {
+    name: 'fetch_all_boats',
+    description: 'Fetch boats available to the current user. For owners: returns their own boats. For crew: returns all boats with published journeys. Includes comprehensive boat information including performance metrics and images.',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum number of boats to return (default 50)',
+        },
+        includePerformance: {
+          type: 'boolean',
+          description: 'Include detailed performance metrics and calculations',
+        },
+        boatType: {
+          type: 'string',
+          description: 'Filter by boat type/category',
+          enum: ['Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats'],
+        },
+        homePort: {
+          type: 'string',
+          description: 'Filter by home port location',
+        },
+        includeImages: {
+          type: 'boolean',
+          description: 'Include boat image URLs',
+        },
+      },
+    },
+  },
   // Owner-specific tools
   {
     name: 'get_owner_boats',

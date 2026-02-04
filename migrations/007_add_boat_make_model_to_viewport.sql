@@ -1,5 +1,5 @@
--- Migration: Add boat_make and boat_model to get_legs_in_viewport function
--- This adds the boat make and model fields to the viewport query results
+-- Migration: Add boat_make_model to get_legs_in_viewport function
+-- This updates the function to return a combined boat_make_model field instead of separate boat_make and boat_model fields
 
 -- Drop the existing function first since we're changing the return type
 DROP FUNCTION IF EXISTS public.get_legs_in_viewport(double precision, double precision, double precision, double precision, date, date, risk_level[], text[], integer);
@@ -33,8 +33,7 @@ RETURNS TABLE (
   boat_type sailboat_category,
   boat_image_url text,
   boat_average_speed_knots numeric,
-  boat_make text,
-  boat_model text,
+  boat_make_model text,
   owner_name text,
   owner_image_url text,
   min_experience_level integer,
@@ -71,13 +70,12 @@ BEGIN
     b.name AS boat_name,
     b.type AS boat_type,
     -- Get first image from images array, or NULL if array is empty
-    CASE 
+    CASE
       WHEN array_length(b.images, 1) > 0 THEN b.images[1]
       ELSE NULL
     END AS boat_image_url,
     b.average_speed_knots AS boat_average_speed_knots,
-    b.make AS boat_make,
-    b.model AS boat_model,
+    b.make_model AS boat_make_model,
     -- Get owner name and image from profiles
     p.full_name AS owner_name,
     p.profile_image_url AS owner_image_url,
@@ -137,7 +135,7 @@ BEGIN
     --    - If journey's risk_level array doesn't contain any selected filter → exclude
     --    - If journey's risk_level is null or empty → include (no restriction)
     AND (
-      risk_levels_filter IS NULL 
+      risk_levels_filter IS NULL
       OR risk_levels_filter = ARRAY[]::risk_level[]
       OR (
         -- Case 1: Leg has risk_level defined
@@ -161,7 +159,7 @@ BEGIN
     -- If skills_filter has values: only returns legs where ALL filter skills are present
     -- Note: Legs with no skills are excluded when a skills filter is provided (desired behavior)
     AND (
-      skills_filter IS NULL 
+      skills_filter IS NULL
       OR skills_filter = ARRAY[]::text[]
       OR (
         -- Check if all skills in filter are present in combined skills

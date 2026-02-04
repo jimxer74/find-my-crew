@@ -111,6 +111,10 @@ export async function executeTool(
         result = await analyzeLegMatch(supabase, userId, args.legId as string);
         break;
 
+      case 'fetch_all_boats':
+        result = await fetchAllBoats(supabase, userId, args);
+        break;
+
       case 'get_owner_boats':
         if (!userRoles.includes('owner')) {
           throw new Error('This action requires owner role');
@@ -1170,6 +1174,111 @@ async function getBoatDetails(supabase: SupabaseClient, boatId: string) {
 
   if (error) throw error;
   return data;
+}
+
+async function fetchAllBoats(
+  supabase: SupabaseClient,
+  userId: string,
+  args: Record<string, unknown>
+) {
+  const { limit = 50, includePerformance = false, boatType, homePort, includeImages = true } = args;
+
+  // Check if user is owner
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('roles')
+    .eq('id', userId)
+    .single();
+
+  const isOwner = profile?.roles?.includes('owner');
+
+  let query = supabase.from('boats').select('*');
+
+  if (isOwner) {
+    // Owners see their own boats
+    query = query.eq('owner_id', userId);
+  } else {
+    // Crew see boats with published journeys
+    query = query
+      .select(`
+        boats.*,
+        journeys!inner(id, state)
+      `)
+      .eq('journeys.state', 'Published')
+      .not('journeys.id', 'is', null);
+  }
+
+  // Apply filters
+  if (boatType) {
+    query = query.eq('type', boatType);
+  }
+  if (homePort) {
+    query = query.ilike('home_port', `%${homePort}%`);
+  }
+
+  // Apply limit (with proper type casting)
+  query = query.limit(Number(limit) || 50);
+
+  const { data, error } = await query;
+
+  if (error) throw error;
+
+  // Filter out sensitive fields based on permissions and includeImages setting
+  const filteredBoats = (data || []).map(boat => {
+    const result: any = {
+      id: boat.id,
+      name: boat.name,
+      type: boat.type,
+      make: boat.make,
+      model: boat.model,
+      capacity: boat.capacity,
+      home_port: boat.home_port,
+      country_flag: boat.country_flag,
+    };
+
+    // Always include basic performance metrics
+    if (boat.loa_m) result.loa_m = boat.loa_m;
+    if (boat.lwl_m) result.lwl_m = boat.lwl_m;
+    if (boat.beam_m) result.beam_m = boat.beam_m;
+    if (boat.max_draft_m) result.max_draft_m = boat.max_draft_m;
+    if (boat.displcmt_m) result.displcmt_m = boat.displcmt_m;
+
+    // Include detailed performance metrics only if requested
+    if (includePerformance) {
+      if (boat.sail_area_sqm) result.sail_area_sqm = boat.sail_area_sqm;
+      if (boat.average_speed_knots) result.average_speed_knots = boat.average_speed_knots;
+      if (boat.sa_displ_ratio) result.sa_displ_ratio = boat.sa_displ_ratio;
+      if (boat.ballast_displ_ratio) result.ballast_displ_ratio = boat.ballast_displ_ratio;
+      if (boat.displ_len_ratio) result.displ_len_ratio = boat.displ_len_ratio;
+      if (boat.cbr) result.cbr = boat.cbr;
+      if (boat.hsc) result.hsc = boat.hsc;
+      if (boat.dsf) result.dsf = boat.dsf;
+    }
+
+    // Include descriptions
+    if (boat.characteristics) result.characteristics = boat.characteristics;
+    if (boat.capabilities) result.capabilities = boat.capabilities;
+    if (boat.accommodations) result.accommodations = boat.accommodations;
+
+    // Include images if requested
+    if (includeImages && boat.images && boat.images.length > 0) {
+      result.images = boat.images;
+    }
+
+    // For crew, include journey count for context
+    if (!isOwner && boat.journeys) {
+      result.published_journeys_count = boat.journeys.length;
+    }
+
+    return result;
+  });
+
+  return {
+    boats: filteredBoats,
+    count: filteredBoats.length,
+    totalCount: isOwner ? (data || []).length : filteredBoats.length,
+    userType: isOwner ? 'owner' : 'crew',
+  };
 }
 
 async function analyzeLegMatch(

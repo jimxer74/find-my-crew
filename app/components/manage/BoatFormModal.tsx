@@ -180,14 +180,10 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     if (fetchError) {
       setError('Failed to load boat details');
     } else if (data) {
-      const makeModelValue = data.make && data.model 
-        ? `${data.make} ${data.model}`.trim()
-        : data.make || data.model || '';
-      
       setFormData({
         name: data.name || '',
         type: data.type || null,
-        make_model: makeModelValue,
+        make_model: data.make_model || '',
         capacity: data.capacity || null,
         home_port: data.home_port || '',
         loa_m: data.loa_m || null,
@@ -286,8 +282,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     const boatData = {
       name: formData.name,
       type: formData.type,
-      make: make || null,
-      model: model || null,
+      make_model: formData.make_model || null,
       capacity: formData.capacity || null,
       home_port: formData.home_port || null,
       loa_m: formData.loa_m || null,

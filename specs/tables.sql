@@ -147,8 +147,7 @@ create table if not exists public.boats (
   owner_id    uuid not null references auth.users (id) on delete cascade,
   name        text not null,
   type        sailboat_category, -- Sailboat category (nullable)
-  make        text,
-  model       text,
+  make_model  text, -- Combined make and model field (e.g., "Bavaria 46")
   capacity    int,
   home_port   text,
   country_flag text, -- ISO 3166-1 alpha-2 country code (e.g., US, GB, FR)

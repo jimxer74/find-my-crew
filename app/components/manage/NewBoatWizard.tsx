@@ -211,17 +211,11 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
     try {
       const supabase = getSupabaseBrowserClient();
 
-      // Parse make_model into make and model
-      const makeModelParts = step2Data.makeModel.trim().split(/\s+/);
-      const make = makeModelParts.length > 0 ? makeModelParts[0] : null;
-      const model = makeModelParts.length > 1 ? makeModelParts.slice(1).join(' ') : null;
-
       const boatData = {
         owner_id: userId,
         name: step2Data.name,
         type: step2Data.type,
-        make: make,
-        model: model,
+        make_model: step2Data.makeModel || null,
         capacity: step2Data.capacity,
         home_port: step2Data.homePort || null,
         country_flag: step1Data.countryCode || null,
