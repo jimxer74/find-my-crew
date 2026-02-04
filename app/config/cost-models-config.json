@@ -3,7 +3,7 @@
     {
       "name": "Shared contribution",
       "displayName": "Shared Contribution",
-      "icon": "/shared-costs-tp.png",
+      "icon": "/shared-costs-tp",
       "description": "Crew members share the costs of the journey proportionally",
       "details": "All crew members contribute to the journey expenses based on agreed proportions.",
       "color": "blue",
@@ -12,7 +12,7 @@
     {
       "name": "Owner covers all costs",
       "displayName": "Owner Covers All",
-      "icon": "/owner-covers-all-tp.png",
+      "icon": "/owner-covers-all-tp",
       "description": "The boat owner pays all expenses for the journey",
       "details": "The boat owner takes full financial responsibility for all journey expenses. Crew members contribute their skills and time instead of money.",
       "color": "green",
@@ -21,7 +21,7 @@
     {
       "name": "Crew pays a fee",
       "displayName": "Crew Pays Fee",
-      "icon": "/crew-pays-fee-tp.png",
+      "icon": "/crew-pays-fee-tp",
       "description": "Crew members pay a fixed fee or daily rate for participation",
       "details": "Each crew member pays a predetermined fee or daily rate to join the journey. This covers their share of expenses and provides compensation for the experience.",
       "color": "orange",
@@ -30,7 +30,7 @@
     {
       "name": "Delivery/paid crew",
       "displayName": "Professional Delivery / Paid Crew",
-      "icon": "/delivery-paid-crew-tp.png",
+      "icon": "/delivery-paid-crew-tp",
       "description": "Professional crew is hired and paid for the journey",
       "details": "Professional crew members are hired and compensated for their expertise and services during the journey.",
       "color": "purple",

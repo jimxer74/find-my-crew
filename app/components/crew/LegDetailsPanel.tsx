@@ -1441,7 +1441,7 @@ transition-all"
                 <div className="flex items-start gap-3">
                   <div className="relative w-16 h-16 flex-shrink-0">
                     <Image
-                       src={getCostModelConfig(leg.cost_model).icon}
+                       src={theme.resolvedTheme === 'dark' ? getCostModelConfig(leg.cost_model).icon + "-dark.png" : getCostModelConfig(leg.cost_model).icon + ".png"}
                        alt={getCostModelConfig(leg.cost_model).displayName}
                        fill
                        className="object-contain"
