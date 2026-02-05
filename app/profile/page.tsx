@@ -117,6 +117,7 @@ function ProfilePageContent() {
   const [aiTargetField, setAiTargetField] = useState<string | null>(null);
   const [aiActionId, setAiActionId] = useState<string | null>(null);
   const [aiFocusedField, setAiFocusedField] = useState<string | null>(null);
+  const [aiTargetSkills, setAiTargetSkills] = useState<string[] | null>(null);
 
   // Section control state for AI redirect
   const [sectionStates, setSectionStates] = useState<Record<string, boolean>>({
@@ -218,11 +219,43 @@ function ProfilePageContent() {
       const section = searchParams.get('section');
       const field = searchParams.get('field');
       const aiActionIdParam = searchParams.get('aiActionId');
+      const targetSkillsParam = searchParams.get('targetSkills');
+
+      console.log('[AI redirect] 📊 Processing parameters:', {
+        section,
+        field,
+        aiActionIdParam,
+        targetSkillsParam,
+        hasTargetSkills: !!targetSkillsParam
+      });
 
       if (section && field) {
         setAiTargetSection(section);
         setAiTargetField(field);
         setAiActionId(aiActionIdParam);
+
+        // Process targetSkills parameter
+        if (targetSkillsParam) {
+          try {
+            const parsedSkills = JSON.parse(decodeURIComponent(targetSkillsParam));
+            console.log('[AI redirect] 📊 Parsed targetSkills:', parsedSkills);
+
+            if (Array.isArray(parsedSkills) && parsedSkills.length > 0) {
+              // Validate skills against config
+              const validSkills = parsedSkills.filter((skill: any) =>
+                typeof skill === 'string' &&
+                skillsConfig.general.some(configSkill => configSkill.name === skill)
+              );
+              console.log('[AI redirect] 📊 Valid skills:', validSkills);
+
+              if (validSkills.length > 0) {
+                setAiTargetSkills(validSkills);
+              }
+            }
+          } catch (error) {
+            console.warn('Invalid targetSkills parameter:', error);
+          }
+        }
 
         // Auto-expand the target section
         setSectionStates(prev => ({
@@ -231,9 +264,22 @@ function ProfilePageContent() {
         }));
 
         // Focus the target field
+        console.log('[AI redirect] 📊 Scheduling field focus for:', field);
         setTimeout(() => {
+          console.log('[AI redirect] 📊 Executing field focus for:', field);
           focusTargetField(field);
         }, 300);
+
+        // Clean up URL parameters after processing (delayed to ensure highlighting works)
+        setTimeout(() => {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('section');
+          url.searchParams.delete('field');
+          url.searchParams.delete('aiActionId');
+          url.searchParams.delete('targetSkills');
+          console.log('[AI redirect] 📊 Cleaning up URL parameters');
+          router.replace(url.toString());
+        }, 500); // Increased delay to 500ms to ensure highlighting has time to work
       }
     }
   }, [searchParams, user]);
@@ -513,6 +559,8 @@ function ProfilePageContent() {
 
   // Handle AI-focused field highlighting
   const focusTargetField = (fieldId: string) => {
+    console.log('[focusTargetField] 🎯 Called with fieldId:', fieldId);
+
     // Map profile field names to actual HTML element IDs
     const fieldIdMap: Record<string, string> = {
       'user_description': 'user_description',
@@ -527,11 +575,15 @@ function ProfilePageContent() {
     };
 
     const actualFieldId = fieldIdMap[fieldId] || fieldId;
+    console.log('[focusTargetField] 🎯 Mapped fieldId:', fieldId, '->', actualFieldId);
+
     let element = document.getElementById(actualFieldId);
+    console.log('[focusTargetField] 🎯 Found element by ID:', element);
 
     // For skills, try to find the first skill input or the "Add Skills" button
     if (fieldId === 'skills') {
       element = document.getElementById('skill-add-button') || document.querySelector('[id^="skill-"]') as HTMLElement;
+      console.log('[focusTargetField] 🎯 Skills element:', element);
     }
 
     // For risk level, find the first risk level button
@@ -549,9 +601,11 @@ function ProfilePageContent() {
           element = label.nextElementSibling as HTMLElement || label.parentElement?.querySelector('button') as HTMLElement;
         }
       }
+      console.log('[focusTargetField] 🎯 Risk level element:', element);
     }
 
     if (element) {
+      console.log('[focusTargetField] 🎯 Element found, applying highlight');
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (element.focus) element.focus();
       setAiFocusedField(actualFieldId);
@@ -577,10 +631,14 @@ function ProfilePageContent() {
         setAiFocusedField(null);
       }, 5000);
     } else {
+      console.log('[focusTargetField] 🎯 Element not found, trying alternative selectors');
       // Try to find the field by name or other selectors
       const elements = document.querySelectorAll(`[name="${fieldId}"], [data-field="${fieldId}"], [id*="${fieldId}"]`);
+      console.log('[focusTargetField] 🎯 Alternative elements found:', elements.length);
+
       if (elements.length > 0) {
         const firstElement = elements[0] as HTMLElement;
+        console.log('[focusTargetField] 🎯 Using alternative element:', firstElement);
         firstElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (firstElement.focus) firstElement.focus();
         setAiFocusedField(fieldId);
@@ -605,6 +663,8 @@ function ProfilePageContent() {
           }
           setAiFocusedField(null);
         }, 5000);
+      } else {
+        console.warn('[focusTargetField] 🎯 No element found for field:', fieldId);
       }
     }
 
@@ -620,8 +680,19 @@ function ProfilePageContent() {
     }
   };
 
+  // Clear AI target skills after processing
+  useEffect(() => {
+    if (aiTargetSkills) {
+      // Clear the target skills after they've been processed by the component
+      const timer = setTimeout(() => {
+        setAiTargetSkills(null);
+      }, 1000); // Wait 1 second to allow component to process
+      return () => clearTimeout(timer);
+    }
+  }, [aiTargetSkills]);
+
   // Handle profile image upload
-  const handleImageUpload = async (file: File | null) => {
+  const handleImageUpload = async (file: File | null): Promise<void> => {
     if (!file || !user) return;
 
     setUploadingImage(true);
@@ -1061,6 +1132,7 @@ function ProfilePageContent() {
                 }, 100);
               }}
               onShowSkillsSidebar={showSkillsSidebar}
+              aiTargetSkills={aiTargetSkills}
             />
           </CollapsibleSection>
 

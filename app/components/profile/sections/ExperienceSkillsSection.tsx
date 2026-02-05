@@ -3,6 +3,8 @@
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { ExperienceLevel } from '@/app/types/experience-levels';
+import skillsConfig from '@/app/config/skills-config.json';
+import { useEffect } from 'react';
 
 type SkillEntry = {
   skill_name: string;
@@ -30,6 +32,7 @@ type ExperienceSkillsSectionProps = {
   isFieldMissing: (fieldName: string) => boolean;
   onInfoClick?: (title: string, content: React.ReactNode) => void;
   onShowSkillsSidebar?: () => void;
+  aiTargetSkills?: string[] | null;
 };
 
 export function ExperienceSkillsSection({
@@ -38,26 +41,61 @@ export function ExperienceSkillsSection({
   isFieldMissing,
   onInfoClick,
   onShowSkillsSidebar,
+  aiTargetSkills,
 }: ExperienceSkillsSectionProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Process AI target skills on mount
+  useEffect(() => {
+    if (aiTargetSkills && aiTargetSkills.length > 0) {
+      // Get existing skill names for duplicate checking
+      const existingSkillNames = new Set(formData.skills.map(s => s.skill_name));
+
+      // Process target skills: filter valid ones and add with default descriptions
+      const newSkills: SkillEntry[] = [];
+      aiTargetSkills.forEach(skillName => {
+        // Skip if skill already exists
+        if (existingSkillNames.has(skillName)) {
+          return;
+        }
+
+        // Find skill config to get starting sentence
+        const skillConfig = skillsConfig.general.find(config => config.name === skillName);
+        if (skillConfig) {
+          newSkills.push({
+            skill_name: skillName,
+            description: skillConfig.startingSentence || '',
+          });
+        }
+      });
+
+      // Add new skills if any
+      if (newSkills.length > 0) {
+        setFormData((prev) => ({
+          ...prev,
+          skills: [...prev.skills, ...newSkills],
+        }));
+      }
+    }
+  }, [aiTargetSkills, formData.skills, setFormData]);
+
   // Remove skill from form
-  const removeSkill = (skillName: string) => {
+  const removeSkill = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      skills: prev.skills.filter(s => s.skill_name !== skillName),
+      skills: prev.skills.filter((_, i) => i !== index),
     }));
   };
 
   // Update skill description
-  const updateSkillDescription = (skillName: string, description: string) => {
+  const updateSkillDescription = (index: number, description: string) => {
     setFormData((prev) => ({
       ...prev,
-      skills: prev.skills.map(s =>
-        s.skill_name === skillName ? { ...s, description } : s
+      skills: prev.skills.map((s, i) =>
+        i === index ? { ...s, description } : s
       ),
     }));
   };
@@ -100,11 +138,11 @@ export function ExperienceSkillsSection({
         {/* Display selected skills with editable descriptions */}
         {formData.skills.length > 0 && (
           <div className="space-y-3 mb-3">
-            {formData.skills.map((skill) => {
+            {formData.skills.map((skill, index) => {
               const displayName = formatSkillName(skill.skill_name);
 
               return (
-                <div key={skill.skill_name} className="flex items-start gap-2 p-3 border border-border rounded-md bg-card">
+                <div key={`${skill.skill_name}-${index}`} className="flex items-start gap-2 p-3 border border-border rounded-md bg-card">
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-2">
                       <label className="text-sm font-medium text-foreground">
@@ -112,7 +150,7 @@ export function ExperienceSkillsSection({
                       </label>
                       <button
                         type="button"
-                        onClick={() => removeSkill(skill.skill_name)}
+                        onClick={() => removeSkill(index)}
                         className="text-red-500 hover:text-red-700 text-sm font-medium"
                         title="Remove skill"
                       >
@@ -120,9 +158,9 @@ export function ExperienceSkillsSection({
                       </button>
                     </div>
                     <textarea
-                      id={`skill-${skill.skill_name}`}
+                      id={`skill-${skill.skill_name}-${index}`}
                       value={skill.description}
-                      onChange={(e) => updateSkillDescription(skill.skill_name, e.target.value)}
+                      onChange={(e) => updateSkillDescription(index, e.target.value)}
                       placeholder={`Describe your ${displayName.toLowerCase()} experience...`}
                       rows={2}
                       className="w-full px-3 py-2 border border-border rounded-md shadow-sm focus:outline-none focus:ring-ring focus:border-ring text-sm"

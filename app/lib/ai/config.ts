@@ -436,6 +436,7 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
+        'anthropic/claude-sonnet-4-5', // Premium model
         'deepseek/deepseek-r1-0528:free',
         'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
@@ -485,6 +486,7 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
+        'anthropic/claude-sonnet-4-5', // Premium model
         'openrouter/free',
         'deepseek/deepseek-r1-0528:free',
         'meta-llama/llama-3.3-70b-instruct:free',
@@ -535,6 +537,7 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
+        'anthropic/claude-sonnet-4-5', // Premium model
         'openrouter/free',
         'deepseek/deepseek-r1-0528:free',
         'meta-llama/llama-3.3-70b-instruct:free',

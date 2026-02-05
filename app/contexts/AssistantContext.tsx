@@ -447,6 +447,12 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     console.log('[redirectToProfile] 📊 Called with parameters:', { actionId, section, field });
     console.log('redirectToProfile called for action:', actionId, 'section:', section, 'field:', field);
 
+    // Find the action to extract targetSkills
+    const action = state.pendingActions.find(a => a.id === actionId);
+    const targetSkills = action?.action_payload?.targetSkills;
+    console.log('[redirectToProfile] 📊 Found action:', action);
+    console.log('[redirectToProfile] 📊 Extracted targetSkills:', targetSkills);
+
     try {
       // Mark action as approved in the database
       const response = await fetch(`/api/ai/assistant/actions/${actionId}/redirect`, {
@@ -477,13 +483,23 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
     // Navigate to profile with query params
     if (typeof window !== 'undefined') {
-      console.log(`Navigating to profile: section=${section}, field=${field}, aiActionId=${actionId}`);
-      window.location.href = `/profile?section=${section}&field=${field}&aiActionId=${actionId}`;
+      // Build URL with all parameters including targetSkills
+      let url = `/profile?section=${section}&field=${field}&aiActionId=${actionId}`;
+
+      // Add targetSkills parameter if available
+      if (targetSkills && Array.isArray(targetSkills) && targetSkills.length > 0) {
+        const encodedTargetSkills = encodeURIComponent(JSON.stringify(targetSkills));
+        url += `&targetSkills=${encodedTargetSkills}`;
+        console.log('[redirectToProfile] 📊 Added targetSkills to URL:', encodedTargetSkills);
+      }
+
+      console.log(`[redirectToProfile] 📊 Navigating to profile: ${url}`);
+      window.location.href = url;
     }
 
     // Optional: Show toast notification (if toast is available)
     console.log(`Redirecting to profile to update ${field}`);
-  }, []);
+  }, [state.pendingActions]);
 
   const approveAction = useCallback(async (actionId: string, value?: string) => {
     const action = state.pendingActions.find(a => a.id === actionId);
