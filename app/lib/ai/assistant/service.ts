@@ -17,8 +17,10 @@ import {
   UserContext,
   LegReference,
 } from './types';
-import { getUserContext, buildSystemPrompt } from './context';
+import { getUserContext } from './context';
 import { getToolsForUser, toolsToOpenAIFormat } from './tools';
+import { HybridUseCaseClassifier, UseCaseIntent } from './use-case-classification';
+import { ModularPromptBuilder } from './modular-prompts';
 import { executeTools } from './toolExecutor';
 
 const MAX_HISTORY_MESSAGES = 20;
@@ -107,8 +109,19 @@ export async function chat(
   const tools = getToolsForUser(userRoles);
   log('Available tools:', tools.map(t => t.name));
 
+  // Classify user intent using modular prompt system
+  log('Classifying user intent...');
+  const useCaseClassifier = new HybridUseCaseClassifier();
+  const intent = await useCaseClassifier.classifyIntent(request.message);
+  log('User intent classified:', intent);
+
+  // Build prompt using modular prompt system
+  log('Building prompt with modular system...');
+  const promptBuilder = new ModularPromptBuilder();
+  const systemPrompt = promptBuilder.buildPrompt(intent, userContext);
+  log('Modular prompt built successfully');
+
   // Build messages for AI
-  const systemPrompt = buildSystemPrompt(userContext);
   const messages = buildAIMessages(systemPrompt, history);
   log('Built AI messages:', { totalMessages: messages.length });
 
@@ -218,10 +231,29 @@ Alternative tool call formats are also supported:
 
 **PREFERRED FORMAT:** Use the \`\`\`tool_call\`\`\` code block format for best compatibility.
 
+**EXAMPLES OF MULTI-PARAMETER TOOL CALLS:**
+
+1. Location + Boat Type filtering:
+\`\`\`tool_call
+{"name": "search_legs_by_location", "arguments": {"departureBbox": {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}, "departureDescription": "Western Mediterranean", "boatType": "Offshore sailing"}}
+\`\`\`
+
+2. Location + Make/Model filtering:
+\`\`\`tool_call
+{"name": "search_legs_by_location", "arguments": {"departureBbox": {"minLng": -1, "minLat": 40, "maxLng": 4, "maxLat": 44}, "departureDescription": "Bay of Biscay", "makeModel": "Hallberg-Rassy"}}
+\`\`\`
+
+3. Location + Date + Risk Level filtering:
+\`\`\`tool_call
+{"name": "search_legs_by_location", "arguments": {"departureBbox": {"minLng": 10, "minLat": 35, "maxLng": 20, "maxLat": 45}, "departureDescription": "Adriatic Sea", "startDate": "2024-06-01", "endDate": "2024-07-01", "riskLevel": "Offshore sailing"}}
+\`\`\`
+
 CRITICAL RULES FOR TOOL CALLS:
 1. Action tools (suggest_register_for_leg, suggest_profile_update, etc.) ALWAYS require BOTH the action parameter AND a "reason" parameter
 2. The "reason" parameter must be a non-empty string explaining why you're making this suggestion
-3. Never omit required parameters - missing parameters will cause the tool to fail
+3. NEVER omit required parameters - missing parameters will cause the tool to fail
+4. When users request multiple filters (location + boat make/model, location + date ranges, etc.), include ALL relevant parameters in a single tool call
+5. Use nested objects for complex parameters like departureBbox/arrivalBbox
 
 You can make multiple tool calls, but try limit it to one or two if possible. After receiving tool results, provide your final response to the user.
 `;
@@ -233,15 +265,15 @@ You can make multiple tool calls, but try limit it to one or two if possible. Af
     ];
 
     // Call AI
-    log('Calling AI service...', { prompt: toolPrompt });
-    log('Messages with tools:', {message: messagesWithTools});
+    log('Calling AI service...', { prompt: toolPrompt.substring(0, 200) + (toolPrompt.length > 200 ? '...' : '')  });
+    //log('Messages with tools:', {message: messagesWithTools});
 
     const result = await callAI({
-      useCase: 'assistant-chat',
+      useCase: 'assistant-chat', // Keep this for now as the AI service needs a use case
       prompt: messagesWithTools.map(m => `${m.role}: ${m.content}`).join('\n\n'),
     });
     log('AI response received, length:', result.text.length);
-    log('AI raw response preview:', result.text.substring(0, 500) + (result.text.length > 500 ? '...' : ''));
+    log('AI raw response preview:', result.text.substring(0, 200) + (result.text.length > 200 ? '...' : ''));
 
     // Parse response for tool calls
     const { content, toolCalls } = parseToolCalls(result.text);

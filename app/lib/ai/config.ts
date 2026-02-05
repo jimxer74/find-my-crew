@@ -14,13 +14,17 @@ export type Environment = 'development' | 'production';
 
 export type UseCase =
   | 'boat-details'           // Extracting comprehensive boat details
+  | 'boat-suggestions'       // Suggesting boat options
   | 'suggest-sailboats'      // Suggesting sailboat make/model names
+  | 'profile-generation'     // Generating user profiles
   | 'generate-journey'       // Generating sailing journey plans
   | 'suggest-makers'         // Suggesting boat manufacturers
   | 'suggest-models'         // Suggesting boat models
   | 'assess-registration'    // Assessing crew member registration match for automated approval
   | 'generate-profile'       // Generating profile suggestions from Facebook data
-  | 'assistant-chat';        // AI assistant conversational chat with tool calling
+  | 'assistant-chat'         // AI assistant conversational chat with tool calling
+  | 'assistant-system'       // System-level assistant configuration
+  | 'general-conversation';  // General conversation fallback for intent classification
 
 export interface ModelConfig {
   provider: AIProvider;
@@ -48,9 +52,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'boat-details': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
-      temperature: 0.3,
-      maxTokens: 2000,
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
     },
     {
       provider: 'deepseek',
@@ -87,12 +98,117 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       maxTokens: 2000,
     },
   ],
+  'boat-suggestions': [
+    {
+      provider: 'openrouter',
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.1-8b-instant', // Free tier model
+        'llama-3.3-70b-versatile',
+        'qwen/qwen3-32b',
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat'],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-flash', // Free tier model
+        'gemini-3-flash',
+      ],
+      temperature: 0.7,
+      maxTokens: 500,
+    },
+    {
+      provider: 'openrouter',
+      models: [
+        'openai/gpt-4o-mini', // Cost-effective model
+        'anthropic/claude-haiku', // Free tier model
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+  ],
+  'profile-generation': [
+    {
+      provider: 'openrouter',
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-flash', // Free tier model
+        'gemini-3-flash',
+      ],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.1-8b-instant', // Free tier model
+        'llama-3.3-70b-versatile',
+        'qwen/qwen3-32b',
+      ],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat', 'deepseek-reasoner'],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+    {
+      provider: 'openrouter',
+      models: [
+        'openai/gpt-4o-mini', // Cost-effective model
+        'anthropic/claude-haiku', // Free tier model
+      ],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+  ],
   'suggest-sailboats': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
       temperature: 0.7,
-      maxTokens: 1000,
+      maxTokens: 4000,
     },
     {
       provider: 'groq',
@@ -132,9 +248,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'generate-journey': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
       temperature: 0.7,
-      maxTokens: 20000,
+      maxTokens: 4000,
     },
     {
       provider: 'gemini',
@@ -172,9 +295,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'suggest-makers': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
       temperature: 0.7,
-      maxTokens: 300,
+      maxTokens: 4000,
     },
     {
       provider: 'groq',
@@ -211,9 +341,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'suggest-models': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
       temperature: 0.7,
-      maxTokens: 300,
+      maxTokens: 4000,
     },
     {
       provider: 'groq',
@@ -250,9 +387,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'assess-registration': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
-      temperature: 0.3, // Lower temperature for more consistent scoring
-      maxTokens: 2000,
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
     },
     {
       provider: 'deepseek',
@@ -291,9 +435,16 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
   'generate-profile': [
     {
       provider: 'openrouter',
-      models: ['openrouter/free'],
-      temperature: 0.5, // Balanced for creative but accurate suggestions
-      maxTokens: 10000,
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
     },
     {
       provider: 'gemini',
@@ -334,12 +485,12 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
+        'deepseek/deepseek-r1-0528:free',
         'openrouter/free',
         'meta-llama/llama-3.3-70b-instruct:free',
         'meta-llama/llama-3.2-3b-instruct:free',
         'qwen/qwen3-4b:free',
         'qwen/qwen3-next-80b-a3b-instruct:free',
-        'deepseek/deepseek-r1-0528:free',
       ],
       temperature: 0.7,
       maxTokens: 4000,
@@ -378,6 +529,88 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       ],
       temperature: 0.7,
       maxTokens: 4000,
+    },
+  ],
+  'assistant-system': [
+    {
+      provider: 'openrouter',
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.1-8b-instant', // Free tier model
+        'llama-3.3-70b-versatile',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-flash', // Free tier model
+        'gemini-3-flash',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+  ],
+  'general-conversation': [
+    {
+      provider: 'openrouter',
+      models: [
+        'deepseek/deepseek-r1-0528:free',
+        'openrouter/free',
+        'meta-llama/llama-3.3-70b-instruct:free',
+        'meta-llama/llama-3.2-3b-instruct:free',
+        'qwen/qwen3-4b:free',
+        'qwen/qwen3-next-80b-a3b-instruct:free',
+      ],
+      temperature: 0.7,
+      maxTokens: 4000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'llama-3.1-8b-instant', // Free tier model
+        'llama-3.3-70b-versatile',
+        'qwen/qwen3-32b',
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat'],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-flash', // Free tier model
+        'gemini-3-flash',
+      ],
+      temperature: 0.7,
+      maxTokens: 500,
+    },
+    {
+      provider: 'openrouter',
+      models: [
+        'openai/gpt-4o-mini', // Cost-effective model
+        'anthropic/claude-haiku', // Free tier model
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
     },
   ],
 };
@@ -421,6 +654,78 @@ export const PROD_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       ],
       temperature: 0.3,
       maxTokens: 2000,
+    },
+  ],
+  'boat-suggestions': [
+    {
+      provider: 'openrouter',
+      models: [
+        'anthropic/opus-20250409', // Premium model
+        'anthropic/claude-sonnet-4-5', // Premium model
+        'openai/gpt-4o', // Premium model
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'llama-3.3-70b-versatile',
+        'llama-3.1-70b-versatile',
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat'],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'gemini',
+      models: ['gemini-2.5-pro', 'gemini-3-pro'],
+      temperature: 0.7,
+      maxTokens: 500,
+    },
+  ],
+  'profile-generation': [
+    {
+      provider: 'openrouter',
+      models: [
+        'anthropic/opus-20250409', // Premium model for creativity
+        'anthropic/claude-sonnet-4-5', // Premium model
+        'openai/gpt-4o', // Premium model
+        'google/gemini-2.5-pro-exp', // Premium model
+      ],
+      temperature: 0.6, // Higher temperature for creative suggestions
+      maxTokens: 10000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-pro',
+        'gemini-3-pro',
+      ],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'llama-3.3-70b-versatile',
+        'qwen/qwen3-32b',
+      ],
+      temperature: 0.5,
+      maxTokens: 10000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat', 'deepseek-reasoner'],
+      temperature: 0.5,
+      maxTokens: 10000,
     },
   ],
   'suggest-sailboats': [
@@ -679,6 +984,70 @@ export const PROD_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
       models: ['deepseek-chat', 'deepseek-reasoner'],
       temperature: 0.7,
       maxTokens: 4000,
+    },
+  ],
+  'assistant-system': [
+    {
+      provider: 'openrouter',
+      models: [
+        'anthropic/opus-20250409', // Premium model
+        'anthropic/claude-sonnet-4-5', // Premium model
+        'openai/gpt-4o', // Premium model
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'llama-3.3-70b-versatile',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+    {
+      provider: 'gemini',
+      models: [
+        'gemini-2.5-pro',
+        'gemini-3-pro',
+      ],
+      temperature: 0.3,
+      maxTokens: 2000,
+    },
+  ],
+  'general-conversation': [
+    {
+      provider: 'openrouter',
+      models: [
+        'anthropic/opus-20250409', // Premium model
+        'anthropic/claude-sonnet-4-5', // Premium model
+        'openai/gpt-4o', // Premium model
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'groq',
+      models: [
+        'meta-llama/llama-4-scout-17b-16e-instruct',
+        'llama-3.3-70b-versatile',
+        'llama-3.1-70b-versatile',
+      ],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'deepseek',
+      models: ['deepseek-chat', 'deepseek-reasoner'],
+      temperature: 0.7,
+      maxTokens: 1000,
+    },
+    {
+      provider: 'gemini',
+      models: ['gemini-2.5-pro', 'gemini-3-pro'],
+      temperature: 0.7,
+      maxTokens: 500,
     },
   ],
 };

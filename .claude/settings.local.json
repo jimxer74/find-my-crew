@@ -33,7 +33,11 @@
       "Bash(supabase status:*)",
       "Bash(dir:*)",
       "Bash(npx tsx:*)",
-      "Bash(del:*)"
+      "Bash(del:*)",
+      "Bash(npm install:*)",
+      "Bash(pkill:*)",
+      "mcp__backlog__task_search",
+      "Bash(find:*)"
     ]
   }
 }

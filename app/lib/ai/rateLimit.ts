@@ -14,9 +14,9 @@ interface RateLimitConfig {
 
 // Default rate limit configuration
 const DEFAULT_RATE_LIMIT_CONFIG: RateLimitConfig = {
-  maxRequests: 60,           // 60 requests per minute (1 per second)
+  maxRequests: 120,           // 60 requests per minute (1 per second)
   windowMs: 60000,           // 1 minute window
-  maxRetries: 3,             // Try up to 3 times
+  maxRetries: 5,             // Try up to 3 times
   baseRetryDelay: 1000,      // Start with 1 second delay
 };
 

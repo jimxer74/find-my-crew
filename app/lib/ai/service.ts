@@ -5,14 +5,17 @@
  * based on the configuration in config.ts
  */
 
-import { AIProvider, UseCase, ModelConfig, AI_CONFIG, getAPIKeys, hasAnyProvider } from './config';
+import { AIProvider, ModelConfig, AI_CONFIG, getAPIKeys, hasAnyProvider, UseCase } from './config';
 import { createRateLimiter, createUseCaseRateLimiter, GLOBAL_AI_RATE_LIMITER } from './rateLimit';
+import { promptRegistry } from './prompts';
 
 export interface AICallOptions {
   useCase: UseCase;
   prompt: string;
   temperature?: number;
   maxTokens?: number;
+  context?: any;
+  version?: string;
 }
 
 export interface AICallResult {
@@ -397,7 +400,23 @@ async function callProvider(
  * Main function to call AI with automatic provider/model selection and fallback
  */
 export async function callAI(options: AICallOptions): Promise<AICallResult> {
-  const { useCase, prompt, temperature, maxTokens } = options;
+  const { useCase, prompt, temperature, maxTokens, context, version } = options;
+
+  // If no prompt provided but useCase is specified, try to get from registry
+  let finalPrompt = prompt;
+  if (!finalPrompt && useCase) {
+    try {
+      const promptDefinition = promptRegistry.getPrompt(useCase, version);
+      finalPrompt = await promptRegistry.executePrompt(useCase, context, version);
+    } catch (error) {
+      console.warn(`Failed to get prompt from registry for ${useCase}: ${error}`);
+      // Fall back to original prompt if provided, otherwise throw error
+      if (!prompt) {
+        throw new AIServiceError(`No prompt provided and registry lookup failed for use case: ${useCase}`);
+      }
+      finalPrompt = prompt;
+    }
+  }
 
   // Apply rate limiting at the use case level
   const useCaseRateLimiter = createUseCaseRateLimiter(useCase);
@@ -439,7 +458,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
         const text = await callProvider(
           config.provider,
           model,
-          prompt,
+          finalPrompt,
           finalTemperature,
           finalMaxTokens
         );

@@ -13,7 +13,7 @@ import { ToolDefinition } from './types';
 export const DATA_TOOLS: ToolDefinition[] = [
   {
     name: 'search_journeys',
-    description: 'Search for published sailing journeys or voyages. Use this when user wants to find long sailing journeys that span multiple legs, typically taking several weeks or months to complete.',
+    description: 'Search for published sailing journeys or voyages. Use this when user wants to find long sailing journeys that span multiple legs, typically taking several weeks or months to complete. Supports filtering by date range, risk level, boat type, and boat make/model.',
     parameters: {
       type: 'object',
       properties: {
@@ -37,7 +37,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
         },
         makeModel: {
           type: 'string',
-          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis", "Hallberg-Rassy") - case-insensitive partial matching',
         },
         limit: {
           type: 'number',
@@ -48,7 +48,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'search_legs',
-    description: 'Search for sailing opportunities or sailing legs or passages. Use this for general searches without specific location requirements. For location-based searches (e.g., "from Barcelona", "to Caribbean"), use search_legs_by_location instead.',
+    description: 'Search for sailing opportunities or sailing legs or passages. Use this for general searches without specific location requirements. For location-based searches (e.g., "from Barcelona", "to Caribbean"), use search_legs_by_location instead. Supports filtering by journey, dates, skills, boat type, and boat make/model.',
     parameters: {
       type: 'object',
       properties: {
@@ -79,7 +79,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
         },
         makeModel: {
           type: 'string',
-          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis", "Hallberg-Rassy") - case-insensitive partial matching',
         },
         limit: {
           type: 'number',
@@ -90,7 +90,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
   },
   {
     name: 'search_legs_by_location',
-    description: 'Search for sailing legs by geographic location using bounding box coordinates. Use this when user mentions specific places, regions, or areas for departure or arrival. YOU must determine the appropriate bounding box coordinates for the location. IMPORTANT: Use nested departureBbox/arrivalBbox objects with numeric coordinates. Example: {"departureBbox": {"minLng": -6, "minLat": 35, "maxLng": 10, "maxLat": 44}, "departureDescription": "Western Mediterranean"}',
+    description: 'Search for sailing legs by geographic location using bounding box coordinates. Use this when user mentions specific places, regions, or areas for departure or arrival. YOU must determine the appropriate bounding box coordinates for the location. Supports filtering by date range, risk level, boat type, and boat make/model. IMPORTANT: Use nested departureBbox/arrivalBbox objects with numeric coordinates.',
     parameters: {
       type: 'object',
       properties: {
@@ -155,7 +155,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
         },
         makeModel: {
           type: 'string',
-          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis", "Hallberg-Rassy") - case-insensitive partial matching',
         },
         limit: {
           type: 'number',
@@ -271,7 +271,7 @@ export const DATA_TOOLS: ToolDefinition[] = [
         },
         makeModel: {
           type: 'string',
-          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis", "Hallberg-Rassy") - case-insensitive partial matching',
         },
         includeImages: {
           type: 'boolean',
