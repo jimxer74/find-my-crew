@@ -112,13 +112,29 @@ export async function chat(
   // Classify user intent using modular prompt system
   log('Classifying user intent...');
   const useCaseClassifier = new HybridUseCaseClassifier();
-  const intent = await useCaseClassifier.classifyIntent(request.message);
-  log('User intent classified:', intent);
+  const intentMessage = await useCaseClassifier.classifyIntent(request.message);
+  log('User intent classified:', intentMessage);
+
+  // Return clarification request message immediately if needed
+  if (intentMessage.intent === UseCaseIntent.CLARIFICATION_REQUEST) {
+    log('Clarification request:', intentMessage.message);
+    return {
+      conversationId,
+      message: {
+        role: 'assistant',
+        content: intentMessage.message,
+        metadata: {},
+        id: '',
+        conversation_id: conversationId,
+        created_at: new Date().toISOString(),
+      },
+      pendingActions: undefined,
+    };}
 
   // Build prompt using modular prompt system
   log('Building prompt with modular system...');
   const promptBuilder = new ModularPromptBuilder();
-  const systemPrompt = promptBuilder.buildPrompt(intent, userContext);
+  const systemPrompt = promptBuilder.buildPrompt(intentMessage.intent, userContext);
   log('Modular prompt built successfully');
 
   // Build messages for AI

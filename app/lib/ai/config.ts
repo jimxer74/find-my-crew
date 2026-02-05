@@ -485,8 +485,8 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
-        'deepseek/deepseek-r1-0528:free',
         'openrouter/free',
+        'deepseek/deepseek-r1-0528:free',
         'meta-llama/llama-3.3-70b-instruct:free',
         'meta-llama/llama-3.2-3b-instruct:free',
         'qwen/qwen3-4b:free',
@@ -535,8 +535,8 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
-        'deepseek/deepseek-r1-0528:free',
         'openrouter/free',
+        'deepseek/deepseek-r1-0528:free',
         'meta-llama/llama-3.3-70b-instruct:free',
         'meta-llama/llama-3.2-3b-instruct:free',
         'qwen/qwen3-4b:free',
@@ -568,8 +568,8 @@ export const DEV_AI_CONFIG: Record<UseCase, ModelConfig[]> = {
     {
       provider: 'openrouter',
       models: [
-        'deepseek/deepseek-r1-0528:free',
         'openrouter/free',
+        'deepseek/deepseek-r1-0528:free',
         'meta-llama/llama-3.3-70b-instruct:free',
         'meta-llama/llama-3.2-3b-instruct:free',
         'qwen/qwen3-4b:free',
