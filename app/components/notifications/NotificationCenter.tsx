@@ -37,7 +37,7 @@ interface NotificationPageContentProps {
   hasMore?: boolean;
   onApproveAction: (actionId: string) => void;
   onRejectAction: (actionId: string) => void;
-  onRedirectToProfile: (action: any) => void;
+  onRedirectToProfile: (action: any, section: string, field: string) => void;
 }
 
 export function NotificationCenter({

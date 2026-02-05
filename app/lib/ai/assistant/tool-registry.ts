@@ -262,7 +262,8 @@ export class ToolPrioritizer {
         'get_user_profile': 5,
         'get_pending_actions': 4,
         'get_suggestions': 3
-      }
+      },
+      [UseCaseIntent.CLARIFICATION_REQUEST]: {}
     };
 
     return priorities[intent]?.[toolName] || 1;

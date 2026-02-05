@@ -39,7 +39,8 @@ export class CrewDataSanitizer {
     ],
     [UseCaseIntent.GENERAL_CONVERSATION]: [
       'roles', 'sailingExperience', 'skills'
-    ]
+    ],
+    [UseCaseIntent.CLARIFICATION_REQUEST]: []
   };
 
   /**
