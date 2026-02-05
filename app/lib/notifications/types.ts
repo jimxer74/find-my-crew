@@ -18,6 +18,8 @@ export enum NotificationType {
   PROFILE_REMINDER = 'profile_reminder',
   AI_AUTO_APPROVED = 'ai_auto_approved',
   AI_REVIEW_NEEDED = 'ai_review_needed',
+  AI_PENDING_ACTION = 'ai_pending_action',
+  AI_ACTION_APPROVED = 'ai_action_approved',
   FEEDBACK_STATUS_CHANGED = 'feedback_status_changed',
   FEEDBACK_MILESTONE = 'feedback_milestone',
 }
@@ -67,6 +69,18 @@ export interface NotificationMetadata {
   new_status?: string;
   status_note?: string;
   milestone?: number;
+  // AI Pending Action specific metadata
+  action_id?: string;
+  action_type?: string;
+  action_payload?: Record<string, unknown>;
+  action_explanation?: string;
+  input_required?: boolean;
+  input_type?: 'text' | 'text_array' | 'select';
+  input_options?: string[];
+  input_prompt?: string;
+  profile_section?: 'personal' | 'preferences' | 'experience' | 'notifications';
+  profile_field?: string;
+  ai_highlight_text?: string;
   [key: string]: unknown;
 }
 
@@ -191,4 +205,25 @@ export interface ProfileReminderData {
 
 export function isNotificationType(value: string): value is NotificationType {
   return Object.values(NotificationType).includes(value as NotificationType);
+}
+
+/**
+ * Type guard for checking if a notification is an AI pending action
+ */
+export function isAIPendingAction(notification: Notification): boolean {
+  return notification.type === NotificationType.AI_PENDING_ACTION;
+}
+
+/**
+ * Type guard for checking if metadata contains AI pending action data
+ */
+export function hasAIPendingActionMetadata(metadata: NotificationMetadata): boolean {
+  return !!metadata.action_id && !!metadata.action_type;
+}
+
+/**
+ * Type guard for checking if input is required for an AI pending action
+ */
+export function requiresInput(metadata: NotificationMetadata): boolean {
+  return metadata.input_required === true;
 }

@@ -55,23 +55,16 @@ export interface AIPendingAction {
   profile_section?: 'personal' | 'preferences' | 'experience' | 'notifications';
   profile_field?: string;
   ai_highlight_text?: string;
+
+  // DATABASE FIELDS: Additional fields from database
+  field_type?: string;          // e.g., "skills", "user_description"
+  suggested_value?: string;     // Suggested value for the field
 }
 
 export interface ProfileActionMetadata {
   section: 'personal' | 'preferences' | 'experience' | 'notifications';
   field: string; // e.g., 'user_description', 'certifications', etc.
   highlightText: string; // Text to show as AI suggestion context
-}
-
-export interface AISuggestion {
-  id: string;
-  user_id: string;
-  suggestion_type: SuggestionType;
-  title: string;
-  description: string;
-  metadata: SuggestionMetadata;
-  dismissed: boolean;
-  created_at: string;
 }
 
 // Action types
@@ -93,22 +86,6 @@ export interface SkillsRefinementPayload {
   currentSkills: string[];
   suggestedImprovements?: Record<string, string>;
   userProvidedDescriptions?: Record<string, string>;
-}
-
-// Suggestion types
-export type SuggestionType =
-  | 'matching_leg'
-  | 'matching_crew'
-  | 'profile_improvement'
-  | 'journey_opportunity';
-
-export interface SuggestionMetadata {
-  legId?: string;
-  journeyId?: string;
-  crewId?: string;
-  matchScore?: number;
-  reason?: string;
-  [key: string]: unknown;
 }
 
 // Tool calling types
@@ -175,7 +152,6 @@ export interface UserContext {
     createdAt: string;
   }[];
   pendingActionsCount: number;
-  suggestionsCount: number;
 }
 
 // Chat request/response

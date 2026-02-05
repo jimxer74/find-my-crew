@@ -1,6 +1,8 @@
 'use client';
 
 import { type Notification, NotificationType } from '@/app/lib/notifications';
+import { ActionConfirmation } from './ActionConfirmation';
+import { isAIPendingAction } from '@/app/lib/notifications/types';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -122,6 +124,9 @@ export function NotificationItem({
   const senderAvatarUrl = notification.metadata?.sender_avatar_url as string | undefined;
   const senderName = notification.metadata?.sender_name as string | undefined;
 
+  // Check if this is an AI pending action
+  const isPendingAction = isAIPendingAction(notification);
+
   return (
     <div
       className={`group relative flex gap-3 p-3 cursor-pointer transition-colors hover:bg-accent ${
@@ -154,32 +159,64 @@ export function NotificationItem({
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>
-          {notification.title}
-        </p>
-        {notification.message && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
-            {notification.message}
-          </p>
+        {isPendingAction ? (
+          // For AI pending actions, render the action confirmation component
+          <ActionConfirmation
+            notification={notification}
+            onApprove={(actionId) => {
+              // Mark as read and handle approval
+              onMarkAsRead(notification.id);
+              if (onClick) {
+                onClick(notification);
+              }
+            }}
+            onReject={(actionId) => {
+              // Mark as read and handle rejection
+              onMarkAsRead(notification.id);
+              if (onClick) {
+                onClick(notification);
+              }
+            }}
+            onRedirectToProfile={(actionId, section, field) => {
+              // Handle profile redirect
+              if (onClick) {
+                onClick(notification);
+              }
+            }}
+          />
+        ) : (
+          // For regular notifications, render standard content
+          <>
+            <p className={`text-sm ${!notification.read ? 'font-medium' : ''}`}>
+              {notification.title}
+            </p>
+            {notification.message && (
+              <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+                {notification.message}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {formatRelativeTime(notification.created_at)}
+            </p>
+          </>
         )}
-        <p className="text-xs text-muted-foreground mt-1">
-          {formatRelativeTime(notification.created_at)}
-        </p>
       </div>
 
       {/* Delete button (shows on hover) */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(notification.id);
-        }}
-        className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-background focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring transition-opacity"
-        aria-label="Delete notification"
-      >
-        <svg className="w-4 h-4 text-muted-foreground hover:text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+      {!isPendingAction && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(notification.id);
+          }}
+          className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-background focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring transition-opacity"
+          aria-label="Delete notification"
+        >
+          <svg className="w-4 h-4 text-muted-foreground hover:text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }

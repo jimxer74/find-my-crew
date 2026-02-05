@@ -15,6 +15,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
+import { useAssistant } from '@/app/contexts/AssistantContext';
 
 export function Header() {
   const t = useTranslations('common');
@@ -27,6 +28,7 @@ export function Header() {
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const filtersButtonRef = useRef<HTMLButtonElement>(null);
+  const { pendingActionsCount } = useAssistant();
 
   // Close all dialogs when route changes
   useEffect(() => {
@@ -145,6 +147,9 @@ export function Header() {
 
   const { userRoles } = useUserRoles();
 
+  console.log('[Header] 📊 pendingActionsCount:', pendingActionsCount);
+  // No longer tracking suggestions count
+
   return (
     <>
       <nav className="border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95">
@@ -205,7 +210,7 @@ export function Header() {
               {/* AI Assistant - Only show for authenticated users */}
               {user && <AssistantButton userRoles={userRoles}/>}
               {/* Notification Bell - Only show for authenticated users */}
-              {user && <NotificationBell />}
+              {user && <NotificationBell pendingActionsCount={pendingActionsCount} />}
               <NavigationMenu
                 onOpenLogin={() => {
                   // On mobile, navigate to login page; on desktop, open modal

@@ -13,7 +13,6 @@ export type {
   AIConversation,
   AIMessage,
   AIPendingAction,
-  AISuggestion,
   ChatRequest,
   ChatResponse,
   AssistantOptions,
@@ -21,7 +20,6 @@ export type {
   ToolCall,
   ToolResult,
   ActionType,
-  SuggestionType,
 } from './types';
 
 // Tools
@@ -43,7 +41,4 @@ export { executeAction, rejectAction } from './actions';
 export {
   findMatchingCrew,
   findMatchingLegs,
-  createMatchingSuggestions,
-  generateSuggestionsForNewLeg,
-  generateSuggestionsForUser,
 } from './matching';

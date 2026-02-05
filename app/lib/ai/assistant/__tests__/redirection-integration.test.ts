@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AssistantProvider, useAssistant } from '@/app/contexts/AssistantContext';
+import { AssistantProvider, useAssistant, parseProfileAction } from '@/app/contexts/AssistantContext';
 import { ActionConfirmation } from '@/app/components/ai/ActionConfirmation';
 
 // Mock dependencies
@@ -34,7 +34,8 @@ const MockComponent = () => {
             created_at: '2023-01-01T00:00:00Z',
             resolved_at: null,
           };
-          assistant.redirectToProfile(mockAction);
+          const { section, field } = parseProfileAction(mockAction);
+          assistant.redirectToProfile(mockAction.id, section, field);
         }}
       >
         Redirect to Profile
@@ -112,9 +113,8 @@ describe('Profile Redirection Integration', () => {
             action={mockAction}
             onApprove={() => {}}
             onReject={() => {}}
-            onRedirectToProfile={(action) => {
-              const { section, field } = parseProfileAction(action);
-              window.location.href = `/profile?section=${section}&field=${field}&aiActionId=${action.id}`;
+            onRedirectToProfile={(actionId, section, field) => {
+              window.location.href = `/profile?section=${section}&field=${field}&aiActionId=${actionId}`;
             }}
           />
         </TestWrapper>

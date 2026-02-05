@@ -4,7 +4,6 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
-import { ActionConfirmation } from './ActionConfirmation';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
 import { ActionFeedback } from './ActionFeedback';
 import { TextInputModal } from './TextInputModal';
@@ -276,9 +275,9 @@ export function AssistantChat() {
     }
   };
 
-  // Get pending actions for current conversation
+  // Get pending actions for current conversation - only count those that require immediate input
   const relevantPendingActions = pendingActions.filter(
-    a => a.status === 'pending'
+    a => a.status === 'pending' && a.awaiting_user_input === true
   );
 
 
@@ -458,63 +457,6 @@ export function AssistantChat() {
 
         <div ref={messagesEndRef} />
       </div>
-
-      {/* Pending actions (Desktop) */}
-      {!isMobile && relevantPendingActions.length > 0 && (
-        <div className="border-t border-border p-4 space-y-2 max-h-48 overflow-y-auto bg-muted/50">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            {t('pendingActions')}
-          </p>
-          {relevantPendingActions.map((action) => (
-            <ActionConfirmation
-              key={action.id}
-              action={action}
-              onApprove={() => approveAction(action.id)}
-              onReject={() => rejectAction(action.id)}
-              onRedirectToProfile={(action) => {
-                // For profile update actions, use the proper redirect method
-                redirectToProfile(action);
-              }}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Mobile Bottom Sheet */}
-      {isMobile && isOpen && relevantPendingActions.length > 0 && (
-        <div
-          className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-lg z-50"
-          style={{ height: `${bottomSheetHeight}px` }}
-        >
-          {/* Drag Handle */}
-          <div
-            className="flex justify-center py-2 cursor-ns-resize hover:bg-muted/50 transition-colors"
-            onMouseDown={(e) => handleDragStart(e.clientY)}
-            onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
-          >
-            <div className="w-12 h-1 bg-border rounded-full" />
-          </div>
-
-          {/* Content */}
-          <div className="p-4 space-y-2 max-h-[calc(100%-60px)] overflow-y-auto">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {t('pendingActions')}
-            </p>
-            {relevantPendingActions.map((action) => (
-              <ActionConfirmation
-                key={action.id}
-                action={action}
-                onApprove={() => approveAction(action.id)}
-                onReject={() => rejectAction(action.id)}
-                onRedirectToProfile={(action) => {
-                  // For profile update actions, use the proper redirect method
-                  redirectToProfile(action);
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Input area - Hide when pending actions exist */}
       {relevantPendingActions.length === 0 && (

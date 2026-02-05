@@ -118,7 +118,6 @@ export async function getUserContext(
     boats,
     recentRegistrations,
     pendingActionsCount: pendingActionsCount || 0,
-    suggestionsCount: suggestionsCount || 0,
   };
 }
 
@@ -133,7 +132,7 @@ export function buildSystemPrompt(context: UserContext): string {
     registrationCount: context.recentRegistrations?.length
   });
 
-  const { profile, boats, recentRegistrations, pendingActionsCount, suggestionsCount } = context;
+  const { profile, boats, recentRegistrations, pendingActionsCount } = context;
 
   let prompt = `You are a helpful AI assistant for "SailSmart", a platform that connects sailing boat owners with crew members looking for sailing opportunities.
 
@@ -240,9 +239,6 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
       prompt += `\n**Note:** User has ${pendingActionsCount} pending action(s) awaiting approval.\n`;
     }
 
-    if (suggestionsCount > 0) {
-      prompt += `**Note:** User has ${suggestionsCount} unread suggestion(s).\n`;
-    }
   } else {
     prompt += `\n## Current User Context\n\n`;
     prompt += `The user hasn't created a profile yet. Encourage them to complete their profile to unlock all features.\n`;

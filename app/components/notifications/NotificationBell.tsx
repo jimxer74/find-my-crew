@@ -5,13 +5,19 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { NotificationCenter } from './NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
+import { useAssistant } from '@/app/contexts/AssistantContext';
 
-export function NotificationBell() {
+export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCount?: number } = {}) {
   const t = useTranslations('navigation');
   const pathname = usePathname();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { pendingActions } = useAssistant();
+
+  console.log('[NotificationBell] 📊 Props received - pendingActionsCount:', pendingActionsCount);
+  console.log('[NotificationBell] 📊 pendingActions from context:', pendingActions);
+  console.log('[NotificationBell] 📊 pendingActions length:', pendingActions?.length);
 
   // Close notifications when route changes
   useEffect(() => {
@@ -28,6 +34,7 @@ export function NotificationBell() {
       window.removeEventListener('closeAllDialogs', handleCloseAll);
     };
   }, []);
+
   const {
     notifications,
     unreadCount,
@@ -38,6 +45,10 @@ export function NotificationBell() {
     loadMore,
     hasMore,
   } = useNotificationContext();
+
+  // Calculate total badge count including unread notifications and pending actions
+  const totalBadgeCount = unreadCount + pendingActionsCount;
+  console.log('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCount:', pendingActionsCount, '= total:', totalBadgeCount);
 
   const handleToggle = useCallback(() => {
     // Toggle panel on both mobile and desktop
@@ -57,7 +68,7 @@ export function NotificationBell() {
         ref={buttonRef}
         onClick={handleToggle}
         className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-        aria-label={`${t('notifications')}${unreadCount > 0 ? ` (${unreadCount})` : ''}`}
+        aria-label={`${t('notifications')}${totalBadgeCount > 0 ? ` (${totalBadgeCount})` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -77,10 +88,10 @@ export function NotificationBell() {
           )}
         </svg>
 
-        {/* Unread badge - only show when closed */}
-        {!isOpen && unreadCount > 0 && (
+        {/* Unread badge - only show when closed, now includes pending actions */}
+        {!isOpen && totalBadgeCount > 0 && (
           <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-medium text-white bg-red-500 rounded-full">
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {totalBadgeCount > 99 ? '99+' : totalBadgeCount}
           </span>
         )}
       </button>
@@ -99,6 +110,12 @@ export function NotificationBell() {
         hasMore={hasMore}
         buttonRef={buttonRef}
       />
+      {/* Debug: Show pending actions count in UI */}
+      {pendingActions && pendingActions.length > 0 && (
+        <div style={{ position: 'fixed', top: '50px', right: '10px', background: 'red', color: 'white', padding: '5px', zIndex: 9999 }}>
+          Debug: {pendingActions.length} pending actions
+        </div>
+      )}
     </div>
   );
 }

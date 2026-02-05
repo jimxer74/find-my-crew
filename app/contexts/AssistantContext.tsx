@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode, RefObject } from 'react';
-import { AIConversation, AIMessage, AIPendingAction, AISuggestion } from '@/app/lib/ai/assistant/types';
+import { AIConversation, AIMessage, AIPendingAction } from '@/app/lib/ai/assistant/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 // Type declaration for custom event
@@ -25,7 +25,6 @@ interface AssistantState {
   currentConversationId: string | null;
   messages: AIMessage[];
   pendingActions: AIPendingAction[];
-  suggestions: AISuggestion[];
   isLoading: boolean;
   error: string | null;
   errorDetails: AIError | null;
@@ -59,14 +58,11 @@ interface AssistantContextType extends AssistantState {
   deleteConversation: (id: string) => Promise<void>;
   approveAction: (actionId: string) => Promise<void>;
   rejectAction: (actionId: string) => Promise<void>;
-  dismissSuggestion: (suggestionId: string) => Promise<void>;
-  loadSuggestions: () => Promise<void>;
   loadPendingActions: () => Promise<void>;
   showInputModal: (action: AIPendingAction) => void;
   hideInputModal: () => void;
   submitInput: (actionId: string, value: string | string[]) => Promise<void>;
-  redirectToProfile: (action: AIPendingAction) => void;
-  suggestionsCount: number;
+  redirectToProfile: (actionId: string, section: string, field: string) => void;
   pendingActionsCount: number;
 }
 
@@ -74,8 +70,12 @@ const AssistantContext = createContext<AssistantContextType | null>(null);
 
 // Helper function to parse profile action and determine section/field
 export function parseProfileAction(action: AIPendingAction) {
+  console.log('[parseProfileAction] 📊 Parsing action:', action.action_type);
+  console.log('[parseProfileAction] 📊 Action object:', action);
+
   // Use metadata from action if available
   if (action.profile_section && action.profile_field) {
+    console.log('[parseProfileAction] 📊 Using metadata from action:', { section: action.profile_section, field: action.profile_field });
     return {
       section: action.profile_section,
       field: action.profile_field
@@ -93,11 +93,14 @@ export function parseProfileAction(action: AIPendingAction) {
     'refine_skills': { section: 'experience', field: 'skills' },
   };
 
+  console.log('[parseProfileAction] 📊 Looking up action type:', action.action_type);
   const mapping = ACTION_TO_PROFILE_MAPPING[action.action_type];
   if (mapping) {
+    console.log('[parseProfileAction] 📊 Found mapping:', mapping);
     return mapping;
   }
 
+  console.log('[parseProfileAction] 📊 No mapping found, using fallback');
   // Default fallback if action type not in mapping
   return { section: 'personal', field: 'user_description' };
 }
@@ -111,7 +114,6 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     currentConversationId: null,
     messages: [],
     pendingActions: [],
-    suggestions: [],
     isLoading: false,
     error: null,
     errorDetails: null,
@@ -343,14 +345,40 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadPendingActions = useCallback(async () => {
+    console.log('[AssistantContext] 🔍 loadPendingActions called');
     try {
       const response = await fetch('/api/ai/assistant/actions');
+      console.log('[AssistantContext] 📡 API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
-        setState(prev => ({ ...prev, pendingActions: data.actions }));
+        console.log('[AssistantContext] 📦 Received data:', data);
+
+        // Transform database fields to match frontend interface
+        const transformedActions = data.actions.map((action: any) => ({
+          ...action,
+          action_payload: action.action_payload,
+          input_prompt: action.input_prompt,
+          input_type: action.input_type,
+          input_options: action.input_options,
+          profile_section: action.profile_section,
+          profile_field: action.profile_field,
+          ai_highlight_text: action.ai_highlight_text,
+        }));
+
+        console.log('[AssistantContext] ✅ Transformed actions:', transformedActions);
+        console.log('[AssistantContext] 📊 Transformed actions count:', transformedActions.length);
+        console.log('[AssistantContext] 📊 First transformed action:', transformedActions[0]);
+        console.log('[AssistantContext] 📊 Actions array type:', Array.isArray(transformedActions));
+        setState(prev => {
+          console.log('[AssistantContext] 🔄 Setting state with actions:', transformedActions);
+          return { ...prev, pendingActions: transformedActions };
+        });
+      } else {
+        console.error('[AssistantContext] ❌ Failed to load pending actions:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Failed to load pending actions:', error);
+      console.error('[AssistantContext] 🚨 Exception in loadPendingActions:', error);
     }
   }, []);
 
@@ -415,23 +443,24 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     }
   }, [loadPendingActions]);
 
-  const redirectToProfile = useCallback(async (action: AIPendingAction) => {
-    console.log('redirectToProfile called for action:', action.id, 'type:', action.action_type);
+  const redirectToProfile = useCallback(async (actionId: string, section: string, field: string) => {
+    console.log('[redirectToProfile] 📊 Called with parameters:', { actionId, section, field });
+    console.log('redirectToProfile called for action:', actionId, 'section:', section, 'field:', field);
 
     try {
       // Mark action as approved in the database
-      const response = await fetch(`/api/ai/assistant/actions/${action.id}/redirect`, {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/redirect`, {
         method: 'POST',
       });
 
       if (response.ok) {
-        console.log('Successfully marked action as approved:', action.id);
+        console.log('Successfully marked action as approved:', actionId);
 
         // Update local state immediately
         setState(prev => ({
           ...prev,
           pendingActions: prev.pendingActions.map(a =>
-            a.id === action.id ? { ...a, status: 'approved' as const } : a
+            a.id === actionId ? { ...a, status: 'approved' as const } : a
           )
         }));
       } else {
@@ -443,16 +472,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       // Still proceed with redirect even if API call fails
     }
 
-    // Parse action payload to determine target section and field
-    const { section, field } = parseProfileAction(action);
-
     // Close assistant sidebar
     setState(prev => ({ ...prev, isOpen: false, lastActionResult: null }));
 
     // Navigate to profile with query params
     if (typeof window !== 'undefined') {
-      console.log(`Navigating to profile: section=${section}, field=${field}, aiActionId=${action.id}`);
-      window.location.href = `/profile?section=${section}&field=${field}&aiActionId=${action.id}`;
+      console.log(`Navigating to profile: section=${section}, field=${field}, aiActionId=${actionId}`);
+      window.location.href = `/profile?section=${section}&field=${field}&aiActionId=${actionId}`;
     }
 
     // Optional: Show toast notification (if toast is available)
@@ -479,7 +505,12 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
     if (PROFILE_UPDATE_ACTIONS.includes(action.action_type)) {
       // For profile update actions, redirect to profile page instead of direct approval
-      redirectToProfile(action);
+      console.log('[approveAction] 📊 Profile action detected:', action.action_type);
+      console.log('[approveAction] 📊 Action object:', action);
+      console.log('[approveAction] 📊 actionId parameter:', actionId);
+      const { section, field } = parseProfileAction(action);
+      console.log('[approveAction] 📊 Parsed section/field:', { section, field });
+      redirectToProfile(actionId, section, field);
       return;
     }
 
@@ -658,33 +689,23 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const loadSuggestions = useCallback(async () => {
-    try {
-      const response = await fetch('/api/ai/assistant/suggestions');
-      if (response.ok) {
-        const data = await response.json();
-        setState(prev => ({ ...prev, suggestions: data.suggestions }));
-      }
-    } catch (error) {
-      console.error('Failed to load suggestions:', error);
-    }
-  }, []);
-
-  const dismissSuggestion = useCallback(async (suggestionId: string) => {
-    try {
-      await fetch(`/api/ai/assistant/suggestions/${suggestionId}/dismiss`, {
-        method: 'POST',
-      });
-      setState(prev => ({
-        ...prev,
-        suggestions: prev.suggestions.filter(s => s.id !== suggestionId),
-      }));
-    } catch (error) {
-      console.error('Failed to dismiss suggestion:', error);
-    }
-  }, []);
+  // Suggestions functionality removed - only pending actions are used
 
   // Profile update action completion logic
+
+  // Load pending actions when user is authenticated
+  useEffect(() => {
+    const loadActions = async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        await loadPendingActions();
+      }
+    };
+
+    loadActions();
+  }, [loadPendingActions]);
 
   // Periodic cleanup of expired actions
   useEffect(() => {
@@ -752,14 +773,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     deleteConversation,
     approveAction,
     rejectAction,
-    dismissSuggestion,
-    loadSuggestions,
     loadPendingActions,
     showInputModal,
     hideInputModal,
     submitInput,
     redirectToProfile,
-    suggestionsCount: state.suggestions.filter(s => !s.dismissed).length,
     pendingActionsCount: state.pendingActions.filter(a => a.status === 'pending').length,
   };
 

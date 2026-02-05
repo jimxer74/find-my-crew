@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 
 // GET /api/ai/assistant/actions - List pending actions
 export async function GET(request: NextRequest) {
+  console.log('[API] 🔍 GET /api/ai/assistant/actions called');
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -22,15 +23,20 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
+      console.log('[API] ❌ Unauthorized - no user');
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
+    console.log('[API] 👤 User authenticated:', user.id);
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status') || 'pending';
     const limit = parseInt(searchParams.get('limit') || '20', 10);
+
+    console.log('[API] 📋 Query params - status:', status, 'limit:', limit);
 
     let query = supabase
       .from('ai_pending_actions')
@@ -40,6 +46,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (status !== 'all') {
+      console.log('[API] 📊 Applying status filter:', status);
       query = query.eq('status', status);
     }
 
@@ -47,12 +54,14 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
+    console.log('[API] 📦 Database query result:', actions);
+
     return NextResponse.json({
       actions: actions || [],
       count: actions?.length || 0,
     });
   } catch (error: any) {
-    console.error('List actions error:', error);
+    console.error('[API] 🚨 Exception in GET /api/ai/assistant/actions:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to list actions' },
       { status: 500 }

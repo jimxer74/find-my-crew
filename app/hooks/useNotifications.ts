@@ -20,6 +20,13 @@ interface UseNotificationsReturn {
   loadMore: () => Promise<void>;
   hasMore: boolean;
   refresh: () => Promise<void>;
+  // Action confirmation state
+  activeInputModal: string | null;
+  setActiveInputModal: (actionId: string | null) => void;
+  // Action confirmation handlers
+  approveAction: (actionId: string) => Promise<void>;
+  rejectAction: (actionId: string) => Promise<void>;
+  submitActionInput: (actionId: string, value: string | string[]) => Promise<void>;
 }
 
 export function useNotifications(): UseNotificationsReturn {
@@ -30,6 +37,7 @@ export function useNotifications(): UseNotificationsReturn {
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [offset, setOffset] = useState(0);
+  const [activeInputModal, setActiveInputModal] = useState<string | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const isMountedRef = useRef(true);
   const hasLoadedRef = useRef(false);
@@ -311,6 +319,72 @@ export function useNotifications(): UseNotificationsReturn {
     hasLoadedRef.current = true; // Mark as loaded after refresh
   }, [fetchNotifications]);
 
+  // Action confirmation handlers
+  const approveAction = useCallback(async (actionId: string) => {
+    try {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/approve`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to approve action');
+      }
+
+      // Remove the notification since action is completed
+      setNotifications((prev) => prev.filter((n) => n.id !== actionId));
+      if (unreadCount > 0) {
+        setUnreadCount((prev) => prev - 1);
+      }
+    } catch (err: any) {
+      console.error('[useNotifications] Error approving action:', err);
+      setError(err.message);
+    }
+  }, [unreadCount]);
+
+  const rejectAction = useCallback(async (actionId: string) => {
+    try {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/reject`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reject action');
+      }
+
+      // Remove the notification since action is completed
+      setNotifications((prev) => prev.filter((n) => n.id !== actionId));
+      if (unreadCount > 0) {
+        setUnreadCount((prev) => prev - 1);
+      }
+    } catch (err: any) {
+      console.error('[useNotifications] Error rejecting action:', err);
+      setError(err.message);
+    }
+  }, [unreadCount]);
+
+  const submitActionInput = useCallback(async (actionId: string, value: string | string[]) => {
+    try {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/submit-input`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newValue: value }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit action input');
+      }
+
+      // Close the modal and refresh notifications
+      setActiveInputModal(null);
+      await refresh();
+    } catch (err: any) {
+      console.error('[useNotifications] Error submitting action input:', err);
+      setError(err.message);
+    }
+  }, [refresh]);
+
   return {
     notifications,
     unreadCount,
@@ -322,5 +396,12 @@ export function useNotifications(): UseNotificationsReturn {
     loadMore,
     hasMore,
     refresh,
+    // Action confirmation state
+    activeInputModal,
+    setActiveInputModal,
+    // Action confirmation handlers
+    approveAction,
+    rejectAction,
+    submitActionInput,
   };
 }
