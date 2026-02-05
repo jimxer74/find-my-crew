@@ -30,6 +30,15 @@ export const DATA_TOOLS: ToolDefinition[] = [
           description: 'Filter by risk level',
           enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],
         },
+        boatType: {
+          type: 'string',
+          description: 'Filter by boat type/category',
+          enum: ['Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats'],
+        },
+        makeModel: {
+          type: 'string',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
+        },
         limit: {
           type: 'number',
           description: 'Maximum number of results to return (default 10)',
@@ -62,6 +71,15 @@ export const DATA_TOOLS: ToolDefinition[] = [
         crewNeeded: {
           type: 'boolean',
           description: 'Only show legs that still need crew (default true)',
+        },
+        boatType: {
+          type: 'string',
+          description: 'Filter by boat type/category',
+          enum: ['Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats'],
+        },
+        makeModel: {
+          type: 'string',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
         },
         limit: {
           type: 'number',
@@ -129,6 +147,15 @@ export const DATA_TOOLS: ToolDefinition[] = [
         crewNeeded: {
           type: 'boolean',
           description: 'Only show legs that still need crew (default true)',
+        },
+        boatType: {
+          type: 'string',
+          description: 'Filter by boat type/category',
+          enum: ['Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats'],
+        },
+        makeModel: {
+          type: 'string',
+          description: 'Filter by boat make and model (e.g., "Bavaria 46", "Beneteau Oceanis")',
         },
         limit: {
           type: 'number',

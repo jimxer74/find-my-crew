@@ -281,8 +281,7 @@ async function searchJourneys(
       boats!inner (
         id,
         name,
-        make,
-        model,
+        make_model,
         type
       )
     `)
@@ -298,6 +297,14 @@ async function searchJourneys(
   // Note: journey.risk_level is a scalar enum (not array), use eq for filtering
   if (args.riskLevel) {
     query = query.eq('risk_level', args.riskLevel);
+  }
+  // Filter by boat type
+  if (args.boatType) {
+    query = query.eq('boats.type', args.boatType);
+  }
+  // Filter by boat make and model using ILIKE for case-insensitive partial matching
+  if (args.makeModel) {
+    query = query.ilike('boats.make_model', `%${args.makeModel}%`);
   }
 
   const limit = (args.limit as number) || 10;
@@ -335,8 +342,9 @@ async function searchLegs(
         boats!inner (
           id,
           name,
-          make,
-          model
+          make_model,
+          type,
+          make_model
         )
       )
     `)
@@ -351,6 +359,14 @@ async function searchLegs(
   }
   if (args.endDate) {
     query = query.lte('end_date', args.endDate);
+  }
+  // Filter by boat type
+  if (args.boatType) {
+    query = query.eq('journeys.boats.type', args.boatType);
+  }
+  // Filter by boat make and model using ILIKE for case-insensitive partial matching
+  if (args.makeModel) {
+    query = query.ilike('journeys.boats.make_model', `%${args.makeModel}%`);
   }
 
   const limit = (args.limit as number) || 10;
@@ -499,8 +515,9 @@ async function searchLegsByLocation(
         boats!inner (
           id,
           name,
-          make,
-          model
+          make_model,
+          type,
+          make_model
         )
       ),
       waypoints (
@@ -511,6 +528,15 @@ async function searchLegsByLocation(
     .in('id', matchingLegIds)
     .eq('journeys.state', 'Published')
     .order('start_date', { ascending: true });
+
+  // Filter by boat type
+  if (args.boatType) {
+    query = query.eq('journeys.boats.type', args.boatType);
+  }
+  // Filter by boat make and model using ILIKE for case-insensitive partial matching
+  if (args.makeModel) {
+    query = query.ilike('journeys.boats.make_model', `%${args.makeModel}%`);
+  }
 
   // Apply date filters
   if (args.startDate) {
@@ -581,6 +607,23 @@ async function searchLegsByLocation(
     filteredLegs = filteredLegs.filter((leg: any) => {
       const legCombinedSkills = (leg.combined_skills || []).map((s: string) => s.toLowerCase());
       return requiredSkills.every(skill => legCombinedSkills.includes(skill));
+    });
+  }
+
+  // Filter by boat type if specified (additional filtering for cases where SQL filtering didn't work)
+  if (args.boatType) {
+    filteredLegs = filteredLegs.filter((leg: any) => {
+      const boatType = leg.journeys?.boats?.type;
+      return boatType === args.boatType;
+    });
+  }
+
+  // Filter by boat make and model if specified (additional filtering for cases where SQL filtering didn't work)
+  if (args.makeModel) {
+    filteredLegs = filteredLegs.filter((leg: any) => {
+      const makeModel = leg.journeys?.boats?.make_model;
+      if (!makeModel) return false;
+      return makeModel.toLowerCase().includes((args.makeModel as string).toLowerCase());
     });
   }
 
@@ -997,8 +1040,7 @@ async function getLegDetails(supabase: SupabaseClient, legId: string) {
         boats!inner (
           id,
           name,
-          make,
-          model,
+          make_model,
           type,
           capacity,
           home_port
@@ -1053,8 +1095,7 @@ async function getJourneyDetails(supabase: SupabaseClient, journeyId: string) {
       boats!inner (
         id,
         name,
-        make,
-        model,
+        make_model,
         type,
         capacity,
         home_port,
@@ -1397,7 +1438,7 @@ async function analyzeLegMatch(
 async function getOwnerBoats(supabase: SupabaseClient, userId: string) {
   const { data, error } = await supabase
     .from('boats')
-    .select('id, name, make, model, type, home_port, capacity')
+    .select('id, name, make_model, type, home_port, capacity')
     .eq('owner_id', userId);
 
   if (error) throw error;
