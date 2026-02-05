@@ -469,7 +469,7 @@ export const ACTION_TOOLS: ToolDefinition[] = [
       required: ['reason', 'suggestedField'],
     },
   },
-  
+  /*
   {
     name: 'suggest_profile_update_skills',
     description: 'Suggest updating the skills field in the user\'s profile. Creates a pending action that the user must approve. AI should identify specific skills that could be added but must NOT create content - only suggest the field and ask user for the new skills. This tool is for iterative refinement of skills. IMPORTANT: Both reason and suggestedField parameters are REQUIRED. Example: {"name": "suggest_profile_update_skills", "arguments": {"reason": "Adding sailing-related skills will help you qualify for more sailing opportunities.", "suggestedField": "skills"}}',
@@ -489,6 +489,7 @@ export const ACTION_TOOLS: ToolDefinition[] = [
       required: ['reason', 'suggestedField'],
     },
   },
+  */
   {
     name: 'suggest_skills_refinement',
     description: 'Suggest iterative refinement for specific skills in the user\'s profile. Creates a pending action that the user must approve. AI should identify specific skills that could be improved and suggest asking the user for better descriptions. This tool enables iterative refinement where AI suggests improvements to existing skills. IMPORTANT: Both reason, suggestedField, and targetSkills parameters are REQUIRED. After approval, the user will provide descriptions for the specified skills, which will then be used to update the profile. Example: {"name": "suggest_skills_refinement", "arguments": {"reason": "Your navigation skill description could be more detailed to help captains understand your specific navigation capabilities.", "suggestedField": "skills", "targetSkills": ["navigation", "piloting"]}}',
