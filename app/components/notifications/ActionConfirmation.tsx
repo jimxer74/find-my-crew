@@ -282,15 +282,15 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleRedirectToProfile}
-                className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors cursor-pointer"
               >
                 View in Profile
               </button>
               <button
                 onClick={handleReject}
-                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
+                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors cursor-pointer"
               >
-                Cancel
+                Mark as completed
               </button>
             </div>
           </div>

@@ -321,6 +321,7 @@ export function useNotifications(): UseNotificationsReturn {
 
   // Action confirmation handlers
   const approveAction = useCallback(async (actionId: string) => {
+    /*
     try {
       const response = await fetch(`/api/ai/assistant/actions/${actionId}/approve`, {
         method: 'POST',
@@ -338,12 +339,12 @@ export function useNotifications(): UseNotificationsReturn {
     } catch (err: any) {
       console.error('[useNotifications] Error approving action:', err);
       setError(err.message);
-    }
+    }*/
   }, [unreadCount]);
 
   const rejectAction = useCallback(async (actionId: string) => {
     try {
-      const response = await fetch(`/api/ai/assistant/actions/${actionId}/reject`, {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/approve`, {
         method: 'POST',
       });
 

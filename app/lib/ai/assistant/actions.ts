@@ -537,15 +537,6 @@ async function executeUpdateProfileUserDescription(
   const { supabase, userId } = context;
   const { newValue } = action.action_payload as { newValue: string };
 
-  // For suggestion tools, newValue may not be provided (user should provide it)
-  // This action should prompt the user for the new value instead of auto-updating
-  if (!newValue || typeof newValue !== 'string') {
-    return {
-      success: false,
-      message: 'This action requires you to provide a new user description. Please use the profile edit form to update your description.',
-      error: 'REQUIRES_USER_INPUT',
-    };
-  }
 
   const { error } = await supabase
     .from('profiles')

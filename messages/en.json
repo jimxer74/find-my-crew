@@ -463,7 +463,7 @@
     }
   },
   "assistant": {
-    "title": "AI Assistant",
+    "title": "SailSmart Assistant",
     "placeholder": "Ask me anything...",
     "newConversation": "New conversation",
     "close": "Close",

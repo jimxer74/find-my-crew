@@ -54,7 +54,7 @@ function ProfilePageContent() {
       .ai-focused-field {
         outline: 2px solid #3b82f6;
         outline-offset: 2px;
-        background-color: #dbeafe;
+        background-color:#3b82f620;
         border-color: #3b82f6;
         box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
         animation: pulse 2s infinite;
@@ -234,6 +234,8 @@ function ProfilePageContent() {
         setAiTargetField(field);
         setAiActionId(aiActionIdParam);
 
+        let showSimpleFocus = true;
+
         // Process targetSkills parameter
         if (targetSkillsParam) {
           try {
@@ -248,8 +250,22 @@ function ProfilePageContent() {
               );
               console.log('[AI redirect] 📊 Valid skills:', validSkills);
 
-              if (validSkills.length > 0) {
-                setAiTargetSkills(validSkills);
+              if (validSkills.length > 0) {                
+                setAiTargetSkills(validSkills);                
+                showSimpleFocus = false;
+                // Auto-expand the target section
+                setSectionStates(prev => ({
+                  ...prev,
+                  [section]: true
+                }));
+
+                validSkills.forEach(skill => {
+                  setTimeout(() => {
+                    console.log('[AI redirect] 📊 Skill field focus:', skill);
+                      focusTargetField(skill);
+                    }, 600);
+                  });
+
               }
             }
           } catch (error) {
@@ -257,20 +273,25 @@ function ProfilePageContent() {
           }
         }
 
+        // Show simple focus on the target field
+        if(showSimpleFocus) {
         // Auto-expand the target section
-        setSectionStates(prev => ({
-          ...prev,
-          [section]: true
-        }));
+          setSectionStates(prev => ({
+            ...prev,
+            [section]: true
+          }));
 
-        // Focus the target field
-        console.log('[AI redirect] 📊 Scheduling field focus for:', field);
-        setTimeout(() => {
-          console.log('[AI redirect] 📊 Executing field focus for:', field);
-          focusTargetField(field);
-        }, 300);
+          // Focus the target field
+          console.log('[AI redirect] 📊 Scheduling field focus for:', field);
+
+          setTimeout(() => {
+            console.log('[AI redirect] 📊 Executing field focus for:', field);
+              focusTargetField(field);
+            }, 600);
+          }
 
         // Clean up URL parameters after processing (delayed to ensure highlighting works)
+        /*
         setTimeout(() => {
           const url = new URL(window.location.href);
           url.searchParams.delete('section');
@@ -279,7 +300,8 @@ function ProfilePageContent() {
           url.searchParams.delete('targetSkills');
           console.log('[AI redirect] 📊 Cleaning up URL parameters');
           router.replace(url.toString());
-        }, 500); // Increased delay to 500ms to ensure highlighting has time to work
+        }, 600); // Increased delay to 500ms to ensure highlighting has time to work
+        */
       }
     }
   }, [searchParams, user]);

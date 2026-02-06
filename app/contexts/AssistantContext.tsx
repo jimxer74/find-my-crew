@@ -452,7 +452,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     const targetSkills = action?.action_payload?.targetSkills;
     console.log('[redirectToProfile] 📊 Found action:', action);
     console.log('[redirectToProfile] 📊 Extracted targetSkills:', targetSkills);
-
+/*
     try {
       // Mark action as approved in the database
       const response = await fetch(`/api/ai/assistant/actions/${actionId}/redirect`, {
@@ -480,7 +480,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
     // Close assistant sidebar
     setState(prev => ({ ...prev, isOpen: false, lastActionResult: null }));
-
+*/
     // Navigate to profile with query params
     if (typeof window !== 'undefined') {
       // Build URL with all parameters including targetSkills
@@ -502,6 +502,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, [state.pendingActions]);
 
   const approveAction = useCallback(async (actionId: string, value?: string) => {
+    /*
     const action = state.pendingActions.find(a => a.id === actionId);
     if (!action) {
       console.error('Action not found:', actionId);
@@ -593,7 +594,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       }
       return;
     }
-
+    
     // Check if action requires input collection (for other action types)
     if (action.input_type && ['text', 'text_array', 'select'].includes(action.input_type)) {
       // Show input modal for this action
@@ -650,12 +651,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           actionId,
         },
       }));
-    }
-  }, [state.pendingActions, showInputModal, loadPendingActions]);
 
+      
+    }
+    */
+  }, [state.pendingActions, showInputModal, loadPendingActions]);
+    
   const rejectAction = useCallback(async (actionId: string) => {
     try {
-      const response = await fetch(`/api/ai/assistant/actions/${actionId}/reject`, {
+      const response = await fetch(`/api/ai/assistant/actions/${actionId}/approve`, {
         method: 'POST',
       });
 
