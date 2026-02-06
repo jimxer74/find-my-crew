@@ -220,7 +220,7 @@ Available intents (use the exact value):
 - ${UseCaseIntent.GENERAL_CONVERSATION}: General questions, chit-chat or unclear intent
 - ${UseCaseIntent.CLARIFICATION_REQUEST}: Cannot confidently classify — ask for clarification
 
-Respond ONLY with valid JSON in this exact structure — no extra text, no markdown:
+IMPORTANT: Respond ONLY with valid JSON in this exact structure — NO extra text, NO markdown code blocks, NO explanations, NO formatting. Return ONLY the JSON object:
 
 {
   "primary_intent": "one_of_the_values_above",
@@ -239,12 +239,23 @@ User message:
         useCase: 'general-conversation',
         prompt,
         temperature: 0.1,
-        maxTokens: 500, // increased — important for complete JSON
+        maxTokens: 500,
       });
 
-      const parsed = this.parseIntentResponse(result.text);
-      console.log('[LLM Classification]', parsed);
-      return parsed;
+      // Additional safety check: if the response looks like it contains markdown
+      // or other non-JSON content, try to extract just the JSON
+      const response = result.text;
+
+      // If the response starts with something other than {, try to find JSON within it
+      if (response && !response.trim().startsWith('{')) {
+        // Look for JSON pattern within the response
+        const jsonMatch = response.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          return this.parseIntentResponse(jsonMatch[0]);
+        }
+      }
+
+      return this.parseIntentResponse(response);
     } catch (error) {
       console.error('[AI Assistant] LLM classification failed:', error);
       return {
@@ -258,25 +269,65 @@ User message:
   }
 
   /**
-   * Parse LLM response safely
+   * Parse LLM response safely with enhanced markdown handling
    */
   private parseIntentResponse(response: string): IntentMessage {
     try {
-      // Clean up common LLM output artifacts
-      let cleaned = response.trim();
-      cleaned = cleaned.replace(/^```json\s*/i, '').replace(/\s*```$/i, '');
+      // Input validation and sanitization
+      if (!response || typeof response !== 'string') {
+        throw new Error('Invalid response format');
+      }
 
+      // Limit response length to prevent memory issues
+      const maxResponseLength = 10000;
+      if (response.length > maxResponseLength) {
+        response = response.substring(0, maxResponseLength);
+      }
+
+      // Clean up common LLM output artifacts with enhanced markdown handling
+      let cleaned = response.trim();
+
+      // Handle various markdown code block formats:
+      // ```json, ```JSON, ```javascript, ```python, ``` (no language), ``` js, etc.
+      // Remove opening code block (case-insensitive, with optional language identifier)
+      cleaned = cleaned.replace(/^```(?:json|js|javascript|python|tsx|ts|\s*)?\s*/i, '');
+
+      // Remove closing code block
+      cleaned = cleaned.replace(/\s*```$/i, '');
+
+      // Handle the specific case where response starts with backticks but doesn't match above pattern
+      // This addresses the error case: "```" at the start
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.substring(3).trim();
+      }
+      if (cleaned.endsWith('```')) {
+        cleaned = cleaned.substring(0, cleaned.length - 3).trim();
+      }
+
+      // Remove any remaining leading/trailing whitespace and newlines
+      cleaned = cleaned.trim();
+
+      // Additional cleanup for common LLM artifacts
+      // Remove any remaining "json" text that might be left over
+      cleaned = cleaned.replace(/^\s*json\s*/i, '');
+
+      // Parse the cleaned JSON
       const json = JSON.parse(cleaned);
+
+      // Validate required fields
+      if (!json.primary_intent) {
+        throw new Error('Missing primary_intent field');
+      }
 
       const intent = json.primary_intent as UseCaseIntent;
       if (!Object.values(UseCaseIntent).includes(intent)) {
-        console.error('Invalid intent value:', intent, '\nRaw response:', response);
+        console.warn('Invalid intent value:', intent);
         return {
           intent: UseCaseIntent.CLARIFICATION_REQUEST,
           secondaryIntent: null,
           message: 'Sorry, I didn’t quite understand. Could you clarify what you’re looking for?',
           confidence: 0,
-          reasoning: 'Failed to parse LLM classification response',
+          reasoning: 'Invalid intent value received from LLM',
         };
       }
 
@@ -291,7 +342,16 @@ User message:
         reasoning: String(json.reasoning || 'Classified by LLM'),
       };
     } catch (err) {
-      console.error('Failed to parse intent JSON:', err, '\nRaw response:', response);
+      // Enhanced error logging without exposing full raw response
+      const errorInfo = err instanceof Error ? err.message : String(err);
+      const responsePreview = response ? response.substring(0, 200) + (response.length > 200 ? '...' : '') : 'empty';
+
+      console.error('Failed to parse intent JSON:', {
+        error: errorInfo,
+        responsePreview,
+        responseLength: response ? response.length : 0
+      });
+
       return {
         intent: UseCaseIntent.CLARIFICATION_REQUEST,
         secondaryIntent: null,
