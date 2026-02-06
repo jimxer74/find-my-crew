@@ -861,7 +861,8 @@ with check (
 -- ============================================================================
 -- TABLE: ai_pending_actions
 -- ============================================================================
--- Stores action suggestions from AI that await user approval
+-- Stores action suggestions from AI assistant that are awaiting user action
+-- These are not actions that AI is executing, but rather actions that AI is suggesting to the user to improve for exmple their profile, register for a leg, etc.
 
 create table if not exists public.ai_pending_actions (
   id uuid primary key default gen_random_uuid(),
@@ -870,7 +871,7 @@ create table if not exists public.ai_pending_actions (
   action_type text not null, -- 'register_for_leg', 'update_profile_user_description', 'update_profile_certifications', etc.
   action_payload jsonb not null, -- Parameters for the action (supports both old bulk format and new field-specific format)
   explanation text not null, -- AI's explanation of why this action is suggested
-  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired')),
+  status text not null default 'pending' check (status in ('pending', 'approved')),
   created_at timestamptz not null default now(),
   resolved_at timestamptz,
   -- New fields for better field-specific action support

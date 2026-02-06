@@ -28,7 +28,7 @@ export function Header() {
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const filtersButtonRef = useRef<HTMLButtonElement>(null);
-  const { pendingActionsCount, isOpen: isAssistantOpen, closeAssistant } = useAssistant();
+  const { isOpen: isAssistantOpen, closeAssistant } = useAssistant();
 
   // Close all dialogs when route changes (excluding assistant dialog)
   useEffect(() => {
@@ -150,7 +150,6 @@ export function Header() {
 
   const { userRoles } = useUserRoles();
 
-  console.log('[Header] 📊 pendingActionsCount:', pendingActionsCount);
   // No longer tracking suggestions count
 
   return (
@@ -218,7 +217,7 @@ export function Header() {
               {/* AI Assistant - Only show for authenticated users */}
               {user && <AssistantButton userRoles={userRoles}/>}
               {/* Notification Bell - Only show for authenticated users */}
-              {user && <NotificationBell pendingActionsCount={pendingActionsCount} />}
+              {user && <NotificationBell />}
               <NavigationMenu
                 onOpenLogin={() => {
                   // Close assistant dialog before opening login

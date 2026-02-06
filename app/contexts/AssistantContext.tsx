@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode, RefObject } from 'react';
 import { AIConversation, AIMessage, AIPendingAction } from '@/app/lib/ai/assistant/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import type { AuthChangeEvent } from '@supabase/supabase-js';
 
 // Type declaration for custom event
 declare global {
@@ -452,35 +453,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     const targetSkills = action?.action_payload?.targetSkills;
     console.log('[redirectToProfile] 📊 Found action:', action);
     console.log('[redirectToProfile] 📊 Extracted targetSkills:', targetSkills);
-/*
-    try {
-      // Mark action as approved in the database
-      const response = await fetch(`/api/ai/assistant/actions/${actionId}/redirect`, {
-        method: 'POST',
-      });
-
-      if (response.ok) {
-        console.log('Successfully marked action as approved:', actionId);
-
-        // Update local state immediately
-        setState(prev => ({
-          ...prev,
-          pendingActions: prev.pendingActions.map(a =>
-            a.id === actionId ? { ...a, status: 'approved' as const } : a
-          )
-        }));
-      } else {
-        console.warn('Failed to mark action as approved:', response.status, response.statusText);
-        // Still proceed with redirect even if API call fails
-      }
-    } catch (error) {
-      console.error('Error marking action as approved:', error);
-      // Still proceed with redirect even if API call fails
-    }
-
-    // Close assistant sidebar
-    setState(prev => ({ ...prev, isOpen: false, lastActionResult: null }));
-*/
+    
     // Navigate to profile with query params
     if (typeof window !== 'undefined') {
       // Build URL with all parameters including targetSkills
@@ -724,7 +697,45 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Initial load
     loadActions();
+
+    // Listen for auth state changes
+    const supabase = getSupabaseBrowserClient();
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AssistantContext] 📊 Auth state change:', event, 'session:', !!session);
+      if (event === 'SIGNED_IN' && session) {
+        console.log('[AssistantContext] 📊 User signed in, loading pending actions');
+        loadPendingActions();
+      } else if (event === 'SIGNED_OUT') {
+        console.log('[AssistantContext] 📊 User signed out, clearing pending actions');
+        setState(prev => ({ ...prev, pendingActions: [], awaitingInputActions: [] }));
+      }
+    });
+
+    // Listen for real-time changes to pending actions
+    const pendingActionsChannel = supabase
+      .channel('ai_pending_actions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'ai_pending_actions',
+        },
+        (payload) => {
+          console.log('[AssistantContext] 📊 Real-time pending actions change detected:', payload);
+          // Reload pending actions to get the latest state
+          loadPendingActions();
+        }
+      )
+      .subscribe();
+
+    // Cleanup listeners
+    return () => {
+      authListener?.unsubscribe();
+      pendingActionsChannel?.unsubscribe();
+    };
   }, [loadPendingActions]);
 
   // Periodic cleanup of expired actions
@@ -773,7 +784,35 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Initial run and auth state listener
+    let cleanupInterval: NodeJS.Timeout | null = null;
+
+    const supabase = getSupabaseBrowserClient();
+    const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[AssistantContext] 📊 Cleanup auth listener:', event, 'session:', !!session);
+      if (event === 'SIGNED_IN' && session) {
+        console.log('[AssistantContext] 📊 User signed in, starting cleanup interval');
+        cleanupExpiredActions();
+        cleanupInterval = setInterval(cleanupExpiredActions, 60 * 60 * 1000);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('[AssistantContext] 📊 User signed out, clearing cleanup interval');
+        if (cleanupInterval) {
+          clearInterval(cleanupInterval);
+          cleanupInterval = null;
+        }
+      }
+    });
+
+    // Initial run
     runCleanup();
+
+    // Cleanup
+    return () => {
+      if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+      }
+      authListener?.unsubscribe();
+    };
   }, [loadPendingActions]);
 
   const value: AssistantContextType = {

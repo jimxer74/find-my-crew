@@ -19,6 +19,10 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   console.log('[NotificationBell] 📊 pendingActions from context:', pendingActions);
   console.log('[NotificationBell] 📊 pendingActions length:', pendingActions?.length);
 
+  // Calculate pending actions count from context instead of props
+  const pendingActionsCountFromContext = pendingActions?.length || 0;
+  console.log('[NotificationBell] 📊 Calculated pendingActionsCount from context:', pendingActionsCountFromContext);
+
   // Close notifications when route changes
   useEffect(() => {
     setIsOpen(false);
@@ -47,8 +51,8 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   } = useNotificationContext();
 
   // Calculate total badge count including unread notifications and pending actions
-  const totalBadgeCount = unreadCount + pendingActionsCount;
-  console.log('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCount:', pendingActionsCount, '= total:', totalBadgeCount);
+  const totalBadgeCount = unreadCount + pendingActionsCountFromContext;
+  console.log('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCountFromContext:', pendingActionsCountFromContext, '= total:', totalBadgeCount);
 
   const handleToggle = useCallback(() => {
     // Close assistant dialog before toggling notifications
