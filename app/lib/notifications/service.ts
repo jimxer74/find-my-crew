@@ -633,6 +633,36 @@ export async function notifyFeedbackMilestone(
   });
 }
 
+/**
+ * Creates a pending registration notification for the crew member
+ * Sent when a crew member registers and their registration is pending approval
+ * (Only sent after approval process determines status is pending)
+ */
+export async function notifyPendingRegistration(
+  supabase: SupabaseClient,
+  crewUserId: string,
+  registrationId: string,
+  journeyId: string,
+  journeyName: string,
+  legName: string
+): Promise<{ notification: Notification | null; error: string | null }> {
+  return createNotification(supabase, {
+    user_id: crewUserId,
+    type: NotificationType.PENDING_REGISTRATION,
+    title: 'Registration Pending Review',
+    message: `Your registration for "${legName}" in "${journeyName}" is pending approval. You will be notified once the owner reviews your application.`,
+    link: `/crew/registrations?registration=${registrationId}`,
+    metadata: {
+      registration_id: registrationId,
+      journey_id: journeyId,
+      journey_name: journeyName,
+      leg_name: legName,
+      sender_id: journeyId, // Journey acts as sender
+      sender_name: journeyName,
+    },
+  });
+}
+
 // ============================================================================
 // Batch Operations
 // ============================================================================

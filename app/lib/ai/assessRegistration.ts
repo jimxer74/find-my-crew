@@ -11,6 +11,7 @@ import {
   createNotification,
   NotificationType,
   sendReviewNeededEmail,
+  notifyPendingRegistration,
 } from '@/app/lib/notifications';
 
 /**
@@ -389,6 +390,24 @@ export async function assessRegistrationWithAI(
   // Send notifications based on AI assessment result
   // Only send notifications if we have a valid ownerId
   if (ownerId) {
+    // If registration stays pending (not auto-approved), notify crew member
+    if (!updateData.auto_approved) {
+      const pendingNotifyResult = await notifyPendingRegistration(
+        supabase,
+        crewUserId,
+        registrationId,
+        journeyId,
+        journeyName,
+        legs?.name || 'Unknown Leg'
+      );
+      if (pendingNotifyResult.error) {
+        console.error('[AI Assessment] Failed to notify crew of pending registration:', pendingNotifyResult.error);
+      } else {
+        console.log('[AI Assessment] Pending registration notification sent to crew:', crewUserId);
+      }
+    }
+
+    // Continue with existing notifications...
     if (updateData.auto_approved) {
       // Notify crew member of approval
       const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, ownerId);

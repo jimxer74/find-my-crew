@@ -321,8 +321,15 @@ async function callOpenRouter(
         headers: {
           'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://find-my-crew.vercel.app',
-          'X-Title': 'Find My Crew',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://www.sailsm.art',
+          'X-Title': 'SailSmart',
+          'X-Description': 'SailSmart is a platform for sailors to find their crew and boats.',
+          'X-Keywords': 'sailsmart, sailor, crew, boat, sailing, yachting',
+          'X-Author': 'SailSmart',
+          'X-Publisher': 'SailSmart',
+          'X-Copyright': 'SailSmart 2026',
+          'X-Contact': 'info@sailsm.art',
+          'X-Url': 'https://www.sailsm.art',
         },
         body: JSON.stringify({
           model,

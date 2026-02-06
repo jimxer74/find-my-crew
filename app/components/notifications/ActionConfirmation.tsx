@@ -122,8 +122,8 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
     return (
       <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
@@ -199,62 +199,24 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
     setShowModal(false);
   };
 
-  // Special handling for actions that require input
-  if (requiresInput(notification.metadata)) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">{label}</span>
-              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
-                Pending
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {notification.metadata.action_explanation || notification.message}
-            </p>
-
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={handleApprove}
-                className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-              >
-                Continue
-              </button>
-              <button
-                onClick={handleReject}
-                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Modal for input actions */}
-        {showModal && (
-          <ActionModal
-            notification={notification}
-            onApprove={handleModalSubmit}
-            onReject={handleReject}
-            onRedirectToProfile={onRedirectToProfile}
-          />
-        )}
-      </div>
-    );
-  }
-
   // Special handling for profile update actions - redirect to profile page
   if (PROFILE_UPDATE_ACTIONS.includes(actionType)) {
     return (
       <div className="bg-card border-t border-border p-3 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {icon}
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+            {/*{icon}*/}
+            <svg
+        className="w-5 h-5 text-foreground"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+          <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+      </svg>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -284,66 +246,17 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
                 onClick={handleRedirectToProfile}
                 className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors cursor-pointer"
               >
-                View in Profile
+                Update in Profile
               </button>
               <button
                 onClick={handleReject}
                 className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors cursor-pointer"
               >
-                Mark as completed
+                Mark as Completed
               </button>
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  // Special handling for actions that require input
-  if (requiresInput(notification.metadata) && notification.metadata.input_type) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            {icon}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">{label}</span>
-              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
-                Pending
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {notification.metadata.action_explanation || notification.message}
-            </p>
-
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={handleApprove}
-                className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-              >
-                Continue
-              </button>
-              <button
-                onClick={handleReject}
-                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Modal for input actions */}
-        {showModal && (
-          <ActionModal
-            notification={notification}
-            onApprove={handleModalSubmit}
-            onReject={handleReject}
-            onRedirectToProfile={onRedirectToProfile}
-          />
-        )}
       </div>
     );
   }
@@ -352,7 +265,7 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
   return (
     <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
           {icon}
         </div>
         <div className="flex-1 min-w-0">

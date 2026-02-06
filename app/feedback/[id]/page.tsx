@@ -180,6 +180,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
               {/* Meta info */}
               <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground border-t border-border pt-4">
                 {/* Author */}
+                {/*
                 <div className="flex items-center gap-2">
                   {!feedback.is_anonymous && feedback.author?.profile_image_url ? (
                     <img
@@ -198,6 +199,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
                 </div>
 
                 <span>•</span>
+                */}
 
                 {/* Date */}
                 <span>

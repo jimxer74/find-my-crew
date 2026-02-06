@@ -79,20 +79,22 @@ export function FeedbackCard({ feedback, isOwn = false, onVote }: FeedbackCardPr
           {/* Footer */}
           <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
             {/* Author avatar */}
+            {/*
             {!feedback.is_anonymous && feedback.author?.profile_image_url ? (
               <img
                 src={feedback.author.profile_image_url}
                 alt={authorDisplay}
                 className="w-5 h-5 rounded-full object-cover"
               />
-            ) : (
+            ) : ( */}
+            {/*}
               <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center">
                 <svg className="w-3 h-3 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
-            )}
-            <span>{authorDisplay}</span>
+            {/* )} */}
+            {/* <span>{authorDisplay}</span> */}
             <span>•</span>
             <span>{formatRelativeTime(feedback.created_at)}</span>
           </div>

@@ -39,11 +39,15 @@ export default function FeedbackPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
             <div>
-              <p className="text-sm text-yellow-900 font-semibold">Beta Version</p>
+              <p className="text-sm text-yellow-900 font-semibold">Early Beta Version</p>
               <p className="text-sm text-yellow-800 mt-1">
-                This application is currently in beta testing and is not intended for real-world usage.
-                Features may be incomplete, unstable, or subject to change. Your feedback helps us improve!
-              </p>
+                This application is currently in early beta testing and is not intended for real-world usage.
+                Features may be incomplete, unstable, or subject to change. All data including users and authentication data will be deleted after the beta testing period. Please also note the during beta testing application may use unstable and partly experimental Large Language Models and other AI technologies that may produce inaccurate or incorrect information.
+                The target of this beta release is to collect feedback from users to guide the development of the application. 
+                <br />
+                <br />
+                Any feedback will be greatly appreciated!</p>
+              
             </div>
           </div>
         </div>

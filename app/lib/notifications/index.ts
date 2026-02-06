@@ -34,6 +34,7 @@ export {
   notifyAllApprovedCrew,
   notifyFeedbackStatusChanged,
   notifyFeedbackMilestone,
+  notifyPendingRegistration,
 } from './service';
 
 // Email service

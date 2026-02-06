@@ -4,6 +4,7 @@ import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import {
   notifyRegistrationApproved,
   notifyRegistrationDenied,
+  notifyPendingRegistration,
 } from '@/app/lib/notifications';
 
 /**
@@ -53,7 +54,7 @@ export async function PATCH(
     const { status, notes } = body;
 
     // Validate status
-    const validStatuses = ['Approved', 'Not approved', 'Cancelled'];
+    const validStatuses = ['Approved', 'Not approved', 'Cancelled', 'Pending approval'];
     if (!status || !validStatuses.includes(status)) {
       return NextResponse.json(
         { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
@@ -71,6 +72,7 @@ export async function PATCH(
         legs!inner (
           id,
           journey_id,
+          name,
           journeys!inner (
             id,
             name,
@@ -92,7 +94,7 @@ export async function PATCH(
     }
 
     // Verify owner owns this journey
-    const legs = registration.legs as unknown as { id: string; journey_id: string; journeys: { id: string; name: string; boat_id: string; boats: { owner_id: string } } };
+    const legs = registration.legs as unknown as { id: string; journey_id: string; name: string; journeys: { id: string; name: string; boat_id: string; boats: { owner_id: string } } };
     if (legs.journeys.boats.owner_id !== user.id) {
       return NextResponse.json(
         { error: 'You do not have permission to update this registration' },
@@ -121,46 +123,64 @@ export async function PATCH(
     }
 
     // Send notification to crew member (non-blocking)
-    if (status === 'Approved' || status === 'Not approved') {
-      const journeyId = legs.journeys.id;
-      const journeyName = legs.journeys.name;
-      const crewUserId = registration.user_id;
+    const journeyId = legs.journeys.id;
+    const journeyName = legs.journeys.name;
+    const crewUserId = registration.user_id;
 
-      // Get owner name
-      const { data: ownerProfile } = await supabase
-        .from('profiles')
-        .select('full_name, username')
-        .eq('id', user.id)
-        .single();
+    // Get owner name
+    const { data: ownerProfile } = await supabase
+      .from('profiles')
+      .select('full_name, username')
+      .eq('id', user.id)
+      .single();
 
-      const ownerName = ownerProfile?.full_name || ownerProfile?.username || 'The boat owner';
+    const ownerName = ownerProfile?.full_name || ownerProfile?.username || 'The boat owner';
 
-      // Create notification (fire and forget)
-      if (status === 'Approved') {
-        notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, user.id)
-          .then((result) => {
-            if (result.error) {
-              console.error('[Registration API] Failed to send approval notification:', result.error);
-            } else {
-              console.log('[Registration API] Approval notification sent to crew:', crewUserId);
-            }
-          })
-          .catch((err) => {
-            console.error('[Registration API] Error sending approval notification:', err);
-          });
-      } else if (status === 'Not approved') {
-        notifyRegistrationDenied(supabase, crewUserId, journeyId, journeyName, ownerName, notes, user.id)
-          .then((result) => {
-            if (result.error) {
-              console.error('[Registration API] Failed to send denial notification:', result.error);
-            } else {
-              console.log('[Registration API] Denial notification sent to crew:', crewUserId);
-            }
-          })
-          .catch((err) => {
-            console.error('[Registration API] Error sending denial notification:', err);
-          });
-      }
+    // Create notification (fire and forget)
+    if (status === 'Approved') {
+      notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, user.id)
+        .then((result) => {
+          if (result.error) {
+            console.error('[Registration API] Failed to send approval notification:', result.error);
+          } else {
+            console.log('[Registration API] Approval notification sent to crew:', crewUserId);
+          }
+        })
+        .catch((err) => {
+          console.error('[Registration API] Error sending approval notification:', err);
+        });
+    } else if (status === 'Not approved') {
+      notifyRegistrationDenied(supabase, crewUserId, journeyId, journeyName, ownerName, notes, user.id)
+        .then((result) => {
+          if (result.error) {
+            console.error('[Registration API] Failed to send denial notification:', result.error);
+          } else {
+            console.log('[Registration API] Denial notification sent to crew:', crewUserId);
+          }
+        })
+        .catch((err) => {
+          console.error('[Registration API] Error sending denial notification:', err);
+        });
+    } else if (status === 'Pending approval') {
+      // Notify crew member that their registration is pending review
+      notifyPendingRegistration(
+        supabase,
+        crewUserId,
+        registrationId,
+        journeyId,
+        journeyName,
+        legs?.name || 'Unknown Leg'
+      )
+        .then((result) => {
+          if (result.error) {
+            console.error('[Registration API] Failed to send pending notification:', result.error);
+          } else {
+            console.log('[Registration API] Pending registration notification sent to crew:', crewUserId);
+          }
+        })
+        .catch((err) => {
+          console.error('[Registration API] Error sending pending notification:', err);
+        });
     }
 
     return NextResponse.json({

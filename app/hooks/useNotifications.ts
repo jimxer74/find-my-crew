@@ -364,26 +364,7 @@ export function useNotifications(): UseNotificationsReturn {
   }, [unreadCount]);
 
   const submitActionInput = useCallback(async (actionId: string, value: string | string[]) => {
-    try {
-      const response = await fetch(`/api/ai/assistant/actions/${actionId}/submit-input`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newValue: value }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to submit action input');
-      }
-
-      // Close the modal and refresh notifications
-      setActiveInputModal(null);
-      await refresh();
-    } catch (err: any) {
-      console.error('[useNotifications] Error submitting action input:', err);
-      setError(err.message);
-    }
+    // Do nothing, we don't need to submit action input anymore
   }, [refresh]);
 
   return {

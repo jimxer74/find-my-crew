@@ -22,6 +22,7 @@ export enum NotificationType {
   AI_ACTION_APPROVED = 'ai_action_approved',
   FEEDBACK_STATUS_CHANGED = 'feedback_status_changed',
   FEEDBACK_MILESTONE = 'feedback_milestone',
+  PENDING_REGISTRATION = 'pending_registration',
 }
 
 // ============================================================================
@@ -197,6 +198,16 @@ export interface LegUpdatedData {
 export interface ProfileReminderData {
   missing_fields: string[];
   completion_percentage: number;
+}
+
+/**
+ * Template data for pending registration notification
+ */
+export interface PendingRegistrationData {
+  registration_id: string;
+  journey_id: string;
+  journey_name: string;
+  leg_name: string;
 }
 
 // ============================================================================

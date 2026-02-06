@@ -15,7 +15,7 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-// POST /api/ai/assistant/actions/[id]/approve - Approve and execute action
+// POST /api/ai/assistant/actions/[id]/approve - Approve and indicate the user has implemented the action
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
