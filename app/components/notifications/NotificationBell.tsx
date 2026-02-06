@@ -13,7 +13,7 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const { pendingActions } = useAssistant();
+  const { pendingActions, isOpen: isAssistantOpen, closeAssistant } = useAssistant();
 
   console.log('[NotificationBell] 📊 Props received - pendingActionsCount:', pendingActionsCount);
   console.log('[NotificationBell] 📊 pendingActions from context:', pendingActions);
@@ -24,7 +24,7 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
     setIsOpen(false);
   }, [pathname]);
 
-  // Listen for close all dialogs event
+  // Listen for close all dialogs event (for compatibility with other components)
   useEffect(() => {
     const handleCloseAll = () => {
       setIsOpen(false);
@@ -51,11 +51,16 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   console.log('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCount:', pendingActionsCount, '= total:', totalBadgeCount);
 
   const handleToggle = useCallback(() => {
+    // Close assistant dialog before toggling notifications
+    if (isAssistantOpen && closeAssistant) {
+      console.log('[NotificationBell] 📊 Closing assistant dialog for notifications toggle');
+      closeAssistant();
+    }
     // Toggle panel on both mobile and desktop
     setIsOpen((prev) => !prev);
     // Don't refresh automatically - use cached notifications from state
     // Notifications are already loaded and kept in sync via realtime updates
-  }, []);
+  }, [isAssistantOpen, closeAssistant]);
 
   const handleClose = useCallback(() => {
     setIsOpen(false);
@@ -111,11 +116,13 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
         buttonRef={buttonRef}
       />
       {/* Debug: Show pending actions count in UI */}
+      {/*
       {pendingActions && pendingActions.length > 0 && (
         <div style={{ position: 'fixed', top: '50px', right: '10px', background: 'red', color: 'white', padding: '5px', zIndex: 9999 }}>
           Debug: {pendingActions.length} pending actions
         </div>
       )}
+      */}
     </div>
   );
 }

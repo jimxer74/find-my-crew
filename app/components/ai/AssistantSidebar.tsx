@@ -29,42 +29,9 @@ export function AssistantSidebar() {
     }
   }, [isOpen, loadConversations]);
 
-  // Close on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      // Don't close if clicking on the button or the panel
-      if (buttonRef?.current?.contains(target) || panelRef.current?.contains(target)) {
-        return;
-      }
-      closeAssistant();
-    };
-
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, closeAssistant, buttonRef]);
-
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        closeAssistant();
-      }
-    };
-
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, closeAssistant]);
+  // Assistant dialog no longer auto-closes on click outside or escape key
+  // It only closes when the explicit close button is clicked
+  // However, it should close when other dialogs are opened (closeAllDialogs event)
 
   // Don't render when closed
   if (!isOpen) {

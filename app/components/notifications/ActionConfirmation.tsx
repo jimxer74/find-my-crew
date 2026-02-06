@@ -259,15 +259,18 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">{label}</span>
+              {/*}
               <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
                 Pending
               </span>
+              */}
             </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+            <p className="text-sm text-muted-foreground mt-1">
               {notification.metadata.action_explanation || notification.message}
             </p>
 
             {/* AI action context */}
+            {/*
             {PROFILE_UPDATE_ACTIONS.includes(actionType) && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <p className="text-xs text-blue-700">
@@ -275,19 +278,19 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
                 </p>
               </div>
             )}
-
+            */}
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleRedirectToProfile}
                 className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
               >
-                Update in Profile
+                View in Profile
               </button>
               <button
                 onClick={handleReject}
                 className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
               >
-                Reject
+                Cancel
               </button>
             </div>
           </div>

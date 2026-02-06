@@ -28,25 +28,27 @@ export function Header() {
   const [roleLoading, setRoleLoading] = useState(false);
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const filtersButtonRef = useRef<HTMLButtonElement>(null);
-  const { pendingActionsCount } = useAssistant();
+  const { pendingActionsCount, isOpen: isAssistantOpen, closeAssistant } = useAssistant();
 
-  // Close all dialogs when route changes
+  // Close all dialogs when route changes (excluding assistant dialog)
   useEffect(() => {
     setIsLoginModalOpen(false);
     setIsSignupModalOpen(false);
     setIsFiltersDialogOpen(false);
-    // Dispatch event to close all dialogs
+    // Dispatch event to close other dialogs (filters, notifications, navigation)
     if (typeof window !== 'undefined') {
+      console.log('[Header] 📊 Dispatching closeAllDialogs event for route change');
       window.dispatchEvent(new CustomEvent('closeAllDialogs'));
     }
   }, [pathname]);
 
-  // Listen for close all dialogs event
+  // Listen for close all dialogs event (Assistant sidebar handles its own closing)
   useEffect(() => {
     const handleCloseAll = () => {
       setIsLoginModalOpen(false);
       setIsSignupModalOpen(false);
       setIsFiltersDialogOpen(false);
+      // Note: Assistant dialog listens to this event separately to close when other dialogs open
     };
     window.addEventListener('closeAllDialogs', handleCloseAll);
     return () => {
@@ -76,6 +78,7 @@ export function Header() {
           setIsLoginModalOpen(false);
           setIsSignupModalOpen(false);
           setIsFiltersDialogOpen(false);
+          console.log('[Header] 📊 Dispatching closeAllDialogs event for link click');
           window.dispatchEvent(new CustomEvent('closeAllDialogs'));
         }
       }
@@ -169,6 +172,11 @@ export function Header() {
                 <button
                   ref={filtersButtonRef}
                   onClick={() => {
+                    // Close assistant dialog before toggling filters
+                    if (isAssistantOpen && closeAssistant) {
+                      console.log('[Header] 📊 Closing assistant dialog for filters toggle');
+                      closeAssistant();
+                    }
                     // Toggle panel on both mobile and desktop
                     setIsFiltersDialogOpen(!isFiltersDialogOpen);
                   }}
@@ -213,6 +221,11 @@ export function Header() {
               {user && <NotificationBell pendingActionsCount={pendingActionsCount} />}
               <NavigationMenu
                 onOpenLogin={() => {
+                  // Close assistant dialog before opening login
+                  if (isAssistantOpen && closeAssistant) {
+                    console.log('[Header] 📊 Closing assistant dialog for login');
+                    closeAssistant();
+                  }
                   // On mobile, navigate to login page; on desktop, open modal
                   if (typeof window !== 'undefined' && window.innerWidth < 768) {
                     router.push('/auth/login');
@@ -221,6 +234,11 @@ export function Header() {
                   }
                 }}
                 onOpenSignup={() => {
+                  // Close assistant dialog before opening signup
+                  if (isAssistantOpen && closeAssistant) {
+                    console.log('[Header] 📊 Closing assistant dialog for signup');
+                    closeAssistant();
+                  }
                   // On mobile, navigate to signup page; on desktop, open modal
                   if (typeof window !== 'undefined' && window.innerWidth < 768) {
                     router.push('/auth/signup');
