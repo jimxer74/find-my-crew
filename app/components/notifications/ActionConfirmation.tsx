@@ -251,7 +251,7 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
   // Special handling for profile update actions - redirect to profile page
   if (PROFILE_UPDATE_ACTIONS.includes(actionType)) {
     return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
+      <div className="bg-card border-t border-border p-3 shadow-sm">
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             {icon}
