@@ -10,4 +10,8 @@ labels:
 dependencies: []
 ---
 
+## Description
 
+<!-- SECTION:DESCRIPTION:BEGIN -->
+DO extensive code analysis and identify areas whre UI needs to be harmonized, considering all elements and styles
+<!-- SECTION:DESCRIPTION:END -->
