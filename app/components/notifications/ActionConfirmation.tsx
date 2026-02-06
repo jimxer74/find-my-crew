@@ -114,49 +114,6 @@ const ACTION_ICONS: Record<string, ReactElement> = {
 export function ActionConfirmation({ notification, onApprove, onReject, onRedirectToProfile, useModal = true }: ActionConfirmationProps) {
   const [showModal, setShowModal] = useState(false);
 
-  // Check if this is an AI pending action
-  const isAIPending = isAIPendingAction(notification) && hasAIPendingActionMetadata(notification.metadata);
-
-  // For non-AI pending actions, render basic action confirmation
-  if (!isAIPending) {
-    return (
-      <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-foreground">{notification.title}</span>
-              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
-                Pending
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-              {notification.message}
-            </p>
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => onApprove(notification.id)}
-                className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => onReject(notification.id)}
-                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
-              >
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const actionType = notification.metadata.action_type!;
   const actionId = notification.metadata.action_id!;
   const label = ACTION_LABELS[actionType] || actionType;
@@ -166,8 +123,6 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
     </svg>
   );
 
-  const [inputValue, setInputValue] = React.useState<string>('');
-  const [multiInputValue, setMultiInputValue] = React.useState<string[]>([]);
 
   const handleApprove = () => {
     console.log('Approve button clicked for action:', actionId);
@@ -221,26 +176,10 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-foreground">{label}</span>
-              {/*}
-              <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
-                Pending
-              </span>
-              */}
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               {notification.metadata.action_explanation || notification.message}
             </p>
-
-            {/* AI action context */}
-            {/*
-            {PROFILE_UPDATE_ACTIONS.includes(actionType) && (
-              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-xs text-blue-700">
-                  {ACTION_TO_PROFILE_MAPPING[actionType]?.highlightText || 'Update this field in your profile'}
-                </p>
-              </div>
-            )}
-            */}
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleRedirectToProfile}
@@ -260,50 +199,4 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
       </div>
     );
   }
-
-  // Default action confirmation UI
-  return (
-    <div className="bg-card border border-border rounded-lg p-3 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-          {icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">{label}</span>
-            <span className="text-xs px-1.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded">
-              Pending
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-            {notification.metadata.action_explanation || notification.message}
-          </p>
-          <div className="flex gap-2 mt-2">
-            <button
-              onClick={handleApprove}
-              className="px-3 py-1.5 text-xs font-medium bg-green-600 hover:bg-green-700 text-white rounded transition-colors"
-            >
-              Approve
-            </button>
-            <button
-              onClick={handleReject}
-              className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors"
-            >
-              Reject
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal for input actions */}
-      {showModal && (
-        <ActionModal
-          notification={notification}
-          onApprove={handleModalSubmit}
-          onReject={handleReject}
-          onRedirectToProfile={onRedirectToProfile}
-        />
-      )}
-    </div>
-  );
 }

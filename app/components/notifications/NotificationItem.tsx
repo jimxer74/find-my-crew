@@ -197,7 +197,7 @@ export function NotificationItem({
               {notification.title}
             </p>
             {notification.message && (
-              <p className="text-sm text-muted-foreground line-clamp-2 mt-0.5">
+              <p className="text-sm text-muted-foreground mt-0.5">
                 {notification.message}
               </p>
             )}
@@ -206,23 +206,21 @@ export function NotificationItem({
             </p>
           </>
         )}
+      {!isPendingAction && (
+      <div className="flex gap-2 mt-3">
+           <button
+                   className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors cursor-pointer"
+                   onClick={(e) => {
+                   e.stopPropagation();
+                   onDelete(notification.id)}}>
+              Mark as Read
+           </button>
+        </div>
+       )}  
       </div>
 
-      {/* Delete button (shows on hover) */}
-      {!isPendingAction && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(notification.id);
-          }}
-          className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-background focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring transition-opacity"
-          aria-label="Delete notification"
-        >
-          <svg className="w-4 h-4 text-muted-foreground hover:text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
+      
+
     </div>
   );
 }

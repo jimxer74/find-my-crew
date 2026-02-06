@@ -47,7 +47,8 @@
       "Bash(npm ls:*)",
       "Bash(taskkill:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(grep:*)"
     ]
   }
 }
