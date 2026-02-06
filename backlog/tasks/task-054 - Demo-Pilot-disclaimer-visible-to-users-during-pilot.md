@@ -1,9 +1,10 @@
 ---
 id: TASK-054
 title: Demo / Pilot disclaimer visible to users during pilot
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-29 06:28'
+updated_date: '2026-02-06 11:49'
 labels: []
 dependencies: []
 ---
