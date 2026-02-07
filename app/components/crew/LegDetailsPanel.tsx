@@ -881,20 +881,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           </button>
         )}
 
-        {/* Minimize/Maximize button - Desktop only - Inside Pane */}
+        {/* Minimize button - Desktop only - Right edge of pane */}
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex w-6 h-8
-    absolute top-1/2 -right-4 -translate-y-1/2   ← key changes for perfect vertical centering
-    bg-card 
-    border border-border 
-    rounded-none md:rounded-r-md
-    -z-10 
-    items-center justify-center 
-    shadow-md 
-    hover:bg-accent 
-    transition-all"
+            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-5 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer z-10"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
@@ -918,7 +909,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && isMinimized && (
           <button
             onClick={() => setIsMinimized(false)}
-            className="hidden md:flex w-6 h-8 absolute top-1/2 -translate-y-1/2 left-0 z-10 bg-card border border-border rounded-none md:rounded-r-md p-0.5 items-center justify-center shadow-sm hover:bg-accent transition-all"
+            className="hidden md:flex w-8 h-12 absolute top-1/2 -translate-y-1/2 left-0 z-10 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer"
             title="Maximize panel"
             aria-label="Maximize panel"
           >
@@ -933,6 +924,30 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 d="M13 5l7 7-7 7"
+              />
+            </svg>
+          </button>
+        )}
+
+        {/* Close button - Desktop only - Top right inside panel */}
+        {isOpen && !isMinimized && (
+          <button
+            onClick={onClose}
+            className="hidden md:flex absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all cursor-pointer"
+            title="Close panel"
+            aria-label="Close panel"
+          >
+            <svg
+              className="w-6 h-6 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
               />
             </svg>
           </button>

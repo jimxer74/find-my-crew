@@ -21,6 +21,7 @@ type NavigationMenuContentProps = {
   onClose?: () => void;
   onOpenLogin?: () => void;
   onOpenSignup?: () => void;
+  profileFullName?: string | null;
 };
 // Helper function to get initials from full name
 function getInitials(name: string): string {
@@ -38,8 +39,52 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [profileFullName, setProfileFullName] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Fetch current profile full_name to ensure avatar shows the most recent name
+  useEffect(() => {
+    const fetchProfileFullName = async () => {
+      if (!user) {
+        setProfileFullName(null);
+        return;
+      }
+
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.warn('[NavigationMenu] Failed to fetch profile full_name:', error.message);
+          // Fallback to auth metadata if profile fetch fails
+          setProfileFullName(user.user_metadata?.full_name || user.email);
+        } else {
+          setProfileFullName(data?.full_name || user.email);
+        }
+      } catch (err) {
+        console.error('[NavigationMenu] Error fetching profile:', err);
+        // Fallback to auth metadata
+        setProfileFullName(user.user_metadata?.full_name || user.email);
+      }
+    };
+
+    fetchProfileFullName();
+
+    // Listen for profile updates to refresh the name
+    const handleProfileUpdate = () => {
+      fetchProfileFullName();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [user]);
 
   // Close menu when route changes
   useEffect(() => {
@@ -123,7 +168,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
         {user ? (           
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
-            {getInitials(user.user_metadata.full_name)}
+            {getInitials(profileFullName || user.user_metadata?.full_name || user.email)}
           </div>
         
       ) : (
@@ -163,6 +208,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
               onClose={() => setIsOpen(false)}
               onOpenLogin={onOpenLogin}
               onOpenSignup={onOpenSignup}
+              profileFullName={profileFullName}
             />
           </div>
         </div>,
@@ -173,7 +219,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 }
 
 // Content component that can be used in both modal and page modes
-export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: NavigationMenuContentProps) {
+export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, profileFullName }: NavigationMenuContentProps) {
   const t = useTranslations('navigation');
   const tAuth = useTranslations('auth');
   const tSettings = useTranslations('settings');
@@ -253,7 +299,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
                 <div className="flex flex-col min-w-0">
                 <span className="font-medium">{t('myProfile')}</span>
                 <span className="text-xs text-muted-foreground truncate">
-                {user.user_metadata?.full_name || user.email}
+                {profileFullName || user.user_metadata?.full_name || user.email}
                 </span>
                 <span className="text-xs text-muted-foreground truncate">
                 {user.email}

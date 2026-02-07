@@ -11,6 +11,8 @@ type FilterState = {
   dateRange: DateRange;
   location: Location | null;
   locationInput: string;
+  arrivalLocation: Location | null;
+  arrivalLocationInput: string;
   experienceLevel: ExperienceLevel | null;
   riskLevel: RiskLevel[];
 };
@@ -26,6 +28,8 @@ const defaultFilters: FilterState = {
   dateRange: { start: null, end: null },
   location: null,
   locationInput: '',
+  arrivalLocation: null,
+  arrivalLocationInput: '',
   experienceLevel: null,
   riskLevel: [],
 };
@@ -63,6 +67,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       let otherFilters = {
         location: null as Location | null,
         locationInput: '',
+        arrivalLocation: null as Location | null,
+        arrivalLocationInput: '',
         experienceLevel: null as ExperienceLevel | null,
         riskLevel: [] as RiskLevel[],
       };
@@ -72,6 +78,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         if (parsed.location) {
           otherFilters.location = parsed.location as Location;
           otherFilters.locationInput = parsed.locationInput || '';
+        }
+        if (parsed.arrivalLocation) {
+          otherFilters.arrivalLocation = parsed.arrivalLocation as Location;
+          otherFilters.arrivalLocationInput = parsed.arrivalLocationInput || '';
         }
         if (parsed.experienceLevel !== undefined) {
           otherFilters.experienceLevel = parsed.experienceLevel as ExperienceLevel | null;
@@ -108,6 +118,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       const filtersSerialized = {
         location: filters.location,
         locationInput: filters.locationInput,
+        arrivalLocation: filters.arrivalLocation,
+        arrivalLocationInput: filters.arrivalLocationInput,
         experienceLevel: filters.experienceLevel,
         riskLevel: filters.riskLevel,
       };

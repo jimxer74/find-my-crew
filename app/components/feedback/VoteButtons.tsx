@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { ThumbsUp } from 'lucide-react';
 
 interface VoteButtonsProps {
   feedbackId: string;
-  voteScore: number;
+  upvotes: number;
   userVote: number | null;
   disabled?: boolean;
   onVote: (feedbackId: string, vote: 1 | -1 | 0) => Promise<void>;
@@ -12,20 +13,21 @@ interface VoteButtonsProps {
 
 export function VoteButtons({
   feedbackId,
-  voteScore,
+  upvotes,
   userVote,
   disabled = false,
   onVote,
 }: VoteButtonsProps) {
   const [isVoting, setIsVoting] = useState(false);
+  const hasVoted = userVote === 1;
 
-  const handleVote = async (vote: 1 | -1) => {
+  const handleVote = async () => {
     if (disabled || isVoting) return;
 
     setIsVoting(true);
     try {
-      // If clicking the same vote, remove it (toggle)
-      const newVote = userVote === vote ? 0 : vote;
+      // Toggle: if already voted, remove vote (0), otherwise add upvote (1)
+      const newVote = hasVoted ? 0 : 1;
       await onVote(feedbackId, newVote);
     } finally {
       setIsVoting(false);
@@ -33,47 +35,25 @@ export function VoteButtons({
   };
 
   return (
-    <div className="flex flex-col items-center gap-0.5">
-      {/* Upvote button */}
-      <button
-        onClick={() => handleVote(1)}
-        disabled={disabled || isVoting}
-        className={`p-1 rounded transition-colors ${
-          userVote === 1
-            ? 'text-green-600 dark:text-green-400'
-            : 'text-muted-foreground hover:text-foreground'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        aria-label="Upvote"
-      >
-        <svg className="w-5 h-5" fill={userVote === 1 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-        </svg>
-      </button>
-
-      {/* Vote count */}
-      <span className={`text-sm font-medium tabular-nums ${
-        voteScore > 0 ? 'text-green-600 dark:text-green-400' :
-        voteScore < 0 ? 'text-red-600 dark:text-red-400' :
-        'text-muted-foreground'
-      }`}>
-        {voteScore}
-      </span>
-
-      {/* Downvote button */}
-      <button
-        onClick={() => handleVote(-1)}
-        disabled={disabled || isVoting}
-        className={`p-1 rounded transition-colors ${
-          userVote === -1
-            ? 'text-red-600 dark:text-red-400'
-            : 'text-muted-foreground hover:text-foreground'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-        aria-label="Downvote"
-      >
-        <svg className="w-5 h-5" fill={userVote === -1 ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-    </div>
+    <button
+      onClick={handleVote}
+      disabled={disabled || isVoting}
+      className={`flex items-center gap-1 transition-colors ${
+        hasVoted
+          ? 'text-blue-600 dark:text-blue-400'
+          : 'text-muted-foreground hover:text-foreground'
+      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+      aria-label={hasVoted ? 'Remove like' : 'Like'}
+    >
+      <ThumbsUp
+        className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`}
+        strokeWidth={hasVoted ? 2.5 : 2}
+      />
+      {upvotes > 0 && (
+        <span className="text-sm font-medium tabular-nums">
+          {upvotes}
+        </span>
+      )}
+    </button>
   );
 }

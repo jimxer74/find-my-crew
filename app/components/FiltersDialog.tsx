@@ -93,7 +93,7 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <h2 className="text-lg font-semibold text-foreground">{t('filters')}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
       </div>
 
       {/* Content - scrollable */}
@@ -121,6 +121,8 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
   // Temporary filter state (for editing before save)
   const [tempLocation, setTempLocation] = useState<Location | null>(null);
   const [tempLocationInput, setTempLocationInput] = useState('');
+  const [tempArrivalLocation, setTempArrivalLocation] = useState<Location | null>(null);
+  const [tempArrivalLocationInput, setTempArrivalLocationInput] = useState('');
   const [tempRiskLevel, setTempRiskLevel] = useState<RiskLevel[]>([]);
   const [tempExperienceLevel, setTempExperienceLevel] = useState<ExperienceLevel | null>(null);
   const [tempDateRange, setTempDateRange] = useState<DateRange>(filters.dateRange);
@@ -145,6 +147,8 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
   useEffect(() => {
     setTempLocation(filters.location);
     setTempLocationInput(filters.locationInput);
+    setTempArrivalLocation(filters.arrivalLocation);
+    setTempArrivalLocationInput(filters.arrivalLocationInput);
     setTempRiskLevel(filters.riskLevel);
     setTempExperienceLevel(filters.experienceLevel);
     setTempDateRange(filters.dateRange);
@@ -220,6 +224,8 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
     updateFilters({
       location: tempLocation,
       locationInput: tempLocationInput,
+      arrivalLocation: tempArrivalLocation,
+      arrivalLocationInput: tempArrivalLocationInput,
       riskLevel: tempRiskLevel,
       experienceLevel: tempExperienceLevel,
       dateRange: tempDateRange,
@@ -352,8 +358,8 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
               <div className="group">
                 <div className="relative">
                   <LocationAutocomplete
-                    id="filter-location"
-                    label={tFilters('location')}
+                    id="filter-departure-location"
+                    label={tFilters('departureLocation')}
                     value={tempLocationInput}
                     onChange={(loc) => {
                       setTempLocation(loc);
@@ -365,7 +371,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                         setTempLocation(null);
                       }
                     }}
-                    placeholder={tFilters('locationPlaceholder')}
+                    placeholder={tFilters('departureLocationPlaceholder')}
                   />
                   {tempLocation && (
                     <button
@@ -376,6 +382,52 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                     }}
                       className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
                       aria-label="Clear location"
+                      type="button"
+                    >
+                      <svg
+                        className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Arrival Location Autocomplete */}
+              <div className="group">
+                <div className="relative">
+                  <LocationAutocomplete
+                    id="filter-arrival-location"
+                    label={tFilters('arrivalLocation')}
+                    value={tempArrivalLocationInput}
+                    onChange={(loc) => {
+                      setTempArrivalLocation(loc);
+                      setTempArrivalLocationInput(loc.name);
+                    }}
+                    onInputChange={(value) => {
+                      setTempArrivalLocationInput(value);
+                      if (!value) {
+                        setTempArrivalLocation(null);
+                      }
+                    }}
+                    placeholder={tFilters('arrivalLocationPlaceholder')}
+                  />
+                  {tempArrivalLocation && (
+                    <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTempArrivalLocation(null);
+                      setTempArrivalLocationInput('');
+                    }}
+                      className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
+                      aria-label="Clear arrival location"
                       type="button"
                     >
                       <svg

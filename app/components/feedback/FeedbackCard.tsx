@@ -48,7 +48,7 @@ export function FeedbackCard({ feedback, isOwn = false, onVote }: FeedbackCardPr
         {/* Vote buttons */}
         <VoteButtons
           feedbackId={feedback.id}
-          voteScore={feedback.vote_score}
+          upvotes={feedback.upvotes}
           userVote={feedback.user_vote ?? null}
           disabled={isOwn}
           onVote={onVote}

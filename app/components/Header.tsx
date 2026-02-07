@@ -156,7 +156,7 @@ export function Header() {
                     setIsFiltersDialogOpen(!isFiltersDialogOpen);
                   }}
                   className="cursor-pointer flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
-                  aria-label={`Filters${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
+                  aria-label={`Search${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
                 >
                   <div className="relative">
                     <svg
@@ -172,12 +172,8 @@ export function Header() {
                         <path d="M6 18L18 6M6 6l12 12" />
                       ) : (
                         <>
-                          <line x1="4" y1="6" x2="16" y2="6" />
-                          <circle cx="19" cy="6" r="2" fill="none" />
-                          <line x1="4" y1="12" x2="16" y2="12" />
-                          <circle cx="5" cy="12" r="2" fill="none" />
-                          <line x1="4" y1="18" x2="16" y2="18" />
-                          <circle cx="19" cy="18" r="2" fill="none" />
+                          <circle cx="11" cy="11" r="8" />
+                          <path d="M21 21l-4.35-4.35" />
                         </>
                       )}
                     </svg>

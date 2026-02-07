@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { LegMobileCard } from './LegMobileCard';
+import { BottomSheet, SnapPoint } from '../ui/BottomSheet';
+import { LegList } from './LegList';
+import { LegBrowsePane } from './LegBrowsePane';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -101,6 +104,7 @@ export function CrewBrowseMap({
   const [loading, setLoading] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null);
   const [showFullPanelOnMobile, setShowFullPanelOnMobile] = useState(false);
+  const [bottomSheetSnapPoint, setBottomSheetSnapPoint] = useState<SnapPoint>('collapsed');
   const [legWaypoints, setLegWaypoints] = useState<Array<{
     id: string;
     index: number;
@@ -112,6 +116,13 @@ export function CrewBrowseMap({
   const [userRiskLevel, setUserRiskLevel] = useState<('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null>(null);
   const [userRegistrations, setUserRegistrations] = useState<Map<string, 'Approved' | 'Pending approval'>>(new Map()); // leg_id -> status
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [visibleBounds, setVisibleBounds] = useState<{
+    minLng: number;
+    minLat: number;
+    maxLng: number;
+    maxLat: number;
+  } | null>(null);
+  const [isLegsPaneMinimized, setIsLegsPaneMinimized] = useState(false);
   const { user } = useAuth();
   const { filters, lastUpdated } = useFilters();
   const filtersRef = useRef(filters);
@@ -147,7 +158,134 @@ export function CrewBrowseMap({
   const unregisteredTextColor = '#22276E';
   const initialLegIdProcessedRef = useRef<string | null>(null);
 
-  
+  // Helper function to select a leg and fetch its waypoints for route display
+  const selectLegWithWaypoints = useCallback(async (leg: Leg) => {
+    // Clear previous selection
+    setSelectedLeg(null);
+    setLegWaypoints([]);
+
+    // Small delay to ensure state is cleared
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Set new leg
+    setSelectedLeg(leg);
+
+    // Fetch waypoints for route display
+    try {
+      console.log('[CrewBrowseMap] Fetching waypoints for leg:', leg.leg_id);
+      const response = await fetch(`/api/legs/${leg.leg_id}/waypoints`);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[CrewBrowseMap] Waypoints received:', data);
+        setLegWaypoints(data.waypoints || []);
+      } else {
+        console.error('[CrewBrowseMap] Failed to fetch waypoints:', response.status);
+        setLegWaypoints([]);
+      }
+    } catch (error) {
+      console.error('[CrewBrowseMap] Error fetching waypoints:', error);
+      setLegWaypoints([]);
+    }
+  }, []);
+
+  // Helper function to get bottom sheet height in pixels based on snap point
+  const getBottomSheetPixelHeight = useCallback((snapPoint: SnapPoint): number => {
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const headerHeight = 64; // 4rem
+
+    switch (snapPoint) {
+      case 'collapsed':
+        return 80;
+      case 'half':
+        return viewportHeight * 0.5;
+      case 'expanded':
+        return viewportHeight - headerHeight;
+      default:
+        return 80;
+    }
+  }, []);
+
+  // Helper function to calculate visible map bounds (excluding UI overlays)
+  const calculateVisibleBounds = useCallback(() => {
+    if (!map.current || !mapLoaded) return null;
+
+    const container = map.current.getContainer();
+    const rect = container.getBoundingClientRect();
+    const { width, height } = rect;
+
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+    let visibleLeft = 0;
+    let visibleTop = 0;
+    let visibleRight = width;
+    let visibleBottom = height;
+
+    if (isMobile) {
+      // Account for bottom sheet height based on snap point
+      // Only filter when not showing full panel
+      if (!showFullPanelOnMobile) {
+        const bottomSheetHeight = getBottomSheetPixelHeight(bottomSheetSnapPoint);
+        visibleBottom = height - bottomSheetHeight;
+      }
+    } else {
+      // Account for left pane (400px when visible)
+      // Pane is visible when: no leg selected AND pane not minimized
+      // OR when leg is selected (detail pane is shown)
+      if (!isLegsPaneMinimized && !selectedLeg) {
+        visibleLeft = 400;
+      } else if (selectedLeg) {
+        // Detail pane is always 400px when a leg is selected
+        visibleLeft = 400;
+      }
+    }
+
+    // Ensure we have valid bounds
+    if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+      return null;
+    }
+
+    try {
+      // Convert pixel corners to geographic coordinates
+      const sw = map.current.unproject([visibleLeft, visibleBottom]);
+      const ne = map.current.unproject([visibleRight, visibleTop]);
+
+      return {
+        minLng: Math.min(sw.lng, ne.lng),
+        minLat: Math.min(sw.lat, ne.lat),
+        maxLng: Math.max(sw.lng, ne.lng),
+        maxLat: Math.max(sw.lat, ne.lat)
+      };
+    } catch (error) {
+      console.error('[CrewBrowseMap] Error calculating visible bounds:', error);
+      return null;
+    }
+  }, [mapLoaded, bottomSheetSnapPoint, showFullPanelOnMobile, isLegsPaneMinimized, selectedLeg, getBottomSheetPixelHeight]);
+
+  // Update visible bounds (debounced via caller)
+  const updateVisibleBounds = useCallback(() => {
+    const bounds = calculateVisibleBounds();
+    if (bounds) {
+      setVisibleBounds(bounds);
+    }
+  }, [calculateVisibleBounds]);
+
+  // Memoized filtered legs based on visible bounds
+  const visibleLegs = useMemo(() => {
+    if (!visibleBounds) return legs;
+
+    return legs.filter(leg => {
+      const wp = leg.start_waypoint;
+      if (!wp) return false;
+
+      return (
+        wp.lng >= visibleBounds.minLng &&
+        wp.lng <= visibleBounds.maxLng &&
+        wp.lat >= visibleBounds.minLat &&
+        wp.lat <= visibleBounds.maxLat
+      );
+    });
+  }, [legs, visibleBounds]);
+
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
     newBounds: { minLng: number; minLat: number; maxLng: number; maxLat: number },
@@ -1523,9 +1661,13 @@ export function CrewBrowseMap({
 
     isFittingBoundsRef.current = true;
 
-    // Fit map to bounds
+    // Fit map to bounds with asymmetric padding to account for left pane (400px on desktop)
+    // Use larger left padding on desktop to ensure route is visible next to the pane
+    const isMobile = window.innerWidth < 768;
     map.current.fitBounds(bounds, {
-      padding: 50, // Additional padding in pixels
+      padding: isMobile
+        ? { top: 50, bottom: 100, left: 50, right: 50 } // Mobile: bottom padding for bottom sheet
+        : { top: 50, bottom: 50, left: 450, right: 50 }, // Desktop: 400px pane + 50px buffer on left
       duration: 1000,
       maxZoom: 12, // Don't zoom in too much
       essential: true, // This is essential, don't interrupt
@@ -1536,6 +1678,46 @@ export function CrewBrowseMap({
       isFittingBoundsRef.current = false;
     }, 1100); // Slightly longer than animation duration
   }, [selectedLeg, legWaypoints, mapLoaded, userRegistrations]);
+
+  // Effect to update visible bounds when map moves or UI state changes
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Debounce timer ref for map move events
+    let boundsDebounceTimer: NodeJS.Timeout | null = null;
+
+    const debouncedUpdateBounds = () => {
+      if (boundsDebounceTimer) {
+        clearTimeout(boundsDebounceTimer);
+      }
+      boundsDebounceTimer = setTimeout(() => {
+        updateVisibleBounds();
+      }, 150); // 150ms debounce for smooth performance
+    };
+
+    // Attach event listeners
+    map.current.on('moveend', debouncedUpdateBounds);
+    map.current.on('zoomend', debouncedUpdateBounds);
+
+    // Initial update
+    updateVisibleBounds();
+
+    return () => {
+      if (boundsDebounceTimer) {
+        clearTimeout(boundsDebounceTimer);
+      }
+      if (map.current) {
+        map.current.off('moveend', debouncedUpdateBounds);
+        map.current.off('zoomend', debouncedUpdateBounds);
+      }
+    };
+  }, [mapLoaded, updateVisibleBounds]);
+
+  // Effect to update visible bounds when UI state changes
+  useEffect(() => {
+    // Update bounds when bottom sheet snap point or pane state changes
+    updateVisibleBounds();
+  }, [bottomSheetSnapPoint, isLegsPaneMinimized, selectedLeg, showFullPanelOnMobile, updateVisibleBounds]);
 
   return (
     <div
@@ -1568,11 +1750,68 @@ export function CrewBrowseMap({
         </div>
       )}
 
-      {/* Mobile Card - Bottom Center (Mobile only, when not showing full panel) */}
-      {selectedLeg && !showFullPanelOnMobile && (
+      {/* Mobile: Bottom Sheet with Leg List (shows when not in full panel mode) */}
+      {!showFullPanelOnMobile && legs.length > 0 && (
+        <BottomSheet
+          isOpen={true}
+          defaultSnapPoint="collapsed"
+          onSnapPointChange={setBottomSheetSnapPoint}
+          collapsedHeight={80}
+          halfHeight="50vh"
+          expandedHeight="calc(100vh - 4rem)"
+          headerContent={
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-foreground">
+                {visibleLegs.length} Leg{visibleLegs.length !== 1 ? 's' : ''} in View
+              </span>
+              {selectedLeg && (
+                <button
+                  onClick={() => {
+                    setSelectedLeg(null);
+                    setLegWaypoints([]);
+                  }}
+                  className="text-sm text-primary hover:underline cursor-pointer"
+                >
+                  Clear selection
+                </button>
+              )}
+            </div>
+          }
+        >
+          <LegList
+            legs={visibleLegs}
+            onLegClick={async (leg) => {
+              // Find the full leg data and select it with waypoints
+              const fullLeg = legs.find(l => l.leg_id === leg.leg_id);
+              if (fullLeg) {
+                await selectLegWithWaypoints(fullLeg);
+                setShowFullPanelOnMobile(true);
+              }
+            }}
+            sortByMatch={true}
+            displayOptions={{
+              showCarousel: true,
+              showMatchBadge: true,
+              showLegName: true,
+              showJourneyName: true,
+              showLocations: true,
+              showDates: true,
+              showDuration: true,
+              carouselHeight: 'h-32',
+            }}
+            gap="md"
+          />
+        </BottomSheet>
+      )}
+
+      {/* Mobile: Single Leg Card (when a leg is selected from map, before opening full panel) */}
+      {selectedLeg && !showFullPanelOnMobile && bottomSheetSnapPoint === 'collapsed' && (
         <LegMobileCard
           leg={selectedLeg}
-          onClose={() => setSelectedLeg(null)}
+          onClose={() => {
+            setSelectedLeg(null);
+            setLegWaypoints([]);
+          }}
           onClick={() => {
             // Open full panel on mobile when card is clicked
             setShowFullPanelOnMobile(true);
@@ -1580,48 +1819,61 @@ export function CrewBrowseMap({
         />
       )}
 
-      {/* Leg Details Panel - Full screen on mobile, side panel on desktop */}
-      {selectedLeg && (
-        <>
-          {/* Mobile: Full screen panel */}
-          {showFullPanelOnMobile && (
-            <div className="md:hidden">
-              <LegDetailsPanel
-                leg={selectedLeg}
-                isOpen={true}
-                onClose={() => {
-                  setShowFullPanelOnMobile(false);
-                  setSelectedLeg(null);
-                }}
-                userSkills={userSkills}
-                userRiskLevel={userRiskLevel}
-                userExperienceLevel={userExperienceLevel}
-                onRegistrationChange={() => {
-                  // Could refresh data or show notification here
-                  console.log('Registration status changed');
-                }}
-                initialOpenRegistration={initialOpenRegistration}
-              />
-            </div>
-          )}
+      {/* Mobile: Full screen panel */}
+      {selectedLeg && showFullPanelOnMobile && (
+        <div className="md:hidden">
+          <LegDetailsPanel
+            leg={selectedLeg}
+            isOpen={true}
+            onClose={() => {
+              setShowFullPanelOnMobile(false);
+              setSelectedLeg(null);
+              setLegWaypoints([]);
+            }}
+            userSkills={userSkills}
+            userRiskLevel={userRiskLevel}
+            userExperienceLevel={userExperienceLevel}
+            onRegistrationChange={() => {
+              // Could refresh data or show notification here
+              console.log('Registration status changed');
+            }}
+            initialOpenRegistration={initialOpenRegistration}
+          />
+        </div>
+      )}
 
-          {/* Desktop: Side panel */}
-          <div className="hidden md:block">
-            <LegDetailsPanel
-              leg={selectedLeg}
-              isOpen={!!selectedLeg}
-              onClose={() => setSelectedLeg(null)}
-              userRiskLevel={userRiskLevel}
-              userSkills={userSkills}
-              userExperienceLevel={userExperienceLevel}
-              onRegistrationChange={() => {
-                // Could refresh data or show notification here
-                console.log('Registration status changed');
-              }}
-              initialOpenRegistration={initialOpenRegistration}
-            />
-          </div>
-        </>
+      {/* Desktop: Left Side Pane with Leg List (hidden when detail panel is open) */}
+      <LegBrowsePane
+        legs={visibleLegs}
+        isVisible={!selectedLeg}
+        isLoading={loading}
+        onLegSelect={async (leg) => {
+          // When selecting from the list, select with waypoints to show route
+          await selectLegWithWaypoints(leg as Leg);
+        }}
+        onMinimizeChange={setIsLegsPaneMinimized}
+      />
+
+      {/* Desktop: Side panel for selected leg details */}
+      {selectedLeg && (
+        <div className="hidden md:block">
+          <LegDetailsPanel
+            leg={selectedLeg}
+            isOpen={!!selectedLeg}
+            onClose={() => {
+              setSelectedLeg(null);
+              setLegWaypoints([]);
+            }}
+            userRiskLevel={userRiskLevel}
+            userSkills={userSkills}
+            userExperienceLevel={userExperienceLevel}
+            onRegistrationChange={() => {
+              // Could refresh data or show notification here
+              console.log('Registration status changed');
+            }}
+            initialOpenRegistration={initialOpenRegistration}
+          />
+        </div>
       )}
     </div>
   );

@@ -140,7 +140,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
             <div className="flex-shrink-0">
               <VoteButtons
                 feedbackId={feedback.id}
-                voteScore={feedback.vote_score}
+                upvotes={feedback.upvotes}
                 userVote={feedback.user_vote ?? null}
                 disabled={isOwner || !user}
                 onVote={handleVote}
@@ -206,11 +206,15 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
                   {t('submittedOn', { date: new Date(feedback.created_at).toLocaleDateString() })}
                 </span>
 
-                {/* Vote count */}
-                <span>•</span>
-                <span>
-                  {feedback.upvotes} {t('upvotes')} / {feedback.downvotes} {t('downvotes')}
-                </span>
+                {/* Like count */}
+                {feedback.upvotes > 0 && (
+                  <>
+                    <span>•</span>
+                    <span>
+                      {feedback.upvotes} {feedback.upvotes === 1 ? t('like') : t('likes')}
+                    </span>
+                  </>
+                )}
               </div>
 
               {/* Owner actions */}

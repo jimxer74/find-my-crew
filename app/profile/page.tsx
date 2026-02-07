@@ -479,6 +479,11 @@ function ProfilePageContent() {
       setSuccess(true);
       setIsNewProfile(false);
 
+      // Dispatch event to notify other components (like NavigationMenu) that profile was updated
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileUpdated'));
+      }
+
       const calculatedCompletion = calculateCompletionPercentage();
 
       if (profile) {
