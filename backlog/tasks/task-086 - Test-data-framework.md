@@ -1,10 +1,10 @@
 ---
 id: TASK-086
 title: Test data framework
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-07 15:08'
-updated_date: '2026-02-07 15:30'
+updated_date: '2026-02-07 15:58'
 labels: []
 dependencies: []
 ---
@@ -20,15 +20,15 @@ A solution to easily manage and create test data for the app testing. It should 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLI command `npm run seed:test-data` works with configurable options
-- [ ] #2 Can clear existing data before seeding (respects FK constraints)
-- [ ] #3 Creates real auth.users via Supabase Admin API
-- [ ] #4 Generates semi-realistic sailing-themed profiles with sensible skills
-- [ ] #5 Includes library of real sailing routes (Mediterranean, Caribbean, Baltic, etc.)
-- [ ] #6 Supports presets: minimal, standard, full
-- [ ] #7 Deterministic output with same seed produces same data
-- [ ] #8 Can export generated data to JSON for reproducibility
-- [ ] #9 All entity relationships maintained (profiles → boats → journeys → legs → waypoints → registrations)
+- [x] #1 CLI command `npm run seed:test-data` works with configurable options
+- [x] #2 Can clear existing data before seeding (respects FK constraints)
+- [x] #3 Creates real auth.users via Supabase Admin API
+- [x] #4 Generates semi-realistic sailing-themed profiles with sensible skills
+- [x] #5 Includes library of real sailing routes (Mediterranean, Caribbean, Baltic, etc.)
+- [x] #6 Supports presets: minimal, standard, full
+- [x] #7 Deterministic output with same seed produces same data
+- [x] #8 Can export generated data to JSON for reproducibility
+- [x] #9 All entity relationships maintained (profiles → boats → journeys → legs → waypoints → registrations)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -215,3 +215,75 @@ npm run seed:test-data -- --profiles 20 --boats 5 --clear
 - Uses existing @supabase/supabase-js
 - Built-in Node.js crypto for seeded random
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Test Data Framework Implementation Complete
+
+### Created Files
+
+**Directory Structure:**
+```
+scripts/
+├── tsconfig.json                    # TypeScript config for scripts
+└── test-data/
+    ├── index.ts                     # CLI entry point
+    ├── config.ts                    # Presets & configuration
+    ├── data/
+    │   ├── index.ts
+    │   ├── sailing-routes.ts        # 16 real sailing routes with coordinates
+    │   ├── sailing-names.ts         # Nautical names, skills, certifications
+    │   └── boat-specs.ts            # 25 real sailboat specifications
+    ├── generators/
+    │   ├── index.ts                 # Orchestrator
+    │   ├── profiles.ts              # Creates auth.users + profiles
+    │   ├── boats.ts                 # Boat generation
+    │   ├── journeys.ts              # Journey generation
+    │   ├── legs.ts                  # Leg generation
+    │   ├── waypoints.ts             # PostGIS waypoint generation
+    │   ├── registrations.ts         # Crew registrations
+    │   ├── notifications.ts         # User notifications
+    │   └── consents.ts              # GDPR consents
+    └── utils/
+        ├── index.ts
+        ├── supabase-admin.ts        # Admin API client
+        ├── seeded-random.ts         # Deterministic RNG
+        ├── cleanup.ts               # FK-aware table cleanup
+        └── export.ts                # JSON export utility
+```
+
+### Features Implemented
+
+1. **CLI Interface** - `npm run seed:test-data -- [options]`
+2. **Three Presets**:
+   - `minimal`: 3 profiles, 1 boat, 1 journey (quick testing)
+   - `standard`: 10 profiles, ~4 boats, ~6 journeys (development)
+   - `full`: 50 profiles, ~15 boats, ~30 journeys (load testing)
+3. **Deterministic Generation** - Same seed produces identical data
+4. **FK-Aware Cleanup** - Truncates tables in correct order
+5. **Real Sailing Routes** - Mediterranean, Caribbean, Baltic, Atlantic, Pacific
+6. **Realistic Boat Specs** - 25 production sailboats with performance calculations
+7. **JSON Export** - Save generated data for reproducibility
+
+### Usage Examples
+
+```bash
+# Standard preset with cleanup
+npm run seed:test-data -- --preset standard --clear
+
+# Minimal preset with specific seed
+npm run seed:test-data -- --preset minimal --seed 12345
+
+# Full preset with JSON export
+npm run seed:test-data -- --preset full --export ./test-data.json
+
+# Custom configuration
+npm run seed:test-data -- --profiles 20 --registrations 50 --clear
+```
+
+### Dependencies Added
+
+- `dotenv` - Environment variable loading
+- `tsx` - TypeScript execution
+<!-- SECTION:FINAL_SUMMARY:END -->
