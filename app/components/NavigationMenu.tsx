@@ -21,6 +21,15 @@ type NavigationMenuContentProps = {
   onOpenLogin?: () => void;
   onOpenSignup?: () => void;
 };
+// Helper function to get initials from full name
+function getInitials(name: string): string {
+  if (!name || !name.trim()) return '?';
+  const parts = name.trim().split(' ').filter(Boolean);
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0][0].toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
 
 export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProps) {
   const { user, loading } = useAuth();
@@ -83,6 +92,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
     };
   }, [isOpen]);
 
+  
   const handleLogout = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
@@ -137,6 +147,9 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
     }
   }, [isOpen, loadUserRoles]);
 
+
+
+
   return (
     <div>
       {/* Hamburger Menu Button */}
@@ -146,24 +159,23 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
           // Toggle panel on both mobile and desktop
           setIsOpen(!isOpen);
         }}
-        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+        className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md focus:outline-none cursor-pointer"
         aria-label="Toggle menu"
       >
-        <svg
-          className="w-6 h-6 text-foreground"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          {isOpen ? (
-            <path d="M6 18L18 6M6 6l12 12" />
-          ) : (
-            <path d="M4 6h16M4 12h16M4 18h16" />
-          )}
+
+        {user ? (           
+          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
+            {getInitials(user.user_metadata.full_name)}
+          </div>
+        
+      ) : (
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+           <circle cx="12" cy="12" r="11" fill="white" stroke="currentColor" strokeWidth="2"/>
+           <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="2"/>
+           <path d="M 6 18 Q 6 14 12 14 Q 18 14 18 18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
         </svg>
+      )}
+
       </button>
 
       {/* Menu Panel - only render when open, use portal to render outside Header DOM */}
@@ -263,15 +275,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
     router.refresh();
   };
 
-  // Helper function to get initials from full name
-  const getInitials = (name: string): string => {
-    if (!name || !name.trim()) return '?';
-    const parts = name.trim().split(' ').filter(Boolean);
-    if (parts.length === 0) return '?';
-    if (parts.length === 1) return parts[0][0].toUpperCase();
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  };
-
+  
   // Helper function to handle navigation on mobile menu page
   const handleNavClick = (href: string, e?: React.MouseEvent) => {
     // Prevent default if event is provided (for Link components)
@@ -292,6 +296,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
     }, 50);
   };
 
+
   return (
     <div className="bg-card py-2" data-navigation-menu>
 
@@ -300,31 +305,43 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
         <div className="px-4 py-3 text-sm text-muted-foreground">{t('loading') || 'Loading...'}</div>
       ) : user ? (
         <>
+     
           {/* My Profile */}
-          {isMenuPage ? (
-            <button
-              onClick={() => handleNavClick('/profile')}
-              className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
-            >
-              {/* Avatar with initials */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
-                {getInitials(fullName)}
-              </div>
-              <span className="font-medium truncate">{fullName || t('myProfile')}</span>
-            </button>
-          ) : (
             <Link
               href="/profile"
               onClick={(e) => handleNavClick('/profile', e)}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
             >
-              {/* Avatar with initials */}
-              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
-                {getInitials(fullName)}
-              </div>
-              <span className="font-medium truncate">{fullName || t('myProfile')}</span>
+                <div className="flex items-center gap-3">
+                <div>
+                   <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                    />
+                  </svg>
+                </div>
+                
+  
+                {/* Name + Email stacked vertically */}
+                <div className="flex flex-col min-w-0">
+                <span className="font-medium">{t('myProfile')}</span>  
+                <span className="text-xs text-muted-foreground truncate">
+                {fullName || t('myProfile')}
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                {user.email}
+                </span>
+                </div>
+                </div>
             </Link>
-          )}
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
