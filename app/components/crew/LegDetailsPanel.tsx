@@ -885,7 +885,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {isOpen && !isMinimized && (
           <button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-5 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer z-10"
+            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer"
             title="Minimize panel"
             aria-label="Minimize panel"
           >

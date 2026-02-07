@@ -16,7 +16,7 @@ case "$ACTION" in
 
     # Change these values to your actual keys/URLs
     export ANTHROPIC_API_KEY=""
-    export ANTHROPIC_AUTH_TOKEN="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"
+    export ANTHROPIC_AUTH_TOKEN="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"
     export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
     export ANTHROPIC_MODEL_OVERRIDE="kwaipilot/kat-coder-pro"
 

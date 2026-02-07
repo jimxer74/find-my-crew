@@ -5,7 +5,18 @@
  * based on the configuration in config.ts
  */
 
-import { AIProvider, ModelConfig, AI_CONFIG, getAPIKeys, hasAnyProvider, UseCase } from './config';
+import {
+  AIProvider,
+  AIProviderConfig,
+  EnvironmentConfig,
+  getCurrentConfig,
+  getCurrentEnvironment,
+  getProviderConfig,
+  hasProviderAPIKey,
+  hasAnyProvider,
+  getAPIKeys,
+  UseCase
+} from './config';
 import { createRateLimiter, createUseCaseRateLimiter, GLOBAL_AI_RATE_LIMITER } from './rateLimit';
 import { promptRegistry } from './prompts';
 
@@ -436,26 +447,27 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
       );
     }
 
-    // Get configuration for this use case
-    const configs = AI_CONFIG[useCase];
-    if (!configs || configs.length === 0) {
-      throw new AIServiceError(`No configuration found for use case: ${useCase}`);
+    // Get configuration for current environment (with optional provider override)
+    const envConfig = getCurrentConfig();
+    const providers = envConfig.providers;
+    if (!providers || providers.length === 0) {
+      throw new AIServiceError(`No providers configured for environment: ${getCurrentEnvironment()}`);
     }
 
     const errors: Array<{ provider: AIProvider; model: string; error: string }> = [];
 
     // Try each provider configuration in order
-    for (const config of configs) {
-    const apiKey = getAPIKeys()[config.provider];
-    
-    // Skip if provider doesn't have API key
-    if (!apiKey) {
-      console.log(`Skipping ${config.provider} - API key not configured`);
-      continue;
-    }
+    for (const config of providers) {
+      const apiKey = getAPIKeys()[config.provider];
 
-    // Try each model for this provider
-    for (const model of config.models) {
+      // Skip if provider doesn't have API key
+      if (!apiKey) {
+        console.log(`Skipping ${config.provider} - API key not configured`);
+        continue;
+      }
+
+      // Try each model for this provider
+      for (const model of config.models) {
       try {
         const finalTemperature = temperature ?? config.temperature ?? 0.7;
         const finalMaxTokens = maxTokens ?? config.maxTokens ?? 1000;
@@ -498,5 +510,5 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
   throw new AIServiceError(
     `All AI providers failed for use case: ${useCase}. Errors: ${JSON.stringify(errors)}`
   );
-  });
+});
 }

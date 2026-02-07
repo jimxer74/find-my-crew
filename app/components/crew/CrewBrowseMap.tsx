@@ -104,6 +104,7 @@ export function CrewBrowseMap({
   const [loading, setLoading] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<Leg | null>(null);
   const [showFullPanelOnMobile, setShowFullPanelOnMobile] = useState(false);
+  const [showMobileLegCard, setShowMobileLegCard] = useState(false); // Track when MobileLegCard is shown from map click
   const [bottomSheetSnapPoint, setBottomSheetSnapPoint] = useState<SnapPoint>('collapsed');
   const [legWaypoints, setLegWaypoints] = useState<Array<{
     id: string;
@@ -216,17 +217,14 @@ export function CrewBrowseMap({
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
     let visibleLeft = 0;
-    let visibleTop = 0;
-    let visibleRight = width;
-    let visibleBottom = height;
+    const visibleTop = 0;
+    const visibleRight = width;
+    const visibleBottom = height;
 
     if (isMobile) {
-      // Account for bottom sheet height based on snap point
-      // Only filter when not showing full panel
-      if (!showFullPanelOnMobile) {
-        const bottomSheetHeight = getBottomSheetPixelHeight(bottomSheetSnapPoint);
-        visibleBottom = height - bottomSheetHeight;
-      }
+      // For mobile, always use full screen height for filtering legs
+      // This shows all legs visible on the full screen, even if waypoints might be under the bottom sheet
+      // No adjustment needed - use full height
     } else {
       // Account for left pane (400px when visible)
       // Pane is visible when: no leg selected AND pane not minimized
@@ -259,7 +257,7 @@ export function CrewBrowseMap({
       console.error('[CrewBrowseMap] Error calculating visible bounds:', error);
       return null;
     }
-  }, [mapLoaded, bottomSheetSnapPoint, showFullPanelOnMobile, isLegsPaneMinimized, selectedLeg, getBottomSheetPixelHeight]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
@@ -1288,6 +1286,7 @@ export function CrewBrowseMap({
           setSelectedLeg(null);
           setLegWaypoints([]);
           setShowFullPanelOnMobile(false);
+          setShowMobileLegCard(true); // Show MobileLegCard when marker is clicked on mobile
 
           // Small delay to ensure state is cleared
           await new Promise(resolve => setTimeout(resolve, 50));
@@ -1715,9 +1714,9 @@ export function CrewBrowseMap({
 
   // Effect to update visible bounds when UI state changes
   useEffect(() => {
-    // Update bounds when bottom sheet snap point or pane state changes
+    // Update bounds when pane state changes (desktop only, mobile uses full screen)
     updateVisibleBounds();
-  }, [bottomSheetSnapPoint, isLegsPaneMinimized, selectedLeg, showFullPanelOnMobile, updateVisibleBounds]);
+  }, [isLegsPaneMinimized, selectedLeg, updateVisibleBounds]);
 
   return (
     <div
@@ -1750,8 +1749,8 @@ export function CrewBrowseMap({
         </div>
       )}
 
-      {/* Mobile: Bottom Sheet with Leg List (shows when not in full panel mode) */}
-      {!showFullPanelOnMobile && legs.length > 0 && (
+      {/* Mobile: Bottom Sheet with Leg List (shows when not in full panel mode and MobileLegCard is not shown) */}
+      {!showFullPanelOnMobile && !showMobileLegCard && legs.length > 0 && (
         <BottomSheet
           isOpen={true}
           defaultSnapPoint="collapsed"
@@ -1790,31 +1789,34 @@ export function CrewBrowseMap({
             }}
             sortByMatch={true}
             displayOptions={{
-              showCarousel: true,
+              showCarousel: bottomSheetSnapPoint !== 'collapsed', // Hide carousel when collapsed
               showMatchBadge: true,
               showLegName: true,
               showJourneyName: true,
               showLocations: true,
-              showDates: true,
-              showDuration: true,
+              showDates: bottomSheetSnapPoint !== 'collapsed', // Hide dates when collapsed
+              showDuration: bottomSheetSnapPoint !== 'collapsed', // Hide duration when collapsed
               carouselHeight: 'h-32',
+              compact: bottomSheetSnapPoint === 'collapsed', // Use compact mode when collapsed
             }}
             gap="md"
           />
         </BottomSheet>
       )}
 
-      {/* Mobile: Single Leg Card (when a leg is selected from map, before opening full panel) */}
-      {selectedLeg && !showFullPanelOnMobile && bottomSheetSnapPoint === 'collapsed' && (
+      {/* Mobile: Single Leg Card (when a leg is selected from map marker click) */}
+      {selectedLeg && showMobileLegCard && !showFullPanelOnMobile && (
         <LegMobileCard
           leg={selectedLeg}
           onClose={() => {
             setSelectedLeg(null);
             setLegWaypoints([]);
+            setShowMobileLegCard(false); // Show bottom sheet again when closing
           }}
           onClick={() => {
             // Open full panel on mobile when card is clicked
             setShowFullPanelOnMobile(true);
+            setShowMobileLegCard(false);
           }}
         />
       )}
