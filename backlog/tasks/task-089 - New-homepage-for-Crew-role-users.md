@@ -4,7 +4,7 @@ title: New homepage for Crew role users
 status: In Progress
 assignee: []
 created_date: '2026-02-07 21:30'
-updated_date: '2026-02-07 22:01'
+updated_date: '2026-02-07 22:08'
 labels: []
 dependencies: []
 ---
@@ -25,18 +25,18 @@ Completely new Front Page for crew users. Concept is to display best matching sa
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 User's location is detected via browser Geolocation API on page load
-- [ ] #2 Cruising regions are displayed sorted by distance from user's location
-- [ ] #3 Each cruising region shows a horizontal scrollable list of matching legs
-- [ ] #4 Legs are sorted by match score (best matches first) within each region
-- [ ] #5 Region headers link to map view filtered by that region's bounding box
-- [ ] #6 Desktop: Previous/Next navigation buttons for leg carousel
-- [ ] #7 Mobile: Swipe gesture works for horizontal scrolling
-- [ ] #8 LegListItem component is reused for consistent leg display
-- [ ] #9 Graceful fallback when location permission is denied
-- [ ] #10 Old /crew/dashboard page remains functional as map-based browse
-- [ ] #11 Crew users are redirected to new homepage after login
-- [ ] #12 All UI text is localized (EN and FI)
+- [x] #1 User's location is detected via browser Geolocation API on page load
+- [x] #2 Cruising regions are displayed sorted by distance from user's location
+- [x] #3 Each cruising region shows a horizontal scrollable list of matching legs
+- [x] #4 Legs are sorted by match score (best matches first) within each region
+- [x] #5 Region headers link to map view filtered by that region's bounding box
+- [x] #6 Desktop: Previous/Next navigation buttons for leg carousel
+- [x] #7 Mobile: Swipe gesture works for horizontal scrolling
+- [x] #8 LegListItem component is reused for consistent leg display
+- [x] #9 Graceful fallback when location permission is denied
+- [x] #10 Old /crew/dashboard page remains functional as map-based browse
+- [x] #11 Crew users are redirected to new homepage after login
+- [x] #12 All UI text is localized (EN and FI)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -202,3 +202,35 @@ app/
 - Uses existing LegListItem component
 - Uses existing viewport API patterns
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Complete
+
+### Files Created:
+- `app/crew/home/page.tsx` - Main crew homepage
+- `app/components/crew/LegCarousel.tsx` - Horizontal scrolling leg cards
+- `app/components/crew/CruisingRegionSection.tsx` - Region section with header and carousel
+- `app/hooks/useUserLocation.ts` - Geolocation hook
+- `app/api/legs/by-region/route.ts` - API for fetching legs by region
+
+### Files Modified:
+- `app/lib/geocoding/locations.ts` - Added distance calculation utilities
+- `app/auth/login/page.tsx` - Updated redirect to /crew/home
+- `app/auth/callback/route.ts` - Updated redirect to /crew/home
+- `app/page.tsx` - Updated links to /crew/home
+- `app/components/NavigationMenu.tsx` - Updated links to /crew/home
+- `messages/en.json` - Added crewHome translations
+- `messages/fi.json` - Added crewHome translations
+
+### Features:
+- User location detection via Geolocation API
+- Regions sorted by distance from user
+- Horizontal scrollable leg carousels with snap scrolling
+- Desktop: prev/next arrows on hover
+- Mobile: 2 cards visible, swipe to scroll
+- Regions with no legs are hidden
+- Match score calculation for each leg
+- Links to map view with region bbox filter
+<!-- SECTION:NOTES:END -->
