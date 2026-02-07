@@ -4,7 +4,7 @@ title: Resizable bottom sheet in mobile version to list legs visible in map view
 status: In Progress
 assignee: []
 created_date: '2026-01-28 06:42'
-updated_date: '2026-02-07 13:26'
+updated_date: '2026-02-07 13:36'
 labels: []
 dependencies: []
 ---
@@ -32,18 +32,18 @@ Important Implementation concepts:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mobile: Bottom sheet displays legs in viewport, resizable (collapsed/half/full)
-- [ ] #2 Mobile: Bottom sheet shows leg cards with image carousel, match badge, leg info
-- [ ] #3 Mobile: Tapping a leg opens LegDetailsPanel full screen
-- [ ] #4 Desktop: Left side pane lists legs in viewport
-- [ ] #5 Desktop: Clicking leg shows detail view in same pane with back navigation
-- [ ] #6 Legs are sorted by best match percentage first
-- [ ] #7 LegListItem component is reusable and configurable
-- [ ] #8 LegList component accepts legs as props and is reusable in other contexts
-- [ ] #9 Image carousel combines journey images + boat image
-- [ ] #10 Match badge displays on top-left of each leg card
-- [ ] #11 Leg info shows: leg name, journey name, start/end places, dates, duration
-- [ ] #12 Header remains visible at all times
+- [x] #1 Mobile: Bottom sheet displays legs in viewport, resizable (collapsed/half/full)
+- [x] #2 Mobile: Bottom sheet shows leg cards with image carousel, match badge, leg info
+- [x] #3 Mobile: Tapping a leg opens LegDetailsPanel full screen
+- [x] #4 Desktop: Left side pane lists legs in viewport
+- [x] #5 Desktop: Clicking leg shows detail view in same pane with back navigation
+- [x] #6 Legs are sorted by best match percentage first
+- [x] #7 LegListItem component is reusable and configurable
+- [x] #8 LegList component accepts legs as props and is reusable in other contexts
+- [x] #9 Image carousel combines journey images + boat image
+- [x] #10 Match badge displays on top-left of each leg card
+- [x] #11 Leg info shows: leg name, journey name, start/end places, dates, duration
+- [x] #12 Header remains visible at all times
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -139,3 +139,27 @@ CrewBrowseMap
 - Leverage existing match calculation from `skillMatching.ts`
 - Reuse ImageCarousel and MatchBadge components
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Complete
+
+### Files Created:
+1. `app/components/crew/LegListItem.tsx` - Reusable, configurable leg card with image carousel, match badge, and leg info
+2. `app/components/crew/LegList.tsx` - List wrapper that accepts legs as props, sorts by match %, handles empty state
+3. `app/components/ui/BottomSheet.tsx` - Resizable mobile bottom sheet with 3 snap points (collapsed/half/expanded), drag gestures
+4. `app/components/crew/LegBrowsePane.tsx` - Desktop left side pane showing leg list
+
+### Files Modified:
+1. `app/components/crew/CrewBrowseMap.tsx` - Integrated all new components
+
+### Key Features:
+- Mobile: BottomSheet displays legs in viewport with drag-to-resize (3 snap points)
+- Desktop: LegBrowsePane shows leg list, hides when detail panel opens
+- LegListItem is fully configurable with display options
+- Images carousel combines journey_images + boat_image_url
+- Match badge on top-left of each card
+- Sorted by best match percentage first
+- Header remains visible at all times (top-16 offset)
+<!-- SECTION:NOTES:END -->
