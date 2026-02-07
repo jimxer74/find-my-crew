@@ -4,7 +4,7 @@
 This document provides a comprehensive analysis of the SailSmart codebase (Next.js application) to identify all UI components, texts, and configurations that are not yet fully localized.
 
 ## Project Information
-- **Project**: SailSmart - Find My Crew
+- **Project**: SailSmart - SailSmart
 - **Technology Stack**: Next.js 16.1.1, TypeScript, Tailwind CSS, Supabase
 - **Current i18n Setup**: next-intl 4.8.1 with English (en) and Finnish (fi) locales
 - **Analysis Date**: February 6, 2026

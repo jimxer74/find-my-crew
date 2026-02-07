@@ -1,16 +1,16 @@
-Product Requirements Document (PRD): find-my-crew - Crew and Sailboat Owner Matching Platform
+Product Requirements Document (PRD): SailSmart - Crew and Sailboat Owner Matching Platform
 1. Document Information
-Product Name: find-my-crew
+Product Name: SailSmart
 Version: 1.1
 Date: January 17, 2026
 Author: Grok AI (Assisted Response)
 Status: Draft
-Purpose: This PRD outlines the requirements for enhancing the find-my-crew platform with AI-driven automation for matching, approvals, and related processes. It assumes basic functionality (e.g., user profiles, passage listings, basic search) and data structures (e.g., user databases, passage records) are already implemented. The focus is on AI integration, additional data needs, and enabling features such as security, identification, and auditing.
+Purpose: This PRD outlines the requirements for enhancing the SailSmart platform with AI-driven automation for matching, approvals, and related processes. It assumes basic functionality (e.g., user profiles, passage listings, basic search) and data structures (e.g., user databases, passage records) are already implemented. The focus is on AI integration, additional data needs, and enabling features such as security, identification, and auditing.
 2. Product Overview
 2.1 Problem Statement
 Sailboat owners and crew members often struggle to find compatible matches for passages due to mismatched skills, preferences, schedules, and experiences. Manual searching and approval processes are time-consuming, error-prone, and inefficient, leading to missed opportunities, safety risks, and frustration. The platform aims to solve this by leveraging AI to automate matching and approvals, making the process seamless and reliable.
 2.2 Value Proposition
-find-my-crew makes finding and securing sailboat passages as easy as possible by using AI to:
+SailSmart makes finding and securing sailboat passages as easy as possible by using AI to:
 Automatically match crew with owners based on skills, experiences, preferences, and real-time data.
 Automate approval workflows to reduce manual intervention.
 Ensure trust through strong security, identification, and auditing features. This results in faster, safer, and more personalized connections, differentiating from manual or basic matching platforms.

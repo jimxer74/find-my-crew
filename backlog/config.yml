@@ -1,4 +1,4 @@
-project_name: "find-my-crew"
+project_name: "SailSmart"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
 labels: []

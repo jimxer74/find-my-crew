@@ -587,7 +587,144 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
     }
   }
 
-  // Method 4: OpenRouter specific format - try common OpenRouter patterns
+  // Method 4: New format - <|tool_calls|>[...] or <|tool_calls|>(...)
+  // This format contains an array of tool calls
+  const toolCallsArrayRegex = /<\|tool_calls\|>(\[.*?\])<\|\/tool_calls\|>/g;
+  const toolCallsParenRegex = /<\|tool_calls\|>\((.*?)\)<\|\/tool_calls\|>/g;
+  let arrayMatch;
+  let parenMatch;
+
+  // Parse array format first
+  while ((arrayMatch = toolCallsArrayRegex.exec(text)) !== null) {
+    log('Found <|tool_calls|> array format:', arrayMatch[1].substring(0, 200));
+    try {
+      let jsonContent = arrayMatch[1].trim();
+
+      // Handle potential extra quotes or formatting
+      if (jsonContent.startsWith('"') && jsonContent.endsWith('"')) {
+        jsonContent = jsonContent.slice(1, -1);
+      }
+
+      let toolCallsArray;
+      try {
+        toolCallsArray = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log('Failed to parse JSON array, trying to fix malformed JSON:', jsonError);
+        // Try to fix common JSON issues
+        let fixedJson = jsonContent;
+        try {
+          // Remove trailing comma before closing bracket
+          fixedJson = fixedJson.replace(/,(\s*\])/g, '$1');
+
+          toolCallsArray = JSON.parse(fixedJson);
+        } catch (fixError) {
+          log('Failed to fix malformed JSON array, trying to extract valid JSON array:', fixError);
+          // Try to extract a valid JSON array from the text
+          const arrayMatch = jsonContent.match(/\[[\s\S]*\]/);
+          if (arrayMatch) {
+            try {
+              toolCallsArray = JSON.parse(arrayMatch[0]);
+            } catch (nestedError) {
+              log('Still failed to parse extracted JSON array:', nestedError);
+              continue;
+            }
+          } else {
+            log('No valid JSON array found in content');
+            continue;
+          }
+        }
+      }
+
+      // Validate and process each tool call in the array
+      if (!Array.isArray(toolCallsArray)) {
+        log('Skipping <|tool_calls|> format - content is not a valid array');
+        continue;
+      }
+
+      for (const toolCallItem of toolCallsArray) {
+        // Validate this is actually a tool call (must have name field)
+        if (!toolCallItem.name || typeof toolCallItem.name !== 'string') {
+          log('Skipping invalid tool call in array - no valid "name" field');
+          continue;
+        }
+
+        const toolCall = {
+          id: `tc_${Date.now()}_${toolCalls.length}`,
+          name: toolCallItem.name,
+          arguments: toolCallItem.arguments || {},
+        };
+        toolCalls.push(toolCall);
+        log('Parsed <|tool_calls|> array tool call:', { name: toolCall.name, args: toolCall.arguments });
+      }
+
+      // Remove tool call from content
+      content = content.replace(arrayMatch[0], '').trim();
+    } catch (e) {
+      log('Failed to parse <|tool_calls|> array format JSON:', e);
+      // Invalid JSON, skip
+    }
+  }
+
+  // Parse parentheses format as fallback
+  while ((parenMatch = toolCallsParenRegex.exec(text)) !== null) {
+    log('Found <|tool_calls|> parentheses format:', parenMatch[1].substring(0, 200));
+    try {
+      let jsonContent = parenMatch[1].trim();
+
+      // Handle potential extra quotes or formatting
+      if (jsonContent.startsWith('"') && jsonContent.endsWith('"')) {
+        jsonContent = jsonContent.slice(1, -1);
+      }
+
+      let toolCallsArray;
+      try {
+        toolCallsArray = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log('Failed to parse JSON in parentheses format, trying to fix malformed JSON:', jsonError);
+        // Try to fix common JSON issues
+        let fixedJson = jsonContent;
+        try {
+          // Remove trailing comma before closing bracket
+          fixedJson = fixedJson.replace(/,(\s*\])/g, '$1');
+
+          toolCallsArray = JSON.parse(fixedJson);
+        } catch (fixError) {
+          log('Failed to fix malformed JSON in parentheses format:', fixError);
+          continue;
+        }
+      }
+
+      // Validate and process each tool call in the array
+      if (!Array.isArray(toolCallsArray)) {
+        log('Skipping <|tool_calls|> parentheses format - content is not a valid array');
+        continue;
+      }
+
+      for (const toolCallItem of toolCallsArray) {
+        // Validate this is actually a tool call (must have name field)
+        if (!toolCallItem.name || typeof toolCallItem.name !== 'string') {
+          log('Skipping invalid tool call in parentheses array - no valid "name" field');
+          continue;
+        }
+
+        const toolCall = {
+          id: `tc_${Date.now()}_${toolCalls.length}`,
+          name: toolCallItem.name,
+          arguments: toolCallItem.arguments || {},
+        };
+        toolCalls.push(toolCall);
+        log('Parsed <|tool_calls|> parentheses tool call:', { name: toolCall.name, args: toolCall.arguments });
+      }
+
+      // Remove tool call from content
+      content = content.replace(parenMatch[0], '').trim();
+    } catch (e) {
+      log('Failed to parse <|tool_calls|> parentheses format JSON:', e);
+      // Invalid JSON, skip
+    }
+  }
+
+  // Method 5: OpenRouter specific format - try common OpenRouter patterns
   // Pattern 1: <|start|>tool_name<|end|>
   const openRouterStartEndRegex = /<\|start\|>(\w+)<\|end\|>/g;
   let openRouterMatch;

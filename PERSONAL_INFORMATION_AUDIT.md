@@ -8,7 +8,7 @@
 
 ## EXECUTIVE SUMMARY
 
-This document provides a comprehensive audit of all locations within the Find My Crew codebase where personal identification and contact information is prompted to, collected by, and accessed by the AI system. The audit identified 15 distinct areas where personal data is handled, ranging from database storage to AI-generated user prompts.
+This document provides a comprehensive audit of all locations within the SailSmart codebase where personal identification and contact information is prompted to, collected by, and accessed by the AI system. The audit identified 15 distinct areas where personal data is handled, ranging from database storage to AI-generated user prompts.
 
 **Key Findings:**
 - AI system has broad access to complete user profiles via `getUserProfile()` tool

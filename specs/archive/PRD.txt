@@ -1,10 +1,10 @@
-Product Requirements Document (PRD) for find-my-crew Platform1. 
+Product Requirements Document (PRD) for SailSmart Platform1. 
 
 Overview
 
 1.1 Project Description
 
-find-my-crew is a web platform built with NextJS that connects boat owners/skippers with 
+SailSmart is a web platform built with NextJS that connects boat owners/skippers with 
 potential crew members. Owners can register their boats, plan and share upcoming 
 journeys divided into legs (segments of the journey), and seek crew for specific legs. 
 Users (potential crew) can browse available journeys, view details, and register 
@@ -102,7 +102,7 @@ This guide outlines a phased approach to build the MVP. Assume basic familiarity
 
 Phase 1: Project Setup (1-2 days)
 
-Initialize NextJS Project: Run npx create-next-app@latest find-my-crew --typescript --tailwind --eslint.
+Initialize NextJS Project: Run npx create-next-app@latest SailSmart --typescript --tailwind --eslint.
 Install Dependencies: Supabase: npm install @supabase/supabase-js.
 Forms: npm install react-hook-form zod.
 UI: Install Shadcn/UI via npx shadcn-ui@latest init.
