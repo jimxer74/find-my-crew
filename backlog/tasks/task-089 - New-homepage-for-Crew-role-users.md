@@ -1,10 +1,10 @@
 ---
 id: TASK-089
 title: New homepage for Crew role users
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-07 21:30'
-updated_date: '2026-02-07 21:37'
+updated_date: '2026-02-07 22:01'
 labels: []
 dependencies: []
 ---
