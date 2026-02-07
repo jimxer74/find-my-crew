@@ -4,7 +4,7 @@ title: New homepage for Crew role users
 status: To Do
 assignee: []
 created_date: '2026-02-07 21:30'
-updated_date: '2026-02-07 21:35'
+updated_date: '2026-02-07 21:37'
 labels: []
 dependencies: []
 ---
@@ -133,7 +133,7 @@ Create a new homepage for Crew role users that displays sailing legs organized b
 - Message encouraging users to check back later or explore other regions
 
 #### 5.3 Responsive Design
-- Mobile: Full-width cards, swipe to scroll
+- Mobile: 2 cards, swipe to scroll
 - Tablet: 2-3 cards visible
 - Desktop: 4-5 cards visible with navigation arrows
 
