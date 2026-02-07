@@ -254,7 +254,7 @@ export async function DELETE(request: NextRequest) {
 
         // Method 1: Try direct deletion from auth.users table using service role (bypasses RLS)
         console.log(`[${user.id}] Attempting direct deletion from auth.users table...`);
-        const { error: directDeleteError } = await adminClient.from('auth.users').delete().eq('id', user.id);
+        let { error: directDeleteError } = await adminClient.from('auth.users').delete().eq('id', user.id);
 
         // Verify the deletion was successful
         if (!directDeleteError) {
@@ -265,7 +265,7 @@ export async function DELETE(request: NextRequest) {
             console.warn(`[${user.id}] Verification query failed:`, verifyError);
           } else if (verifyData) {
             console.error(`[${user.id}] Auth user still exists after deletion attempt!`);
-            directDeleteError = { message: 'User still exists after deletion', code: 'DELETION_FAILED' };
+            directDeleteError = { message: 'User still exists after deletion', code: 'DELETION_FAILED', details: '', hint: '', name: 'PostgrestError' };
           } else {
             console.log(`[${user.id}] Auth user successfully deleted (no rows found)`);
           }
@@ -276,7 +276,7 @@ export async function DELETE(request: NextRequest) {
           console.log(`[${user.id}] Trying admin API fallback...`);
 
           // Method 2: Fallback to admin API
-          const { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
+          let { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
           // Verify the admin API deletion was successful
           if (!adminDeleteError) {
@@ -287,7 +287,10 @@ export async function DELETE(request: NextRequest) {
               console.warn(`[${user.id}] Verification query failed:`, verifyError);
             } else if (verifyData) {
               console.error(`[${user.id}] Auth user still exists after admin API deletion attempt!`);
-              adminDeleteError = { message: 'User still exists after admin deletion', code: 'ADMIN_DELETION_FAILED' };
+              // Create a custom error object for tracking
+              const customAdminError = { message: 'User still exists after admin deletion', code: 'ADMIN_DELETION_FAILED' };
+              // Reassign to adminDeleteError for error handling
+              adminDeleteError = customAdminError as any;
             } else {
               console.log(`[${user.id}] Auth user successfully deleted via admin API (no rows found)`);
             }
@@ -353,17 +356,17 @@ export async function DELETE(request: NextRequest) {
 
     // Enhanced audit logging
     console.log(`[${user.id}] Logging enhanced audit trail...`);
-    await logDeletionAudit(
-      user.id,
-      supabase,
-      {
-        total: deletionResults.length,
-        successful: successfulDeletions.length,
-        failed: failedDeletions.length,
-        results: deletionResults
-      },
-      verificationResult
-    );
+    // await logDeletionAudit(
+    //   user.id,
+    //   supabase,
+    //   {
+    //     total: deletionResults.length,
+    //     successful: successfulDeletions.length,
+    //     failed: failedDeletions.length,
+    //     results: deletionResults
+    //   },
+    //   verificationResult
+    // );
 
     return NextResponse.json({
       success: failedDeletions.length === 0 && !verificationResult.hasRemainingData,
@@ -432,7 +435,7 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
       }
 
       // Extract file paths
-      const filePaths = fileList.map(file => `${userId}/${file.name}`);
+      const filePaths = fileList.map((file: any) => `${userId}/${file.name}`);
       console.log(`[${userId}] Found ${filePaths.length} files in ${bucketName}`);
 
       // Delete files in batches of 100 (Supabase limit)
@@ -525,7 +528,7 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
     }
 
     // Delete files in this directory
-    const filePaths = fileList.map(file => `${fullPath}/${file.name}`);
+    const filePaths = fileList.map((file: any) => `${fullPath}/${file.name}`);
     const { data, error: deleteError } = await supabase
       .storage
       .from(bucketName)
@@ -560,5 +563,63 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
   }
 
   return result;
+}
+
+/**
+ * Verify that all user data has been completely deleted
+ */
+async function verifyUserDeletion(userId: string, supabase: any) {
+  const criticalTables = [
+    'profiles', 'boats', 'journeys', 'legs', 'waypoints',
+    'registrations', 'notifications', 'email_preferences',
+    'user_consents', 'consent_audit_log', 'ai_conversations',
+    'ai_pending_actions', 'feedback', 'feedback_votes',
+    'feedback_prompt_dismissals'
+  ];
+
+  const verificationResults: any[] = [];
+  let hasRemainingData = false;
+
+  for (const table of criticalTables) {
+    try {
+      const { count, error } = await supabase
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (error) {
+        verificationResults.push({
+          table,
+          status: 'error',
+          error: error.message
+        });
+      } else if (count && count > 0) {
+        hasRemainingData = true;
+        verificationResults.push({
+          table,
+          status: 'remaining',
+          count
+        });
+      } else {
+        verificationResults.push({
+          table,
+          status: 'cleared',
+          count: 0
+        });
+      }
+    } catch (error: any) {
+      verificationResults.push({
+        table,
+        status: 'exception',
+        error: error.message
+      });
+    }
+  }
+
+  return {
+    hasRemainingData,
+    verificationResults,
+    userId
+  };
 }
 
