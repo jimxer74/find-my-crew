@@ -1,9 +1,10 @@
 ---
 id: TASK-085
 title: Create limiters for Beta Testing
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-06 14:15'
+updated_date: '2026-02-07 15:17'
 labels: []
 dependencies: []
 ---
