@@ -25,7 +25,7 @@ export function Header() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const { user } = useAuth();
   const { filters, updateFilters } = useFilters();
-  const [roleLoading, setRoleLoading] = useState(false);
+  const { userRoles, roleLoading, refreshRoles } = useUserRoles();
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const filtersButtonRef = useRef<HTMLButtonElement>(null);
   const { isOpen: isAssistantOpen, closeAssistant } = useAssistant();
@@ -41,6 +41,21 @@ export function Header() {
       window.dispatchEvent(new CustomEvent('closeAllDialogs'));
     }
   }, [pathname]);
+
+  // Listen for profile updates to refresh user information
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      // Refresh user roles when profile is updated
+      if (user) {
+        refreshRoles();
+      }
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [user, refreshRoles]);
 
   // Listen for close all dialogs event (Assistant sidebar handles its own closing)
   useEffect(() => {
@@ -91,45 +106,6 @@ export function Header() {
     };
   }, []);
 
-  // Get user roles for Filters button visibility
-  /*
-  useEffect(() => {
-    if (user) {
-      setRoleLoading(true);
-      // Try to get roles from user metadata first (faster, synchronous)
-      const rolesFromMetadata = user.user_metadata?.roles as string[] | null;
-      if (rolesFromMetadata && Array.isArray(rolesFromMetadata) && rolesFromMetadata.length > 0) {
-        setUserRoles(rolesFromMetadata);
-        setRoleLoading(false);
-        return; // Early return if we have metadata
-      }
-
-      // Fetch from database if no metadata available
-      const supabase = getSupabaseBrowserClient();
-      supabase
-        .from('profiles')
-        .select('roles')
-        .eq('id', user.id)
-        .single()
-        .then(({ data, error }) => {
-          if (error) {
-            // If query fails, default to crew
-            setUserRoles(['crew']);
-          } else if (data?.roles && data.roles.length > 0) {
-            setUserRoles(data.roles);
-          } else {
-            // If no profile exists yet, default to crew (most common case)
-            setUserRoles(['crew']);
-          }
-          setRoleLoading(false);
-        });
-    } else {
-      setUserRoles(null);
-      setRoleLoading(false);
-    }
-  }, [user]);
-*/
-
   const hasActiveFilters = () => {
     return !!(
       filters.location ||
@@ -148,7 +124,7 @@ export function Header() {
     return count;
   };
 
-  const { userRoles } = useUserRoles();
+  // userRoles is already available from the useUserRoles() destructuring above
 
   // No longer tracking suggestions count
 
@@ -179,7 +155,7 @@ export function Header() {
                     // Toggle panel on both mobile and desktop
                     setIsFiltersDialogOpen(!isFiltersDialogOpen);
                   }}
-                  className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                  className="cursor-pointer flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
                   aria-label={`Filters${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
                 >
                   <div className="relative">

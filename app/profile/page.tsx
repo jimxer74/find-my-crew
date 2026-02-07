@@ -505,6 +505,19 @@ function ProfilePageContent() {
 
       router.refresh();
 
+      // Dispatch profile updated event to notify other components
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileUpdated', {
+          detail: {
+            updatedFields: Object.keys(formData).filter(key =>
+              formData[key as keyof typeof formData] !== undefined &&
+              formData[key as keyof typeof formData] !== null
+            ),
+            timestamp: Date.now()
+          }
+        }));
+      }
+
       if (isNewProfile) {
         setTimeout(() => {
           if (roles.includes('owner')) {

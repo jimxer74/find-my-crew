@@ -26,7 +26,7 @@ export function AssistantButton({ userRoles }: { userRoles: string[] | null }) {
     <button
       ref={buttonRef}
       onClick={handleClick}
-      className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+      className="cursor-pointer relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
       aria-label={t('assistant')}
       title={t('assistant')}
     >

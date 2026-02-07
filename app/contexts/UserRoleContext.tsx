@@ -4,12 +4,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '../lib/supabaseClient';
-// import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 type UserRolesContextType = {
   userRoles: string[] | null
   roleLoading: boolean
   hasRole: (role: string) => boolean
+  refreshRoles: () => Promise<void>
 }
 
 const UserRolesContext = createContext<UserRolesContextType | undefined>(undefined)
@@ -19,7 +19,7 @@ export function UserRolesProvider({ children }: { children: ReactNode }) {
   const [userRoles, setUserRoles] = useState<string[] | null>(null)
   const [roleLoading, setRoleLoading] = useState(true)
 
-  useEffect(() => {
+  const loadUserRoles = async () => {
     if (!user) {
       setUserRoles(null)
       setRoleLoading(false)
@@ -37,31 +37,46 @@ export function UserRolesProvider({ children }: { children: ReactNode }) {
 
     // Fetch from database if no metadata available
     const supabase = getSupabaseBrowserClient();
-    supabase
-    .from('profiles')
-    .select('roles')
-    .eq('id', user.id)
-    .single()
-    .then(({ data, error }) => {
-        if (error) {
-        // If query fails, default to crew
-        setUserRoles(['crew']);
-        } else if (data?.roles && data.roles.length > 0) {
-        setUserRoles(data.roles);
-        } else {
-        // If no profile exists yet, default to crew (most common case)
-        setUserRoles(['crew']);
-        }
-        setRoleLoading(false);
-    });
-    
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('roles')
+      .eq('id', user.id)
+      .single();
 
+    if (error) {
+      // If query fails, default to crew
+      setUserRoles(['crew']);
+    } else if (data?.roles && data.roles.length > 0) {
+      setUserRoles(data.roles);
+    } else {
+      // If no profile exists yet, default to crew (most common case)
+      setUserRoles(['crew']);
+    }
+    setRoleLoading(false);
+  }
+
+  const refreshRoles = loadUserRoles
+
+  useEffect(() => {
+    loadUserRoles()
   }, [user])
+
+  // Listen for profile update events
+  useEffect(() => {
+    const handleProfileUpdate = () => {
+      loadUserRoles()
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [loadUserRoles]);
 
   const hasRole = (role: string) => !!userRoles?.includes(role)
 
   return (
-    <UserRolesContext.Provider value={{ userRoles, roleLoading, hasRole }}>
+    <UserRolesContext.Provider value={{ userRoles, roleLoading, hasRole, refreshRoles }}>
       {children}
     </UserRolesContext.Provider>
   )

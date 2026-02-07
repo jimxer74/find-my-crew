@@ -76,7 +76,7 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+        className="cursor-pointer relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
         aria-label={`${t('notifications')}${totalBadgeCount > 0 ? ` (${totalBadgeCount})` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"

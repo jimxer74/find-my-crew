@@ -10,6 +10,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/app/components/ui/ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { useUserRoles } from '@/app/contexts/UserRoleContext';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;
@@ -33,6 +34,7 @@ function getInitials(name: string): string {
 
 export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProps) {
   const { user, loading } = useAuth();
+  const { userRoles, roleLoading } = useUserRoles();
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -101,51 +103,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
     router.refresh();
   };
 
-  // Get user roles for dashboard link
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-
-  const loadUserRoles = useCallback(async () => {
-    if (!user) {
-      setUserRoles([]);
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('roles')
-      .eq('id', user.id)
-      .single();
-
-    if (data && data.roles) {
-      setUserRoles(data.roles);
-    } else {
-      setUserRoles([]);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    loadUserRoles();
-  }, [loadUserRoles]);
-
-  // Listen for profile update events
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      loadUserRoles();
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    return () => {
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, [loadUserRoles]);
-
-  // Refresh roles when menu opens
-  useEffect(() => {
-    if (isOpen && user) {
-      loadUserRoles();
-    }
-  }, [isOpen, loadUserRoles]);
+  // Note: User roles are now handled by UserRolesContext, removing duplicate logic
 
 
 
@@ -220,52 +178,12 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
   const tAuth = useTranslations('auth');
   const tSettings = useTranslations('settings');
   const { user, loading } = useAuth();
+  const { userRoles } = useUserRoles();
   const router = useRouter();
   const pathname = usePathname();
   const isMenuPage = pathname === '/menu';
 
-  // Get user roles and profile data
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [fullName, setFullName] = useState<string>('');
-
-  const loadUserRoles = useCallback(async () => {
-    if (!user) {
-      setUserRoles([]);
-      setFullName('');
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('roles, full_name')
-      .eq('id', user.id)
-      .single();
-
-    if (data) {
-      setUserRoles(data.roles || []);
-      setFullName(data.full_name || '');
-    } else {
-      setUserRoles([]);
-      setFullName('');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    loadUserRoles();
-  }, [loadUserRoles]);
-
-  // Listen for profile update events
-  useEffect(() => {
-    const handleProfileUpdate = () => {
-      loadUserRoles();
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    return () => {
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, [loadUserRoles]);
+  // Note: User roles are now handled by UserRolesContext, removing duplicate logic
 
   const handleLogout = async () => {
     const supabase = getSupabaseBrowserClient();
@@ -275,7 +193,8 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
     router.refresh();
   };
 
-  
+  // Note: User roles are now handled by UserRolesContext, removing duplicate logic
+
   // Helper function to handle navigation on mobile menu page
   const handleNavClick = (href: string, e?: React.MouseEvent) => {
     // Prevent default if event is provided (for Link components)
@@ -332,9 +251,9 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
   
                 {/* Name + Email stacked vertically */}
                 <div className="flex flex-col min-w-0">
-                <span className="font-medium">{t('myProfile')}</span>  
+                <span className="font-medium">{t('myProfile')}</span>
                 <span className="text-xs text-muted-foreground truncate">
-                {fullName || t('myProfile')}
+                {user.user_metadata?.full_name || user.email}
                 </span>
                 <span className="text-xs text-muted-foreground truncate">
                 {user.email}
@@ -347,7 +266,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           <div className="border-t border-border my-1" />
 
           {/* Owner-specific menu items */}
-          {userRoles.includes('owner') && (
+          {userRoles?.includes('owner') && (
             <>
               {/* For Skipper header */}
               <div className="px-4 py-2">
@@ -480,7 +399,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           )}
 
           {/* Crew-specific menu items */}
-          {userRoles.includes('crew') && (
+          {userRoles?.includes('crew') && (
             <>
               {/* For Crew header */}
               <div className="px-4 py-2">
@@ -572,7 +491,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup }: Na
           )}
 
           {/* Show message if user has no roles */}
-          {userRoles.length === 0 && (
+          {userRoles?.length === 0 && (
             <div className="px-4 py-3 text-sm text-muted-foreground">
               {t('completeProfile')}
             </div>
