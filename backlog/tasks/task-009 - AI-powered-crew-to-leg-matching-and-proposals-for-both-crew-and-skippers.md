@@ -4,7 +4,7 @@ title: AI powered crew to leg matching and proposals for both crew and skippers
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-01-27 15:05'
+updated_date: '2026-02-07 22:41'
 labels:
   - ai
   - feature
@@ -25,26 +25,25 @@ ordinal: 5000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Implement an AI-powered matching system that proactively suggests crew members to boat owners and voyage opportunities to crew members. The system runs as a scheduled job and presents matches in a swipe-based UI similar to dating apps, where users can quickly accept, skip, or decline suggestions.
+Implement an AI-powered matching system that proactively suggests crew members to boat owners and voyage opportunities to crew members. The system runs as a scheduled job and presents matches for crew in /crew/home as a first LegCarousel in page (after that there are location proximity sorted cruising areas and the legs) and for owners in /owner/home, similar fashion as crew homepage, create a new CrewCarousel component for it to display good crew matches for owners. 
 
 ## Problem Statement
 Currently, crew members must browse published journeys and manually apply. Boat owners must wait for applications. This passive model misses potential good matches where neither party discovers the other.
 
 ## Solution Overview
-A daily background job analyzes all published journeys with open crew slots and all available crew profiles (with AI consent), using AI to score compatibility. High-quality matches are saved and surfaced to both parties via notifications and a dedicated "Matches" UI.
+A daily background job analyzes all published journeys with open crew slots and all available crew profiles (with AI consent), using AI to score compatibility. High-quality matches are saved and surfaced to both parties via their home pages.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Daily scheduled job runs and generates matches for all eligible journeys/crew
 - [ ] #2 Crew members see suggested legs matching their profile (swipe UI)
-- [ ] #3 Boat owners see suggested crew members for their open legs (swipe UI)
-- [ ] #4 Users can Accept (creates registration), Skip (hide temporarily), or Decline (never show again)
-- [ ] #5 Only users with ai_processing_consent=true are included in matching
-- [ ] #6 Match notifications sent to both crew and owners when new matches found
-- [ ] #7 Match scoring considers: skills overlap, experience level, risk tolerance, date availability, location preferences
-- [ ] #8 Matches respect existing registrations (don't suggest already-applied legs)
-- [ ] #9 UI shows match score percentage and key matching factors
+- [ ] #3 Boat owners see suggested crew members for their open legs, CrewCarousel in owners homepage
+- [ ] #4 Only users with ai_processing_consent=true are included in matching
+- [ ] #5 Match notifications sent to both crew and owners when new matches found
+- [ ] #6 Match scoring considers: skills overlap, experience level, risk tolerance, date availability, location preferences, cost model basically all info available in journeys, legs and crew profiles
+- [ ] #7 Matches respect existing registrations (don't suggest already-applied legs)
+- [ ] #8 UI shows match score percentage
 <!-- AC:END -->
 
 ## Implementation Plan
