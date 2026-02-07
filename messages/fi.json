@@ -115,6 +115,15 @@
     "signIn": "Kirjaudu",
     "signUp": "Rekisteröidy"
   },
+  "crewHome": {
+    "title": "Löydä purjehdusmahdollisuuksia",
+    "subtitle": "Etsi osuuksia läheltäsi, järjestetty parhaan vastaavuuden mukaan",
+    "viewOnMap": "Näytä kartalla",
+    "detectingLocation": "Tunnistetaan sijaintiasi...",
+    "usingDefaultLocation": "Käytetään oletussijaintia (salli sijainti parempien tulosten saamiseksi)",
+    "noLegsInRegion": "Ei osuuksia tällä alueella",
+    "loadMore": "Lataa lisää"
+  },
   "home": {
     "hero": {
       "titleOwner": "Puuttuuko sinulta gasti seuraavalle purjehdusmatkalle?",

@@ -115,6 +115,15 @@
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
+  "crewHome": {
+    "title": "Discover Sailing Opportunities",
+    "subtitle": "Find legs near you, sorted by best match",
+    "viewOnMap": "View on Map",
+    "detectingLocation": "Detecting your location...",
+    "usingDefaultLocation": "Using default location (enable location for better results)",
+    "noLegsInRegion": "No legs available in this region",
+    "loadMore": "Load more"
+  },
   "home": {
     "hero": {
       "titleOwner": "Find Your Perfect Crew",

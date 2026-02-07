@@ -454,7 +454,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
               {/* Browse Journeys */}
               {isMenuPage ? (
                 <button
-                  onClick={() => handleNavClick('/crew/dashboard')}
+                  onClick={() => handleNavClick('/crew/home')}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
                 >
                   <svg
@@ -474,8 +474,8 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
                 </button>
               ) : (
                 <Link
-                  href="/crew/dashboard"
-                  onClick={(e) => handleNavClick('/crew/dashboard', e)}
+                  href="/crew/home"
+                  onClick={(e) => handleNavClick('/crew/home', e)}
                   className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
                 >
                   <svg
@@ -634,7 +634,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
           {/* Browse Journeys - Available to non-signed-in users */}
           {isMenuPage ? (
             <button
-              onClick={() => handleNavClick('/crew/dashboard')}
+              onClick={() => handleNavClick('/crew/home')}
               className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
             >
               <svg

@@ -21,7 +21,15 @@ async function safeDelete(
 ): Promise<DeletionResult> {
   try {
     console.log(`[${userId}] Starting deletion of ${table}...`);
-    const { error } = await supabase.from(table).delete().eq(...Object.entries(condition)[0]);
+    // Build the delete query more robustly
+    let deleteQuery = supabase.from(table).delete();
+
+    // Add conditions from the condition object
+    for (const [key, value] of Object.entries(condition)) {
+      deleteQuery = deleteQuery.eq(key, value);
+    }
+
+    const { error } = await deleteQuery;
 
     if (error) {
       throw error;
@@ -201,7 +209,7 @@ export async function DELETE(request: NextRequest) {
 
       if (profileVerifyError && profileVerifyError.code !== 'PGRST116') {
         console.warn(`[${user.id}] Profile verification query failed:`, profileVerifyError);
-      } else if (profileVerify) {
+      } else if (profileVerify && profileVerify.id) {
         console.error(`[${user.id}] Profile still exists after deletion attempt!`);
         profilesResult.success = false;
         profilesResult.error = 'Profile still exists after deletion';
@@ -263,7 +271,7 @@ export async function DELETE(request: NextRequest) {
 
           if (verifyError && verifyError.code !== 'PGRST116') { // PGRST116 means no rows found (good)
             console.warn(`[${user.id}] Verification query failed:`, verifyError);
-          } else if (verifyData) {
+          } else if (verifyData && verifyData.id) {
             console.error(`[${user.id}] Auth user still exists after deletion attempt!`);
             directDeleteError = { message: 'User still exists after deletion', code: 'DELETION_FAILED', details: '', hint: '', name: 'PostgrestError' };
           } else {
@@ -285,7 +293,7 @@ export async function DELETE(request: NextRequest) {
 
             if (verifyError && verifyError.code !== 'PGRST116') { // PGRST116 means no rows found (good)
               console.warn(`[${user.id}] Verification query failed:`, verifyError);
-            } else if (verifyData) {
+            } else if (verifyData && verifyData.id) {
               console.error(`[${user.id}] Auth user still exists after admin API deletion attempt!`);
               // Create a custom error object for tracking
               const customAdminError = { message: 'User still exists after admin deletion', code: 'ADMIN_DELETION_FAILED' };

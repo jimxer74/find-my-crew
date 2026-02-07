@@ -82,7 +82,7 @@ export default function Home() {
               <>
 
                 <Link
-                  href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/dashboard'}
+                  href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/home'}
                   className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
                   {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys')}
@@ -100,7 +100,7 @@ export default function Home() {
             ) : (
               <>
                 <Link
-                  href="/crew/dashboard"
+                  href="/crew/home"
                   className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                 >
                   {t('hero.browseJourneys')}
@@ -227,10 +227,10 @@ export default function Home() {
           </p>
           {user ? (
             <Link
-              href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/dashboard' }
+              href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/home'}
               className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
             >
-              {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys') }
+              {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys')}
             </Link>
           ) : (
             <button

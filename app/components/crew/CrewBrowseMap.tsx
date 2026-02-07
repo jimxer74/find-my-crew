@@ -60,6 +60,7 @@ type CrewBrowseMapProps = {
   style?: React.CSSProperties;
   initialCenter?: [number, number]; // [lng, lat]
   initialZoom?: number;
+  initialBounds?: { minLng: number; minLat: number; maxLng: number; maxLat: number }; // Fit map to bounds
   initialLegId?: string | null; // Pre-select a leg by ID
   initialOpenRegistration?: boolean; // Auto-open registration form when leg is loaded
 };
@@ -92,6 +93,7 @@ export function CrewBrowseMap({
   style,
   initialCenter = [0, 20], // Default to center of world
   initialZoom = 2,
+  initialBounds,
   initialLegId,
   initialOpenRegistration = false,
 }: CrewBrowseMapProps) {
@@ -1166,9 +1168,20 @@ export function CrewBrowseMap({
       console.log('[CrewBrowseMap] Map loaded');
       mapLoadedRef.current = true;
       setMapLoaded(true);
-      
+
       if (!map.current) return;
-      
+
+      // Fit to initial bounds if provided (e.g., from cruising region link)
+      if (initialBounds) {
+        map.current.fitBounds(
+          [
+            [initialBounds.minLng, initialBounds.minLat],
+            [initialBounds.maxLng, initialBounds.maxLat],
+          ],
+          { padding: 50, duration: 0 }
+        );
+      }
+
       // Set cursor to default pointer
       if (map.current.getCanvasContainer()) {
         map.current.getCanvasContainer().style.cursor = 'default';

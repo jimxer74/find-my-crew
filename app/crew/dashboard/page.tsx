@@ -1,21 +1,70 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { useFilters } from '@/app/contexts/FilterContext';
 import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
+import { Location } from '@/app/components/ui/LocationAutocomplete';
 
 export default function CrewDashboard() {
   const t = useTranslations('crewDashboard');
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
+  const { updateFilters } = useFilters();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialLegId = searchParams.get('legId');
   const openRegistration = searchParams.get('register') === 'true';
+  const hasAppliedUrlFiltersRef = useRef(false);
+
+  // Parse region bbox from URL params
+  const initialRegionBbox = useMemo(() => {
+    const regionName = searchParams.get('region');
+    const minLng = searchParams.get('departure_min_lng');
+    const minLat = searchParams.get('departure_min_lat');
+    const maxLng = searchParams.get('departure_max_lng');
+    const maxLat = searchParams.get('departure_max_lat');
+
+    if (regionName && minLng && minLat && maxLng && maxLat) {
+      return {
+        name: regionName,
+        bbox: {
+          minLng: parseFloat(minLng),
+          minLat: parseFloat(minLat),
+          maxLng: parseFloat(maxLng),
+          maxLat: parseFloat(maxLat),
+        },
+      };
+    }
+    return null;
+  }, [searchParams]);
+
+  // Apply region filter from URL params (only once on mount)
+  useEffect(() => {
+    if (initialRegionBbox && !hasAppliedUrlFiltersRef.current) {
+      hasAppliedUrlFiltersRef.current = true;
+
+      const centerLat = (initialRegionBbox.bbox.minLat + initialRegionBbox.bbox.maxLat) / 2;
+      const centerLng = (initialRegionBbox.bbox.minLng + initialRegionBbox.bbox.maxLng) / 2;
+
+      const location: Location = {
+        name: initialRegionBbox.name,
+        lat: centerLat,
+        lng: centerLng,
+        isCruisingRegion: true,
+        bbox: initialRegionBbox.bbox,
+      };
+
+      updateFilters({
+        location,
+        locationInput: initialRegionBbox.name,
+      });
+    }
+  }, [initialRegionBbox]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Allow non-signed-in users to browse journeys with limited information
   // No redirect to login - they can browse but will see limited details
@@ -80,6 +129,7 @@ export default function CrewDashboard() {
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
           initialLegId={initialLegId}
           initialOpenRegistration={openRegistration}
+          initialBounds={initialRegionBbox?.bbox}
         />
       </main>
     </div>

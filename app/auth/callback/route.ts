@@ -84,7 +84,7 @@ export async function GET(request: Request) {
         if (profile.roles.includes('owner')) {
           redirectPath = origin + '/owner/journeys';
         } else if (profile.roles.includes('crew')) {
-          redirectPath = origin + '/crew/dashboard';
+          redirectPath = origin + '/crew/home';
         }
       }
       // If no profile or no roles, redirect to home (can browse limited)

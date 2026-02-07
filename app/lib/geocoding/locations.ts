@@ -482,3 +482,72 @@ export function getCategories(): string[] {
   const categories = new Set(LOCATION_REGISTRY.map(r => r.category));
   return Array.from(categories);
 }
+
+/**
+ * Calculate the center point of a bounding box
+ */
+export function getBboxCenter(bbox: BoundingBox): { lat: number; lng: number } {
+  return {
+    lat: (bbox.minLat + bbox.maxLat) / 2,
+    lng: (bbox.minLng + bbox.maxLng) / 2,
+  };
+}
+
+/**
+ * Calculate distance between two points using Haversine formula
+ * Returns distance in kilometers
+ */
+export function calculateDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Calculate distance from a point to a region's center
+ */
+export function calculateDistanceToRegion(
+  userLat: number,
+  userLng: number,
+  region: LocationRegion
+): number {
+  const center = getBboxCenter(region.bbox);
+  return calculateDistance(userLat, userLng, center.lat, center.lng);
+}
+
+/**
+ * Sort regions by distance from user's location
+ * Returns regions with distance info
+ */
+export function sortRegionsByDistance(
+  userLat: number,
+  userLng: number,
+  regions: LocationRegion[] = LOCATION_REGISTRY
+): Array<LocationRegion & { distance: number }> {
+  return regions
+    .map((region) => ({
+      ...region,
+      distance: calculateDistanceToRegion(userLat, userLng, region),
+    }))
+    .sort((a, b) => a.distance - b.distance);
+}
+
+/**
+ * Get all regions from the registry
+ */
+export function getAllRegions(): LocationRegion[] {
+  return LOCATION_REGISTRY;
+}
