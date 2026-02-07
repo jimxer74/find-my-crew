@@ -3,15 +3,6 @@ name: Deploy to Production
 on:
   workflow_dispatch:
     inputs:
-      release_type:
-        description: 'Release type (pilot, beta, production)'
-        required: true
-        default: 'pilot'
-        type: choice
-        options:
-          - pilot
-          - beta
-          - production
       create_tag:
         description: 'Create a git tag for this release'
         required: true
@@ -85,8 +76,7 @@ jobs:
 
       - name: Build Project Artifacts
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          RELEASE_TYPE: ${{ inputs.release_type }}
+        # Limits are configured via LIMIT_* environment variables in Vercel project settings
 
       - name: Deploy to Vercel Production
         id: deploy
@@ -102,7 +92,7 @@ jobs:
           echo "- **URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release Type:** ${{ inputs.release_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Limits:** Configured via LIMIT_* env vars in Vercel" >> $GITHUB_STEP_SUMMARY
           if [ "${{ inputs.create_tag }}" == "true" ]; then
             echo "- **Tag:** ${{ inputs.tag_name }}" >> $GITHUB_STEP_SUMMARY
           fi

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { chat, ChatRequest } from '@/app/lib/ai/assistant';
+import { canSendAIMessage } from '@/app/lib/limits';
 
 // Debug logging helper
 const DEBUG = true;
@@ -50,6 +51,23 @@ export async function POST(request: NextRequest) {
       );
     }
     log('User authenticated:', { userId: user.id, email: user.email });
+
+    // Check AI message limit
+    const limitCheck = await canSendAIMessage(supabase, user.id);
+    if (!limitCheck.allowed) {
+      log('AI message limit reached:', { current: limitCheck.current, limit: limitCheck.limit });
+      return NextResponse.json(
+        {
+          error: 'Daily message limit reached',
+          errorType: 'daily_limit_reached',
+          userMessage: limitCheck.message,
+          current: limitCheck.current,
+          limit: limitCheck.limit,
+        },
+        { status: 429 }
+      );
+    }
+    log('AI message limit check passed:', { current: limitCheck.current, limit: limitCheck.limit });
 
     // Parse request body
     const body: ChatRequest = await request.json();

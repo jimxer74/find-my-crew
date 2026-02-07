@@ -33,8 +33,7 @@ jobs:
 
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          RELEASE_TYPE: pilot
+        # Limits are configured via LIMIT_* environment variables in Vercel project settings
 
       - name: Deploy to Vercel Preview
         id: deploy
@@ -54,4 +53,4 @@ jobs:
           echo "- **URL:** ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Release Type:** pilot" >> $GITHUB_STEP_SUMMARY
+          echo "- **Limits:** Configured via LIMIT_* env vars in Vercel" >> $GITHUB_STEP_SUMMARY

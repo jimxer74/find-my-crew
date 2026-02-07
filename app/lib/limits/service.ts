@@ -1,13 +1,13 @@
 /**
  * Limits Service
  *
- * Provides functions to check various limits for the pilot release.
- * Use these functions before creating boats, journeys, legs, or registrations.
+ * Provides functions to check various limits based on environment variables.
+ * If a limit is not configured (env var not set), the check always passes.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { getLimits, getReleaseType } from './config';
-import { LimitCheckResult, UserUsage, JourneyUsage, SystemUsage } from './types';
+import { getLimits } from './config';
+import { LimitCheckResult, UserUsage, JourneyUsage, SystemUsage, AIUsage } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnySupabaseClient = SupabaseClient<any, any, any>;
@@ -20,13 +20,14 @@ export async function canCreateBoat(
   userId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+  const limit = limits.maxBoatsPerUser;
 
-  // If unlimited, skip the check
-  if (limits.maxBoatsPerUser === Infinity) {
+  // If no limit configured, allow
+  if (limit === null) {
     return {
       allowed: true,
       current: 0,
-      limit: Infinity,
+      limit: null,
     };
   }
 
@@ -40,26 +41,26 @@ export async function canCreateBoat(
     return {
       allowed: false,
       current: 0,
-      limit: limits.maxBoatsPerUser,
+      limit,
       message: 'Failed to check boat limit',
     };
   }
 
   const currentCount = count || 0;
 
-  if (currentCount >= limits.maxBoatsPerUser) {
+  if (currentCount >= limit) {
     return {
       allowed: false,
       current: currentCount,
-      limit: limits.maxBoatsPerUser,
-      message: `You have reached the maximum of ${limits.maxBoatsPerUser} boat${limits.maxBoatsPerUser !== 1 ? 's' : ''} for the ${getReleaseType()} release.`,
+      limit,
+      message: `You have reached the maximum of ${limit} boat${limit !== 1 ? 's' : ''}.`,
     };
   }
 
   return {
     allowed: true,
     current: currentCount,
-    limit: limits.maxBoatsPerUser,
+    limit,
   };
 }
 
@@ -71,13 +72,14 @@ export async function canCreateJourney(
   userId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+  const limit = limits.maxJourneysPerUser;
 
-  // If unlimited, skip the check
-  if (limits.maxJourneysPerUser === Infinity) {
+  // If no limit configured, allow
+  if (limit === null) {
     return {
       allowed: true,
       current: 0,
-      limit: Infinity,
+      limit: null,
     };
   }
 
@@ -92,26 +94,26 @@ export async function canCreateJourney(
     return {
       allowed: false,
       current: 0,
-      limit: limits.maxJourneysPerUser,
+      limit,
       message: 'Failed to check journey limit',
     };
   }
 
   const currentCount = data?.length || 0;
 
-  if (currentCount >= limits.maxJourneysPerUser) {
+  if (currentCount >= limit) {
     return {
       allowed: false,
       current: currentCount,
-      limit: limits.maxJourneysPerUser,
-      message: `You have reached the maximum of ${limits.maxJourneysPerUser} journey${limits.maxJourneysPerUser !== 1 ? 's' : ''} for the ${getReleaseType()} release.`,
+      limit,
+      message: `You have reached the maximum of ${limit} journey${limit !== 1 ? 's' : ''}.`,
     };
   }
 
   return {
     allowed: true,
     current: currentCount,
-    limit: limits.maxJourneysPerUser,
+    limit,
   };
 }
 
@@ -123,13 +125,14 @@ export async function canCreateLeg(
   journeyId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+  const limit = limits.maxLegsPerJourney;
 
-  // If unlimited, skip the check
-  if (limits.maxLegsPerJourney === Infinity) {
+  // If no limit configured, allow
+  if (limit === null) {
     return {
       allowed: true,
       current: 0,
-      limit: Infinity,
+      limit: null,
     };
   }
 
@@ -143,26 +146,26 @@ export async function canCreateLeg(
     return {
       allowed: false,
       current: 0,
-      limit: limits.maxLegsPerJourney,
+      limit,
       message: 'Failed to check leg limit',
     };
   }
 
   const currentCount = count || 0;
 
-  if (currentCount >= limits.maxLegsPerJourney) {
+  if (currentCount >= limit) {
     return {
       allowed: false,
       current: currentCount,
-      limit: limits.maxLegsPerJourney,
-      message: `This journey has reached the maximum of ${limits.maxLegsPerJourney} legs for the ${getReleaseType()} release.`,
+      limit,
+      message: `This journey has reached the maximum of ${limit} leg${limit !== 1 ? 's' : ''}.`,
     };
   }
 
   return {
     allowed: true,
     current: currentCount,
-    limit: limits.maxLegsPerJourney,
+    limit,
   };
 }
 
@@ -173,13 +176,14 @@ export async function canRegisterUser(
   supabase: AnySupabaseClient
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+  const limit = limits.maxRegisteredUsers;
 
-  // Check if we're in production mode with unlimited users
-  if (limits.maxRegisteredUsers === Infinity) {
+  // If no limit configured, allow
+  if (limit === null) {
     return {
       allowed: true,
       current: 0,
-      limit: Infinity,
+      limit: null,
     };
   }
 
@@ -192,26 +196,26 @@ export async function canRegisterUser(
     return {
       allowed: false,
       current: 0,
-      limit: limits.maxRegisteredUsers,
+      limit,
       message: 'Failed to check user registration limit',
     };
   }
 
   const currentCount = count || 0;
 
-  if (currentCount >= limits.maxRegisteredUsers) {
+  if (currentCount >= limit) {
     return {
       allowed: false,
       current: currentCount,
-      limit: limits.maxRegisteredUsers,
-      message: `We've reached the maximum number of users (${limits.maxRegisteredUsers}) for the ${getReleaseType()} release. Please check back later or join our waitlist.`,
+      limit,
+      message: `We've reached the maximum number of users (${limit}). Please check back later or join our waitlist.`,
     };
   }
 
   return {
     allowed: true,
     current: currentCount,
-    limit: limits.maxRegisteredUsers,
+    limit,
   };
 }
 
@@ -223,13 +227,14 @@ export async function canCreateWaypoint(
   legId: string
 ): Promise<LimitCheckResult> {
   const limits = getLimits();
+  const limit = limits.maxWaypointsPerLeg;
 
-  // If unlimited, skip the check
-  if (limits.maxWaypointsPerLeg === Infinity) {
+  // If no limit configured, allow
+  if (limit === null) {
     return {
       allowed: true,
       current: 0,
-      limit: Infinity,
+      limit: null,
     };
   }
 
@@ -243,26 +248,111 @@ export async function canCreateWaypoint(
     return {
       allowed: false,
       current: 0,
-      limit: limits.maxWaypointsPerLeg,
+      limit,
       message: 'Failed to check waypoint limit',
     };
   }
 
   const currentCount = count || 0;
 
-  if (currentCount >= limits.maxWaypointsPerLeg) {
+  if (currentCount >= limit) {
     return {
       allowed: false,
       current: currentCount,
-      limit: limits.maxWaypointsPerLeg,
-      message: `This leg has reached the maximum of ${limits.maxWaypointsPerLeg} waypoints for the ${getReleaseType()} release.`,
+      limit,
+      message: `This leg has reached the maximum of ${limit} waypoint${limit !== 1 ? 's' : ''}.`,
     };
   }
 
   return {
     allowed: true,
     current: currentCount,
-    limit: limits.maxWaypointsPerLeg,
+    limit,
+  };
+}
+
+/**
+ * Check if a user can send another AI message today
+ */
+export async function canSendAIMessage(
+  supabase: AnySupabaseClient,
+  userId: string
+): Promise<LimitCheckResult> {
+  const limits = getLimits();
+  const limit = limits.maxAIMessagesPerDayPerUser;
+
+  // If no limit configured, allow
+  if (limit === null) {
+    return {
+      allowed: true,
+      current: 0,
+      limit: null,
+    };
+  }
+
+  // Get the start of today (UTC)
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const todayISO = today.toISOString();
+
+  // Count user messages sent today
+  // Join ai_messages with ai_conversations to filter by user_id
+  const { count, error } = await supabase
+    .from('ai_messages')
+    .select('id, ai_conversations!inner(user_id)', { count: 'exact', head: true })
+    .eq('ai_conversations.user_id', userId)
+    .eq('role', 'user')
+    .gte('created_at', todayISO);
+
+  if (error) {
+    console.error('Error checking AI message count:', error);
+    return {
+      allowed: false,
+      current: 0,
+      limit,
+      message: 'Failed to check AI message limit',
+    };
+  }
+
+  const currentCount = count || 0;
+
+  if (currentCount >= limit) {
+    return {
+      allowed: false,
+      current: currentCount,
+      limit,
+      message: `You have reached your daily limit of ${limit} AI assistant message${limit !== 1 ? 's' : ''}. Please try again tomorrow.`,
+    };
+  }
+
+  return {
+    allowed: true,
+    current: currentCount,
+    limit,
+  };
+}
+
+/**
+ * Get user's AI usage for today
+ */
+export async function getAIUsage(
+  supabase: AnySupabaseClient,
+  userId: string
+): Promise<AIUsage> {
+  // Get the start of today (UTC)
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const todayISO = today.toISOString();
+
+  const { count } = await supabase
+    .from('ai_messages')
+    .select('id, ai_conversations!inner(user_id)', { count: 'exact', head: true })
+    .eq('ai_conversations.user_id', userId)
+    .eq('role', 'user')
+    .gte('created_at', todayISO);
+
+  return {
+    messagesUsedToday: count || 0,
   };
 }
 

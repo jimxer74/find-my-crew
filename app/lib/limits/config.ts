@@ -1,80 +1,67 @@
 /**
  * Limits Configuration
  *
- * Centralized configuration for release-based limits.
- * Set RELEASE_TYPE environment variable to: 'pilot', 'beta', or 'production'
+ * Environment variable-based limits configuration.
+ * If an environment variable is not set, no limit applies (unlimited).
+ *
+ * Environment variables:
+ * - LIMIT_MAX_BOATS_PER_USER: Maximum boats a user can create
+ * - LIMIT_MAX_JOURNEYS_PER_USER: Maximum journeys a user can create
+ * - LIMIT_MAX_LEGS_PER_JOURNEY: Maximum legs per journey
+ * - LIMIT_MAX_REGISTERED_USERS: Maximum total registered users
+ * - LIMIT_MAX_WAYPOINTS_PER_LEG: Maximum waypoints per leg
+ * - LIMIT_MAX_IMAGES_PER_BOAT: Maximum images per boat
+ * - LIMIT_MAX_AI_MESSAGES_PER_DAY_PER_USER: Maximum AI assistant messages per day per user
  */
 
-import { ReleaseType, ReleaseLimits } from './types';
-
-// Define limits for each release type
-const LIMITS_BY_RELEASE: Record<ReleaseType, ReleaseLimits> = {
-  pilot: {
-    maxBoatsPerUser: 1,
-    maxJourneysPerUser: 2,
-    maxLegsPerJourney: 10,
-    maxRegisteredUsers: 50,
-    maxWaypointsPerLeg: 20,
-    maxImagesPerBoat: 5,
-  },
-  beta: {
-    maxBoatsPerUser: 3,
-    maxJourneysPerUser: 10,
-    maxLegsPerJourney: 25,
-    maxRegisteredUsers: 500,
-    maxWaypointsPerLeg: 50,
-    maxImagesPerBoat: 10,
-  },
-  production: {
-    maxBoatsPerUser: Infinity,
-    maxJourneysPerUser: Infinity,
-    maxLegsPerJourney: Infinity,
-    maxRegisteredUsers: Infinity,
-    maxWaypointsPerLeg: Infinity,
-    maxImagesPerBoat: Infinity,
-  },
-};
+import { Limits } from './types';
 
 /**
- * Get the current release type from environment variable
- * Defaults to 'production' (no limits)
+ * Parse an environment variable as a positive integer.
+ * Returns null if not set or invalid (meaning no limit).
  */
-export function getReleaseType(): ReleaseType {
-  const releaseType = process.env.RELEASE_TYPE?.toLowerCase();
-
-  if (releaseType === 'pilot' || releaseType === 'beta') {
-    return releaseType;
-  }
-
-  // Default to production (no limits)
-  return 'production';
+function parseEnvLimit(envVar: string | undefined): number | null {
+  if (!envVar) return null;
+  const parsed = parseInt(envVar, 10);
+  if (isNaN(parsed) || parsed < 0) return null;
+  return parsed;
 }
 
 /**
- * Get the limits for the current release type
+ * Get the current limits from environment variables.
+ * Returns null for any limit that is not set (meaning unlimited).
  */
-export function getLimits(): ReleaseLimits {
-  return LIMITS_BY_RELEASE[getReleaseType()];
+export function getLimits(): Limits {
+  return {
+    maxBoatsPerUser: parseEnvLimit(process.env.LIMIT_MAX_BOATS_PER_USER),
+    maxJourneysPerUser: parseEnvLimit(process.env.LIMIT_MAX_JOURNEYS_PER_USER),
+    maxLegsPerJourney: parseEnvLimit(process.env.LIMIT_MAX_LEGS_PER_JOURNEY),
+    maxRegisteredUsers: parseEnvLimit(process.env.LIMIT_MAX_REGISTERED_USERS),
+    maxWaypointsPerLeg: parseEnvLimit(process.env.LIMIT_MAX_WAYPOINTS_PER_LEG),
+    maxImagesPerBoat: parseEnvLimit(process.env.LIMIT_MAX_IMAGES_PER_BOAT),
+    maxAIMessagesPerDayPerUser: parseEnvLimit(process.env.LIMIT_MAX_AI_MESSAGES_PER_DAY_PER_USER),
+  };
 }
 
 /**
- * Check if we're in pilot mode
+ * Get a specific limit value.
+ * Returns null if not set (meaning unlimited).
  */
-export function isPilot(): boolean {
-  return getReleaseType() === 'pilot';
+export function getLimit(key: keyof Limits): number | null {
+  return getLimits()[key];
 }
 
 /**
- * Check if we're in production mode
+ * Check if a specific limit is configured (not unlimited).
  */
-export function isProduction(): boolean {
-  return getReleaseType() === 'production';
+export function hasLimit(key: keyof Limits): boolean {
+  return getLimits()[key] !== null;
 }
 
 /**
- * Get a human-readable release type name
+ * Check if any limits are configured.
  */
-export function getReleaseTypeName(): string {
-  const type = getReleaseType();
-  return type.charAt(0).toUpperCase() + type.slice(1);
+export function hasAnyLimits(): boolean {
+  const limits = getLimits();
+  return Object.values(limits).some(v => v !== null);
 }

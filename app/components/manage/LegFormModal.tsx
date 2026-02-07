@@ -8,6 +8,7 @@ import skillsConfig from '@/app/config/skills-config.json';
 import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
 import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { canCreateLeg } from '@/app/lib/limits';
 import Image from 'next/image';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
@@ -39,6 +40,7 @@ export function LegFormModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [boatCapacity, setBoatCapacity] = useState<number | null>(null);
   const [journeyDefaultsLoaded, setJourneyDefaultsLoaded] = useState(false);
   const [journeyDefaultsApplied, setJourneyDefaultsApplied] = useState(false);
@@ -57,9 +59,22 @@ export function LegFormModal({
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [editingWaypointIndex, setEditingWaypointIndex] = useState<number | null>(null);
 
+  // Check leg creation limit
+  const checkLegLimit = async () => {
+    const supabase = getSupabaseBrowserClient();
+    const result = await canCreateLeg(supabase, journeyId);
+    if (!result.allowed) {
+      setLimitReached(true);
+      setError(result.message || 'Leg limit reached for this journey');
+    } else {
+      setLimitReached(false);
+    }
+  };
+
   // Load boat capacity and leg data when modal opens
   useEffect(() => {
     if (isOpen) {
+      setLimitReached(false); // Reset limit flag when modal opens
       setJourneyDefaultsApplied(false); // Reset flag when modal opens
       setJourneySkills(null); // Reset journey skills when modal opens
       setJourneyMinExperienceLevel(null); // Reset journey experience level when modal opens
@@ -74,6 +89,8 @@ export function LegFormModal({
       } else {
         // Creating new leg - reset form first, then load journey defaults
         resetForm();
+        // Check leg creation limit
+        checkLegLimit();
         // Load journey defaults after a brief delay to ensure state is reset
         const timer = setTimeout(() => {
           loadBoatCapacity(null); // This will set risk level and skills from journey
@@ -1092,7 +1109,7 @@ export function LegFormModal({
                   </button>
                   <button
                     onClick={handleSave}
-                    disabled={saving || !legName.trim() || waypoints.length < 2}
+                    disabled={saving || !legName.trim() || waypoints.length < 2 || (!legId && limitReached)}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
                   >
                     {saving ? 'Saving...' : legId ? 'Save Changes' : 'Create Leg'}
