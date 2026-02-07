@@ -419,14 +419,14 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
     }
   }
 
-  // Method 2: Find tool call format with <|tool_call_start|> and <|tool_call_end|>
-  const toolCallStartRegex = /<\|tool_call_start\|>\[(.*?)\]<\|tool_call_end\|>/g;
+  // Method 2: Find tool call format with <|tool_calls_start|> and <|tool_calls_end|> delimiters
+  const toolCallDelimiterRegex = /<\|tool_calls_start\|>([\s\S]*?)<\|tool_calls_end\|>/g;
   let startMatch;
 
-  while ((startMatch = toolCallStartRegex.exec(text)) !== null) {
-    log('Found tool call with <|> format:', startMatch[1].trim().substring(0, 200));
+  while ((startMatch = toolCallDelimiterRegex.exec(text)) !== null) {
+    log('Found tool call with <|tool_calls_start|> delimiters:', startMatch[1].trim().substring(0, 200));
     try {
-      // Extract the content between [] and parse as JSON
+      // Extract the content between delimiters and parse as JSON
       const toolCallContent = startMatch[1].trim();
 
       // Handle case where content might be wrapped in quotes or have extra formatting
@@ -444,7 +444,7 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
         jsonContent = jsonContent.substring(firstBrace, lastBrace + 1);
       } else {
         // If no JSON braces found, this is not a tool call - skip it
-        log('Skipping <|> format - no JSON structure found in content');
+        log('Skipping <|tool_calls_start|> format - no JSON structure found in content');
         continue;
       }
 
@@ -452,33 +452,17 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
       try {
         toolCallJson = JSON.parse(jsonContent);
       } catch (jsonError) {
-        log('Failed to parse JSON, trying to fix truncated JSON:', jsonError);
-        // Try to fix truncated JSON by adding missing closing braces
+        log('Failed to parse JSON, trying to fix malformed JSON:', jsonError);
+        // Try to fix malformed JSON by cleaning up extra braces/brackets
         let fixedJson = jsonContent;
         try {
-          // Try to fix common truncation issues
-          // Add missing closing braces/brackets
-          let openBraces = (fixedJson.match(/\{/g) || []).length;
-          let closeBraces = (fixedJson.match(/\}/g) || []).length;
-          let openBrackets = (fixedJson.match(/\[/g) || []).length;
-          let closeBrackets = (fixedJson.match(/\]/g) || []).length;
-
-          // Add missing closing braces
-          while (closeBraces < openBraces) {
-            fixedJson += '}';
-            closeBraces++;
-          }
-          while (closeBrackets < openBrackets) {
-            fixedJson += ']';
-            closeBrackets++;
-          }
-
-          // Remove trailing comma before closing brace/bracket
-          fixedJson = fixedJson.replace(/,(\s*[}\]])/g, '$1');
+          // Try to fix common JSON issues (like extra closing braces)
+          // Remove trailing comma and extra closing braces that might cause parsing errors
+          fixedJson = fixedJson.replace(/,(\s*})/g, '$1').replace(/}\s*}$/g, '}');
 
           toolCallJson = JSON.parse(fixedJson);
         } catch (fixError) {
-          log('Failed to fix truncated JSON, trying to extract valid JSON object:', fixError);
+          log('Failed to fix malformed JSON, trying to extract valid JSON object:', fixError);
           // Try to extract a valid JSON object from the text
           const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -487,13 +471,13 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
             } catch (nestedError) {
               log('Still failed to parse extracted JSON:', nestedError);
               // If we still can't parse JSON, this is not a valid tool call
-              log('Skipping <|> format - content is not valid JSON');
+              log('Skipping <|tool_calls_start|> format - content is not valid JSON');
               continue;
             }
           } else {
             log('No valid JSON object found in content');
             // If no JSON pattern found, this is not a valid tool call
-            log('Skipping <|> format - content is not valid JSON');
+            log('Skipping <|tool_calls_start|> format - content is not valid JSON');
             continue;
           }
         }
@@ -501,7 +485,7 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
 
       // Validate this is actually a tool call (must have name field)
       if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
-        log('Skipping <|> format - no valid "name" field');
+        log('Skipping <|tool_calls_start|> format - no valid "name" field');
         continue;
       }
       const toolCall = {
@@ -510,11 +494,11 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
         arguments: toolCallJson.arguments || {},
       };
       toolCalls.push(toolCall);
-      log('Parsed <|> tool call:', { name: toolCall.name, args: toolCall.arguments });
+      log('Parsed <|tool_calls_start|> tool call:', { name: toolCall.name, args: toolCall.arguments });
       // Remove tool call from content
       content = content.replace(startMatch[0], '').trim();
     } catch (e) {
-      log('Failed to parse <|> tool call JSON:', e);
+      log('Failed to parse <|tool_calls_start|> tool call JSON:', e);
       // Invalid JSON, skip
     }
   }

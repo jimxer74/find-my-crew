@@ -413,10 +413,10 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
   let content = text;
 
   // Method 1: Find tool call blocks with code block format
-  const toolCallRegex = /```(?:tool_calls?|tool_code|json)\s*\n?([\s\S]*?)```/g;
+  const codeBlockRegex = /```(?:tool_calls?|tool_code|json)\s*\n?([\s\S]*?)```/g;
   let match;
 
-  while ((match = toolCallRegex.exec(text)) !== null) {
+  while ((match = codeBlockRegex.exec(text)) !== null) {
     try {
       const toolCallJson = JSON.parse(match[1].trim());
       if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
@@ -429,6 +429,28 @@ function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] 
       };
       toolCalls.push(toolCall);
       content = content.replace(match[0], '').trim();
+    } catch (e) {
+      // Skip invalid JSON
+    }
+  }
+
+  // Method 2: Find tool call blocks with <|tool_calls_start|> and <|tool_calls_end|> delimiters
+  const delimiterRegex = /<\|tool_calls_start\|>([\s\S]*?)<\|tool_calls_end\|>/g;
+  let delimiterMatch;
+
+  while ((delimiterMatch = delimiterRegex.exec(text)) !== null) {
+    try {
+      const toolCallJson = JSON.parse(delimiterMatch[1].trim());
+      if (!toolCallJson.name || typeof toolCallJson.name !== 'string') {
+        continue;
+      }
+      const toolCall = {
+        id: `tc_${Date.now()}_${toolCalls.length}`,
+        name: toolCallJson.name,
+        arguments: toolCallJson.arguments || {},
+      };
+      toolCalls.push(toolCall);
+      content = content.replace(delimiterMatch[0], '').trim();
     } catch (e) {
       // Skip invalid JSON
     }
