@@ -101,19 +101,13 @@ export default function Home() {
               <>
                 <Link
                   href="/crew/dashboard"
-                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
+                  className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
                 >
                   {t('hero.browseJourneys')}
                 </Link>
                 <button
-                  onClick={() => setIsSignupModalOpen(true)}
-                  className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
-                >
-                  {t('hero.signUp')}
-                </button>
-                <button
                   onClick={() => setIsLoginModalOpen(true)}
-                  className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
+                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
                 >
                   {t('hero.login')}
                 </button>
