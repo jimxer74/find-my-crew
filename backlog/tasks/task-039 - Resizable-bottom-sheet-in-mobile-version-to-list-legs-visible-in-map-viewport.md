@@ -1,10 +1,10 @@
 ---
 id: TASK-039
 title: Resizable bottom sheet in mobile version to list legs visible in map viewport
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-28 06:42'
-updated_date: '2026-02-07 13:15'
+updated_date: '2026-02-07 13:26'
 labels: []
 dependencies: []
 ---
