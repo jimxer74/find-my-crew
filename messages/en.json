@@ -16,6 +16,9 @@
     "filters": "Filters",
     "apply": "Apply",
     "clear": "Clear",
+    "clearAll": "Clear all",
+    "profile": "Profile",
+    "pleaseComplete": "Please complete",
     "reset": "Reset",
     "confirm": "Confirm",
     "yes": "Yes",
@@ -208,9 +211,9 @@
       "filters": {
         "location": "Location",
         "locationPlaceholder": "Search for a location...",
-        "departureLocation": "Departure location",
+        "departureLocation": "Where from",
         "departureLocationPlaceholder": "Search for departure location...",
-        "arrivalLocation": "Arrival location",
+        "arrivalLocation": "Where to",
         "arrivalLocationPlaceholder": "Search for arrival location...",
         "search": "Search",
         "searchPlaceholder": "Search journeys, boats, owners...",
@@ -218,11 +221,17 @@
         "startDate": "Start Date",
         "endDate": "End Date",
         "riskLevel": "Risk Level",
-        "experienceLevel": "Experience Level",
+        "riskLevelPreferences": "Risk Level Preferences",
+        "experienceLevel": "Sailing Experience Level",
         "skills": "Required Skills",
         "crewNeeded": "Crew Needed",
-        "availability": "Availability",
-        "saveAndSearch": "Save and Search"
+        "availability": "When",
+        "saveAndSearch": "Save and Search",
+        "selectDateRange": "Select date range",
+        "clearDateRange": "Clear date range",
+        "clearLocation": "Clear location",
+        "clearArrivalLocation": "Clear arrival location",
+        "experienceWarning": "You've selected {selected}, which is higher than your profile level ({profile}). Make sure you're comfortable with this level."
       }
     },
     "card": {

@@ -25,6 +25,14 @@ export async function GET(request: NextRequest) {
       notificationsResult,
       emailPrefsResult,
       consentAuditResult,
+      // AI data
+      aiConversationsResult,
+      aiMessagesResult,
+      aiPendingActionsResult,
+      // Feedback data
+      feedbackResult,
+      feedbackVotesResult,
+      feedbackPromptDismissalsResult,
     ] = await Promise.all([
       // Profile data
       supabase
@@ -89,6 +97,48 @@ export async function GET(request: NextRequest) {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
+
+      // AI conversations
+      supabase
+        .from('ai_conversations')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+
+      // AI messages
+      supabase
+        .from('ai_messages')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+
+      // AI pending actions
+      supabase
+        .from('ai_pending_actions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+
+      // Feedback submissions
+      supabase
+        .from('feedback')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+
+      // Feedback votes
+      supabase
+        .from('feedback_votes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
+
+      // Feedback prompt dismissals
+      supabase
+        .from('feedback_prompt_dismissals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false }),
     ]);
 
     // Compile all data
@@ -106,6 +156,20 @@ export async function GET(request: NextRequest) {
       notifications: notificationsResult.data || [],
 
       consentHistory: consentAuditResult.data || [],
+
+      // AI assistant data
+      ai_data: {
+        conversations: aiConversationsResult.data || [],
+        messages: aiMessagesResult.data || [],
+        pending_actions: aiPendingActionsResult.data || [],
+      },
+
+      // Feedback system data
+      feedback_data: {
+        feedback: feedbackResult.data || [],
+        votes: feedbackVotesResult.data || [],
+        prompt_dismissals: feedbackPromptDismissalsResult.data || [],
+      },
 
       // Account metadata
       accountCreatedAt: user.created_at,

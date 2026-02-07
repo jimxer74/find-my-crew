@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import { ExperienceLevel, getExperienceLevelConfig, getAllExperienceLevels } from '@/app/types/experience-levels';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
@@ -42,9 +43,9 @@ const getSkillLevelInfo = (level: ExperienceLevel): { title: string; content: Re
 
 
 
-export function SkillLevelSelector({ 
-  value, 
-  onChange, 
+export function SkillLevelSelector({
+  value,
+  onChange,
   onInfoClick,
   profileValue = null,
   showProfileIndicator = false,
@@ -52,6 +53,8 @@ export function SkillLevelSelector({
   onWarning,
   showRequiredBadge = false
 }: SkillLevelSelectorProps) {
+  const t = useTranslations('common');
+  const tFilters = useTranslations('journeys.browse.filters');
   const levels = getAllExperienceLevels();
   
   // Check if selected level is higher than profile level
@@ -66,7 +69,7 @@ export function SkillLevelSelector({
       if (isHigherThanProfile) {
         const profileConfig = getExperienceLevelConfig(profileValue!);
         const selectedConfig = getExperienceLevelConfig(value!);
-        onWarning(`You've selected ${selectedConfig.displayName}, which is higher than your profile level (${profileConfig.displayName}). Make sure you're comfortable with this level.`);
+        onWarning(tFilters('experienceWarning', { selected: selectedConfig.displayName, profile: profileConfig.displayName }));
       } else {
         onWarning(null);
       }
@@ -93,10 +96,10 @@ export function SkillLevelSelector({
   return (
     <div className="w-full">
       <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
-        Sailing Experience Level
+        {tFilters('experienceLevel')}
         {showRequiredBadge && value === null && (
           <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
-            Please complete
+            {t('pleaseComplete')}
           </span>
         )}
       </label>
@@ -118,9 +121,9 @@ export function SkillLevelSelector({
             >
               {/* Profile indicator badge */}
               {isProfile && (
-                <div className="absolute top-1 right-1 z-10">
+                <div className="absolute top-1 right-1">
                   <div className="bg-gray-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
-                    Profile
+                    {t('profile')}
                   </div>
                 </div>
               )}

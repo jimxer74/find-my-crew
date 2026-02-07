@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { searchLocation, type LocationSearchResult } from '@/app/lib/geocoding/locations';
 
 export type Location = {
   name: string;
@@ -8,6 +9,29 @@ export type Location = {
   lng: number;
   countryCode?: string;  // ISO 3166-1 alpha-2 code (e.g., US, GB, FR)
   countryName?: string;  // Full country name
+  isCruisingRegion?: boolean;  // True if this is a predefined cruising area
+  bbox?: {  // Bounding box for cruising regions
+    minLng: number;
+    minLat: number;
+    maxLng: number;
+    maxLat: number;
+  };
+};
+
+// Unified suggestion type for both Mapbox and cruising regions
+type Suggestion = {
+  id: string;
+  name: string;
+  subtitle?: string;
+  isCruisingRegion: boolean;
+  // Mapbox-specific
+  mapbox_id?: string;
+  place_formatted?: string;
+  // Cruising region-specific
+  category?: string;
+  description?: string;
+  bbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
+  score?: number;
 };
 
 export type LocationAutocompleteProps = {
@@ -33,7 +57,7 @@ export function LocationAutocomplete({
   types = 'region, city, country, place',
   className = '',
 }: LocationAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,7 +77,15 @@ export function LocationAutocomplete({
     });
   };
 
-  // Fetch location suggestions from Mapbox Search Box API with debouncing
+  // Format category name for display
+  const formatCategory = (category: string): string => {
+    return category
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Fetch location suggestions from Mapbox Search Box API and cruising regions with debouncing
   const fetchLocationSuggestions = (query: string) => {
     // Clear existing timeout
     if (searchTimeoutRef.current) {
@@ -74,14 +106,34 @@ export function LocationAutocomplete({
 
     // Debounce API calls - wait 300ms after user stops typing
     const timeoutId = setTimeout(async () => {
+      // Search cruising regions first (instant, no API call)
+      const cruisingResults = searchLocation(query);
+      const cruisingSuggestions: Suggestion[] = cruisingResults
+        .slice(0, 5) // Limit to top 5 cruising regions
+        .map((result: LocationSearchResult) => ({
+          id: `cruising-${result.region.name}`,
+          name: result.region.name,
+          subtitle: `Cruising Area • ${formatCategory(result.region.category)}`,
+          isCruisingRegion: true,
+          category: result.region.category,
+          description: result.region.description,
+          bbox: result.region.bbox,
+          score: result.score,
+        }));
+
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
       if (!accessToken) {
         console.warn('Mapbox access token not configured');
+        // Still show cruising regions even without Mapbox
+        setSuggestions(cruisingSuggestions);
+        setShowSuggestions(cruisingSuggestions.length > 0);
         return;
       }
 
       const sessionToken = sessionTokenRef.current;
       if (!sessionToken) {
+        setSuggestions(cruisingSuggestions);
+        setShowSuggestions(cruisingSuggestions.length > 0);
         return;
       }
 
@@ -102,23 +154,27 @@ export function LocationAutocomplete({
         }
 
         const data = await response.json();
-        const newSuggestions = (data.suggestions || [])
+        const mapboxSuggestions: Suggestion[] = (data.suggestions || [])
           .map((suggestion: any) => ({
+            id: suggestion.mapbox_id,
             mapbox_id: suggestion.mapbox_id,
             name: suggestion.name || suggestion.full_address || suggestion.place_formatted,
-            full_address: suggestion.full_address,
+            subtitle: suggestion.place_formatted,
             place_formatted: suggestion.place_formatted,
-            feature_type: suggestion.feature_type,
-            context: suggestion.context || {},
+            isCruisingRegion: false,
           }))
-          .slice(0, 8); // Take top 8 most relevant
+          .slice(0, 6); // Take top 6 from Mapbox
 
-        setSuggestions(newSuggestions);
+        // Merge: cruising regions first (sorted by score), then Mapbox results
+        const mergedSuggestions = [...cruisingSuggestions, ...mapboxSuggestions];
+
+        setSuggestions(mergedSuggestions);
         setShowSuggestions(true);
       } catch (err) {
         console.error('Error fetching location suggestions:', err);
-        setSuggestions([]);
-        setShowSuggestions(false);
+        // Still show cruising regions on error
+        setSuggestions(cruisingSuggestions);
+        setShowSuggestions(cruisingSuggestions.length > 0);
       }
     }, 300);
 
@@ -127,7 +183,29 @@ export function LocationAutocomplete({
   };
 
   // Handle location selection from autocomplete - retrieve full details with coordinates
-  const handleLocationSelect = async (suggestion: any) => {
+  const handleLocationSelect = async (suggestion: Suggestion) => {
+    // Handle cruising region selection - no API call needed
+    if (suggestion.isCruisingRegion && suggestion.bbox) {
+      // Calculate center point from bounding box
+      const lat = (suggestion.bbox.minLat + suggestion.bbox.maxLat) / 2;
+      const lng = (suggestion.bbox.minLng + suggestion.bbox.maxLng) / 2;
+
+      onChange({
+        name: suggestion.name,
+        lat,
+        lng,
+        isCruisingRegion: true,
+        bbox: suggestion.bbox,  // Include the predefined bounding box
+      });
+
+      setInputValue(suggestion.name);
+      setShowSuggestions(false);
+      setSuggestions([]);
+      sessionTokenRef.current = null;
+      return;
+    }
+
+    // Handle Mapbox location selection
     const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     if (!accessToken) {
       console.warn('Mapbox access token not configured');
@@ -154,7 +232,7 @@ export function LocationAutocomplete({
 
       const data = await response.json();
       const feature = data.features?.[0];
-      
+
       if (feature && feature.geometry && feature.geometry.coordinates) {
         const [lng, lat] = feature.geometry.coordinates;
         const locationName = feature.properties?.full_address ||
@@ -173,6 +251,7 @@ export function LocationAutocomplete({
           lng: lng,
           countryCode,
           countryName,
+          isCruisingRegion: false,
         });
 
         setInputValue(locationName);
@@ -227,16 +306,24 @@ export function LocationAutocomplete({
       />
       {showSuggestions && suggestions.length > 0 && (
         <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {suggestions.map((suggestion, index) => (
+          {suggestions.map((suggestion) => (
             <button
-              key={suggestion.mapbox_id || `suggestion-${index}`}
+              key={suggestion.id}
               type="button"
               onClick={() => handleLocationSelect(suggestion)}
               className="w-full text-left px-4 py-2 hover:bg-accent transition-colors border-b border-border last:border-b-0"
             >
-              <div className="font-medium text-card-foreground">{suggestion.name}</div>
-              {suggestion.place_formatted && (
-                <div className="text-sm text-muted-foreground">{suggestion.place_formatted}</div>
+              <div className="font-medium text-card-foreground">
+                {suggestion.name}
+              </div>
+              {suggestion.subtitle && (
+                <div className={`text-sm ${
+                  suggestion.isCruisingRegion
+                    ? 'text-sky-600/80 dark:text-sky-400/80'
+                    : 'text-muted-foreground'
+                }`}>
+                  {suggestion.subtitle}
+                </div>
               )}
             </button>
           ))}

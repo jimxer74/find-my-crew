@@ -16,6 +16,9 @@
     "filters": "Suodattimet",
     "apply": "Käytä",
     "clear": "Tyhjennä",
+    "clearAll": "Tyhjennä kaikki",
+    "profile": "Profiili",
+    "pleaseComplete": "Täytä",
     "reset": "Nollaa",
     "confirm": "Vahvista",
     "yes": "Kyllä",
@@ -218,11 +221,17 @@
         "startDate": "Aloituspäivä",
         "endDate": "Päättymispäivä",
         "riskLevel": "Riskitaso",
-        "experienceLevel": "Kokemusaste",
+        "riskLevelPreferences": "Riskitasoasetukset",
+        "experienceLevel": "Purjehduskokemus",
         "skills": "Vaaditut taidot",
         "crewNeeded": "Miehistöä tarvitaan",
-        "availability": "Saatavuus",
-        "saveAndSearch": "Tallenna ja hae"
+        "availability": "Milloin",
+        "saveAndSearch": "Tallenna ja hae",
+        "selectDateRange": "Valitse ajanjakso",
+        "clearDateRange": "Tyhjennä ajanjakso",
+        "clearLocation": "Tyhjennä sijainti",
+        "clearArrivalLocation": "Tyhjennä määränpää",
+        "experienceWarning": "Olet valinnut tason {selected}, joka on korkeampi kuin profiilisi taso ({profile}). Varmista, että olet valmis tähän tasoon."
       }
     },
     "card": {

@@ -28,6 +28,7 @@ type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps) {
   const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
+  const { clearFilters } = useFilters();
 
   // Close dialog when clicking outside
   useEffect(() => {
@@ -82,24 +83,31 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
       className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-[28rem] bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
     >
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
-        {/* Close button - mobile only */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+        <div className="flex items-center">
+          {/* Close button - mobile only */}
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+            aria-label={t('close')}
+          >
+            <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
+        </div>
         <button
-          onClick={onClose}
-          className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
-          aria-label="Close"
+          onClick={clearFilters}
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={t('clearAll')}
         >
-          <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          {t('clearAll')}
         </button>
-        <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
       </div>
 
-      {/* Content - scrollable */}
-      <div className="flex-1 overflow-y-auto">
-        <FiltersPageContent onClose={handleCancel} />
-      </div>
+      {/* Content - FiltersPageContent handles its own scrolling */}
+      <FiltersPageContent onClose={handleCancel} />
     </div>,
     document.body
   );
@@ -257,9 +265,9 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col">
-      {/* Content - no overflow-y-auto, let parent handle scrolling in page mode */}
-      <div className="flex-1 p-4">
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Content - scrollable */}
+      <div className="flex-1 overflow-y-auto p-4">
         {loading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-muted-foreground">{t('loading')}</div>
@@ -275,7 +283,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                   <button
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                     className="flex items-center gap-2 w-full px-3 py-2 min-h-[44px] rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
-                    aria-label="Select date range"
+                    aria-label={tFilters('selectDateRange')}
                   >
                     <svg
                       className={`w-5 h-5 flex-shrink-0 ${
@@ -310,7 +318,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                         setTempDateRange({ start: null, end: null });
                       }}
                       className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
-                      aria-label="Clear date range"
+                      aria-label={tFilters('clearDateRange')}
                     >
                       <svg
                         className="w-4 h-4 text-muted-foreground hover:text-foreground"
@@ -381,7 +389,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                       setTempLocationInput('');
                     }}
                       className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
-                      aria-label="Clear location"
+                      aria-label={tFilters('clearLocation')}
                       type="button"
                     >
                       <svg
@@ -427,7 +435,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                       setTempArrivalLocationInput('');
                     }}
                       className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
-                      aria-label="Clear arrival location"
+                      aria-label={tFilters('clearArrivalLocation')}
                       type="button"
                     >
                       <svg
@@ -496,17 +504,11 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
           )}
         </div>
 
-      {/* Action buttons - sticky footer */}
-      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 border-t border-border bg-card">
-        <button
-          onClick={handleCancel}
-          className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
-        >
-          {t('cancel')}
-        </button>
+      {/* Action button - sticky footer */}
+      <div className="flex-shrink-0 flex items-center justify-center p-4 border-t border-border bg-card">
         <button
           onClick={handleSave}
-          className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+          className="px-6 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
         >
           {tFilters('saveAndSearch')}
         </button>

@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { DateRange } from '@/app/components/ui/DateRangePicker';
 import { Location } from '@/app/components/ui/LocationAutocomplete';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -128,6 +129,31 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       console.error('Error saving filters to session:', err);
     }
   }, [filters, isInitialized]);
+
+  // Clear filters on logout
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const supabase = getSupabaseBrowserClient();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        // Clear filters from state
+        setFilters(defaultFilters);
+        setLastUpdated(Date.now());
+
+        // Clear filters from session storage
+        try {
+          sessionStorage.removeItem('crew-date-range');
+          sessionStorage.removeItem('crew-filters');
+        } catch (err) {
+          console.error('Error clearing filters from session on logout:', err);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const updateFilters = (updates: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...updates }));

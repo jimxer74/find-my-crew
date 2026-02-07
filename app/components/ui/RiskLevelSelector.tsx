@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
@@ -67,16 +68,18 @@ const getRiskLevelInfo = (level: RiskLevel): { title: string; content: React.Rea
   }
 };
 
-export function RiskLevelSelector({ 
-  value, 
-  onChange, 
-  onInfoClick, 
-  onClose, 
+export function RiskLevelSelector({
+  value,
+  onChange,
+  onInfoClick,
+  onClose,
   singleSelect = false,
   profileValue = null,
   showProfileIndicator = false,
   showRequiredBadge = false
 }: RiskLevelSelectorProps) {
+  const t = useTranslations('common');
+  const tFilters = useTranslations('journeys.browse.filters');
   // Normalize value to array for internal use
   const valueArray = Array.isArray(value) ? value : value ? [value] : [];
   const profileArray = Array.isArray(profileValue) ? profileValue : profileValue ? [profileValue] : [];
@@ -174,10 +177,10 @@ export function RiskLevelSelector({
   return (
     <div className="w-full">
       <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
-        {singleSelect ? 'Risk Level' : 'Risk Level Preferences'}
+        {singleSelect ? tFilters('riskLevel') : tFilters('riskLevelPreferences')}
         {showRequiredBadge && isEmpty && (
           <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
-            Please complete
+            {t('pleaseComplete')}
           </span>
         )}
       </label>
@@ -193,9 +196,9 @@ export function RiskLevelSelector({
           }`}
         >
           {isProfileValue('Coastal sailing') && (
-            <div className="absolute top-1 right-1 z-10">
+            <div className="absolute top-1 right-1">
               <div className="bg-gray-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
-                Profile
+                {t('profile')}
               </div>
             </div>
           )}
@@ -232,9 +235,9 @@ export function RiskLevelSelector({
           }`}
         >
           {isProfileValue('Offshore sailing') && (
-            <div className="absolute top-1 right-1 z-10">
-              <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
-                Profile
+            <div className="absolute top-1 right-1">
+              <div className="bg-gray-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                {t('profile')}
               </div>
             </div>
           )}
@@ -270,9 +273,9 @@ export function RiskLevelSelector({
           }`}
         >
           {isProfileValue('Extreme sailing') && (
-            <div className="absolute top-1 right-1 z-10">
-              <div className="bg-blue-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
-                Profile
+            <div className="absolute top-1 right-1">
+              <div className="bg-gray-500 text-white text-[8px] md:text-xs px-1 md:px-1.5 py-0.5 rounded font-medium">
+                {t('profile')}
               </div>
             </div>
           )}

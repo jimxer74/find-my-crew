@@ -1,6 +1,18 @@
 -- ============================================================================
 -- Function to get_legs_in_viewport
 -- ============================================================================
+-- Parameters:
+--   min_lng, min_lat, max_lng, max_lat: Viewport bounding box (required)
+--   start_date_filter: Optional date filter (legs starting on or after)
+--   end_date_filter: Optional date filter (legs ending on or before)
+--   risk_levels_filter: Optional array of risk levels to filter by
+--   skills_filter: Optional array of required skills
+--   min_experience_level_filter: Optional user experience level for matching
+--   departure_min_lng, departure_min_lat, departure_max_lng, departure_max_lat:
+--     Optional bounding box for departure location (filters start waypoint)
+--   arrival_min_lng, arrival_min_lat, arrival_max_lng, arrival_max_lat:
+--     Optional bounding box for arrival location (filters end waypoint)
+-- ============================================================================
 
 BEGIN
   RETURN QUERY
@@ -153,6 +165,38 @@ BEGIN
       min_experience_level_filter IS NULL
       OR COALESCE(l.min_experience_level, j.min_experience_level) IS NULL
       OR COALESCE(l.min_experience_level, j.min_experience_level) <= min_experience_level_filter
+    )
+    -- Optional departure location filter (start waypoint with index = 0)
+    AND (
+      -- If any departure bbox param is NULL, skip this filter
+      (departure_min_lng IS NULL OR departure_min_lat IS NULL OR
+       departure_max_lng IS NULL OR departure_max_lat IS NULL)
+      OR
+      EXISTS (
+        SELECT 1 FROM public.waypoints w
+        WHERE w.leg_id = l.id
+        AND w.index = 0
+        AND ST_Within(
+          w.location,
+          ST_MakeEnvelope(departure_min_lng, departure_min_lat, departure_max_lng, departure_max_lat, 4326)
+        )
+      )
+    )
+    -- Optional arrival location filter (end waypoint with max index)
+    AND (
+      -- If any arrival bbox param is NULL, skip this filter
+      (arrival_min_lng IS NULL OR arrival_min_lat IS NULL OR
+       arrival_max_lng IS NULL OR arrival_max_lat IS NULL)
+      OR
+      EXISTS (
+        SELECT 1 FROM public.waypoints w
+        WHERE w.leg_id = l.id
+        AND w.index = (SELECT MAX(w2.index) FROM public.waypoints w2 WHERE w2.leg_id = l.id)
+        AND ST_Within(
+          w.location,
+          ST_MakeEnvelope(arrival_min_lng, arrival_min_lat, arrival_max_lng, arrival_max_lat, 4326)
+        )
+      )
     )
   ORDER BY l.start_date ASC NULLS LAST, l.created_at DESC;
 END;

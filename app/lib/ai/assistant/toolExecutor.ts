@@ -8,7 +8,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
 import { BoundingBox, describeBbox } from '../../geocoding/geocoding';
-import { getLocationBbox, listRegions, getCategories } from './locations';
+import { getLocationBbox, listRegions, getCategories } from '../../geocoding/locations';
 
 // Debug logging helper
 const DEBUG = true;

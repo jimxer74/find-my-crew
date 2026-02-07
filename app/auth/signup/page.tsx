@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { EmailConfirmationModal } from '@/app/components/EmailConfirmationModal';
 
 export default function SignUpPage() {
   const t = useTranslations('auth.signup');
@@ -14,6 +15,7 @@ export default function SignUpPage() {
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,9 +39,8 @@ export default function SignUpPage() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Redirect to home page - ConsentSetupModal will appear there to collect consents
-        router.push('/');
-        router.refresh();
+        // Show email confirmation modal instead of immediate redirect
+        setShowEmailModal(true);
       }
     } catch (err: any) {
       setError(err.message || t('errors.emailAlreadyExists'));
@@ -141,6 +142,18 @@ export default function SignUpPage() {
           </p>
         </form>
       </div>
+
+      {/* Email Confirmation Modal */}
+      <EmailConfirmationModal
+        email={email}
+        isOpen={showEmailModal}
+        onClose={() => {
+          setShowEmailModal(false);
+          // After user acknowledges, redirect to home page
+          router.push('/');
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

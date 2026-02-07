@@ -139,6 +139,8 @@ export function CrewBrowseMap({
   const sourceAddedRef = useRef(false);
   const routeSourceAddedRef = useRef(false);
   const isFittingBoundsRef = useRef(false);
+  const isLocationFocusingRef = useRef(false); // Skip data reload while focusing on location filter
+  const prevLocationRef = useRef<{ departure: typeof filters.location; arrival: typeof filters.arrivalLocation } | null>(null);
   const userSkillsRef = useRef<string[]>([]);
   const userExperienceLevelRef = useRef<number | null>(null);
   const userRiskLevelRef = useRef<('Coastal sailing' | 'Offshore sailing' | 'Extreme sailing')[] | null>(null);
@@ -268,11 +270,15 @@ export function CrewBrowseMap({
   }, [calculateVisibleBounds]);
 
   // Memoized filtered legs based on visible bounds
+  // When only arrival filter is set, filter by end_waypoint; otherwise by start_waypoint
   const visibleLegs = useMemo(() => {
     if (!visibleBounds) return legs;
 
+    // Determine which waypoint to use based on filters
+    const showEndWaypoints = !filters.location && !!filters.arrivalLocation;
+
     return legs.filter(leg => {
-      const wp = leg.start_waypoint;
+      const wp = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
       if (!wp) return false;
 
       return (
@@ -282,7 +288,7 @@ export function CrewBrowseMap({
         wp.lat <= visibleBounds.maxLat
       );
     });
-  }, [legs, visibleBounds]);
+  }, [legs, visibleBounds, filters.location, filters.arrivalLocation]);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
@@ -494,15 +500,130 @@ export function CrewBrowseMap({
 
   // Reload legs when filters change or when lastUpdated timestamp changes
   useEffect(() => {
-    console.log('[CrewBrowseMap] Filters changed, triggering reload', {
+    // Check if location filter is set - if so, the focus effect will handle map movement
+    // and trigger the reload after animation completes
+    const hasLocationFilter = !!(filters.location?.lat || filters.arrivalLocation?.lat);
+    const prevHadLocation = !!(prevLocationRef.current?.departure?.lat || prevLocationRef.current?.arrival?.lat);
+    const locationFilterChanged =
+      filters.location?.lat !== prevLocationRef.current?.departure?.lat ||
+      filters.location?.lng !== prevLocationRef.current?.departure?.lng ||
+      filters.arrivalLocation?.lat !== prevLocationRef.current?.arrival?.lat ||
+      filters.arrivalLocation?.lng !== prevLocationRef.current?.arrival?.lng;
+
+    console.log('[CrewBrowseMap] Filters changed', {
       experienceLevel: filters.experienceLevel,
       riskLevel: filters.riskLevel,
       location: filters.location,
+      arrivalLocation: filters.arrivalLocation,
       dateRange: filters.dateRange,
       lastUpdated,
+      hasLocationFilter,
+      locationFilterChanged,
     });
+
+    // If location filter is set AND changed, skip reload here
+    // The focus effect will handle the map animation and trigger reload after
+    if (hasLocationFilter && locationFilterChanged) {
+      console.log('[CrewBrowseMap] Skipping reload - focus effect will handle location change');
+      return;
+    }
+
+    // If location was cleared, or other filters changed, trigger reload
     triggerDataReload();
-  }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.dateRange, lastUpdated, triggerDataReload]);
+  }, [filters.experienceLevel, filters.riskLevel, filters.location, filters.arrivalLocation, filters.dateRange, lastUpdated, triggerDataReload]);
+
+  // Focus map on location filter bounding box when location filters change
+  // Priority: departure location > arrival location (if both set, focus on departure)
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Check if location filters actually changed (not just other filters)
+    const prevDeparture = prevLocationRef.current?.departure;
+    const prevArrival = prevLocationRef.current?.arrival;
+    const departureChanged = filters.location?.lat !== prevDeparture?.lat || filters.location?.lng !== prevDeparture?.lng;
+    const arrivalChanged = filters.arrivalLocation?.lat !== prevArrival?.lat || filters.arrivalLocation?.lng !== prevArrival?.lng;
+
+    // Update ref for next comparison
+    prevLocationRef.current = { departure: filters.location, arrival: filters.arrivalLocation };
+
+    // Only focus if location actually changed
+    if (!departureChanged && !arrivalChanged) return;
+
+    // Determine which location to focus on
+    // If departure is set, always focus on departure (even if arrival is also set)
+    // If only arrival is set, focus on arrival
+    const focusLocation = filters.location || filters.arrivalLocation;
+
+    if (!focusLocation?.lat || !focusLocation?.lng) return;
+
+    // Use predefined bbox for cruising regions, otherwise calculate from center point
+    let bounds: mapboxgl.LngLatBounds;
+    const isCruisingRegion = !!focusLocation.bbox;
+
+    if (focusLocation.bbox) {
+      // Cruising region with predefined bounding box - use it directly
+      bounds = new mapboxgl.LngLatBounds(
+        [focusLocation.bbox.minLng, focusLocation.bbox.minLat],
+        [focusLocation.bbox.maxLng, focusLocation.bbox.maxLat]
+      );
+    } else {
+      // Regular location - calculate bbox from center with margin
+      const LOCATION_MARGIN_DEGREES = 1.0; // ~111km margin
+      bounds = new mapboxgl.LngLatBounds(
+        [focusLocation.lng - LOCATION_MARGIN_DEGREES, focusLocation.lat - LOCATION_MARGIN_DEGREES],
+        [focusLocation.lng + LOCATION_MARGIN_DEGREES, focusLocation.lat + LOCATION_MARGIN_DEGREES]
+      );
+    }
+
+    const locationName = filters.location ? 'departure' : 'arrival';
+    console.log(`[CrewBrowseMap] Focusing map on ${locationName} location:`, {
+      ...focusLocation,
+      isCruisingRegion,
+      bounds: bounds.toArray(),
+    });
+
+    // Set flag to prevent filter change effect from triggering premature data reload
+    isLocationFocusingRef.current = true;
+
+    // Fit map to the bounding box with padding for UI elements
+    // For cruising regions, use larger padding to ensure the whole region is visible
+    const isMobile = window.innerWidth < 768;
+    const animationDuration = 1500;
+
+    map.current.fitBounds(bounds, {
+      padding: isMobile
+        ? { top: 60, bottom: 200, left: 40, right: 40 } // Mobile: account for bottom sheet
+        : { top: 60, bottom: 60, left: 460, right: 60 }, // Desktop: account for left pane (400px + buffer)
+      duration: animationDuration,
+      maxZoom: isCruisingRegion ? 8 : 10, // Lower max zoom for large cruising regions
+    });
+
+    // After animation completes, clear flag and trigger data reload for new viewport
+    // Wait a bit longer (500ms) after animation to let map settle and avoid debounce conflicts
+    setTimeout(() => {
+      console.log('[CrewBrowseMap] Location focus animation complete, triggering reload', {
+        mapExists: !!map.current,
+        mapLoaded: mapLoadedRef.current,
+        isLoading: isLoadingRef.current,
+      });
+
+      isLocationFocusingRef.current = false;
+      lastLoadedBoundsRef.current = null;
+
+      // Reset loading state in case it got stuck
+      isLoadingRef.current = false;
+
+      // Clear any pending debounce timers to avoid conflicts
+      if (viewportDebounceTimerRef.current) {
+        clearTimeout(viewportDebounceTimerRef.current);
+        viewportDebounceTimerRef.current = null;
+      }
+
+      // Directly trigger reload
+      triggerDataReload();
+    }, animationDuration + 500); // Wait 500ms after animation to let map settle
+
+  }, [filters.location, filters.arrivalLocation, mapLoaded, triggerDataReload]);
 
   // Handle initialLegId - fetch and select the leg when provided or changed
   useEffect(() => {
@@ -592,6 +713,11 @@ export function CrewBrowseMap({
   useEffect(() => {
     if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
+    // Determine which waypoint to show based on filters:
+    // - If only arrival location is set (no departure), show end waypoints
+    // - Otherwise, show start waypoints
+    const showEndWaypoints = !filters.location && !!filters.arrivalLocation;
+
     // Separate approved legs from others to prevent clustering
     const approvedLegIds = new Set(
       Array.from(userRegistrations.entries())
@@ -601,23 +727,26 @@ export function CrewBrowseMap({
 
     // Convert legs to GeoJSON format, excluding approved legs from clustering source
     const features = legs
-      .filter(leg => 
-        leg.start_waypoint !== null && 
-        !approvedLegIds.has(leg.leg_id) // Exclude approved legs from clustering
-      )
-      .map(leg => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
-        },
-        properties: {
-          leg_id: leg.leg_id,
-          match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
-          experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
-          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
-        },
-      }));
+      .filter(leg => {
+        const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+        return waypoint !== null && !approvedLegIds.has(leg.leg_id);
+      })
+      .map(leg => {
+        const waypoint = showEndWaypoints ? leg.end_waypoint! : leg.start_waypoint!;
+        return {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [waypoint.lng, waypoint.lat],
+          },
+          properties: {
+            leg_id: leg.leg_id,
+            match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
+            experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
+            registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
+          },
+        };
+      });
 
     const geoJsonData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
@@ -632,23 +761,26 @@ export function CrewBrowseMap({
 
     // Update approved legs source (non-clustered, always visible)
     const approvedFeatures = legs
-      .filter(leg => 
-        leg.start_waypoint !== null && 
-        approvedLegIds.has(leg.leg_id)
-      )
-      .map(leg => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [leg.start_waypoint!.lng, leg.start_waypoint!.lat],
-        },
-        properties: {
-          leg_id: leg.leg_id,
-          match_percentage: leg.skill_match_percentage ?? 100,
-          experience_matches: leg.experience_level_matches ?? true,
-          registration_status: 'Approved' as const,
-        },
-      }));
+      .filter(leg => {
+        const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+        return waypoint !== null && approvedLegIds.has(leg.leg_id);
+      })
+      .map(leg => {
+        const waypoint = showEndWaypoints ? leg.end_waypoint! : leg.start_waypoint!;
+        return {
+          type: 'Feature' as const,
+          geometry: {
+            type: 'Point' as const,
+            coordinates: [waypoint.lng, waypoint.lat],
+          },
+          properties: {
+            leg_id: leg.leg_id,
+            match_percentage: leg.skill_match_percentage ?? 100,
+            experience_matches: leg.experience_level_matches ?? true,
+            registration_status: 'Approved' as const,
+          },
+        };
+      });
 
     const approvedGeoJsonData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
@@ -659,7 +791,7 @@ export function CrewBrowseMap({
     if (approvedSource) {
       approvedSource.setData(approvedGeoJsonData);
     }
-  }, [legs, mapLoaded, userRegistrations]);
+  }, [legs, mapLoaded, userRegistrations, filters.location, filters.arrivalLocation]);
 
   const theme = useTheme();
   const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
@@ -720,6 +852,12 @@ export function CrewBrowseMap({
       }
       // Debounce the viewport change
       viewportDebounceTimerRef.current = setTimeout(async () => {
+          console.log('[CrewBrowseMap] Debounced handler starting', {
+            hasMap: !!map.current,
+            isLoading: isLoadingRef.current,
+            lastLoadedBounds: lastLoadedBoundsRef.current,
+          });
+
           if (!map.current || isLoadingRef.current) {
             console.log('[CrewBrowseMap] Debounced handler: map not ready or already loading');
             return;
@@ -917,6 +1055,38 @@ export function CrewBrowseMap({
               params.append('end_date', currentFilters.dateRange.end.toISOString().split('T')[0]);
             }
 
+            // Add departure location filter if set
+            // Use direct bbox for cruising regions, center point for regular locations
+            if (currentFilters.location?.lat && currentFilters.location?.lng) {
+              if (currentFilters.location.bbox) {
+                // Cruising region with predefined bounding box
+                params.append('departure_min_lng', currentFilters.location.bbox.minLng.toString());
+                params.append('departure_min_lat', currentFilters.location.bbox.minLat.toString());
+                params.append('departure_max_lng', currentFilters.location.bbox.maxLng.toString());
+                params.append('departure_max_lat', currentFilters.location.bbox.maxLat.toString());
+              } else {
+                // Regular location - API will calculate bbox from center
+                params.append('departure_lat', currentFilters.location.lat.toString());
+                params.append('departure_lng', currentFilters.location.lng.toString());
+              }
+            }
+
+            // Add arrival location filter if set
+            // Use direct bbox for cruising regions, center point for regular locations
+            if (currentFilters.arrivalLocation?.lat && currentFilters.arrivalLocation?.lng) {
+              if (currentFilters.arrivalLocation.bbox) {
+                // Cruising region with predefined bounding box
+                params.append('arrival_min_lng', currentFilters.arrivalLocation.bbox.minLng.toString());
+                params.append('arrival_min_lat', currentFilters.arrivalLocation.bbox.minLat.toString());
+                params.append('arrival_max_lng', currentFilters.arrivalLocation.bbox.maxLng.toString());
+                params.append('arrival_max_lat', currentFilters.arrivalLocation.bbox.maxLat.toString());
+              } else {
+                // Regular location - API will calculate bbox from center
+                params.append('arrival_lat', currentFilters.arrivalLocation.lat.toString());
+                params.append('arrival_lng', currentFilters.arrivalLocation.lng.toString());
+              }
+            }
+
             // Note: We no longer filter by skills in the API
             // Instead, we fetch all legs and filter by match percentage on the frontend
             // This allows us to show match percentages for all legs
@@ -924,10 +1094,13 @@ export function CrewBrowseMap({
               experienceLevel: currentFilters.experienceLevel,
               riskLevel: currentFilters.riskLevel,
               dateRange: currentFilters.dateRange,
+              departureLocation: currentFilters.location,
+              arrivalLocation: currentFilters.arrivalLocation,
             });
 
             const url = `/api/legs/viewport?${params.toString()}`;
-            console.log('[CrewBrowseMap] Fetching from:', url);
+            console.log('[CrewBrowseMap] Fetching from URL:', url);
+            console.log('[CrewBrowseMap] All params:', Object.fromEntries(params.entries()));
 
             const response = await fetch(url);
             if (!response.ok) {
@@ -1660,12 +1833,13 @@ export function CrewBrowseMap({
 
     isFittingBoundsRef.current = true;
 
-    // Fit map to bounds with asymmetric padding to account for left pane (400px on desktop)
-    // Use larger left padding on desktop to ensure route is visible next to the pane
+    // Fit map to bounds with asymmetric padding to account for UI overlays
+    // Mobile: Large bottom padding for MobileLegCard (~350px card height + margin)
+    // Desktop: Large left padding for detail pane (400px + buffer)
     const isMobile = window.innerWidth < 768;
     map.current.fitBounds(bounds, {
       padding: isMobile
-        ? { top: 50, bottom: 100, left: 50, right: 50 } // Mobile: bottom padding for bottom sheet
+        ? { top: 50, bottom: 380, left: 30, right: 30 } // Mobile: large bottom padding for MobileLegCard
         : { top: 50, bottom: 50, left: 450, right: 50 }, // Desktop: 400px pane + 50px buffer on left
       duration: 1000,
       maxZoom: 12, // Don't zoom in too much

@@ -14,6 +14,7 @@ import { Header } from "./components/Header";
 import { ThemeScript } from "./components/ThemeScript";
 import { AssistantSidebar } from "./components/ai/AssistantSidebar";
 import { UserRolesProvider } from "./contexts/UserRoleContext";
+import { EmailVerificationBanner } from "./components/EmailVerificationBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,7 @@ export default async function RootLayout({
                     <AssistantProvider>
                       <Header />
                       <div className="min-h-screen pt-16">
+                        <EmailVerificationBanner />
                         {children}
                       </div>
                       <AssistantSidebar />

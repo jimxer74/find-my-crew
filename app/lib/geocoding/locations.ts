@@ -26,7 +26,7 @@ export interface LocationRegion {
 export const LOCATION_REGISTRY: LocationRegion[] = [
   // Mediterranean
   {
-    name: 'Full Mediterranean',
+    name: 'Mediterranean',
     aliases: ['mediterranean', 'med', 'the med', 'mediterranean sea'],
     category: 'mediterranean',
     bbox: { minLng: -6, minLat: 30, maxLng: 36, maxLat: 46 },
@@ -47,20 +47,6 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     description: 'Eastern Mediterranean including Greece, Turkey, and the Levant',
   },
   {
-    name: 'Barcelona area',
-    aliases: ['barcelona', 'catalonia', 'costa brava'],
-    category: 'mediterranean',
-    bbox: { minLng: 1.5, minLat: 41.0, maxLng: 2.5, maxLat: 41.8 },
-    description: 'Barcelona and surrounding Catalan coast',
-  },
-  {
-    name: 'Balearic Islands',
-    aliases: ['balearics', 'mallorca', 'majorca', 'ibiza', 'menorca', 'formentera'],
-    category: 'mediterranean',
-    bbox: { minLng: 1.0, minLat: 38.5, maxLng: 4.5, maxLat: 40.5 },
-    description: 'Balearic Islands including Mallorca, Ibiza, and Menorca',
-  },
-  {
     name: 'French Riviera',
     aliases: ['cote d\'azur', 'côte d\'azur', 'riviera', 'nice', 'monaco', 'cannes', 'st tropez', 'saint tropez'],
     category: 'mediterranean',
@@ -68,39 +54,11 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     description: 'French Riviera from Marseille to the Italian border',
   },
   {
-    name: 'Croatia',
-    aliases: ['croatian coast', 'dalmatia', 'dalmatian coast', 'split', 'dubrovnik', 'adriatic croatia'],
-    category: 'mediterranean',
-    bbox: { minLng: 13.0, minLat: 42.0, maxLng: 17.5, maxLat: 45.5 },
-    description: 'Croatian Adriatic coast including Dalmatian islands',
-  },
-  {
     name: 'Greek Islands',
     aliases: ['greece', 'aegean', 'cyclades', 'dodecanese', 'ionian islands', 'greek islands'],
     category: 'mediterranean',
     bbox: { minLng: 23.0, minLat: 35.0, maxLng: 28.0, maxLat: 39.5 },
     description: 'Greek Islands in the Aegean Sea',
-  },
-  {
-    name: 'Sardinia',
-    aliases: ['sardegna', 'costa smeralda'],
-    category: 'mediterranean',
-    bbox: { minLng: 8.0, minLat: 38.8, maxLng: 10.0, maxLat: 41.3 },
-    description: 'Island of Sardinia, Italy',
-  },
-  {
-    name: 'Corsica',
-    aliases: ['corse'],
-    category: 'mediterranean',
-    bbox: { minLng: 8.5, minLat: 41.3, maxLng: 9.6, maxLat: 43.0 },
-    description: 'Island of Corsica, France',
-  },
-  {
-    name: 'Sicily',
-    aliases: ['sicilia', 'aeolian islands'],
-    category: 'mediterranean',
-    bbox: { minLng: 12.0, minLat: 36.6, maxLng: 15.7, maxLat: 38.8 },
-    description: 'Island of Sicily and surrounding waters',
   },
   {
     name: 'Turkish Riviera',
@@ -111,27 +69,6 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
   },
 
   // Atlantic
-  {
-    name: 'Canary Islands',
-    aliases: ['canaries', 'gran canaria', 'tenerife', 'lanzarote', 'fuerteventura', 'la palma'],
-    category: 'atlantic',
-    bbox: { minLng: -18.5, minLat: 27.5, maxLng: -13.5, maxLat: 29.5 },
-    description: 'Canary Islands, Spain - popular ARC start location',
-  },
-  {
-    name: 'Azores',
-    aliases: ['acores', 'azores islands'],
-    category: 'atlantic',
-    bbox: { minLng: -31.5, minLat: 36.5, maxLng: -25.0, maxLat: 40.0 },
-    description: 'Azores archipelago - mid-Atlantic waypoint',
-  },
-  {
-    name: 'Madeira',
-    aliases: ['madeira island', 'funchal', 'porto santo'],
-    category: 'atlantic',
-    bbox: { minLng: -17.5, minLat: 32.3, maxLng: -16.2, maxLat: 33.2 },
-    description: 'Madeira and Porto Santo islands',
-  },
   {
     name: 'Cape Verde',
     aliases: ['cabo verde', 'cape verde islands', 'mindelo', 'sal'],
@@ -145,20 +82,6 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     category: 'atlantic',
     bbox: { minLng: -10.0, minLat: 36.9, maxLng: -7.5, maxLat: 42.2 },
     description: 'Portuguese Atlantic coast from Algarve to northern Portugal',
-  },
-  {
-    name: 'Galicia',
-    aliases: ['galicia spain', 'northwest spain', 'nw spain', 'vigo', 'la coruña', 'rias baixas'],
-    category: 'atlantic',
-    bbox: { minLng: -9.5, minLat: 41.8, maxLng: -7.0, maxLat: 44.0 },
-    description: 'Northwest Spain - Galicia region',
-  },
-  {
-    name: 'Brittany',
-    aliases: ['bretagne', 'brittany france', 'brest', 'saint malo'],
-    category: 'atlantic',
-    bbox: { minLng: -5.5, minLat: 47.0, maxLng: -1.0, maxLat: 49.0 },
-    description: 'Brittany coast, France',
   },
   {
     name: 'Bay of Biscay',
@@ -225,27 +148,7 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     bbox: { minLng: -70.5, minLat: 10.0, maxLng: -63.0, maxLat: 13.0 },
     description: 'Aruba, Bonaire, Curaçao and Venezuelan coast islands',
   },
-  {
-    name: 'Grenadines',
-    aliases: ['st vincent and the grenadines', 'svgrenadines', 'bequia', 'mustique', 'tobago cays'],
-    category: 'caribbean',
-    bbox: { minLng: -61.5, minLat: 12.0, maxLng: -60.5, maxLat: 13.5 },
-    description: 'St Vincent and the Grenadines',
-  },
-  {
-    name: 'Turks and Caicos',
-    aliases: ['turks & caicos', 'tci', 'providenciales', 'provo'],
-    category: 'caribbean',
-    bbox: { minLng: -72.5, minLat: 20.5, maxLng: -70.5, maxLat: 22.0 },
-    description: 'Turks and Caicos Islands',
-  },
-  {
-    name: 'Trinidad and Tobago',
-    aliases: ['trinidad', 'tobago', 't&t'],
-    category: 'caribbean',
-    bbox: { minLng: -61.9, minLat: 10.0, maxLng: -60.5, maxLat: 11.4 },
-    description: 'Trinidad and Tobago - southern Caribbean',
-  },
+  
 
   // Northern Europe
   {

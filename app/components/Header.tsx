@@ -118,6 +118,7 @@ export function Header() {
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.location) count++;
+    if (filters.arrivalLocation) count++;
     if (filters.riskLevel && filters.riskLevel.length > 0) count++;
     if (filters.experienceLevel) count++;
     if (filters.dateRange.start || filters.dateRange.end) count++;
