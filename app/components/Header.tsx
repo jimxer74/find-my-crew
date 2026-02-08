@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { LogoWithText } from './LogoWithText';
@@ -20,6 +20,7 @@ import { useAssistant } from '@/app/contexts/AssistantContext';
 export function Header() {
   const t = useTranslations('common');
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
@@ -128,6 +129,12 @@ export function Header() {
   // userRoles is already available from the useUserRoles() destructuring above
 
   // No longer tracking suggestions count
+
+  // Don't render header on welcome pages or minimal mode (prospect onboarding flow)
+  const isMinimalMode = searchParams?.get('minimal') === '1';
+  if (pathname?.startsWith('/welcome') || isMinimalMode) {
+    return null;
+  }
 
   return (
     <>

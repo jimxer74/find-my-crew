@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Footer() {
   const t = useTranslations('footer');
+  const pathname = usePathname();
   const currentYear = new Date().getFullYear();
   const { user, loading: authLoading } = useAuth();
+
+  // Check if we're in the welcome flow (no header mode)
+  const isWelcomeFlow = pathname?.startsWith('/welcome');
   
   return (
     <footer className="bg-card border-t border-border mt-auto">
@@ -29,13 +34,13 @@ export function Footer() {
             </Link>
             )}
             <Link
-              href="/privacy-policy"
+              href={isWelcomeFlow ? '/privacy-policy?minimal=1' : '/privacy-policy'}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               {t('legal.privacyPolicy')}
             </Link>
             <Link
-              href="/terms-of-service"
+              href={isWelcomeFlow ? '/terms-of-service?minimal=1' : '/terms-of-service'}
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               {t('legal.termsOfService')}

@@ -16,6 +16,7 @@ export type UseCase =
   | 'generate-profile'       // Generating profile suggestions from Facebook data
   | 'assistant-chat'         // AI assistant conversational chat with tool calling
   | 'assistant-system'       // System-level assistant configuration
+  | 'prospect-chat'          // AI chat for unauthenticated prospect users
   | 'general-conversation';  // General conversation fallback for intent classification
 
 export interface AIProviderConfig {

@@ -52,7 +52,8 @@
       "Bash(npx eslint:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "mcp__backlog__task_create"
     ]
   }
 }

@@ -647,6 +647,31 @@
     "ogTitle": "SailSmart",
     "ogDescription": "Connect boat owners with crew members for unforgettable sailing adventures."
   },
+  "welcome": {
+    "login": "Log in",
+    "crew": {
+      "title": "Find Your Next Adventure",
+      "subtitle": "Discover sailing opportunities that match your dreams",
+      "description": "Tell us what you're looking for, and SailSmart assistant will help you find the perfect sailing experience - start living your dream today.",
+      "cta": "Start now",
+      "features": {
+        "discover": "Discover sailing opportunities worldwide",
+        "match": "Get matched based on your preferences",
+        "connect": "Connect with experienced skippers"
+      }
+    },
+    "owner": {
+      "title": "Find Your Perfect Crew",
+      "subtitle": "Connect with perfect crew for your voyages",
+      "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people for your adventure.",
+      "cta": "Coming Soon",
+      "features": {
+        "post": "Post your journeys and routes",
+        "match": "AI-powered crew matching",
+        "manage": "Manage applications easily"
+      }
+    }
+  },
   "feedback": {
     "pageTitle": "Feedback",
     "pageDescription": "Share your ideas, report bugs, and help us improve SailSmart.",

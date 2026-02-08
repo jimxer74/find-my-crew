@@ -13,6 +13,7 @@ export type UseCase =
   | 'generate-profile'
   | 'suggest-sailboats'
   | 'assistant-chat'
+  | 'prospect-chat'
   | 'general-conversation'
   | 'suggest-makers'
   | 'suggest-models';
@@ -43,6 +44,7 @@ export const USE_CASES = {
   GENERATE_PROFILE: 'generate-profile' as UseCase,
   SUGGEST_SAILBOATS: 'suggest-sailboats' as UseCase,
   ASSISTANT_CHAT: 'assistant-chat' as UseCase,
+  PROSPECT_CHAT: 'prospect-chat' as UseCase,
   GENERAL_CONVERSATION: 'general-conversation' as UseCase,
   SUGGEST_MAKERS: 'suggest-makers' as UseCase,
   SUGGEST_MODELS: 'suggest-models' as UseCase

@@ -647,6 +647,31 @@
     "ogTitle": "SailSmart",
     "ogDescription": "Yhdistä veneiden omistajat miehistön jäseniin unohtumattomiin purjehdusseikkailuihin."
   },
+  "welcome": {
+    "login": "Kirjaudu",
+    "crew": {
+      "title": "Löydä Seuraava Seikkailusi",
+      "subtitle": "Löydä purjehdusmahdollisuuksia jotka vastaavat taitojasi ja unelmiasi",
+      "description": "Kerro mitä etsit, ja tekoälyavustajamme auttaa sinua löytämään täydellisen purjehduskokemuksen - rekisteröitymistä ei tarvita aloittaaksesi tutkimisen.",
+      "cta": "Aloita Tutkiminen",
+      "features": {
+        "discover": "Löydä purjehdusmahdollisuuksia maailmanlaajuisesti",
+        "match": "Saat suosituksia mieltymystesi perusteella",
+        "connect": "Yhdistä kokeneisiin skippereihin"
+      }
+    },
+    "owner": {
+      "title": "Löydä Täydellinen Miehistö",
+      "subtitle": "Yhdistä kokeneet purjehtijat matkoillesi",
+      "description": "Julkaise purjehdussuunnitelmasi ja anna pätevien miehistön jäsenten löytää sinut. Tekoälypohjainen yhdistäminen auttaa löytämään oikeat ihmiset seikkailuusi.",
+      "cta": "Tulossa Pian",
+      "features": {
+        "post": "Julkaise matkasi ja reittisi",
+        "match": "Tekoälypohjainen miehistön yhdistäminen",
+        "manage": "Hallitse hakemuksia helposti"
+      }
+    }
+  },
   "feedback": {
     "pageTitle": "Palaute",
     "pageDescription": "Jaa ideasi, ilmoita virheistä ja auta meitä parantamaan SailSmart-sovellusta.",
