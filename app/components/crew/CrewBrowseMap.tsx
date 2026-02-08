@@ -688,6 +688,9 @@ export function CrewBrowseMap({
         // Set the selected leg
         setSelectedLeg(leg);
 
+        // Show MobileLegCard on mobile when leg is pre-selected via URL
+        setShowMobileLegCard(true);
+
         // Fetch waypoints for the route display
         const waypointsResponse = await fetch(`/api/legs/${initialLegId}/waypoints`);
         if (waypointsResponse.ok) {
