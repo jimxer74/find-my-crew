@@ -656,6 +656,22 @@ export function CrewBrowseMap({
 
         if (!legData) return;
 
+        // Calculate match percentage and experience level match
+        const experienceMatches = checkExperienceLevelMatch(
+          userExperienceLevelRef.current,
+          legData.min_experience_level
+        );
+
+        const matchPercentage = calculateMatchPercentage(
+          userSkillsRef.current,
+          legData.skills || [],
+          userRiskLevelRef.current as string[] | null,
+          legData.leg_risk_level as string | null,
+          legData.journey_risk_level as string[] | null || [],
+          userExperienceLevelRef.current,
+          legData.min_experience_level
+        );
+
         // API now returns data in the correct Leg format
         const leg: Leg = {
           leg_id: legData.leg_id,
@@ -683,6 +699,8 @@ export function CrewBrowseMap({
           min_experience_level: legData.min_experience_level,
           start_waypoint: legData.start_waypoint,
           end_waypoint: legData.end_waypoint,
+          skill_match_percentage: matchPercentage,
+          experience_level_matches: experienceMatches,
         };
 
         // Set the selected leg
@@ -1490,6 +1508,23 @@ export function CrewBrowseMap({
               const response = await fetch(`/api/legs/${legId}`);
               if (response.ok) {
                 const legData = await response.json();
+
+                // Calculate match percentage and experience level match
+                const experienceMatches = checkExperienceLevelMatch(
+                  userExperienceLevelRef.current,
+                  legData.min_experience_level
+                );
+
+                const matchPercentage = calculateMatchPercentage(
+                  userSkillsRef.current,
+                  legData.skills || [],
+                  userRiskLevelRef.current as string[] | null,
+                  legData.leg_risk_level as string | null,
+                  legData.journey_risk_level as string[] | null || [],
+                  userExperienceLevelRef.current,
+                  legData.min_experience_level
+                );
+
                 // API returns data in Leg format
                 leg = {
                   leg_id: legData.leg_id,
@@ -1517,6 +1552,8 @@ export function CrewBrowseMap({
                   min_experience_level: legData.min_experience_level,
                   start_waypoint: legData.start_waypoint,
                   end_waypoint: legData.end_waypoint,
+                  skill_match_percentage: matchPercentage,
+                  experience_level_matches: experienceMatches,
                 };
               } else {
                 console.error('[CrewBrowseMap] Failed to fetch leg from API:', response.status);
