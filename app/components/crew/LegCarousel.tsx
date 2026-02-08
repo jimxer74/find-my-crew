@@ -82,7 +82,7 @@ export function LegCarousel({
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-full sm:w-[280px] animate-pulse"
+            className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] animate-pulse"
           >
             <div className="bg-muted rounded-lg h-40 mb-2" />
             <div className="bg-muted rounded h-4 w-3/4 mb-1" />
@@ -134,7 +134,7 @@ export function LegCarousel({
         {legs.map((leg) => (
           <div
             key={leg.leg_id}
-            className="flex-shrink-0 w-full sm:w-[280px] snap-start"
+            className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start"
           >
             <LegListItem
               leg={leg}
@@ -157,7 +157,7 @@ export function LegCarousel({
 
         {/* Show More Card */}
         {showShowMoreCard && (
-          <div className="flex-shrink-0 w-full sm:w-[280px] snap-start">
+          <div className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start">
             <button
               onClick={() => router.push(showMoreUrl)}
               className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
