@@ -4,6 +4,7 @@ title: Codebase cleanup
 status: To Do
 assignee: []
 created_date: '2026-02-08 08:36'
+updated_date: '2026-02-08 11:02'
 labels: []
 dependencies: []
 ---
@@ -245,3 +246,99 @@ dependencies: []
   database constructs, security vulnerabilities, code quality, UI inconsistencies, and unused code.
    No changes have been made to the codebase.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## 8. UI COMPONENTIZATION (HIGH)
+
+**Goal:** Identify all reusable UI components and create a unified component library that provides consistent look and feel across the app while improving codebase maintainability.
+
+### 8.1 Cards
+Identify and unify card patterns used across:
+- Journey cards, Crew cards, Boat cards
+- Profile cards, Notification cards
+- Info/summary cards in dashboards
+- **Create:** `<Card>`, `<CardHeader>`, `<CardBody>`, `<CardFooter>` components
+
+### 8.2 Carousels
+Standardize carousel implementations:
+- Image carousels (boat photos, journey photos)
+- Leg carousels (journey legs display)
+- Card carousels (horizontal scrolling lists)
+- **Create:** `<Carousel>`, `<CarouselItem>` with consistent navigation controls
+
+### 8.3 Badges & Status Indicators
+Unify badge styles for:
+- Match score badges (MatchBadge.tsx)
+- Status badges (active, pending, completed)
+- Role badges (owner, crew, captain)
+- Notification count badges
+- **Create:** `<Badge variant="success|warning|error|info|neutral">` component
+
+### 8.4 Icons & Icon Components
+Standardize icon usage:
+- Audit all inline SVGs and replace with icon component library
+- Create consistent sizing scale (sm, md, lg, xl)
+- Add proper accessibility (aria-labels, role="img")
+- **Create:** `<Icon name="..." size="..." />` wrapper component
+
+### 8.5 Icon Buttons
+Unify clickable icon patterns:
+- Close buttons, menu toggles, action buttons
+- Consistent hover/focus states
+- Proper touch targets (min 44x44px)
+- **Create:** `<IconButton icon="..." aria-label="..." />` component
+
+### 8.6 Text Buttons & Links
+Standardize text-only interactive elements:
+- "View more", "See all", "Learn more" links
+- Cancel/secondary action buttons
+- Consistent underline/hover behavior
+- **Create:** `<TextButton>` and `<TextLink>` components
+
+### 8.7 Form Controls
+Unify form input patterns:
+- Text inputs, textareas, selects
+- Checkboxes, radio buttons, toggles
+- Date pickers, file uploads
+- Error states and helper text
+- **Create:** Form component library with consistent validation display
+
+### 8.8 Modals & Dialogs
+Standardize overlay patterns:
+- Confirmation dialogs
+- Form modals
+- Full-screen modals
+- **Create:** `<Modal>`, `<Dialog>`, `<Drawer>` with consistent z-index and backdrop
+
+### 8.9 Loading States
+Unify loading indicators:
+- Skeleton loaders for content
+- Spinner/loading indicators
+- Progress bars
+- **Create:** `<Skeleton>`, `<Spinner>`, `<Progress>` components
+
+### 8.10 Empty States
+Standardize empty/null state displays:
+- No results found
+- Empty lists/tables
+- Feature prompts
+- **Create:** `<EmptyState icon="..." title="..." action={...} />` component
+
+---
+
+## Implementation Approach
+
+**Phase 1:** Audit existing components and document patterns
+**Phase 2:** Create base components in `app/components/ui/` directory
+**Phase 3:** Migrate existing code to use new components
+**Phase 4:** Update Storybook/documentation for design system
+
+### Benefits
+- Consistent visual language across the application
+- Reduced code duplication
+- Easier maintenance and updates
+- Better accessibility compliance
+- Faster feature development with reusable building blocks
+<!-- SECTION:PLAN:END -->
