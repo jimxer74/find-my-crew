@@ -4,7 +4,7 @@ title: AI driven onboarding / prospect user support for crew
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:13'
-updated_date: '2026-02-08 17:25'
+updated_date: '2026-02-08 17:40'
 labels: []
 dependencies: []
 ordinal: 4000
@@ -43,3 +43,78 @@ Here is the idea of the new user flow:
 
 This is very complex feature and will probably require iterations, so propose a good way to approach this and in which kind of packages this is relevant to plan and implement.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 New landing page with dual-column layout (Crew/Owner) is accessible without header
+- [ ] #2 Prospect users can start AI chat without authentication
+- [ ] #3 AI gathers user preferences through natural conversation
+- [ ] #4 Matching legs are displayed inline as clickable badges
+- [ ] #5 Session persists via cookie+localStorage for returning users
+- [ ] #6 Users can sign up within the chat flow (email or Facebook)
+- [ ] #7 Profile is auto-populated from AI-gathered information
+- [ ] #8 Signed-up users can immediately register for discovered legs
+- [ ] #9 Mobile responsive design with vertically stacked layout
+- [ ] #10 Footer with legal links always visible
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Architecture Decisions (2026-02-08)
+
+### 1. Leg Display: Inline in Chat
+- Show matching legs as clickable badges within AI responses
+- Simpler UX, keeps user focused on conversation
+- Reuses existing `[[leg:UUID:Name]]` pattern from AssistantChat
+
+### 2. Session Storage: Cookie + LocalStorage
+- Store session ID in HttpOnly cookie
+- Store conversation history and gathered preferences in localStorage
+- Key: `prospect_session_{sessionId}`
+- Simple implementation, works offline
+- Note: Data lost if user clears browser - acceptable for MVP
+
+### 3. Flow Scope: Full Chat Flow
+- Everything happens within the chat interface
+- Sign-up forms rendered inline or as overlays within chat page
+- No redirects to external pages during onboarding
+- Seamless user experience
+
+### 4. Implementation: MVP First Approach
+- Phase 1: Basic prospect AI chat + leg display
+- Phase 2: Session persistence + returning users
+- Phase 3: Sign-up integration
+- Phase 4: Full registration + profile creation
+
+---
+
+## Current Codebase Analysis
+
+### Existing Infrastructure to Leverage:
+- `AssistantChat` component with inline leg references `[[leg:UUID:Name]]`
+- `ai_conversations` and `ai_messages` tables (need anonymous variant)
+- Supabase Auth with email signup
+- `profiles` table with detailed sailing preferences
+
+### New Components Required:
+1. **New Landing Page** (`/welcome` or `/start`)
+   - Dual-column layout (Crew left, Owner right)
+   - No header, footer only
+   - Mobile: vertically stacked (Crew first)
+
+2. **Prospect Session Management**
+   - Cookie-based session ID
+   - LocalStorage for conversation/preferences
+   - No database writes until sign-up
+
+3. **Prospect AI Chat**
+   - Modified AssistantChat for unauthenticated users
+   - Different API endpoint that doesn't require auth
+   - Same UI patterns but simplified
+
+4. **In-Chat Sign-up Components**
+   - Email signup form within chat
+   - Facebook OAuth button within chat
+   - Profile creation from gathered data
+<!-- SECTION:NOTES:END -->
