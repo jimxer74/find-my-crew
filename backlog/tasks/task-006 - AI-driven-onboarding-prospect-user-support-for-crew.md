@@ -4,7 +4,7 @@ title: AI driven onboarding / prospect user support for crew
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:13'
-updated_date: '2026-02-08 17:15'
+updated_date: '2026-02-08 17:25'
 labels: []
 dependencies: []
 ordinal: 4000
@@ -34,6 +34,7 @@ Here is the idea of the new user flow:
 - Ask when user is planning the sailing and  also where from or where to he/she wants to sail  and constantly update the shown legs based on new obtained knowldge from user
 - IMPORTANT: gathered information needs to be stored in database --> for this assess current setup and propose solution options! Also very IMPORTANT is to user to be able to suspend the flow, leave the flow and maybe come back later to continue where they left, e.g. maybe storing some reference to prospect profile data and AI conversation in cookies or such --> please also propose a solution for this.
 - AI should try to convince user to sign-up by asking necessary information either for email based sign-up or facebook based sign-up. Sign-up process should be started if user approves to start it.
+- IMPORTANT: We dont know users behaviour before hand and solution cannot be fixed to certain sequence or flog logic, e.g. some users may know very well what they want and can for example copy-paste existing posting from facebook sailing group etc. to AI chat, so AI chat needs to be very flexible and responsive to different variations of sequence. Or for users the location or dates when they are on vacation are the most important thing for selection of the sailing trip.  
 
 5. User comes back later to site
 - User may come back later to continue the flow and if the cookie reference is availble to existing gathered data, user must be directed to continue the flow where it last time was left
