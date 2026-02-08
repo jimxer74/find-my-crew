@@ -1,9 +1,10 @@
 ---
 id: TASK-074
 title: Personal info in AI
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-03 15:04'
+updated_date: '2026-02-08 15:57'
 labels: []
 dependencies: []
 ---
