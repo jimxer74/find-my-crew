@@ -1,23 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
+import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 
 type CruisingRegionSectionProps = {
   region: LocationRegion;
   userSkills?: string[];
   userExperienceLevel?: number | null;
+  userRiskLevel?: string[] | null;
 };
 
 export function CruisingRegionSection({
   region,
   userSkills = [],
   userExperienceLevel = null,
+  userRiskLevel = null,
 }: CruisingRegionSectionProps) {
+  const t = useTranslations('crewHome');
   const router = useRouter();
   const [legs, setLegs] = useState<LegListItemData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +41,7 @@ export function CruisingRegionSection({
         min_lat: region.bbox.minLat.toString(),
         max_lng: region.bbox.maxLng.toString(),
         max_lat: region.bbox.maxLat.toString(),
-        limit: '10',
+        limit: '5',
       });
 
       const response = await fetch(`/api/legs/by-region?${params}`);
@@ -47,9 +51,17 @@ export function CruisingRegionSection({
 
       const data = await response.json();
 
-      // Calculate match scores for each leg
+      // Calculate match scores for each leg using the canonical function
       const legsWithScores = (data.legs || []).map((leg: any) => {
-        const matchPercentage = calculateSkillMatch(leg.skills || [], userSkills);
+        const matchPercentage = calculateMatchPercentage(
+          userSkills,
+          leg.skills || [],
+          userRiskLevel,
+          leg.risk_level || null,
+          null, // journey risk level not available here
+          userExperienceLevel,
+          leg.min_experience_level || null
+        );
         const experienceMatches = userExperienceLevel
           ? userExperienceLevel >= (leg.min_experience_level || 1)
           : true;
@@ -75,21 +87,6 @@ export function CruisingRegionSection({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calculate skill match percentage
-  const calculateSkillMatch = (legSkills: string[], userSkills: string[]): number => {
-    if (!legSkills || legSkills.length === 0) return 100; // No skills required = 100% match
-    if (!userSkills || userSkills.length === 0) return 0; // User has no skills = 0% match
-
-    const normalizedLegSkills = legSkills.map((s) => s.toLowerCase().trim());
-    const normalizedUserSkills = userSkills.map((s) => s.toLowerCase().trim());
-
-    const matchingSkills = normalizedLegSkills.filter((skill) =>
-      normalizedUserSkills.includes(skill)
-    );
-
-    return Math.round((matchingSkills.length / normalizedLegSkills.length) * 100);
   };
 
   // Handle leg click - navigate to dashboard with leg selected
@@ -118,15 +115,16 @@ export function CruisingRegionSection({
     <section className="mb-8">
       {/* Region Header */}
       <div className="flex items-center justify-between mb-3">
-        <Link
-          href={getMapUrl()}
-          className="group flex items-center gap-2 hover:opacity-80 transition-opacity"
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground">
+          {region.name}
+        </h2>
+        <button
+          onClick={() => router.push(getMapUrl())}
+          className="flex items-center gap-1.5 px-2 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+          title={t('viewOnMap')}
         >
-          <h2 className="text-lg sm:text-xl font-semibold text-foreground">
-            {region.name}
-          </h2>
           <svg
-            className="w-4 h-4 text-muted-foreground group-hover:text-foreground transition-colors"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -135,10 +133,11 @@ export function CruisingRegionSection({
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M9 5l7 7-7 7"
+              d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
             />
           </svg>
-        </Link>
+          <span className="hidden sm:inline">{t('viewOnMap')}</span>
+        </button>
       </div>
 
       {/* Region Description (optional) */}
@@ -160,6 +159,7 @@ export function CruisingRegionSection({
         legs={legs}
         onLegClick={handleLegClick}
         loading={loading}
+        showMoreUrl={getMapUrl()}
       />
     </section>
   );

@@ -118,11 +118,13 @@
   "crewHome": {
     "title": "Löydä purjehdusmahdollisuuksia",
     "subtitle": "Etsi osuuksia läheltäsi, järjestetty parhaan vastaavuuden mukaan",
-    "viewOnMap": "Näytä kartalla",
+    "viewOnMap": "Näytä lisää kartalla",
     "detectingLocation": "Tunnistetaan sijaintiasi...",
     "usingDefaultLocation": "Käytetään oletussijaintia (salli sijainti parempien tulosten saamiseksi)",
     "noLegsInRegion": "Ei osuuksia tällä alueella",
-    "loadMore": "Lataa lisää"
+    "loadMore": "Lataa lisää",
+    "showMoreOnMap": "Näytä lisää kartalla",
+    "swipeForMore": "Pyyhkäise nähdäksesi lisää"
   },
   "home": {
     "hero": {

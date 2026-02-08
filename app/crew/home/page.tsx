@@ -26,7 +26,9 @@ export default function CrewHomePage() {
   >([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
+  const [userRiskLevel, setUserRiskLevel] = useState<string[] | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
+  const [visibleRegionsCount, setVisibleRegionsCount] = useState(5);
 
   // Sort regions by distance when user location is available
   useEffect(() => {
@@ -37,11 +39,12 @@ export default function CrewHomePage() {
     }
   }, [userLocation.loading, userLocation.lat, userLocation.lng]);
 
-  // Load user profile (skills and experience level)
+  // Load user profile (skills, experience level, and risk level)
   useEffect(() => {
     if (!user) {
       setUserSkills([]);
       setUserExperienceLevel(null);
+      setUserRiskLevel(null);
       setProfileLoading(false);
       return;
     }
@@ -50,13 +53,14 @@ export default function CrewHomePage() {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from('profiles')
-        .select('skills, sailing_experience')
+        .select('skills, sailing_experience, risk_level')
         .eq('id', user.id)
         .single();
 
       if (!error && data) {
         setUserSkills(data.skills || []);
         setUserExperienceLevel(data.sailing_experience || null);
+        setUserRiskLevel(data.risk_level || null);
       }
       setProfileLoading(false);
     };
@@ -125,42 +129,49 @@ export default function CrewHomePage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 pt-2 pb-4">
-        {/* Regions List with View on Map button positioned on first row */}
-        <div className="relative">
-          {/* View on Map button - absolutely positioned to align with first region header */}
-          <Link
-            href="/crew/dashboard"
-            className="absolute top-0 right-0 z-10 flex items-center gap-2 px-3 py-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-            {t('viewOnMap')}
-          </Link>
-
+        {/* Regions List */}
+        <div>
           {sortedRegions.length === 0 ? (
             <div className="py-12 text-center">
               <p className="text-muted-foreground">{tCommon('loading')}</p>
             </div>
           ) : (
-            sortedRegions.map((region) => (
-              <CruisingRegionSection
-                key={region.name}
-                region={region}
-                userSkills={userSkills}
-                userExperienceLevel={userExperienceLevel}
-              />
-            ))
+            <>
+              {sortedRegions.slice(0, visibleRegionsCount).map((region) => (
+                <CruisingRegionSection
+                  key={region.name}
+                  region={region}
+                  userSkills={userSkills}
+                  userExperienceLevel={userExperienceLevel}
+                  userRiskLevel={userRiskLevel}
+                />
+              ))}
+
+              {/* Show More Button */}
+              {visibleRegionsCount < sortedRegions.length && (
+                <div className="flex justify-center py-4">
+                  <button
+                    onClick={() => setVisibleRegionsCount((prev) => prev + 5)}
+                    className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+                  >
+                    {t('loadMore')}
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

@@ -260,73 +260,34 @@ export async function DELETE(request: NextRequest) {
           },
         });
 
-        // Method 1: Try direct deletion from auth.users table using service role (bypasses RLS)
-        console.log(`[${user.id}] Attempting direct deletion from auth.users table...`);
-        let { error: directDeleteError } = await adminClient.from('auth.users').delete().eq('id', user.id);
+        // Use Supabase Admin API for auth user deletion (recommended approach)
+        console.log(`[${user.id}] Attempting auth user deletion via admin API...`);
+        const { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
-        // Verify the deletion was successful
-        if (!directDeleteError) {
-          console.log(`[${user.id}] Checking if auth user was actually deleted...`);
-          const { data: verifyData, error: verifyError } = await adminClient.from('auth.users').select('id').eq('id', user.id).single();
+        // Verify the admin API deletion was successful
+        if (!adminDeleteError) {
+          console.log(`[${user.id}] Auth user successfully deleted via admin API`);
+          authDeletionResult = { success: true, table: 'auth.users', operation: 'delete' };
 
-          if (verifyError && verifyError.code !== 'PGRST116') { // PGRST116 means no rows found (good)
-            console.warn(`[${user.id}] Verification query failed:`, verifyError);
-          } else if (verifyData && verifyData.id) {
-            console.error(`[${user.id}] Auth user still exists after deletion attempt!`);
-            directDeleteError = { message: 'User still exists after deletion', code: 'DELETION_FAILED', details: '', hint: '', name: 'PostgrestError' };
-          } else {
-            console.log(`[${user.id}] Auth user successfully deleted (no rows found)`);
-          }
-        }
-
-        if (directDeleteError) {
-          console.log(`[${user.id}] Direct auth.users deletion failed (${directDeleteError.code}): ${directDeleteError.message}`);
-          console.log(`[${user.id}] Trying admin API fallback...`);
-
-          // Method 2: Fallback to admin API
-          let { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
-
-          // Verify the admin API deletion was successful
-          if (!adminDeleteError) {
-            console.log(`[${user.id}] Checking if auth user was actually deleted via admin API...`);
-            const { data: verifyData, error: verifyError } = await adminClient.from('auth.users').select('id').eq('id', user.id).single();
-
-            if (verifyError && verifyError.code !== 'PGRST116') { // PGRST116 means no rows found (good)
-              console.warn(`[${user.id}] Verification query failed:`, verifyError);
-            } else if (verifyData && verifyData.id) {
-              console.error(`[${user.id}] Auth user still exists after admin API deletion attempt!`);
-              // Create a custom error object for tracking
-              const customAdminError = { message: 'User still exists after admin deletion', code: 'ADMIN_DELETION_FAILED' };
-              // Reassign to adminDeleteError for error handling
-              adminDeleteError = customAdminError as any;
-            } else {
-              console.log(`[${user.id}] Auth user successfully deleted via admin API (no rows found)`);
+          // Optional: Verify deletion by checking if user exists (using service role client)
+          try {
+            const { data: userData } = await adminClient.auth.admin.getUserById(user.id);
+            if (userData) {
+              console.warn(`[${user.id}] User still exists after admin API deletion, but API call succeeded`);
             }
-          }
-
-          if (adminDeleteError) {
-            console.error(`[${user.id}] Both direct and admin auth user deletion failed:`);
-            console.error(`  Direct deletion error: ${directDeleteError.message} (code: ${directDeleteError.code})`);
-            console.error(`  Admin API error: ${adminDeleteError.message} (code: ${adminDeleteError.code})`);
-            authDeletionResult = {
-              success: false,
-              table: 'auth.users',
-              operation: 'delete',
-              error: `Both deletion methods failed`,
-              details: {
-                directDeleteError: directDeleteError.message,
-                directDeleteCode: directDeleteError.code,
-                adminDeleteError: adminDeleteError.message,
-                adminDeleteCode: adminDeleteError.code
-              }
-            };
-          } else {
-            console.log(`[${user.id}] Successfully deleted auth user via admin API`);
-            authDeletionResult = { success: true, table: 'auth.users', operation: 'delete' };
+          } catch (verifyError) {
+            const errorMessage = verifyError instanceof Error ? verifyError.message : String(verifyError);
+            console.log(`[${user.id}] User verification failed (expected if user was deleted):`, errorMessage);
           }
         } else {
-          console.log(`[${user.id}] Successfully deleted auth user directly from auth.users table`);
-          authDeletionResult = { success: true, table: 'auth.users', operation: 'delete' };
+          console.error(`[${user.id}] Auth user deletion via admin API failed:`, adminDeleteError);
+          authDeletionResult = {
+            success: false,
+            table: 'auth.users',
+            operation: 'delete',
+            error: adminDeleteError.message,
+            details: { code: adminDeleteError.code }
+          };
         }
       } catch (error: any) {
         console.error(`[${user.id}] Exception deleting auth user:`, error);

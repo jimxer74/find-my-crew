@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { calculateMatchPercentage } from '@/app/lib/skillMatching';
+import { normalizeSkillNames } from '@/app/lib/skillUtils';
 
 /**
  * GET /api/registrations/[registrationId]/details
@@ -247,20 +249,9 @@ export async function GET(
     });
 
     // Combine journey and leg skills (remove duplicates)
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
     const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
     const legSkills = normalizeSkillNames(legs.skills || []);
     const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(Boolean);
-
-    // Calculate skill match percentage
-    let skillMatchPercentage: number | null = null;
-    if (crewProfile?.skills && crewProfile.skills.length > 0 && combinedSkills.length > 0) {
-      const crewSkills = normalizeSkillNames(crewProfile.skills);
-      const matchingSkills = combinedSkills.filter((skill: string) =>
-        crewSkills.includes(skill)
-      );
-      skillMatchPercentage = Math.round((matchingSkills.length / combinedSkills.length) * 100);
-    }
 
     // Determine effective values (leg overrides journey)
     const effectiveRiskLevel = legs.risk_level ||
@@ -269,6 +260,21 @@ export async function GET(
     const effectiveMinExperienceLevel = legs.min_experience_level ??
       legs.journeys.min_experience_level ??
       null;
+
+    // Calculate skill match percentage using the canonical function
+    let skillMatchPercentage: number | null = null;
+    if (crewProfile?.skills && crewProfile.skills.length > 0 && combinedSkills.length > 0) {
+      const crewSkills = normalizeSkillNames(crewProfile.skills);
+      skillMatchPercentage = calculateMatchPercentage(
+        crewSkills,
+        combinedSkills,
+        crewProfile.risk_level || null,
+        effectiveRiskLevel,
+        legs.journeys.risk_level || null,
+        crewProfile.sailing_experience,
+        effectiveMinExperienceLevel
+      );
+    }
 
     // Check experience level match
     let experienceLevelMatches: boolean | null = null;

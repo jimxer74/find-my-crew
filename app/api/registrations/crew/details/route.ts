@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
+import { calculateMatchPercentage } from '@/app/lib/skillMatching';
+import { normalizeSkillNames } from '@/app/lib/skillUtils';
 
 /**
  * GET /api/registrations/crew/details
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     // Verify user is a crew member
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, skills, sailing_experience')
+      .select('roles, skills, sailing_experience, risk_level')
       .eq('id', user.id)
       .single();
 
@@ -77,6 +79,7 @@ export async function GET(request: NextRequest) {
           id,
           name,
           skills,
+          risk_level,
           cost_model,
           images,
           boat_id,
@@ -184,11 +187,8 @@ export async function GET(request: NextRequest) {
         };
       };
 
-      // Normalize skills to canonical format (handles both display and canonical formats)
-      // This ensures compatibility even if migration hasn't been run yet
-      const { normalizeSkillNames } = require('@/app/lib/skillUtils');
       // Type assertion for nested Supabase join
-      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; cost_model: string | null; images: string[]; boat_id: string; boats: { id: string; name: string; type: string; make_model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
+      const journey = leg.journeys as unknown as { id: string; name: string; skills: string[]; risk_level: string[] | null; cost_model: string | null; images: string[]; boat_id: string; boats: { id: string; name: string; type: string; make_model: string; images: string[]; average_speed_knots: number; owner_id: string } } | null;
       const journeySkills = normalizeSkillNames(journey?.skills || []);
       const legSkills = normalizeSkillNames(leg.skills || []);
 
@@ -199,20 +199,21 @@ export async function GET(request: NextRequest) {
         ]),
       ].filter(Boolean);
 
-      // Calculate skill match percentage if user has skills
+      // Calculate skill match percentage using the canonical function
       let skillMatchPercentage: number | undefined;
       let experienceLevelMatches: boolean | undefined;
-      
+
       if (profile.skills && profile.skills.length > 0 && combinedSkills.length > 0) {
-        // Parse user skills from JSON strings (profiles store as JSON)
-        const { normalizeSkillNames } = require('@/app/lib/skillUtils');
         const userSkills = normalizeSkillNames(profile.skills);
-        
-        const matchingSkills = combinedSkills.filter((skill: string) => 
-          userSkills.includes(skill)
+        skillMatchPercentage = calculateMatchPercentage(
+          userSkills,
+          combinedSkills,
+          profile.risk_level || null,
+          leg.risk_level || null,
+          journey?.risk_level || null,
+          profile.sailing_experience,
+          leg.min_experience_level
         );
-        
-        skillMatchPercentage = Math.round((matchingSkills.length / combinedSkills.length) * 100);
       }
 
       // Check experience level match

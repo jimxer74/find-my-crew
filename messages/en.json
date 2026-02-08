@@ -118,11 +118,13 @@
   "crewHome": {
     "title": "Discover Sailing Opportunities",
     "subtitle": "Find legs near you, sorted by best match",
-    "viewOnMap": "View on Map",
+    "viewOnMap": "View more on map",
     "detectingLocation": "Detecting your location...",
     "usingDefaultLocation": "Using default location (enable location for better results)",
     "noLegsInRegion": "No legs available in this region",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "showMoreOnMap": "View more on map",
+    "swipeForMore": "Swipe for more"
   },
   "home": {
     "hero": {

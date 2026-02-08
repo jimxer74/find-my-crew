@@ -1,18 +1,34 @@
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { LegListItem, LegListItemData } from './LegListItem';
 
 type LegCarouselProps = {
   legs: LegListItemData[];
   onLegClick?: (leg: LegListItemData) => void;
   loading?: boolean;
+  showMoreUrl?: string;
+  maxLegsBeforeShowMore?: number;
 };
 
-export function LegCarousel({ legs, onLegClick, loading = false }: LegCarouselProps) {
+export function LegCarousel({
+  legs,
+  onLegClick,
+  loading = false,
+  showMoreUrl,
+  maxLegsBeforeShowMore = 5,
+}: LegCarouselProps) {
+  const t = useTranslations('crewHome');
+  const router = useRouter();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  // Determine if we should show the "show more" card
+  const showShowMoreCard = showMoreUrl && legs.length >= maxLegsBeforeShowMore;
 
   // Check scroll position to show/hide arrows
   const checkScrollPosition = () => {
@@ -22,6 +38,11 @@ export function LegCarousel({ legs, onLegClick, loading = false }: LegCarouselPr
     const { scrollLeft, scrollWidth, clientWidth } = container;
     setCanScrollLeft(scrollLeft > 0);
     setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+
+    // Hide swipe hint after user has scrolled
+    if (scrollLeft > 20 && !hasScrolled) {
+      setHasScrolled(true);
+    }
   };
 
   useEffect(() => {
@@ -61,7 +82,7 @@ export function LegCarousel({ legs, onLegClick, loading = false }: LegCarouselPr
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] animate-pulse"
+            className="flex-shrink-0 w-full sm:w-[280px] animate-pulse"
           >
             <div className="bg-muted rounded-lg h-40 mb-2" />
             <div className="bg-muted rounded h-4 w-3/4 mb-1" />
@@ -113,7 +134,7 @@ export function LegCarousel({ legs, onLegClick, loading = false }: LegCarouselPr
         {legs.map((leg) => (
           <div
             key={leg.leg_id}
-            className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start"
+            className="flex-shrink-0 w-full sm:w-[280px] snap-start"
           >
             <LegListItem
               leg={leg}
@@ -133,7 +154,54 @@ export function LegCarousel({ legs, onLegClick, loading = false }: LegCarouselPr
             />
           </div>
         ))}
+
+        {/* Show More Card */}
+        {showShowMoreCard && (
+          <div className="flex-shrink-0 w-full sm:w-[280px] snap-start">
+            <button
+              onClick={() => router.push(showMoreUrl)}
+              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+            >
+              <svg
+                className="w-8 h-8 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+                />
+              </svg>
+              <span className="text-sm font-medium text-foreground">
+                {t('showMoreOnMap')}
+              </span>
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Mobile Swipe Hint - shown only on first render when there are more items */}
+      {!hasScrolled && canScrollRight && legs.length > 1 && (
+        <div className="flex md:hidden items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground animate-pulse">
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M7 16l-4-4m0 0l4-4m-4 4h18"
+            />
+          </svg>
+          <span>{t('swipeForMore')}</span>
+        </div>
+      )}
 
       {/* Right Arrow - Desktop only */}
       {canScrollRight && (
