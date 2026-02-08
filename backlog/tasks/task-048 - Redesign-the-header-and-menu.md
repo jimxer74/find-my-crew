@@ -1,10 +1,10 @@
 ---
 id: TASK-048
 title: Redesign the header and menu
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-28 13:56'
-updated_date: '2026-01-28 14:10'
+updated_date: '2026-02-08 15:58'
 labels: []
 dependencies: []
 ---
