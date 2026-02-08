@@ -4,7 +4,7 @@ title: 'Phase 1.1: New Dual-Column Landing Page'
 status: In Progress
 assignee: []
 created_date: '2026-02-08 17:43'
-updated_date: '2026-02-08 17:45'
+updated_date: '2026-02-08 17:50'
 labels:
   - ui
   - landing-page
@@ -46,11 +46,37 @@ Create a new landing page at `/welcome` (or `/start`) with:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dual-column layout displays correctly on desktop (>768px)
-- [ ] #2 Single-column stacked layout on mobile (<768px)
-- [ ] #3 No header/navigation visible
-- [ ] #4 Footer with legal links always visible
-- [ ] #5 Login button accessible
-- [ ] #6 Crew CTA button navigates to prospect chat page
-- [ ] #7 Background image with color overlays renders correctly
+- [x] #1 Dual-column layout displays correctly on desktop (>768px)
+- [x] #2 Single-column stacked layout on mobile (<768px)
+- [x] #3 No header/navigation visible
+- [x] #4 Footer with legal links always visible
+- [x] #5 Login button accessible
+- [x] #6 Crew CTA button navigates to prospect chat page
+- [x] #7 Background image with color overlays renders correctly
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Progress (2026-02-08)
+
+### Created Files:
+- `app/welcome/page.tsx` - Main dual-column landing page
+- `app/welcome/chat/page.tsx` - Placeholder for prospect chat (TASK-006.02)
+
+### Added Translations:
+- English: `messages/en.json` - Added `welcome` section
+- Finnish: `messages/fi.json` - Added `welcome` section
+
+### Features Implemented:
+- Dual-column layout (Owner left, Crew right on desktop)
+- Mobile responsive: vertically stacked (Crew first, Owner second)
+- Background image with transparent color overlays (blue for crew, amber for owner)
+- Login button in top-right corner
+- Logo linking back to main site in top-left corner
+- Footer with legal links visible
+- Crew CTA button linking to `/welcome/chat`
+- Owner section with "Coming Soon" placeholder
+
+### Build Status: SUCCESS
+<!-- SECTION:NOTES:END -->
