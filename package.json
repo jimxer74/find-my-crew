@@ -11,6 +11,11 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "playwright": "playwright test",
+    "playwright:ui": "playwright test --ui",
+    "playwright:headed": "playwright test --headed",
+    "playwright:debug": "playwright test --debug",
+    "playwright:report": "playwright show-report",
     "seed:test-data": "npx tsx scripts/test-data/index.ts"
   },
   "dependencies": {
