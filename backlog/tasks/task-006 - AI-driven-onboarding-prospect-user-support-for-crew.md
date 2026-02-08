@@ -4,7 +4,7 @@ title: AI driven onboarding / prospect user support for crew
 status: To Do
 assignee: []
 created_date: '2026-01-23 17:13'
-updated_date: '2026-02-08 17:40'
+updated_date: '2026-02-08 17:44'
 labels: []
 dependencies: []
 ordinal: 4000
@@ -57,6 +57,75 @@ This is very complex feature and will probably require iterations, so propose a 
 - [ ] #9 Mobile responsive design with vertically stacked layout
 - [ ] #10 Footer with legal links always visible
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Plan - Phased Approach
+
+### Phase 1: MVP - Basic Prospect AI Chat (High Priority)
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-006.01 | New Dual-Column Landing Page | To Do |
+| TASK-006.02 | Prospect AI Chat Page & Component | To Do |
+| TASK-006.03 | Prospect Leg Search API | To Do |
+
+**Goal:** Allow prospects to start an AI conversation and discover matching sailing legs without authentication.
+
+---
+
+### Phase 2: Session Persistence (Medium Priority)
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-006.04 | Session Persistence with Cookie + LocalStorage | To Do |
+
+**Goal:** Enable returning users to continue where they left off.
+
+---
+
+### Phase 3: Sign-up Integration (Medium Priority)
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-006.05 | In-Chat Email Sign-up Flow | To Do |
+| TASK-006.06 | In-Chat Facebook OAuth Sign-up | To Do |
+
+**Goal:** Seamless sign-up within the chat without leaving the conversation.
+
+---
+
+### Phase 4: Full Registration Flow (Low Priority)
+| Task | Description | Status |
+|------|-------------|--------|
+| TASK-006.07 | In-Chat Leg Registration | To Do |
+| TASK-006.08 | Profile Completion Within Chat | To Do |
+
+**Goal:** Complete end-to-end flow from discovery to registration within chat.
+
+---
+
+## Dependency Graph
+
+```
+TASK-006.01 (Landing Page)
+    └── TASK-006.02 (Prospect Chat)
+            └── TASK-006.03 (Leg Search API)
+                    └── TASK-006.04 (Session Persistence)
+                            ├── TASK-006.05 (Email Sign-up)
+                            │       └── TASK-006.06 (Facebook OAuth)
+                            ├── TASK-006.07 (Leg Registration)
+                            └── TASK-006.08 (Profile Completion)
+```
+
+## Estimated Effort
+
+| Phase | Tasks | Estimated Effort |
+|-------|-------|------------------|
+| Phase 1 | 3 tasks | 3-4 days |
+| Phase 2 | 1 task | 1 day |
+| Phase 3 | 2 tasks | 2-3 days |
+| Phase 4 | 2 tasks | 2 days |
+| **Total** | **8 tasks** | **8-10 days** |
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
