@@ -13,5 +13,7 @@ export type {
   ProspectChatRequest,
   ProspectChatResponse,
   ProspectLegReference,
-  ProspectToolCall,
 } from './types';
+
+// Re-export shared types for convenience
+export type { ToolCall } from '../shared';

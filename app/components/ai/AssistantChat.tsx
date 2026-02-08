@@ -8,6 +8,7 @@ import { useUserRoles } from '@/app/contexts/UserRoleContext';
 import { ActionFeedback } from './ActionFeedback';
 import { TextInputModal } from './TextInputModal';
 import { MultiSelectInputModal } from './MultiSelectInputModal';
+import { ChatLegCarousel } from './ChatLegCarousel';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 
 
@@ -337,33 +338,17 @@ export function AssistantChat() {
                   {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}
                 </div>
               )}
-              {/* Fallback: Show leg references at bottom if AI didn't use inline format */}
+              {/* Show leg references as carousel */}
               {message.role === 'assistant' &&
                message.metadata?.legReferences &&
                message.metadata.legReferences.length > 0 &&
                !message.content.includes('[[leg:') && (
-                <div className="mt-2 flex flex-wrap gap-1.5 border-t border-border/50 pt-2">
-                  {message.metadata.legReferences.map((leg) => (
-                    <button
-                      key={leg.id}
-                      onClick={() => handleLegClick(leg.id)}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      {leg.name}
-                    </button>
-                  ))}
+                <div className="mt-3 -mx-2">
+                  <ChatLegCarousel
+                    legs={message.metadata.legReferences}
+                    onLegClick={handleLegClick}
+                    compact={true}
+                  />
                 </div>
               )}
             </div>

@@ -73,7 +73,19 @@ export async function POST(request: NextRequest) {
     log('Prospect chat response received:', {
       sessionId: response.sessionId,
       messageId: response.message?.id,
+      hasLegReferences: !!response.message?.metadata?.legReferences,
+      legReferencesCount: response.message?.metadata?.legReferences?.length || 0,
     });
+
+    // Debug: Log leg references if present
+    if (response.message?.metadata?.legReferences?.length) {
+      log('Leg references:', response.message.metadata.legReferences.map(leg => ({
+        id: leg.id,
+        name: leg.name,
+        hasJourneyImages: !!leg.journeyImages?.length,
+        hasBoatImages: !!leg.boatImages?.length,
+      })));
+    }
 
     log('=== Prospect chat completed successfully ===');
     return NextResponse.json(response);

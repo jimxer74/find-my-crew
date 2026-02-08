@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { ProspectMessage } from '@/app/lib/ai/prospect/types';
+import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 
 /**
  * Parse message content and render inline leg references as clickable links.
@@ -216,6 +217,18 @@ export function ProspectChat() {
                   ? renderMessageWithLegLinks(message.content, handleLegClick)
                   : message.content}
               </div>
+              {/* Show leg carousel if leg references are available */}
+              {message.role === 'assistant' &&
+               message.metadata?.legReferences &&
+               message.metadata.legReferences.length > 0 && (
+                <div className="mt-3 -mx-2">
+                  <ChatLegCarousel
+                    legs={message.metadata.legReferences}
+                    onLegClick={(legId) => handleLegClick(legId, '')}
+                    compact={true}
+                  />
+                </div>
+              )}
             </div>
           </div>
         ))}

@@ -2,18 +2,36 @@
  * Dynamic Tool Registry
  *
  * Manages use-case specific tool selection and prioritization.
+ * Tool definitions are imported from the shared tools module.
  */
 
 import { UseCaseIntent } from './use-case-classification';
+import {
+  TOOL_DEFINITIONS,
+  getToolsForUser,
+  type ToolDefinition as SharedToolDefinition,
+} from '../shared/tools';
 
 /**
- * Tool definition interface
+ * Tool definition interface (simplified for use-case registry)
  */
 export interface ToolDefinition {
   name: string;
   description: string;
   parameters: Record<string, any>;
   required: string[];
+}
+
+/**
+ * Convert shared tool definition to registry format
+ */
+function toRegistryFormat(tool: SharedToolDefinition): ToolDefinition {
+  return {
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters.properties,
+    required: tool.parameters.required || [],
+  };
 }
 
 /**
@@ -60,143 +78,18 @@ export class UseCaseToolRegistry implements ToolRegistry {
   getToolsForUseCase(intent: UseCaseIntent, userRoles: string[]): ToolDefinition[] {
     const toolNames = this.toolMappings.get(intent) || [];
 
-    // Get all tools and filter by use case and user roles
-    const allTools = this.getAllTools();
-    return allTools.filter(tool => toolNames.includes(tool.name));
+    // Get tools available for user's roles from shared registry
+    const userTools = getToolsForUser(userRoles).map(toRegistryFormat);
+
+    // Filter to only tools relevant for this use case
+    return userTools.filter(tool => toolNames.includes(tool.name));
   }
 
   /**
-   * Get all available tools (simplified for now)
+   * Get all available tools for given user roles
    */
-  private getAllTools(): ToolDefinition[] {
-    return [
-      {
-        name: 'search_legs_by_location',
-        description: 'Search for sailing legs by location using bounding box coordinates',
-        parameters: {
-          departureBbox: { type: 'object', properties: { minLng: { type: 'number' }, minLat: { type: 'number' }, maxLng: { type: 'number' }, maxLat: { type: 'number' } }, required: ['minLng', 'minLat', 'maxLng', 'maxLat'] },
-          departureDescription: { type: 'string', description: 'Human-readable description of departure area' },
-          arrivalBbox: { type: 'object', properties: { minLng: { type: 'number' }, minLat: { type: 'number' }, maxLng: { type: 'number' }, maxLat: { type: 'number' } }, required: ['minLng', 'minLat', 'maxLng', 'maxLat'] },
-          arrivalDescription: { type: 'string', description: 'Human-readable description of arrival area' },
-          startDate: { type: 'string', description: 'Start date for the sailing period (YYYY-MM-DD)' },
-          endDate: { type: 'string', description: 'End date for the sailing period (YYYY-MM-DD)' },
-          boatType: { type: 'string', description: 'Preferred boat type (e.g., "Offshore sailing", "Coastal cruising")' },
-          makeModel: { type: 'string', description: 'Preferred boat make and model' },
-          riskLevel: { type: 'string', description: 'Preferred risk level (e.g., "Coastal sailing", "Offshore sailing")' },
-          experienceLevel: { type: 'string', description: 'Required experience level (e.g., "Beginner", "Offshore Skipper")' }
-        },
-        required: ['departureBbox', 'departureDescription']
-      },
-      {
-        name: 'search_legs',
-        description: 'Search for sailing legs with general criteria',
-        parameters: {
-          journeyName: { type: 'string', description: 'Name of the journey to search within' },
-          legName: { type: 'string', description: 'Name of the specific leg' },
-          boatType: { type: 'string', description: 'Boat type preference' },
-          experienceLevel: { type: 'string', description: 'Required experience level' },
-          riskLevel: { type: 'string', description: 'Risk level preference' },
-          dateRange: { type: 'object', properties: { start: { type: 'string' }, end: { type: 'string' } }, description: 'Date range for sailing' }
-        },
-        required: []
-      },
-      {
-        name: 'get_leg_details',
-        description: 'Get detailed information about a specific sailing leg',
-        parameters: {
-          legId: { type: 'string', description: 'UUID of the leg to get details for' }
-        },
-        required: ['legId']
-      },
-      {
-        name: 'get_journey_details',
-        description: 'Get detailed information about a sailing journey',
-        parameters: {
-          journeyId: { type: 'string', description: 'UUID of the journey to get details for' }
-        },
-        required: ['journeyId']
-      },
-      {
-        name: 'suggest_profile_update_user_description',
-        description: 'Suggest updating the user description field in profile',
-        parameters: {
-          reason: { type: 'string', description: 'Reason for suggesting this update' },
-          suggestedField: { type: 'string', description: 'Field name that needs updating (must be "user_description")' }
-        },
-        required: ['reason', 'suggestedField']
-      },
-      {
-        name: 'suggest_profile_update_certifications',
-        description: 'Suggest updating certifications in profile',
-        parameters: {
-          reason: { type: 'string', description: 'Reason for suggesting this update' },
-          suggestedField: { type: 'string', description: 'Field name that needs updating (must be "certifications")' }
-        },
-        required: ['reason', 'suggestedField']
-      },
-      {
-        name: 'suggest_profile_update_skills',
-        description: 'Suggest updating skills in profile',
-        parameters: {
-          reason: { type: 'string', description: 'Reason for suggesting this update' },
-          suggestedField: { type: 'string', description: 'Field name that needs updating (must be "skills")' }
-        },
-        required: ['reason', 'suggestedField']
-      },
-      {
-        name: 'suggest_profile_update_risk_level',
-        description: 'Suggest updating risk level preferences in profile',
-        parameters: {
-          reason: { type: 'string', description: 'Reason for suggesting this update' },
-          suggestedField: { type: 'string', description: 'Field name that needs updating (must be "risk_level")' }
-        },
-        required: ['reason', 'suggestedField']
-      },
-      {
-        name: 'suggest_profile_update_sailing_preferences',
-        description: 'Suggest updating sailing preferences in profile',
-        parameters: {
-          reason: { type: 'string', description: 'Reason for suggesting this update' },
-          suggestedField: { type: 'string', description: 'Field name that needs updating (must be "sailing_preferences")' }
-        },
-        required: ['reason', 'suggestedField']
-      },
-      {
-        name: 'suggest_register_for_leg',
-        description: 'Suggest registering for a specific sailing leg',
-        parameters: {
-          legId: { type: 'string', description: 'UUID of the leg to register for' },
-          reason: { type: 'string', description: 'Reason for suggesting this registration' }
-        },
-        required: ['legId', 'reason']
-      },
-      {
-        name: 'get_leg_registration_info',
-        description: 'Get registration information for a specific leg',
-        parameters: {
-          legId: { type: 'string', description: 'UUID of the leg to get registration info for' }
-        },
-        required: ['legId']
-      },
-      {
-        name: 'get_user_profile',
-        description: 'Get the current user profile information',
-        parameters: {},
-        required: []
-      },
-      {
-        name: 'get_pending_actions',
-        description: 'Get pending actions for the user',
-        parameters: {},
-        required: []
-      },
-      {
-        name: 'get_suggestions',
-        description: 'Get suggestions for the user',
-        parameters: {},
-        required: []
-      }
-    ];
+  getAllToolsForUser(userRoles: string[]): ToolDefinition[] {
+    return getToolsForUser(userRoles).map(toRegistryFormat);
   }
 }
 

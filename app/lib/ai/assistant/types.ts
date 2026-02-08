@@ -23,7 +23,16 @@ export interface AIMessage {
 export interface LegReference {
   id: string;
   name: string;
+  journeyName?: string;
+  journeyId?: string;
   boatName?: string;
+  startDate?: string;
+  endDate?: string;
+  departureLocation?: string;
+  arrivalLocation?: string;
+  // Image fields for carousel display
+  journeyImages?: string[];
+  boatImages?: string[];
 }
 
 export interface MessageMetadata {

@@ -6,8 +6,10 @@ import {
   useState,
   useCallback,
   useEffect,
+  useRef,
   ReactNode,
 } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   ProspectMessage,
   ProspectSession,
@@ -81,6 +83,9 @@ function saveSession(session: ProspectSession): void {
 }
 
 export function ProspectChatProvider({ children }: { children: ReactNode }) {
+  const searchParams = useSearchParams();
+  const initialQueryProcessed = useRef(false);
+
   const [state, setState] = useState<ProspectChatState>({
     sessionId: null,
     messages: [],
@@ -91,6 +96,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   });
 
   const [isReturningUser, setIsReturningUser] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Load session on mount
   useEffect(() => {
@@ -105,6 +111,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       }));
       setIsReturningUser(session.conversation.length > 0);
     }
+    setIsInitialized(true);
   }, []);
 
   // Save session when state changes
@@ -209,6 +216,20 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         : [...prev.viewedLegs, legId],
     }));
   }, []);
+
+  // Process initial query from URL parameter (from welcome page search)
+  useEffect(() => {
+    if (!isInitialized || initialQueryProcessed.current || state.isLoading) {
+      return;
+    }
+
+    const initialQuery = searchParams?.get('q');
+    if (initialQuery && initialQuery.trim()) {
+      initialQueryProcessed.current = true;
+      // Send the initial message
+      sendMessage(initialQuery.trim());
+    }
+  }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
   const value: ProspectChatContextType = {
     ...state,

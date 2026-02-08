@@ -2,7 +2,10 @@
  * Prospect AI Chat Type Definitions
  *
  * Types for unauthenticated prospect users exploring sailing opportunities.
+ * Uses shared ToolCall type from @/app/lib/ai/shared for consistency.
  */
+
+import { ToolCall } from '../shared';
 
 export interface ProspectMessage {
   id: string;
@@ -10,26 +13,24 @@ export interface ProspectMessage {
   content: string;
   timestamp: string;
   metadata?: {
-    toolCalls?: ProspectToolCall[];
+    toolCalls?: ToolCall[];
     legReferences?: ProspectLegReference[];
   };
-}
-
-export interface ProspectToolCall {
-  id: string;
-  name: string;
-  arguments: Record<string, unknown>;
 }
 
 export interface ProspectLegReference {
   id: string;
   name: string;
   journeyName?: string;
+  journeyId?: string;
   boatName?: string;
   startDate?: string;
   endDate?: string;
   departureLocation?: string;
   arrivalLocation?: string;
+  // Image fields for carousel display
+  journeyImages?: string[];
+  boatImages?: string[];
 }
 
 export interface ProspectPreferences {

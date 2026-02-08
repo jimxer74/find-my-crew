@@ -2,6 +2,7 @@
  * AI Assistant Tool Executor
  *
  * Executes tool calls from the AI and returns results.
+ * Uses shared utilities from @/app/lib/ai/shared for common operations.
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
@@ -9,6 +10,12 @@ import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
 import { BoundingBox, describeBbox } from '../../geocoding/geocoding';
 import { getLocationBbox, listRegions, getCategories } from '../../geocoding/locations';
+import {
+  normalizeBboxArgs,
+  isValidBbox,
+  findLegsInBbox,
+  transformLeg,
+} from '../shared';
 
 // Debug logging helper
 const DEBUG = true;
@@ -192,75 +199,7 @@ export async function executeTools(
 // Data Tool Implementations
 // ============================================================================
 
-/**
- * Normalize bounding box arguments from AI
- * Handles multiple formats:
- * 1. Proper nested: { departureBbox: { minLng: -6, ... } }
- * 2. Flat coordinates: { minLng: -6, minLat: 35, maxLng: 10, maxLat: 44 }
- * 3. String values: { departureBbox: { minLng: "-6", ... } }
- */
-function normalizeBboxArgs(args: Record<string, unknown>): {
-  departureBbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
-  arrivalBbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
-  departureDescription?: string;
-  arrivalDescription?: string;
-} {
-  const result: ReturnType<typeof normalizeBboxArgs> = {};
-
-  // Helper to convert string/number to number
-  const toNumber = (val: unknown): number | undefined => {
-    if (typeof val === 'number') return val;
-    if (typeof val === 'string') {
-      const num = parseFloat(val);
-      return isNaN(num) ? undefined : num;
-    }
-    return undefined;
-  };
-
-  // Helper to normalize a bbox object (convert strings to numbers)
-  const normalizeBbox = (bbox: unknown): { minLng: number; minLat: number; maxLng: number; maxLat: number } | undefined => {
-    if (!bbox || typeof bbox !== 'object') return undefined;
-    const b = bbox as Record<string, unknown>;
-    const minLng = toNumber(b.minLng);
-    const minLat = toNumber(b.minLat);
-    const maxLng = toNumber(b.maxLng);
-    const maxLat = toNumber(b.maxLat);
-    if (minLng !== undefined && minLat !== undefined && maxLng !== undefined && maxLat !== undefined) {
-      return { minLng, minLat, maxLng, maxLat };
-    }
-    return undefined;
-  };
-
-  // Check for proper nested format first
-  if (args.departureBbox) {
-    result.departureBbox = normalizeBbox(args.departureBbox);
-  }
-  if (args.arrivalBbox) {
-    result.arrivalBbox = normalizeBbox(args.arrivalBbox);
-  }
-
-  // If no nested bbox found, check for flat coordinates at root level
-  // This handles the case where AI sends: { minLng: -6, minLat: 35, maxLng: 10, maxLat: 44 }
-  if (!result.departureBbox && !result.arrivalBbox) {
-    const minLng = toNumber(args.minLng);
-    const minLat = toNumber(args.minLat);
-    const maxLng = toNumber(args.maxLng);
-    const maxLat = toNumber(args.maxLat);
-
-    if (minLng !== undefined && minLat !== undefined && maxLng !== undefined && maxLat !== undefined) {
-      // Flat coordinates found - treat as departure bbox by default
-      result.departureBbox = { minLng, minLat, maxLng, maxLat };
-      log('Converted flat coordinates to departureBbox:', result.departureBbox);
-
-      // Use departureDescription if provided, otherwise generate one
-      if (!args.departureDescription) {
-        result.departureDescription = 'Search area (coordinates provided)';
-      }
-    }
-  }
-
-  return result;
-}
+// Note: normalizeBboxArgs is now imported from shared utilities
 
 async function searchJourneys(
   supabase: SupabaseClient,
@@ -655,251 +594,8 @@ async function searchLegsByLocation(
   };
 }
 
-/**
- * Validate that a bounding box has valid coordinates
- */
-function isValidBbox(bbox: { minLng: number; minLat: number; maxLng: number; maxLat: number }): boolean {
-  // Check all values are numbers
-  if (
-    typeof bbox.minLng !== 'number' ||
-    typeof bbox.minLat !== 'number' ||
-    typeof bbox.maxLng !== 'number' ||
-    typeof bbox.maxLat !== 'number'
-  ) {
-    return false;
-  }
-
-  // Check longitude range (-180 to 180)
-  if (bbox.minLng < -180 || bbox.minLng > 180 || bbox.maxLng < -180 || bbox.maxLng > 180) {
-    return false;
-  }
-
-  // Check latitude range (-90 to 90)
-  if (bbox.minLat < -90 || bbox.minLat > 90 || bbox.maxLat < -90 || bbox.maxLat > 90) {
-    return false;
-  }
-
-  // Check min < max (allow for bboxes crossing the antimeridian)
-  if (bbox.minLat > bbox.maxLat) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Find leg IDs that have waypoints within the specified bounding boxes
- * Uses raw SQL via Supabase RPC or direct query
- */
-async function findLegsInBbox(
-  supabase: SupabaseClient,
-  departureBbox: BoundingBox | null,
-  arrivalBbox: BoundingBox | null
-): Promise<string[]> {
-  log('Finding legs in bboxes:', { departureBbox, arrivalBbox });
-
-  // Build conditions for the query
-  const conditions: string[] = [];
-  const params: Record<string, unknown> = {};
-
-  // We need to use raw SQL for PostGIS spatial queries
-  // Build the WHERE clause based on which bboxes are provided
-
-  let sqlQuery = `
-    SELECT DISTINCT l.id
-    FROM legs l
-    INNER JOIN journeys j ON j.id = l.journey_id
-    WHERE j.state = 'Published'
-  `;
-
-  // Add departure location filter (start waypoint with index = 0)
-  if (departureBbox) {
-    sqlQuery += `
-      AND EXISTS (
-        SELECT 1 FROM waypoints w
-        WHERE w.leg_id = l.id
-        AND w.index = 0
-        AND ST_Within(
-          w.location,
-          ST_MakeEnvelope(${departureBbox.minLng}, ${departureBbox.minLat}, ${departureBbox.maxLng}, ${departureBbox.maxLat}, 4326)
-        )
-      )
-    `;
-  }
-
-  // Add arrival location filter (end waypoint with max index)
-  if (arrivalBbox) {
-    sqlQuery += `
-      AND EXISTS (
-        SELECT 1 FROM waypoints w
-        WHERE w.leg_id = l.id
-        AND w.index = (SELECT MAX(w2.index) FROM waypoints w2 WHERE w2.leg_id = l.id)
-        AND ST_Within(
-          w.location,
-          ST_MakeEnvelope(${arrivalBbox.minLng}, ${arrivalBbox.minLat}, ${arrivalBbox.maxLng}, ${arrivalBbox.maxLat}, 4326)
-        )
-      )
-    `;
-  }
-
-  sqlQuery += ' LIMIT 100';
-
-  log('Executing spatial query:', sqlQuery);
-
-  // Execute raw SQL using Supabase's rpc or sql methods
-  // Note: Supabase requires an RPC function for raw SQL, or we can use the REST API
-  // For now, let's try using the .rpc method with a generic function
-
-  try {
-    // Try using a simple approach: query legs and filter by bbox overlap
-    // This uses the leg's bbox column which is pre-calculated
-
-    // If we only have departure OR arrival, we can use the leg's bbox
-    // For both, we need waypoint-level precision
-
-    if (departureBbox && arrivalBbox) {
-      // Need waypoint-level queries - use raw SQL via RPC
-      // First, try to call a stored procedure if available
-      const { data, error } = await supabase.rpc('find_legs_by_location', {
-        departure_min_lng: departureBbox.minLng,
-        departure_min_lat: departureBbox.minLat,
-        departure_max_lng: departureBbox.maxLng,
-        departure_max_lat: departureBbox.maxLat,
-        arrival_min_lng: arrivalBbox.minLng,
-        arrival_min_lat: arrivalBbox.minLat,
-        arrival_max_lng: arrivalBbox.maxLng,
-        arrival_max_lat: arrivalBbox.maxLat,
-      });
-
-      if (error) {
-        // RPC function might not exist, fall back to simpler approach
-        log('RPC not available, using fallback approach:', error.message);
-        return await findLegsInBboxFallback(supabase, departureBbox, arrivalBbox);
-      }
-
-      return (data || []).map((row: any) => row.id);
-    } else {
-      // Single location - use the simpler fallback approach
-      return await findLegsInBboxFallback(supabase, departureBbox, arrivalBbox);
-    }
-  } catch (error: any) {
-    log('Spatial query error, using fallback:', error.message);
-    return await findLegsInBboxFallback(supabase, departureBbox, arrivalBbox);
-  }
-}
-
-/**
- * Fallback method to find legs when RPC is not available
- * Fetches waypoints and filters in memory
- */
-async function findLegsInBboxFallback(
-  supabase: SupabaseClient,
-  departureBbox: BoundingBox | null,
-  arrivalBbox: BoundingBox | null
-): Promise<string[]> {
-  log('Using fallback bbox search');
-
-  // Get all legs with their waypoints
-  const { data: legs, error } = await supabase
-    .from('legs')
-    .select(`
-      id,
-      journeys!inner (
-        state
-      ),
-      waypoints (
-        index,
-        location
-      )
-    `)
-    .eq('journeys.state', 'Published')
-    .limit(500);
-
-  if (error) {
-    log('Fallback query error:', error);
-    throw error;
-  }
-
-  const matchingLegIds: string[] = [];
-
-  for (const leg of legs || []) {
-    const waypoints = (leg as any).waypoints || [];
-    if (waypoints.length === 0) continue;
-
-    // Sort waypoints by index
-    const sortedWaypoints = waypoints.sort((a: any, b: any) => a.index - b.index);
-    const startWaypoint = sortedWaypoints.find((w: any) => w.index === 0);
-    const endWaypoint = sortedWaypoints[sortedWaypoints.length - 1];
-
-    let departureMatch = true;
-    let arrivalMatch = true;
-
-    // Check departure location
-    if (departureBbox && startWaypoint?.location) {
-      const coords = extractCoordinates(startWaypoint.location);
-      if (coords) {
-        departureMatch = isPointInBbox(coords.lng, coords.lat, departureBbox);
-      } else {
-        departureMatch = false;
-      }
-    }
-
-    // Check arrival location
-    if (arrivalBbox && endWaypoint?.location) {
-      const coords = extractCoordinates(endWaypoint.location);
-      if (coords) {
-        arrivalMatch = isPointInBbox(coords.lng, coords.lat, arrivalBbox);
-      } else {
-        arrivalMatch = false;
-      }
-    }
-
-    if (departureMatch && arrivalMatch) {
-      matchingLegIds.push(leg.id);
-    }
-  }
-
-  log('Fallback found matching legs:', matchingLegIds.length);
-  return matchingLegIds;
-}
-
-/**
- * Extract coordinates from a PostGIS geometry response
- */
-function extractCoordinates(location: any): { lng: number; lat: number } | null {
-  try {
-    if (typeof location === 'string') {
-      // Could be GeoJSON string or WKT
-      if (location.startsWith('{')) {
-        const geoJson = JSON.parse(location);
-        if (geoJson.coordinates) {
-          return { lng: geoJson.coordinates[0], lat: geoJson.coordinates[1] };
-        }
-      }
-    } else if (location?.coordinates) {
-      // GeoJSON object
-      return { lng: location.coordinates[0], lat: location.coordinates[1] };
-    } else if (location?.x !== undefined && location?.y !== undefined) {
-      // Point object with x/y
-      return { lng: location.x, lat: location.y };
-    }
-  } catch (e) {
-    log('Failed to extract coordinates:', e);
-  }
-  return null;
-}
-
-/**
- * Check if a point is within a bounding box
- */
-function isPointInBbox(lng: number, lat: number, bbox: BoundingBox): boolean {
-  return (
-    lng >= bbox.minLng &&
-    lng <= bbox.maxLng &&
-    lat >= bbox.minLat &&
-    lat <= bbox.maxLat
-  );
-}
+// Note: isValidBbox, findLegsInBbox, extractCoordinates, and isPointInBbox
+// are now imported from '../shared' to avoid code duplication
 
 /**
  * Handle get_location_bounding_box tool

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Footer } from '@/app/components/Footer';
 import { LoginModal } from '@/app/components/LoginModal';
@@ -10,8 +11,19 @@ import { SignupModal } from '@/app/components/SignupModal';
 
 export default function WelcomePage() {
   const t = useTranslations('welcome');
+  const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    // Navigate to chat with the initial query
+    router.push(`/welcome/chat?q=${encodeURIComponent(query)}`);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -86,19 +98,44 @@ export default function WelcomePage() {
               {t('crew.subtitle')}
             </p>
 
-            <p className="text-sm md:text-base text-white/80 mb-8">
+            <p className="text-sm md:text-base text-white/80 mb-6">
               {t('crew.description')}
             </p>
 
-            <Link
-              href="/welcome/chat"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 min-h-[52px] bg-white text-blue-900 rounded-lg font-semibold text-lg hover:bg-white/90 transition-colors shadow-lg"
-            >
-              {t('crew.cta')}
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
+            {/* Search input */}
+            <form onSubmit={handleSearch} className="w-full max-w-sm mx-auto">
+              <div className="relative flex items-center">
+                <textarea
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSearch(e);
+                    }
+                  }}
+                  placeholder="Where and when do you want to sail?"
+                  rows={2}
+                  className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!searchQuery.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Search"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="11" cy="11" r="8" strokeWidth="2" />
+                    <path strokeLinecap="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
+                  </svg>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
 

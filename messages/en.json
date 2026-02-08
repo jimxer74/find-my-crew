@@ -651,8 +651,8 @@
     "login": "Log in",
     "crew": {
       "title": "Find Your Next Adventure",
-      "subtitle": "Discover sailing opportunities that match your dreams",
-      "description": "Tell us what you're looking for, and SailSmart assistant will help you find the perfect sailing experience - start living your dream today.",
+      "subtitle": "Discover your dream sailing opportunities",
+      "description": "Tell us what you're looking for, and SailSmart assistant will help you find the perfect sailing experience.",
       "cta": "Start now",
       "features": {
         "discover": "Discover sailing opportunities worldwide",
@@ -663,7 +663,7 @@
     "owner": {
       "title": "Find Your Perfect Crew",
       "subtitle": "Connect with perfect crew for your voyages",
-      "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people for your adventure.",
+      "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people.",
       "cta": "Coming Soon",
       "features": {
         "post": "Post your journeys and routes",

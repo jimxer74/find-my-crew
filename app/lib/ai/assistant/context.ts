@@ -134,7 +134,15 @@ export function buildSystemPrompt(context: UserContext): string {
 
   const { profile, boats, recentRegistrations, pendingActionsCount } = context;
 
+  // Get current date for context
+  const now = new Date();
+  const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const currentYear = now.getFullYear();
+
   let prompt = `You are a helpful AI assistant for "SailSmart", a platform that connects sailing boat owners with crew members looking for sailing opportunities.
+
+CURRENT DATE: ${currentDate}
+IMPORTANT: Today's date is ${currentDate}. When searching for sailing trips or using date filters, use ${currentYear} or later. Do NOT use past years - always search for upcoming trips.
 
 Your role is to help users:
 - Primary goal is to find sailing journeys and legs that best match users needs, preferences and restrictions
