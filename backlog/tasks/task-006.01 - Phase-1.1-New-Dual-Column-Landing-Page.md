@@ -1,9 +1,10 @@
 ---
 id: TASK-006.01
 title: 'Phase 1.1: New Dual-Column Landing Page'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-08 17:43'
+updated_date: '2026-02-08 17:45'
 labels:
   - ui
   - landing-page
