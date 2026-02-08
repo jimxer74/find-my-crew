@@ -1,10 +1,10 @@
 ---
 id: TASK-006
 title: AI driven onboarding / prospect user support for crew
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-01-23 17:13'
-updated_date: '2026-02-08 17:44'
+updated_date: '2026-02-08 17:45'
 labels: []
 dependencies: []
 ordinal: 4000
