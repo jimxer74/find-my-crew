@@ -1,9 +1,10 @@
 ---
 id: TASK-006.03
 title: 'Phase 1.3: Prospect Leg Search API'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
+updated_date: '2026-02-08 17:58'
 labels:
   - api
   - search
