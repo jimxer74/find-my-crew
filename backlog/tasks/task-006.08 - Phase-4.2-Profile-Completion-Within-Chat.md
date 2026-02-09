@@ -4,7 +4,7 @@ title: 'Phase 4.2: Profile Completion Within Chat'
 status: To Do
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 12:24'
+updated_date: '2026-02-09 14:02'
 labels:
   - profile
   - phase-4
@@ -21,7 +21,14 @@ Allow users to complete their profile within the chat after signing up, using in
 **Depends on:** Phase 3 tasks
 
 **Flow:**
-1. After sign-up, AI suggests completing profile
+Previous phase:
+option a) Email sign-up
+- User signs-in via email and is notified to go to email and confirm registration.
+- User clicks the https://www.sailsm.art -homepage in email link and is directed to /page.tsx
+option b) OAuth (Facebook sign-up)
+- User signs using Facebook identity and is rediredect to https://www.sailsm.art/ -homepage
+
+1. After redirection to homepage, there must be a logic to check that if sign-up process was started in AI assistant. If yes, redirect user to AI assistant and AI suggest completing the profile
 2. Shows what information was already gathered
 3. Asks for any missing required fields
 4. Updates profile via existing API
