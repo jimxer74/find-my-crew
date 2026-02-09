@@ -1,7 +1,7 @@
 ---
 id: TASK-006.05
 title: 'Phase 3.1: In-Chat Email Sign-up Flow'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-08 17:44'
 updated_date: '2026-02-09 12:32'
@@ -50,7 +50,7 @@ Map gathered preferences to profile fields:
 - [x] #2 Form validates email and password
 - [x] #3 Successful signup triggers email confirmation
 - [x] #4 User profile created with gathered preferences
-- [ ] #5 Error states handled gracefully in chat context
+- [x] #5 Error states handled gracefully in chat context
 <!-- AC:END -->
 
 ## Implementation Notes
