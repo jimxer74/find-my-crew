@@ -1,10 +1,10 @@
 ---
 id: TASK-025
 title: UI elements refactoring into reusable components
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-25 07:59'
-updated_date: '2026-01-25 08:22'
+updated_date: '2026-02-09 09:32'
 labels: []
 dependencies: []
 priority: low
