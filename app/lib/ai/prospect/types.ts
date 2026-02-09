@@ -37,7 +37,9 @@ export interface ProspectPreferences {
   experienceLevel?: number; // 1-4
   riskLevels?: string[];
   preferredDates?: { start: string; end: string };
-  preferredLocations?: string[];
+  preferredLocations?: string[]; // Deprecated: use departure/arrival locations
+  departureLocations?: string[]; // Where user wants to start
+  arrivalLocations?: string[]; // Where user wants to end
   skills?: string[];
   sailingGoals?: string;
 }

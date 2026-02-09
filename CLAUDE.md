@@ -51,9 +51,12 @@ You MUST read the overview resource to understand the complete workflow. The inf
 
 ## UI AND LAYOUT PRINCIPLES
 
-**App Header Visibility:** The main application header (`<Header />` component) must ALWAYS remain visible. When creating new pages, wizards, forms, or any UI components:
+**App Header Visibility:** The main application header (`<Header />` component) must ALWAYS remain visible if NOT explicitly stated otherwise. When creating new pages, wizards, forms, or any UI components:
 
 1. **NEVER** use fixed full-screen overlays (`fixed inset-0`) that cover the header
 2. **ALWAYS** render page content below the header, not on top of it
 3. For multi-step wizards or forms, replace the main content area while keeping the header visible
 4. **PROPOSE** generalization and creation or refactoring existing functionalities and ui into reusable components
+
+## GDPR CUSTOMER DATA DELETION
+1. **ALLWAYS** verify when creating new database tables containing new user information to update the GDPR account deletion logic to implement neccessary deletion functionality for new database tables

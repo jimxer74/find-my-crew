@@ -98,7 +98,7 @@ create table public.profiles (
   constraint profiles_pkey primary key (id),
   constraint profiles_language_check check (language in ('en', 'fi')),
   constraint profiles_username_key unique (username),
-  constraint profiles_id_fkey foreign KEY (id) references auth.users (id)
+  constraint profiles_id_fkey foreign KEY (id) references auth.users (id) on delete cascade
 );
 -- Indexes
 create unique index if not exists profiles_user_id_key on public.profiles (id);
@@ -959,7 +959,7 @@ create table if not exists public.feedback (
   status feedback_status not null default 'new',
   status_note text,               -- Admin note explaining status change
   status_changed_at timestamptz,
-  status_changed_by uuid references auth.users(id),
+  status_changed_by uuid references auth.users(id) on delete set null,
 
   -- Voting (denormalized for performance)
   upvotes integer not null default 0,

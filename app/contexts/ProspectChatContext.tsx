@@ -19,6 +19,31 @@ import {
 const STORAGE_KEY = 'prospect_session';
 const SESSION_EXPIRY_DAYS = 7;
 
+/**
+ * Fetch session ID from server (stored in HttpOnly cookie)
+ */
+async function fetchSessionFromCookie(): Promise<{ sessionId: string; isNewSession: boolean } | null> {
+  try {
+    const response = await fetch('/api/prospect/session');
+    if (!response.ok) return null;
+    return response.json();
+  } catch (e) {
+    console.error('Failed to fetch session from cookie:', e);
+    return null;
+  }
+}
+
+/**
+ * Clear the session cookie on server
+ */
+async function clearSessionCookie(): Promise<void> {
+  try {
+    await fetch('/api/prospect/session', { method: 'DELETE' });
+  } catch (e) {
+    console.error('Failed to clear session cookie:', e);
+  }
+}
+
 interface ProspectChatState {
   sessionId: string | null;
   messages: ProspectMessage[];
@@ -98,20 +123,58 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load session on mount
+  // Load session on mount - combine cookie (session ID) with localStorage (data)
   useEffect(() => {
-    const session = loadSession();
-    if (session) {
-      setState((prev) => ({
-        ...prev,
-        sessionId: session.sessionId,
-        messages: session.conversation,
-        preferences: session.gatheredPreferences,
-        viewedLegs: session.viewedLegs,
-      }));
-      setIsReturningUser(session.conversation.length > 0);
+    async function initSession() {
+      // First, get session ID from HttpOnly cookie
+      const cookieSession = await fetchSessionFromCookie();
+
+      if (cookieSession) {
+        // Load localStorage data
+        const localSession = loadSession();
+
+        // Check if localStorage data matches the cookie session
+        if (localSession && localSession.sessionId === cookieSession.sessionId) {
+          // Restore full session from localStorage
+          setState((prev) => ({
+            ...prev,
+            sessionId: cookieSession.sessionId,
+            messages: localSession.conversation,
+            preferences: localSession.gatheredPreferences,
+            viewedLegs: localSession.viewedLegs,
+          }));
+          setIsReturningUser(localSession.conversation.length > 0);
+        } else {
+          // Cookie exists but localStorage is stale or missing
+          // Clear localStorage and start fresh with the cookie session ID
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          setState((prev) => ({
+            ...prev,
+            sessionId: cookieSession.sessionId,
+          }));
+          setIsReturningUser(false);
+        }
+      } else {
+        // No cookie session - fallback to localStorage only (legacy support)
+        const localSession = loadSession();
+        if (localSession) {
+          setState((prev) => ({
+            ...prev,
+            sessionId: localSession.sessionId,
+            messages: localSession.conversation,
+            preferences: localSession.gatheredPreferences,
+            viewedLegs: localSession.viewedLegs,
+          }));
+          setIsReturningUser(localSession.conversation.length > 0);
+        }
+      }
+
+      setIsInitialized(true);
     }
-    setIsInitialized(true);
+
+    initSession();
   }, []);
 
   // Save session when state changes
@@ -193,12 +256,18 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, error: null }));
   }, []);
 
-  const clearSession = useCallback(() => {
+  const clearSession = useCallback(async () => {
+    // Clear both localStorage and server cookie
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
     }
+    await clearSessionCookie();
+
+    // Fetch a new session ID from server
+    const newSession = await fetchSessionFromCookie();
+
     setState({
-      sessionId: null,
+      sessionId: newSession?.sessionId || null,
       messages: [],
       preferences: {},
       viewedLegs: [],

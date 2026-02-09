@@ -110,6 +110,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Service role key for admin operations
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
     const body = await request.json();
     const { confirmation } = body;
 
@@ -149,6 +153,10 @@ export async function DELETE(request: NextRequest) {
     const emailPrefsResult = await safeDelete('email_preferences', { user_id: user.id }, supabase, user.id);
     deletionResults.push(emailPrefsResult);
 
+    // 5. Delete registrations (ensure this happens before boats are deleted)
+    const registrationsResult = await safeDelete('registrations', { user_id: user.id }, supabase, user.id);
+    deletionResults.push(registrationsResult);
+
     // 5. Delete AI conversations and related data
     const aiConversationsResult = await safeDelete('ai_conversations', { user_id: user.id }, supabase, user.id);
     deletionResults.push(aiConversationsResult);
@@ -156,7 +164,32 @@ export async function DELETE(request: NextRequest) {
     const aiPendingActionsResult = await safeDelete('ai_pending_actions', { user_id: user.id }, supabase, user.id);
     deletionResults.push(aiPendingActionsResult);
 
-    // 6. Delete feedback data
+    // 6. Clear feedback records where user is referenced in status_changed_by
+    console.log(`[${user.id}] Clearing feedback status_changed_by references...`);
+    const { error: feedbackStatusError } = await supabase
+      .from('feedback')
+      .update({ status_changed_by: null })
+      .eq('status_changed_by', user.id);
+
+    if (feedbackStatusError) {
+      console.error(`[${user.id}] Failed to clear feedback status_changed_by:`, feedbackStatusError);
+      deletionResults.push({
+        success: false,
+        table: 'feedback_status_changed_by',
+        operation: 'update',
+        error: feedbackStatusError.message,
+        details: { code: feedbackStatusError.code }
+      });
+    } else {
+      console.log(`[${user.id}] Successfully cleared feedback status_changed_by references`);
+      deletionResults.push({
+        success: true,
+        table: 'feedback_status_changed_by',
+        operation: 'update'
+      });
+    }
+
+    // 7. Delete feedback data
     const feedbackResult = await safeDelete('feedback', { user_id: user.id }, supabase, user.id);
     deletionResults.push(feedbackResult);
 
@@ -166,12 +199,7 @@ export async function DELETE(request: NextRequest) {
     const feedbackDismissalsResult = await safeDelete('feedback_prompt_dismissals', { user_id: user.id }, supabase, user.id);
     deletionResults.push(feedbackDismissalsResult);
 
-    // 7. Delete registration answers (via registrations cascade)
-    // 8. Delete registrations
-    const registrationsResult = await safeDelete('registrations', { user_id: user.id }, supabase, user.id);
-    deletionResults.push(registrationsResult);
-
-    // 9. For owned boats: delete waypoints, legs, journeys, boats (cascade)
+    // 8. For owned boats: delete waypoints, legs, journeys, boats (cascade)
     const { data: ownedBoats, error: boatsError } = await supabase
       .from('boats')
       .select('id')
@@ -196,6 +224,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 10. Delete profile (explicit deletion before auth user deletion)
+    // Note: profiles.id has foreign key to auth.users.id, but without CASCADE
+    // So we need to delete it before the auth user
+    console.log(`[${user.id}] Attempting profile deletion...`);
     const profilesResult = await safeDelete('profiles', { id: user.id }, supabase, user.id);
 
     // Verify profile deletion was successful
@@ -209,10 +240,39 @@ export async function DELETE(request: NextRequest) {
 
       if (profileVerifyError && profileVerifyError.code !== 'PGRST116') {
         console.warn(`[${user.id}] Profile verification query failed:`, profileVerifyError);
+        profilesResult.success = false;
+        profilesResult.error = profileVerifyError.message;
       } else if (profileVerify && profileVerify.id) {
         console.error(`[${user.id}] Profile still exists after deletion attempt!`);
         profilesResult.success = false;
         profilesResult.error = 'Profile still exists after deletion';
+
+        // Try a force delete using admin client if available
+        if (serviceRoleKey && supabaseUrl) {
+          console.log(`[${user.id}] Attempting force delete of profile using admin client...`);
+          const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false }
+          });
+
+          try {
+            const { error: forceDeleteError } = await adminClient
+              .from('profiles')
+              .delete()
+              .eq('id', user.id);
+
+            if (forceDeleteError) {
+              console.error(`[${user.id}] Force delete of profile failed:`, forceDeleteError);
+              profilesResult.error = `Force delete failed: ${forceDeleteError.message}`;
+            } else {
+              console.log(`[${user.id}] Profile force deleted successfully`);
+              profilesResult.success = true;
+              profilesResult.error = undefined;
+            }
+          } catch (forceError: unknown) {
+            console.error(`[${user.id}] Exception during force delete:`, forceError);
+            profilesResult.error = `Force delete exception: ${forceError instanceof Error ? forceError.message : String(forceError)}`;
+          }
+        }
       } else {
         console.log(`[${user.id}] Profile successfully deleted`);
       }
@@ -245,9 +305,6 @@ export async function DELETE(request: NextRequest) {
 
     // 11. Delete the auth user using service role
     // Note: This requires SUPABASE_SERVICE_ROLE_KEY environment variable
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
     let authDeletionResult: DeletionResult = { success: true, table: 'auth.users', operation: 'skip' };
 
     if (serviceRoleKey && supabaseUrl) {
@@ -262,6 +319,40 @@ export async function DELETE(request: NextRequest) {
 
         // Use Supabase Admin API for auth user deletion (recommended approach)
         console.log(`[${user.id}] Attempting auth user deletion via admin API...`);
+
+        // First, let's double-check that all cleanup was completed successfully
+        console.log(`[${user.id}] Performing final verification before auth user deletion...`);
+        const finalVerification = await verifyUserDeletion(user.id, supabase);
+
+        if (finalVerification.hasRemainingData) {
+          console.warn(`[${user.id}] WARNING: Some user data remains before auth deletion:`, finalVerification.verificationResults.filter(v => v.status === 'remaining'));
+          // Log the remaining data but continue - this might be expected for some tables
+        }
+
+        // Additional constraint check for auth-specific references
+        const constraintCheck = await checkForConstraintViolations(user.id, supabase);
+        if (constraintCheck.hasViolations) {
+          console.error(`[${user.id}] CRITICAL: Constraint violations detected before auth deletion:`, constraintCheck.violations);
+
+          // For critical violations, we should not proceed with auth deletion
+          const criticalViolations = constraintCheck.violations.filter(v =>
+            v.table === 'profiles' || v.column === 'id' ||
+            (v.table === 'feedback' && v.column === 'status_changed_by')
+          );
+
+          if (criticalViolations.length > 0) {
+            console.error(`[${user.id}] CRITICAL VIOLATIONS: Cannot proceed with auth deletion due to:`, criticalViolations);
+            authDeletionResult = {
+              success: false,
+              table: 'auth.users',
+              operation: 'skip',
+              error: 'Critical constraint violations prevent auth user deletion',
+              details: { criticalViolations, constraintCheck: constraintCheck.violations }
+            };
+          }
+        }
+
+        console.log(`[${user.id}] Proceeding with auth user deletion...`);
         const { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
         // Verify the admin API deletion was successful
@@ -281,12 +372,26 @@ export async function DELETE(request: NextRequest) {
           }
         } else {
           console.error(`[${user.id}] Auth user deletion via admin API failed:`, adminDeleteError);
+          console.error(`[${user.id}] Error details:`, {
+            message: adminDeleteError.message,
+            name: adminDeleteError.name,
+            status: adminDeleteError.status
+          });
+
+          // Try to get more information about what's preventing deletion
+          const detailedCheck = await checkForConstraintViolations(user.id, supabase);
+          console.error(`[${user.id}] Detailed constraint check:`, detailedCheck);
+
           authDeletionResult = {
             success: false,
             table: 'auth.users',
             operation: 'delete',
             error: adminDeleteError.message,
-            details: { code: adminDeleteError.code }
+            details: {
+              status: adminDeleteError.status,
+              violations: detailedCheck.violations,
+              hasViolations: detailedCheck.hasViolations
+            }
           };
         }
       } catch (error: any) {
@@ -532,6 +637,87 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
   }
 
   return result;
+}
+
+/**
+ * Check for potential foreign key constraint violations before auth user deletion
+ */
+async function checkForConstraintViolations(userId: string, supabase: any) {
+  const violations: any[] = [];
+
+  try {
+    // Check for any remaining references to this user in auth.users
+    const tablesToCheck = [
+      { table: 'profiles', column: 'id' },
+      { table: 'feedback', column: 'status_changed_by' },
+      { table: 'user_consents', column: 'user_id' },
+      { table: 'consent_audit_log', column: 'user_id' },
+      { table: 'email_preferences', column: 'user_id' },
+      { table: 'notifications', column: 'user_id' },
+      { table: 'ai_conversations', column: 'user_id' },
+      { table: 'ai_pending_actions', column: 'user_id' },
+      { table: 'feedback', column: 'user_id' },
+      { table: 'feedback_votes', column: 'user_id' },
+      { table: 'feedback_prompt_dismissals', column: 'user_id' },
+      { table: 'registrations', column: 'user_id' },
+      { table: 'boats', column: 'owner_id' },
+      { table: 'email_preferences', column: 'user_id' }
+    ];
+
+    for (const { table, column } of tablesToCheck) {
+      try {
+        const { count, error } = await supabase
+          .from(table)
+          .select('*', { count: 'exact', head: true })
+          .eq(column, userId);
+
+        if (error) {
+          console.warn(`[${userId}] Error checking ${table}.${column}:`, error);
+        } else if (count && count > 0) {
+          violations.push({
+            table,
+            column,
+            remainingRecords: count,
+            message: `${table}.${column} still references user ${userId} (${count} records)`
+          });
+        }
+      } catch (checkError) {
+        console.warn(`[${userId}] Exception checking ${table}.${column}:`, checkError);
+      }
+    }
+
+    // Check for any unprocessed deletion steps
+    const remainingData = await verifyUserDeletion(userId, supabase);
+    if (remainingData.hasRemainingData) {
+      violations.push({
+        type: 'incomplete_deletion',
+        message: 'Some user data was not deleted before auth user deletion attempt',
+        remainingData: remainingData.verificationResults.filter(v => v.status === 'remaining')
+      });
+    }
+
+    const hasViolations = violations.length > 0;
+
+    if (hasViolations) {
+      console.warn(`[${userId}] Constraint violations detected:`, violations);
+    } else {
+      console.log(`[${userId}] No constraint violations detected`);
+    }
+
+    return {
+      hasViolations,
+      violations,
+      remainingData
+    };
+
+  } catch (error: any) {
+    console.error(`[${userId}] Error checking for constraint violations:`, error);
+    return {
+      hasViolations: true,
+      violations: [{ type: 'check_error', message: error.message }],
+      remainingData: null
+    };
+  }
 }
 
 /**

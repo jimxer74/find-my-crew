@@ -119,6 +119,7 @@ export function ProspectChat() {
     isReturningUser,
     sendMessage,
     clearError,
+    clearSession,
     addViewedLeg,
   } = useProspectChat();
 
@@ -165,11 +166,44 @@ export function ProspectChat() {
     sendMessage(message);
   };
 
+  const handleStartFresh = () => {
+    if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
+      clearSession();
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
+      {/* Chat header with Start Fresh option */}
+      {messages.length > 0 && (
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
+          <span className="text-sm text-muted-foreground">
+            Exploring sailing opportunities
+          </span>
+          <button
+            onClick={handleStartFresh}
+            disabled={isLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Start Fresh
+          </button>
+        </div>
+      )}
+
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-2xl mx-auto space-y-4">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-4">
         {messages.length === 0 && !isLoading && (
           <div className="text-center text-muted-foreground py-8">
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
@@ -292,7 +326,7 @@ export function ProspectChat() {
 
       {/* Input area */}
       <div className="border-t border-border p-4 bg-card">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl lg:max-w-4xl mx-auto">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <textarea
               ref={inputRef}
