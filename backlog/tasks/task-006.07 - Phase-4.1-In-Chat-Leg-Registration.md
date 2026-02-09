@@ -4,7 +4,7 @@ title: 'Phase 4.1: In-Chat Leg Registration'
 status: To Do
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 18:41'
+updated_date: '2026-02-09 18:50'
 labels:
   - registration
   - phase-4
@@ -30,11 +30,16 @@ Scenario b) known logged in user
 1. User clicks on a leg badge or says "I want to register for [leg name]"
 
 Main Registration flow, after a or b scenario
-2. AI confirms the leg details
-3. Chat displays inline registration form (notes, confirm)
-4. Registration submitted to existing API
+2. AI confirms the leg details and requirements
+3. AI informs user if the leg or journey requirements or type of sailing does not match users profile or aspirations
+3. AI checks if a Journey has registration questions for autoapproval
+4. AI asks the required registration questions to be filled by user and provides immediate improvement ideas and suggestions for better possibilities for autoapproval
+3. Once all the regisration questions has been asked and answered, AI asks to "Approve" the registration 
+4. If Approved by user registration is submitted to existing API
 5. Confirmation shown in chat
-6. AI suggests next steps (view other legs, complete profile)
+6. AI suggests next steps (e.g. preparation for the journey, or improving the profile)
+7. As final message AI provides some nice encouraging words to say goodbuy
+8. A button to close the chat is displayed and clicking it redirects user to /crew homepage
 
 **Components:**
 - `InlineChatRegistrationForm.tsx` - Registration form for chat
