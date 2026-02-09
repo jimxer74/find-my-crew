@@ -1,9 +1,10 @@
 ---
 id: TASK-006.05
 title: 'Phase 3.1: In-Chat Email Sign-up Flow'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
+updated_date: '2026-02-09 12:28'
 labels:
   - auth
   - signup
