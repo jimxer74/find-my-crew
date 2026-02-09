@@ -4,6 +4,7 @@ title: 'Phase 4.1: In-Chat Leg Registration'
 status: To Do
 assignee: []
 created_date: '2026-02-08 17:44'
+updated_date: '2026-02-09 18:41'
 labels:
   - registration
   - phase-4
@@ -20,7 +21,15 @@ Allow signed-up users to register for sailing legs directly within the chat inte
 **Depends on:** Phase 3 tasks (user must be authenticated)
 
 **Flow:**
+Scenario a) prospect user, not  logged in 
+1. User clicks "join" for the leg in prospect AI assistant when not singed-up or logged-in yet
+2. User goes through the whole sign-up and profile creation conversation flow and gets finally logged in
+** IMPORTANT** an UUID of the leg that user registered or joined, must be carried over to main registration flow below, so that after successful signup, profile creation and login, user can directly continue registration process for the leg.
+
+Scenario b) known logged in user
 1. User clicks on a leg badge or says "I want to register for [leg name]"
+
+Main Registration flow, after a or b scenario
 2. AI confirms the leg details
 3. Chat displays inline registration form (notes, confirm)
 4. Registration submitted to existing API
