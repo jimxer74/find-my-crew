@@ -65,6 +65,7 @@ interface ProspectChatContextType extends ProspectChatState {
   clearError: () => void;
   clearSession: () => void;
   addViewedLeg: (legId: string) => void;
+  setTargetLeg: (legId: string, legName: string) => void;
   approveAction: (messageId: string, action: PendingAction) => Promise<void>;
   cancelAction: (messageId: string) => void;
   isReturningUser: boolean;
@@ -441,6 +442,18 @@ Ready to get started?`,
     }));
   }, []);
 
+  // Set target leg for registration (when user clicks "Join" on a specific leg)
+  const setTargetLeg = useCallback((legId: string, legName: string) => {
+    setState((prev) => ({
+      ...prev,
+      preferences: {
+        ...prev.preferences,
+        targetLegId: legId,
+        targetLegName: legName,
+      },
+    }));
+  }, []);
+
   // Approve a pending action - execute the held tool call
   const approveAction = useCallback(async (messageId: string, action: PendingAction) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -542,6 +555,7 @@ Ready to get started?`,
     clearError,
     clearSession,
     addViewedLeg,
+    setTargetLeg,
     approveAction,
     cancelAction,
     isReturningUser,

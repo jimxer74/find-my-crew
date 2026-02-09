@@ -122,6 +122,7 @@ export function ProspectChat() {
     clearError,
     clearSession,
     addViewedLeg,
+    setTargetLeg,
     approveAction,
     cancelAction,
   } = useProspectChat();
@@ -201,12 +202,21 @@ export function ProspectChat() {
       }));
     }
 
-    // Show the signup form
-    setShowAuthForm('signup');
-    // Optionally scroll to the form
+    // Set the target leg in preferences so the AI knows the primary intent
+    setTargetLeg(legId, legName);
+
+    // Send a message to the AI indicating the user wants to join this specific leg
+    // This establishes the primary intent for the conversation
+    sendMessage(`I want to join the "${legName}" leg. [Leg ID: ${legId}]`);
+
+    // Show the signup form after a short delay to let the message appear
     setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+      setShowAuthForm('signup');
+      // Scroll to show the AI response
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }, 300);
   };
 
   return (

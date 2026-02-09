@@ -52,6 +52,9 @@ export interface ProspectPreferences {
   arrivalLocations?: string[]; // Where user wants to end
   skills?: string[];
   sailingGoals?: string;
+  // Target leg for registration (when user clicks "Join" on a specific leg)
+  targetLegId?: string;
+  targetLegName?: string;
 }
 
 export interface ProspectSession {
