@@ -4,7 +4,7 @@ title: 'Phase 4.1: In-Chat Leg Registration'
 status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 18:55'
+updated_date: '2026-02-09 18:58'
 labels:
   - registration
   - phase-4
@@ -54,9 +54,8 @@ Main Registration flow, after a or b scenario
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Registration form appears inline in chat for authenticated users
-- [ ] #2 Leg details shown before confirming registration
-- [ ] #3 Registration creates record in database
-- [ ] #4 Confirmation message shown in chat
-- [ ] #5 Owner notified of new registration
+- [ ] #1 Registration is done as questions in assistant chat for authenticated users
+- [ ] #2 Registration creates record in database
+- [ ] #3 Confirmation message shown in chat
+- [ ] #4 Owner notified of new registration
 <!-- AC:END -->
