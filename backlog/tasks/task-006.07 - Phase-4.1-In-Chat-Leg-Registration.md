@@ -1,10 +1,10 @@
 ---
 id: TASK-006.07
 title: 'Phase 4.1: In-Chat Leg Registration'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 18:50'
+updated_date: '2026-02-09 18:55'
 labels:
   - registration
   - phase-4
