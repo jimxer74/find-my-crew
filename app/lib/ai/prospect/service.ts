@@ -48,72 +48,14 @@ const log = (message: string, data?: unknown) => {
 };
 
 /**
- * Extract potential location mentions from a message and match against the location registry.
- * Returns matched locations with their bounding boxes ready for AI to use directly.
+ * Extract location mentions from a message using exact (case-insensitive) matching
+ * against the predefined LocationRegion names and aliases.
+ *
+ * Only returns matches where the user's message contains an exact region name or alias.
+ * Any locations not in the registry are left for the AI/LLM to geocode.
  */
 function extractMatchedLocations(message: string): LocationSearchResult[] {
-  // Common location indicator words to help identify location phrases
-  const locationIndicators = [
-    'in', 'from', 'to', 'near', 'around', 'sailing', 'departing', 'arriving',
-    'going', 'want', 'like', 'interested', 'explore', 'visit', 'mediterranean',
-    'caribbean', 'atlantic', 'pacific', 'aegean', 'adriatic', 'baltic'
-  ];
-
-  const normalizedMessage = message.toLowerCase();
-  const allMatches: LocationSearchResult[] = [];
-
-  // Try to match the entire message first (in case it's just a location name)
-  const fullMatch = searchLocation(message);
-  if (fullMatch.length > 0 && fullMatch[0].score >= 0.8) {
-    return [fullMatch[0]];
-  }
-
-  // Extract potential location phrases using various patterns
-  const words = message.split(/[\s,]+/);
-
-  // Try individual words and word combinations
-  for (let i = 0; i < words.length; i++) {
-    // Single word - use lower threshold (0.7) since single words like "riviera" should match
-    const singleWord = words[i].replace(/[^a-zA-Z\u00C0-\u024F]/g, ''); // Keep unicode letters
-    if (singleWord.length >= 3) {
-      const matches = searchLocation(singleWord);
-      for (const match of matches) {
-        if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
-          allMatches.push(match);
-        }
-      }
-    }
-
-    // Two-word combinations
-    if (i < words.length - 1) {
-      const twoWords = `${words[i]} ${words[i + 1]}`.replace(/[^a-zA-Z\u00C0-\u024F\s]/g, '');
-      if (twoWords.length >= 5) {
-        const matches = searchLocation(twoWords);
-        for (const match of matches) {
-          if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
-            allMatches.push(match);
-          }
-        }
-      }
-    }
-
-    // Three-word combinations
-    if (i < words.length - 2) {
-      const threeWords = `${words[i]} ${words[i + 1]} ${words[i + 2]}`.replace(/[^a-zA-Z\u00C0-\u024F\s]/g, '');
-      if (threeWords.length >= 7) {
-        const matches = searchLocation(threeWords);
-        for (const match of matches) {
-          if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
-            allMatches.push(match);
-          }
-        }
-      }
-    }
-  }
-
-  // Sort by score and return top matches
-  allMatches.sort((a, b) => b.score - a.score);
-  return allMatches.slice(0, 3); // Return top 3 matches
+  return searchLocation(message);
 }
 
 /**
@@ -237,7 +179,7 @@ ${matchedLocations && matchedLocations.length > 0 ? `
 
 The following locations were detected and pre-resolved. **COPY THE TOOL CALL EXACTLY AS SHOWN - do not retype the coordinates manually to avoid typos.**
 
-${matchedLocations.map(match => `**${match.region.name}** (confidence: ${Math.round(match.score * 100)}%)
+${matchedLocations.map(match => `**${match.region.name}** (matched on: "${match.matchedTerm}")
 
 READY-TO-USE TOOL CALL (copy this exactly, just add your date filters):
 \`\`\`tool_call
@@ -518,12 +460,27 @@ async function executeProspectTools(
           continue;
         }
 
+        // Field alias mapping to handle AI naming variations
+        const fieldAliases: Record<string, string> = {
+          'risk_levels': 'risk_level',
+          'avatar_url': 'profile_image_url',
+        };
+
         // Build update object from provided fields
         const updates: Record<string, unknown> = {};
         const allowedFields = [
           'full_name', 'user_description', 'sailing_experience',
-          'risk_level', 'skills', 'sailing_preferences', 'certifications'
+          'risk_level', 'skills', 'sailing_preferences', 'certifications',
+          'phone', 'profile_image_url'
         ];
+
+        // First, map any aliased field names to their canonical names
+        for (const [alias, canonical] of Object.entries(fieldAliases)) {
+          if (args[alias] !== undefined && args[canonical] === undefined) {
+            log(`Field alias mapping: ${alias} -> ${canonical}`);
+            args[canonical] = args[alias];
+          }
+        }
 
         for (const field of allowedFields) {
           if (args[field] !== undefined) {
@@ -542,27 +499,118 @@ async function executeProspectTools(
 
         updates.updated_at = new Date().toISOString();
 
-        const { error } = await supabase
+        // Check if profile row exists (newly signed-up users may not have one yet)
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .update(updates)
-          .eq('id', authenticatedUserId);
+          .select('id, username, roles')
+          .eq('id', authenticatedUserId)
+          .single();
 
-        if (error) {
-          results.push({
-            name: toolCall.name,
-            result: null,
-            error: `Failed to update profile: ${error.message}`,
-          });
-          continue;
+        let operationType: 'insert' | 'update';
+
+        if (existingProfile) {
+          // Profile exists - update it
+          operationType = 'update';
+
+          // Ensure the 'crew' role is set if roles are empty (prospect flow = crew)
+          const existingRoles = existingProfile.roles as string[] | null;
+          if (!existingRoles || existingRoles.length === 0) {
+            updates.roles = ['crew'];
+            log('Profile has no roles set, adding default crew role');
+          }
+
+          const { data, error } = await supabase
+            .from('profiles')
+            .update(updates)
+            .eq('id', authenticatedUserId)
+            .select('id');
+
+          if (error) {
+            results.push({
+              name: toolCall.name,
+              result: null,
+              error: `Failed to update profile: ${error.message}`,
+            });
+            continue;
+          }
+
+          if (!data || data.length === 0) {
+            log('⚠️ Profile update matched 0 rows despite profile existing - possible RLS issue');
+            results.push({
+              name: toolCall.name,
+              result: null,
+              error: 'Profile update failed: no rows were affected. This may be a permissions issue.',
+            });
+            continue;
+          }
+        } else {
+          // Profile doesn't exist yet - insert a new one
+          operationType = 'insert';
+
+          // Generate a username from full_name or user ID
+          const baseName = (updates.full_name as string)
+            ? (updates.full_name as string).toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20)
+            : `user_${authenticatedUserId.substring(0, 8)}`;
+          const username = `${baseName}_${Date.now().toString(36)}`;
+
+          // Get user email from auth for the profile
+          let email: string | undefined;
+          try {
+            const { data: authUser } = await supabase.auth.getUser();
+            email = authUser?.user?.email || undefined;
+          } catch {
+            // Email is optional, continue without it
+          }
+
+          const insertData: Record<string, unknown> = {
+            id: authenticatedUserId,
+            username,
+            ...updates,
+            created_at: new Date().toISOString(),
+            roles: ['crew'], // Default role for prospects
+          };
+
+          if (email) {
+            insertData.email = email;
+          }
+
+          log('Profile does not exist, inserting new profile:', insertData);
+
+          const { data, error } = await supabase
+            .from('profiles')
+            .insert(insertData)
+            .select('id');
+
+          if (error) {
+            results.push({
+              name: toolCall.name,
+              result: null,
+              error: `Failed to create profile: ${error.message}`,
+            });
+            continue;
+          }
+
+          if (!data || data.length === 0) {
+            results.push({
+              name: toolCall.name,
+              result: null,
+              error: 'Profile creation failed: no rows were inserted.',
+            });
+            continue;
+          }
         }
 
-        log('Profile updated successfully:', updates);
+        const updatedFieldNames = Object.keys(updates).filter(k => k !== 'updated_at' && k !== 'created_at');
+        log(`Profile ${operationType}d successfully:`, updates);
         results.push({
           name: toolCall.name,
           result: {
             success: true,
-            updatedFields: Object.keys(updates).filter(k => k !== 'updated_at'),
-            message: 'Profile updated successfully',
+            operation: operationType,
+            updatedFields: updatedFieldNames,
+            message: operationType === 'insert'
+              ? 'Profile created and populated successfully'
+              : 'Profile updated successfully',
           },
         });
         continue;
@@ -780,17 +828,54 @@ export async function prospectChat(
   log('📜 Conversation history length:', request.conversationHistory?.length || 0);
   log('👤 Profile completion mode:', request.profileCompletionMode || false);
   log('🔐 Authenticated user ID:', request.authenticatedUserId || '(none)');
+  log('👤 User profile:', request.userProfile || '(none)');
 
   const sessionId = request.sessionId || `prospect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const preferences = request.gatheredPreferences || {};
   const history = request.conversationHistory || [];
   const authenticatedUserId = request.authenticatedUserId || null;
+  const userProfile = request.userProfile || null;
   const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
+
+  // Handle approved action - execute the held tool call directly
+  if (request.approvedAction && authenticatedUserId) {
+    log('✅ Executing approved action:', request.approvedAction.toolName);
+
+    const toolCall: ToolCall = {
+      id: `approved_${Date.now()}`,
+      name: request.approvedAction.toolName,
+      arguments: request.approvedAction.arguments,
+    };
+
+    const toolResults = await executeProspectTools(supabase, [toolCall], authenticatedUserId);
+    const result = toolResults[0];
+
+    let responseContent: string;
+    if (result?.error) {
+      responseContent = `There was an issue saving your profile: ${result.error}\n\nPlease try again or you can complete your profile manually on the profile page.`;
+    } else {
+      const updatedFields = (result?.result as { updatedFields?: string[] })?.updatedFields || [];
+      responseContent = `Your profile has been saved successfully! Updated fields: ${updatedFields.join(', ')}.\n\nYou can now browse sailing opportunities and boat owners will be able to see your profile. You can always edit your profile later from the profile page to add more details.`;
+    }
+
+    const responseMessage: ProspectMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      role: 'assistant',
+      content: responseContent,
+      timestamp: new Date().toISOString(),
+    };
+
+    return {
+      sessionId,
+      message: responseMessage,
+      extractedPreferences: undefined,
+    };
+  }
 
   // Extract and match locations from the user's message against our registry
   const matchedLocations = extractMatchedLocations(request.message);
   if (matchedLocations.length > 0) {
-    log('📍 PRE-RESOLVED LOCATIONS:', matchedLocations.map(m => `${m.region.name} (${Math.round(m.score * 100)}%)`));
+    log('📍 PRE-RESOLVED LOCATIONS:', matchedLocations.map(m => `${m.region.name} (matched: "${m.matchedTerm}")`));
   }
 
   // Build prompts with pre-resolved locations
@@ -803,39 +888,78 @@ export async function prospectChat(
 ## PROFILE COMPLETION MODE
 
 You are now helping an authenticated user complete their profile after signing up. The user's preferences from your previous conversation have been gathered.
-
+${(() => {
+  const known: string[] = [];
+  if (userProfile?.fullName) known.push(`- **Name:** "${userProfile.fullName}"`);
+  if (userProfile?.email) known.push(`- **Email:** "${userProfile.email}"`);
+  if (userProfile?.phone) known.push(`- **Phone:** "${userProfile.phone}"`);
+  if (userProfile?.avatarUrl) known.push(`- **Profile photo:** Already set from their account`);
+  if (known.length > 0) {
+    return `\n**ALREADY KNOWN (from signup/OAuth - do NOT ask for these again):**\n${known.join('\n')}\n\nUse this information directly when building the profile. Greet the user by name if known.\n`;
+  }
+  return '';
+})()}
 **Your goals in this mode:**
-1. Welcome the user back and acknowledge they've signed up
+1. Welcome the user back by name (if known) and acknowledge they've signed up
 2. Summarize what you know about their sailing preferences
-3. Help them fill in any missing profile fields
-4. Use the \`update_user_profile\` tool to save their information
+3. Help them fill in any missing profile fields through natural conversation
+4. Present a profile summary for the user to approve before saving
 5. Show profile completion progress
 
 **Available profile tools:**
 - \`get_profile_completion_status\` - Check which fields are filled and missing
-- \`update_user_profile\` - Save profile field updates
+- \`update_user_profile\` - Save profile field updates (REQUIRES USER APPROVAL - see below)
 - \`get_experience_level_definitions\` - Explain experience levels if needed
 - \`get_risk_level_definitions\` - Explain risk levels if needed
 - \`get_skills_definitions\` - Show available skills
 
-**Important fields to complete:**
-- full_name (required)
-- user_description (a short bio about their sailing background)
-- sailing_experience (1-4 scale)
-- risk_level (array of comfort zones)
-- skills (array of sailing skills)
-- sailing_preferences (free text about what they're looking for)
-- certifications (optional, free text)
+**Profile fields to gather (in conversation order):**
+1. **full_name** (required) - ${userProfile?.fullName ? `Already known: "${userProfile.fullName}". Use this value directly, do NOT ask again.` : 'Ask for their full name if not already known'}
+2. **user_description** (required) - A short bio about their sailing background, experience, and who they are as a sailor. This is what boat owners will read first. Guide them to write 2-3 sentences.
+3. **sailing_preferences** (required) - What they're looking for: types of sailing (coastal cruising, offshore passages, racing), preferred regions, time of year, trip duration preferences, what makes a trip appealing to them.
+4. **sailing_experience** (required) - 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
+5. **risk_level** (required) - Array of comfort zones: "Coastal sailing", "Offshore sailing", "Extreme sailing"
+6. **skills** (optional) - Array of sailing skills. Ask about these but make it clear this is optional and can be filled in later on their profile page.
+7. **certifications** (optional) - Free text for sailing certifications (RYA, ASA, etc.)
+8. **phone** (optional) - ${userProfile?.phone ? `Already known: "${userProfile.phone}". Include in the profile save, do NOT ask again.` : 'Phone number. Only ask if not already provided.'}
+9. **profile_image_url** (auto) - ${userProfile?.avatarUrl ? `Already set from OAuth provider. Include "${userProfile.avatarUrl}" in the profile save automatically, do NOT ask about it.` : 'Profile photo URL. Skip this field - user can set it later on their profile page.'}
+
+**CRITICAL: APPROVAL REQUIRED FOR PROFILE UPDATES**
+- Do NOT call \`update_user_profile\` immediately after gathering information
+- Instead, FIRST present a clear summary of ALL the profile data you plan to save
+- Format the summary as a readable list showing each field and its value
+- Ask the user to review and confirm: "Does this look correct? I'll save it once you confirm."
+- ONLY call \`update_user_profile\` AFTER the user explicitly confirms/approves
+- If the user wants to change something, update the values and present the summary again
 
 **Workflow:**
 1. First, call \`get_profile_completion_status\` to see current state
-2. Based on gathered preferences, offer to save them to profile
-3. Ask for any critical missing info (like full_name)
-4. Use \`update_user_profile\` to save confirmed values
-5. After updating, remind user they can continue to the full profile page for more detailed editing
+2. Greet the user and summarize what you already know from the conversation
+3. Ask about missing required fields one or two at a time (don't overwhelm)
+4. For \`user_description\`: Help them craft a good bio. Suggest something based on what you know and ask if they'd like to adjust it.
+5. For \`sailing_preferences\`: Ask what they're looking for in sailing opportunities - regions, trip types, duration, time of year.
+6. For \`skills\`: Mention you can add skills but reassure them it's optional and can be done later.
+7. Once you have enough info, present a COMPLETE SUMMARY of the proposed profile data
+8. Wait for explicit user approval before calling \`update_user_profile\`
+9. After saving, remind user they can continue to the full profile page for more detailed editing
 
-**Example interaction:**
-"Great news - your account is set up! Based on our chat, I know you're a [competent crew] looking for [adventure sailing]. Would you like me to save this to your profile? I just need your full name to complete the basics."`;
+**Important notes on pre-filled data:**
+- When including known data (name, email, phone, avatar) in the profile save, mention them in the summary so the user sees them but make clear these came from their signup.
+- Do NOT ask questions about data you already have. Focus conversation on the fields you still need.
+
+**Example summary format:**
+"Here's your profile summary for review:
+
+• **Name:** John Smith
+• **Bio:** Experienced coastal sailor with 5 years on the water. Comfortable in Mediterranean conditions and eager to gain offshore experience.
+• **Sailing preferences:** Looking for Mediterranean coastal cruising and short offshore passages, preferably in summer months. Open to 1-2 week trips.
+• **Experience level:** 3 - Coastal Skipper
+• **Comfort zones:** Coastal sailing, Offshore sailing
+• **Skills:** Navigation, Helming, Sail trimming (optional - can add more later)
+• **Certifications:** RYA Day Skipper
+• **Phone:** +358 40 123 4567 (from signup)
+
+Does this look correct? I'll save your profile once you confirm."`;
   }
 
   const toolInstructions = buildToolInstructions();
@@ -860,9 +984,13 @@ You are now helping an authenticated user complete their profile after signing u
 
   log('💬 Total messages for AI:', messages.length);
 
+  // Tools that require user approval before execution (action tools)
+  const APPROVAL_REQUIRED_TOOLS = ['update_user_profile'];
+
   // Process with tool loop
   let allToolCalls: ToolCall[] = [];
   let allLegRefs: ProspectLegReference[] = [];
+  let pendingAction: { toolName: string; arguments: Record<string, unknown> } | undefined;
   let currentMessages = [...messages];
   let iterations = 0;
   let finalContent = '';
@@ -905,9 +1033,46 @@ You are now helping an authenticated user complete their profile after signing u
       break;
     }
 
-    // Execute tools
-    allToolCalls.push(...toolCalls);
-    const toolResults = await executeProspectTools(supabase, toolCalls, authenticatedUserId);
+    // Separate approval-required tool calls from auto-executable ones
+    const autoExecuteTools: ToolCall[] = [];
+    for (const tc of toolCalls) {
+      if (isProfileCompletionMode && APPROVAL_REQUIRED_TOOLS.includes(tc.name)) {
+        // Hold this tool call as pending - requires user approval
+        log(`⏸️ Holding ${tc.name} as pending action (requires user approval)`);
+        pendingAction = {
+          toolName: tc.name,
+          arguments: tc.arguments as Record<string, unknown>,
+        };
+      } else {
+        autoExecuteTools.push(tc);
+      }
+    }
+
+    // If we have a pending action and content, break the loop - show content + pending action to user
+    if (pendingAction && content.trim()) {
+      finalContent = content;
+      allToolCalls.push(...autoExecuteTools);
+      // Execute any remaining auto-execute tools (e.g. get_profile_completion_status)
+      if (autoExecuteTools.length > 0) {
+        await executeProspectTools(supabase, autoExecuteTools, authenticatedUserId);
+      }
+      log('✅ Content ready with pending action for user approval');
+      break;
+    }
+
+    // If only a pending action and no content, tell the AI to present a summary
+    if (pendingAction && !content.trim()) {
+      currentMessages.push(
+        { role: 'assistant', content: result.text },
+        { role: 'user', content: 'SYSTEM: Present the profile data summary to the user for review before saving. Do NOT call update_user_profile yet. Show a clear summary and ask the user to confirm.' }
+      );
+      pendingAction = undefined; // Reset - let the AI present summary first
+      continue;
+    }
+
+    // Execute auto-executable tools
+    allToolCalls.push(...autoExecuteTools);
+    const toolResults = await executeProspectTools(supabase, autoExecuteTools.length > 0 ? autoExecuteTools : toolCalls, authenticatedUserId);
 
     log('');
     log('📊 TOOL RESULTS:');
@@ -975,6 +1140,11 @@ You are now helping an authenticated user complete their profile after signing u
         arguments: tc.arguments as Record<string, unknown>,
       })) : undefined,
       legReferences: allLegRefs.length > 0 ? allLegRefs : undefined,
+      pendingAction: pendingAction ? {
+        toolName: pendingAction.toolName,
+        arguments: pendingAction.arguments,
+        label: 'Save Profile',
+      } : undefined,
     },
   };
 
@@ -983,9 +1153,10 @@ You are now helping an authenticated user complete their profile after signing u
   log('║           PROSPECT CHAT - COMPLETE                           ║');
   log('╚══════════════════════════════════════════════════════════════╝');
   log('');
-  log('📤 FINAL RESPONSE:', `${finalContent.length} chars`);
+  log('📤 FINAL RESPONSE:', `${filteredContent.length} chars`);
   log('📊 Tool calls:', allToolCalls.length);
   log('🦵 Leg refs:', allLegRefs.length);
+  log('⏸️ Pending action:', pendingAction ? `${pendingAction.toolName}` : 'none');
   log('');
 
   return {

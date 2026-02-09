@@ -368,87 +368,96 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
 ];
 
 /**
- * Normalize a location query for matching
+ * Normalize text for case-insensitive comparison.
+ * Lowercases, trims, normalizes quotes and whitespace.
  */
-function normalizeQuery(query: string): string {
-  return query
+function normalize(text: string): string {
+  return text
     .toLowerCase()
     .trim()
     .replace(/['']/g, "'") // Normalize quotes
     .replace(/\s+/g, ' '); // Normalize whitespace
 }
 
-/**
- * Calculate similarity score between two strings (simple contains + Levenshtein-inspired)
- */
-function calculateSimilarity(query: string, target: string): number {
-  const normalizedQuery = normalizeQuery(query);
-  const normalizedTarget = normalizeQuery(target);
-
-  // Exact match
-  if (normalizedQuery === normalizedTarget) return 1.0;
-
-  // Target contains query (e.g., "barcelona" in "barcelona area")
-  if (normalizedTarget.includes(normalizedQuery)) return 0.9;
-
-  // Query contains target (e.g., "barcelona area spain" contains "barcelona")
-  if (normalizedQuery.includes(normalizedTarget)) return 0.85;
-
-  // Word-level matching
-  const queryWords = normalizedQuery.split(' ');
-  const targetWords = normalizedTarget.split(' ');
-  const matchingWords = queryWords.filter(w => targetWords.some(tw => tw.includes(w) || w.includes(tw)));
-  if (matchingWords.length > 0) {
-    return 0.5 + (matchingWords.length / Math.max(queryWords.length, targetWords.length)) * 0.3;
-  }
-
-  return 0;
-}
-
 export interface LocationSearchResult {
   region: LocationRegion;
-  score: number;
+  /** What the match was found on: the region name or one of its aliases */
   matchedOn: 'name' | 'alias';
+  /** The exact name or alias string that matched */
+  matchedTerm: string;
 }
 
 /**
- * Search for a location by name or alias
- * Returns matching regions sorted by relevance
+ * Search for exact (case-insensitive) location matches within a text.
+ *
+ * Checks whether the text contains an exact occurrence of a region name or alias.
+ * Uses word-boundary awareness: a match is valid only when the matched term is not
+ * embedded inside a larger word (e.g. "nice" won't match inside "nicely").
+ *
+ * Longer matches are returned first so "Greek Islands" takes priority over "Greece".
  */
-export function searchLocation(query: string): LocationSearchResult[] {
+export function searchLocation(text: string): LocationSearchResult[] {
+  const normalizedText = normalize(text);
   const results: LocationSearchResult[] = [];
 
   for (const region of LOCATION_REGISTRY) {
-    // Check name
-    const nameScore = calculateSimilarity(query, region.name);
+    const normalizedName = normalize(region.name);
 
-    // Check ALL aliases and find the best match
-    let bestAliasScore = 0;
-    for (const alias of region.aliases) {
-      const aliasScore = calculateSimilarity(query, alias);
-      if (aliasScore > bestAliasScore) {
-        bestAliasScore = aliasScore;
-      }
+    // Check region name
+    if (isExactPhraseInText(normalizedText, normalizedName)) {
+      results.push({ region, matchedOn: 'name', matchedTerm: region.name });
+      continue; // Name match found — no need to check aliases for this region
     }
 
-    // Use the better score between name and best alias
-    const bestScore = Math.max(nameScore, bestAliasScore);
-    const matchedOn = nameScore >= bestAliasScore ? 'name' : 'alias';
-
-    if (bestScore > 0.4) {
-      results.push({ region, score: bestScore, matchedOn });
+    // Check aliases
+    for (const alias of region.aliases) {
+      const normalizedAlias = normalize(alias);
+      if (isExactPhraseInText(normalizedText, normalizedAlias)) {
+        results.push({ region, matchedOn: 'alias', matchedTerm: alias });
+        break; // One alias match is enough per region
+      }
     }
   }
 
-  // Sort by score descending
-  results.sort((a, b) => b.score - a.score);
+  // Sort: longer matched terms first (more specific matches win)
+  results.sort((a, b) => b.matchedTerm.length - a.matchedTerm.length);
 
   return results;
 }
 
 /**
- * Get a single best-matching location
- * Returns null if no good match found
+ * Check if a phrase appears in text as an exact match (not embedded inside another word).
+ * For example, "nice" matches in "sailing near nice" but NOT in "a nice day".
+ */
+function isExactPhraseInText(normalizedText: string, normalizedPhrase: string): boolean {
+  if (normalizedPhrase.length === 0) return false;
+
+  let startIndex = 0;
+  while (true) {
+    const idx = normalizedText.indexOf(normalizedPhrase, startIndex);
+    if (idx === -1) return false;
+
+    const charBefore = idx > 0 ? normalizedText[idx - 1] : ' ';
+    const charAfter = idx + normalizedPhrase.length < normalizedText.length
+      ? normalizedText[idx + normalizedPhrase.length]
+      : ' ';
+
+    // Word boundary: the character before/after must be a non-letter, non-digit
+    const isWordBoundaryBefore = !/[a-z0-9\u00C0-\u024F]/.test(charBefore);
+    const isWordBoundaryAfter = !/[a-z0-9\u00C0-\u024F]/.test(charAfter);
+
+    if (isWordBoundaryBefore && isWordBoundaryAfter) {
+      return true;
+    }
+
+    // Keep searching from next position
+    startIndex = idx + 1;
+  }
+}
+
+/**
+ * Get a single best-matching location for a query string.
+ * Returns the region with the longest matching term, or null if no match.
  */
 export function getLocationBbox(query: string): {
   bbox: BoundingBox;
@@ -458,7 +467,7 @@ export function getLocationBbox(query: string): {
   category: string;
 } | null {
   const results = searchLocation(query);
-  if (results.length === 0 || results[0].score < 0.5) {
+  if (results.length === 0) {
     return null;
   }
 

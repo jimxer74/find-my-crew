@@ -909,15 +909,26 @@ function extractLegReferences(toolResults: ToolResult[]): LegReference[] {
       }
       seenIds.add(leg.id);
 
+      const journey = leg.journeys;
+
       const ref: LegReference = {
         id: leg.id,
         name: leg.name || 'Unnamed leg',
+        // Journey info
+        journeyId: journey?.id,
+        journeyName: journey?.name,
+        // Boat info
+        boatName: journey?.boats?.name,
+        // Dates
+        startDate: leg.start_date,
+        endDate: leg.end_date,
+        // Locations (from transformed search results)
+        departureLocation: leg.start_location,
+        arrivalLocation: leg.end_location,
+        // Images from journey and boat (both are text[] in the database)
+        journeyImages: Array.isArray(journey?.images) ? journey.images : undefined,
+        boatImages: Array.isArray(journey?.boats?.images) ? journey.boats.images : undefined,
       };
-
-      // Extract boat name from journeys relationship
-      if (leg.journeys?.boats?.name) {
-        ref.boatName = leg.journeys.boats.name;
-      }
 
       refs.push(ref);
 

@@ -1,13 +1,12 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
-import { ProspectMessage } from '@/app/lib/ai/prospect/types';
+import { ProspectMessage, PendingAction } from '@/app/lib/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
-import { InlineChatSignupForm } from './InlineChatSignupForm';
-import { InlineChatLoginForm } from './InlineChatLoginForm';
+import { SignupModal } from '@/app/components/SignupModal';
+import { LoginModal } from '@/app/components/LoginModal';
 
 /**
  * Parse message content and render inline leg references as clickable links.
@@ -111,7 +110,6 @@ function QuickSuggestions({
 }
 
 export function ProspectChat() {
-  const router = useRouter();
   const t = useTranslations('common');
 
   const {
@@ -124,6 +122,8 @@ export function ProspectChat() {
     clearError,
     clearSession,
     addViewedLeg,
+    approveAction,
+    cancelAction,
   } = useProspectChat();
 
   const [inputValue, setInputValue] = useState('');
@@ -314,6 +314,33 @@ export function ProspectChat() {
                   />
                 </div>
               )}
+              {/* Show Approve/Cancel buttons for pending actions */}
+              {message.role === 'assistant' && message.metadata?.pendingAction && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => approveAction(message.id, message.metadata!.pendingAction!)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 min-h-[40px] bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      {message.metadata.pendingAction.label || 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => cancelAction(message.id)}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 px-4 py-2 min-h-[40px] bg-muted hover:bg-accent text-foreground text-sm font-medium rounded-lg border border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -371,34 +398,6 @@ export function ProspectChat() {
           </div>
         )}
 
-        {/* Inline auth forms */}
-        {showAuthForm === 'signup' && (
-          <div className="flex justify-start">
-            <InlineChatSignupForm
-              preferences={preferences}
-              onSuccess={() => {
-                // Form shows success state internally
-                // Could redirect or refresh here if needed
-              }}
-              onCancel={() => setShowAuthForm(null)}
-              onSwitchToLogin={() => setShowAuthForm('login')}
-            />
-          </div>
-        )}
-
-        {showAuthForm === 'login' && (
-          <div className="flex justify-start">
-            <InlineChatLoginForm
-              onSuccess={() => {
-                setShowAuthForm(null);
-                router.refresh();
-              }}
-              onCancel={() => setShowAuthForm(null)}
-              onSwitchToSignup={() => setShowAuthForm('signup')}
-            />
-          </div>
-        )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -437,6 +436,20 @@ export function ProspectChat() {
           </form>
         </div>
       </div>
+
+      {/* Auth modals */}
+      <SignupModal
+        isOpen={showAuthForm === 'signup'}
+        onClose={() => setShowAuthForm(null)}
+        onSwitchToLogin={() => setShowAuthForm('login')}
+        prospectPreferences={preferences as Record<string, unknown>}
+      />
+      <LoginModal
+        isOpen={showAuthForm === 'login'}
+        onClose={() => setShowAuthForm(null)}
+        onSwitchToSignup={() => setShowAuthForm('signup')}
+        fromProspect
+      />
     </div>
   );
 }

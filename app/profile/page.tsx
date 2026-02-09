@@ -528,7 +528,7 @@ function ProfilePageContent() {
           if (roles.includes('owner')) {
             router.push('/owner/boats');
           } else if (roles.includes('crew')) {
-            router.push('/crew/dashboard');
+            router.push('/crew');
           } else {
             router.push('/');
           }
@@ -1025,7 +1025,7 @@ function ProfilePageContent() {
               {isNewProfile ? t('completeYourProfile') : t('profile')}
             </h1>
             <Link
-              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
+              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew' : '/'}
               className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
             >
               {tCommon('cancel')}
@@ -1204,7 +1204,7 @@ function ProfilePageContent() {
           {/* Save/Cancel buttons */}
           <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 sm:gap-4 pt-4 mt-6 border-t border-border">
             <Link
-              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew/dashboard' : '/'}
+              href={formData.roles.includes('owner') ? '/owner/boats' : formData.roles.includes('crew') ? '/crew' : '/'}
               className="px-4 py-3 min-h-[44px] flex items-center justify-center border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
             >
               {tCommon('cancel')}

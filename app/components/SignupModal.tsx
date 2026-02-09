@@ -8,9 +8,11 @@ type SignupModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
+  /** When provided, stores prospect preferences in user metadata and uses prospect redirect flow */
+  prospectPreferences?: Record<string, unknown>;
 };
 
-export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalProps) {
+export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferences }: SignupModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,20 +28,38 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     const supabase = getSupabaseBrowserClient();
 
     try {
+      // Build user metadata
+      const userMetadata: Record<string, unknown> = {
+        full_name: fullName,
+      };
+
+      // Include prospect preferences if coming from prospect chat flow
+      if (prospectPreferences) {
+        userMetadata.prospect_preferences = prospectPreferences;
+      }
+
+      const redirectTo = prospectPreferences
+        ? `${window.location.origin}/auth/callback?from=prospect`
+        : undefined;
+
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            full_name: fullName,
-          },
+          data: userMetadata,
+          ...(redirectTo ? { emailRedirectTo: redirectTo } : {}),
         },
       });
 
       if (authError) throw authError;
 
       if (authData.user) {
+        // Set flag so the app knows to redirect to assistant after consent completion
+        if (prospectPreferences) {
+          localStorage.setItem('ai_assistant_signup_pending', 'true');
+        }
+
         // Redirect to home page - ConsentSetupModal will appear there to collect consents
         onClose();
         router.push('/');
@@ -57,10 +77,21 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalPro
     setError(null);
 
     const supabase = getSupabaseBrowserClient();
+
+    // Store preferences in localStorage before OAuth redirect (will be lost otherwise)
+    if (prospectPreferences) {
+      localStorage.setItem('prospect_signup_preferences', JSON.stringify(prospectPreferences));
+      localStorage.setItem('ai_assistant_signup_pending', 'true');
+    }
+
+    const redirectTo = prospectPreferences
+      ? `${window.location.origin}/auth/callback?from=prospect`
+      : `${window.location.origin}/auth/callback`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
       },
     });
 

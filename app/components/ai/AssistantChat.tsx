@@ -48,7 +48,7 @@ function renderMessageWithLegLinks(
         <button
           key={`register-${keyIndex++}`}
           onClick={() => onRegisterClick(legId)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 rounded-full transition-colors font-medium text-sm"
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 rounded-full transition-colors font-medium text-sm"
           title={`Register for ${legName}`}
         >
           <svg
@@ -71,7 +71,7 @@ function renderMessageWithLegLinks(
         <button
           key={`leg-${keyIndex++}`}
           onClick={() => onLegClick(legId)}
-          className="inline-flex items-center gap-1 px-1.5 py-0.5 text-primary bg-primary/10 hover:bg-primary/20 rounded transition-colors font-medium"
+          className="inline-flex items-center gap-1 px-2 py-0.5 text-blue-200 dark:text-blue-300 bg-blue-800 dark:bg-blue-500/40 hover:bg-blue-500 dark:hover:bg-blue-800/50 rounded-full transition-colors font-medium text-sm cursor-pointer"
           title={`View ${legName}`}
         >
           <svg
@@ -237,45 +237,14 @@ export function AssistantChat() {
   }, [isDragging, isMobile]);
 
   // Handle clicking on a leg reference - navigate to dashboard with the legId
-  // Desktop: open in new tab, Mobile: navigate with back-to-assistant param
+  // Navigate in same window so the assistant pane stays accessible
   const handleLegClick = (legId: string) => {
-    const url = `/crew/dashboard?legId=${legId}`;
-    // Check screen width directly to ensure accurate detection at click time
-    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
-    if (isMobileScreen) {
-      // Mobile: navigate in same window with from=assistant param for back button
-      window.location.href = `${url}&from=assistant`;
-    } else {
-      // Desktop: open in new tab using programmatic anchor click
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.target = '_blank';
-      anchor.rel = 'noopener noreferrer';
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    }
+    router.push(`/crew/dashboard?legId=${legId}&from=assistant`);
   };
 
   // Handle clicking on a register reference - navigate to dashboard and open registration form
-  // Desktop: open in new tab, Mobile: navigate with back-to-assistant param
   const handleRegisterClick = (legId: string) => {
-    const url = `/crew/dashboard?legId=${legId}&register=true`;
-    // Check screen width directly to ensure accurate detection at click time
-    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
-    if (isMobileScreen) {
-      // Mobile: navigate in same window with from=assistant param for back button
-      window.location.href = `${url}&from=assistant`;
-    } else {
-      // Desktop: open in new tab using programmatic anchor click (more reliable than window.open)
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.target = '_blank';
-      anchor.rel = 'noopener noreferrer';
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    }
+    router.push(`/crew/dashboard?legId=${legId}&register=true&from=assistant`);
   };
 
   // Auto-scroll to bottom when messages change

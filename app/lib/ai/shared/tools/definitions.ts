@@ -347,6 +347,14 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           type: 'string',
           description: "User's sailing certifications (free text)",
         },
+        phone: {
+          type: 'string',
+          description: "User's phone number (if known from signup/OAuth)",
+        },
+        profile_image_url: {
+          type: 'string',
+          description: "User's profile image URL (if known from OAuth provider)",
+        },
       },
     },
   },

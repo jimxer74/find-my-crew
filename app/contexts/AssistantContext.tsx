@@ -638,7 +638,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Action rejected successfully:', data);
+        console.log('Action rejected marked as read:', data);
 
         setState(prev => ({
           ...prev,

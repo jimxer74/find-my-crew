@@ -7,6 +7,14 @@
 
 import { ToolCall } from '../shared';
 
+/** A pending tool call action awaiting user approval */
+export interface PendingAction {
+  toolName: string;
+  arguments: Record<string, unknown>;
+  /** Human-readable label for the approve button */
+  label?: string;
+}
+
 export interface ProspectMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -15,6 +23,8 @@ export interface ProspectMessage {
   metadata?: {
     toolCalls?: ToolCall[];
     legReferences?: ProspectLegReference[];
+    /** Action tool calls that require user approval before execution */
+    pendingAction?: PendingAction;
   };
 }
 
@@ -53,6 +63,14 @@ export interface ProspectSession {
   viewedLegs: string[]; // IDs of legs user clicked on
 }
 
+/** Known user profile data from signup/OAuth metadata */
+export interface KnownUserProfile {
+  fullName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  avatarUrl?: string | null;
+}
+
 export interface ProspectChatRequest {
   sessionId?: string;
   message: string;
@@ -61,7 +79,11 @@ export interface ProspectChatRequest {
   // Profile completion mode for authenticated users
   profileCompletionMode?: boolean;
   userId?: string;
+  /** User profile data already known from signup/OAuth (name, email, phone, avatar) */
+  userProfile?: KnownUserProfile | null;
   authenticatedUserId?: string | null; // Set by server after auth verification
+  /** Pre-approved action to execute directly (from user clicking Approve button) */
+  approvedAction?: PendingAction;
 }
 
 export interface ProspectChatResponse {

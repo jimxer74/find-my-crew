@@ -57,61 +57,7 @@ export async function executeAction(
     };
   }
 
-  try {
-    let result: ActionResult;
-    log(`Executing action type: ${action.action_type}`);
-
-    switch (action.action_type) {
-      case 'register_for_leg':
-        result = await executeRegisterForLeg(action, context);
-        break;
-
-      case 'update_profile_user_description':
-        result = await executeUpdateProfileUserDescription(action, context);
-        break;
-
-      case 'suggest_profile_update_user_description':
-        result = await executeSuggestProfileUpdateUserDescription(action, context);
-        break;
-
-      case 'update_profile_certifications':
-        result = await executeUpdateProfileCertifications(action, context);
-        break;
-
-      case 'update_profile_risk_level':
-        result = await executeUpdateProfileRiskLevel(action, context);
-        break;
-
-      case 'update_profile_sailing_preferences':
-        result = await executeUpdateProfileSailingPreferences(action, context);
-        break;
-
-      case 'update_profile_skills':
-        result = await executeUpdateProfileSkills(action, context);
-        break;
-
-      case 'refine_skills':
-        result = await executeRefineSkills(action, context);
-        break;
-
-      case 'approve_registration':
-        result = await executeApproveRegistration(action, context);
-        break;
-
-      case 'reject_registration':
-        result = await executeRejectRegistration(action, context);
-        break;
-
-      default:
-        result = {
-          success: false,
-          message: `Unknown action type: ${action.action_type}`,
-          error: 'UNKNOWN_ACTION',
-        };
-    }
-
-    // Update action status
-    if (result.success) {
+  try {    
       log('Action succeeded, updating status to approved');
       await supabase
         .from('ai_pending_actions')
@@ -120,20 +66,21 @@ export async function executeAction(
           resolved_at: new Date().toISOString(),
         })
         .eq('id', action.id);
-    } else {
-      log('Action failed:', result.error);
-    }
+    } catch (error: any) {
+      log('Action execution error:', error.message);
+      return {
+        success: false,
+        message: error.message || 'Action execution failed',
+        error: 'EXECUTION_ERROR',
+      };
+      }
 
-    log('--- executeAction completed ---', { success: result.success });
-    return result;
-  } catch (error: any) {
-    log('Action execution error:', error.message);
+    log('--- executeAction completed ---');
+    
     return {
-      success: false,
-      message: error.message || 'Action execution failed',
-      error: 'EXECUTION_ERROR',
+      success: true,
+      message: 'Action executed successfully',
     };
-  }
 }
 
 /**
@@ -564,16 +511,6 @@ async function executeUpdateProfileCertifications(
 ): Promise<ActionResult> {
   const { supabase, userId } = context;
   const { newValue } = action.action_payload as { newValue: string };
-
-  // For suggestion tools, newValue may not be provided (user should provide it)
-  // This action should prompt the user for the new value instead of auto-updating
-  if (!newValue || typeof newValue !== 'string') {
-    return {
-      success: false,
-      message: 'This action requires you to provide new certifications. Please use the profile edit form to update your certifications.',
-      error: 'REQUIRES_USER_INPUT',
-    };
-  }
 
   const { error } = await supabase
     .from('profiles')

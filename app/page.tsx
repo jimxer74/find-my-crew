@@ -24,29 +24,35 @@ export default function WelcomePage() {
   const [sessionContext, setSessionContext] = useState<string | null>(null);
   const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
 
-  // Check if user just signed up from AI assistant and redirect back
+  // Check if user just signed up from AI assistant and redirect after consent is completed.
+  // Flow A (email signup): User clicks email link → lands here → consent modal appears → user completes → redirect
+  // Flow B (OAuth signup): Handled in ProspectChatContext (no page reload needed)
   useEffect(() => {
-    const checkAISignupRedirect = async () => {
-      try {
-        const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
-        if (!signupPending) return;
+    const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
+    if (!signupPending) return;
 
-        // Check if user is now authenticated
-        const supabase = getSupabaseBrowserClient();
-        const { data: { user } } = await supabase.auth.getUser();
+    const handleConsentCompleted = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ aiProcessingConsent: boolean }>;
+      const aiConsent = customEvent.detail?.aiProcessingConsent ?? false;
 
-        if (user) {
-          // User is authenticated - clear flag and redirect to assistant for profile completion
-          localStorage.removeItem(AI_SIGNUP_FLAG);
-          console.log('AI signup detected - redirecting to assistant for profile completion');
-          router.push('/welcome/chat?profile_completion=true');
-        }
-      } catch (e) {
-        console.error('Failed to check AI signup redirect:', e);
+      // Consent is done - clear the signup flag
+      localStorage.removeItem(AI_SIGNUP_FLAG);
+
+      if (aiConsent) {
+        // AI consent granted → redirect to assistant for AI-powered profile completion
+        console.log('AI signup + AI consent granted → redirecting to assistant for profile completion');
+        router.push('/welcome/chat?profile_completion=true');
+      } else {
+        // AI consent NOT granted → redirect to manual profile setup page
+        console.log('AI signup + AI consent NOT granted → redirecting to profile setup page');
+        router.push('/profile-setup');
       }
     };
 
-    checkAISignupRedirect();
+    window.addEventListener('consentSetupCompleted', handleConsentCompleted);
+    return () => {
+      window.removeEventListener('consentSetupCompleted', handleConsentCompleted);
+    };
   }, [router]);
 
   // Check for existing conversation on mount

@@ -8,9 +8,11 @@ type LoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToSignup: () => void;
+  /** When true, uses prospect redirect flow for OAuth (from=prospect) */
+  fromProspect?: boolean;
 };
 
-export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProps) {
+export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: LoginModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,7 +50,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
           if (profile.roles.includes('owner')) {
             redirectPath = '/owner/boats';
           } else if (profile.roles.includes('crew')) {
-            redirectPath = '/crew/dashboard';
+            redirectPath = '/crew';
           }
         }
         // If no profile or no roles, redirect to home (can browse limited)
@@ -69,10 +71,14 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginModalProp
     setError(null);
 
     const supabase = getSupabaseBrowserClient();
+    const redirectTo = fromProspect
+      ? `${window.location.origin}/auth/callback?from=prospect`
+      : `${window.location.origin}/auth/callback`;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo,
       },
     });
 

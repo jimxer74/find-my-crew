@@ -280,7 +280,7 @@ export function ProfileCreationWizard() {
         if (formData.roles.includes('owner')) {
           router.push('/owner/boats');
         } else {
-          router.push('/crew/dashboard');
+          router.push('/crew');
         }
       }, 2000);
     } catch (err: any) {

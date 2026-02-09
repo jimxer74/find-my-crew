@@ -332,13 +332,18 @@ async function searchLegs(
         skills,
         risk_level,
         min_experience_level,
+        images,
         boats!inner (
           id,
           name,
           make_model,
           type,
-          make_model
+          images
         )
+      ),
+      waypoints (
+        index,
+        name
       )
     `)
     .eq('journeys.state', 'Published')
@@ -395,11 +400,19 @@ async function searchLegs(
     // Effective min_experience_level: leg's if set, otherwise journey's
     const effectiveMinExperienceLevel = leg.min_experience_level ?? journey?.min_experience_level ?? null;
 
+    // Get start and end waypoint names
+    const sortedWaypoints = (leg.waypoints || []).sort((a: any, b: any) => a.index - b.index);
+    const startWaypoint = sortedWaypoints.find((w: any) => w.index === 0);
+    const endWaypoint = sortedWaypoints.length > 0 ? sortedWaypoints[sortedWaypoints.length - 1] : null;
+
     return {
       ...leg,
       combined_skills: combinedSkills,
       effective_risk_level: effectiveRiskLevel,
       effective_min_experience_level: effectiveMinExperienceLevel,
+      start_location: startWaypoint?.name || 'Unknown',
+      end_location: endWaypoint?.name || 'Unknown',
+      waypoints: undefined,
     };
   });
 
@@ -505,12 +518,13 @@ async function searchLegsByLocation(
         skills,
         risk_level,
         min_experience_level,
+        images,
         boats!inner (
           id,
           name,
           make_model,
           type,
-          make_model
+          images
         )
       ),
       waypoints (

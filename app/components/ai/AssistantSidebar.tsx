@@ -1,14 +1,33 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 import { AssistantChat } from './AssistantChat';
 
+const MIN_PANEL_WIDTH = 320;  // px
+const MAX_PANEL_WIDTH = 800;  // px
+const DEFAULT_PANEL_WIDTH = 448; // ~28rem
+const STORAGE_KEY = 'assistant-panel-width';
+
+function loadSavedWidth(): number {
+  if (typeof window === 'undefined') return DEFAULT_PANEL_WIDTH;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = parseInt(saved, 10);
+    if (!isNaN(parsed) && parsed >= MIN_PANEL_WIDTH && parsed <= MAX_PANEL_WIDTH) {
+      return parsed;
+    }
+  }
+  return DEFAULT_PANEL_WIDTH;
+}
+
 export function AssistantSidebar() {
   const t = useTranslations('assistant');
   const panelRef = useRef<HTMLDivElement>(null);
+  const isResizing = useRef(false);
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
   const {
     isOpen,
     isMobile,
@@ -22,6 +41,11 @@ export function AssistantSidebar() {
     buttonRef,
   } = useAssistant();
 
+  // Load saved width on mount
+  useEffect(() => {
+    setPanelWidth(loadSavedWidth());
+  }, []);
+
   // Load conversations when sidebar opens
   useEffect(() => {
     if (isOpen) {
@@ -29,9 +53,36 @@ export function AssistantSidebar() {
     }
   }, [isOpen, loadConversations]);
 
-  // Assistant dialog no longer auto-closes on click outside or escape key
-  // It only closes when the explicit close button is clicked
-  // However, it should close when other dialogs are opened (closeAllDialogs event)
+  // Resize handler
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = window.innerWidth - moveEvent.clientX;
+      const clamped = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
+      setPanelWidth(clamped);
+    };
+
+    const handleMouseUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      // Save to localStorage
+      if (panelRef.current) {
+        const finalWidth = panelRef.current.offsetWidth;
+        localStorage.setItem(STORAGE_KEY, String(finalWidth));
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, []);
 
   // Don't render when closed
   if (!isOpen) {
@@ -42,7 +93,21 @@ export function AssistantSidebar() {
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div ref={panelRef} className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-[28rem] bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden">
+    <div
+      ref={panelRef}
+      className="fixed top-16 bottom-0 right-0 w-full bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+      style={isMobile ? undefined : { width: `${panelWidth}px` }}
+    >
+      {/* Resize handle - desktop only */}
+      {!isMobile && (
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute top-0 bottom-0 left-0 w-1.5 cursor-col-resize z-10 group hover:bg-primary/30 active:bg-primary/40 transition-colors"
+          title="Drag to resize"
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1 h-8 rounded-full bg-border group-hover:bg-primary/60 transition-colors" />
+        </div>
+      )}
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">

@@ -9,11 +9,13 @@ import {
   useRef,
   ReactNode,
 } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ProspectMessage,
   ProspectSession,
   ProspectPreferences,
+  PendingAction,
+  KnownUserProfile,
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -55,6 +57,7 @@ interface ProspectChatState {
   profileCompletionMode: boolean;
   isAuthenticated: boolean;
   userId: string | null;
+  userProfile: KnownUserProfile | null;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -62,6 +65,8 @@ interface ProspectChatContextType extends ProspectChatState {
   clearError: () => void;
   clearSession: () => void;
   addViewedLeg: (legId: string) => void;
+  approveAction: (messageId: string, action: PendingAction) => Promise<void>;
+  cancelAction: (messageId: string) => void;
   isReturningUser: boolean;
 }
 
@@ -111,8 +116,24 @@ function saveSession(session: ProspectSession): void {
   }
 }
 
+/**
+ * Extract known profile data from Supabase auth user metadata.
+ * OAuth providers (Facebook, Google, etc.) populate user_metadata with
+ * name, email, phone, avatar_url, and other fields.
+ */
+function extractKnownProfile(user: { email?: string; phone?: string; user_metadata?: Record<string, unknown> }): KnownUserProfile {
+  const meta = user.user_metadata || {};
+  return {
+    fullName: (meta.full_name as string) || (meta.name as string) || null,
+    email: user.email || (meta.email as string) || null,
+    phone: user.phone || (meta.phone as string) || null,
+    avatarUrl: (meta.avatar_url as string) || (meta.picture as string) || null,
+  };
+}
+
 export function ProspectChatProvider({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const initialQueryProcessed = useRef(false);
   const profileCompletionProcessed = useRef(false);
 
@@ -126,6 +147,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     profileCompletionMode: false,
     isAuthenticated: false,
     userId: null,
+    userProfile: null,
   });
 
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -195,13 +217,15 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
 
         if (user) {
+          const knownProfile = extractKnownProfile(user);
           setState((prev) => ({
             ...prev,
             profileCompletionMode: true,
             isAuthenticated: true,
             userId: user.id,
+            userProfile: knownProfile,
           }));
-          console.log('Profile completion mode activated for user:', user.id);
+          console.log('Profile completion mode activated for user:', user.id, 'known profile:', knownProfile);
         }
       }
     }
@@ -210,6 +234,54 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       checkProfileCompletionMode();
     }
   }, [isInitialized, searchParams]);
+
+  // Listen for consent completion event (OAuth flow: user is already on /welcome/chat)
+  // When consent modal closes, check if AI consent was granted.
+  // If yes → activate profile completion mode. If no → redirect to manual profile setup.
+  useEffect(() => {
+    const signupPending = typeof window !== 'undefined'
+      ? localStorage.getItem('ai_assistant_signup_pending')
+      : null;
+
+    // Only listen if there's a pending signup from the prospect chat flow
+    if (!signupPending) return;
+
+    const handleConsentCompleted = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ aiProcessingConsent: boolean }>;
+      const aiConsent = customEvent.detail?.aiProcessingConsent ?? false;
+
+      // Clear the signup flag
+      localStorage.removeItem('ai_assistant_signup_pending');
+
+      if (!aiConsent) {
+        // AI consent NOT granted → redirect to manual profile setup
+        console.log('[ProspectChat] Consent completed without AI consent → redirecting to profile setup');
+        router.push('/profile-setup');
+        return;
+      }
+
+      // AI consent granted → activate profile completion mode
+      console.log('[ProspectChat] Consent completed with AI consent → entering profile completion mode');
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const knownProfile = extractKnownProfile(user);
+        setState((prev) => ({
+          ...prev,
+          profileCompletionMode: true,
+          isAuthenticated: true,
+          userId: user.id,
+          userProfile: knownProfile,
+        }));
+      }
+    };
+
+    window.addEventListener('consentSetupCompleted', handleConsentCompleted);
+    return () => {
+      window.removeEventListener('consentSetupCompleted', handleConsentCompleted);
+    };
+  }, [router]);
 
   // Auto-send profile completion message when entering profile completion mode
   useEffect(() => {
@@ -223,10 +295,11 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       profileCompletionProcessed.current = true;
 
       // Create a welcome back message from the assistant
+      const greeting = state.userProfile?.fullName ? `Welcome back, ${state.userProfile.fullName}!` : 'Welcome back!';
       const welcomeMessage: ProspectMessage = {
         id: `assistant_welcome_${Date.now()}`,
         role: 'assistant',
-        content: `Welcome back! 🎉 Great news - your account is now active! I remember our conversation about your sailing interests. Let me help you complete your profile so boat owners can see what a great match you are.
+        content: `${greeting} 🎉 Great news - your account is now active! I remember our conversation about your sailing interests. Let me help you complete your profile so boat owners can see what a great match you are.
 
 Based on our chat, here's what I've gathered about your preferences:
 ${state.preferences.sailingGoals ? `• **Sailing goals:** ${state.preferences.sailingGoals}` : ''}
@@ -235,12 +308,12 @@ ${state.preferences.preferredLocations?.length ? `• **Preferred locations:** $
 ${state.preferences.skills?.length ? `• **Skills:** ${state.preferences.skills.join(', ')}` : ''}
 ${state.preferences.riskLevels?.length ? `• **Comfort level:** ${state.preferences.riskLevels.join(', ')}` : ''}
 
-Would you like me to help you complete your profile with this information? I can also help you add:
-• Your full name (for boat owners to know who you are)
+Let's build your profile! I'll need a few things from you:
 • A short bio about your sailing background
-• Any certifications you have
+• What you're looking for in sailing opportunities
+• Your experience level and comfort zones
 
-Just let me know what you'd like to do!`,
+Ready to get started?`,
         timestamp: new Date().toISOString(),
       };
 
@@ -249,7 +322,7 @@ Just let me know what you'd like to do!`,
         messages: [...prev.messages, welcomeMessage],
       }));
     }
-  }, [isInitialized, state.profileCompletionMode, state.isAuthenticated, state.isLoading, state.preferences]);
+  }, [isInitialized, state.profileCompletionMode, state.isAuthenticated, state.isLoading, state.preferences, state.userProfile]);
 
   // Save session when state changes
   useEffect(() => {
@@ -298,6 +371,7 @@ Just let me know what you'd like to do!`,
           // Include profile completion context for authenticated users
           profileCompletionMode: state.profileCompletionMode,
           userId: state.userId,
+          userProfile: state.userProfile,
         }),
       });
 
@@ -353,6 +427,7 @@ Just let me know what you'd like to do!`,
       profileCompletionMode: false,
       isAuthenticated: false,
       userId: null,
+      userProfile: null,
     });
     setIsReturningUser(false);
   }, []);
@@ -363,6 +438,87 @@ Just let me know what you'd like to do!`,
       viewedLegs: prev.viewedLegs.includes(legId)
         ? prev.viewedLegs
         : [...prev.viewedLegs, legId],
+    }));
+  }, []);
+
+  // Approve a pending action - execute the held tool call
+  const approveAction = useCallback(async (messageId: string, action: PendingAction) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
+    // Clear the pending action from the message
+    setState((prev) => ({
+      ...prev,
+      messages: prev.messages.map((m) =>
+        m.id === messageId
+          ? { ...m, metadata: { ...m.metadata, pendingAction: undefined } }
+          : m
+      ),
+    }));
+
+    try {
+      // Send approval message to execute the tool call
+      const response = await fetch('/api/ai/prospect/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: state.sessionId,
+          message: `[User approved: ${action.label || action.toolName}. Execute the action now.]`,
+          conversationHistory: state.messages,
+          gatheredPreferences: state.preferences,
+          profileCompletionMode: state.profileCompletionMode,
+          userId: state.userId,
+          userProfile: state.userProfile,
+          // Pass the approved tool call to execute directly
+          approvedAction: action,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.userMessage || 'Failed to execute action');
+      }
+
+      const data = await response.json();
+
+      setState((prev) => ({
+        ...prev,
+        sessionId: data.sessionId,
+        messages: [...prev.messages, data.message],
+        isLoading: false,
+      }));
+    } catch (error: any) {
+      console.error('Approve action error:', error);
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: error.message || 'Failed to save profile. Please try again.',
+      }));
+    }
+  }, [state.sessionId, state.messages, state.preferences, state.profileCompletionMode, state.userId, state.userProfile]);
+
+  // Cancel a pending action
+  const cancelAction = useCallback((messageId: string) => {
+    // Clear the pending action from the message
+    setState((prev) => ({
+      ...prev,
+      messages: prev.messages.map((m) =>
+        m.id === messageId
+          ? { ...m, metadata: { ...m.metadata, pendingAction: undefined } }
+          : m
+      ),
+    }));
+
+    // Add a note that the user cancelled
+    const cancelMessage: ProspectMessage = {
+      id: `system_cancel_${Date.now()}`,
+      role: 'assistant',
+      content: 'No problem! Let me know if you\'d like to make any changes to the profile data, or we can try again when you\'re ready.',
+      timestamp: new Date().toISOString(),
+    };
+
+    setState((prev) => ({
+      ...prev,
+      messages: [...prev.messages, cancelMessage],
     }));
   }, []);
 
@@ -386,6 +542,8 @@ Just let me know what you'd like to do!`,
     clearError,
     clearSession,
     addViewedLeg,
+    approveAction,
+    cancelAction,
     isReturningUser,
   };
 

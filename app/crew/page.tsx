@@ -13,6 +13,7 @@ import {
 } from '@/app/lib/geocoding/locations';
 import { CruisingRegionSection } from '@/app/components/crew/CruisingRegionSection';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
+import { Footer } from '@/app/components/Footer';
 
 export default function CrewHomePage() {
   const t = useTranslations('crewHome');
@@ -175,6 +176,9 @@ export default function CrewHomePage() {
           )}
         </div>
       </main>
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

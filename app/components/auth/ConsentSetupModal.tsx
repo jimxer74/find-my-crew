@@ -118,6 +118,14 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
 
       await supabase.from('consent_audit_log').insert(auditLogs);
 
+      // Dispatch event so other components (e.g. ProspectChat, homepage) can react
+      // to consent completion and know whether AI consent was granted
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('consentSetupCompleted', {
+          detail: { aiProcessingConsent: aiProcessing },
+        }));
+      }
+
       onComplete();
     } catch (err: any) {
       console.error('Error saving consents:', err);
