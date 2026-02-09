@@ -4,27 +4,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import Link from 'next/link';
+import {
+  calculateProfileCompletion,
+  type ProfileDataForCompletion,
+  type ProfileFieldStatus,
+} from '@/app/lib/profile/completionCalculator';
 
 type MissingFieldsIndicatorProps = {
   variant?: 'inline' | 'list' | 'compact';
   showTitle?: boolean;
-  profileData?: {
-    username: string | null;
-    full_name: string | null;
-    phone: string | null;
-    sailing_experience: any;
-    risk_level: any[] | null;
-    skills: any[] | null;
-    sailing_preferences: string | null;
-    roles: string[] | null;
-  } | null;
-};
-
-type FieldStatus = {
-  name: string;
-  label: string;
-  missing: boolean;
-  section?: string;
+  profileData?: ProfileDataForCompletion | null;
 };
 
 export function MissingFieldsIndicator({ 
@@ -33,71 +22,12 @@ export function MissingFieldsIndicator({
   profileData = null
 }: MissingFieldsIndicatorProps) {
   const { user } = useAuth();
-  const [missingFields, setMissingFields] = useState<FieldStatus[]>([]);
+  const [missingFields, setMissingFields] = useState<ProfileFieldStatus[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const calculateMissingFields = useCallback((data: {
-    username: string | null;
-    full_name: string | null;
-    phone: string | null;
-    sailing_experience: any;
-    risk_level: any[] | null;
-    skills: any[] | null;
-    sailing_preferences: string | null;
-    roles: string[] | null;
-  }) => {
-    const fields: FieldStatus[] = [
-      {
-        name: 'username',
-        label: 'Username',
-        missing: !data.username || data.username.trim() === '',
-        section: 'Basic Information',
-      },
-      {
-        name: 'full_name',
-        label: 'Full Name',
-        missing: !data.full_name || data.full_name.trim() === '',
-        section: 'Basic Information',
-      },
-      {
-        name: 'phone',
-        label: 'Phone Number',
-        missing: !data.phone || data.phone.trim() === '',
-        section: 'Basic Information',
-      },
-      {
-        name: 'sailing_experience',
-        label: 'Sailing Experience Level',
-        missing: data.sailing_experience === null || data.sailing_experience === undefined,
-        section: 'Experience',
-      },
-      {
-        name: 'risk_level',
-        label: 'Risk Level Preferences',
-        missing: !data.risk_level || !Array.isArray(data.risk_level) || data.risk_level.length === 0,
-        section: 'Experience',
-      },
-      {
-        name: 'skills',
-        label: 'Skills',
-        missing: !data.skills || !Array.isArray(data.skills) || data.skills.length === 0,
-        section: 'Skills',
-      },
-      {
-        name: 'sailing_preferences',
-        label: 'Sailing Preferences',
-        missing: !data.sailing_preferences || data.sailing_preferences.trim() === '',
-        section: 'Preferences',
-      },
-      {
-        name: 'roles',
-        label: 'Roles (Owner/Crew)',
-        missing: !data.roles || !Array.isArray(data.roles) || data.roles.length === 0,
-        section: 'Roles',
-      },
-    ];
-
-    setMissingFields(fields.filter(f => f.missing));
+  const computeMissing = useCallback((data: ProfileDataForCompletion) => {
+    const result = calculateProfileCompletion(data);
+    setMissingFields(result.missingFields);
     setLoading(false);
   }, []);
 
@@ -109,7 +39,7 @@ export function MissingFieldsIndicator({
 
     // If profileData is provided as prop, use it directly
     if (profileData) {
-      calculateMissingFields(profileData);
+      computeMissing(profileData);
       return;
     }
 
@@ -126,8 +56,8 @@ export function MissingFieldsIndicator({
       return;
     }
 
-    calculateMissingFields(data);
-  }, [user, profileData, calculateMissingFields]);
+    computeMissing(data);
+  }, [user, profileData, computeMissing]);
 
   useEffect(() => {
     checkMissingFields();
@@ -136,9 +66,9 @@ export function MissingFieldsIndicator({
   // Update when profileData prop changes
   useEffect(() => {
     if (profileData) {
-      calculateMissingFields(profileData);
+      computeMissing(profileData);
     }
-  }, [profileData, calculateMissingFields]);
+  }, [profileData, computeMissing]);
 
   // Listen for profile updates
   useEffect(() => {
@@ -195,7 +125,7 @@ export function MissingFieldsIndicator({
     }
     acc[section].push(field);
     return acc;
-  }, {} as Record<string, FieldStatus[]>);
+  }, {} as Record<string, ProfileFieldStatus[]>);
 
   return (
     <div className="bg-muted/50 border border-border rounded-lg p-4">

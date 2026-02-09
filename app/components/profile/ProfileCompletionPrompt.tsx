@@ -81,7 +81,7 @@ export function ProfileCompletionPrompt({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">
                 {hasProfile 
-                  ? `Complete your profile to unlock all features${showCompletionPercentage && completionPercentage !== null ? ` (${completionPercentage}% complete)` : ''}`
+                  ? `Complete your profile get better matches${showCompletionPercentage && completionPercentage !== null ? ` (${completionPercentage}% complete)` : ''}`
                   : 'Create your profile to see full leg details and register for journeys'}
               </p>
             </div>

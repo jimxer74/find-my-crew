@@ -16,6 +16,11 @@ import {
   NotificationsConsentsSection,
 } from '@/app/components/profile/sections';
 import skillsConfig from '@/app/config/skills-config.json';
+import {
+  calculateProfileCompletion,
+  isProfileFieldMissing,
+  type ProfileDataForCompletion,
+} from '@/app/lib/profile/completionCalculator';
 
 type SkillEntry = {
   skill_name: string;
@@ -160,45 +165,26 @@ function ProfilePageContent() {
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
-  // Helper function to check if a field is missing
+  // Helper: build the minimal shape the shared calculator expects
+  const getCompletionData = (): ProfileDataForCompletion => ({
+    username: formData.username || null,
+    full_name: formData.full_name || null,
+    phone: formData.phone || null,
+    sailing_experience: formData.sailing_experience,
+    risk_level: formData.risk_level,
+    skills: formData.skills,
+    sailing_preferences: formData.sailing_preferences || null,
+    roles: formData.roles,
+  });
+
+  // Helper function to check if a field is missing (delegates to shared utility)
   const isFieldMissing = (fieldName: string): boolean => {
-    switch (fieldName) {
-      case 'username':
-        return !formData.username || formData.username.trim() === '';
-      case 'full_name':
-        return !formData.full_name || formData.full_name.trim() === '';
-      case 'phone':
-        return !formData.phone || formData.phone.trim() === '';
-      case 'sailing_experience':
-        return formData.sailing_experience === null;
-      case 'risk_level':
-        return !formData.risk_level || formData.risk_level.length === 0;
-      case 'skills':
-        return !formData.skills || formData.skills.length === 0;
-      case 'sailing_preferences':
-        return !formData.sailing_preferences || formData.sailing_preferences.trim() === '';
-      case 'roles':
-        return !formData.roles || formData.roles.length === 0;
-      default:
-        return false;
-    }
+    return isProfileFieldMissing(fieldName, getCompletionData());
   };
 
-  // Calculate profile completion percentage
+  // Calculate profile completion percentage (delegates to shared utility)
   const calculateCompletionPercentage = (): number => {
-    const totalFields = 8;
-    let completionScore = 0;
-
-    if (formData.username && formData.username.trim() !== '') completionScore++;
-    if (formData.full_name && formData.full_name.trim() !== '') completionScore++;
-    if (formData.phone && formData.phone.trim() !== '') completionScore++;
-    if (formData.sailing_experience !== null) completionScore++;
-    if (formData.risk_level && formData.risk_level.length > 0) completionScore++;
-    if (formData.skills && formData.skills.length > 0) completionScore++;
-    if (formData.sailing_preferences && formData.sailing_preferences.trim() !== '') completionScore++;
-    if (formData.roles && formData.roles.length > 0) completionScore++;
-
-    return Math.round((completionScore / totalFields) * 100);
+    return calculateProfileCompletion(getCompletionData()).percentage;
   };
 
   useEffect(() => {

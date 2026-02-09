@@ -111,7 +111,7 @@
     "loading": "Loading..."
   },
   "crewDashboard": {
-    "signInBanner": "Sign in and complete your profile to see full journey details, dates, boat information, and skipper details",
+    "signInBanner": "Sign in to join a sailing trip",
     "signIn": "Sign in",
     "signUp": "Sign up"
   },
