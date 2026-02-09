@@ -1,10 +1,10 @@
 ---
 id: TASK-006.04
 title: 'Phase 2.1: Session Persistence with Cookie + LocalStorage'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 08:04'
+updated_date: '2026-02-09 08:09'
 labels:
   - session
   - persistence
@@ -61,9 +61,43 @@ interface ProspectSession {
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Session ID persists in cookie across browser sessions
-- [ ] #2 Conversation history restored from localStorage
-- [ ] #3 Gathered preferences restored on return visit
-- [ ] #4 Welcome back message shown to returning users
-- [ ] #5 Session expires after 7 days of inactivity
+- [x] #1 Session ID persists in cookie across browser sessions
+- [x] #2 Conversation history restored from localStorage
+- [x] #3 Gathered preferences restored on return visit
+- [x] #4 Welcome back message shown to returning users
+- [x] #5 Session expires after 7 days of inactivity
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Summary
+
+### Created:
+- `app/api/prospect/session/route.ts` - API endpoint for HttpOnly cookie session management
+  - GET: Returns/creates session ID from cookie
+  - DELETE: Clears session cookie
+
+### Updated:
+- `app/contexts/ProspectChatContext.tsx`
+  - Added cookie-based session initialization
+  - Combined cookie (session ID) with localStorage (conversation data)
+  - Updated `clearSession` to also clear server cookie and get new session
+
+- `app/components/prospect/ProspectChat.tsx`
+  - Added "Start Fresh" button in header when conversation exists
+  - Confirmation dialog before clearing
+
+- `app/lib/ai/prospect/types.ts`
+  - Added `departureLocations` and `arrivalLocations` to ProspectPreferences
+
+### Installed:
+- `@types/uuid` for TypeScript support
+
+### Session Flow:
+1. On page load: Fetch session ID from HttpOnly cookie
+2. If cookie exists: Check localStorage for matching session data
+3. If data matches: Restore conversation/preferences
+4. If mismatch: Clear stale localStorage, use new session ID
+5. On clear: Delete cookie, clear localStorage, get new session ID
+<!-- SECTION:NOTES:END -->
