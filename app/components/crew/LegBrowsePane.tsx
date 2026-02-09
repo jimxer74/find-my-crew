@@ -28,6 +28,7 @@ type LegBrowsePaneProps = {
   className?: string;
   isLoading?: boolean;
   isVisible?: boolean;  // Control visibility (hide when detail panel is open)
+  showMatchBadge?: boolean;  // Whether to show match badges (false when no user logged in)
 };
 
 export function LegBrowsePane({
@@ -37,6 +38,7 @@ export function LegBrowsePane({
   className = '',
   isLoading = false,
   isVisible = true,
+  showMatchBadge = true,
 }: LegBrowsePaneProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -94,10 +96,10 @@ export function LegBrowsePane({
               <LegList
                 legs={legs}
                 onLegClick={handleLegClick}
-                sortByMatch={true}
+                sortByMatch={showMatchBadge} // Only sort by match when showing match badges
                 displayOptions={{
                   showCarousel: true,
-                  showMatchBadge: true,
+                  showMatchBadge: showMatchBadge,
                   showLegName: true,
                   showJourneyName: true,
                   showLocations: true,

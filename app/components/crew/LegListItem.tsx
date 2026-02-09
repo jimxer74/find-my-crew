@@ -131,7 +131,7 @@ export function LegListItem({
       {options.showCarousel && (
         <div className={`relative ${options.carouselHeight}`}>
           {allImages.length > 0 ? (
-            <div className="relative w-full h-full" onClick={(e) => e.stopPropagation()}>
+            <div className="relative w-full h-full">
               <ImageCarousel
                 images={allImages}
                 alt={leg.leg_name}

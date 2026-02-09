@@ -749,6 +749,8 @@ export function CrewBrowseMap({
     );
 
     // Convert legs to GeoJSON format, excluding approved legs from clustering source
+    // When no user is logged in, don't include match data (markers will be dark blue)
+    const hasUser = !!user;
     const features = legs
       .filter(leg => {
         const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
@@ -764,8 +766,9 @@ export function CrewBrowseMap({
           },
           properties: {
             leg_id: leg.leg_id,
-            match_percentage: leg.skill_match_percentage ?? 100, // Default to 100 if not calculated
-            experience_matches: leg.experience_level_matches ?? true, // Whether experience level matches
+            has_user: hasUser, // Whether a user is logged in
+            match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null, // null when no user
+            experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null, // null when no user
             registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
           },
         };
@@ -798,8 +801,9 @@ export function CrewBrowseMap({
           },
           properties: {
             leg_id: leg.leg_id,
-            match_percentage: leg.skill_match_percentage ?? 100,
-            experience_matches: leg.experience_level_matches ?? true,
+            has_user: hasUser, // Whether a user is logged in
+            match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null,
+            experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null,
             registration_status: 'Approved' as const,
           },
         };
@@ -814,7 +818,7 @@ export function CrewBrowseMap({
     if (approvedSource) {
       approvedSource.setData(approvedGeoJsonData);
     }
-  }, [legs, mapLoaded, userRegistrations, filters.location, filters.arrivalLocation]);
+  }, [legs, mapLoaded, userRegistrations, filters.location, filters.arrivalLocation, user]);
 
   const theme = useTheme();
   const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
@@ -1394,8 +1398,9 @@ export function CrewBrowseMap({
 
 
       // Add unclustered point layer (individual leg markers for non-registered legs)
-      // Color based on match percentage: green (80+), yellow (50-79), orange (25-49), red (<25)
-      // Always show red if experience level doesn't match
+      // When user is logged in: Color based on match percentage: green (80+), yellow (50-79), orange (25-49), red (<25)
+      // When no user logged in: Use brand dark blue (#22276E) for all markers
+      // Always show red if experience level doesn't match (only when user is logged in)
       // Only show circles for legs without registrations
       map.current.addLayer({
         id: 'unclustered-point',
@@ -1409,6 +1414,9 @@ export function CrewBrowseMap({
         paint: {
           'circle-color': [
             'case',
+            // When no user is logged in, use brand dark blue
+            ['==', ['get', 'has_user'], false],
+            '#22276E', // brand dark blue
             ['==', ['get', 'experience_matches'], false],
             '#ef4444', // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
@@ -1419,11 +1427,13 @@ export function CrewBrowseMap({
             '#fdba74', // orange-500
             '#ef4444', // red-500
           ],
-          //'circle-radius': unregisteredIconSize,
           'circle-radius': [
             'case',
+            // When no user is logged in, use consistent size
+            ['==', ['get', 'has_user'], false],
+            10, // brand dark blue size
             ['==', ['get', 'experience_matches'], false],
-            10, // red allways small
+            10, // red always small
             ['>=', ['get', 'match_percentage'], 80],
             12, // green-500
             ['>=', ['get', 'match_percentage'], 50],
@@ -1435,6 +1445,9 @@ export function CrewBrowseMap({
           'circle-stroke-width': 2,
           'circle-stroke-color': [
             'case',
+            // When no user is logged in, use white stroke for visibility in dark mode
+            ['==', ['get', 'has_user'], false],
+            '#ffffff', // white stroke for dark blue markers
             ['==', ['get', 'experience_matches'], false],
             '#dc2626', // red-500 - always red if experience level doesn't match
             ['>=', ['get', 'match_percentage'], 80],
@@ -2014,10 +2027,10 @@ export function CrewBrowseMap({
                 setShowFullPanelOnMobile(true);
               }
             }}
-            sortByMatch={true}
+            sortByMatch={!!user} // Only sort by match when user is logged in
             displayOptions={{
               showCarousel: bottomSheetSnapPoint !== 'collapsed', // Hide carousel when collapsed
-              showMatchBadge: true,
+              showMatchBadge: !!user, // Only show match badge when user is logged in
               showLegName: true,
               showJourneyName: true,
               showLocations: true,
@@ -2081,6 +2094,7 @@ export function CrewBrowseMap({
           await selectLegWithWaypoints(leg as Leg);
         }}
         onMinimizeChange={setIsLegsPaneMinimized}
+        showMatchBadge={!!user} // Only show match badges when user is logged in
       />
 
       {/* Desktop: Side panel for selected leg details */}

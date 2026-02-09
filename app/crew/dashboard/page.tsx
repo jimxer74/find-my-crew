@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -19,7 +19,9 @@ export default function CrewDashboard() {
   const searchParams = useSearchParams();
   const initialLegId = searchParams.get('legId');
   const openRegistration = searchParams.get('register') === 'true';
+  const fromAssistant = searchParams.get('from') === 'assistant';
   const hasAppliedUrlFiltersRef = useRef(false);
+  const [showBackButton, setShowBackButton] = useState(fromAssistant);
 
   // Parse region bbox from URL params
   const initialRegionBbox = useMemo(() => {
@@ -131,6 +133,41 @@ export default function CrewDashboard() {
           initialOpenRegistration={openRegistration}
           initialBounds={initialRegionBbox?.bbox}
         />
+
+        {/* Floating "Back to Assistant" button - shown when navigated from assistant on mobile */}
+        {showBackButton && (
+          <div className="fixed bottom-24 right-4 z-50 md:hidden">
+            <button
+              onClick={() => router.push('/assistant')}
+              className="flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:opacity-90 transition-all min-h-[48px]"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span className="font-medium text-sm">Back to Assistant</span>
+            </button>
+            {/* Dismiss button */}
+            <button
+              onClick={() => setShowBackButton(false)}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-muted text-muted-foreground rounded-full flex items-center justify-center shadow-md hover:bg-accent transition-colors"
+              aria-label="Dismiss"
+            >
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
       </main>
     </div>
   );

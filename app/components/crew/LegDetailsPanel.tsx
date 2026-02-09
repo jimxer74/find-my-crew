@@ -1093,18 +1093,17 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         autoPlay={false}
                       />
 
-                      {/* Match Percentage Badge Only */}
-                      <div className="absolute top-3 left-3">
-                        {/* Match Percentage Badge */}
-                        {leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                      {/* Match Percentage Badge Only - only show when user is logged in */}
+                      {user && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                        <div className="absolute top-3 left-3">
                           <MatchBadge
                             percentage={leg.skill_match_percentage}
                             showLabel={true}
                             size="sm"
                             className="shadow-lg"
                           />
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
 
                   </div>
@@ -1115,18 +1114,17 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       <span className="text-sm text-muted-foreground">No images available</span>
                     </div>
 
-                    {/* Match Percentage Badge for fallback image */}
-                    <div className="absolute top-3 left-3">
-                      {/* Match Percentage Badge */}
-                      {leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                    {/* Match Percentage Badge for fallback image - only show when user is logged in */}
+                    {user && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                      <div className="absolute top-3 left-3">
                         <MatchBadge
                           percentage={leg.skill_match_percentage}
                           showLabel={true}
                           size="sm"
                           className="shadow-lg"
                         />
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1142,21 +1140,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             {/* Description */}
             {leg.leg_description && (
               <div>
-                {profileStatus?.exists ? (
-                  <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
-                ) : (
-                  <>
-                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {leg.leg_description.length > 150 
-                        ? leg.leg_description.substring(0, 150) + '...' 
-                        : leg.leg_description}
-                    </p>
-                    <LimitedAccessIndicator 
-                      message="Complete your profile to see full leg description"
-                      showCompleteProfileCTA={true}
-                    />
-                  </>
-                )}
+                <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
               </div>
             )}
 
@@ -1186,7 +1170,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         return name;
                       })()}
                     </div>
-                    {leg.start_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
+                    {leg.start_date && (
                       <div className="text-xs font-medium text-foreground">
                         {formatDate(leg.start_date)}
                       </div>
@@ -1226,7 +1210,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         return name;
                       })()}
                     </div>
-                    {leg.end_date && profileStatus?.exists && profileStatus.completionPercentage === 100 && (
+                    {leg.end_date && (
                       <div className="text-xs font-medium text-foreground">
                         {formatDate(leg.end_date)}
                       </div>
@@ -1371,9 +1355,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               skillMatchPercentage={leg.skill_match_percentage}
             />
 
-            {/* Boat Info - Only show if profile*/}
-            {profileStatus?.exists && (
-              <div className="pt-2 border-t border-border text-left">
+            {/* Boat Info */}
+            <div className="pt-2 border-t border-border text-left">
                 <div className="grid grid-cols-2 gap-4 mb-2">
                   <h3 className="text-xs font-semibold text-muted-foreground">Skipper / Owner</h3>
                 </div>
@@ -1446,7 +1429,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                    </div>
                   </div>
                 </div>
-            )}
 
             {/* Journey Costs Section */}
             {leg.cost_model && leg.cost_model !== 'Not defined' && (
@@ -1529,44 +1511,19 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               {/* Sticky Footer - Registration Section */}
               <div className="flex-shrink-0 border-t border-border bg-card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
               {!user ? (
-                <div className="space-y-3">
-                  <LimitedAccessIndicator 
-                    message="Sign up and complete your profile to register for this leg"
-                    showCompleteProfileCTA={true}
-                  />
-                  <button
-                    disabled
-                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
-                  >
-                    Register for leg
-                  </button>
-                </div>
-              ) : !profileStatus?.exists ? (
-                <div className="space-y-3">
-                  <LimitedAccessIndicator 
-                    message="Sign up and complete your profile to register for this leg"
-                    showCompleteProfileCTA={true}
-                  />
-                  <button
-                    disabled
-                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
-                  >
-                    Register for leg
-                  </button>
-                </div>
-              ) : !profileStatus.hasRoles || !profileStatus.exists ? (
-                <div className="space-y-3">
-                  <LimitedAccessIndicator 
-                    message="Add a crew role to your profile to register for legs"
-                    showCompleteProfileCTA={true}
-                  />
-                  <button
-                    disabled
-                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
-                  >
-                    Register for leg
-                  </button>
-                </div>
+                <Link
+                  href="/auth/login"
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
+                >
+                  Sign in to register for leg
+                </Link>
+              ) : !profileStatus?.exists || !profileStatus.hasRoles ? (
+                <Link
+                  href="/profile-setup"
+                  className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
+                >
+                  Complete profile to register
+                </Link>
               ) : registrationStatus ? (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">

@@ -158,8 +158,22 @@ export function ProspectChat() {
 
   const handleLegClick = (legId: string, legName: string) => {
     addViewedLeg(legId);
-    // Navigate to crew dashboard with leg selected
-    router.push(`/crew/dashboard?legId=${legId}`);
+    const url = `/crew/dashboard?legId=${legId}`;
+    // Check screen width directly to ensure accurate detection at click time
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobileScreen) {
+      // Mobile: navigate in same window with from=assistant param for back button
+      window.location.href = `${url}&from=assistant`;
+    } else {
+      // Desktop: open in new tab using programmatic anchor click
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
   };
 
   const handleSuggestionSelect = (message: string) => {

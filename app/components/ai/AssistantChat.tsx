@@ -237,14 +237,45 @@ export function AssistantChat() {
   }, [isDragging, isMobile]);
 
   // Handle clicking on a leg reference - navigate to dashboard with the legId
+  // Desktop: open in new tab, Mobile: navigate with back-to-assistant param
   const handleLegClick = (legId: string) => {
-    // Use router.push with full page refresh to ensure the new legId is processed
-    window.location.href = `/crew/dashboard?legId=${legId}`;
+    const url = `/crew/dashboard?legId=${legId}`;
+    // Check screen width directly to ensure accurate detection at click time
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobileScreen) {
+      // Mobile: navigate in same window with from=assistant param for back button
+      window.location.href = `${url}&from=assistant`;
+    } else {
+      // Desktop: open in new tab using programmatic anchor click
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
   };
 
   // Handle clicking on a register reference - navigate to dashboard and open registration form
+  // Desktop: open in new tab, Mobile: navigate with back-to-assistant param
   const handleRegisterClick = (legId: string) => {
-    window.location.href = `/crew/dashboard?legId=${legId}&register=true`;
+    const url = `/crew/dashboard?legId=${legId}&register=true`;
+    // Check screen width directly to ensure accurate detection at click time
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobileScreen) {
+      // Mobile: navigate in same window with from=assistant param for back button
+      window.location.href = `${url}&from=assistant`;
+    } else {
+      // Desktop: open in new tab using programmatic anchor click (more reliable than window.open)
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+    }
   };
 
   // Auto-scroll to bottom when messages change
