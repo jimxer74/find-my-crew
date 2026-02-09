@@ -617,6 +617,49 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ['reason', 'suggestedField', 'targetSkills'],
     },
   },
+  {
+    name: 'submit_leg_registration',
+    description:
+      'Submit a registration for a sailing leg after collecting all required answers through conversation. Use this ONLY after you have asked and collected answers for ALL registration questions from get_leg_registration_info. Creates a pending action that the user must approve before the registration is submitted.',
+    access: 'crew',
+    category: 'action',
+    parameters: {
+      type: 'object',
+      properties: {
+        legId: {
+          type: 'string',
+          description: 'REQUIRED: The UUID of the leg to register for',
+        },
+        answers: {
+          type: 'array',
+          description: 'REQUIRED: Array of answers to registration questions. Each answer must include requirement_id and either answer_text or answer_json based on question type.',
+          items: {
+            type: 'object',
+            properties: {
+              requirement_id: {
+                type: 'string',
+                description: 'The UUID of the requirement/question being answered',
+              },
+              answer_text: {
+                type: 'string',
+                description: 'Text answer for text or yes_no question types',
+              },
+              answer_json: {
+                type: 'object',
+                description: 'JSON answer for multiple_choice or rating question types',
+              },
+            },
+            required: ['requirement_id'],
+          },
+        },
+        notes: {
+          type: 'string',
+          description: 'Optional additional notes from the user about why they want to join this leg',
+        },
+      },
+      required: ['legId', 'answers'],
+    },
+  },
 
   // ============================================================
   // OWNER-ONLY TOOLS - Available only to users with owner role

@@ -707,6 +707,34 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_IN' && session) {
         console.log('[AssistantContext] 📊 User signed in, loading pending actions');
         loadPendingActions();
+
+        // Check for pending leg registration from prospect signup flow
+        if (typeof window !== 'undefined') {
+          const pendingLegStr = localStorage.getItem('pending_leg_registration');
+          if (pendingLegStr) {
+            try {
+              const { legId, legName, timestamp } = JSON.parse(pendingLegStr);
+              // Only process if the pending registration is less than 30 minutes old
+              const isRecent = timestamp && (Date.now() - timestamp) < 30 * 60 * 1000;
+
+              if (isRecent && legId) {
+                console.log('[AssistantContext] 📊 Found pending leg registration:', { legId, legName });
+                // Clear the pending registration from storage
+                localStorage.removeItem('pending_leg_registration');
+                // Store the leg info to trigger registration after UI is ready
+                localStorage.setItem('pending_leg_registration_ready', JSON.stringify({ legId, legName }));
+                // Auto-open the assistant panel
+                openAssistant();
+              } else {
+                // Expired or invalid, clean up
+                localStorage.removeItem('pending_leg_registration');
+              }
+            } catch (e) {
+              console.error('[AssistantContext] Failed to parse pending leg registration:', e);
+              localStorage.removeItem('pending_leg_registration');
+            }
+          }
+        }
       } else if (event === 'SIGNED_OUT') {
         console.log('[AssistantContext] 📊 User signed out, clearing pending actions');
         setState(prev => ({ ...prev, pendingActions: [], awaitingInputActions: [] }));

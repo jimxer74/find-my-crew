@@ -192,6 +192,15 @@ export function ProspectChat() {
 
   // Handle join button click on leg cards - triggers signup flow
   const handleJoinClick = (legId: string, legName: string) => {
+    // Store pending leg info for post-signup registration continuation
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pending_leg_registration', JSON.stringify({
+        legId,
+        legName,
+        timestamp: Date.now()
+      }));
+    }
+
     // Show the signup form
     setShowAuthForm('signup');
     // Optionally scroll to the form

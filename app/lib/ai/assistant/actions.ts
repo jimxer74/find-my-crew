@@ -57,30 +57,70 @@ export async function executeAction(
     };
   }
 
-  try {    
-      log('Action succeeded, updating status to approved');
-      await supabase
-        .from('ai_pending_actions')
-        .update({
-          status: 'approved',
-          resolved_at: new Date().toISOString(),
-        })
-        .eq('id', action.id);
-    } catch (error: any) {
-      log('Action execution error:', error.message);
-      return {
-        success: false,
-        message: error.message || 'Action execution failed',
-        error: 'EXECUTION_ERROR',
-      };
-      }
+  try {
+    let result: ActionResult;
+
+    // Execute the action based on type
+    switch (action.action_type) {
+      case 'register_for_leg':
+        result = await executeRegisterForLeg(action, context);
+        break;
+      case 'approve_registration':
+        result = await executeApproveRegistration(action, context);
+        break;
+      case 'reject_registration':
+        result = await executeRejectRegistration(action, context);
+        break;
+      case 'update_profile_user_description':
+        result = await executeUpdateProfileUserDescription(action, context);
+        break;
+      case 'update_profile_certifications':
+        result = await executeUpdateProfileCertifications(action, context);
+        break;
+      case 'update_profile_risk_level':
+        result = await executeUpdateProfileRiskLevel(action, context);
+        break;
+      case 'update_profile_sailing_preferences':
+        result = await executeUpdateProfileSailingPreferences(action, context);
+        break;
+      case 'update_profile_skills':
+        result = await executeUpdateProfileSkills(action, context);
+        break;
+      case 'refine_skills':
+        result = await executeRefineSkills(action, context);
+        break;
+      case 'suggest_profile_update_user_description':
+        result = await executeSuggestProfileUpdateUserDescription(action, context);
+        break;
+      default:
+        // For unhandled action types, just mark as approved
+        log(`Unknown action type: ${action.action_type}, marking as approved`);
+        result = { success: true, message: 'Action acknowledged' };
+    }
+
+    if (!result.success) {
+      return result;
+    }
+
+    log('Action succeeded, updating status to approved');
+    await supabase
+      .from('ai_pending_actions')
+      .update({
+        status: 'approved',
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('id', action.id);
 
     log('--- executeAction completed ---');
-    
+    return result;
+  } catch (error: any) {
+    log('Action execution error:', error.message);
     return {
-      success: true,
-      message: 'Action executed successfully',
+      success: false,
+      message: error.message || 'Action execution failed',
+      error: 'EXECUTION_ERROR',
     };
+  }
 }
 
 /**
@@ -183,45 +223,13 @@ async function executeRegisterForLeg(
   context: ActionContext
 ): Promise<ActionResult> {
   const { supabase, userId } = context;
-  const { legId } = action.action_payload as { legId: string };
+  const { legId, answers, notes } = action.action_payload as {
+    legId: string;
+    answers?: Array<{ requirement_id: string; answer_text?: string; answer_json?: any }>;
+    notes?: string;
+  };
 
-  // Check if journey has requirements - if so, reject and guide to UI
-  const { data: legForRequirements } = await supabase
-    .from('legs')
-    .select('journey_id')
-    .eq('id', legId)
-    .single();
-
-  if (legForRequirements) {
-    const { count: requirementCount } = await supabase
-      .from('journey_requirements')
-      .select('*', { count: 'exact', head: true })
-      .eq('journey_id', legForRequirements.journey_id);
-
-    if (requirementCount && requirementCount > 0) {
-      return {
-        success: false,
-        message: 'This leg requires answering registration questions. Please complete registration through the leg details page where you can fill out the required form.',
-        error: 'REQUIRES_FORM_REGISTRATION',
-      };
-    }
-  }
-
-  // Check if already registered
-  const { data: existing } = await supabase
-    .from('registrations')
-    .select('id')
-    .eq('leg_id', legId)
-    .eq('user_id', userId)
-    .single();
-
-  if (existing) {
-    return {
-      success: false,
-      message: 'You are already registered for this leg',
-      error: 'ALREADY_REGISTERED',
-    };
-  }
+  log('executeRegisterForLeg called', { legId, hasAnswers: !!answers, answersCount: answers?.length });
 
   // Get leg details to verify it exists and is open
   const { data: leg } = await supabase
@@ -230,8 +238,11 @@ async function executeRegisterForLeg(
       id,
       name,
       crew_needed,
+      journey_id,
       journeys!inner (
-        state
+        id,
+        state,
+        auto_approval_enabled
       )
     `)
     .eq('id', legId)
@@ -245,7 +256,9 @@ async function executeRegisterForLeg(
     };
   }
 
-  if ((leg as any).journeys.state !== 'Published') {
+  const journey = (leg as any).journeys;
+
+  if (journey.state !== 'Published') {
     return {
       success: false,
       message: 'This journey is not currently accepting registrations',
@@ -253,30 +266,149 @@ async function executeRegisterForLeg(
     };
   }
 
-  // Create registration
-  const { data: registration, error } = await supabase
-    .from('registrations')
-    .insert({
-      leg_id: legId,
-      user_id: userId,
-      status: 'Pending approval',
-    })
-    .select()
-    .single();
+  // Check if there are requirements and if answers are needed
+  const { count: requirementCount } = await supabase
+    .from('journey_requirements')
+    .select('*', { count: 'exact', head: true })
+    .eq('journey_id', journey.id);
 
-  if (error) {
+  const hasRequirements = requirementCount && requirementCount > 0;
+
+  // If journey has requirements but no answers provided, reject
+  if (hasRequirements && (!answers || answers.length === 0)) {
     return {
       success: false,
-      message: 'Failed to create registration',
-      error: error.message,
+      message: 'This leg requires answering registration questions. Please provide answers to all required questions.',
+      error: 'REQUIRES_ANSWERS',
     };
   }
 
-  return {
-    success: true,
-    message: `Successfully registered for ${leg.name}. Your registration is pending approval.`,
-    data: registration,
+  // Check if already registered
+  const { data: existing } = await supabase
+    .from('registrations')
+    .select('id, status')
+    .eq('leg_id', legId)
+    .eq('user_id', userId)
+    .single();
+
+  if (existing && existing.status !== 'Cancelled') {
+    return {
+      success: false,
+      message: 'You are already registered for this leg',
+      error: 'ALREADY_REGISTERED',
+    };
+  }
+
+  // Use the registrations API to create the registration (includes answer handling and notifications)
+  log('Calling registrations API...', { legId, notesLength: notes?.length, answersCount: answers?.length });
+
+  // Build the request body
+  const requestBody: any = {
+    leg_id: legId,
+    notes: notes || null,
   };
+
+  if (answers && answers.length > 0) {
+    requestBody.answers = answers;
+  }
+
+  // Make internal API call to the registrations endpoint
+  // We construct the URL based on the current environment
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
+
+  try {
+    // Get the user's session token
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData?.session?.access_token;
+
+    if (!accessToken) {
+      return {
+        success: false,
+        message: 'Authentication required for registration',
+        error: 'AUTH_REQUIRED',
+      };
+    }
+
+    const response = await fetch(`${baseUrl}/api/registrations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'Cookie': `sb-access-token=${accessToken}`,
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      log('Registration API error:', data);
+      return {
+        success: false,
+        message: data.error || 'Failed to create registration',
+        error: data.details || 'API_ERROR',
+      };
+    }
+
+    log('Registration created successfully:', data.registration?.id);
+
+    return {
+      success: true,
+      message: `Successfully registered for ${leg.name}! Your registration is pending approval. The boat owner has been notified and will review your application.`,
+      data: data.registration,
+    };
+  } catch (fetchError: any) {
+    log('Fetch error calling registrations API:', fetchError.message);
+
+    // Fallback: Create registration directly via Supabase
+    log('Fallback: Creating registration directly via Supabase');
+
+    const { data: registration, error: insertError } = await supabase
+      .from('registrations')
+      .insert({
+        leg_id: legId,
+        user_id: userId,
+        status: 'Pending approval',
+        notes: notes || null,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      return {
+        success: false,
+        message: 'Failed to create registration',
+        error: insertError.message,
+      };
+    }
+
+    // Handle answers if provided
+    if (answers && answers.length > 0 && registration) {
+      const answersToInsert = answers.map((answer) => ({
+        registration_id: registration.id,
+        requirement_id: answer.requirement_id,
+        answer_text: answer.answer_text || null,
+        answer_json: answer.answer_json || null,
+      }));
+
+      const { error: answersError } = await supabase
+        .from('registration_answers')
+        .insert(answersToInsert);
+
+      if (answersError) {
+        log('Error saving answers:', answersError);
+        // Don't fail the registration, just log the error
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully registered for ${leg.name}! Your registration is pending approval.`,
+      data: registration,
+    };
+  }
 }
 
 async function executeUpdateProfile(

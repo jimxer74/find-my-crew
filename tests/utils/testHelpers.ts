@@ -171,13 +171,18 @@ export class TestHelpers {
   }
 
   /**
-   * Clear all cookies and local storage
+   * Clear all cookies and local storage.
+   * Must be called after navigating to the app (same origin); otherwise localStorage access throws SecurityError.
    */
   async clearSession() {
     await this.page.context().clearCookies();
     await this.page.evaluate(() => {
-      localStorage.clear();
-      sessionStorage.clear();
+      try {
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {
+        // Ignore SecurityError when document has no same-origin URL (e.g. about:blank)
+      }
     });
   }
 

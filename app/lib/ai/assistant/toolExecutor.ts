@@ -1528,6 +1528,7 @@ async function createPendingAction(
   // Map tool name to action type
   const actionTypeMap: Record<string, ActionType> = {
     suggest_register_for_leg: 'register_for_leg',
+    submit_leg_registration: 'register_for_leg',
     suggest_profile_update_user_description: 'update_profile_user_description',
     suggest_profile_update_certifications: 'update_profile_certifications',
     suggest_profile_update_risk_level: 'update_profile_risk_level',
@@ -1559,6 +1560,34 @@ async function createPendingAction(
       payload = { legId: args.legId };
       explanation = args.reason as string;
       break;
+
+    case 'submit_leg_registration': {
+      // Validate required parameters for conversational registration
+      if (!args.legId) {
+        throw new Error('Missing required parameter: legId. Please provide the ID of the leg to register for.');
+      }
+      if (!args.answers || !Array.isArray(args.answers)) {
+        throw new Error('Missing required parameter: answers. Please provide an array of answers to registration questions.');
+      }
+
+      // Validate each answer has requirement_id
+      for (const answer of args.answers as any[]) {
+        if (!answer.requirement_id) {
+          throw new Error('Each answer must include a requirement_id.');
+        }
+        if (!answer.answer_text && answer.answer_json === undefined) {
+          throw new Error(`Answer for requirement ${answer.requirement_id} must include either answer_text or answer_json.`);
+        }
+      }
+
+      payload = {
+        legId: args.legId,
+        answers: args.answers,
+        notes: args.notes || null,
+      };
+      explanation = 'Registration for this sailing leg with your answers to the registration questions. Click Approve to submit your registration.';
+      break;
+    }
 
     case 'suggest_profile_update_user_description':
     case 'suggest_profile_update_certifications':

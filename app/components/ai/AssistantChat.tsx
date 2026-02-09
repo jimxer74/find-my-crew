@@ -15,17 +15,19 @@ import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 
 
 /**
- * Parse message content and render inline leg references as clickable links.
+ * Parse message content and render inline references as clickable elements.
  * Format: [[leg:UUID:Name]] -> clickable link to /crew/dashboard?legId=UUID
  * Format: [[register:UUID:Name]] -> badge link to open registration form
+ * Format: [[close_chat:PATH:Label]] -> button to close chat and redirect
  */
 function renderMessageWithLegLinks(
   content: string,
   onLegClick: (legId: string) => void,
-  onRegisterClick: (legId: string) => void
+  onRegisterClick: (legId: string) => void,
+  onCloseAndRedirect?: (path: string) => void
 ): React.ReactNode {
-  // Combined regex to match both [[leg:UUID:Name]] and [[register:UUID:Name]] patterns
-  const refRegex = /\[\[(leg|register):([a-f0-9-]+):([^\]]+)\]\]/gi;
+  // Combined regex to match leg, register, and close_chat patterns
+  const refRegex = /\[\[(leg|register|close_chat):([^:\]]+):([^\]]+)\]\]/gi;
 
   const parts: React.ReactNode[] = [];
   let lastIndex = 0;
@@ -42,7 +44,32 @@ function renderMessageWithLegLinks(
     const legId = match[2];
     const legName = match[3];
 
-    if (type === 'register') {
+    if (type === 'close_chat') {
+      // Close chat and redirect button
+      const path = legId; // In this case, legId contains the path
+      const label = legName; // And legName contains the button label
+      parts.push(
+        <button
+          key={`close-${keyIndex++}`}
+          onClick={() => onCloseAndRedirect?.(path)}
+          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors font-medium text-sm shadow-sm"
+          title={label}
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+          {label}
+        </button>
+      );
+    } else if (type === 'register') {
       // Registration questions badge
       parts.push(
         <button
@@ -194,6 +221,37 @@ export function AssistantChat() {
     }
   }, [lastActionResult, clearActionResult]);
 
+  // Check for pending leg registration from prospect signup flow
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const checkPendingRegistration = () => {
+      if (typeof window === 'undefined') return;
+
+      const pendingLegStr = localStorage.getItem('pending_leg_registration_ready');
+      if (pendingLegStr) {
+        try {
+          const { legId, legName } = JSON.parse(pendingLegStr);
+          console.log('[AssistantChat] Starting pending leg registration:', { legId, legName });
+          // Clear the flag immediately to prevent duplicate triggers
+          localStorage.removeItem('pending_leg_registration_ready');
+          // Send message to start registration flow
+          const registrationMessage = legName
+            ? `I want to register for the sailing leg "${legName}". The leg ID is ${legId}.`
+            : `I want to register for a sailing leg. The leg ID is ${legId}.`;
+          sendMessage(registrationMessage);
+        } catch (e) {
+          console.error('[AssistantChat] Failed to process pending leg registration:', e);
+          localStorage.removeItem('pending_leg_registration_ready');
+        }
+      }
+    };
+
+    // Small delay to ensure component is fully mounted
+    const timer = setTimeout(checkPendingRegistration, 500);
+    return () => clearTimeout(timer);
+  }, [isOpen, sendMessage]);
+
   // Drag handlers for mobile bottom sheet
   const handleDragStart = (clientY: number) => {
     if (!isMobile) return;
@@ -245,6 +303,12 @@ export function AssistantChat() {
   // Handle clicking on a register reference - navigate to dashboard and open registration form
   const handleRegisterClick = (legId: string) => {
     router.push(`/crew/dashboard?legId=${legId}&register=true&from=assistant`);
+  };
+
+  // Handle close chat and redirect - close assistant panel and navigate to specified path
+  const handleCloseAndRedirect = (path: string) => {
+    closeAssistant();
+    router.push(path);
   };
 
   // Auto-scroll to bottom when messages change
@@ -330,7 +394,7 @@ export function AssistantChat() {
             >
               <div className="text-sm whitespace-pre-wrap break-words">
                 {message.role === 'assistant'
-                  ? renderMessageWithLegLinks(message.content, handleLegClick, handleRegisterClick)
+                  ? renderMessageWithLegLinks(message.content, handleLegClick, handleRegisterClick, handleCloseAndRedirect)
                   : message.content}
               </div>
               {message.role === 'assistant' && message.metadata?.toolCalls && (
