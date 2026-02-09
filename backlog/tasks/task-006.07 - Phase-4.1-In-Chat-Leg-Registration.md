@@ -4,7 +4,7 @@ title: 'Phase 4.1: In-Chat Leg Registration'
 status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 18:58'
+updated_date: '2026-02-09 19:01'
 labels:
   - registration
   - phase-4
@@ -54,8 +54,81 @@ Main Registration flow, after a or b scenario
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Registration is done as questions in assistant chat for authenticated users
-- [ ] #2 Registration creates record in database
-- [ ] #3 Confirmation message shown in chat
-- [ ] #4 Owner notified of new registration
+- [ ] #1 Registration questions asked conversationally by AI (no inline forms)
+- [ ] #2 Leg details shown before confirming registration
+- [ ] #3 Registration creates record in database via existing API
+- [ ] #4 Confirmation message shown in chat after success
+- [ ] #5 Owner notified of new registration
+- [ ] #6 Prospect leg UUID carried over through signup flow
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Plan
+
+### Approach: Conversational Registration (No Inline Forms)
+
+The AI will ask registration questions directly in the conversation, NOT via inline forms. This provides a more natural and guided experience.
+
+### Changes Required:
+
+#### 1. Add new tool: `submit_leg_registration` (in `definitions.ts`)
+- Action tool that creates a pending action for registration
+- Accepts: `legId`, `answers` (array of requirement answers), `notes`
+- The AI collects answers conversationally and passes them when submitting
+
+#### 2. Update `get_leg_registration_info` tool
+- Already returns requirements - ensure it has all data needed for conversational Q&A
+- Returns: `requirements` array with question_text, question_type, options, is_required
+
+#### 3. Update CREW_REGISTER prompt template (in `modular-prompts.ts`)
+- Guide AI to:
+  1. Fetch leg details and requirements using `get_leg_registration_info`
+  2. Show leg summary and confirm user wants to proceed
+  3. Ask each requirement question conversationally (one at a time or grouped)
+  4. Provide suggestions for better auto-approval chances
+  5. Once all questions answered, summarize and ask user to confirm
+  6. Call `submit_leg_registration` with collected answers
+  7. Show success message with next steps
+
+#### 4. Add tool executor for `submit_leg_registration` (in `toolExecutor.ts`)
+- Creates pending action with registration data
+- On approval, calls `/api/registrations` with answers
+
+#### 5. Handle leg UUID carry-over for prospect signup
+- Store `pending_leg_registration` in localStorage when prospect clicks "Join"
+- After signup completion, detect and start registration flow
+
+#### 6. Add close/redirect functionality after success
+- After successful registration, AI provides farewell message
+- Show button to close chat and redirect to /crew
+
+### Flow Diagram:
+
+```
+User: "I want to register for [leg]"
+  ↓
+AI: get_leg_registration_info(legId)
+  ↓
+AI: Shows leg summary, asks "Would you like to proceed?"
+  ↓
+User: "Yes"
+  ↓
+AI: Asks Question 1 (from requirements)
+  ↓
+User: [Answer 1]
+  ↓
+AI: Asks Question 2...
+  ↓
+... (all questions asked conversationally)
+  ↓
+AI: "Here's a summary of your answers. Ready to submit?"
+  ↓
+User: "Yes" / Clicks Approve button
+  ↓
+AI: submit_leg_registration(legId, answers, notes)
+  ↓
+Registration created → Success message → Close button
+```
+<!-- SECTION:PLAN:END -->
