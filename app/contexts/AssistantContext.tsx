@@ -721,10 +721,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
                 console.log('[AssistantContext] 📊 Found pending leg registration:', { legId, legName });
                 // Clear the pending registration from storage
                 localStorage.removeItem('pending_leg_registration');
-                // Store the leg info to trigger registration after UI is ready
+                // Store the leg info to trigger registration after redirect completes
+                // The AssistantChat component will detect this after the page loads
                 localStorage.setItem('pending_leg_registration_ready', JSON.stringify({ legId, legName }));
-                // Auto-open the assistant panel
-                openAssistant();
+                // Don't open assistant here - let the redirect complete first
+                // The crew page will handle opening the assistant
               } else {
                 // Expired or invalid, clean up
                 localStorage.removeItem('pending_leg_registration');

@@ -194,7 +194,8 @@ export function AssistantChat() {
     rejectAction,
     hideInputModal,
     submitInput,
-    closeAssistant, // ✅ Added closeAssistant
+    openAssistant,
+    closeAssistant,
     redirectToProfile,
   } = useAssistant();
 
@@ -222,9 +223,8 @@ export function AssistantChat() {
   }, [lastActionResult, clearActionResult]);
 
   // Check for pending leg registration from prospect signup flow
+  // This effect runs on mount to detect pending registration after redirect
   useEffect(() => {
-    if (!isOpen) return;
-
     const checkPendingRegistration = () => {
       if (typeof window === 'undefined') return;
 
@@ -232,10 +232,19 @@ export function AssistantChat() {
       if (pendingLegStr) {
         try {
           const { legId, legName } = JSON.parse(pendingLegStr);
-          console.log('[AssistantChat] Starting pending leg registration:', { legId, legName });
-          // Clear the flag immediately to prevent duplicate triggers
+          console.log('[AssistantChat] Found pending leg registration:', { legId, legName });
+
+          // If assistant is not open, open it first
+          if (!isOpen) {
+            console.log('[AssistantChat] Opening assistant for pending registration');
+            openAssistant();
+            // The effect will re-run when isOpen changes to true
+            return;
+          }
+
+          // Assistant is open, clear the flag and send the message
           localStorage.removeItem('pending_leg_registration_ready');
-          // Send message to start registration flow
+          console.log('[AssistantChat] Sending registration message');
           const registrationMessage = legName
             ? `I want to register for the sailing leg "${legName}". The leg ID is ${legId}.`
             : `I want to register for a sailing leg. The leg ID is ${legId}.`;
@@ -247,10 +256,10 @@ export function AssistantChat() {
       }
     };
 
-    // Small delay to ensure component is fully mounted
+    // Small delay to ensure component is fully mounted and auth redirect completed
     const timer = setTimeout(checkPendingRegistration, 500);
     return () => clearTimeout(timer);
-  }, [isOpen, sendMessage]);
+  }, [isOpen, sendMessage, openAssistant]);
 
   // Drag handlers for mobile bottom sheet
   const handleDragStart = (clientY: number) => {
