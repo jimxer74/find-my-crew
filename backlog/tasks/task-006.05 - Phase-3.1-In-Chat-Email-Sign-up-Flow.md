@@ -4,7 +4,7 @@ title: 'Phase 3.1: In-Chat Email Sign-up Flow'
 status: In Progress
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 12:28'
+updated_date: '2026-02-09 12:32'
 labels:
   - auth
   - signup
@@ -46,9 +46,56 @@ Map gathered preferences to profile fields:
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Sign-up form appears inline within chat
-- [ ] #2 Form validates email and password
-- [ ] #3 Successful signup triggers email confirmation
-- [ ] #4 User profile created with gathered preferences
+- [x] #1 Sign-up form appears inline within chat
+- [x] #2 Form validates email and password
+- [x] #3 Successful signup triggers email confirmation
+- [x] #4 User profile created with gathered preferences
 - [ ] #5 Error states handled gracefully in chat context
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Notes (2026-02-09)
+
+### Components Created
+
+1. **InlineChatSignupForm.tsx** (`app/components/prospect/`)
+   - Email signup form styled to match chat interface
+   - Collects full name, email, password
+   - Supports Facebook OAuth with preference preservation
+   - Shows success state with email confirmation message
+   - Stores prospect preferences in user metadata for later sync
+
+2. **InlineChatLoginForm.tsx** (`app/components/prospect/`)
+   - Companion login form for returning users
+   - Same inline chat styling
+   - Facebook OAuth support
+
+### Integration Points
+
+1. **ProspectChat.tsx** updated:
+   - Added `showAuthForm` state ('signup' | 'login' | null)
+   - Sign up button appears in header after 2+ messages
+   - Forms render inline within chat message area
+   - Preferences passed from context to signup form
+
+2. **Auth callback route** updated:
+   - Detects `from=prospect` parameter
+   - Reads `prospect_preferences` from user metadata
+   - Syncs preferences to profile fields:
+     - experienceLevel → sailing_experience
+     - skills → skills
+     - riskLevels → risk_level (with enum mapping)
+     - sailingGoals → sailing_preferences
+
+### Preference Mapping
+
+```typescript
+ProspectPreferences → Profile
+- experienceLevel (1-4) → sailing_experience
+- skills[] → skills[]
+- riskLevels[] → risk_level[] (mapped to enum)
+- sailingGoals → sailing_preferences
+```
+<!-- SECTION:NOTES:END -->
