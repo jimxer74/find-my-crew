@@ -4,7 +4,7 @@ title: 'Phase 2.1: Session Persistence with Cookie + LocalStorage'
 status: To Do
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 07:03'
+updated_date: '2026-02-09 07:04'
 labels:
   - session
   - persistence
@@ -22,6 +22,8 @@ Implement session persistence for prospect users so they can return and continue
 **Depends on:** Phase 1 tasks
 
 **Note: Preferred locations must support for both Departure location and Arrival locations. Also a point to consider is should locations be stored as bounding box coordinates or just location texts give by user?
+
+** Note: There should also be a way the user to clear the current status and AI conversation and start over if wanting so. 
 
 **Session Management:**
 - Generate UUID session ID on first visit
