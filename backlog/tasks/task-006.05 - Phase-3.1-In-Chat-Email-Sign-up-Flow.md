@@ -4,7 +4,7 @@ title: 'Phase 3.1: In-Chat Email Sign-up Flow'
 status: Done
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 12:32'
+updated_date: '2026-02-09 12:43'
 labels:
   - auth
   - signup
@@ -99,3 +99,51 @@ ProspectPreferences → Profile
 - sailingGoals → sailing_preferences
 ```
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Complete
+
+### Files Created
+- `app/components/prospect/InlineChatSignupForm.tsx` - Inline email signup form
+- `app/components/prospect/InlineChatLoginForm.tsx` - Inline login form for returning users
+
+### Files Modified
+- `app/components/prospect/ProspectChat.tsx` - Integrated signup/login forms, added header button
+- `app/auth/callback/route.ts` - Added prospect preference syncing to profile
+
+### Key Features Delivered
+
+1. **Inline Signup Form**
+   - Styled to match chat interface (appears as assistant message)
+   - Collects: full name, email, password
+   - Facebook OAuth with preference preservation
+   - Success state shows email confirmation instructions
+   - "Maybe later" and "Already have an account?" options
+
+2. **Inline Login Form**
+   - Matching chat styling
+   - Email/password and Facebook OAuth
+   - Switch to signup option
+
+3. **Sign-up Trigger**
+   - "Sign up" button appears in chat header after 2+ messages
+   - Forms render inline within message area
+   - Can be dismissed with "Maybe later"
+
+4. **Preference Syncing**
+   - Preferences stored in `user_metadata.prospect_preferences` during signup
+   - Auth callback detects `from=prospect` parameter
+   - Syncs to profile on first login:
+     - `experienceLevel` → `sailing_experience`
+     - `skills[]` → `skills[]`
+     - `riskLevels[]` → `risk_level[]` (with enum mapping)
+     - `sailingGoals` → `sailing_preferences`
+
+### Testing Notes
+- Build passes successfully
+- Forms validate required fields and password length
+- Error states display inline with destructive styling
+- OAuth redirects preserve `from=prospect` for preference sync
+<!-- SECTION:FINAL_SUMMARY:END -->
