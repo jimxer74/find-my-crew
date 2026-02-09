@@ -31,7 +31,6 @@ type Suggestion = {
   category?: string;
   description?: string;
   bbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
-  score?: number;
 };
 
 export type LocationAutocompleteProps = {
@@ -118,7 +117,6 @@ export function LocationAutocomplete({
           category: result.region.category,
           description: result.region.description,
           bbox: result.region.bbox,
-          score: result.score,
         }));
 
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
