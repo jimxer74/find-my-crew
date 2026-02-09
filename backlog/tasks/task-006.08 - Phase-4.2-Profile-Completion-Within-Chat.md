@@ -4,6 +4,7 @@ title: 'Phase 4.2: Profile Completion Within Chat'
 status: To Do
 assignee: []
 created_date: '2026-02-08 17:44'
+updated_date: '2026-02-09 12:24'
 labels:
   - profile
   - phase-4
@@ -43,6 +44,10 @@ Allow users to complete their profile within the chat after signing up, using in
 - `InlineChatProfileCompletion.tsx` - Profile fields in chat
 - Show profile completion progress
 - Link to full profile page for advanced editing
+- 
+
+**Additional notes**
+- Create tools for fetching the Decriptions for Sailing Experience Levels: (Beginner, Competent crew, Coastal Skipper, Offshore Skipper), Risk Levels and Skills definitions so that AI can show them in chat if needed
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
