@@ -39,12 +39,22 @@ async function safeDelete(
     return { success: true, table, operation: 'delete' };
   } catch (error: any) {
     console.error(`[${userId}] Failed to delete ${table}:`, error);
+
+    // Check if this is an RLS policy violation for consent tables
+    const isConsentTable = ['user_consents', 'consent_audit_log'].includes(table);
+    const isRLSBlocked = error.code === 'PGRST110' || error.message?.includes('permission denied');
+
+    let errorMessage = error.message;
+    if (isConsentTable && isRLSBlocked) {
+      errorMessage = `RLS policy violation: Cannot delete ${table}. Use service role client to bypass RLS policies. Error: ${error.message}`;
+    }
+
     return {
       success: false,
       table,
       operation: 'delete',
-      error: error.message,
-      details: { code: error.code, details: error.details }
+      error: errorMessage,
+      details: { code: error.code, details: error.details, isRLSBlocked, isConsentTable }
     };
   }
 }
@@ -141,12 +151,28 @@ export async function DELETE(request: NextRequest) {
     const notificationsResult = await safeDelete('notifications', { user_id: user.id }, supabase, user.id);
     deletionResults.push(notificationsResult);
 
-    // 2. Delete consent audit log
-    const consentAuditResult = await safeDelete('consent_audit_log', { user_id: user.id }, supabase, user.id);
+    // 2. Delete consent audit log (use service role client to bypass RLS)
+    let consentAuditResult;
+    if (serviceRoleKey && supabaseUrl) {
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      consentAuditResult = await safeDelete('consent_audit_log', { user_id: user.id }, adminClient, user.id);
+    } else {
+      consentAuditResult = await safeDelete('consent_audit_log', { user_id: user.id }, supabase, user.id);
+    }
     deletionResults.push(consentAuditResult);
 
-    // 3. Delete user consents
-    const userConsentsResult = await safeDelete('user_consents', { user_id: user.id }, supabase, user.id);
+    // 3. Delete user consents (use service role client to bypass RLS)
+    let userConsentsResult;
+    if (serviceRoleKey && supabaseUrl) {
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      userConsentsResult = await safeDelete('user_consents', { user_id: user.id }, adminClient, user.id);
+    } else {
+      userConsentsResult = await safeDelete('user_consents', { user_id: user.id }, supabase, user.id);
+    }
     deletionResults.push(userConsentsResult);
 
     // 4. Delete email preferences

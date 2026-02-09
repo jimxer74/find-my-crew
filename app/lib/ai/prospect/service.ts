@@ -33,6 +33,7 @@ import {
   ProspectPreferences,
   ProspectLegReference,
 } from './types';
+import { searchLocation, LocationSearchResult } from '@/app/lib/geocoding/locations';
 
 const MAX_HISTORY_MESSAGES = 15;
 const MAX_LEG_REFERENCES = 8;
@@ -47,9 +48,83 @@ const log = (message: string, data?: unknown) => {
 };
 
 /**
- * Build system prompt for prospect onboarding chat
+ * Extract potential location mentions from a message and match against the location registry.
+ * Returns matched locations with their bounding boxes ready for AI to use directly.
  */
-function buildProspectSystemPrompt(preferences: ProspectPreferences): string {
+function extractMatchedLocations(message: string): LocationSearchResult[] {
+  // Common location indicator words to help identify location phrases
+  const locationIndicators = [
+    'in', 'from', 'to', 'near', 'around', 'sailing', 'departing', 'arriving',
+    'going', 'want', 'like', 'interested', 'explore', 'visit', 'mediterranean',
+    'caribbean', 'atlantic', 'pacific', 'aegean', 'adriatic', 'baltic'
+  ];
+
+  const normalizedMessage = message.toLowerCase();
+  const allMatches: LocationSearchResult[] = [];
+
+  // Try to match the entire message first (in case it's just a location name)
+  const fullMatch = searchLocation(message);
+  if (fullMatch.length > 0 && fullMatch[0].score >= 0.8) {
+    return [fullMatch[0]];
+  }
+
+  // Extract potential location phrases using various patterns
+  const words = message.split(/[\s,]+/);
+
+  // Try individual words and word combinations
+  for (let i = 0; i < words.length; i++) {
+    // Single word - use lower threshold (0.7) since single words like "riviera" should match
+    const singleWord = words[i].replace(/[^a-zA-Z\u00C0-\u024F]/g, ''); // Keep unicode letters
+    if (singleWord.length >= 3) {
+      const matches = searchLocation(singleWord);
+      for (const match of matches) {
+        if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
+          allMatches.push(match);
+        }
+      }
+    }
+
+    // Two-word combinations
+    if (i < words.length - 1) {
+      const twoWords = `${words[i]} ${words[i + 1]}`.replace(/[^a-zA-Z\u00C0-\u024F\s]/g, '');
+      if (twoWords.length >= 5) {
+        const matches = searchLocation(twoWords);
+        for (const match of matches) {
+          if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
+            allMatches.push(match);
+          }
+        }
+      }
+    }
+
+    // Three-word combinations
+    if (i < words.length - 2) {
+      const threeWords = `${words[i]} ${words[i + 1]} ${words[i + 2]}`.replace(/[^a-zA-Z\u00C0-\u024F\s]/g, '');
+      if (threeWords.length >= 7) {
+        const matches = searchLocation(threeWords);
+        for (const match of matches) {
+          if (match.score >= 0.7 && !allMatches.some(m => m.region.name === match.region.name)) {
+            allMatches.push(match);
+          }
+        }
+      }
+    }
+  }
+
+  // Sort by score and return top matches
+  allMatches.sort((a, b) => b.score - a.score);
+  return allMatches.slice(0, 3); // Return top 3 matches
+}
+
+/**
+ * Build system prompt for prospect onboarding chat
+ * @param preferences - User's gathered preferences
+ * @param matchedLocations - Pre-resolved locations from the location registry
+ */
+function buildProspectSystemPrompt(
+  preferences: ProspectPreferences,
+  matchedLocations?: LocationSearchResult[]
+): string {
   const hasPreferences = Object.keys(preferences).some(
     key => preferences[key as keyof ProspectPreferences] !== undefined
   );
@@ -101,9 +176,81 @@ IMPORTANT:
 - Keep the conversation flowing naturally - don't overwhelm with too many legs at once
 - If the user shares details about themselves, acknowledge and use that information
 
+## CRITICAL: NO HALLUCINATION RULE
+
+**YOU MUST ONLY REFERENCE LEGS THAT WERE RETURNED FROM TOOL CALLS.**
+
+- NEVER invent, fabricate, or imagine sailing legs or journeys
+- NEVER create fictional leg names, UUIDs, dates, durations, or any other details
+- NEVER describe specific legs (with names, durations, descriptions) that weren't in the tool results
+- ONLY use the exact leg information (ID, name, dates, locations) provided in tool results
+- The [[leg:UUID:Name]] format MUST use the exact UUID and name from the tool results
+
+**WHEN TOOL RETURNS 0 RESULTS OR AN ERROR:**
+- Say honestly: "I couldn't find any sailing legs matching your criteria in that area."
+- Do NOT list fictional alternatives like "Mediterranean Breeze - 7 Days" or similar made-up legs
+- Do NOT describe what legs "might" exist or "would be available"
+- Instead, suggest: trying different dates, expanding the search area, or checking back later
+- You can describe the REGION (e.g., "The French Riviera is beautiful for sailing") but NOT specific legs
+
+**EXAMPLE OF WHAT NOT TO DO (BAD):**
+"Here are some legs: Mediterranean Breeze - 7 Days, Coastal Explorer - 10 Days..."
+(These are made up and don't exist!)
+
+**EXAMPLE OF CORRECT RESPONSE WHEN NO RESULTS:**
+"I searched the French Riviera area but couldn't find any available sailing legs matching your dates. This could mean trips haven't been posted yet for that period. Would you like me to try different dates, or search a broader Mediterranean area?"
+
+**VIOLATION OF THIS RULE CREATES A TERRIBLE USER EXPERIENCE - USERS CANNOT REGISTER FOR LEGS THAT DON'T EXIST.**
+
+## REGISTRATION INTENT DETECTION
+
+When a user expresses intent to register or join a sailing leg, you must guide them through the signup process.
+
+**Registration intent phrases to detect:**
+- "I want to register for..."
+- "I'd like to join..."
+- "How do I sign up for..."
+- "I want to book..."
+- "Can I register..."
+- "Sign me up for..."
+- "I'm interested in joining..."
+- "How do I apply for..."
+
+**When registration intent is detected:**
+1. Acknowledge their interest enthusiastically
+2. Explain that to register, they'll need to create an account first
+3. Tell them: "To register for this leg, you'll need to create an account first. Click the **Sign up** button above to get started - it only takes a minute! Your sailing preferences from our conversation will be saved to your profile automatically."
+4. Mention the benefits: saved preferences, ability to register for multiple legs, communication with boat owners
+5. If they have specific questions about the leg, answer those too
+
+**Example response when user wants to register:**
+"Great choice! [Leg Name] looks perfect for you! 🌊
+
+To register for this leg, you'll need to create a free account first. Click the **Sign up** button at the top of our chat to get started - it only takes a minute!
+
+The good news is that all the sailing preferences we've discussed will be automatically saved to your profile, so boat owners can see you're a great match.
+
+Once you're signed up, you can register for this leg and reach out to the skipper with any questions. Would you like to know more about what to expect on this particular journey while you sign up?"
+
+${matchedLocations && matchedLocations.length > 0 ? `
+## PRE-RESOLVED LOCATIONS - COPY THESE TOOL CALLS EXACTLY
+
+The following locations were detected and pre-resolved. **COPY THE TOOL CALL EXACTLY AS SHOWN - do not retype the coordinates manually to avoid typos.**
+
+${matchedLocations.map(match => `**${match.region.name}** (confidence: ${Math.round(match.score * 100)}%)
+
+READY-TO-USE TOOL CALL (copy this exactly, just add your date filters):
+\`\`\`tool_call
+{"name": "search_legs_by_location", "arguments": {"departureBbox": {"minLng": ${match.region.bbox.minLng}, "minLat": ${match.region.bbox.minLat}, "maxLng": ${match.region.bbox.maxLng}, "maxLat": ${match.region.bbox.maxLat}}, "departureDescription": "${match.region.name}", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD"}}
+\`\`\`
+`).join('\n')}
+**CRITICAL: Copy the departureBbox object exactly as shown above. Do NOT retype the numbers manually - this causes typos like missing maxLat.**
+` : ''}
 ## LOCATION-BASED SEARCH (CRITICAL)
 
 When users mention locations, you MUST resolve them to geographic bounding boxes and use the \`search_legs_by_location\` tool.
+${matchedLocations && matchedLocations.length > 0 ? '\n**For the locations listed in PRE-RESOLVED LOCATIONS above, use those exact bounding boxes.**\n' : ''}
+For other locations not pre-resolved above, use your geographic knowledge to create appropriate bounding boxes:
 
 **How to resolve locations to bounding boxes:**
 You have geographic knowledge of sailing regions. Convert location names to bounding box coordinates:
@@ -171,11 +318,85 @@ IMPORTANT: Always use a tool when the user mentions wanting to sail somewhere or
 }
 
 /**
+ * Experience level definitions
+ */
+const EXPERIENCE_LEVEL_DEFINITIONS = {
+  1: {
+    name: 'Beginner',
+    description: 'New to sailing or has only been on a few day sails. Learning basic terminology and boat handling.',
+    skills: 'Basic understanding of wind direction, can assist with simple tasks under supervision.',
+  },
+  2: {
+    name: 'Competent Crew',
+    description: 'Has sailing experience and can handle various crew duties confidently. Comfortable in moderate conditions.',
+    skills: 'Can helm in fair weather, assist with sail changes, handle lines, and stand watches.',
+  },
+  3: {
+    name: 'Coastal Skipper',
+    description: 'Experienced sailor who can skipper a yacht safely in coastal waters during daylight and fair weather.',
+    skills: 'Navigation, passage planning, weather interpretation, crew management, can handle most coastal conditions.',
+  },
+  4: {
+    name: 'Offshore Skipper',
+    description: 'Highly experienced sailor capable of offshore passages including ocean crossings and challenging conditions.',
+    skills: 'Advanced navigation, heavy weather sailing, emergency procedures, long-distance passage planning, crew leadership.',
+  },
+};
+
+/**
+ * Risk level definitions
+ */
+const RISK_LEVEL_DEFINITIONS = {
+  'Coastal sailing': {
+    description: 'Sailing within sight of land or short distances between ports. Generally calmer conditions and easier access to shelter.',
+    typical_conditions: 'Day sails, short coastal hops, protected waters. Usually within VHF range of coast guard.',
+    experience_recommended: 'Beginner to Competent Crew',
+  },
+  'Offshore sailing': {
+    description: 'Passages that take you out of sight of land for extended periods. Requires self-sufficiency and good weather planning.',
+    typical_conditions: 'Multi-day passages, open water crossings, variable weather conditions. May be days from nearest port.',
+    experience_recommended: 'Coastal Skipper or above',
+  },
+  'Extreme sailing': {
+    description: 'Challenging conditions including high latitude sailing, ocean crossings, or expeditions to remote areas.',
+    typical_conditions: 'Heavy weather, ice navigation, very long passages, limited rescue options. Weeks from nearest port.',
+    experience_recommended: 'Offshore Skipper with specific experience',
+  },
+};
+
+/**
+ * Available sailing skills
+ */
+const SAILING_SKILLS = [
+  'Helming',
+  'Navigation',
+  'Sail trimming',
+  'Anchoring',
+  'Line handling',
+  'Winching',
+  'Docking/Mooring',
+  'Weather forecasting',
+  'Diesel engine maintenance',
+  'Electrical systems',
+  'Plumbing/Watermaker',
+  'Cooking/Provisioning',
+  'First aid',
+  'Radio operation (VHF)',
+  'Radar operation',
+  'Spinnaker handling',
+  'Heavy weather sailing',
+  'Night sailing',
+  'Man overboard recovery',
+  'Emergency procedures',
+];
+
+/**
  * Execute prospect tool calls
  */
 async function executeProspectTools(
   supabase: SupabaseClient,
-  toolCalls: ToolCall[]
+  toolCalls: ToolCall[],
+  authenticatedUserId?: string | null
 ): Promise<Array<{ name: string; result: unknown; error?: string }>> {
   const results: Array<{ name: string; result: unknown; error?: string }> = [];
 
@@ -185,6 +406,167 @@ async function executeProspectTools(
 
     try {
       const args = toolCall.arguments as Record<string, unknown>;
+
+      // Definition tools (public)
+      if (toolCall.name === 'get_experience_level_definitions') {
+        results.push({
+          name: toolCall.name,
+          result: EXPERIENCE_LEVEL_DEFINITIONS,
+        });
+        continue;
+      }
+
+      if (toolCall.name === 'get_risk_level_definitions') {
+        results.push({
+          name: toolCall.name,
+          result: RISK_LEVEL_DEFINITIONS,
+        });
+        continue;
+      }
+
+      if (toolCall.name === 'get_skills_definitions') {
+        results.push({
+          name: toolCall.name,
+          result: {
+            skills: SAILING_SKILLS,
+            note: 'These are common sailing skills. Users can also add custom skills.',
+          },
+        });
+        continue;
+      }
+
+      // Authenticated user tools
+      if (toolCall.name === 'get_profile_completion_status') {
+        if (!authenticatedUserId) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: 'User must be authenticated to get profile completion status',
+          });
+          continue;
+        }
+
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authenticatedUserId)
+          .single();
+
+        if (error) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: `Failed to get profile: ${error.message}`,
+          });
+          continue;
+        }
+
+        const completionStatus = {
+          filledFields: [] as string[],
+          missingFields: [] as string[],
+          completionPercentage: 0,
+        };
+
+        const requiredFields = ['full_name', 'user_description', 'sailing_experience', 'risk_level', 'skills'];
+        const optionalFields = ['sailing_preferences', 'certifications', 'phone'];
+
+        for (const field of requiredFields) {
+          const value = profile?.[field];
+          if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+            completionStatus.filledFields.push(field);
+          } else {
+            completionStatus.missingFields.push(field);
+          }
+        }
+
+        for (const field of optionalFields) {
+          const value = profile?.[field];
+          if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+            completionStatus.filledFields.push(field);
+          }
+        }
+
+        const totalFields = requiredFields.length;
+        const filledRequired = requiredFields.filter(f => completionStatus.filledFields.includes(f)).length;
+        completionStatus.completionPercentage = Math.round((filledRequired / totalFields) * 100);
+
+        results.push({
+          name: toolCall.name,
+          result: {
+            ...completionStatus,
+            profile: {
+              full_name: profile?.full_name,
+              user_description: profile?.user_description,
+              sailing_experience: profile?.sailing_experience,
+              risk_level: profile?.risk_level,
+              skills: profile?.skills,
+              sailing_preferences: profile?.sailing_preferences,
+              certifications: profile?.certifications,
+            },
+          },
+        });
+        continue;
+      }
+
+      if (toolCall.name === 'update_user_profile') {
+        if (!authenticatedUserId) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: 'User must be authenticated to update profile',
+          });
+          continue;
+        }
+
+        // Build update object from provided fields
+        const updates: Record<string, unknown> = {};
+        const allowedFields = [
+          'full_name', 'user_description', 'sailing_experience',
+          'risk_level', 'skills', 'sailing_preferences', 'certifications'
+        ];
+
+        for (const field of allowedFields) {
+          if (args[field] !== undefined) {
+            updates[field] = args[field];
+          }
+        }
+
+        if (Object.keys(updates).length === 0) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: 'No valid fields provided to update',
+          });
+          continue;
+        }
+
+        updates.updated_at = new Date().toISOString();
+
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', authenticatedUserId);
+
+        if (error) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: `Failed to update profile: ${error.message}`,
+          });
+          continue;
+        }
+
+        log('Profile updated successfully:', updates);
+        results.push({
+          name: toolCall.name,
+          result: {
+            success: true,
+            updatedFields: Object.keys(updates).filter(k => k !== 'updated_at'),
+            message: 'Profile updated successfully',
+          },
+        });
+        continue;
+      }
 
       if (toolCall.name === 'search_legs') {
         // Text-based search using shared utilities
@@ -263,6 +645,9 @@ async function executeProspectTools(
 
         const searchResult = await searchLegsByBbox(supabase, searchOptions);
         log('Found legs:', searchResult.count);
+        if (searchResult.dateAvailability) {
+          log('Date availability info:', searchResult.dateAvailability);
+        }
         results.push({
           name: toolCall.name,
           result: {
@@ -271,6 +656,7 @@ async function executeProspectTools(
             searchedDeparture: searchResult.searchedDeparture,
             searchedArrival: searchResult.searchedArrival,
             message: searchResult.message,
+            dateAvailability: searchResult.dateAvailability,
           },
         });
 
@@ -284,6 +670,57 @@ async function executeProspectTools(
   }
 
   return results;
+}
+
+/**
+ * Validate and filter leg references in AI response content.
+ * Removes any [[leg:UUID:Name]] references that don't match valid leg IDs from tool results.
+ * This prevents hallucinated legs from appearing as clickable links.
+ */
+function validateAndFilterLegReferences(
+  content: string,
+  validLegIds: Set<string>
+): { filteredContent: string; removedCount: number } {
+  const legRefRegex = /\[\[leg:([a-f0-9-]+):([^\]]+)\]\]/gi;
+  let removedCount = 0;
+
+  const filteredContent = content.replace(legRefRegex, (match, uuid, name) => {
+    if (validLegIds.has(uuid)) {
+      return match; // Keep valid references
+    } else {
+      removedCount++;
+      // Replace with just the name (no link) so the text still makes sense
+      return name;
+    }
+  });
+
+  return { filteredContent, removedCount };
+}
+
+/**
+ * Detect potential plain-text hallucinated leg descriptions.
+ * Returns true if the content appears to describe specific legs when none should exist.
+ * This is a heuristic check - not perfect but catches common patterns.
+ */
+function detectPlainTextHallucination(content: string, hasValidLegs: boolean): boolean {
+  if (hasValidLegs) return false; // If we have valid legs, descriptions are expected
+
+  // Patterns that suggest the AI is describing specific (fake) legs
+  const hallucinationPatterns = [
+    /\b\d+[-\s]?days?\b.*(?:trip|cruise|journey|adventure|sailing)/i,  // "7 days trip", "10-day cruise"
+    /(?:trip|cruise|journey|adventure|leg).*\b\d+[-\s]?days?\b/i,      // "trip - 7 days"
+    /^[-•*]\s*[A-Z][^-\n]+[-–]\s*\d+\s*[Dd]ays?/m,                     // Bullet: "- Mediterranean Breeze - 7 Days"
+    /here\s+(?:are|is)\s+(?:a\s+)?(?:few|some|the)\s+legs?\b/i,        // "Here are some legs"
+    /(?:found|discovered|have)\s+(?:a\s+)?(?:few|some|these)\s+(?:great|perfect|ideal)?\s*(?:sailing\s+)?(?:legs?|options?|trips?)/i,
+  ];
+
+  for (const pattern of hallucinationPatterns) {
+    if (pattern.test(content)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -341,13 +778,66 @@ export async function prospectChat(
   log('📥 USER MESSAGE:', request.message);
   log('📋 Session ID:', request.sessionId || '(new session)');
   log('📜 Conversation history length:', request.conversationHistory?.length || 0);
+  log('👤 Profile completion mode:', request.profileCompletionMode || false);
+  log('🔐 Authenticated user ID:', request.authenticatedUserId || '(none)');
 
   const sessionId = request.sessionId || `prospect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   const preferences = request.gatheredPreferences || {};
   const history = request.conversationHistory || [];
+  const authenticatedUserId = request.authenticatedUserId || null;
+  const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
 
-  // Build prompts
-  const systemPrompt = buildProspectSystemPrompt(preferences);
+  // Extract and match locations from the user's message against our registry
+  const matchedLocations = extractMatchedLocations(request.message);
+  if (matchedLocations.length > 0) {
+    log('📍 PRE-RESOLVED LOCATIONS:', matchedLocations.map(m => `${m.region.name} (${Math.round(m.score * 100)}%)`));
+  }
+
+  // Build prompts with pre-resolved locations
+  let systemPrompt = buildProspectSystemPrompt(preferences, matchedLocations);
+
+  // Add profile completion instructions if in that mode
+  if (isProfileCompletionMode) {
+    systemPrompt += `
+
+## PROFILE COMPLETION MODE
+
+You are now helping an authenticated user complete their profile after signing up. The user's preferences from your previous conversation have been gathered.
+
+**Your goals in this mode:**
+1. Welcome the user back and acknowledge they've signed up
+2. Summarize what you know about their sailing preferences
+3. Help them fill in any missing profile fields
+4. Use the \`update_user_profile\` tool to save their information
+5. Show profile completion progress
+
+**Available profile tools:**
+- \`get_profile_completion_status\` - Check which fields are filled and missing
+- \`update_user_profile\` - Save profile field updates
+- \`get_experience_level_definitions\` - Explain experience levels if needed
+- \`get_risk_level_definitions\` - Explain risk levels if needed
+- \`get_skills_definitions\` - Show available skills
+
+**Important fields to complete:**
+- full_name (required)
+- user_description (a short bio about their sailing background)
+- sailing_experience (1-4 scale)
+- risk_level (array of comfort zones)
+- skills (array of sailing skills)
+- sailing_preferences (free text about what they're looking for)
+- certifications (optional, free text)
+
+**Workflow:**
+1. First, call \`get_profile_completion_status\` to see current state
+2. Based on gathered preferences, offer to save them to profile
+3. Ask for any critical missing info (like full_name)
+4. Use \`update_user_profile\` to save confirmed values
+5. After updating, remind user they can continue to the full profile page for more detailed editing
+
+**Example interaction:**
+"Great news - your account is set up! Based on our chat, I know you're a [competent crew] looking for [adventure sailing]. Would you like me to save this to your profile? I just need your full name to complete the basics."`;
+  }
+
   const toolInstructions = buildToolInstructions();
   const fullSystemPrompt = systemPrompt + '\n\n' + toolInstructions;
 
@@ -417,7 +907,7 @@ export async function prospectChat(
 
     // Execute tools
     allToolCalls.push(...toolCalls);
-    const toolResults = await executeProspectTools(supabase, toolCalls);
+    const toolResults = await executeProspectTools(supabase, toolCalls, authenticatedUserId);
 
     log('');
     log('📊 TOOL RESULTS:');
@@ -437,17 +927,46 @@ export async function prospectChat(
     // Add tool results for next iteration using shared utility
     const toolResultsText = formatToolResultsForAI(toolResults);
 
+    // Check if any legs were found in the results
+    const foundLegsCount = toolResults.reduce((count, r) => {
+      const data = r.result as { legs?: unknown[] } | null;
+      return count + (data?.legs?.length || 0);
+    }, 0);
+
+    // Build context message with appropriate guidance based on results
+    let contextMessage = `Tool results:\n${toolResultsText}\n\n`;
+    if (foundLegsCount === 0) {
+      contextMessage += `IMPORTANT: The search returned 0 legs. Do NOT make up or describe fictional legs. Honestly tell the user no matching legs were found and suggest alternatives (different dates, broader area, etc.).\n\n`;
+    }
+    contextMessage += `Now provide a helpful response to the user. ${foundLegsCount > 0 ? 'Format any legs as [[leg:UUID:Name]] using ONLY the exact UUIDs and names from the results above.' : 'Do NOT list any specific leg names since none were found.'}`;
+
     currentMessages.push(
       { role: 'assistant', content: result.text },
-      { role: 'user', content: `Tool results:\n${toolResultsText}\n\nNow provide a helpful response to the user. Remember to format any legs as [[leg:UUID:Name]].` }
+      { role: 'user', content: contextMessage }
     );
   }
 
-  // Create response message
+  // Validate and filter leg references to prevent hallucinated legs
+  // Only allow leg references that were actually returned from tool calls
+  const validLegIds = new Set(allLegRefs.map(leg => leg.id));
+  const { filteredContent, removedCount } = validateAndFilterLegReferences(finalContent, validLegIds);
+
+  if (removedCount > 0) {
+    log(`⚠️ HALLUCINATION DETECTED: Removed ${removedCount} invalid leg reference(s) from AI response`);
+  }
+
+  // Check for plain-text hallucinations (describing fake legs without UUID format)
+  const hasPlainTextHallucination = detectPlainTextHallucination(filteredContent, allLegRefs.length > 0);
+  if (hasPlainTextHallucination) {
+    log(`⚠️ PLAIN-TEXT HALLUCINATION SUSPECTED: AI may be describing non-existent legs without proper references`);
+    // Note: We log this but don't auto-fix plain text as it's harder to do without breaking legitimate content
+  }
+
+  // Create response message with validated content
   const responseMessage: ProspectMessage = {
     id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     role: 'assistant',
-    content: finalContent,
+    content: filteredContent,
     timestamp: new Date().toISOString(),
     metadata: {
       toolCalls: allToolCalls.length > 0 ? allToolCalls.map(tc => ({

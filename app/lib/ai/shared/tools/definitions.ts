@@ -269,6 +269,99 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
+    name: 'get_experience_level_definitions',
+    description:
+      'Get definitions and descriptions for sailing experience levels (1-4). Use this to explain what each level means when helping users set their experience level.',
+    access: 'public',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_risk_level_definitions',
+    description:
+      'Get definitions and descriptions for sailing risk levels (Coastal, Offshore, Extreme). Use this to explain what each risk level means when helping users set their comfort zone.',
+    access: 'public',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'get_skills_definitions',
+    description:
+      'Get the list of available sailing skills that users can add to their profile. Use this when helping users identify and select their skills.',
+    access: 'public',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'update_user_profile',
+    description:
+      "Update fields in the current user's profile. Only available for authenticated users. Use this during profile completion to save gathered preferences. Only update fields the user has confirmed.",
+    access: 'authenticated',
+    category: 'action',
+    parameters: {
+      type: 'object',
+      properties: {
+        full_name: {
+          type: 'string',
+          description: "User's full name",
+        },
+        user_description: {
+          type: 'string',
+          description: "User's bio or description of their sailing background and goals",
+        },
+        sailing_experience: {
+          type: 'number',
+          description: 'Experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
+          minimum: 1,
+          maximum: 4,
+        },
+        risk_level: {
+          type: 'array',
+          description: 'Array of risk levels the user is comfortable with',
+          items: {
+            type: 'string',
+            enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],
+          },
+        },
+        skills: {
+          type: 'array',
+          description: 'Array of sailing skills the user has',
+          items: {
+            type: 'string',
+          },
+        },
+        sailing_preferences: {
+          type: 'string',
+          description: "User's sailing preferences and goals (free text)",
+        },
+        certifications: {
+          type: 'string',
+          description: "User's sailing certifications (free text)",
+        },
+      },
+    },
+  },
+  {
+    name: 'get_profile_completion_status',
+    description:
+      "Get the current user's profile completion status including which fields are filled and which are missing. Use this to guide users through completing their profile.",
+    access: 'authenticated',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'get_user_registrations',
     description: "Get the current user's registration history for sailing legs.",
     access: 'authenticated',

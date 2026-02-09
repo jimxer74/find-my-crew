@@ -130,9 +130,9 @@ export function Header() {
 
   // No longer tracking suggestions count
 
-  // Don't render header on welcome pages or minimal mode (prospect onboarding flow)
+  // Don't render header on homepage, welcome pages, or minimal mode (prospect onboarding flow)
   const isMinimalMode = searchParams?.get('minimal') === '1';
-  if (pathname?.startsWith('/welcome') || isMinimalMode) {
+  if (pathname === '/' || pathname?.startsWith('/welcome') || isMinimalMode) {
     return null;
   }
 

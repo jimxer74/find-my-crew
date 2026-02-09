@@ -295,9 +295,27 @@ export default function WelcomePage() {
                 {sessionLegs.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
                     {sessionLegs.map((leg) => (
-                      <span
+                      <button
                         key={leg.id}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const url = `/crew/dashboard?legId=${leg.id}`;
+                          const isMobileScreen = window.innerWidth < 768;
+                          if (isMobileScreen) {
+                            window.location.href = url;
+                          } else {
+                            // Desktop: open in new tab
+                            const anchor = document.createElement('a');
+                            anchor.href = url;
+                            anchor.target = '_blank';
+                            anchor.rel = 'noopener noreferrer';
+                            document.body.appendChild(anchor);
+                            anchor.click();
+                            document.body.removeChild(anchor);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 hover:border-white/30 transition-colors cursor-pointer"
+                        title={`View ${leg.name}`}
                       >
                         <svg
                           className="w-3 h-3 text-white/70"
@@ -319,7 +337,7 @@ export default function WelcomePage() {
                           />
                         </svg>
                         {leg.name.length > 20 ? leg.name.substring(0, 20) + '...' : leg.name}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 )}

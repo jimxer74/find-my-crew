@@ -15,6 +15,7 @@ import {
   ProspectSession,
   ProspectPreferences,
 } from '@/app/lib/ai/prospect/types';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 const STORAGE_KEY = 'prospect_session';
 const SESSION_EXPIRY_DAYS = 7;
@@ -51,6 +52,9 @@ interface ProspectChatState {
   viewedLegs: string[];
   isLoading: boolean;
   error: string | null;
+  profileCompletionMode: boolean;
+  isAuthenticated: boolean;
+  userId: string | null;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -110,6 +114,7 @@ function saveSession(session: ProspectSession): void {
 export function ProspectChatProvider({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const initialQueryProcessed = useRef(false);
+  const profileCompletionProcessed = useRef(false);
 
   const [state, setState] = useState<ProspectChatState>({
     sessionId: null,
@@ -118,6 +123,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     viewedLegs: [],
     isLoading: false,
     error: null,
+    profileCompletionMode: false,
+    isAuthenticated: false,
+    userId: null,
   });
 
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -177,6 +185,72 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     initSession();
   }, []);
 
+  // Detect profile completion mode and check authentication
+  useEffect(() => {
+    async function checkProfileCompletionMode() {
+      const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+
+      if (isProfileCompletion) {
+        const supabase = getSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          setState((prev) => ({
+            ...prev,
+            profileCompletionMode: true,
+            isAuthenticated: true,
+            userId: user.id,
+          }));
+          console.log('Profile completion mode activated for user:', user.id);
+        }
+      }
+    }
+
+    if (isInitialized) {
+      checkProfileCompletionMode();
+    }
+  }, [isInitialized, searchParams]);
+
+  // Auto-send profile completion message when entering profile completion mode
+  useEffect(() => {
+    if (
+      isInitialized &&
+      state.profileCompletionMode &&
+      state.isAuthenticated &&
+      !profileCompletionProcessed.current &&
+      !state.isLoading
+    ) {
+      profileCompletionProcessed.current = true;
+
+      // Create a welcome back message from the assistant
+      const welcomeMessage: ProspectMessage = {
+        id: `assistant_welcome_${Date.now()}`,
+        role: 'assistant',
+        content: `Welcome back! 🎉 Great news - your account is now active! I remember our conversation about your sailing interests. Let me help you complete your profile so boat owners can see what a great match you are.
+
+Based on our chat, here's what I've gathered about your preferences:
+${state.preferences.sailingGoals ? `• **Sailing goals:** ${state.preferences.sailingGoals}` : ''}
+${state.preferences.experienceLevel ? `• **Experience level:** ${state.preferences.experienceLevel}/4` : ''}
+${state.preferences.preferredLocations?.length ? `• **Preferred locations:** ${state.preferences.preferredLocations.join(', ')}` : ''}
+${state.preferences.skills?.length ? `• **Skills:** ${state.preferences.skills.join(', ')}` : ''}
+${state.preferences.riskLevels?.length ? `• **Comfort level:** ${state.preferences.riskLevels.join(', ')}` : ''}
+
+Would you like me to help you complete your profile with this information? I can also help you add:
+• Your full name (for boat owners to know who you are)
+• A short bio about your sailing background
+• Any certifications you have
+
+Just let me know what you'd like to do!`,
+        timestamp: new Date().toISOString(),
+      };
+
+      setState((prev) => ({
+        ...prev,
+        messages: [...prev.messages, welcomeMessage],
+      }));
+    }
+  }, [isInitialized, state.profileCompletionMode, state.isAuthenticated, state.isLoading, state.preferences]);
+
   // Save session when state changes
   useEffect(() => {
     if (state.sessionId) {
@@ -221,6 +295,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           message,
           conversationHistory: state.messages,
           gatheredPreferences: state.preferences,
+          // Include profile completion context for authenticated users
+          profileCompletionMode: state.profileCompletionMode,
+          userId: state.userId,
         }),
       });
 
@@ -250,7 +327,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         messages: prev.messages.filter((m) => m.id !== userMessage.id),
       }));
     }
-  }, [state.sessionId, state.messages, state.preferences]);
+  }, [state.sessionId, state.messages, state.preferences, state.profileCompletionMode, state.userId]);
 
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
@@ -273,6 +350,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       viewedLegs: [],
       isLoading: false,
       error: null,
+      profileCompletionMode: false,
+      isAuthenticated: false,
+      userId: null,
     });
     setIsReturningUser(false);
   }, []);

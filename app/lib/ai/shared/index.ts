@@ -45,6 +45,7 @@ export {
   findLegsInBbox,
   type LegSearchOptions,
   type LegSearchResult,
+  type DateAvailabilityInfo,
 } from './search-utils';
 
 // Tool registry (unified tool definitions and access control)

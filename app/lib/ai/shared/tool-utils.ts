@@ -135,6 +135,40 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     log('Parsed simple function call:', functionName);
   }
 
+  // Method 5: Inline tool_call format without code fences (e.g., "tool_call {"name": "...", ...}")
+  // Some models output this format without markdown code blocks
+  const inlineToolCallRegex = /tool_call\s*(\{[\s\S]*?"name"\s*:\s*"[^"]+[\s\S]*?\})\s*(?:\n|$)/gi;
+
+  while ((match = inlineToolCallRegex.exec(text)) !== null) {
+    // Skip if already processed
+    if (content.indexOf(match[0]) === -1) continue;
+
+    try {
+      let jsonStr = match[1].trim();
+
+      // Try to parse as-is first
+      let toolCallJson: any;
+      try {
+        toolCallJson = JSON.parse(jsonStr);
+      } catch {
+        // Try to fix truncated JSON
+        toolCallJson = tryFixAndParseJson(jsonStr);
+      }
+
+      if (toolCallJson && toolCallJson.name && typeof toolCallJson.name === 'string') {
+        toolCalls.push({
+          id: `tc_${Date.now()}_${toolCallIndex++}`,
+          name: toolCallJson.name,
+          arguments: toolCallJson.arguments || {},
+        });
+        content = content.replace(match[0], '').trim();
+        log('Parsed inline tool_call:', toolCallJson.name);
+      }
+    } catch (e) {
+      log('Failed to parse inline tool_call');
+    }
+  }
+
   return { content, toolCalls };
 }
 

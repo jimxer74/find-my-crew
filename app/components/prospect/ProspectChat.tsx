@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { ProspectMessage } from '@/app/lib/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
+import { InlineChatSignupForm } from './InlineChatSignupForm';
+import { InlineChatLoginForm } from './InlineChatLoginForm';
 
 /**
  * Parse message content and render inline leg references as clickable links.
@@ -114,6 +116,7 @@ export function ProspectChat() {
 
   const {
     messages,
+    preferences,
     isLoading,
     error,
     isReturningUser,
@@ -124,6 +127,7 @@ export function ProspectChat() {
   } = useProspectChat();
 
   const [inputValue, setInputValue] = useState('');
+  const [showAuthForm, setShowAuthForm] = useState<'signup' | 'login' | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -186,32 +190,64 @@ export function ProspectChat() {
     }
   };
 
+  // Handle join button click on leg cards - triggers signup flow
+  const handleJoinClick = (legId: string, legName: string) => {
+    // Show the signup form
+    setShowAuthForm('signup');
+    // Optionally scroll to the form
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Chat header with Start Fresh option */}
+      {/* Chat header with Start Fresh option and Sign up prompt */}
       {messages.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card">
-          <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card gap-2">
+          <span className="text-sm text-muted-foreground truncate">
             Exploring sailing opportunities
           </span>
-          <button
-            onClick={handleStartFresh}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Sign up button - show after some engagement */}
+            {messages.length >= 2 && !showAuthForm && (
+              <button
+                onClick={() => setShowAuthForm('signup')}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-md transition-opacity"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Sign up
+              </button>
+            )}
+            <button
+              onClick={handleStartFresh}
+              disabled={isLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
             >
-              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Start Fresh
-          </button>
+              <svg
+                className="w-3.5 h-3.5"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Start Fresh
+            </button>
+          </div>
         </div>
       )}
 
@@ -273,6 +309,7 @@ export function ProspectChat() {
                   <ChatLegCarousel
                     legs={message.metadata.legReferences}
                     onLegClick={(legId) => handleLegClick(legId, '')}
+                    onJoinClick={handleJoinClick}
                     compact={true}
                   />
                 </div>
@@ -331,6 +368,34 @@ export function ProspectChat() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Inline auth forms */}
+        {showAuthForm === 'signup' && (
+          <div className="flex justify-start">
+            <InlineChatSignupForm
+              preferences={preferences}
+              onSuccess={() => {
+                // Form shows success state internally
+                // Could redirect or refresh here if needed
+              }}
+              onCancel={() => setShowAuthForm(null)}
+              onSwitchToLogin={() => setShowAuthForm('login')}
+            />
+          </div>
+        )}
+
+        {showAuthForm === 'login' && (
+          <div className="flex justify-start">
+            <InlineChatLoginForm
+              onSuccess={() => {
+                setShowAuthForm(null);
+                router.refresh();
+              }}
+              onCancel={() => setShowAuthForm(null)}
+              onSwitchToSignup={() => setShowAuthForm('signup')}
+            />
           </div>
         )}
 

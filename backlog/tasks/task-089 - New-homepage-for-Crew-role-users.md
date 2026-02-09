@@ -50,7 +50,7 @@ Create a new homepage for Crew role users that displays sailing legs organized b
 ### Phase 1: Create New Page and Core Components
 
 #### 1.1 Create New Crew Homepage Route
-- **File:** `app/crew/home/page.tsx`
+- **File:** `app/crew/page.tsx`
 - New page that will become the default landing for crew users
 - Keep existing `/crew/dashboard` as the map-based browse page
 
@@ -108,7 +108,7 @@ Create a new homepage for Crew role users that displays sailing legs organized b
 ### Phase 4: Main Homepage Assembly
 
 #### 4.1 Implement Crew Home Page
-- **File:** `app/crew/home/page.tsx`
+- **File:** `app/crew/page.tsx`
 - Flow:
   1. Request user's location (with loading state)
   2. Sort `LOCATION_REGISTRY` by distance to user
@@ -117,7 +117,7 @@ Create a new homepage for Crew role users that displays sailing legs organized b
   5. Infinite scroll or "Show more regions" button
 
 #### 4.2 Update Navigation/Routing
-- Update auth redirect for crew users to `/crew/home` instead of `/crew/dashboard`
+- Update auth redirect for crew users to `/crew` instead of `/crew/dashboard`
 - Add navigation link to switch between home and map views
 - Keep existing map functionality at `/crew/dashboard`
 
@@ -209,7 +209,7 @@ app/
 ## Implementation Complete
 
 ### Files Created:
-- `app/crew/home/page.tsx` - Main crew homepage
+- `app/crew/page.tsx` - Main crew homepage
 - `app/components/crew/LegCarousel.tsx` - Horizontal scrolling leg cards
 - `app/components/crew/CruisingRegionSection.tsx` - Region section with header and carousel
 - `app/hooks/useUserLocation.ts` - Geolocation hook
@@ -217,10 +217,10 @@ app/
 
 ### Files Modified:
 - `app/lib/geocoding/locations.ts` - Added distance calculation utilities
-- `app/auth/login/page.tsx` - Updated redirect to /crew/home
-- `app/auth/callback/route.ts` - Updated redirect to /crew/home
-- `app/page.tsx` - Updated links to /crew/home
-- `app/components/NavigationMenu.tsx` - Updated links to /crew/home
+- `app/auth/login/page.tsx` - Updated redirect to /crew
+- `app/auth/callback/route.ts` - Updated redirect to /crew
+- `app/page.tsx` - Updated links to /crew
+- `app/components/NavigationMenu.tsx` - Updated links to /crew
 - `messages/en.json` - Added crewHome translations
 - `messages/fi.json` - Added crewHome translations
 

@@ -58,6 +58,10 @@ export interface ProspectChatRequest {
   message: string;
   conversationHistory?: ProspectMessage[];
   gatheredPreferences?: ProspectPreferences;
+  // Profile completion mode for authenticated users
+  profileCompletionMode?: boolean;
+  userId?: string;
+  authenticatedUserId?: string | null; // Set by server after auth verification
 }
 
 export interface ProspectChatResponse {

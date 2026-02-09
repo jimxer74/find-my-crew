@@ -45,7 +45,7 @@ export default function LoginPage() {
           if (profile.roles.includes('owner')) {
             redirectPath = '/owner/boats';
           } else if (profile.roles.includes('crew')) {
-            redirectPath = '/crew/home';
+            redirectPath = '/crew';
           }
         }
         // If no profile or no roles, redirect to home (can browse limited)

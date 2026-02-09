@@ -25,7 +25,7 @@ ordinal: 5000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Implement an AI-powered matching system that proactively suggests crew members to boat owners and voyage opportunities to crew members. The system runs as a scheduled job and presents matches for crew in /crew/home as a first LegCarousel in page (after that there are location proximity sorted cruising areas and the legs) and for owners in /owner/home, similar fashion as crew homepage, create a new CrewCarousel component for it to display good crew matches for owners. 
+Implement an AI-powered matching system that proactively suggests crew members to boat owners and voyage opportunities to crew members. The system runs as a scheduled job and presents matches for crew in /crew as a first LegCarousel in page (after that there are location proximity sorted cruising areas and the legs) and for owners in /owner/home, similar fashion as crew homepage, create a new CrewCarousel component for it to display good crew matches for owners. 
 
 ## Problem Statement
 Currently, crew members must browse published journeys and manually apply. Boat owners must wait for applications. This passive model misses potential good matches where neither party discovers the other.

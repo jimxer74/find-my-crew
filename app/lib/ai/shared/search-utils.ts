@@ -43,6 +43,17 @@ export interface LegSearchOptions {
 }
 
 /**
+ * Information about legs that exist spatially but were filtered out by dates
+ */
+export interface DateAvailabilityInfo {
+  spatialMatchCount: number;
+  earliestDate: string;
+  latestDate: string;
+  searchedStartDate: string;
+  searchedEndDate: string;
+}
+
+/**
  * Search result with metadata
  */
 export interface LegSearchResult {
@@ -53,6 +64,7 @@ export interface LegSearchResult {
   departureArea?: string;
   arrivalArea?: string;
   message?: string;
+  dateAvailability?: DateAvailabilityInfo; // Info about legs filtered out by dates
 }
 
 /**
@@ -176,6 +188,48 @@ export async function searchPublishedLegs(
   return {
     legs: formattedLegs,
     count: formattedLegs.length,
+  };
+}
+
+/**
+ * Helper function to get date range info for legs that exist in an area
+ * Used to inform users about when legs are available if their dates don't match
+ */
+async function getLegsDateRange(
+  supabase: SupabaseClient,
+  legIds: string[]
+): Promise<{ earliestDate: string; latestDate: string; count: number } | null> {
+  if (legIds.length === 0) return null;
+
+  const { data, error } = await supabase
+    .from('legs')
+    .select('start_date, end_date, crew_needed, journeys!inner(state)')
+    .in('id', legIds)
+    .eq('journeys.state', 'Published')
+    .gt('crew_needed', 0)
+    .order('start_date', { ascending: true });
+
+  if (error || !data || data.length === 0) {
+    log('getLegsDateRange error or no data:', error?.message);
+    return null;
+  }
+
+  const dates = data
+    .filter((leg) => leg.start_date)
+    .map((leg) => ({
+      start: new Date(leg.start_date),
+      end: leg.end_date ? new Date(leg.end_date) : new Date(leg.start_date),
+    }));
+
+  if (dates.length === 0) return null;
+
+  const earliest = dates.reduce((min, d) => (d.start < min ? d.start : min), dates[0].start);
+  const latest = dates.reduce((max, d) => (d.end > max ? d.end : max), dates[0].end);
+
+  return {
+    earliestDate: earliest.toISOString().split('T')[0],
+    latestDate: latest.toISOString().split('T')[0],
+    count: data.length,
   };
 }
 
@@ -349,6 +403,41 @@ export async function searchLegsByBbox(
     });
   }
 
+  // Check if spatial matches were filtered out by dates
+  // This helps users understand that legs exist but not in their date range
+  let dateAvailability: DateAvailabilityInfo | undefined;
+  let message: string | undefined;
+
+  if (filteredLegs.length === 0 && matchingLegIds.length > 0 && (options.startDate || options.endDate)) {
+    log('Spatial matches filtered by dates - checking date availability');
+    const dateRange = await getLegsDateRange(supabase, matchingLegIds);
+
+    if (dateRange && dateRange.count > 0) {
+      const locationDesc = departureDescription || arrivalDescription || 'this area';
+      const searchedRange = options.startDate && options.endDate
+        ? `${formatDateForDisplay(options.startDate)} to ${formatDateForDisplay(options.endDate)}`
+        : options.startDate
+        ? `from ${formatDateForDisplay(options.startDate)} onwards`
+        : `until ${formatDateForDisplay(options.endDate!)}`;
+
+      const availableRange = dateRange.earliestDate === dateRange.latestDate
+        ? formatDateForDisplay(dateRange.earliestDate)
+        : `${formatDateForDisplay(dateRange.earliestDate)} to ${formatDateForDisplay(dateRange.latestDate)}`;
+
+      message = `I found ${dateRange.count} sailing ${dateRange.count === 1 ? 'leg' : 'legs'} in ${locationDesc}, but ${dateRange.count === 1 ? "it's" : "they're"} scheduled for ${availableRange}, which is outside your search dates (${searchedRange}). Would you like me to search with different dates?`;
+
+      dateAvailability = {
+        spatialMatchCount: dateRange.count,
+        earliestDate: dateRange.earliestDate,
+        latestDate: dateRange.latestDate,
+        searchedStartDate: options.startDate || '',
+        searchedEndDate: options.endDate || '',
+      };
+
+      log('Date availability info:', dateAvailability);
+    }
+  }
+
   return {
     legs: filteredLegs,
     count: filteredLegs.length,
@@ -356,7 +445,21 @@ export async function searchLegsByBbox(
     searchedArrival: arrivalDescription,
     departureArea: departureBbox ? describeBbox(departureBbox) : undefined,
     arrivalArea: arrivalBbox ? describeBbox(arrivalBbox) : undefined,
+    message,
+    dateAvailability,
   };
+}
+
+/**
+ * Format a date string for user-friendly display
+ */
+function formatDateForDisplay(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
 }
 
 /**

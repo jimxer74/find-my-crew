@@ -17,9 +17,14 @@ export function MainContent({ children }: MainContentProps) {
   const searchParams = useSearchParams();
 
   // Routes that don't have a header and shouldn't have top padding
-  const noHeaderRoutes = ['/welcome'];
+  // Exact match routes (e.g. homepage '/') and prefix match routes (e.g. '/welcome/*')
+  const noHeaderExactRoutes = ['/'];
+  const noHeaderPrefixRoutes = ['/welcome'];
   const isMinimalMode = searchParams?.get('minimal') === '1';
-  const hasHeader = !noHeaderRoutes.some(route => pathname?.startsWith(route)) && !isMinimalMode;
+  const isNoHeaderRoute =
+    noHeaderExactRoutes.includes(pathname || '') ||
+    noHeaderPrefixRoutes.some(route => pathname?.startsWith(route));
+  const hasHeader = !isNoHeaderRoute && !isMinimalMode;
 
   return (
     <div className={hasHeader ? 'min-h-screen pt-16' : 'min-h-screen'}>

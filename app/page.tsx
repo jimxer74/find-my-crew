@@ -1,254 +1,430 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useTranslations } from 'next-intl';
-import { useAuth } from './contexts/AuthContext';
-import { LoginModal } from './components/LoginModal';
-import { SignupModal } from './components/SignupModal';
-import { Footer } from './components/Footer';
-import { getSupabaseBrowserClient } from './lib/supabaseClient';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { Footer } from '@/app/components/Footer';
+import { LoginModal } from '@/app/components/LoginModal';
+import { SignupModal } from '@/app/components/SignupModal';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
-export default function Home() {
-  const t = useTranslations('home');
-  const tNav = useTranslations('navigation');
-  const tAuth = useTranslations('auth');
-  const { user } = useAuth();
+const STORAGE_KEY = 'prospect_session';
+const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
+
+export default function WelcomePage() {
+  const t = useTranslations('welcome');
   const router = useRouter();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [hasExistingSession, setHasExistingSession] = useState(false);
+  const [sessionType, setSessionType] = useState<'crew' | 'owner' | null>(null);
+  const [sessionContext, setSessionContext] = useState<string | null>(null);
+  const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
 
-  const loadUserRoles = useCallback(async () => {
-    if (!user) {
-      setUserRoles([]);
-      return;
-    }
-    
-    const supabase = getSupabaseBrowserClient();
-    const { data } = await supabase
-      .from('profiles')
-      .select('roles')
-      .eq('id', user.id)
-      .single();
-    
-    if (data && data.roles) {
-      setUserRoles(data.roles);
-    } else {
-      setUserRoles([]);
-    }
-  }, [user]);
-
+  // Check if user just signed up from AI assistant and redirect back
   useEffect(() => {
-    loadUserRoles();
-  }, [loadUserRoles]);
+    const checkAISignupRedirect = async () => {
+      try {
+        const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
+        if (!signupPending) return;
+
+        // Check if user is now authenticated
+        const supabase = getSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          // User is authenticated - clear flag and redirect to assistant for profile completion
+          localStorage.removeItem(AI_SIGNUP_FLAG);
+          console.log('AI signup detected - redirecting to assistant for profile completion');
+          router.push('/welcome/chat?profile_completion=true');
+        }
+      } catch (e) {
+        console.error('Failed to check AI signup redirect:', e);
+      }
+    };
+
+    checkAISignupRedirect();
+  }, [router]);
+
+  // Check for existing conversation on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const session = JSON.parse(stored);
+        // Check if session has messages
+        if (session.conversation && session.conversation.length > 0) {
+          setHasExistingSession(true);
+          // For now, all prospect sessions are 'crew' type
+          // Future: detect owner sessions from a different storage key
+          setSessionType('crew');
+
+          // Extract context from first user message or preferences
+          const firstUserMessage = session.conversation.find(
+            (msg: { role: string; content: string }) => msg.role === 'user'
+          );
+          if (firstUserMessage) {
+            // Truncate if too long
+            const content = firstUserMessage.content;
+            setSessionContext(content.length > 60 ? content.substring(0, 60) + '...' : content);
+          }
+
+          // Extract unique leg references from all messages
+          const legs = new Map<string, string>();
+          for (const msg of session.conversation) {
+            if (msg.metadata?.legReferences) {
+              for (const leg of msg.metadata.legReferences) {
+                if (leg.id && leg.name && !legs.has(leg.id)) {
+                  legs.set(leg.id, leg.name);
+                }
+              }
+            }
+          }
+          // Convert to array and limit to 4 legs
+          const legArray = Array.from(legs.entries()).map(([id, name]) => ({ id, name }));
+          setSessionLegs(legArray.slice(0, 4));
+        }
+      }
+    } catch (e) {
+      console.error('Failed to check session:', e);
+    }
+  }, []);
+
+  const handleContinueConversation = () => {
+    router.push('/welcome/chat');
+  };
+
+  const handleClearSession = async () => {
+    // Clear localStorage
+    localStorage.removeItem(STORAGE_KEY);
+    // Clear server cookie
+    try {
+      await fetch('/api/prospect/session', { method: 'DELETE' });
+    } catch (e) {
+      console.error('Failed to clear session cookie:', e);
+    }
+    // Reset state to show full welcome page
+    setHasExistingSession(false);
+    setSessionType(null);
+    setSessionContext(null);
+    setSessionLegs([]);
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    if (!query) return;
+
+    // Navigate to chat with the initial query
+    router.push(`/welcome/chat?q=${encodeURIComponent(query)}`);
+  };
 
   return (
-    <div className="min-h-screen">
-      {/* Background image with zoom effect */}
-      <div 
-        className="fixed inset-0 bg-cover bg-center homepage-bg-zoom -z-10"
+    <div className="min-h-screen flex flex-col">
+      {/* Background image - shared across both columns */}
+      <div
+        className="fixed inset-0 bg-cover bg-center -z-20"
         style={{
           backgroundImage: 'url(/homepage-2.jpg)',
         }}
       />
-      {/* Overlay for better text readability */}
-      <div className="fixed inset-0 bg-black/30 backdrop-blur-[1px] -z-10"></div>
-      
-      {/* Content wrapper with relative positioning */}
-      <div className="relative z-10">
 
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 md:py-14">
-          <div className="text-center items-center justify-center flex flex-col">
+      {/* Login button - fixed top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <button
+          onClick={() => setIsLoginModalOpen(true)}
+          className="px-4 py-2 min-h-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors font-medium"
+        >
+          {t('login')}
+        </button>
+      </div>
+
+      {/* Logo - top left */}
+      <div className="absolute top-4 left-4 z-50">
+        <Link href="/">
           <Image
-                src="/sailsmart_new_tp_dark.png"
-                alt="SailSmart"
-                width={220}
-                height={220}
-                className="object-contain drop-shadow-lg mb-4"
-              />
+            src="/sailsmart_new_tp_dark.png"
+            alt="SailSmart"
+            width={80}
+            height={80}
+            className="object-contain drop-shadow-2xl w-[50px] h-[50px] md:w-[80px] md:h-[80px]"
+          />
+        </Link>
+      </div>
 
-            <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold text-white mb-4 sm:mb-6 drop-shadow-lg px-2">
-              {userRoles.includes('owner') ? t('hero.titleOwner') : t('hero.titleCrew')}
-            </h2>
-            <p className="text-base sm:text-lg md:text-xl text-white/95 mb-6 sm:mb-8 max-w-2xl mx-auto drop-shadow-md px-2">
-              {t('hero.subtitle')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-2">
-            {user ? (
-              <>
+      {/* Main content - dual column layout or single column when session exists */}
+      <main className="flex-1 flex flex-col md:flex-row min-h-screen">
+        {/* Crew Column (Right on desktop, First on mobile) */}
+        <div className={`relative flex items-center justify-center p-6 md:p-12 ${
+          hasExistingSession && sessionType === 'crew'
+            ? 'flex-1 min-h-screen'
+            : 'flex-1 order-1 md:order-2 min-h-[50vh] md:min-h-screen'
+        }`}>
+          {/* Blue overlay for crew side - only show when dual column */}
+          {!(hasExistingSession && sessionType === 'crew') && (
+            <div className="absolute inset-0 bg-blue-900/60 backdrop-blur-[2px] -z-10" />
+          )}
+          {/* Lighter overlay for single column mode */}
+          {hasExistingSession && sessionType === 'crew' && (
+            <div className="absolute inset-0 bg-blue-900/40 backdrop-blur-[1px] -z-10" />
+          )}
 
-                <Link
-                  href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/home'}
-                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
+          <div className={`w-full text-center text-white ${
+            hasExistingSession && sessionType === 'crew' ? 'max-w-full sm:max-w-md md:max-w-2xl' : 'max-w-full sm:max-w-md'
+          }`}>
+            <div className="mb-4">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                <svg
+                  className="w-7 h-7 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys')}
-                </Link>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+              </div>
+            </div>
 
-                {user && (
-                  <Link
-                    href={userRoles.includes('owner') ? '/owner/registrations' : '/crew/registrations'  }
-                    className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
-                  >
-                    {userRoles.includes('owner') ? t('hero.myCrew') : t('hero.myRegistrations')}
-                  </Link>
-                )}
-              </>
-            ) : (
-              <>
-                <Link
-                  href="/crew/home"
-                  className="border border-primary text-primary px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-colors font-medium text-base sm:text-lg hover:bg-primary/10"
-                >
-                  {t('hero.browseJourneys')}
-                </Link>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
+              {t('crew.title')}
+            </h1>
+{/*}
+            <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
+              {t('crew.subtitle')}
+            </p>
+*/}      
+            <p className="text-sm md:text-base text-white/80 mb-6">
+              {t('crew.description')}
+            </p>
+
+            {/* Search input */}
+            <form onSubmit={handleSearch} className={`w-full mx-auto ${
+              hasExistingSession && sessionType === 'crew' ? 'max-w-full sm:max-w-sm md:max-w-lg' : 'max-w-full sm:max-w-sm'
+            }`}>
+              <div className="relative flex items-center">
+                <textarea
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSearch(e);
+                    }
+                  }}
+                  placeholder="Where and when do you want to sail?"
+                  rows={2}
+                  className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500"
+                />
                 <button
-                  onClick={() => setIsLoginModalOpen(true)}
-                  className="bg-primary text-primary-foreground px-6 sm:px-8 py-3 min-h-[44px] flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
+                  type="submit"
+                  disabled={!searchQuery.trim()}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Search"
                 >
-                  {t('hero.login')}
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="11" cy="11" r="8" strokeWidth="2" />
+                    <path strokeLinecap="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
+                  </svg>
                 </button>
-              </>
+              </div>
+            </form>
+
+            {/* Continue conversation link */}
+            {hasExistingSession && (
+              <div className={`w-full mx-auto mt-4 ${
+                sessionType === 'crew' ? 'max-w-full sm:max-w-sm md:max-w-lg' : 'max-w-full sm:max-w-sm'
+              }`}>
+                <div className="relative">
+                  <button
+                    onClick={handleContinueConversation}
+                    className="w-full px-4 py-3 pr-12 flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/25 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-white font-medium">Continue previous conversation</p>
+                      {sessionContext && (
+                        <p className="text-xs text-white/70 truncate">&quot;{sessionContext}&quot;</p>
+                      )}
+                    </div>
+                    <svg
+                      className="w-4 h-4 text-white/50 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                  {/* Clear session button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClearSession();
+                    }}
+                    className="absolute top-1 right-1 p-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/20 transition-colors"
+                    title="Clear and start over"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Leg badges */}
+                {sessionLegs.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
+                    {sessionLegs.map((leg) => (
+                      <button
+                        key={leg.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const url = `/crew/dashboard?legId=${leg.id}`;
+                          const isMobileScreen = window.innerWidth < 768;
+                          if (isMobileScreen) {
+                            window.location.href = url;
+                          } else {
+                            // Desktop: open in new tab
+                            const anchor = document.createElement('a');
+                            anchor.href = url;
+                            anchor.target = '_blank';
+                            anchor.rel = 'noopener noreferrer';
+                            document.body.appendChild(anchor);
+                            anchor.click();
+                            document.body.removeChild(anchor);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 hover:border-white/30 transition-colors cursor-pointer"
+                        title={`View ${leg.name}`}
+                      >
+                        <svg
+                          className="w-3 h-3 text-white/70"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        {leg.name.length > 20 ? leg.name.substring(0, 20) + '...' : leg.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="grid md:grid-cols-2 gap-6 sm:gap-12 lg:gap-16">
-          {/* For Owners */}
-          <div className="bg-card/90 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
-            <div className="w-16 h-16 mb-4 relative">
-              <Image
-                src="/sailsmart_new_logo_blue.png"
-                alt="Boat Owner"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <h3 className="text-2xl font-bold text-card-foreground mb-4">{t('forOwners.title')}</h3>
-            <p className="text-muted-foreground mb-6">
-              {t('forOwners.description')}
-            </p>
-            <ul className="space-y-3 text-muted-foreground">
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forOwners.feature1')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forOwners.feature2')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forOwners.feature3')}</span>
-              </li>
-            </ul>
-          </div>
+        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists */}
+        {!(hasExistingSession && sessionType === 'crew') && (
+          <div className="flex-1 relative order-2 md:order-1 min-h-[50vh] md:min-h-screen flex items-center justify-center p-6 md:p-12">
+            {/* Warm/amber overlay for owner side */}
+            <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
 
-          {/* For Crew */}
-          <div className="bg-card/90 backdrop-blur-sm rounded-xl shadow-xl p-6 sm:p-8 border border-border/20">
-            <div className="w-16 h-16 mb-4 relative">
-              <Image
-                src="/sailor_transparent.png"
-                alt="Crew Member"
-                fill
-                className="object-contain"
-              />
-            </div>
-            <h3 className="text-2xl font-bold text-card-foreground mb-4">{t('forCrew.title')}</h3>
-            <p className="text-muted-foreground mb-6">
-              {t('forCrew.description')}
-            </p>
-            <ul className="space-y-3 text-muted-foreground">
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forCrew.feature1')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forCrew.feature2')}</span>
-              </li>
-              <li className="flex items-start">
-                <span className="mr-2 text-primary">✓</span>
-                <span>{t('forCrew.feature3')}</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
+            <div className="max-w-md text-center text-white">
+              <div className="mb-4">
+                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                  <svg
+                    className="w-7 h-7 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="1.5"
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                </div>
+              </div>
 
-      {/* How It Works */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-        <h3 className="text-2xl sm:text-3xl font-bold text-center text-white mb-8 sm:mb-12 drop-shadow-lg px-2">{t('howItWorks.title')}</h3>
-        <div className="grid md:grid-cols-3 gap-6 sm:gap-8">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-              <span className="text-2xl font-bold text-white">1</span>
-            </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step1.title')}</h4>
-            <p className="text-white/90 drop-shadow-sm">
-              {t('howItWorks.step1.description')}
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-              <span className="text-2xl font-bold text-white">2</span>
-            </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step2.title')}</h4>
-            <p className="text-white/90 drop-shadow-sm">
-              {t('howItWorks.step2.description')}
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4 border border-white/30">
-              <span className="text-2xl font-bold text-white">3</span>
-            </div>
-            <h4 className="text-xl font-semibold text-white mb-2 drop-shadow-md">{t('howItWorks.step3.title')}</h4>
-            <p className="text-white/90 drop-shadow-sm">
-              {t('howItWorks.step3.description')}
-            </p>
-          </div>
-        </div>
-      </section>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
+                {t('owner.title')}
+              </h1>
 
-      {/* CTA Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
-        <div className="rounded-2xl p-6 sm:p-12 text-center bg-primary/80">
-          <h3 className="text-2xl sm:text-3xl font-bold text-primary-foreground mb-3 sm:mb-4 px-2">
-            {t('cta.title')}
-          </h3>
-          <p className="text-primary-foreground/90 mb-6 sm:mb-8 text-base sm:text-lg max-w-2xl mx-auto px-2">
-            {userRoles.includes('owner') ? t('cta.descriptionOwner') : t('cta.descriptionCrew')}
-          </p>
-          {user ? (
-            <Link
-              href={userRoles.includes('owner') ? '/owner/journeys' : '/crew/home'}
-              className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
-            >
-              {userRoles.includes('owner') ? t('hero.myJourneys') : t('hero.searchJourneys')}
-            </Link>
-          ) : (
-            <button
-              onClick={() => {
-                // On mobile, navigate to signup page; on desktop, open modal
-                  setIsSignupModalOpen(true);
-              }}
-              className="bg-card text-primary px-6 sm:px-8 py-3 min-h-[44px] inline-flex items-center justify-center rounded-lg transition-opacity font-medium text-base sm:text-lg hover:opacity-90"
-            >
-              {t('hero.signUp')}
-            </button>
-          )}
-        </div>
-      </section>
+              <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
+                {t('owner.subtitle')}
+              </p>
 
-        {/* Footer */}
-        <Footer />
-      </div>
+              <p className="text-sm md:text-base text-white/80 mb-8">
+                {t('owner.description')}
+              </p>
+
+              <button
+                disabled
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 min-h-[52px] bg-white/30 text-white/70 rounded-lg font-semibold text-lg cursor-not-allowed border border-white/20"
+              >
+                {t('owner.cta')}
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Modals */}
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}

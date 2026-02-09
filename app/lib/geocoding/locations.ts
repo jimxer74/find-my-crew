@@ -55,10 +55,25 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
   },
   {
     name: 'Greek Islands',
-    aliases: ['greece', 'aegean', 'cyclades', 'dodecanese', 'ionian islands', 'greek islands'],
+    aliases: [
+      'greece', 
+      'aegean', 
+      'cyclades', 
+      'dodecanese', 
+      'ionian islands', 
+      'greek islands',
+      'greek archipelago',
+      'aegean islands',
+      'hellenic islands'
+    ],
     category: 'mediterranean',
-    bbox: { minLng: 23.0, minLat: 35.0, maxLng: 28.0, maxLat: 39.5 },
-    description: 'Greek Islands in the Aegean Sea',
+    bbox: { 
+      minLng: 19.0, 
+      minLat: 34.5, 
+      maxLng: 30.0, 
+      maxLat: 41.0 
+    },
+    description: 'Greek and Greek Archipelago in the Aegean and Ionian Seas',
   },
   {
     name: 'Turkish Riviera',
@@ -406,12 +421,8 @@ export function searchLocation(query: string): LocationSearchResult[] {
   for (const region of LOCATION_REGISTRY) {
     // Check name
     const nameScore = calculateSimilarity(query, region.name);
-    if (nameScore > 0.4) {
-      results.push({ region, score: nameScore, matchedOn: 'name' });
-      continue;
-    }
 
-    // Check aliases
+    // Check ALL aliases and find the best match
     let bestAliasScore = 0;
     for (const alias of region.aliases) {
       const aliasScore = calculateSimilarity(query, alias);
@@ -419,8 +430,13 @@ export function searchLocation(query: string): LocationSearchResult[] {
         bestAliasScore = aliasScore;
       }
     }
-    if (bestAliasScore > 0.4) {
-      results.push({ region, score: bestAliasScore, matchedOn: 'alias' });
+
+    // Use the better score between name and best alias
+    const bestScore = Math.max(nameScore, bestAliasScore);
+    const matchedOn = nameScore >= bestAliasScore ? 'name' : 'alias';
+
+    if (bestScore > 0.4) {
+      results.push({ region, score: bestScore, matchedOn });
     }
   }
 

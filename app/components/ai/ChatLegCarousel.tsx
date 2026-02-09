@@ -24,6 +24,7 @@ export interface ChatLegReference {
 type ChatLegCarouselProps = {
   legs: ChatLegReference[];
   onLegClick?: (legId: string) => void;
+  onJoinClick?: (legId: string, legName: string) => void;
   compact?: boolean;
 };
 
@@ -63,6 +64,7 @@ function transformToLegListItem(leg: ChatLegReference): LegListItemData {
 export function ChatLegCarousel({
   legs,
   onLegClick,
+  onJoinClick,
   compact = true,
 }: ChatLegCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -159,10 +161,10 @@ export function ChatLegCarousel({
           msOverflowStyle: 'none',
         }}
       >
-        {transformedLegs.map((leg) => (
+        {transformedLegs.map((leg, index) => (
           <div
             key={leg.leg_id}
-            className={`flex-shrink-0 snap-start ${
+            className={`flex-shrink-0 snap-start relative ${
               compact ? 'w-[200px] sm:w-[220px]' : 'w-[calc(50%-0.5rem)] sm:w-[280px]'
             }`}
           >
@@ -182,6 +184,32 @@ export function ChatLegCarousel({
                 compact: compact,
               }}
             />
+            {/* Join button overlay */}
+            {onJoinClick && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onJoinClick(leg.leg_id, leg.leg_name);
+                }}
+                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
+                title={`Join ${legs[index]?.name || 'this leg'}`}
+              >
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  />
+                </svg>
+                Join
+              </button>
+            )}
           </div>
         ))}
       </div>
