@@ -1,10 +1,10 @@
 ---
 id: TASK-006.08
 title: 'Phase 4.2: Profile Completion Within Chat'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-09 14:03'
+updated_date: '2026-02-09 14:14'
 labels:
   - profile
   - phase-4
@@ -59,9 +59,48 @@ option b) OAuth (Facebook sign-up)
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AI shows gathered information after signup
-- [ ] #2 Missing fields requested in chat
-- [ ] #3 Profile updated via API
-- [ ] #4 Profile completion percentage calculated
-- [ ] #5 Option to continue to full profile page
+- [x] #1 AI shows gathered information after signup
+- [x] #2 Missing fields requested in chat
+- [x] #3 Profile updated via API
+- [x] #4 Profile completion percentage calculated
+- [x] #5 Option to continue to full profile page
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Notes (2026-02-09)
+
+### Redirect Logic
+- Added `ai_assistant_signup_pending` flag to localStorage when user starts signup from chat
+- Homepage checks for this flag and authenticated user, redirects to `/welcome/chat?profile_completion=true`
+
+### Profile Completion Mode
+- ProspectChatContext detects `profile_completion=true` param and checks authentication
+- When authenticated, sets `profileCompletionMode`, `isAuthenticated`, and `userId` state
+- Auto-generates welcome message with gathered preferences summary
+
+### New AI Tools Added
+- `get_experience_level_definitions` - Returns descriptions for experience levels 1-4
+- `get_risk_level_definitions` - Returns descriptions for Coastal/Offshore/Extreme sailing
+- `get_skills_definitions` - Returns list of available sailing skills
+- `update_user_profile` - Allows AI to update profile fields (full_name, user_description, sailing_experience, risk_level, skills, sailing_preferences, certifications)
+- `get_profile_completion_status` - Returns filled/missing fields and completion percentage
+
+### System Prompt Updates
+- Added PROFILE COMPLETION MODE section with instructions for authenticated users
+- AI guides users through completing profile, uses tools to save confirmed values
+
+### Components Created
+- `InlineChatProfileProgress.tsx` - Visual progress indicator with field checklist and link to full profile page
+
+### Files Modified
+- `app/components/prospect/InlineChatSignupForm.tsx` - Store signup flag
+- `app/page.tsx` - Check for signup flag and redirect
+- `app/contexts/ProspectChatContext.tsx` - Profile completion mode handling
+- `app/api/ai/prospect/chat/route.ts` - Authenticated user context
+- `app/lib/ai/prospect/service.ts` - New tools and profile completion prompt
+- `app/lib/ai/prospect/types.ts` - Extended request type
+- `app/lib/ai/shared/tools/definitions.ts` - New tool definitions
+- `app/lib/ai/shared/tools/types.ts` - Added min/max to parameter type
+<!-- SECTION:NOTES:END -->
