@@ -9,6 +9,7 @@ import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
+import { ProfileExtractionModal } from './ProfileExtractionModal';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -170,6 +171,7 @@ export function ProspectChat() {
     isReturningUser,
     isAuthenticated,
     hasExistingProfile,
+    userMessageCountAfterSignup,
     sendMessage,
     clearError,
     clearSession,
@@ -185,6 +187,7 @@ export function ProspectChat() {
   const [isNavigatingToCrew, setIsNavigatingToCrew] = useState(false);
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
+  const [showProfileExtractionModal, setShowProfileExtractionModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -197,6 +200,21 @@ export function ProspectChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Listen for fallback trigger events (from errors)
+  useEffect(() => {
+    const handleFallbackTrigger = () => {
+      if (isAuthenticated && !hasExistingProfile) {
+        console.log('[ProspectChat] 🔄 Fallback triggered - opening profile extraction modal');
+        setShowProfileExtractionModal(true);
+      }
+    };
+
+    window.addEventListener('triggerProfileExtractionFallback', handleFallbackTrigger);
+    return () => {
+      window.removeEventListener('triggerProfileExtractionFallback', handleFallbackTrigger);
+    };
+  }, [isAuthenticated, hasExistingProfile]);
+
   // Debug: Log authentication and profile state
   useEffect(() => {
     const shouldShowHeaderButton = messages.length > 0 && hasExistingProfile && isAuthenticated;
@@ -207,12 +225,14 @@ export function ProspectChat() {
       isAuthenticated,
       hasExistingProfile,
       messagesLength: messages.length,
+      userMessageCountAfterSignup,
       'Header button (when messages > 0)': shouldShowHeaderButton,
       'Welcome button (when messages === 0)': shouldShowWelcomeButton,
       'Bottom button': shouldShowBottomButton,
       'All conditions met': hasExistingProfile && isAuthenticated,
+      'Fallback badge should show': isAuthenticated && !hasExistingProfile && userMessageCountAfterSignup >= 1,
     });
-  }, [isAuthenticated, hasExistingProfile, messages.length]);
+  }, [isAuthenticated, hasExistingProfile, messages.length, userMessageCountAfterSignup]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -436,6 +456,59 @@ export function ProspectChat() {
                   disabled={isLoading}
                 />
               )}
+              {/* Show fallback suggestion badge after 3+ user messages (profile completion mode) */}
+              {/* Only show on the LAST assistant message to avoid showing it multiple times */}
+              {(() => {
+                const lastAssistantMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
+                const isLastAssistantMessage = message.id === lastAssistantMessage?.id;
+                const shouldShowBadge = 
+                  message.role === 'assistant' &&
+                  isAuthenticated &&
+                  !hasExistingProfile &&
+                  typeof userMessageCountAfterSignup === 'number' &&
+                  userMessageCountAfterSignup >= 1 &&
+                  isLastAssistantMessage;
+                
+                // Debug logging
+                if (message.role === 'assistant' && isAuthenticated && !hasExistingProfile) {
+                  console.log('[ProspectChat] 🔍 Fallback badge check:', {
+                    messageId: message.id,
+                    lastAssistantId: lastAssistantMessage?.id,
+                    isLastMessage: isLastAssistantMessage,
+                    userMessageCount: userMessageCountAfterSignup,
+                    shouldShow: shouldShowBadge,
+                    conditions: {
+                      isAssistant: message.role === 'assistant',
+                      isAuthenticated,
+                      noProfile: !hasExistingProfile,
+                      countOk: typeof userMessageCountAfterSignup === 'number' && userMessageCountAfterSignup >= 1,
+                      isLast: isLastAssistantMessage,
+                    },
+                  });
+                }
+                
+                return shouldShowBadge ? (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <button
+                      onClick={() => setShowProfileExtractionModal(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-lg transition-colors border border-amber-200 dark:border-amber-800"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                      I want to skip the Assistant and fill in my profile myself
+                    </button>
+                  </div>
+                ) : null;
+              })()}
               {/* Show "View Journeys" button and leg carousel after congratulations message (profile creation success) */}
               {message.role === 'assistant' && 
                (message.content.includes('Congratulations! Welcome to SailSmart!') || 
@@ -446,7 +519,7 @@ export function ProspectChat() {
                   {message.metadata?.legReferences && message.metadata.legReferences.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-border/50">
                       <p className="text-sm font-medium text-foreground mb-3">
-                        Here are the sailing opportunities matching your profile - Are you ready to register?
+                        Here you go - you are now ready to join these awesome sailing opportunities!
                       </p>
                       <ChatLegCarousel
                         legs={message.metadata.legReferences}
@@ -643,6 +716,20 @@ export function ProspectChat() {
         onSuccess={() => {
           // Refresh or show success message
           console.log('Registration successful!');
+        }}
+      />
+
+      {/* Profile extraction modal */}
+      <ProfileExtractionModal
+        isOpen={showProfileExtractionModal}
+        onClose={() => setShowProfileExtractionModal(false)}
+        messages={messages}
+        onSuccess={async () => {
+          // Profile saved successfully - clean up prospect session and redirect to profile
+          console.log('[ProspectChat] Profile saved via fallback - cleaning up session and redirecting');
+          await clearSession();
+          setShowProfileExtractionModal(false);
+          router.push('/profile');
         }}
       />
     </div>

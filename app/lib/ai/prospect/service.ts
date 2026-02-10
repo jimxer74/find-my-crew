@@ -393,6 +393,71 @@ function normalizeRiskLevel(value: unknown): string[] | null {
 }
 
 /**
+ * Normalize sailing_experience field to ensure it's a proper integer (1-4)
+ * Handles: text descriptions, numbers, null/undefined
+ * Maps: "Beginner" -> 1, "Competent Crew" -> 2, "Coastal Skipper" -> 3, "Offshore Skipper" -> 4
+ */
+function normalizeSailingExperience(value: unknown): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  
+  // If it's already a valid number, return it
+  if (typeof value === 'number') {
+    if (value >= 1 && value <= 4) {
+      return Math.round(value);
+    }
+    // Out of range, default to Competent Crew
+    log(`sailing_experience out of range (${value}), defaulting to 2`);
+    return 2;
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    
+    // First, try to extract a number if present (e.g., "2", "level 2", "experience 3")
+    const numMatch = trimmed.match(/\b([1-4])\b/);
+    if (numMatch) {
+      return parseInt(numMatch[1], 10);
+    }
+    
+    // Map text descriptions to numbers (case-insensitive)
+    const lowerValue = trimmed.toLowerCase();
+    
+    if (lowerValue.includes('beginner') || lowerValue.includes('new to sailing') || lowerValue.includes('just starting')) {
+      return 1;
+    } else if (lowerValue.includes('competent crew') || lowerValue.includes('competent') || 
+               lowerValue.includes('can steer') || lowerValue.includes('can reef') || 
+               lowerValue.includes('stand watch') || lowerValue.includes('crew member')) {
+      return 2;
+    } else if (lowerValue.includes('coastal skipper') || lowerValue.includes('coastal') ||
+               lowerValue.includes('can skipper') || lowerValue.includes('passage planning')) {
+      return 3;
+    } else if (lowerValue.includes('offshore skipper') || lowerValue.includes('offshore') ||
+               lowerValue.includes('ocean crossing') || lowerValue.includes('transatlantic') ||
+               lowerValue.includes('long distance')) {
+      return 4;
+    }
+    
+    // If no match found, try to infer from context
+    // Default to Competent Crew (2) if unclear, as it's the most common level
+    log(`Could not parse sailing_experience from text: "${trimmed}", defaulting to 2`);
+    return 2;
+  }
+  
+  // For any other type, try to convert to number
+  const numValue = Number(value);
+  if (!isNaN(numValue) && numValue >= 1 && numValue <= 4) {
+    return Math.round(numValue);
+  }
+  
+  // Default fallback
+  log(`Could not normalize sailing_experience: ${value}, defaulting to 2`);
+  return 2;
+}
+
+/**
  * Get registration requirements and auto-approval settings for a leg.
  * Used so the AI can guide the user through registration (with or without questions).
  */
@@ -660,6 +725,8 @@ async function executeProspectTools(
             // Normalize array fields that might come as JSON strings
             if (field === 'risk_level') {
               value = normalizeRiskLevel(value);
+            } else if (field === 'sailing_experience') {
+              value = normalizeSailingExperience(value);
             } else if (field === 'skills') {
               // Skills should be an array of skill objects with skill_name and description
               // CRITICAL: Validate that skill_name matches exactly with skills-config.json

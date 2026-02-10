@@ -64,6 +64,8 @@ interface ProspectChatState {
   consentGrantedForProfileCompletion: boolean;
   /** True if user has a profile (regardless of completion status) */
   hasExistingProfile: boolean;
+  /** Count of user messages sent after signup (for fallback strategy) */
+  userMessageCountAfterSignup: number;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -74,6 +76,8 @@ interface ProspectChatContextType extends ProspectChatState {
   approveAction: (messageId: string, action: PendingAction) => Promise<void>;
   cancelAction: (messageId: string) => void;
   isReturningUser: boolean;
+  /** Trigger fallback profile extraction modal */
+  triggerFallbackProfileExtraction: () => void;
 }
 
 const ProspectChatContext = createContext<ProspectChatContextType | null>(null);
@@ -118,6 +122,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     userProfile: null,
     consentGrantedForProfileCompletion: false,
     hasExistingProfile: false,
+    userMessageCountAfterSignup: 0,
   });
 
   // Keep stateRef in sync with state
@@ -235,12 +240,25 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             if (!shouldSetMessages) {
               console.log('[ProspectChatContext] ⚠️ Skipping message overwrite - messages already exist in state:', prev.messages.length);
             }
+            // Recalculate user message count after signup from loaded messages
+            // Count user messages that were sent after authentication (profile completion mode)
+            let loadedMessageCount = prev.userMessageCountAfterSignup;
+            if (shouldSetMessages && sessionToUse.conversation.length > 0) {
+              // Count user messages in the loaded conversation
+              // This is approximate - we can't know exactly when signup happened, but we count all user messages
+              // The counter will continue incrementing from here
+              const userMessagesInSession = sessionToUse.conversation.filter(m => m.role === 'user').length;
+              loadedMessageCount = userMessagesInSession;
+              console.log('[ProspectChatContext] 📊 Recalculated user message count from session:', loadedMessageCount);
+            }
+            
             return {
               ...prev,
               sessionId,
               messages: shouldSetMessages ? sessionToUse.conversation : prev.messages,
               preferences: preferencesToUse,
               viewedLegs: sessionToUse.viewedLegs,
+              userMessageCountAfterSignup: loadedMessageCount,
             };
           });
           setIsReturningUser(sessionToUse.conversation.length > 0);
@@ -710,6 +728,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const knownProfile = extractKnownProfile(user);
       profileCompletionProcessed.current = true;
 
+      // Recalculate user message count from existing messages when entering profile completion mode
+      const currentMessages = stateRef.current?.messages || [];
+      const userMessageCount = currentMessages.filter(m => m.role === 'user').length;
+
       setState((prev) => ({
         ...prev,
         profileCompletionMode: true,
@@ -719,7 +741,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         consentGrantedForProfileCompletion: true,
         isLoading: true,
         error: null,
+        userMessageCountAfterSignup: userMessageCount, // Initialize counter from existing messages
       }));
+      
+      console.log('[ProspectChatContext] 📊 Initialized user message count on profile completion mode:', userMessageCount);
 
       // Trigger profile completion via backend API (sends SYSTEM message server-side and returns AI response)
       // Load session from API instead of localStorage
@@ -837,6 +862,18 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
     console.log('[ProspectChatContext] Created user message:', userMessage);
 
+    // Increment user message counter after signup (for fallback strategy)
+    // Only count if user is authenticated and in profile completion mode
+    let newMessageCount = state.userMessageCountAfterSignup;
+    if (state.isAuthenticated && state.consentGrantedForProfileCompletion && !state.hasExistingProfile) {
+      newMessageCount = state.userMessageCountAfterSignup + 1;
+      setState((prev) => ({
+        ...prev,
+        userMessageCountAfterSignup: prev.userMessageCountAfterSignup + 1,
+      }));
+      console.log('[ProspectChatContext] 📊 User message count after signup:', newMessageCount);
+    }
+
     // CRITICAL: Get current messages from state directly (not ref) to ensure we have all previous messages
     // The ref might be stale or null, but state is always current
     // Use stateRef as fallback only if state is somehow unavailable
@@ -905,10 +942,36 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.userMessage || 'Failed to send message');
+        const error = new Error(errorData.userMessage || 'Failed to send message') as Error & { errorType?: string };
+        error.errorType = errorData.errorType;
+        throw error;
       }
 
       const data = await response.json();
+
+      // Check for tool errors in response (especially update_user_profile errors)
+      if (data.message?.metadata?.toolCalls) {
+        // Tool errors might be in a separate field or we need to check the message content
+        // For now, check if the message content indicates a profile update error
+        const messageContent = data.message.content || '';
+        const hasProfileError = 
+          messageContent.includes('failed to create profile') ||
+          messageContent.includes('failed to save profile') ||
+          messageContent.includes('issue saving your profile') ||
+          messageContent.includes('error saving') ||
+          messageContent.includes('invalid input syntax');
+        
+        if (hasProfileError && 
+            currentState.isAuthenticated && 
+            currentState.consentGrantedForProfileCompletion && 
+            !currentState.hasExistingProfile) {
+          console.log('[ProspectChatContext] 🔄 Auto-triggering fallback due to profile update error in message');
+          // Small delay to ensure message is displayed first
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('triggerProfileExtractionFallback'));
+          }, 1000);
+        }
+      }
 
       // Check if profile was successfully created - if so, clear all prospect data
       if (data.profileCreated === true) {
@@ -967,7 +1030,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         } : null;
         
         // CRITICAL: Update stateRef BEFORE setState to prevent useEffect from saving stale data
-        const clearedState = {
+        const clearedState: ProspectChatState = {
           sessionId: newSession?.sessionId || null,
           messages: congratulationsMessage ? [congratulationsMessage] : [], // Only the congratulations message with leg refs
           preferences: clearedPreferences, // Completely empty preferences object
@@ -981,14 +1044,15 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           userProfile: currentState.userProfile,
           consentGrantedForProfileCompletion: currentState.consentGrantedForProfileCompletion,
           hasExistingProfile: true, // Profile now exists
+          userMessageCountAfterSignup: currentState.userMessageCountAfterSignup, // Preserve counter
         };
         
         // Update ref immediately to prevent stale saves
         if (stateRef.current) {
-          stateRef.current = clearedState;
+          stateRef.current = { ...clearedState, userMessageCountAfterSignup: stateRef.current.userMessageCountAfterSignup };
         }
         
-        setState(clearedState);
+        setState({ ...clearedState, userMessageCountAfterSignup: stateRef.current?.userMessageCountAfterSignup || 0 });
         setIsReturningUser(false);
         console.log('[ProspectChatContext] ✅ All prospect data cleared (messages, preferences, skills, viewedLegs), profile creation complete. Showing congratulations message with', allPreviousLegRefs.length, 'leg references.');
         return;
@@ -1125,13 +1189,42 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       });
     } catch (error: any) {
       console.error('Prospect chat error:', error);
+      const errorMessage = error.message || 'Something went wrong. Please try again.';
+      const errorType = (error as any).errorType || 'unknown_error';
+      
+      // Get current state for fallback check
+      const currentStateForError = stateRef.current || state;
+      
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error.message || 'Something went wrong. Please try again.',
+        error: errorMessage,
         // Remove the optimistic user message on error
         messages: prev.messages.filter((m) => m.id !== userMessage.id),
       }));
+
+      // Auto-trigger fallback if:
+      // 1. User is authenticated and in profile completion mode
+      // 2. Error is timeout, network error, or update_user_profile tool error
+      const shouldTriggerFallback = 
+        currentStateForError.isAuthenticated && 
+        currentStateForError.consentGrantedForProfileCompletion && 
+        !currentStateForError.hasExistingProfile &&
+        (errorType === 'timeout' || 
+         errorType === 'network_error' ||
+         errorType === 'rate_limit' ||
+         errorMessage.toLowerCase().includes('update_user_profile') ||
+         errorMessage.toLowerCase().includes('failed to create profile') ||
+         errorMessage.toLowerCase().includes('failed to save profile') ||
+         errorMessage.toLowerCase().includes('invalid input syntax'));
+      
+      if (shouldTriggerFallback) {
+        console.log('[ProspectChatContext] 🔄 Auto-triggering fallback profile extraction due to error:', errorType, errorMessage);
+        // Small delay to ensure error message is displayed first
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('triggerProfileExtractionFallback'));
+        }, 1500);
+      }
     }
   }, []); // Empty dependency array - use refs for state values
 
@@ -1246,6 +1339,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       isLoading: false,
       error: null,
       profileCompletionMode: false,
+      userMessageCountAfterSignup: prev.userMessageCountAfterSignup, // Preserve counter
       // Preserve authentication state
       isAuthenticated: prev.isAuthenticated,
       userId: prev.userId,
@@ -1367,6 +1461,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
+  const triggerFallbackProfileExtraction = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('triggerProfileExtractionFallback'));
+  }, []);
+
   const value: ProspectChatContextType = {
     ...state,
     sendMessage,
@@ -1376,6 +1474,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     approveAction,
     cancelAction,
     isReturningUser,
+    triggerFallbackProfileExtraction,
   };
 
   return (
