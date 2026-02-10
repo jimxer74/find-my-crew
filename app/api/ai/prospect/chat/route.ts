@@ -110,11 +110,9 @@ export async function POST(request: NextRequest) {
       message,
       conversationHistory: body.conversationHistory,
       gatheredPreferences: body.gatheredPreferences,
-      // Include profile completion context if authenticated
       profileCompletionMode: body.profileCompletionMode,
       authenticatedUserId,
       userProfile: body.userProfile,
-      // Approved action from user confirmation
       approvedAction: body.approvedAction,
     });
 

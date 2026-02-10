@@ -43,15 +43,26 @@ export interface ProspectLegReference {
   boatImages?: string[];
 }
 
+/** Regex to extract prospect name from AI response for signup form prefill. Match [PROSPECT_NAME: ...] */
+export const PROSPECT_NAME_TAG_REGEX = /\[PROSPECT_NAME:\s*([^\]]+)\]/i;
+
 export interface ProspectPreferences {
-  experienceLevel?: number; // 1-4
-  riskLevels?: string[];
+  // Profile information
+  /** Full name shared in chat before signup; used to prefill the email signup form */
+  fullName?: string;
+  userDescription?: string; // Bio / about the user
+  experienceLevel?: number; // 1-4 (Beginner to Offshore Skipper)
+  riskLevels?: string[]; // Comfort zones: "Coastal sailing", "Offshore sailing", "Extreme sailing"
+  skills?: string[]; // Sailing skills
+  certifications?: string; // Sailing certifications (RYA, ASA, etc.)
+
+  // Sailing preferences
+  sailingGoals?: string; // What they're looking for in sailing
   preferredDates?: { start: string; end: string };
   preferredLocations?: string[]; // Deprecated: use departure/arrival locations
   departureLocations?: string[]; // Where user wants to start
   arrivalLocations?: string[]; // Where user wants to end
-  skills?: string[];
-  sailingGoals?: string;
+
   // Target leg for registration (when user clicks "Join" on a specific leg)
   targetLegId?: string;
   targetLegName?: string;

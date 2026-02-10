@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -8,7 +8,7 @@ type SignupModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
-  /** When provided, stores prospect preferences in user metadata and uses prospect redirect flow */
+  /** When provided, stores prospect preferences in user metadata and uses prospect redirect flow. fullName prefills the name field if the user shared it in chat. */
   prospectPreferences?: Record<string, unknown>;
 };
 
@@ -19,6 +19,17 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Prefill full name from prospect chat when user shared it before signup
+  const prefilledName =
+    (prospectPreferences?.fullName as string)?.trim() ||
+    (prospectPreferences?.full_name as string)?.trim() ||
+    '';
+  useEffect(() => {
+    if (isOpen && prefilledName) {
+      setFullName(prefilledName);
+    }
+  }, [isOpen, prefilledName]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,14 +66,21 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
       if (authError) throw authError;
 
       if (authData.user) {
-        // Set flag so the app knows to redirect to assistant after consent completion
+        // Set flag so the app knows to continue in profile completion mode
         if (prospectPreferences) {
           localStorage.setItem('ai_assistant_signup_pending', 'true');
         }
 
-        // Redirect to home page - ConsentSetupModal will appear there to collect consents
         onClose();
-        router.push('/');
+
+        // For prospect flow, stay on the chat page with profile_completion mode
+        // The consent modal will open on this page, and after consent the chat continues
+        if (prospectPreferences) {
+          router.push('/welcome/chat?profile_completion=true');
+        } else {
+          // Non-prospect signup - redirect to home page
+          router.push('/');
+        }
         router.refresh();
       }
     } catch (err: any) {

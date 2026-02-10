@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
 
     const legIds = registrations.map(r => r.leg_id);
 
-    // Get full leg details with joins
-    const { data: legsData, error: legsError } = await supabase
+    // Get full leg details with joins (filter by Published journey in code to avoid PostgREST filter issues)
+    const { data: legsDataRaw, error: legsError } = await supabase
       .from('legs')
       .select(`
         id,
@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
         journeys!inner (
           id,
           name,
+          state,
           skills,
           risk_level,
           cost_model,
@@ -94,8 +95,7 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .in('id', legIds)
-      .eq('journeys.state', 'Published');
+      .in('id', legIds);
 
     if (legsError) {
       console.error('Error fetching leg details:', legsError);
@@ -106,7 +106,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!legsData || legsData.length === 0) {
+    const legsData = (legsDataRaw || []).filter(
+      (leg: any) => leg.journeys?.state === 'Published'
+    );
+
+    if (legsData.length === 0) {
       return NextResponse.json({
         registrations: [],
         count: 0,
@@ -136,17 +140,21 @@ export async function GET(request: NextRequest) {
     
     // Fetch waypoints for each leg using the RPC function
     for (const legId of legIds) {
-      const { data: legWaypoints } = await supabase.rpc('get_leg_waypoints', {
-        leg_id_param: legId,
-      });
-      
-      if (legWaypoints && legWaypoints.length > 0) {
-        waypointsByLeg[legId] = legWaypoints;
+      try {
+        const { data: legWaypoints, error: wpError } = await supabase.rpc('get_leg_waypoints', {
+          leg_id_param: legId,
+        });
+        if (!wpError && legWaypoints && legWaypoints.length > 0) {
+          waypointsByLeg[legId] = legWaypoints;
+        }
+      } catch (e) {
+        console.warn('Waypoints fetch failed for leg', legId, e);
       }
     }
 
     // Transform data to match LegDetailsPanel format
     const registrationsWithLegs = registrations.map((reg: any) => {
+      try {
       const leg = legsData?.find((l: any) => l.id === reg.leg_id);
       if (!leg) {
         return null;
@@ -245,8 +253,8 @@ export async function GET(request: NextRequest) {
         boat_name: journey?.boats?.name || 'Unknown Boat',
         boat_type: journey?.boats?.type || null,
         boat_make_model: journey?.boats?.make_model || null,
-        boat_image_url: journey?.boats?.images && journey.boats.images.length > 0
-          ? journey.boats.images[0]
+        boat_image_url: (journey?.boats?.images?.length ?? 0) > 0
+          ? journey?.boats?.images?.[0] ?? null
           : null,
         boat_average_speed_knots: journey?.boats?.average_speed_knots || null,
         owner_name: ownerProfilesMap[journey?.boats?.owner_id || '']?.full_name || null,
@@ -258,6 +266,10 @@ export async function GET(request: NextRequest) {
         start_waypoint: transformWaypoint(startWaypoint),
         end_waypoint: transformWaypoint(endWaypoint),
       };
+      } catch (err) {
+        console.warn('Transform failed for registration', reg?.id, err);
+        return null;
+      }
     }).filter(Boolean);
 
     return NextResponse.json({

@@ -708,31 +708,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         console.log('[AssistantContext] 📊 User signed in, loading pending actions');
         loadPendingActions();
 
-        // Check for pending leg registration from prospect signup flow
+        // Copy pending leg registration for assistant flow (e.g. if user lands on crew page).
+        // Do NOT remove pending_leg_registration here – the prospect flow (welcome/chat) needs it
+        // after consent to pass to trigger-profile-completion and profile save. ProspectChatContext
+        // clears it after use (e.g. after registration is sent with approveAction).
         if (typeof window !== 'undefined') {
           const pendingLegStr = localStorage.getItem('pending_leg_registration');
           if (pendingLegStr) {
             try {
               const { legId, legName, timestamp } = JSON.parse(pendingLegStr);
-              // Only process if the pending registration is less than 30 minutes old
               const isRecent = timestamp && (Date.now() - timestamp) < 30 * 60 * 1000;
-
               if (isRecent && legId) {
-                console.log('[AssistantContext] 📊 Found pending leg registration:', { legId, legName });
-                // Clear the pending registration from storage
-                localStorage.removeItem('pending_leg_registration');
-                // Store the leg info to trigger registration after redirect completes
-                // The AssistantChat component will detect this after the page loads
+                console.log('[AssistantContext] 📊 Found pending leg registration (copying to _ready for assistant):', { legId, legName });
                 localStorage.setItem('pending_leg_registration_ready', JSON.stringify({ legId, legName }));
-                // Don't open assistant here - let the redirect complete first
-                // The crew page will handle opening the assistant
-              } else {
-                // Expired or invalid, clean up
-                localStorage.removeItem('pending_leg_registration');
               }
             } catch (e) {
               console.error('[AssistantContext] Failed to parse pending leg registration:', e);
-              localStorage.removeItem('pending_leg_registration');
             }
           }
         }

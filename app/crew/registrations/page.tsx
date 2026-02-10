@@ -115,8 +115,14 @@ export default function MyRegistrationsPage() {
       const response = await fetch('/api/registrations/crew/details');
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to load registrations');
+        let message = 'Failed to load registrations';
+        try {
+          const errorData = await response.json();
+          message = errorData.error || message;
+        } catch {
+          message = response.status === 500 ? 'Server error. Please try again.' : message;
+        }
+        throw new Error(message);
       }
 
       const data = await response.json();

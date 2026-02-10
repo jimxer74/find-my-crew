@@ -124,10 +124,14 @@ export async function GET(request: Request) {
         return response;
       }
 
-      // Determine redirect based on profile and roles
+      // Determine redirect based on context and profile
       let redirectPath = '/'; // Default to home
 
-      if (profile && profile.roles && profile.roles.length > 0) {
+      // If user came from prospect chat, redirect back to chat with profile completion mode
+      if (isFromProspect) {
+        redirectPath = '/welcome/chat?profile_completion=true';
+        console.log('LOGIN CALLBACK, prospect user - redirecting to chat for profile completion');
+      } else if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
         if (profile.roles.includes('owner')) {
           redirectPath = origin + '/owner/journeys';

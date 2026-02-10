@@ -61,6 +61,7 @@ export {
   // Registry functions
   getAllTools,
   getToolsForProspect,
+  getToolsForProspectProfileCompletion,
   getToolsForUser,
   getToolsForContext,
   getToolByName,

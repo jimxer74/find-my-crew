@@ -124,7 +124,9 @@
     "noLegsInRegion": "Ei osuuksia tällä alueella",
     "loadMore": "Lataa lisää",
     "showMoreOnMap": "Näytä lisää kartalla",
-    "swipeForMore": "Pyyhkäise nähdäksesi lisää"
+    "swipeForMore": "Pyyhkäise nähdäksesi lisää",
+    "join": "Liity",
+    "joinLeg": "Liity tähän osuuteen"
   },
   "home": {
     "hero": {

@@ -124,7 +124,9 @@
     "noLegsInRegion": "No legs available in this region",
     "loadMore": "Load more",
     "showMoreOnMap": "View more on map",
-    "swipeForMore": "Swipe for more"
+    "swipeForMore": "Swipe for more",
+    "join": "Join",
+    "joinLeg": "Join this leg"
   },
   "home": {
     "hero": {

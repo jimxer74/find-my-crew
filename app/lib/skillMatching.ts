@@ -5,15 +5,22 @@
 import { toCanonicalSkillName } from './skillUtils';
 
 
-export const matchRiskLevel = (userRiskLevel: string[], legRiskLevel: string | null, journeyRiskLevel: string[] | null): boolean => { 
+/** Normalize risk level to an array (DB may return string or string[]). */
+function toRiskLevelArray(v: string | string[] | null | undefined): string[] {
+  if (v == null) return [];
+  return Array.isArray(v) ? v : [v];
+}
 
-  if (!userRiskLevel) return false;
-  if (!legRiskLevel && !journeyRiskLevel) return true;
+export const matchRiskLevel = (userRiskLevel: string[], legRiskLevel: string | null, journeyRiskLevel: string | string[] | null): boolean => {
+
+  if (!userRiskLevel || !Array.isArray(userRiskLevel)) return false;
+  const journeyArr = toRiskLevelArray(journeyRiskLevel);
+  if (!legRiskLevel && journeyArr.length === 0) return true;
 
   // Check if user risk level matches leg risk level
-  if(userRiskLevel.includes(legRiskLevel as string)) return true;
+  if (legRiskLevel && userRiskLevel.includes(legRiskLevel)) return true;
   // Check if user risk level matches journey risk level
-  if(journeyRiskLevel?.some(riskLevel => userRiskLevel.includes(riskLevel))) return true;
+  if (journeyArr.length > 0 && journeyArr.some(riskLevel => userRiskLevel.includes(riskLevel))) return true;
 
   return false;
 };

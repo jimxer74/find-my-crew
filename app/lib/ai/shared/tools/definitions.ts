@@ -454,7 +454,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'get_leg_registration_info',
     description:
-      'Get registration requirements and auto-approval settings for a leg. Call this BEFORE suggesting registration to check if the user needs to complete a form with questions. If hasRequirements is true, direct user to the leg details page to register instead of using suggest_register_for_leg.',
+      'Get registration requirements and auto-approval settings for a leg. Call this BEFORE suggesting registration. Response includes requirements[] (each with id, question_text, question_type) and requirementIds (array of UUIDs). When calling submit_leg_registration later, you MUST use those exact requirementIds (or each requirement.id) as requirement_id in each answer—never use invented IDs like "req_sailing_skills_001". If hasRequirements is true, ask the user each question and then call submit_leg_registration with answers using the exact UUIDs from this response.',
     access: 'authenticated',
     category: 'data',
     parameters: {
@@ -478,7 +478,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       'Suggest that the user register for a specific sailing leg. Creates a pending action that the user must approve. IMPORTANT: Before calling this, use get_leg_registration_info to check if the leg has registration requirements. If hasRequirements is true, do NOT use this tool - instead direct the user to complete registration via the leg details page in the UI. Only use this tool for legs WITHOUT requirements. Both legId and reason parameters are REQUIRED.',
     access: 'crew',
     category: 'action',
-    disabled: true, // Currently disabled as per original code
+    disabled: false,
     parameters: {
       type: 'object',
       properties: {
@@ -620,7 +620,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'submit_leg_registration',
     description:
-      'Submit a registration for a sailing leg after collecting all required answers through conversation. Use this ONLY after you have asked and collected answers for ALL registration questions from get_leg_registration_info. Creates a pending action that the user must approve before the registration is submitted.',
+      'Submit a registration for a sailing leg after collecting all required answers. You MUST call this tool when submitting—do not only tell the user "registration submitted" in text without calling this tool, or no database record is created. Use ONLY after you have collected answers for ALL registration questions from get_leg_registration_info. Calling this creates a pending action; the user then clicks Register to finalize.',
     access: 'crew',
     category: 'action',
     parameters: {
@@ -632,13 +632,13 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         answers: {
           type: 'array',
-          description: 'REQUIRED: Array of answers to registration questions. Each answer must include requirement_id and either answer_text or answer_json based on question type.',
+          description: 'REQUIRED: Array of answers to registration questions. Each answer must include requirement_id (the exact UUID from get_leg_registration_info) and either answer_text or answer_json based on question type. Never use placeholders like "requirement_id_placeholder".',
           items: {
             type: 'object',
             properties: {
               requirement_id: {
                 type: 'string',
-                description: 'The UUID of the requirement/question being answered',
+                description: 'REQUIRED: The exact UUID from get_leg_registration_info response—use requirementIds[i] or requirements[i].id. Must be a real UUID (e.g. "a1b2c3d4-e5f6-4789-a012-3456789abcde"). Never use invented values like "req_sailing_skills_001" or "requirement_id_placeholder".',
               },
               answer_text: {
                 type: 'string',

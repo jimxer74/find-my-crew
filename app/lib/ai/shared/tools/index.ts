@@ -16,6 +16,7 @@ export {
   // Tool retrieval
   getAllTools,
   getToolsForProspect,
+  getToolsForProspectProfileCompletion,
   getToolsForUser,
   getToolsForContext,
   getToolByName,

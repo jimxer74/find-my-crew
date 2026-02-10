@@ -1,12 +1,131 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { ProspectMessage, PendingAction } from '@/app/lib/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
+
+/**
+ * Check if a message suggests signup or profile creation
+ */
+function suggestsSignupOrProfileCreation(content: string): boolean {
+  const lowerContent = content.toLowerCase();
+  const signupKeywords = [
+    'sign up',
+    'signup',
+    'create an account',
+    'create account',
+    'create your profile',
+    'create a profile',
+    'build your profile',
+    'save your profile',
+    'complete your profile',
+    'register for legs',
+    'join legs',
+    'sign up button',
+    'sign up above',
+  ];
+  return signupKeywords.some(keyword => lowerContent.includes(keyword));
+}
+
+/**
+ * Extract suggested prompts from AI message
+ * Format: [SUGGESTIONS]...[/SUGGESTIONS]
+ */
+function extractSuggestedPrompts(content: string): string[] {
+  const suggestionsRegex = /\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i;
+  const match = content.match(suggestionsRegex);
+  if (!match) return [];
+
+  const suggestionsText = match[1].trim();
+  // Split by lines starting with "- " or numbered lists
+  const prompts = suggestionsText
+    .split(/\n/)
+    .map(line => {
+      // Remove markdown list markers: "- ", "1. ", "* ", "• ", etc.
+      // Also remove quotes if present
+      return line
+        .replace(/^[-*•]\s+/, '')
+        .replace(/^\d+\.\s+/, '')
+        .replace(/^["']|["']$/g, '') // Remove surrounding quotes
+        .trim();
+    })
+    .filter(line => {
+      // Filter out empty lines, metadata tags, and example text
+      return (
+        line.length > 0 &&
+        line.length < 100 && // Reasonable length limit
+        !line.startsWith('[') &&
+        !line.toLowerCase().startsWith('example') &&
+        !line.toLowerCase().startsWith('format')
+      );
+    });
+
+  return prompts.slice(0, 3); // Max 3 suggestions
+}
+
+/**
+ * Remove suggestions block from message content for display
+ */
+function removeSuggestionsFromContent(content: string): string {
+  return content.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/i, '').trim();
+}
+
+/**
+ * Component to display suggested prompts below assistant messages
+ */
+function SuggestedPrompts({
+  prompts,
+  onSelect,
+  disabled = false,
+}: {
+  prompts: string[];
+  onSelect: (prompt: string) => void;
+  disabled?: boolean;
+}) {
+  if (prompts.length === 0) return null;
+
+  const handleClick = (prompt: string) => {
+    if (!disabled) {
+      onSelect(prompt);
+    }
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border/50">
+      <p className="text-xs text-muted-foreground mb-2 font-medium">Try asking:</p>
+      <div className="flex flex-wrap gap-2">
+        {prompts.map((prompt, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => handleClick(prompt)}
+            disabled={disabled}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 hover:shadow-sm active:bg-primary/25 rounded-lg transition-all border border-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary/10"
+            title={`Click to send: ${prompt}`}
+          >
+            <svg
+              className="w-3.5 h-3.5 flex-shrink-0"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+            <span className="text-left">{prompt}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Parse message content and render inline leg references as clickable links.
@@ -111,6 +230,7 @@ function QuickSuggestions({
 
 export function ProspectChat() {
   const t = useTranslations('common');
+  const router = useRouter();
 
   const {
     messages,
@@ -118,17 +238,19 @@ export function ProspectChat() {
     isLoading,
     error,
     isReturningUser,
+    isAuthenticated,
+    hasCompletedProfileCreation,
     sendMessage,
     clearError,
     clearSession,
     addViewedLeg,
-    setTargetLeg,
     approveAction,
     cancelAction,
   } = useProspectChat();
 
   const [inputValue, setInputValue] = useState('');
   const [showAuthForm, setShowAuthForm] = useState<'signup' | 'login' | null>(null);
+  const [isNavigatingToCrew, setIsNavigatingToCrew] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -191,32 +313,33 @@ export function ProspectChat() {
     }
   };
 
-  // Handle join button click on leg cards - triggers signup flow
-  const handleJoinClick = (legId: string, legName: string) => {
-    // Store pending leg info for post-signup registration continuation
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pending_leg_registration', JSON.stringify({
-        legId,
-        legName,
-        timestamp: Date.now()
-      }));
+  // Open Crew dashboard with this leg selected and registration form open (only shown when signed up + profile created)
+  const handleJoinClick = (legId: string, _legName: string) => {
+    const url = `/crew/dashboard?legId=${encodeURIComponent(legId)}&register=true`;
+    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
+    if (isMobileScreen) {
+      window.location.href = `${url}&from=assistant`;
+    } else {
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener noreferrer';
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
     }
+  };
 
-    // Set the target leg in preferences so the AI knows the primary intent
-    setTargetLeg(legId, legName);
-
-    // Send a message to the AI indicating the user wants to join this specific leg
-    // This establishes the primary intent for the conversation
-    sendMessage(`I want to join the "${legName}" leg. [Leg ID: ${legId}]`);
-
-    // Show the signup form after a short delay to let the message appear
-    setTimeout(() => {
-      setShowAuthForm('signup');
-      // Scroll to show the AI response
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }, 300);
+  // Clear prospect chat/session and go to crew homepage (after profile created)
+  const handleViewJourneys = async () => {
+    setIsNavigatingToCrew(true);
+    try {
+      await clearSession();
+      router.push('/crew');
+    } catch (e) {
+      console.error('Failed to clear session:', e);
+      setIsNavigatingToCrew(false);
+    }
   };
 
   return (
@@ -228,8 +351,29 @@ export function ProspectChat() {
             Exploring sailing opportunities
           </span>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* Sign up button - show after some engagement */}
-            {messages.length >= 2 && !showAuthForm && (
+            {/* View Journeys - show when profile was successfully created; clears chat and goes to /crew */}
+            {hasCompletedProfileCreation && (
+              <button
+                onClick={handleViewJourneys}
+                disabled={isNavigatingToCrew}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-md transition-opacity disabled:opacity-50"
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                </svg>
+                View Journeys
+              </button>
+            )}
+            {/* Sign up button - show when user is not signed up */}
+            {!isAuthenticated && !showAuthForm && (
               <button
                 onClick={() => setShowAuthForm('signup')}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-md transition-opacity"
@@ -296,6 +440,28 @@ export function ProspectChat() {
                 ? "Ready to continue exploring? Let's pick up where we left off."
                 : "Tell me about your sailing dreams and I'll help you find the perfect opportunity. No sign-up needed to start exploring!"}
             </p>
+            {/* Sign up button for unauthenticated users - visible from the start */}
+            {!isAuthenticated && !showAuthForm && (
+              <div className="flex justify-center mb-4">
+                <button
+                  onClick={() => setShowAuthForm('signup')}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  Sign up to save your profile and join legs
+                </button>
+              </div>
+            )}
             <QuickSuggestions
               onSelect={handleSuggestionSelect}
               isReturning={isReturningUser}
@@ -317,9 +483,45 @@ export function ProspectChat() {
             >
               <div className="text-sm whitespace-pre-wrap break-words">
                 {message.role === 'assistant'
-                  ? renderMessageWithLegLinks(message.content, handleLegClick)
+                  ? renderMessageWithLegLinks(
+                      removeSuggestionsFromContent(message.content),
+                      handleLegClick
+                    )
                   : message.content}
               </div>
+              {/* Show suggested prompts from AI response */}
+              {message.role === 'assistant' && (
+                <SuggestedPrompts
+                  prompts={extractSuggestedPrompts(message.content)}
+                  onSelect={handleSuggestionSelect}
+                  disabled={isLoading}
+                />
+              )}
+              {/* Show inline sign-up button when AI suggests signup/profile creation */}
+              {message.role === 'assistant' &&
+               !isAuthenticated &&
+               !showAuthForm &&
+               suggestsSignupOrProfileCreation(message.content) && (
+                <div className="mt-3 pt-3 border-t border-border/50">
+                  <button
+                    onClick={() => setShowAuthForm('signup')}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Sign up now
+                  </button>
+                </div>
+              )}
               {/* Show leg carousel if leg references are available */}
               {message.role === 'assistant' &&
                message.metadata?.legReferences &&
@@ -328,7 +530,7 @@ export function ProspectChat() {
                   <ChatLegCarousel
                     legs={message.metadata.legReferences}
                     onLegClick={(legId) => handleLegClick(legId, '')}
-                    onJoinClick={handleJoinClick}
+                    onJoinClick={isAuthenticated && hasCompletedProfileCreation ? handleJoinClick : undefined}
                     compact={true}
                   />
                 </div>
@@ -420,6 +622,32 @@ export function ProspectChat() {
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* View Journeys CTA when profile created - clear prospect data and go to /crew */}
+      {hasCompletedProfileCreation && (
+        <div className="border-t border-border px-4 py-3 bg-primary/5">
+          <div className="max-w-2xl lg:max-w-4xl mx-auto flex justify-center">
+            <button
+              onClick={handleViewJourneys}
+              disabled={isNavigatingToCrew}
+              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              View Journeys
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Input area */}
       <div className="border-t border-border p-4 bg-card">

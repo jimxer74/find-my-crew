@@ -77,18 +77,38 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     }
   }
 
-  // Method 2: XML-like format <tool_call><function=name>...</function></tool_call>
-  const xmlToolCallRegex = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/gi;
+  // Method 2: <tool_call>...</tool_call> — inner content can be JSON or XML-style
+  const toolCallBlockRegex = /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/gi;
 
-  while ((match = xmlToolCallRegex.exec(text)) !== null) {
-    const parsed = parseXmlFunctionCall(match[1]);
+  while ((match = toolCallBlockRegex.exec(text)) !== null) {
+    const inner = match[1].trim();
+    // Try JSON first (many models output {"name": "...", "arguments": {...}} inside <tool_call>)
+    let parsed: { name: string; arguments: Record<string, unknown> } | null = null;
+    const jsonObj = extractJsonFromText(inner);
+    if (jsonObj) {
+      try {
+        const toolCallJson = JSON.parse(jsonObj);
+        if (toolCallJson && toolCallJson.name && typeof toolCallJson.name === 'string') {
+          parsed = {
+            name: toolCallJson.name,
+            arguments: toolCallJson.arguments || {},
+          };
+          log('Parsed <tool_call> JSON:', parsed.name);
+        }
+      } catch {
+        // not valid JSON, try XML below
+      }
+    }
+    if (!parsed) {
+      parsed = parseXmlFunctionCall(inner);
+      if (parsed) log('Parsed XML tool_call:', parsed.name);
+    }
     if (parsed) {
       toolCalls.push({
         id: `tc_${Date.now()}_${toolCallIndex++}`,
         ...parsed,
       });
       content = content.replace(match[0], '').trim();
-      log('Parsed XML tool_call:', parsed.name);
     }
   }
 

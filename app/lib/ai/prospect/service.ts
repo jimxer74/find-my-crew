@@ -24,6 +24,7 @@ import {
   LegSearchOptions,
   // Tool registry
   getToolsForProspect,
+  getToolsForProspectProfileCompletion,
   toolsToPromptFormat,
 } from '../shared';
 import {
@@ -85,36 +86,48 @@ IMPORTANT: Today's date is ${currentDate}. When users ask about sailing trips, u
 
 **There are TWO possible primary user intents. Detect which one applies and act accordingly:**
 
-### Intent A: REGISTER FOR A SPECIFIC LEG (Highest Priority)
-**Triggered when:**
-- User says "I want to join [leg name]" or mentions a specific leg ID
-- User clicks a "Join" button on a leg card (you'll see messages like "I want to join the 'X' leg. [Leg ID: uuid]")
-- User expresses clear intent to register for a particular sailing leg they've seen
-
-**Your goal for Intent A:**
-- FOCUS ENTIRELY on helping them register for THAT specific leg
-- DO NOT suggest other legs - they've already chosen
-- Guide them to sign up so they can complete registration
-- If they're not signed in, explain they need to create an account first
-- Be enthusiastic about their choice and help them proceed
-
-### Intent B: DISCOVER SAILING OPPORTUNITIES (Default)
-**Triggered when:**
-- User is browsing, exploring, asking general questions
-- User hasn't expressed intent to join a specific leg
-- User wants to find legs matching their preferences
-
-**Your goal for Intent B:**
+**Your goal:**
 - Help users find sailing trips that match their interests
 - Gather preferences through natural conversation
 - Show matching legs and encourage exploration
-- Eventually guide them to sign up to get full access
+- Guide them to sign up so they can save their profile and register for legs
+- **Registration for a specific leg is not done in chat.** After signup and profile creation, they use the "Register for leg" button on the Crew dashboard to open the registration form for that leg
+
+## ALWAYS SUGGEST PROFILE CREATION (CRITICAL)
+
+**If the user has not yet signed up or completed their profile, you MUST suggest they create one.**
+- When they are exploring (searching, viewing legs, sharing preferences) but have not signed up: suggest they use the **Sign up** button above to create an account and profile so their preferences and details are saved and they can register for legs.
+- When they have signed up but have not yet confirmed and saved their profile in this chat: encourage them to complete the profile flow (review the summary and click "Save Profile") so their crew profile is stored.
+- Do this naturally and consistently: e.g. after showing legs, after they share something about themselves, or when they express interest in a specific leg. You don't need to say it in every single message, but do bring it up regularly when relevant (e.g. "To save your preferences and create your crew profile so you can register for legs, use the **Sign up** button above!" or "Once you've signed up, I'll help you build your profile so boat owners can see your experience.").
+- Never assume they have a profile until they have completed signup and saved their profile in this chat.
 
 ## CONVERSATION STYLE:
 - Be warm, enthusiastic, and conversational
 - Ask one or two questions at a time, not long lists
 - Show matching sailing legs as soon as you have enough information
 - Keep responses concise and focused
+
+## SUGGESTED PROMPTS (IMPORTANT):
+At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
+
+Format suggestions like this at the very end of your message:
+[SUGGESTIONS]
+- "What sailing skills should I have?"
+- "Show me trips in the Mediterranean"
+- "I'm available in summer, what options do I have?"
+[/SUGGESTIONS]
+
+Make suggestions contextual based on:
+- What information is still missing (if early in conversation)
+- What they've already shared (suggest exploring related options)
+- Their experience level (beginners: learning opportunities, experienced: advanced trips)
+- Their interests (if they mentioned a region, suggest exploring it more)
+- Next logical step in the onboarding flow
+
+Examples:
+- Early conversation: "Tell me about your sailing experience", "What regions interest you?", "When are you available?"
+- After sharing preferences: "Show me trips matching my preferences", "What skills would help me join these trips?", "Tell me more about [specific leg]"
+- After showing legs: "Show me more options", "What about [different region/dates]", "What skills do I need for these trips?"
 
 ## WHAT TO DISCOVER (for Intent B - discovery flow):
 1. What kind of sailing experience they're looking for (adventure, learning, relaxation, etc.)
@@ -131,12 +144,6 @@ ${preferences.preferredDates?.start ? `- Available: ${preferences.preferredDates
 ${preferences.preferredLocations?.length ? `- Preferred locations: ${preferences.preferredLocations.join(', ')}` : ''}
 ${preferences.skills?.length ? `- Skills: ${preferences.skills.join(', ')}` : ''}
 ${preferences.riskLevels?.length ? `- Comfort level: ${preferences.riskLevels.join(', ')}` : ''}
-${(preferences as any).targetLegId ? `
-**TARGET LEG FOR REGISTRATION:**
-- Leg ID: ${(preferences as any).targetLegId}
-- Leg Name: ${(preferences as any).targetLegName || 'Unknown'}
-- **IMPORTANT:** User has clicked "Join" on this specific leg. Focus on helping them register for THIS leg. Do not suggest alternatives.
-` : ''}
 ` : ''}
 
 RESPONSE FORMAT:
@@ -147,9 +154,10 @@ Example: "I found some great options for you! Check out [[leg:abc-123:Mediterran
 
 IMPORTANT:
 - Always format leg references exactly as [[leg:UUID:Name]] so they appear as clickable badges
-- After showing interesting legs, gently encourage users to sign up to register and get more details
+- After showing interesting legs, suggest creating a profile if they haven't (e.g. "To save your search and create your crew profile so you can register for legs, sign up above!").
 - Keep the conversation flowing naturally - don't overwhelm with too many legs at once
 - If the user shares details about themselves, acknowledge and use that information
+- **When the user tells you their full name** (e.g. "I'm John Smith", "My name is Maria", "Call me Alex"), include exactly this tag in your reply so we can prefill the signup form: [PROSPECT_NAME: Their Full Name]. Use the name they gave; put the tag at the end of your message. Example: "Nice to meet you! [PROSPECT_NAME: John Smith]"
 
 ## CRITICAL: NO HALLUCINATION RULE
 
@@ -177,39 +185,12 @@ IMPORTANT:
 
 **VIOLATION OF THIS RULE CREATES A TERRIBLE USER EXPERIENCE - USERS CANNOT REGISTER FOR LEGS THAT DON'T EXIST.**
 
-## REGISTRATION INTENT HANDLING (Intent A - CRITICAL)
+**When the user wants to join or register for a leg:**
+- Tell them to sign up first (Sign up button above) and complete their profile in this chat.
+- After that, they can go to the Crew dashboard, find the leg, and use "Register for leg" to open the registration form. Do not attempt to register them in chat.
 
-**IMPORTANT: When a user wants to join a SPECIFIC leg, THIS IS YOUR PRIMARY GOAL. Do not get distracted.**
-
-**Registration intent indicators:**
-- "I want to register for..."
-- "I'd like to join..."
-- "I want to join the '[leg name]' leg. [Leg ID: xxx]" (from clicking Join button)
-- "How do I sign up for..."
-- "I want to book..."
-- "Can I register..."
-- "Sign me up for..."
-
-**When registration intent is detected for a SPECIFIC leg:**
-1. **ACKNOWLEDGE their excellent choice** - be enthusiastic about the leg they chose
-2. **DO NOT suggest other legs** - they've already made their choice
-3. **EXPLAIN the signup requirement**: "To register for this leg, you'll need to create an account first. Click the **Sign up** button above to get started - it only takes a minute!"
-4. **HIGHLIGHT the benefits**: Their sailing preferences will be saved, they can communicate with the boat owner
-5. **STAY FOCUSED**: If they ask follow-up questions, answer them. Don't redirect to other opportunities.
-6. **After signup**: They'll return and can complete registration for THIS leg
-
-**Example response when user clicks "Join" on a specific leg:**
-"Excellent choice! 🌊 [Leg Name] looks like a fantastic adventure!
-
-To register for this sailing leg, you'll need to create a free account first. Click the **Sign up** button at the top of our chat - it only takes a minute!
-
-Once you're signed up, you'll be able to complete your registration and the boat owner will be notified of your interest. I'll remember that you want to join this specific leg, so we can continue from there.
-
-Is there anything specific you'd like to know about this journey while you create your account?"
-
-**CRITICAL: Once a user has expressed intent to join a SPECIFIC leg, DO NOT:**
-- Suggest alternative legs
-- Ask "would you like to see other options?"
+**When a user wants to join a specific leg, DO NOT:**
+- Suggest alternative legs unless they ask
 - Show leg carousels with other opportunities
 - Redirect the conversation away from their chosen leg
 
@@ -267,10 +248,11 @@ You have geographic knowledge of sailing regions. Convert location names to boun
 }
 
 /**
- * Build tool instructions for the AI using shared tool registry
+ * Build tool instructions for the AI using shared tool registry.
+ * When profileCompletion is true (authenticated user in profile completion mode), includes only profile tools (no registration).
  */
-function buildToolInstructions(): string {
-  const tools = getToolsForProspect();
+function buildToolInstructions(profileCompletion?: boolean): string {
+  const tools = profileCompletion ? getToolsForProspectProfileCompletion() : getToolsForProspect();
   const toolsDescription = toolsToPromptFormat(tools);
 
   return `
@@ -372,6 +354,65 @@ const SAILING_SKILLS = [
 ];
 
 /**
+ * Get registration requirements and auto-approval settings for a leg.
+ * Used so the AI can guide the user through registration (with or without questions).
+ */
+async function getLegRegistrationInfo(supabase: SupabaseClient, legId: string) {
+  const { data: leg, error: legError } = await supabase
+    .from('legs')
+    .select(`
+      id,
+      name,
+      journey_id,
+      journeys!inner (
+        id,
+        name,
+        auto_approval_enabled,
+        auto_approval_threshold
+      )
+    `)
+    .eq('id', legId)
+    .single();
+
+  if (legError || !leg) {
+    throw new Error('Leg not found');
+  }
+
+  const journey = (leg as any).journeys;
+
+  const { data: requirements, error: reqError } = await supabase
+    .from('journey_requirements')
+    .select('id, question_text, question_type, is_required, options')
+    .eq('journey_id', journey.id)
+    .order('order', { ascending: true });
+
+  if (reqError) {
+    throw new Error('Failed to fetch requirements');
+  }
+
+  const hasRequirements = requirements && requirements.length > 0;
+  const requirementIds = (requirements || []).map((r: { id: string }) => r.id);
+
+  return {
+    legId,
+    legName: leg.name,
+    journeyId: journey.id,
+    journeyName: journey.name,
+    hasRequirements,
+    requirementsCount: requirements?.length || 0,
+    requirements: requirements || [],
+    /** Exact UUIDs to use as requirement_id in submit_leg_registration answers. Do not invent or substitute other values. */
+    requirementIds,
+    autoApprovalEnabled: journey.auto_approval_enabled === true,
+    autoApprovalThreshold: journey.auto_approval_threshold || 80,
+    registrationMethod: hasRequirements ? 'ui_form' : 'assistant_action',
+    message: hasRequirements
+      ? 'This leg requires answering registration questions. Direct the user to complete registration through the leg details page in the UI.'
+      : 'No requirements. You can use suggest_register_for_leg to register the user.',
+  };
+}
+
+/**
  * Execute prospect tool calls
  */
 async function executeProspectTools(
@@ -413,6 +454,22 @@ async function executeProspectTools(
             note: 'These are common sailing skills. Users can also add custom skills.',
           },
         });
+        continue;
+      }
+
+      // Leg registration info (used in profile completion to guide registration)
+      if (toolCall.name === 'get_leg_registration_info') {
+        const legId = args.legId as string;
+        if (!legId) {
+          results.push({ name: toolCall.name, result: null, error: 'legId is required' });
+          continue;
+        }
+        try {
+          const info = await getLegRegistrationInfo(supabase, legId);
+          results.push({ name: toolCall.name, result: info });
+        } catch (e: any) {
+          results.push({ name: toolCall.name, result: null, error: e.message || 'Failed to get leg registration info' });
+        }
         continue;
       }
 
@@ -655,6 +712,144 @@ async function executeProspectTools(
         continue;
       }
 
+      // Leg registration (profile completion: user approved suggest_register_for_leg or submit_leg_registration)
+      if (
+        (toolCall.name === 'suggest_register_for_leg' || toolCall.name === 'submit_leg_registration') &&
+        authenticatedUserId
+      ) {
+        const legId = args.legId as string;
+        if (!legId) {
+          results.push({ name: toolCall.name, result: null, error: 'legId is required' });
+          continue;
+        }
+
+        const { data: leg, error: legErr } = await supabase
+          .from('legs')
+          .select(`
+            id,
+            name,
+            journey_id,
+            journeys!inner ( id, state )
+          `)
+          .eq('id', legId)
+          .single();
+
+        if (legErr || !leg) {
+          results.push({ name: toolCall.name, result: null, error: 'Leg not found' });
+          continue;
+        }
+
+        const journey = (leg as any).journeys;
+        if (journey?.state !== 'Published') {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: 'This journey is not currently accepting registrations.',
+          });
+          continue;
+        }
+
+        const { data: existing } = await supabase
+          .from('registrations')
+          .select('id, status')
+          .eq('leg_id', legId)
+          .eq('user_id', authenticatedUserId)
+          .single();
+
+        if (existing && existing.status !== 'Cancelled') {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: 'You are already registered for this leg.',
+          });
+          continue;
+        }
+
+        // For submit_leg_registration with answers: validate requirement_id values (or correct by index)
+        const rawAnswers = (args.answers as any[] | undefined) ?? [];
+        let answers = rawAnswers;
+        if (toolCall.name === 'submit_leg_registration' && rawAnswers.length > 0) {
+          const { data: requirements } = await supabase
+            .from('journey_requirements')
+            .select('id')
+            .eq('journey_id', journey.id)
+            .order('order', { ascending: true });
+          const reqList = requirements || [];
+          const validRequirementIds = new Set(reqList.map((r: { id: string }) => r.id));
+          const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          const allValid = rawAnswers.every((a: any) => {
+            const rid = a?.requirement_id;
+            return typeof rid === 'string' && uuidLike.test(rid) && validRequirementIds.has(rid);
+          });
+          if (!allValid && rawAnswers.length === reqList.length) {
+            // Fallback: AI sent invented IDs (e.g. req_001). Map answers to requirement UUIDs by index.
+            log('Correcting requirement_id by index (AI sent non-UUIDs); requirement count matches.');
+            answers = rawAnswers.map((a: any, i: number) => ({
+              ...a,
+              requirement_id: reqList[i].id,
+            }));
+          } else if (!allValid) {
+            const invalidAnswer = rawAnswers.find((a: any) => {
+              const rid = a?.requirement_id;
+              return typeof rid !== 'string' || !uuidLike.test(rid) || !validRequirementIds.has(rid);
+            });
+            const bad = invalidAnswer ? (typeof invalidAnswer.requirement_id === 'string' ? invalidAnswer.requirement_id : JSON.stringify(invalidAnswer.requirement_id)) : '?';
+            const exampleId = validRequirementIds.size ? Array.from(validRequirementIds)[0] : '(call get_leg_registration_info to get IDs)';
+            results.push({
+              name: toolCall.name,
+              result: null,
+              error: `Invalid requirement_id in answers. Each requirement_id must be the exact UUID returned by get_leg_registration_info for each question (e.g. ${exampleId}). Do not use placeholders. Invalid value received: "${bad}". Call get_leg_registration_info(legId) to get the correct requirement IDs and use those exact UUIDs in submit_leg_registration.`,
+            });
+            continue;
+          }
+        }
+
+        const notes = (args.notes as string) || null;
+        const { data: registration, error: insertErr } = await supabase
+          .from('registrations')
+          .insert({
+            leg_id: legId,
+            user_id: authenticatedUserId,
+            status: 'Pending approval',
+            notes,
+          })
+          .select()
+          .single();
+
+        if (insertErr) {
+          results.push({
+            name: toolCall.name,
+            result: null,
+            error: insertErr.message || 'Failed to create registration',
+          });
+          continue;
+        }
+
+        if (toolCall.name === 'submit_leg_registration' && answers.length > 0 && registration) {
+          const answersToInsert = answers.map((a: any) => ({
+            registration_id: registration.id,
+            requirement_id: a.requirement_id,
+            answer_text: a.answer_text ?? null,
+            answer_json: a.answer_json ?? null,
+          }));
+          const { error: answersErr } = await supabase.from('registration_answers').insert(answersToInsert);
+          if (answersErr) {
+            log('Error saving registration answers:', answersErr);
+          }
+        }
+
+        results.push({
+          name: toolCall.name,
+          result: {
+            success: true,
+            message: `Successfully registered for ${leg.name}! Your registration is pending approval. The boat owner has been notified.`,
+            legName: leg.name,
+            registrationId: registration?.id,
+          },
+        });
+        continue;
+      }
+
       if (toolCall.name === 'search_legs') {
         // Text-based search using shared utilities
         const dateArgs = normalizeDateArgs(args);
@@ -878,11 +1073,12 @@ export async function prospectChat(
 
   // Handle approved action - execute the held tool call directly
   if (request.approvedAction && authenticatedUserId) {
-    log('✅ Executing approved action:', request.approvedAction.toolName);
+    const actionName = request.approvedAction.toolName;
+    log('✅ Executing approved action:', actionName);
 
     const toolCall: ToolCall = {
       id: `approved_${Date.now()}`,
-      name: request.approvedAction.toolName,
+      name: actionName,
       arguments: request.approvedAction.arguments,
     };
 
@@ -893,8 +1089,9 @@ export async function prospectChat(
     if (result?.error) {
       responseContent = `There was an issue saving your profile: ${result.error}\n\nPlease try again or you can complete your profile manually on the profile page.`;
     } else {
+      // update_user_profile success
       const updatedFields = (result?.result as { updatedFields?: string[] })?.updatedFields || [];
-      responseContent = `Your profile has been saved successfully! Updated fields: ${updatedFields.join(', ')}.\n\nYou can now browse sailing opportunities and boat owners will be able to see your profile. You can always edit your profile later from the profile page to add more details.`;
+      responseContent = `Your profile has been saved successfully! Updated fields: ${updatedFields.join(', ')}.\n\nYou can now browse sailing opportunities and boat owners will be able to see your profile. To register for a specific leg, go to the Crew dashboard and use "Register for leg" on the leg you want. You can always edit your profile later from the profile page.`;
     }
 
     const responseMessage: ProspectMessage = {
@@ -926,7 +1123,21 @@ export async function prospectChat(
 
 ## PROFILE COMPLETION MODE
 
-You are now helping an authenticated user complete their profile after signing up. The user's preferences from your previous conversation have been gathered.
+You are now helping an authenticated user complete their profile after signing up.
+
+**CRITICAL: EXTRACT INFORMATION FROM CONVERSATION HISTORY**
+
+You MUST carefully review the ENTIRE conversation history above. The user has likely already shared detailed information about themselves including:
+- Their sailing experience and background
+- Skills (sailing skills AND other useful skills like carpentry, mechanics, cooking, etc.)
+- Certifications or training
+- What kind of sailing they're looking for
+- Their availability and preferred locations
+- Personal details and bio information
+
+**DO NOT ask for information that was already provided in the conversation!**
+Instead, extract this information and use it to build their profile.
+
 ${(() => {
   const known: string[] = [];
   if (userProfile?.fullName) known.push(`- **Name:** "${userProfile.fullName}"`);
@@ -934,74 +1145,78 @@ ${(() => {
   if (userProfile?.phone) known.push(`- **Phone:** "${userProfile.phone}"`);
   if (userProfile?.avatarUrl) known.push(`- **Profile photo:** Already set from their account`);
   if (known.length > 0) {
-    return `\n**ALREADY KNOWN (from signup/OAuth - do NOT ask for these again):**\n${known.join('\n')}\n\nUse this information directly when building the profile. Greet the user by name if known.\n`;
+    return `\n**FROM SIGNUP/OAUTH:**\n${known.join('\n')}\n`;
   }
   return '';
 })()}
-**Your goals in this mode:**
-1. Welcome the user back by name (if known) and acknowledge they've signed up
-2. Summarize what you know about their sailing preferences
-3. Help them fill in any missing profile fields through natural conversation
-4. Present a profile summary for the user to approve before saving
-5. Show profile completion progress
 
-**Available profile tools:**
-- \`get_profile_completion_status\` - Check which fields are filled and missing
-- \`update_user_profile\` - Save profile field updates (REQUIRES USER APPROVAL - see below)
-- \`get_experience_level_definitions\` - Explain experience levels if needed
-- \`get_risk_level_definitions\` - Explain risk levels if needed
-- \`get_skills_definitions\` - Show available skills
+**PRIORITY (CRITICAL):**
+- Your **FIRST** response MUST be to extract profile from the conversation and **PRESENT the profile summary** to the user. Get the user to confirm, then call \`update_user_profile\` so the profile is stored. Registration for legs is done on the Crew dashboard, not in this chat.
 
-**Profile fields to gather (in conversation order):**
-1. **full_name** (required) - ${userProfile?.fullName ? `Already known: "${userProfile.fullName}". Use this value directly, do NOT ask again.` : 'Ask for their full name if not already known'}
-2. **user_description** (required) - A short bio about their sailing background, experience, and who they are as a sailor. This is what boat owners will read first. Guide them to write 2-3 sentences.
-3. **sailing_preferences** (required) - What they're looking for: types of sailing (coastal cruising, offshore passages, racing), preferred regions, time of year, trip duration preferences, what makes a trip appealing to them.
-4. **sailing_experience** (required) - 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
-5. **risk_level** (required) - Array of comfort zones: "Coastal sailing", "Offshore sailing", "Extreme sailing"
-6. **skills** (optional) - Array of sailing skills. Ask about these but make it clear this is optional and can be filled in later on their profile page.
-7. **certifications** (optional) - Free text for sailing certifications (RYA, ASA, etc.)
-8. **phone** (optional) - ${userProfile?.phone ? `Already known: "${userProfile.phone}". Include in the profile save, do NOT ask again.` : 'Phone number. Only ask if not already provided.'}
-9. **profile_image_url** (auto) - ${userProfile?.avatarUrl ? `Already set from OAuth provider. Include "${userProfile.avatarUrl}" in the profile save automatically, do NOT ask about it.` : 'Profile photo URL. Skip this field - user can set it later on their profile page.'}
+**Your workflow in this mode:**
+1. **FIRST:** Carefully read ALL previous messages in the conversation
+2. **EXTRACT** all profile-relevant information the user has shared:
+   - Bio/description: Any personal story, background, journey, personality traits
+   - Experience: Sailing courses, trips, crossings, time on water
+   - Skills: Both sailing skills AND practical skills (carpentry, mechanics, cooking, yoga, etc.)
+   - Certifications: Any sailing qualifications mentioned
+   - Comfort zones: Based on experience (if they've done ocean crossings, they're comfortable offshore)
+   - Preferences: Where they want to sail, what they're looking for
+3. **PRESENT** a comprehensive profile summary based on what you extracted
+4. **ASK** only for information that is genuinely missing (not mentioned at all)
+5. **GET CONFIRMATION** before saving
+
+**Profile fields to populate:**
+1. **full_name** - ${userProfile?.fullName ? `"${userProfile.fullName}"` : 'Extract from conversation or ask'}
+2. **user_description** - Create a compelling bio from their story. Include personality, background, journey, and what makes them unique.
+3. **sailing_preferences** - What they're looking for: routes, regions, trip types
+4. **sailing_experience** - 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper. Determine from their described experience.
+5. **risk_level** - Array: "Coastal sailing", "Offshore sailing", "Extreme sailing". Infer from their experience level.
+6. **skills** - Array of ALL useful skills (sailing AND practical: carpentry, mechanics, electrical, cooking, languages, etc.)
+7. **certifications** - Any sailing certifications or courses mentioned
 
 **CRITICAL: APPROVAL REQUIRED FOR PROFILE UPDATES**
-- Do NOT call \`update_user_profile\` immediately after gathering information
-- Instead, FIRST present a clear summary of ALL the profile data you plan to save
-- Format the summary as a readable list showing each field and its value
-- Ask the user to review and confirm: "Does this look correct? I'll save it once you confirm."
-- ONLY call \`update_user_profile\` AFTER the user explicitly confirms/approves
-- If the user wants to change something, update the values and present the summary again
+- FIRST present a clear summary of ALL extracted profile data
+- Format as a readable list showing each field and its value
+- Ask: "Does this capture your profile correctly? I'll save it once you confirm."
+- ONLY call \`update_user_profile\` AFTER explicit user confirmation
+- **Always encourage the user to confirm and save** so their profile is stored; the session goal is to get the profile saved. If they hesitate, explain that saving the profile lets boat owners see their experience when they register for legs.
 
-**Workflow:**
-1. First, call \`get_profile_completion_status\` to see current state
-2. Greet the user and summarize what you already know from the conversation
-3. Ask about missing required fields one or two at a time (don't overwhelm)
-4. For \`user_description\`: Help them craft a good bio. Suggest something based on what you know and ask if they'd like to adjust it.
-5. For \`sailing_preferences\`: Ask what they're looking for in sailing opportunities - regions, trip types, duration, time of year.
-6. For \`skills\`: Mention you can add skills but reassure them it's optional and can be done later.
-7. Once you have enough info, present a COMPLETE SUMMARY of the proposed profile data
-8. Wait for explicit user approval before calling \`update_user_profile\`
-9. After saving, remind user they can continue to the full profile page for more detailed editing
+**Available tools:** (see full list below) include profile tools (update_user_profile, get_profile_completion_status) and search tools. No registration tools – registration is done on the Crew dashboard.
 
-**Important notes on pre-filled data:**
-- When including known data (name, email, phone, avatar) in the profile save, mention them in the summary so the user sees them but make clear these came from their signup.
-- Do NOT ask questions about data you already have. Focus conversation on the fields you still need.
+**Registration:** Registration for legs is done on the Crew dashboard (leg details panel), not in this chat. Your only goal here is to gather profile information and save it with \`update_user_profile\`. After the profile is saved, the user can use "Register for leg" on any leg in the Crew dashboard.
 
-**Example summary format:**
-"Here's your profile summary for review:
+**SUGGESTED PROMPTS:**
+At the end of your response, include 2-3 suggested follow-up questions to help guide the user through profile completion. Format like this:
+[SUGGESTIONS]
+- "Can you add more details about my sailing experience?"
+- "What other skills should I include?"
+- "Does this profile look complete?"
+[/SUGGESTIONS]
 
-• **Name:** John Smith
-• **Bio:** Experienced coastal sailor with 5 years on the water. Comfortable in Mediterranean conditions and eager to gain offshore experience.
-• **Sailing preferences:** Looking for Mediterranean coastal cruising and short offshore passages, preferably in summer months. Open to 1-2 week trips.
-• **Experience level:** 3 - Coastal Skipper
+Make suggestions contextual:
+- If profile is incomplete: suggest what's missing ("Tell me about your certifications", "What sailing skills do you have?")
+- If profile is ready: suggest confirming and saving ("Does this look correct?", "Ready to save my profile?")
+- After saving: suggest next steps ("How do I register for legs?", "Show me sailing opportunities")
+
+**Example of CORRECT behavior:**
+User previously said: "I have 8 years carpentry experience, did a Gibraltar crossing on a Neel 47, took teen sailing courses, I'm a yoga teacher, available now for transatlantic from Canaries"
+
+Your response should be:
+"Welcome back! Based on our conversation, here's your profile:
+
+• **Bio:** [Craft a compelling bio from their story]
+• **Experience:** Competent Crew (Level 2) - sailing courses, Gibraltar crossing, regular sailing experience
 • **Comfort zones:** Coastal sailing, Offshore sailing
-• **Skills:** Navigation, Helming, Sail trimming (optional - can add more later)
-• **Certifications:** RYA Day Skipper
-• **Phone:** +358 40 123 4567 (from signup)
+• **Skills:** Carpentry, Boat maintenance, Electrical systems, Yoga instruction, Sailing
+• **Preferences:** Transatlantic crossing from Canary Islands, available now
 
-Does this look correct? I'll save your profile once you confirm."`;
+Does this look right?"
+
+**DO NOT** respond with "I still need your bio, experience level..." when the user already provided this information!`;
   }
 
-  const toolInstructions = buildToolInstructions();
+  const toolInstructions = buildToolInstructions(isProfileCompletionMode);
   const fullSystemPrompt = systemPrompt + '\n\n' + toolInstructions;
 
   log('');

@@ -16,6 +16,7 @@ import {
   ProspectPreferences,
   PendingAction,
   KnownUserProfile,
+  PROSPECT_NAME_TAG_REGEX,
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -58,6 +59,10 @@ interface ProspectChatState {
   isAuthenticated: boolean;
   userId: string | null;
   userProfile: KnownUserProfile | null;
+  /** True only after user has completed signup AND granted AI consent (consentSetupCompleted with aiProcessingConsent) */
+  consentGrantedForProfileCompletion: boolean;
+  /** True after user has successfully saved profile via update_user_profile (approve "Save Profile"). Enables showing Join buttons. */
+  hasCompletedProfileCreation: boolean;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -65,7 +70,6 @@ interface ProspectChatContextType extends ProspectChatState {
   clearError: () => void;
   clearSession: () => void;
   addViewedLeg: (legId: string) => void;
-  setTargetLeg: (legId: string, legName: string) => void;
   approveAction: (messageId: string, action: PendingAction) => Promise<void>;
   cancelAction: (messageId: string) => void;
   isReturningUser: boolean;
@@ -149,6 +153,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     userId: null,
     userProfile: null,
+    consentGrantedForProfileCompletion: false,
+    hasCompletedProfileCreation: false,
   });
 
   const [isReturningUser, setIsReturningUser] = useState(false);
@@ -157,13 +163,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   // Load session on mount - combine cookie (session ID) with localStorage (data)
   useEffect(() => {
     async function initSession() {
+      // Check if we're in profile completion mode (post-signup flow)
+      const isProfileCompletionMode = searchParams?.get('profile_completion') === 'true';
+
+      // Load localStorage data first - this contains the conversation history
+      const localSession = loadSession();
+
       // First, get session ID from HttpOnly cookie
       const cookieSession = await fetchSessionFromCookie();
 
       if (cookieSession) {
-        // Load localStorage data
-        const localSession = loadSession();
-
         // Check if localStorage data matches the cookie session
         if (localSession && localSession.sessionId === cookieSession.sessionId) {
           // Restore full session from localStorage
@@ -175,8 +184,20 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             viewedLegs: localSession.viewedLegs,
           }));
           setIsReturningUser(localSession.conversation.length > 0);
+        } else if (isProfileCompletionMode && localSession) {
+          // In profile completion mode, PRESERVE localStorage data even if cookie doesn't match
+          // This ensures conversation history survives the signup process
+          console.log('[ProspectChatContext] Profile completion mode - preserving localStorage session');
+          setState((prev) => ({
+            ...prev,
+            sessionId: localSession.sessionId,
+            messages: localSession.conversation,
+            preferences: localSession.gatheredPreferences,
+            viewedLegs: localSession.viewedLegs,
+          }));
+          setIsReturningUser(localSession.conversation.length > 0);
         } else {
-          // Cookie exists but localStorage is stale or missing
+          // Cookie exists but localStorage is stale or missing (and not in profile completion)
           // Clear localStorage and start fresh with the cookie session ID
           if (typeof window !== 'undefined') {
             localStorage.removeItem(STORAGE_KEY);
@@ -189,7 +210,6 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         }
       } else {
         // No cookie session - fallback to localStorage only (legacy support)
-        const localSession = loadSession();
         if (localSession) {
           setState((prev) => ({
             ...prev,
@@ -206,7 +226,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     }
 
     initSession();
-  }, []);
+  }, [searchParams]);
 
   // Detect profile completion mode and check authentication
   useEffect(() => {
@@ -236,22 +256,73 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, searchParams]);
 
+  // Check on mount if consent was just completed (handles case where event fired before component mounted)
+  // This is a fallback for race conditions where consent completes before ProspectChatContext mounts
+  useEffect(() => {
+    async function checkPendingConsentCompletion() {
+      const signupPending = typeof window !== 'undefined'
+        ? localStorage.getItem('ai_assistant_signup_pending')
+        : null;
+
+      if (!signupPending) return;
+
+      // Check if consent was recently completed (within last 5 seconds) by checking user_consents
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: consentData } = await supabase
+        .from('user_consents')
+        .select('consent_setup_completed_at, ai_processing_consent')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (consentData?.consent_setup_completed_at) {
+        const completedAt = new Date(consentData.consent_setup_completed_at);
+        const now = new Date();
+        const secondsSinceCompletion = (now.getTime() - completedAt.getTime()) / 1000;
+
+        // If consent was completed within last 10 seconds, trigger profile completion
+        if (secondsSinceCompletion < 10) {
+          console.log('[ProspectChat] Detected recent consent completion on mount - triggering profile completion');
+          // Manually trigger the handler logic
+          const event = new CustomEvent('consentSetupCompleted', {
+            detail: { aiProcessingConsent: consentData.ai_processing_consent ?? false },
+          });
+          window.dispatchEvent(event);
+        }
+      }
+    }
+
+    if (isInitialized) {
+      checkPendingConsentCompletion();
+    }
+  }, [isInitialized]);
+
   // Listen for consent completion event (OAuth flow: user is already on /welcome/chat)
   // When consent modal closes, check if AI consent was granted.
   // If yes → activate profile completion mode. If no → redirect to manual profile setup.
+  // IMPORTANT: Always register the listener (not conditional) to avoid race conditions.
+  // Check the flag INSIDE the handler to catch events that fire before/after mount.
   useEffect(() => {
-    const signupPending = typeof window !== 'undefined'
-      ? localStorage.getItem('ai_assistant_signup_pending')
-      : null;
-
-    // Only listen if there's a pending signup from the prospect chat flow
-    if (!signupPending) return;
-
     const handleConsentCompleted = async (event: Event) => {
+      // Check if this is a signup from prospect chat flow (check INSIDE handler to avoid race conditions)
+      const signupPending = typeof window !== 'undefined'
+        ? localStorage.getItem('ai_assistant_signup_pending')
+        : null;
+
+      // Only process if there's a pending signup from the prospect chat flow
+      if (!signupPending) {
+        console.log('[ProspectChat] Consent completed event received but no ai_assistant_signup_pending flag - ignoring');
+        return;
+      }
+
+      console.log('[ProspectChat] Consent completed event received - processing profile completion trigger');
+
       const customEvent = event as CustomEvent<{ aiProcessingConsent: boolean }>;
       const aiConsent = customEvent.detail?.aiProcessingConsent ?? false;
 
-      // Clear the signup flag
+      // Clear the signup flag immediately to prevent duplicate processing
       localStorage.removeItem('ai_assistant_signup_pending');
 
       if (!aiConsent) {
@@ -261,84 +332,114 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // AI consent granted → activate profile completion mode
+      // AI consent granted → activate profile completion mode and mark consent as given
+      // (trigger message will only fire when this flag is true)
       console.log('[ProspectChat] Consent completed with AI consent → entering profile completion mode');
-      const supabase = getSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        const knownProfile = extractKnownProfile(user);
+      // Prevent duplicate processing
+      if (profileCompletionProcessed.current) {
+        console.log('[ProspectChat] Profile completion already processed - skipping duplicate trigger');
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        console.error('[ProspectChat] Failed to get authenticated user:', authError);
         setState((prev) => ({
           ...prev,
-          profileCompletionMode: true,
-          isAuthenticated: true,
-          userId: user.id,
-          userProfile: knownProfile,
+          error: 'Authentication error. Please refresh and try again.',
+        }));
+        return;
+      }
+
+      const knownProfile = extractKnownProfile(user);
+      profileCompletionProcessed.current = true;
+
+      setState((prev) => ({
+        ...prev,
+        profileCompletionMode: true,
+        isAuthenticated: true,
+        userId: user.id,
+        userProfile: knownProfile,
+        consentGrantedForProfileCompletion: true,
+        isLoading: true,
+        error: null,
+      }));
+
+      // Trigger profile completion via backend API (sends SYSTEM message server-side and returns AI response)
+      const session = loadSession();
+
+      try {
+        console.log('[ProspectChat] Calling /api/ai/prospect/trigger-profile-completion', {
+          sessionId: session?.sessionId,
+          historyLength: session?.conversation?.length ?? 0,
+        });
+
+        const res = await fetch('/api/ai/prospect/trigger-profile-completion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include', // ensure cookies (session) are sent for auth
+          body: JSON.stringify({
+            sessionId: session?.sessionId ?? undefined,
+            conversationHistory: session?.conversation ?? [],
+            gatheredPreferences: session?.gatheredPreferences ?? {},
+            userProfile: knownProfile,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.userMessage ?? data.error ?? 'Failed to start profile completion');
+        }
+
+        const assistantMessage = data.message;
+        if (!assistantMessage || typeof assistantMessage.content !== 'string') {
+          throw new Error('Invalid profile completion response. Please try again.');
+        }
+
+        console.log('[ProspectChat] Profile completion trigger successful', {
+          messageId: assistantMessage.id,
+          contentLength: assistantMessage.content.length,
+        });
+
+        const triggerUserMessage: ProspectMessage = {
+          id: `user_trigger_${Date.now()}`,
+          role: 'user',
+          content: data.triggerMessage ?? '[Profile completion]',
+          timestamp: new Date().toISOString(),
+        };
+
+        setState((prev) => ({
+          ...prev,
+          sessionId: data.sessionId ?? prev.sessionId,
+          messages: [...prev.messages, triggerUserMessage, assistantMessage],
+          preferences: data.extractedPreferences
+            ? { ...prev.preferences, ...data.extractedPreferences }
+            : prev.preferences,
+          isLoading: false,
+        }));
+      } catch (err: any) {
+        console.error('[ProspectChat] Trigger profile completion failed:', err);
+        profileCompletionProcessed.current = false;
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: err.message ?? 'Failed to start profile completion. You can continue the conversation below.',
         }));
       }
     };
 
+    // Always register the listener (not conditional) to catch events that fire at any time
+    console.log('[ProspectChat] Registering consentSetupCompleted event listener');
     window.addEventListener('consentSetupCompleted', handleConsentCompleted);
     return () => {
+      console.log('[ProspectChat] Removing consentSetupCompleted event listener');
       window.removeEventListener('consentSetupCompleted', handleConsentCompleted);
     };
   }, [router]);
-
-  // Auto-send profile completion message when entering profile completion mode
-  useEffect(() => {
-    if (
-      isInitialized &&
-      state.profileCompletionMode &&
-      state.isAuthenticated &&
-      !profileCompletionProcessed.current &&
-      !state.isLoading
-    ) {
-      profileCompletionProcessed.current = true;
-
-      // Create a welcome back message from the assistant
-      const greeting = state.userProfile?.fullName ? `Welcome back, ${state.userProfile.fullName}!` : 'Welcome back!';
-      const welcomeMessage: ProspectMessage = {
-        id: `assistant_welcome_${Date.now()}`,
-        role: 'assistant',
-        content: `${greeting} 🎉 Great news - your account is now active! I remember our conversation about your sailing interests. Let me help you complete your profile so boat owners can see what a great match you are.
-
-Based on our chat, here's what I've gathered about your preferences:
-${state.preferences.sailingGoals ? `• **Sailing goals:** ${state.preferences.sailingGoals}` : ''}
-${state.preferences.experienceLevel ? `• **Experience level:** ${state.preferences.experienceLevel}/4` : ''}
-${state.preferences.preferredLocations?.length ? `• **Preferred locations:** ${state.preferences.preferredLocations.join(', ')}` : ''}
-${state.preferences.skills?.length ? `• **Skills:** ${state.preferences.skills.join(', ')}` : ''}
-${state.preferences.riskLevels?.length ? `• **Comfort level:** ${state.preferences.riskLevels.join(', ')}` : ''}
-
-Let's build your profile! I'll need a few things from you:
-• A short bio about your sailing background
-• What you're looking for in sailing opportunities
-• Your experience level and comfort zones
-
-Ready to get started?`,
-        timestamp: new Date().toISOString(),
-      };
-
-      setState((prev) => ({
-        ...prev,
-        messages: [...prev.messages, welcomeMessage],
-      }));
-    }
-  }, [isInitialized, state.profileCompletionMode, state.isAuthenticated, state.isLoading, state.preferences, state.userProfile]);
-
-  // Save session when state changes
-  useEffect(() => {
-    if (state.sessionId) {
-      const session: ProspectSession = {
-        sessionId: state.sessionId,
-        createdAt: new Date().toISOString(),
-        lastActiveAt: new Date().toISOString(),
-        conversation: state.messages,
-        gatheredPreferences: state.preferences,
-        viewedLegs: state.viewedLegs,
-      };
-      saveSession(session);
-    }
-  }, [state.sessionId, state.messages, state.preferences, state.viewedLegs]);
 
   const sendMessage = useCallback(async (message: string) => {
     setState((prev) => ({
@@ -383,13 +484,33 @@ Ready to get started?`,
 
       const data = await response.json();
 
+      // Parse [PROSPECT_NAME: ...] from assistant message to prefill signup form
+      const assistantContent = data.message?.content ?? '';
+      const nameMatch = assistantContent.match(PROSPECT_NAME_TAG_REGEX);
+      const extractedName = nameMatch?.[1]?.trim();
+      const preferencesUpdate: Partial<ProspectPreferences> = data.extractedPreferences
+        ? { ...data.extractedPreferences }
+        : {};
+      if (extractedName) {
+        preferencesUpdate.fullName = extractedName;
+      }
+      // Strip the tag from the message so the user doesn't see it
+      const cleanedContent = extractedName
+        ? assistantContent.replace(PROSPECT_NAME_TAG_REGEX, '').replace(/\n{2,}/g, '\n').trim()
+        : assistantContent;
+      const messageToStore =
+        cleanedContent !== assistantContent
+          ? { ...data.message, content: cleanedContent }
+          : data.message;
+
       setState((prev) => ({
         ...prev,
         sessionId: data.sessionId,
-        messages: [...prev.messages, data.message],
-        preferences: data.extractedPreferences
-          ? { ...prev.preferences, ...data.extractedPreferences }
-          : prev.preferences,
+        messages: [...prev.messages, messageToStore],
+        preferences:
+          Object.keys(preferencesUpdate).length > 0
+            ? { ...prev.preferences, ...preferencesUpdate }
+            : prev.preferences,
         isLoading: false,
       }));
     } catch (error: any) {
@@ -403,6 +524,21 @@ Ready to get started?`,
       }));
     }
   }, [state.sessionId, state.messages, state.preferences, state.profileCompletionMode, state.userId]);
+
+  // Save session when state changes
+  useEffect(() => {
+    if (state.sessionId) {
+      const session: ProspectSession = {
+        sessionId: state.sessionId,
+        createdAt: new Date().toISOString(),
+        lastActiveAt: new Date().toISOString(),
+        conversation: state.messages,
+        gatheredPreferences: state.preferences,
+        viewedLegs: state.viewedLegs,
+      };
+      saveSession(session);
+    }
+  }, [state.sessionId, state.messages, state.preferences, state.viewedLegs]);
 
   const clearError = useCallback(() => {
     setState((prev) => ({ ...prev, error: null }));
@@ -429,6 +565,8 @@ Ready to get started?`,
       isAuthenticated: false,
       userId: null,
       userProfile: null,
+      consentGrantedForProfileCompletion: false,
+      hasCompletedProfileCreation: false,
     });
     setIsReturningUser(false);
   }, []);
@@ -439,18 +577,6 @@ Ready to get started?`,
       viewedLegs: prev.viewedLegs.includes(legId)
         ? prev.viewedLegs
         : [...prev.viewedLegs, legId],
-    }));
-  }, []);
-
-  // Set target leg for registration (when user clicks "Join" on a specific leg)
-  const setTargetLeg = useCallback((legId: string, legName: string) => {
-    setState((prev) => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        targetLegId: legId,
-        targetLegName: legName,
-      },
     }));
   }, []);
 
@@ -469,7 +595,6 @@ Ready to get started?`,
     }));
 
     try {
-      // Send approval message to execute the tool call
       const response = await fetch('/api/ai/prospect/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -481,7 +606,6 @@ Ready to get started?`,
           profileCompletionMode: state.profileCompletionMode,
           userId: state.userId,
           userProfile: state.userProfile,
-          // Pass the approved tool call to execute directly
           approvedAction: action,
         }),
       });
@@ -498,6 +622,7 @@ Ready to get started?`,
         sessionId: data.sessionId,
         messages: [...prev.messages, data.message],
         isLoading: false,
+        ...(action.toolName === 'update_user_profile' ? { hasCompletedProfileCreation: true } : {}),
       }));
     } catch (error: any) {
       console.error('Approve action error:', error);
@@ -555,7 +680,6 @@ Ready to get started?`,
     clearError,
     clearSession,
     addViewedLeg,
-    setTargetLeg,
     approveAction,
     cancelAction,
     isReturningUser,

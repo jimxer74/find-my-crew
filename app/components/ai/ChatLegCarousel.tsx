@@ -124,8 +124,16 @@ export function ChatLegCarousel({
     return null;
   }
 
-  // Transform legs to LegListItemData format
-  const transformedLegs = legs.map(transformToLegListItem);
+  // Transform legs to LegListItemData format and deduplicate by leg_id
+  // (AI may return the same leg multiple times in a message)
+  const seenIds = new Set<string>();
+  const transformedLegs = legs
+    .map(transformToLegListItem)
+    .filter((leg) => {
+      if (seenIds.has(leg.leg_id)) return false;
+      seenIds.add(leg.leg_id);
+      return true;
+    });
 
   return (
     <div className="relative group my-2">

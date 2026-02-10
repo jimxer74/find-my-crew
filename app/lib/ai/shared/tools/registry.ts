@@ -23,6 +23,24 @@ export function getToolsForProspect(): ToolDefinition[] {
   return TOOL_DEFINITIONS.filter((tool) => tool.access === 'public' && !tool.disabled);
 }
 
+/** Tool names added in prospect profile-completion mode (authenticated user, post-signup). Profile only – no registration. */
+const PROFILE_COMPLETION_EXTRA_TOOLS = new Set([
+  'update_user_profile',
+  'get_profile_completion_status',
+]);
+
+/**
+ * Get tools for prospect chat when user is authenticated (profile completion mode).
+ * Includes public tools (search, etc.) plus profile tools only. Registration is done via LegDetailsPanel, not chat.
+ */
+export function getToolsForProspectProfileCompletion(): ToolDefinition[] {
+  return TOOL_DEFINITIONS.filter(
+    (tool) =>
+      !tool.disabled &&
+      (tool.access === 'public' || PROFILE_COMPLETION_EXTRA_TOOLS.has(tool.name))
+  );
+}
+
 /**
  * Get tools available for an authenticated user based on their roles
  */

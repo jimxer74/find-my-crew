@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
@@ -23,6 +24,7 @@ export function CruisingRegionSection({
 }: CruisingRegionSectionProps) {
   const t = useTranslations('crewHome');
   const router = useRouter();
+  const { user } = useAuth();
   const [legs, setLegs] = useState<LegListItemData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +96,11 @@ export function CruisingRegionSection({
     router.push(`/crew/dashboard?legId=${leg.leg_id}`);
   };
 
+  // Handle Join - open dashboard with leg and register=true (opens registration form)
+  const handleJoinClick = (leg: LegListItemData) => {
+    router.push(`/crew/dashboard?legId=${leg.leg_id}&register=true`);
+  };
+
   // Build URL for "View on Map" link
   const getMapUrl = () => {
     const params = new URLSearchParams({
@@ -158,6 +165,7 @@ export function CruisingRegionSection({
       <LegCarousel
         legs={legs}
         onLegClick={handleLegClick}
+        onJoinClick={user ? handleJoinClick : undefined}
         loading={loading}
         showMoreUrl={getMapUrl()}
       />
