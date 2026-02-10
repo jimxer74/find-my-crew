@@ -17,6 +17,7 @@ import {
   PendingAction,
   KnownUserProfile,
   PROSPECT_NAME_TAG_REGEX,
+  ProspectLegReference,
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import * as sessionService from '@/app/lib/prospect/sessionService';
@@ -913,6 +914,26 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       if (data.profileCreated === true) {
         console.log('[ProspectChatContext] 🎉 Profile created successfully! Clearing all prospect data...');
         
+        // CRITICAL: Collect all leg references from previous messages BEFORE clearing
+        // This allows displaying them after the congratulations message
+        const allPreviousLegRefs: ProspectLegReference[] = [];
+        const seenLegIds = new Set<string>();
+        
+        // Collect leg references from all messages before the congratulations message
+        for (const msg of currentState.messages) {
+          if (msg.role === 'assistant' && msg.metadata?.legReferences) {
+            for (const legRef of msg.metadata.legReferences) {
+              // Deduplicate by leg ID
+              if (!seenLegIds.has(legRef.id)) {
+                seenLegIds.add(legRef.id);
+                allPreviousLegRefs.push(legRef);
+              }
+            }
+          }
+        }
+        
+        console.log('[ProspectChatContext] 📋 Collected leg references before clearing:', allPreviousLegRefs.length);
+        
         // Clear all prospect data: messages, preferences, viewed legs, session
         // Delete session from database
         if (currentState.sessionId) {
@@ -936,10 +957,19 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         const clearedPreferences: ProspectPreferences = {};
         console.log('[ProspectChatContext] 🧹 Cleared preferences (including skills):', clearedPreferences);
         
+        // Attach collected leg references to the congratulations message metadata
+        const congratulationsMessage = data.message ? {
+          ...data.message,
+          metadata: {
+            ...data.message.metadata,
+            legReferences: allPreviousLegRefs.length > 0 ? allPreviousLegRefs : undefined,
+          },
+        } : null;
+        
         // CRITICAL: Update stateRef BEFORE setState to prevent useEffect from saving stale data
         const clearedState = {
           sessionId: newSession?.sessionId || null,
-          messages: data.message ? [data.message] : [], // Only the congratulations message
+          messages: congratulationsMessage ? [congratulationsMessage] : [], // Only the congratulations message with leg refs
           preferences: clearedPreferences, // Completely empty preferences object
           viewedLegs: [], // Clear viewed legs
           isLoading: false,
@@ -960,7 +990,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         
         setState(clearedState);
         setIsReturningUser(false);
-        console.log('[ProspectChatContext] ✅ All prospect data cleared (messages, preferences, skills, viewedLegs), profile creation complete. Showing congratulations message only.');
+        console.log('[ProspectChatContext] ✅ All prospect data cleared (messages, preferences, skills, viewedLegs), profile creation complete. Showing congratulations message with', allPreviousLegRefs.length, 'leg references.');
         return;
       }
 

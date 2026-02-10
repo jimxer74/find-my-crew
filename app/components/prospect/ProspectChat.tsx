@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
-import { ProspectMessage, PendingAction } from '@/app/lib/ai/prospect/types';
+import { ProspectMessage, PendingAction, ProspectLegReference } from '@/app/lib/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
@@ -177,8 +177,7 @@ export function ProspectChat() {
     cancelAction,
   } = useProspectChat();
 
-  // Check if this is profile completion mode
-  const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+  // Note: profile_completion query parameter is deprecated - we determine state from hasExistingProfile and isAuthenticated
 
   const [inputValue, setInputValue] = useState('');
   const [showAuthForm, setShowAuthForm] = useState<'signup' | 'login' | null>(null);
@@ -295,6 +294,7 @@ export function ProspectChat() {
     }
   };
 
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Chat header with Start Fresh option and Sign up prompt */}
@@ -304,8 +304,8 @@ export function ProspectChat() {
             Onboarding assistant
           </span>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* View Journeys - show when user is authenticated and has a profile OR profile_completion=true */}
-            {((hasExistingProfile && isAuthenticated) || (isProfileCompletion && isAuthenticated)) && (
+            {/* View Journeys - show when user is authenticated and has a profile */}
+            {(hasExistingProfile && isAuthenticated) && (
               <button
                 onClick={handleViewJourneys}
                 disabled={isNavigatingToCrew}
@@ -322,7 +322,7 @@ export function ProspectChat() {
                 >
                   <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                 </svg>
-                View Journeys
+                View All Journeys
               </button>
             )}
             <button
@@ -365,36 +365,7 @@ export function ProspectChat() {
                 <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            {isProfileCompletion && isAuthenticated ? (
-              <>
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  🎉 Welcome to SailSmart!
-                </h3>
-                <p className="text-sm max-w-sm mx-auto mb-4">
-                  Congratulations! You've successfully completed the first step and created your profile. You're now ready to explore amazing sailing opportunities!
-                </p>
-                <div className="flex justify-center mb-4">
-                  <button
-                    onClick={handleViewJourneys}
-                    disabled={isNavigatingToCrew}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    View Journeys
-                  </button>
-                </div>
-              </>
-            ) : hasExistingProfile && isAuthenticated ? (
+            {hasExistingProfile && isAuthenticated ? (
               <>
                 <h3 className="text-lg font-medium text-foreground mb-2">
                   Welcome back! You're all set
@@ -419,7 +390,7 @@ export function ProspectChat() {
                     >
                       <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                     </svg>
-                    View Journeys
+                    View All Journeys
                   </button>
                 </div>
               </>
@@ -473,36 +444,55 @@ export function ProspectChat() {
                   disabled={isLoading}
                 />
               )}
-              {/* Show "View Journeys" button after congratulations message (profile creation success) */}
+              {/* Show "View Journeys" button and leg carousel after congratulations message (profile creation success) */}
               {message.role === 'assistant' && 
                (message.content.includes('Congratulations! Welcome to SailSmart!') || 
                 message.metadata?.toolCalls?.some(tc => tc.name === 'update_user_profile')) && 
                isAuthenticated && (
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <button
-                    onClick={handleViewJourneys}
-                    disabled={isNavigatingToCrew}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm w-full justify-center"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
+                <>
+                  {/* Show previously found legs if any - they're now stored in the congratulations message metadata */}
+                  {message.metadata?.legReferences && message.metadata.legReferences.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <p className="text-sm font-medium text-foreground mb-3">
+                        Here are the sailing opportunities we found earlier:
+                      </p>
+                      <ChatLegCarousel
+                        legs={message.metadata.legReferences}
+                        onLegClick={(legId) => handleLegClick(legId, '')}
+                        onJoinClick={isAuthenticated && hasExistingProfile ? handleJoinClick : undefined}
+                        compact={true}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <button
+                      onClick={handleViewJourneys}
+                      disabled={isNavigatingToCrew}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm w-full justify-center"
                     >
-                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    View Journeys
-                  </button>
-                </div>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      View All Journeys
+                    </button>
+                  </div>
+                </>
               )}
               {/* Show leg carousel if leg references are available */}
+              {/* Exclude congratulations message - it has its own carousel display above */}
               {message.role === 'assistant' &&
                message.metadata?.legReferences &&
-               message.metadata.legReferences.length > 0 && (
+               message.metadata.legReferences.length > 0 &&
+               !(message.content.includes('Congratulations! Welcome to SailSmart!') || 
+                 message.metadata?.toolCalls?.some(tc => tc.name === 'update_user_profile')) && (
                 <div className="mt-3 -mx-2">
                   <ChatLegCarousel
                     legs={message.metadata.legReferences}
@@ -598,8 +588,8 @@ export function ProspectChat() {
         </div>
       </div>
 
-      {/* Input area - only show for users without existing profile and not in profile completion mode */}
-      {!hasExistingProfile && !(isProfileCompletion && isAuthenticated) && (
+      {/* Input area - show for users without existing profile */}
+      {!hasExistingProfile && (
         <div className="border-t border-border p-4 bg-card">
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">
