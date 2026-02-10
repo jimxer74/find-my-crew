@@ -167,7 +167,6 @@ export function ProspectChat() {
     error,
     isReturningUser,
     isAuthenticated,
-    hasCompletedProfileCreation,
     hasExistingProfile,
     sendMessage,
     clearError,
@@ -284,8 +283,8 @@ export function ProspectChat() {
             Onboarding assistant
           </span>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* View Journeys - show when user is authenticated and has completed profile creation; clears chat and goes to /crew */}
-            {hasCompletedProfileCreation && isAuthenticated && (
+            {/* View Journeys - show when user is authenticated and has a profile; clears chat and goes to /crew */}
+            {hasExistingProfile && isAuthenticated && (
               <button
                 onClick={handleViewJourneys}
                 disabled={isNavigatingToCrew}
@@ -376,8 +375,8 @@ export function ProspectChat() {
               </>
             ) : (
               <>
-                {/* Show View Journeys button if user is authenticated and has completed profile */}
-                {isAuthenticated && hasCompletedProfileCreation ? (
+                {/* Show View Journeys button if user is authenticated and has a profile */}
+                {isAuthenticated && hasExistingProfile ? (
                   <div className="flex flex-col items-center gap-4">
                     <h3 className="text-lg font-medium text-foreground mb-2">
                       Welcome back! You're all set
@@ -415,8 +414,8 @@ export function ProspectChat() {
                         : "Tell me about your sailing dreams and I'll help you find the perfect opportunity. No sign-up needed to start exploring!"}
                     </p>
                     {/* Sign up button for unauthenticated users - visible from the start */}
-                    {/* Don't show if user is authenticated OR has completed profile creation OR has existing profile */}
-                    {!isAuthenticated && !hasCompletedProfileCreation && !hasExistingProfile && !showAuthForm && (
+                    {/* Don't show if user is authenticated OR has existing profile */}
+                    {!isAuthenticated && !hasExistingProfile && !showAuthForm && (
                   <div className="flex justify-center mb-4">
                     <button
                       onClick={() => setShowAuthForm('signup')}
@@ -479,13 +478,10 @@ export function ProspectChat() {
                   disabled={isLoading}
                 />
               )}
-              {/* Show inline sign-up button after assistant messages if user is not authenticated and hasn't completed profile */}
-              {/* Don't show if user is authenticated and has completed profile creation or has existing profile */}
-              {message.role === 'assistant' &&
-               !isAuthenticated &&
-               !hasCompletedProfileCreation &&
-               !hasExistingProfile &&
-               !showAuthForm && (
+              {/* Show inline sign-up button after assistant messages if user is not authenticated and doesn't have a profile */}
+              {/* Don't show if user is authenticated or has existing profile */}
+              {message.role === 'assistant' && !isAuthenticated && !hasExistingProfile &&
+                (
                 <div className="mt-3 pt-3 border-t border-border/50">
                   <button
                     onClick={() => setShowAuthForm('signup')}
@@ -514,7 +510,7 @@ export function ProspectChat() {
                   <ChatLegCarousel
                     legs={message.metadata.legReferences}
                     onLegClick={(legId) => handleLegClick(legId, '')}
-                    onJoinClick={isAuthenticated && hasCompletedProfileCreation ? handleJoinClick : undefined}
+                    onJoinClick={isAuthenticated && hasExistingProfile ? handleJoinClick : undefined}
                     compact={true}
                   />
                 </div>
@@ -607,9 +603,9 @@ export function ProspectChat() {
         </div>
       </div>
 
-      {/* View Journeys CTA when profile created - clear prospect data and go to /crew */}
-      {/* Show for users who have completed profile creation (either just created or already had one) */}
-      {hasCompletedProfileCreation && isAuthenticated && (
+      {/* View Journeys CTA when profile exists - clear prospect data and go to /crew */}
+      {/* Show for users who have a profile */}
+      {hasExistingProfile && isAuthenticated && (
         <div className="border-t border-border px-4 py-3 bg-primary/5">
           <div className="max-w-2xl lg:max-w-4xl mx-auto flex justify-center">
             <button

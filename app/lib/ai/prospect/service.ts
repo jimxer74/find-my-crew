@@ -1180,18 +1180,18 @@ export async function prospectChat(
   const userProfile = request.userProfile || null;
   const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
 
-  // Check if user already has a profile (authenticated user with existing profile)
+  // Check if user already has a profile (simple check - just existence)
   let hasExistingProfile = false;
   if (authenticatedUserId && !isProfileCompletionMode) {
     const { data: profile } = await supabase
       .from('profiles')
-      .select('roles, profile_completion_percentage')
+      .select('id')
       .eq('id', authenticatedUserId)
       .maybeSingle();
     
-    if (profile && profile.roles && profile.roles.length > 0) {
+    if (profile) {
       hasExistingProfile = true;
-      log('✅ User already has a profile with roles:', profile.roles);
+      log('✅ User already has a profile');
     }
   }
 

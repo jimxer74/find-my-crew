@@ -61,9 +61,7 @@ interface ProspectChatState {
   userProfile: KnownUserProfile | null;
   /** True only after user has completed signup AND granted AI consent (consentSetupCompleted with aiProcessingConsent) */
   consentGrantedForProfileCompletion: boolean;
-  /** True after user has successfully saved profile via update_user_profile (approve "Save Profile"). Enables showing Join buttons. */
-  hasCompletedProfileCreation: boolean;
-  /** True if user is already logged in and has an existing profile when they first access the chat */
+  /** True if user has a profile (regardless of completion status) */
   hasExistingProfile: boolean;
 }
 
@@ -157,7 +155,6 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     userId: null,
     userProfile: null,
     consentGrantedForProfileCompletion: false,
-    hasCompletedProfileCreation: false,
     hasExistingProfile: false,
   });
 
@@ -323,7 +320,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           setState((prev) => ({
             ...prev,
             profileCompletionMode: true,
-            isAuthenticated: true,
+            isAuthenticated: true, // User exists = authenticated
             userId: user.id,
             userProfile: knownProfile,
           }));
@@ -340,9 +337,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   // Check if user is already logged in and has a profile when they first access the chat
   useEffect(() => {
     async function checkExistingProfile() {
-      // Skip if already in profile completion mode or if messages exist (user already started chatting)
+      // Skip if already in profile completion mode
       const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
-      if (isProfileCompletion || state.messages.length > 0) {
+      if (isProfileCompletion) {
         return;
       }
 
@@ -350,83 +347,122 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Check if user has a profile with roles
+        // User is authenticated - set isAuthenticated to true
+        const knownProfile = extractKnownProfile(user);
+        
+        // Check if user has a profile (simple check - just existence)
         const { data: profile } = await supabase
           .from('profiles')
-          .select('roles, profile_completion_percentage')
+          .select('id')
           .eq('id', user.id)
           .maybeSingle();
 
-        if (profile && profile.roles && profile.roles.length > 0) {
-          // User is logged in and has a profile with roles
-          const knownProfile = extractKnownProfile(user);
-          setState((prev) => ({
-            ...prev,
-            isAuthenticated: true,
-            userId: user.id,
-            userProfile: knownProfile,
-            hasExistingProfile: true,
-            hasCompletedProfileCreation: true, // They already have a profile, so this is true
-          }));
-          console.log('[ProspectChat] User already has profile:', user.id, 'roles:', profile.roles);
-        }
-      }
-    }
-
-    if (isInitialized) {
-      checkExistingProfile();
-    }
-  }, [isInitialized, searchParams, state.messages.length]);
-
-  // Listen for auth state changes to update isAuthenticated when user logs in/out
-  useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[ProspectChatContext] Auth state changed:', event, 'user:', session?.user?.id);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        // User just signed in - check if they have a profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('roles, profile_completion_percentage')
-          .eq('id', session.user.id)
-          .maybeSingle();
-
-        const knownProfile = extractKnownProfile(session.user);
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true, // User exists = authenticated
+          userId: user.id,
+          userProfile: knownProfile,
+          hasExistingProfile: !!profile, // Simple check: profile exists or not
+        }));
         
-        if (profile && profile.roles && profile.roles.length > 0) {
-          // User has a profile with roles
-          setState((prev) => ({
-            ...prev,
-            isAuthenticated: true,
-            userId: session.user.id,
-            userProfile: knownProfile,
-            hasExistingProfile: true,
-            hasCompletedProfileCreation: true,
-          }));
-          console.log('[ProspectChatContext] User signed in with existing profile:', session.user.id);
+        if (profile) {
+          console.log('[ProspectChat] User has profile:', user.id);
         } else {
-          // User signed in but no profile yet - set authenticated but not completed
-          setState((prev) => ({
-            ...prev,
-            isAuthenticated: true,
-            userId: session.user.id,
-            userProfile: knownProfile,
-            hasExistingProfile: false,
-            hasCompletedProfileCreation: false,
-          }));
-          console.log('[ProspectChatContext] User signed in without profile:', session.user.id);
+          console.log('[ProspectChat] User authenticated but no profile yet:', user.id);
         }
-      } else if (event === 'SIGNED_OUT') {
-        // User signed out - clear authentication state
+      } else {
+        // No user - ensure isAuthenticated is false
         setState((prev) => ({
           ...prev,
           isAuthenticated: false,
           userId: null,
           userProfile: null,
           hasExistingProfile: false,
-          hasCompletedProfileCreation: false,
+        }));
+      }
+    }
+
+    if (isInitialized) {
+      checkExistingProfile();
+    }
+  }, [isInitialized, searchParams]);
+
+  // Listen for auth state changes to update isAuthenticated when user logs in/out
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    
+    // Check initial auth state on mount
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        const knownProfile = extractKnownProfile(user);
+        // Check if user has a profile (simple check - just existence)
+        supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            setState((prev) => ({
+              ...prev,
+              isAuthenticated: true, // User exists = authenticated
+              userId: user.id,
+              userProfile: knownProfile,
+              hasExistingProfile: !!profile, // Simple check: profile exists or not
+            }));
+            console.log('[ProspectChatContext] Initial auth check - user authenticated:', user.id, 'has profile:', !!profile);
+          });
+      } else {
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: false,
+          userId: null,
+          userProfile: null,
+          hasExistingProfile: false,
+        }));
+        console.log('[ProspectChatContext] Initial auth check - no user');
+      }
+    });
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[ProspectChatContext] Auth state changed:', event, 'user:', session?.user?.id);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // User just signed in - set authenticated, then check profile
+        const knownProfile = extractKnownProfile(session.user);
+        
+        // First set authentication state
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: true, // User exists = authenticated
+          userId: session.user.id,
+          userProfile: knownProfile,
+        }));
+        
+        // Then check if they have a profile (simple check - just existence)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        
+        setState((prev) => ({
+          ...prev,
+          hasExistingProfile: !!profile, // Simple check: profile exists or not
+        }));
+        
+        if (profile) {
+          console.log('[ProspectChatContext] User signed in with existing profile:', session.user.id);
+        } else {
+          console.log('[ProspectChatContext] User signed in without profile:', session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out - clear authentication state
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: false, // No user = not authenticated
+          userId: null,
+          userProfile: null,
+          hasExistingProfile: false,
         }));
         console.log('[ProspectChatContext] User signed out');
       }
@@ -541,7 +577,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       setState((prev) => ({
         ...prev,
         profileCompletionMode: true,
-        isAuthenticated: true,
+        isAuthenticated: true, // User exists = authenticated
         userId: user.id,
         userProfile: knownProfile,
         consentGrantedForProfileCompletion: true,
@@ -873,7 +909,6 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       userId: null,
       userProfile: null,
       consentGrantedForProfileCompletion: false,
-      hasCompletedProfileCreation: false,
       hasExistingProfile: false,
     });
     setIsReturningUser(false);
@@ -936,7 +971,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         sessionId: data.sessionId,
         messages: [...prev.messages, data.message],
         isLoading: false,
-        ...(action.toolName === 'update_user_profile' ? { hasCompletedProfileCreation: true } : {}),
+        ...(action.toolName === 'update_user_profile' ? { hasExistingProfile: true } : {}),
       }));
     } catch (error: any) {
       console.error('Approve action error:', error);
