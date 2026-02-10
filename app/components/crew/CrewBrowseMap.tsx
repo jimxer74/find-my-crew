@@ -844,6 +844,7 @@ export function CrewBrowseMap({
       style: mapStyle, // Less colorful, muted style
       center: initialCenter,
       zoom: initialZoom,
+      projection: 'mercator', // Use 2D Mercator projection instead of globe view
     });
 
     // Add navigation controls

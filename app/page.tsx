@@ -389,7 +389,7 @@ export default function WelcomePage() {
                       </svg>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium">Continue previous conversation</p>
+                      <p className="text-sm text-white font-medium">You are allmost there - continue your journey</p>
                       {sessionContext && (
                         <p className="text-xs text-white/70 truncate">&quot;{sessionContext}&quot;</p>
                       )}
@@ -405,29 +405,6 @@ export default function WelcomePage() {
                         strokeLinejoin="round"
                         strokeWidth="2"
                         d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
-                  {/* Clear session button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClearSession();
-                    }}
-                    className="absolute top-1 right-1 p-1.5 rounded-full text-white/50 hover:text-white hover:bg-white/20 transition-colors"
-                    title="Clear and start over"
-                  >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M6 18L18 6M6 6l12 12"
                       />
                     </svg>
                   </button>

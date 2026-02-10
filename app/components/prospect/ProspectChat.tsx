@@ -241,8 +241,8 @@ export function ProspectChat() {
     // Check screen width directly to ensure accurate detection at click time
     const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
     if (isMobileScreen) {
-      // Mobile: navigate in same window with from=assistant param for back button
-      window.location.href = `${url}&from=assistant`;
+      // Mobile: navigate in same window with from=prospect param for back button
+      window.location.href = `${url}&from=prospect`;
     } else {
       // Desktop: open in new tab using programmatic anchor click
       const anchor = document.createElement('a');
@@ -454,7 +454,7 @@ export function ProspectChat() {
                   {message.metadata?.legReferences && message.metadata.legReferences.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-border/50">
                       <p className="text-sm font-medium text-foreground mb-3">
-                        Here are the sailing opportunities we found earlier:
+                        Here are the sailing opportunities matching your profile - Are you ready to register?
                       </p>
                       <ChatLegCarousel
                         legs={message.metadata.legReferences}
