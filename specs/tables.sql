@@ -1218,4 +1218,96 @@ using (
 );
 
 
+-- ============================================================================
+-- TABLE: prospect_sessions
+-- ============================================================================
+
+create table if not exists public.prospect_sessions (
+  session_id uuid primary key,
+  -- CRITICAL: user_id is NULL for unauthenticated users (before signup)
+  -- After signup, this gets linked to auth.users(id)
+  user_id uuid references auth.users(id) on delete cascade, -- NULLABLE for unauthenticated users
+  -- Optional: email for linking sessions before signup (if user shares email)
+  -- This helps link sessions when user signs up with same email
+  email text,
+  conversation jsonb not null default '[]'::jsonb,
+  gathered_preferences jsonb not null default '{}'::jsonb,
+  viewed_legs text[] default '{}'::text[],
+  created_at timestamptz not null default now(),
+  last_active_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '7 days')
+);
+
+-- Indexes for performance
+create index if not exists idx_prospect_sessions_user_id 
+  on public.prospect_sessions(user_id) 
+  where user_id is not null;
+
+-- Index for email-based session linking (before signup)
+create index if not exists idx_prospect_sessions_email 
+  on public.prospect_sessions(email) 
+  where email is not null and user_id is null;
+
+create index if not exists idx_prospect_sessions_expires 
+  on public.prospect_sessions(expires_at);
+
+create index if not exists idx_prospect_sessions_last_active 
+  on public.prospect_sessions(last_active_at);
+
+-- Enable Row Level Security
+alter table public.prospect_sessions enable row level security;
+
+-- RLS Policies
+-- CRITICAL: Allow unauthenticated access to sessions with user_id = NULL
+-- This enables prospect users to access their sessions before signup
+-- Security: API routes MUST validate session_id from cookie matches requested session
+
+-- SELECT: Unauthenticated users can view sessions with user_id = NULL
+create policy "Unauthenticated users can view their sessions"
+  on public.prospect_sessions
+  for select
+  using (user_id is null);
+
+-- INSERT: Unauthenticated users can create sessions with user_id = NULL
+create policy "Unauthenticated users can create sessions"
+  on public.prospect_sessions
+  for insert
+  with check (user_id is null);
+
+-- UPDATE: Unauthenticated users can update sessions with user_id = NULL
+create policy "Unauthenticated users can update their sessions"
+  on public.prospect_sessions
+  for update
+  using (user_id is null)
+  with check (user_id is null);
+
+-- DELETE: Unauthenticated users can delete sessions with user_id = NULL
+create policy "Unauthenticated users can delete their sessions"
+  on public.prospect_sessions
+  for delete
+  using (user_id is null);
+
+-- Authenticated users can access their own sessions
+create policy "Users can view own sessions"
+  on public.prospect_sessions
+  for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update own sessions"
+  on public.prospect_sessions
+  for update
+  using (auth.uid() = user_id);
+
+create policy "Users can delete own sessions"
+  on public.prospect_sessions
+  for delete
+  using (auth.uid() = user_id);
+
+-- Service role can access all sessions (for cleanup jobs and session linking)
+create policy "Service role can manage all sessions"
+  on public.prospect_sessions
+  for all
+  using (auth.jwt() ->> 'role' = 'service_role');
+
+
 

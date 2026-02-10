@@ -19,9 +19,9 @@ import {
   PROSPECT_NAME_TAG_REGEX,
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import * as sessionService from '@/app/lib/prospect/sessionService';
 
-const STORAGE_KEY = 'prospect_session';
-const SESSION_EXPIRY_DAYS = 7;
+const SESSION_EXPIRY_DAYS = 7; // Keep for reference, expiry handled server-side
 
 /**
  * Fetch session ID from server (stored in HttpOnly cookie)
@@ -78,48 +78,9 @@ interface ProspectChatContextType extends ProspectChatState {
 const ProspectChatContext = createContext<ProspectChatContextType | null>(null);
 
 /**
- * Load session from localStorage
+ * NOTE: Session loading and saving now handled by sessionService via API
+ * localStorage functions removed - all session data stored server-side
  */
-function loadSession(): ProspectSession | null {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return null;
-
-    const session: ProspectSession = JSON.parse(stored);
-
-    // Check if session has expired
-    const lastActive = new Date(session.lastActiveAt);
-    const now = new Date();
-    const daysSinceActive =
-      (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24);
-
-    if (daysSinceActive > SESSION_EXPIRY_DAYS) {
-      localStorage.removeItem(STORAGE_KEY);
-      return null;
-    }
-
-    return session;
-  } catch (e) {
-    console.error('Failed to load prospect session:', e);
-    return null;
-  }
-}
-
-/**
- * Save session to localStorage
- */
-function saveSession(session: ProspectSession): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    session.lastActiveAt = new Date().toISOString();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  } catch (e) {
-    console.error('Failed to save prospect session:', e);
-  }
-}
 
 /**
  * Extract known profile data from Supabase auth user metadata.
@@ -165,76 +126,89 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const initSessionRunRef = useRef(false); // Track if initSession has run
 
-  // Load session on mount - combine cookie (session ID) with localStorage (data)
+  // Load session on mount - get session ID from cookie, then load data from API
   useEffect(() => {
-    async function initSession() {
-      // Check if we're in profile completion mode (post-signup flow)
-      const isProfileCompletionMode = searchParams?.get('profile_completion') === 'true';
+    // CRITICAL: Only run once on mount to prevent overwriting messages
+    if (initSessionRunRef.current) {
+      return;
+    }
+    initSessionRunRef.current = true;
 
-      // Load localStorage data first - this contains the conversation history
-      let localSession = loadSession();
-      if (localSession) {
-        const userMessages = localSession.conversation.filter(m => m.role === 'user');
-        const assistantMessages = localSession.conversation.filter(m => m.role === 'assistant');
-        console.log('[ProspectChatContext] Loaded session from localStorage - total messages:', localSession.conversation.length,
-          'user messages:', userMessages.length,
-          'assistant messages:', assistantMessages.length,
-          'sessionId:', localSession.sessionId);
+    async function initSession() {
+      try {
+        // Check if we're in profile completion mode (post-signup flow)
+        const isProfileCompletionMode = searchParams?.get('profile_completion') === 'true';
+
+        // Get session ID from HttpOnly cookie
+        const cookieSession = await fetchSessionFromCookie();
         
-        // CRITICAL: For authenticated users, clear localStorage if session IDs don't match
-        // This prevents loading old conversation history from previous users
-        // We'll check this after we get the cookie session ID below
-        
-        // CRITICAL: Clear skills from preferences if they exist - skills should ONLY come from conversation, not localStorage
-        // This prevents stale skills from previous sessions being reused
-        if (localSession.gatheredPreferences?.skills) {
-          console.log('[ProspectChatContext] 🧹 Removing stale skills from loaded preferences:', localSession.gatheredPreferences.skills);
-          const { skills, ...prefsWithoutSkills } = localSession.gatheredPreferences;
-          localSession.gatheredPreferences = prefsWithoutSkills;
-          // Save cleaned preferences back to localStorage
-          saveSession(localSession);
+        if (!cookieSession) {
+          console.log('[ProspectChatContext] No session cookie found - starting fresh');
+          setIsInitialized(true);
+          return;
         }
-        
-        // Extract PROSPECT_NAME from all assistant messages if not already in preferences
-        // This ensures the name persists even if it was extracted in an earlier message
-        if (!localSession.gatheredPreferences?.fullName) {
-          for (const msg of assistantMessages) {
-            const nameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
-            if (nameMatch?.[1]?.trim()) {
-              const extractedName = nameMatch[1].trim();
-              console.log('[ProspectChatContext] Found PROSPECT_NAME in stored message:', extractedName);
-              // Update preferences with extracted name
-              localSession.gatheredPreferences = {
-                ...localSession.gatheredPreferences,
-                fullName: extractedName,
-              };
-              // Save updated preferences back to localStorage
-              saveSession(localSession);
-              break; // Use first found name
+
+        const sessionId = cookieSession.sessionId;
+        console.log('[ProspectChatContext] Session ID from cookie:', sessionId, 'isNewSession:', cookieSession.isNewSession);
+
+        // Load session data from API
+        let loadedSession: ProspectSession | null = null;
+        if (!cookieSession.isNewSession) {
+          // Existing session - try to load from database
+          try {
+            loadedSession = await sessionService.loadSession(sessionId);
+            if (loadedSession) {
+              const userMessages = loadedSession.conversation.filter(m => m.role === 'user');
+              const assistantMessages = loadedSession.conversation.filter(m => m.role === 'assistant');
+              console.log('[ProspectChatContext] Loaded session from API - total messages:', loadedSession.conversation.length,
+                'user messages:', userMessages.length,
+                'assistant messages:', assistantMessages.length);
+              
+              // CRITICAL: Clear skills from preferences if they exist - skills should ONLY come from conversation, not stored preferences
+              // This prevents stale skills from previous sessions being reused
+              if (loadedSession.gatheredPreferences?.skills) {
+                console.log('[ProspectChatContext] 🧹 Removing stale skills from loaded preferences:', loadedSession.gatheredPreferences.skills);
+                const { skills, ...prefsWithoutSkills } = loadedSession.gatheredPreferences;
+                loadedSession.gatheredPreferences = prefsWithoutSkills;
+                // Save cleaned preferences back to API
+                await sessionService.saveSession(sessionId, loadedSession);
+              }
+              
+              // Extract PROSPECT_NAME from all assistant messages if not already in preferences
+              // This ensures the name persists even if it was extracted in an earlier message
+              if (!loadedSession.gatheredPreferences?.fullName) {
+                for (const msg of assistantMessages) {
+                  const nameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
+                  if (nameMatch?.[1]?.trim()) {
+                    const extractedName = nameMatch[1].trim();
+                    console.log('[ProspectChatContext] Found PROSPECT_NAME in stored message:', extractedName);
+                    // Update preferences with extracted name
+                    loadedSession.gatheredPreferences = {
+                      ...loadedSession.gatheredPreferences,
+                      fullName: extractedName,
+                    };
+                    // Save updated preferences back to API
+                    await sessionService.saveSession(sessionId, loadedSession);
+                    break; // Use first found name
+                  }
+                }
+              }
+            } else {
+              console.log('[ProspectChatContext] No session found in database for session ID:', sessionId);
             }
+          } catch (error) {
+            console.error('[ProspectChatContext] Error loading session from API:', error);
+            // Continue with empty session on error
           }
         }
-      }
 
-      // First, get session ID from HttpOnly cookie
-      const cookieSession = await fetchSessionFromCookie();
-
-      if (cookieSession) {
-        // CRITICAL: If localStorage session ID doesn't match cookie session ID, clear localStorage
-        // This prevents loading old conversation history from previous users/sessions
-        if (localSession && localSession.sessionId !== cookieSession.sessionId) {
-          console.log('[ProspectChatContext] 🧹 Session ID mismatch - clearing old localStorage data. Old:', localSession.sessionId, 'New:', cookieSession.sessionId);
-          localStorage.removeItem(STORAGE_KEY);
-          localSession = null; // Treat as no session
-        }
-        
-        // Check if localStorage data matches the cookie session
-        if (localSession && localSession.sessionId === cookieSession.sessionId) {
-          // Restore full session from localStorage
+        // Restore session data or start fresh
+        if (loadedSession) {
+          const sessionToUse = loadedSession;
           // Only clear fullName if this is a page refresh (session exists but no active conversation)
           // If there are messages, keep the fullName as it was extracted during the conversation
-          const sessionToUse = localSession; // Store reference for TypeScript
           const preferencesToUse = sessionToUse.conversation.length === 0
             ? (() => {
                 // New/empty session - clear fullName
@@ -244,106 +218,53 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               })()
             : sessionToUse.gatheredPreferences; // Active conversation - keep fullName
           
-          // Only update localStorage if we cleared fullName
+          // Update session if we cleared fullName
           if (sessionToUse.conversation.length === 0 && sessionToUse.gatheredPreferences?.fullName) {
             const updatedSession: ProspectSession = {
               ...sessionToUse,
               gatheredPreferences: preferencesToUse,
             };
-            saveSession(updatedSession);
+            await sessionService.saveSession(sessionId, updatedSession);
           }
           
-          setState((prev) => ({
-            ...prev,
-            sessionId: cookieSession.sessionId,
-            messages: sessionToUse.conversation,
-            preferences: preferencesToUse,
-            viewedLegs: sessionToUse.viewedLegs,
-          }));
-          setIsReturningUser(sessionToUse.conversation.length > 0);
-        } else if (localSession && localSession.conversation.length > 0) {
-          // This branch should not be reached if we cleared localSession above
-          // But if it is, we should still check session ID match
-          const sessionToUse = localSession; // Store reference for TypeScript
-          if (sessionToUse.sessionId === cookieSession.sessionId) {
-            // localStorage has conversation data - preserve it even if cookie doesn't match
-            // This ensures conversation history survives when user leaves and comes back
-            // Keep fullName since there's an active conversation
-            console.log('[ProspectChatContext] Preserving localStorage session with conversation data, updating sessionId to match cookie');
-            // Update localStorage session with new cookie session ID to keep them in sync
-            const updatedSession: ProspectSession = {
-              ...sessionToUse,
-              sessionId: cookieSession.sessionId,
-              lastActiveAt: new Date().toISOString(),
-              // Keep existing preferences including fullName
-            };
-            saveSession(updatedSession);
-            setState((prev) => ({
+          setState((prev) => {
+            // CRITICAL: Don't overwrite messages if they already exist (user might have sent a message)
+            // Only set messages if state is empty (initial load)
+            const shouldSetMessages = prev.messages.length === 0;
+            if (!shouldSetMessages) {
+              console.log('[ProspectChatContext] ⚠️ Skipping message overwrite - messages already exist in state:', prev.messages.length);
+            }
+            return {
               ...prev,
-              sessionId: cookieSession.sessionId,
-              messages: sessionToUse.conversation,
-              preferences: sessionToUse.gatheredPreferences,
+              sessionId,
+              messages: shouldSetMessages ? sessionToUse.conversation : prev.messages,
+              preferences: preferencesToUse,
               viewedLegs: sessionToUse.viewedLegs,
-            }));
-            setIsReturningUser(sessionToUse.conversation.length > 0);
-          } else {
-            // Session IDs don't match - start fresh
-            console.log('[ProspectChatContext] Session ID mismatch in else branch - starting fresh');
-            setState((prev) => ({
-              ...prev,
-              sessionId: cookieSession.sessionId,
-              preferences: {}, // Clear preferences for new session
-            }));
-            setIsReturningUser(false);
-          }
+            };
+          });
+          setIsReturningUser(sessionToUse.conversation.length > 0);
         } else {
-          // Cookie exists but localStorage is empty or has no conversation
-          // Start fresh with the cookie session ID - clear any old preferences including fullName
+          // No session found - start fresh
+          console.log('[ProspectChatContext] Starting fresh session');
           setState((prev) => ({
             ...prev,
-            sessionId: cookieSession.sessionId,
-            preferences: {}, // Clear preferences for new session
+            sessionId,
+            messages: [],
+            preferences: {},
+            viewedLegs: [],
           }));
           setIsReturningUser(false);
         }
-      } else {
-        // No cookie session - fallback to localStorage only (legacy support)
-        if (localSession) {
-          const sessionToUse = localSession; // Store reference for TypeScript
-          // Only clear fullName if there's no active conversation
-          const preferencesToUse = sessionToUse.conversation.length === 0
-            ? (() => {
-                const prefs = { ...sessionToUse.gatheredPreferences };
-                delete prefs.fullName;
-                return prefs;
-              })()
-            : sessionToUse.gatheredPreferences;
-          
-          // Only update localStorage if we cleared fullName
-          if (sessionToUse.conversation.length === 0 && sessionToUse.gatheredPreferences?.fullName) {
-            const updatedSession: ProspectSession = {
-              ...sessionToUse,
-              gatheredPreferences: preferencesToUse,
-            };
-            saveSession(updatedSession);
-          }
-          
-          setState((prev) => ({
-            ...prev,
-            sessionId: sessionToUse.sessionId,
-            messages: sessionToUse.conversation,
-            preferences: preferencesToUse,
-            viewedLegs: sessionToUse.viewedLegs,
-          }));
-          setIsReturningUser(sessionToUse.conversation.length > 0);
-        }
-      }
 
-      setIsInitialized(true);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('[ProspectChatContext] Error initializing session:', error);
+        setIsInitialized(true); // Still mark as initialized to prevent infinite loops
+      }
     }
 
     initSession();
-  }, [searchParams]);
+  }, []); // Empty dependency array - only run once on mount to prevent overwriting messages
 
   // Detect profile completion mode and check authentication
   useEffect(() => {
@@ -387,7 +308,17 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError) {
-        console.error('[ProspectChatContext] ❌ Auth check error:', authError);
+        // AuthSessionMissingError is expected for unauthenticated users (prospect flow)
+        // Don't log it as an error - it's a normal state
+        const isSessionMissingError = authError.message?.includes('Auth session missing') || 
+                                      authError.name === 'AuthSessionMissingError';
+        
+        if (isSessionMissingError) {
+          console.log('[ProspectChatContext] ℹ️ User is not authenticated (expected for prospect flow)');
+        } else {
+          console.error('[ProspectChatContext] ❌ Auth check error:', authError);
+        }
+        
         setState((prev) => ({
           ...prev,
           isAuthenticated: false,
@@ -548,6 +479,22 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         console.log('[ProspectChatContext] 🔍 SIGNED_IN - Checking profile for user:', session.user.id);
         // User just signed in - set authenticated, then check profile
         const knownProfile = extractKnownProfile(session.user);
+        
+        // CRITICAL: Link prospect session to authenticated user after signup
+        const currentSessionId = stateRef.current?.sessionId;
+        if (currentSessionId) {
+          try {
+            await sessionService.linkSessionToUser(
+              currentSessionId,
+              session.user.id,
+              session.user.email || undefined
+            );
+            console.log('[ProspectChatContext] ✅ Linked prospect session to user:', session.user.id);
+          } catch (error) {
+            console.error('[ProspectChatContext] Error linking session to user:', error);
+            // Don't fail signup if linking fails - non-critical
+          }
+        }
         
         // First set authentication state
         setState((prev) => ({
@@ -774,7 +721,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       }));
 
       // Trigger profile completion via backend API (sends SYSTEM message server-side and returns AI response)
-      const session = loadSession();
+      // Load session from API instead of localStorage
+      const currentSessionId = stateRef.current?.sessionId;
+      let session: ProspectSession | null = null;
+      if (currentSessionId) {
+        try {
+          session = await sessionService.loadSession(currentSessionId);
+        } catch (error) {
+          console.error('[ProspectChat] Error loading session for profile completion:', error);
+        }
+      }
 
       try {
         console.log('[ProspectChat] Calling /api/ai/prospect/trigger-profile-completion', {
@@ -848,6 +804,28 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = useCallback(async (message: string) => {
     console.log('[ProspectChatContext] sendMessage called with:', message);
+    
+    // Extract email from message if user shares it (for session recovery)
+    const extractedEmail = sessionService.extractEmailFromMessage(message);
+    if (extractedEmail) {
+      console.log('[ProspectChatContext] 📧 Extracted email from message:', extractedEmail);
+      // Update session with email (will be saved via auto-save useEffect)
+      setState((prev) => {
+        if (prev.sessionId) {
+          // Store email in preferences for now (will be saved to session.email via API)
+          const updatedPreferences = {
+            ...prev.preferences,
+            email: extractedEmail,
+          } as ProspectPreferences & { email?: string };
+          return {
+            ...prev,
+            preferences: updatedPreferences,
+          };
+        }
+        return prev;
+      });
+    }
+    
     // Create user message first
     const userMessage: ProspectMessage = {
       id: `user_${Date.now()}`,
@@ -858,49 +836,69 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
     console.log('[ProspectChatContext] Created user message:', userMessage);
 
-    // Update state with loading and user message in one update
-    // Use functional update to ensure we have the latest state
-    let conversationHistoryForAPI: ProspectMessage[] = [];
+    // CRITICAL: Get current messages from state directly (not ref) to ensure we have all previous messages
+    // The ref might be stale or null, but state is always current
+    // Use stateRef as fallback only if state is somehow unavailable
+    const currentMessages = state.messages.length > 0 ? state.messages : (stateRef.current?.messages || []);
+    const updatedMessages = [...currentMessages, userMessage];
     
-    // Use a synchronous state update to ensure the user message is immediately in state
+    console.log('[ProspectChatContext] 📝 Preparing to send message - state messages:', state.messages.length,
+      'ref messages:', stateRef.current?.messages?.length || 0,
+      'current messages (used):', currentMessages.length,
+      'updated messages:', updatedMessages.length,
+      'user message ID:', userMessage.id,
+      'all message IDs before:', currentMessages.map(m => ({ id: m.id, role: m.role })),
+      'all message IDs after:', updatedMessages.map(m => ({ id: m.id, role: m.role })));
+    
+    // Update state with loading and user message
     setState((prev) => {
-      const updatedMessages = [...prev.messages, userMessage];
-      conversationHistoryForAPI = updatedMessages; // Store for API call
-      console.log('[ProspectChatContext] Updated messages array, length:', updatedMessages.length, 
-        'includes user message:', updatedMessages.some(m => m.id === userMessage.id),
-        'user message content:', userMessage.content);
-      
+      // Use the updatedMessages we built above to ensure consistency
       // Update the ref immediately so it's available for the API call
-      if (stateRef.current) {
-        stateRef.current = {
-          ...stateRef.current,
-          messages: updatedMessages,
-        };
-      }
-      
-      return {
+      const newState = {
         ...prev,
         isLoading: true,
         error: null,
         messages: updatedMessages,
       };
+      
+      // Update ref synchronously
+      stateRef.current = newState;
+      
+      return newState;
     });
 
     try {
-      // Use ref to get latest state values to avoid stale closure issues
-      const currentState = stateRef.current!;
+      // CRITICAL: Use updatedMessages directly instead of reading from ref
+      // The ref update above ensures consistency, but using updatedMessages is more reliable
+      // since we built it from the current state
+      const finalConversationHistory = updatedMessages;
+      
+      console.log('[ProspectChatContext] 📤 Sending to API - conversationHistory length:', finalConversationHistory.length,
+        'user messages:', finalConversationHistory.filter(m => m.role === 'user').length,
+        'assistant messages:', finalConversationHistory.filter(m => m.role === 'assistant').length,
+        'message IDs:', finalConversationHistory.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
+      
+      if (finalConversationHistory.length === 0) {
+        console.error('[ProspectChatContext] ⚠️ WARNING: conversationHistory is empty! This should not happen.');
+        // Don't proceed if we have no messages - this indicates a serious state issue
+        throw new Error('Cannot send message: conversation history is empty');
+      }
+      
+      // Get other state values from ref (these are less critical and should be stable)
+      const currentState = stateRef.current || state;
+      
       const response = await fetch('/api/ai/prospect/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: currentState.sessionId,
+          sessionId: currentState.sessionId || state.sessionId,
           message,
-          conversationHistory: conversationHistoryForAPI, // Use the updated messages array
-          gatheredPreferences: currentState.preferences,
+          conversationHistory: finalConversationHistory, // Use the complete conversation history
+          gatheredPreferences: currentState.preferences || state.preferences,
           // Include profile completion context for authenticated users
-          profileCompletionMode: currentState.profileCompletionMode,
-          userId: currentState.userId,
-          userProfile: currentState.userProfile,
+          profileCompletionMode: currentState.profileCompletionMode ?? state.profileCompletionMode,
+          userId: currentState.userId || state.userId,
+          userProfile: currentState.userProfile || state.userProfile,
         }),
       });
 
@@ -916,9 +914,14 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         console.log('[ProspectChatContext] 🎉 Profile created successfully! Clearing all prospect data...');
         
         // Clear all prospect data: messages, preferences, viewed legs, session
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem(STORAGE_KEY);
-          console.log('[ProspectChatContext] ✅ Cleared localStorage');
+        // Delete session from database
+        if (currentState.sessionId) {
+          try {
+            await sessionService.deleteSession(currentState.sessionId);
+            console.log('[ProspectChatContext] ✅ Deleted session from database');
+          } catch (error) {
+            console.error('[ProspectChatContext] Error deleting session:', error);
+          }
         }
         await clearSessionCookie();
         console.log('[ProspectChatContext] ✅ Cleared server session cookie');
@@ -1039,13 +1042,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       // Use functional update to ensure we have the latest state including the user message
       // Always ensure the user message is present - React may batch updates, so check explicitly
       setState((prev) => {
+        // CRITICAL: Start with current messages to preserve all existing messages
+        // The user message was already added optimistically, so it should be in prev.messages
+        let messagesWithUser = [...prev.messages]; // Create a copy to avoid mutations
+        
         // Always ensure the user message is present - add it if missing
-        let messagesWithUser = prev.messages;
-        const hasUserMessage = prev.messages.some(m => m.id === userMessage.id);
+        const hasUserMessage = messagesWithUser.some(m => m.id === userMessage.id);
         
         if (!hasUserMessage) {
-          console.warn('[ProspectChatContext] User message missing from state, adding it:', userMessage.id);
-          messagesWithUser = [...prev.messages, userMessage];
+          console.warn('[ProspectChatContext] ⚠️ User message missing from state, adding it:', userMessage.id);
+          messagesWithUser = [...messagesWithUser, userMessage];
         }
         
         // Check if the assistant message already exists to avoid duplicates
@@ -1054,11 +1060,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           ? messagesWithUser 
           : [...messagesWithUser, messageToStore];
         
-        console.log('[ProspectChatContext] Final messages array length:', finalMessages.length, 
+        console.log('[ProspectChatContext] ✅ Final messages array length:', finalMessages.length, 
           'user messages:', finalMessages.filter(m => m.role === 'user').length,
           'assistant messages:', finalMessages.filter(m => m.role === 'assistant').length,
           'has user message:', finalMessages.some(m => m.id === userMessage.id),
-          'user message IDs:', finalMessages.filter(m => m.role === 'user').map(m => m.id));
+          'user message IDs:', finalMessages.filter(m => m.role === 'user').map(m => m.id),
+          'all message IDs:', finalMessages.map(m => ({ id: m.id, role: m.role })));
         
         // Update the ref to keep it in sync
         if (stateRef.current) {
@@ -1080,7 +1087,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         
         return {
           ...prev,
-          sessionId: data.sessionId,
+          sessionId: data.sessionId ?? prev.sessionId,
           messages: finalMessages,
           preferences: updatedPreferences,
           isLoading: false,
@@ -1099,41 +1106,81 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   }, []); // Empty dependency array - use refs for state values
 
   // Save session when state changes
+  // Auto-save session to API (debounced)
   useEffect(() => {
-    if (state.sessionId) {
-      const userMessages = state.messages.filter(m => m.role === 'user');
-      const assistantMessages = state.messages.filter(m => m.role === 'assistant');
-      console.log('[ProspectChatContext] Saving session - total messages:', state.messages.length,
-        'user messages:', userMessages.length,
-        'assistant messages:', assistantMessages.length,
-        'sessionId:', state.sessionId);
-      
-      // CRITICAL: Don't save if we just cleared everything (empty messages and empty preferences)
-      // This prevents overwriting the cleared state after profile creation
-      if (state.messages.length === 0 && Object.keys(state.preferences).length === 0) {
-        console.log('[ProspectChatContext] ⏭️ Skipping save - state is cleared (likely after profile creation)');
-        return;
-      }
-      
-      // Load existing session to preserve createdAt
-      const existingSession = loadSession();
-      
-      // CRITICAL: Only save if session IDs match - prevents saving to wrong session
-      if (existingSession && existingSession.sessionId !== state.sessionId) {
-        console.log('[ProspectChatContext] ⚠️ Session ID mismatch - not saving. Existing:', existingSession.sessionId, 'Current:', state.sessionId);
-        return;
-      }
-      
-      const session: ProspectSession = {
-        sessionId: state.sessionId,
-        createdAt: existingSession?.createdAt || new Date().toISOString(),
-        lastActiveAt: new Date().toISOString(),
-        conversation: state.messages,
-        gatheredPreferences: state.preferences,
-        viewedLegs: state.viewedLegs,
-      };
-      saveSession(session);
+    if (!state.sessionId) {
+      console.log('[ProspectChatContext] ⏭️ Skipping save - no sessionId');
+      return;
     }
+
+    const userMessages = state.messages.filter(m => m.role === 'user');
+    const assistantMessages = state.messages.filter(m => m.role === 'assistant');
+    console.log('[ProspectChatContext] Auto-saving session - total messages:', state.messages.length,
+      'user messages:', userMessages.length,
+      'assistant messages:', assistantMessages.length,
+      'sessionId:', state.sessionId);
+    
+    // CRITICAL: Don't save if we just cleared everything (empty messages and empty preferences)
+    // This prevents overwriting the cleared state after profile creation
+    if (state.messages.length === 0 && Object.keys(state.preferences).length === 0) {
+      console.log('[ProspectChatContext] ⏭️ Skipping save - state is cleared (likely after profile creation)');
+      return;
+    }
+    
+    // Debounce saves to avoid too many API calls (max once per 2 seconds)
+    const timeoutId = setTimeout(async () => {
+      try {
+        // CRITICAL: Get fresh sessionId from cookie to ensure it matches
+        // The state.sessionId might be stale if cookie was refreshed
+        const cookieResponse = await fetch('/api/prospect/session', {
+          credentials: 'include',
+        });
+        
+        if (!cookieResponse.ok) {
+          console.warn('[ProspectChatContext] ⚠️ Failed to get session ID from cookie, skipping save');
+          return;
+        }
+        
+        const cookieData = await cookieResponse.json();
+        const currentSessionId = cookieData.sessionId;
+        
+        if (!currentSessionId) {
+          console.warn('[ProspectChatContext] ⚠️ No session ID from cookie, skipping save');
+          return;
+        }
+        
+        // Sync state.sessionId if it changed (cookie might have been refreshed)
+        if (currentSessionId !== state.sessionId) {
+          console.log('[ProspectChatContext] 🔄 Session ID changed, updating state:', {
+            old: state.sessionId,
+            new: currentSessionId,
+          });
+          setState((prev) => ({ ...prev, sessionId: currentSessionId }));
+        }
+        
+        // Ensure session.sessionId matches the cookie sessionId
+        const session: ProspectSession = {
+          sessionId: currentSessionId, // Use cookie sessionId, not state.sessionId
+          createdAt: new Date().toISOString(), // Will be set by server on first save
+          lastActiveAt: new Date().toISOString(),
+          conversation: state.messages,
+          gatheredPreferences: state.preferences,
+          viewedLegs: state.viewedLegs,
+        };
+        
+        console.log('[ProspectChatContext] 💾 Saving session with sessionId:', currentSessionId,
+          'messages:', session.conversation.length,
+          'preferences keys:', Object.keys(session.gatheredPreferences).length);
+        
+        await sessionService.saveSession(currentSessionId, session);
+        console.log('[ProspectChatContext] ✅ Session saved to API');
+      } catch (error: any) {
+        console.error('[ProspectChatContext] Error auto-saving session:', error);
+        // Don't throw - auto-save failures shouldn't break the UI
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timeoutId);
   }, [state.sessionId, state.messages, state.preferences, state.viewedLegs]);
 
   const clearError = useCallback(() => {
@@ -1143,10 +1190,15 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     console.log('[ProspectChatContext] 🧹 Clearing prospect chat session...');
     
-    // Clear both localStorage and server cookie
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-      console.log('[ProspectChatContext] ✅ Cleared localStorage');
+    // Clear session from database and server cookie
+    const currentSessionId = stateRef.current?.sessionId;
+    if (currentSessionId) {
+      try {
+        await sessionService.deleteSession(currentSessionId);
+        console.log('[ProspectChatContext] ✅ Deleted session from database');
+      } catch (error) {
+        console.error('[ProspectChatContext] Error deleting session:', error);
+      }
     }
     await clearSessionCookie();
     console.log('[ProspectChatContext] ✅ Cleared server session cookie');

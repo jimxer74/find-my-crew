@@ -43,13 +43,30 @@ function parsePythonFunctionCall(text: string): { name: string; arguments: Recor
   // - default_api.search_legs_by_location(...)
   // - print(default_api.search_legs_by_location(...))
   // - search_legs_by_location(...)
-  const pythonCallRegex = /(?:print\s*\(\s*)?(?:\w+\.)?(\w+)\s*\(([\s\S]*?)\)\s*(?:\))?/;
-  const match = text.match(pythonCallRegex);
+  // 
+  // IMPORTANT: Only match if it looks like a function call, not random text
+  // The pattern must start at the beginning of the text or after whitespace/newline
+  // and must have proper function call structure (name followed by parentheses with content)
+  const pythonCallRegex = /^(?:print\s*\(\s*)?(?:\w+\.)?(\w+)\s*\(([\s\S]*?)\)\s*(?:\))?$/;
+  const match = text.trim().match(pythonCallRegex);
   
   if (!match) return null;
   
   const functionName = match[1]; // The function name (first capture group)
   const argsString = match[2]?.trim() || '';
+  
+  // Validate function name - must be a valid tool name (snake_case or camelCase, not just any word)
+  // Reject single words that are likely place names or common words
+  const invalidNames = ['ireland', 'iceland', 'greenland', 'norway', 'brittany', 'svalbard', 'lofoten'];
+  if (invalidNames.includes(functionName.toLowerCase())) {
+    return null;
+  }
+  
+  // Function name should contain underscore or be camelCase (not just a single capitalized word)
+  if (!functionName.includes('_') && functionName === functionName.charAt(0).toUpperCase() + functionName.slice(1).toLowerCase()) {
+    // Likely a proper noun (place name), not a function
+    return null;
+  }
   
   if (!argsString) {
     return { name: functionName, arguments: {} };

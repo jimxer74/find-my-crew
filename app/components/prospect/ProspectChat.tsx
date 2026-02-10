@@ -433,29 +433,6 @@ export function ProspectChat() {
                     ? "Ready to continue exploring? Let's pick up where we left off."
                     : "Tell me about your sailing dreams and I'll help you find the perfect opportunity. No sign-up needed to start exploring!"}
                 </p>
-                {/* Sign up button for unauthenticated users - visible from the start */}
-                {/* Don't show if user is authenticated OR has existing profile */}
-                {!isAuthenticated && !hasExistingProfile && !showAuthForm && (
-                  <div className="flex justify-center mb-4">
-                    <button
-                      onClick={() => setShowAuthForm('signup')}
-                      className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                      Sign up to save your profile and join legs
-                    </button>
-                  </div>
-                )}
               </>
             )}
             {/* Only show quick suggestions for users without existing profile */}
@@ -522,6 +499,19 @@ export function ProspectChat() {
                   </button>
                 </div>
               )}
+              {/* Show leg carousel if leg references are available */}
+              {message.role === 'assistant' &&
+               message.metadata?.legReferences &&
+               message.metadata.legReferences.length > 0 && (
+                <div className="mt-3 -mx-2">
+                  <ChatLegCarousel
+                    legs={message.metadata.legReferences}
+                    onLegClick={(legId) => handleLegClick(legId, '')}
+                    onJoinClick={isAuthenticated && hasExistingProfile ? handleJoinClick : undefined}
+                    compact={true}
+                  />
+                </div>
+              )}
               {/* Show inline sign-up button after assistant messages if user is not authenticated and doesn't have a profile */}
               {/* Don't show if user is authenticated or has existing profile */}
               {message.role === 'assistant' && !isAuthenticated &&
@@ -546,46 +536,7 @@ export function ProspectChat() {
                   </button>
                 </div>
               )}
-              {/* Show leg carousel if leg references are available */}
-              {message.role === 'assistant' &&
-               message.metadata?.legReferences &&
-               message.metadata.legReferences.length > 0 && (
-                <div className="mt-3 -mx-2">
-                  <ChatLegCarousel
-                    legs={message.metadata.legReferences}
-                    onLegClick={(legId) => handleLegClick(legId, '')}
-                    onJoinClick={isAuthenticated && hasExistingProfile ? handleJoinClick : undefined}
-                    compact={true}
-                  />
-                </div>
-              )}
-              {/* Show Approve/Cancel buttons for pending actions */}
-              {message.role === 'assistant' && message.metadata?.pendingAction && (
-                <div className="mt-3 pt-3 border-t border-border/50">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => approveAction(message.id, message.metadata!.pendingAction!)}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 px-4 py-2 min-h-[40px] bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                      {message.metadata.pendingAction.label || 'Approve'}
-                    </button>
-                    <button
-                      onClick={() => cancelAction(message.id)}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 px-4 py-2 min-h-[40px] bg-muted hover:bg-accent text-foreground text-sm font-medium rounded-lg border border-border transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
+
             </div>
           </div>
         ))}
@@ -646,33 +597,6 @@ export function ProspectChat() {
           <div ref={messagesEndRef} />
         </div>
       </div>
-
-      {/* View Journeys CTA when profile exists or profile_completion=true - clear prospect data and go to /crew */}
-      {/* Show for users who have a profile OR just completed profile creation */}
-      {((hasExistingProfile && isAuthenticated)) && (
-        <div className="border-t border-border px-4 py-3 bg-primary/5">
-          <div className="max-w-2xl lg:max-w-4xl mx-auto flex justify-center">
-            <button
-              onClick={handleViewJourneys}
-              disabled={isNavigatingToCrew}
-              className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-              View Journeys
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Input area - only show for users without existing profile and not in profile completion mode */}
       {!hasExistingProfile && !(isProfileCompletion && isAuthenticated) && (

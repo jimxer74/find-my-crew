@@ -10,8 +10,9 @@ import { LoginModal } from '@/app/components/LoginModal';
 import { SignupModal } from '@/app/components/SignupModal';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
+import * as sessionService from '@/app/lib/prospect/sessionService';
+import { ProspectSession } from '@/app/lib/ai/prospect/types';
 
-const STORAGE_KEY = 'prospect_session';
 const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
 
 export default function WelcomePage() {
@@ -107,14 +108,30 @@ export default function WelcomePage() {
     };
   }, [router]);
 
-  // Check for existing conversation on mount
+  // Check for existing conversation on mount - load from API instead of localStorage
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const session = JSON.parse(stored);
-        // Check if session has messages
-        if (session.conversation && session.conversation.length > 0) {
+    async function checkExistingSession() {
+      try {
+        // Get session ID from cookie
+        const response = await fetch('/api/prospect/session', {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          return; // No session cookie
+        }
+        
+        const cookieData = await response.json();
+        const sessionId = cookieData.sessionId;
+        
+        if (!sessionId || cookieData.isNewSession) {
+          return; // New session, no existing conversation
+        }
+        
+        // Load session data from API
+        const session: ProspectSession | null = await sessionService.loadSession(sessionId);
+        
+        if (session && session.conversation && session.conversation.length > 0) {
           setHasExistingSession(true);
           // For now, all prospect sessions are 'crew' type
           // Future: detect owner sessions from a different storage key
@@ -141,14 +158,23 @@ export default function WelcomePage() {
               }
             }
           }
+          
+          // Also check viewedLegs from session
+          if (session.viewedLegs && session.viewedLegs.length > 0) {
+            // If we have viewed leg IDs but not names, we could fetch them
+            // For now, we'll rely on legReferences from messages
+          }
+          
           // Convert to array and limit to 4 legs
           const legArray = Array.from(legs.entries()).map(([id, name]) => ({ id, name }));
           setSessionLegs(legArray.slice(0, 4));
         }
+      } catch (e) {
+        console.error('Failed to check session:', e);
       }
-    } catch (e) {
-      console.error('Failed to check session:', e);
     }
+    
+    checkExistingSession();
   }, []);
 
   const handleContinueConversation = () => {
@@ -156,14 +182,33 @@ export default function WelcomePage() {
   };
 
   const handleClearSession = async () => {
-    // Clear localStorage
-    localStorage.removeItem(STORAGE_KEY);
-    // Clear server cookie
     try {
+      // Get session ID from cookie before clearing
+      const response = await fetch('/api/prospect/session', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const cookieData = await response.json();
+        const sessionId = cookieData.sessionId;
+        
+        // Delete session from database if it exists
+        if (sessionId) {
+          try {
+            await sessionService.deleteSession(sessionId);
+            console.log('[Frontpage] ✅ Deleted session from database');
+          } catch (error) {
+            console.error('[Frontpage] Error deleting session:', error);
+          }
+        }
+      }
+      
+      // Clear server cookie
       await fetch('/api/prospect/session', { method: 'DELETE' });
     } catch (e) {
-      console.error('Failed to clear session cookie:', e);
+      console.error('Failed to clear session:', e);
     }
+    
     // Reset state to show full welcome page
     setHasExistingSession(false);
     setSessionType(null);

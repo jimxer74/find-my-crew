@@ -1,8 +1,13 @@
 // lib/supabaseServer.ts
 import { cookies } from 'next/headers';
 import { createServerClient } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
+/**
+ * Get Supabase server client with auth session support
+ * Use this when you need authenticated user access
+ */
 export async function getSupabaseServerClient(): Promise<SupabaseClient> {
   const cookieStore = await cookies();
 
@@ -24,6 +29,24 @@ export async function getSupabaseServerClient(): Promise<SupabaseClient> {
             // Supabase will handle setting cookies in the browser instead.
           }
         },
+      },
+    }
+  );
+}
+
+/**
+ * Get Supabase client for unauthenticated operations
+ * Use this for prospect sessions and other public data access
+ * This doesn't require auth cookies and won't throw errors for missing sessions
+ */
+export function getSupabaseUnauthenticatedClient(): SupabaseClient {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
       },
     }
   );
