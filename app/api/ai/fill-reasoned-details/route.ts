@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
+import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,40 +112,13 @@ IMPORTANT: Return ONLY the JSON object, nothing else.`;
 
     const text = result.text;
 
-    // Parse JSON from response
-    let jsonText = text.trim();
-    console.log('=== JSON PARSING DEBUG ===');
-    console.log('Original text length:', jsonText.length);
-    console.log('First 300 chars:', jsonText.substring(0, 300));
-    console.log('Last 300 chars:', jsonText.substring(Math.max(0, jsonText.length - 300)));
-    
-    // Remove code block markers if present
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      console.log('Removed json code block markers');
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/```\n?/g, '');
-      console.log('Removed code block markers');
-    }
-    
-    // Try to extract JSON if wrapped in text
-    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      jsonText = jsonMatch[0];
-      console.log('Extracted JSON from text');
-    }
-    
-    console.log('Cleaned text length:', jsonText.length);
-    console.log('Cleaned text:', jsonText);
-    console.log('==========================');
-
+    // Parse JSON from response using shared utility
     let reasonedDetails;
     try {
-      reasonedDetails = JSON.parse(jsonText);
+      reasonedDetails = parseJsonObjectFromAIResponse(text);
     } catch (parseError: any) {
       console.error('=== JSON PARSE ERROR ===');
       console.error('Parse error:', parseError.message);
-      console.error('Text that failed to parse:', jsonText);
       console.error('========================');
       return NextResponse.json(
         { error: 'Failed to parse AI response' },

@@ -33,13 +33,268 @@ export interface ToolResult {
 }
 
 /**
+ * Parse Python-style function call from text
+ * Handles formats like: default_api.search_legs_by_location(departure_bbox={...}, ...)
+ * or: print(default_api.search_legs_by_location(...))
+ */
+function parsePythonFunctionCall(text: string): { name: string; arguments: Record<string, unknown> } | null {
+  // Match Python function calls: (optional print() wrapper) (optional prefix.)function_name(...)
+  // Examples:
+  // - default_api.search_legs_by_location(...)
+  // - print(default_api.search_legs_by_location(...))
+  // - search_legs_by_location(...)
+  const pythonCallRegex = /(?:print\s*\(\s*)?(?:\w+\.)?(\w+)\s*\(([\s\S]*?)\)\s*(?:\))?/;
+  const match = text.match(pythonCallRegex);
+  
+  if (!match) return null;
+  
+  const functionName = match[1]; // The function name (first capture group)
+  const argsString = match[2]?.trim() || '';
+  
+  if (!argsString) {
+    return { name: functionName, arguments: {} };
+  }
+  
+  try {
+    // Parse Python dict syntax to JSON
+    const parsedArgs = parsePythonDict(argsString);
+    return { name: functionName, arguments: parsedArgs };
+  } catch (e) {
+    log('Failed to parse Python function arguments:', e);
+    return null;
+  }
+}
+
+/**
+ * Parse Python dict syntax to JavaScript object
+ * Handles: {"key": "value", "nested": {"inner": 123}}
+ * Also handles: {key: "value", nested: {inner: 123}} (without quotes on keys)
+ */
+function parsePythonDict(pythonStr: string): Record<string, unknown> {
+  // Convert Python dict to JSON-like format
+  let jsonStr = pythonStr.trim();
+  
+  // Remove outer braces if present
+  if (jsonStr.startsWith('{') && jsonStr.endsWith('}')) {
+    jsonStr = jsonStr.slice(1, -1).trim();
+  }
+  
+  // Handle empty dict
+  if (!jsonStr) {
+    return {};
+  }
+  
+  // Convert Python None to null
+  jsonStr = jsonStr.replace(/\bNone\b/g, 'null');
+  
+  // Convert Python True/False to true/false
+  jsonStr = jsonStr.replace(/\bTrue\b/g, 'true');
+  jsonStr = jsonStr.replace(/\bFalse\b/g, 'false');
+  
+  // Add quotes to unquoted keys (snake_case keys)
+  // Match: key: or key= followed by value
+  jsonStr = jsonStr.replace(/([{,]\s*)([a-z_][a-z0-9_]*)\s*[:=]/gi, '$1"$2":');
+  
+  // Handle nested dicts - ensure keys are quoted
+  // This is a simplified approach - for complex nested structures, we might need recursion
+  let depth = 0;
+  let result = '';
+  let i = 0;
+  
+  while (i < jsonStr.length) {
+    const char = jsonStr[i];
+    
+    if (char === '{') {
+      depth++;
+      result += char;
+    } else if (char === '}') {
+      depth--;
+      result += char;
+    } else if (char === '[') {
+      depth++;
+      result += char;
+    } else if (char === ']') {
+      depth--;
+      result += char;
+    } else if (char === '"' || char === "'") {
+      // Skip string content
+      const quote = char;
+      result += char;
+      i++;
+      while (i < jsonStr.length && jsonStr[i] !== quote) {
+        if (jsonStr[i] === '\\') {
+          result += jsonStr[i];
+          i++;
+          if (i < jsonStr.length) {
+            result += jsonStr[i];
+            i++;
+          }
+        } else {
+          result += jsonStr[i];
+          i++;
+        }
+      }
+      if (i < jsonStr.length) {
+        result += jsonStr[i];
+      }
+    } else {
+      result += char;
+    }
+    i++;
+  }
+  
+  jsonStr = result;
+  
+  // Wrap in braces to make it valid JSON
+  if (!jsonStr.trim().startsWith('{')) {
+    jsonStr = '{' + jsonStr + '}';
+  }
+  
+  try {
+    return JSON.parse(jsonStr);
+  } catch (e) {
+    // If JSON parsing fails, try a more aggressive approach
+    // Extract key-value pairs manually
+    return parsePythonDictManual(pythonStr);
+  }
+}
+
+/**
+ * Manual parsing of Python dict as fallback
+ */
+function parsePythonDictManual(pythonStr: string): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  
+  // Remove outer braces
+  let content = pythonStr.trim();
+  if (content.startsWith('{') && content.endsWith('}')) {
+    content = content.slice(1, -1).trim();
+  }
+  
+  if (!content) return result;
+  
+  // Split by commas, but respect nested structures
+  const pairs: string[] = [];
+  let current = '';
+  let depth = 0;
+  let inString = false;
+  let stringChar = '';
+  
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    
+    if (!inString && (char === '"' || char === "'")) {
+      inString = true;
+      stringChar = char;
+      current += char;
+    } else if (inString && char === stringChar && (i === 0 || content[i - 1] !== '\\')) {
+      inString = false;
+      stringChar = '';
+      current += char;
+    } else if (!inString && char === '{') {
+      depth++;
+      current += char;
+    } else if (!inString && char === '}') {
+      depth--;
+      current += char;
+    } else if (!inString && char === '[') {
+      depth++;
+      current += char;
+    } else if (!inString && char === ']') {
+      depth--;
+      current += char;
+    } else if (!inString && depth === 0 && char === ',') {
+      pairs.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  
+  if (current.trim()) {
+    pairs.push(current.trim());
+  }
+  
+  // Parse each key-value pair
+  for (const pair of pairs) {
+    const colonMatch = pair.match(/^([a-z_][a-z0-9_]*)\s*[:=]\s*(.+)$/i);
+    if (colonMatch) {
+      const key = colonMatch[1];
+      let valueStr = colonMatch[2].trim();
+      
+      // Parse value
+      let value: unknown = valueStr;
+      
+      // Handle strings
+      if ((valueStr.startsWith('"') && valueStr.endsWith('"')) || 
+          (valueStr.startsWith("'") && valueStr.endsWith("'"))) {
+        value = valueStr.slice(1, -1);
+      }
+      // Handle numbers
+      else if (/^-?\d+$/.test(valueStr)) {
+        value = parseInt(valueStr, 10);
+      }
+      else if (/^-?\d+\.\d+$/.test(valueStr)) {
+        value = parseFloat(valueStr);
+      }
+      // Handle booleans
+      else if (valueStr === 'True' || valueStr === 'true') {
+        value = true;
+      }
+      else if (valueStr === 'False' || valueStr === 'false') {
+        value = false;
+      }
+      // Handle None/null
+      else if (valueStr === 'None' || valueStr === 'null') {
+        value = null;
+      }
+      // Handle nested dicts
+      else if (valueStr.startsWith('{') && valueStr.endsWith('}')) {
+        try {
+          value = parsePythonDict(valueStr);
+        } catch {
+          value = valueStr; // Fallback to string
+        }
+      }
+      // Handle arrays
+      else if (valueStr.startsWith('[') && valueStr.endsWith(']')) {
+        try {
+          // Simple array parsing
+          const arrayContent = valueStr.slice(1, -1).trim();
+          if (!arrayContent) {
+            value = [];
+          } else {
+            const items = arrayContent.split(',').map(s => {
+              const trimmed = s.trim();
+              if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || 
+                  (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+                return trimmed.slice(1, -1);
+              }
+              return trimmed;
+            });
+            value = items;
+          }
+        } catch {
+          value = valueStr;
+        }
+      }
+      
+      result[key] = value;
+    }
+  }
+  
+  return result;
+}
+
+/**
  * Parse tool calls from AI response
  *
  * Handles multiple formats:
  * 1. JSON in code blocks: ```tool_call {"name": "...", "arguments": {...}} ```
- * 2. XML-like format: <tool_call><function=name>...</function></tool_call>
- * 3. Delimiter format: <|tool_calls_start|>...<|tool_calls_end|>
- * 4. Simple function format: <function=name>...</function>
+ * 2. Python-style function calls: ```tool_code default_api.search_legs_by_location(...) ```
+ * 3. XML-like format: <tool_call><function=name>...</function></tool_call>
+ * 4. Delimiter format: <|tool_calls_start|>...<|tool_calls_end|>
+ * 5. Simple function format: <function=name>...</function>
  */
 export function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] } {
   const toolCalls: ToolCall[] = [];
@@ -54,7 +309,20 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     try {
       let jsonStr = match[1].trim();
 
-      // Try to parse as-is first
+      // First, try to parse Python-style function calls (e.g., default_api.search_legs_by_location(...))
+      const pythonCall = parsePythonFunctionCall(jsonStr);
+      if (pythonCall) {
+        toolCalls.push({
+          id: `tc_${Date.now()}_${toolCallIndex++}`,
+          name: pythonCall.name,
+          arguments: pythonCall.arguments,
+        });
+        content = content.replace(match[0], '').trim();
+        log('Parsed Python-style tool call:', pythonCall.name);
+        continue;
+      }
+
+      // Try to parse as JSON
       let toolCallJson: any;
       try {
         toolCallJson = JSON.parse(jsonStr);
@@ -63,6 +331,7 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
         toolCallJson = tryFixAndParseJson(jsonStr);
       }
 
+      // Check if this is a proper tool call with name and arguments
       if (toolCallJson && toolCallJson.name && typeof toolCallJson.name === 'string') {
         toolCalls.push({
           id: `tc_${Date.now()}_${toolCallIndex++}`,
@@ -71,9 +340,27 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
         });
         content = content.replace(match[0], '').trim();
         log('Parsed JSON tool call:', toolCallJson.name);
+      } 
+      // Check if this looks like profile data (implicit update_user_profile call)
+      else if (toolCallJson && typeof toolCallJson === 'object' && !toolCallJson.name) {
+        // Check if it has profile-like fields
+        const profileFields = ['full_name', 'bio', 'user_description', 'experience_level', 'sailing_experience', 
+                               'skills', 'risk_level', 'comfort_zones', 'sailing_preferences', 'certifications'];
+        const hasProfileFields = profileFields.some(field => field in toolCallJson);
+        
+        if (hasProfileFields) {
+          log('Detected implicit update_user_profile call from profile JSON');
+          toolCalls.push({
+            id: `tc_${Date.now()}_${toolCallIndex++}`,
+            name: 'update_user_profile',
+            arguments: toolCallJson,
+          });
+          content = content.replace(match[0], '').trim();
+          log('Converted profile JSON to update_user_profile tool call');
+        }
       }
     } catch (e) {
-      log('Failed to parse JSON tool call block');
+      log('Failed to parse tool call block');
     }
   }
 

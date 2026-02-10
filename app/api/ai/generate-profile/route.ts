@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { callAI } from '@/app/lib/ai/service';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
+import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 
 const PROFILE_GENERATION_PROMPT = `You are an AI assistant helping to create a sailing crew member profile based on Facebook data. Analyze the provided data and suggest profile fields.
 
@@ -89,48 +90,15 @@ function buildPrompt(facebookData: FacebookUserData): string {
 }
 
 function parseAIResponse(text: string): ProfileSuggestion {
-  // Try to extract JSON from the response (handle potential markdown wrapping)
-  let jsonText = text.trim();
+  console.log('API-GENERATE-PROFILE: AI response:', text.substring(0, 200));
 
-  console.log('API-GENERATE-PROFILE: AI response:', jsonText);
-
-  // Remove markdown code blocks if present
-  if (jsonText.startsWith('```json')) {
-    jsonText = jsonText.slice(7);
-  } else if (jsonText.startsWith('```')) {
-    jsonText = jsonText.slice(3);
-  }
-  if (jsonText.endsWith('```')) {
-    jsonText = jsonText.slice(0, -3);
-  }
-  jsonText = jsonText.trim();
-
+  // Use shared utility for JSON parsing
   let parsed: any;
-
   try {
-    // First attempt to parse the JSON
-    parsed = JSON.parse(jsonText);
-  } catch (jsonError) {
-    console.error('JSON parsing failed:', jsonError);
-    console.error('Problematic JSON text:', jsonText);
-
-    // Try to fix common JSON issues
-    try {
-      // Fix unterminated strings by attempting to find and close them
-      let fixedJson = jsonText;
-
-      // Look for common patterns that cause unterminated strings
-      // This is a basic fix - in production you might want more sophisticated error recovery
-      fixedJson = fixedJson.replace(/,\s*}/g, '}'); // Remove trailing commas before closing braces
-      fixedJson = fixedJson.replace(/,\s*]/g, ']'); // Remove trailing commas before closing brackets
-
-      // Try to parse again
-      parsed = JSON.parse(fixedJson);
-      console.log('Successfully fixed and parsed JSON');
-    } catch (fixError) {
-      console.error('Failed to fix JSON:', fixError);
-      throw new Error(`JSON parsing failed and could not be automatically fixed: ${fixError}`);
-    }
+    parsed = parseJsonObjectFromAIResponse(text);
+  } catch (error: any) {
+    console.error('JSON parsing failed:', error);
+    throw new Error(`JSON parsing failed: ${error.message}`);
   }
 
   // Validate and normalize the response

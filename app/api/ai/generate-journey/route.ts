@@ -7,6 +7,7 @@ import {
   validatePositiveNumber,
   MAX_INPUT_LENGTHS,
 } from '@/app/lib/ai/validation';
+import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 
 export async function POST(request: NextRequest) {
   try {
@@ -251,15 +252,8 @@ ${allWaypoints.length > 2
 
     console.log('AI Response:', text);
 
-    // Parse the JSON response (remove markdown code blocks if present)
-    let jsonText = text.trim();
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.replace(/```\n?/g, '');
-    }
-
-    const generatedData = JSON.parse(jsonText);
+    // Parse the JSON response using shared utility
+    const generatedData = parseJsonObjectFromAIResponse(text);
 
     // Validate the structure
     if (!generatedData.journeyName || !generatedData.legs || !Array.isArray(generatedData.legs)) {

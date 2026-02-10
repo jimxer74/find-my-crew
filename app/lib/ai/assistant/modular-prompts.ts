@@ -115,7 +115,20 @@ When presenting multiple options, number them clearly and provide:
 - Experience level requirements
 - Any special notes or requirements
 
-Keep responses focused on sailing opportunities and crew matching.`,
+Keep responses focused on sailing opportunities and crew matching.
+
+**SUGGESTED PROMPTS:**
+At the end of your response, include 2-3 suggested follow-up questions the user could ask to continue exploring. Format like this:
+[SUGGESTIONS]
+- "Show me more trips in the Mediterranean"
+- "What skills do I need for these trips?"
+- "Tell me about trips in different dates"
+[/SUGGESTIONS]
+
+Make suggestions contextual based on:
+- What they've searched for (suggest refining or exploring related options)
+- Their profile (suggest trips matching their skills/experience)
+- Next logical steps (explore different regions, dates, or learn about requirements)`,
     };
   }
 
@@ -192,7 +205,20 @@ Structure responses with:
 - Clear explanation of benefits
 - Actionable next steps
 
-Keep suggestions relevant to sailing and crew opportunities.`,
+Keep suggestions relevant to sailing and crew opportunities.
+
+**SUGGESTED PROMPTS:**
+At the end of your response, include 2-3 suggested follow-up questions to help guide profile improvement. Format like this:
+[SUGGESTIONS]
+- "How do I add certifications to my profile?"
+- "What skills should I include?"
+- "Show me trips that match my updated profile"
+[/SUGGESTIONS]
+
+Make suggestions contextual:
+- If profile is incomplete: suggest what to add ("Tell me about your sailing certifications", "What skills do you have?")
+- After suggesting improvements: suggest next steps ("How do I update my profile?", "Show me opportunities for my skill level")
+- After profile updates: suggest exploring opportunities ("Show me trips matching my profile", "What else can I improve?")`,
     };
   }
 
@@ -325,7 +351,20 @@ In the meantime, you can browse other sailing opportunities or complete your pro
 
 Fair winds and following seas! ⛵
 
-[[close_chat:/crew:Browse More Opportunities]]"`,
+[[close_chat:/crew:Browse More Opportunities]]"
+
+**SUGGESTED PROMPTS:**
+At the end of your response (especially during registration flow), include 2-3 suggested follow-up questions. Format like this:
+[SUGGESTIONS]
+- "What other trips are available?"
+- "How do I check my registration status?"
+- "Tell me more about the boat"
+[/SUGGESTIONS]
+
+Make suggestions contextual:
+- During registration: suggest related questions ("What about other legs in this journey?", "Tell me about the boat")
+- After registration: suggest next steps ("Show me other opportunities", "How do I check my status?")
+- When showing leg details: suggest exploring ("Show me similar trips", "What skills do I need?")`,
     };
   }
 
@@ -370,7 +409,20 @@ Structure responses with:
 - Relevant platform context
 - Helpful next steps if applicable
 
-Keep responses informative and user-friendly.`,
+Keep responses informative and user-friendly.
+
+**SUGGESTED PROMPTS:**
+At the end of your response, include 2-3 suggested follow-up questions to help guide the user. Format like this:
+[SUGGESTIONS]
+- "How do I search for sailing trips?"
+- "What should I include in my profile?"
+- "Tell me about registration process"
+[/SUGGESTIONS]
+
+Make suggestions contextual:
+- Based on their question (suggest related topics)
+- Based on their role (crew: search trips, improve profile; owner: create journeys)
+- Next logical steps in using the platform`,
     };
   }
 

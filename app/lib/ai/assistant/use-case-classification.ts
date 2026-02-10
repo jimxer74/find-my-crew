@@ -6,6 +6,7 @@
  */
 import { UserContext } from './types';
 import { callAI, AIServiceError } from '../service';
+import { parseJsonObjectFromAIResponse } from '../shared';
 
 /**
  * Available use case intents for the sailing platform
@@ -284,35 +285,8 @@ User message:
         response = response.substring(0, maxResponseLength);
       }
 
-      // Clean up common LLM output artifacts with enhanced markdown handling
-      let cleaned = response.trim();
-
-      // Handle various markdown code block formats:
-      // ```json, ```JSON, ```javascript, ```python, ``` (no language), ``` js, etc.
-      // Remove opening code block (case-insensitive, with optional language identifier)
-      cleaned = cleaned.replace(/^```(?:json|js|javascript|python|tsx|ts|\s*)?\s*/i, '');
-
-      // Remove closing code block
-      cleaned = cleaned.replace(/\s*```$/i, '');
-
-      // Handle the specific case where response starts with backticks but doesn't match above pattern
-      // This addresses the error case: "```" at the start
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned.substring(3).trim();
-      }
-      if (cleaned.endsWith('```')) {
-        cleaned = cleaned.substring(0, cleaned.length - 3).trim();
-      }
-
-      // Remove any remaining leading/trailing whitespace and newlines
-      cleaned = cleaned.trim();
-
-      // Additional cleanup for common LLM artifacts
-      // Remove any remaining "json" text that might be left over
-      cleaned = cleaned.replace(/^\s*json\s*/i, '');
-
-      // Parse the cleaned JSON
-      const json = JSON.parse(cleaned);
+      // Clean up common LLM output artifacts using shared utility
+      const json = parseJsonObjectFromAIResponse(response);
 
       // Validate required fields
       if (!json.primary_intent) {

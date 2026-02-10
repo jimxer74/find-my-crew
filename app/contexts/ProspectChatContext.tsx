@@ -141,6 +141,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const initialQueryProcessed = useRef(false);
   const profileCompletionProcessed = useRef(false);
+  const stateRef = useRef<ProspectChatState | null>(null);
 
   const [state, setState] = useState<ProspectChatState>({
     sessionId: null,
@@ -157,6 +158,11 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     hasCompletedProfileCreation: false,
   });
 
+  // Keep stateRef in sync with state
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   const [isReturningUser, setIsReturningUser] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -168,6 +174,13 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
       // Load localStorage data first - this contains the conversation history
       const localSession = loadSession();
+      if (localSession) {
+        const userMessages = localSession.conversation.filter(m => m.role === 'user');
+        const assistantMessages = localSession.conversation.filter(m => m.role === 'assistant');
+        console.log('[ProspectChatContext] Loaded session from localStorage - total messages:', localSession.conversation.length,
+          'user messages:', userMessages.length,
+          'assistant messages:', assistantMessages.length);
+      }
 
       // First, get session ID from HttpOnly cookie
       const cookieSession = await fetchSessionFromCookie();
@@ -442,13 +455,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   }, [router]);
 
   const sendMessage = useCallback(async (message: string) => {
-    setState((prev) => ({
-      ...prev,
-      isLoading: true,
-      error: null,
-    }));
-
-    // Create user message
+    console.log('[ProspectChatContext] sendMessage called with:', message);
+    // Create user message first
     const userMessage: ProspectMessage = {
       id: `user_${Date.now()}`,
       role: 'user',
@@ -456,24 +464,51 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       timestamp: new Date().toISOString(),
     };
 
-    setState((prev) => ({
-      ...prev,
-      messages: [...prev.messages, userMessage],
-    }));
+    console.log('[ProspectChatContext] Created user message:', userMessage);
+
+    // Update state with loading and user message in one update
+    // Use functional update to ensure we have the latest state
+    let conversationHistoryForAPI: ProspectMessage[] = [];
+    
+    // Use a synchronous state update to ensure the user message is immediately in state
+    setState((prev) => {
+      const updatedMessages = [...prev.messages, userMessage];
+      conversationHistoryForAPI = updatedMessages; // Store for API call
+      console.log('[ProspectChatContext] Updated messages array, length:', updatedMessages.length, 
+        'includes user message:', updatedMessages.some(m => m.id === userMessage.id),
+        'user message content:', userMessage.content);
+      
+      // Update the ref immediately so it's available for the API call
+      if (stateRef.current) {
+        stateRef.current = {
+          ...stateRef.current,
+          messages: updatedMessages,
+        };
+      }
+      
+      return {
+        ...prev,
+        isLoading: true,
+        error: null,
+        messages: updatedMessages,
+      };
+    });
 
     try {
+      // Use ref to get latest state values to avoid stale closure issues
+      const currentState = stateRef.current!;
       const response = await fetch('/api/ai/prospect/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: state.sessionId,
+          sessionId: currentState.sessionId,
           message,
-          conversationHistory: state.messages,
-          gatheredPreferences: state.preferences,
+          conversationHistory: conversationHistoryForAPI, // Use the updated messages array
+          gatheredPreferences: currentState.preferences,
           // Include profile completion context for authenticated users
-          profileCompletionMode: state.profileCompletionMode,
-          userId: state.userId,
-          userProfile: state.userProfile,
+          profileCompletionMode: currentState.profileCompletionMode,
+          userId: currentState.userId,
+          userProfile: currentState.userProfile,
         }),
       });
 
@@ -503,16 +538,49 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           ? { ...data.message, content: cleanedContent }
           : data.message;
 
-      setState((prev) => ({
-        ...prev,
-        sessionId: data.sessionId,
-        messages: [...prev.messages, messageToStore],
-        preferences:
-          Object.keys(preferencesUpdate).length > 0
-            ? { ...prev.preferences, ...preferencesUpdate }
-            : prev.preferences,
-        isLoading: false,
-      }));
+      // Use functional update to ensure we have the latest state including the user message
+      // Always ensure the user message is present - React may batch updates, so check explicitly
+      setState((prev) => {
+        // Always ensure the user message is present - add it if missing
+        let messagesWithUser = prev.messages;
+        const hasUserMessage = prev.messages.some(m => m.id === userMessage.id);
+        
+        if (!hasUserMessage) {
+          console.warn('[ProspectChatContext] User message missing from state, adding it:', userMessage.id);
+          messagesWithUser = [...prev.messages, userMessage];
+        }
+        
+        // Check if the assistant message already exists to avoid duplicates
+        const assistantMessageExists = messagesWithUser.some(m => m.id === messageToStore.id);
+        const finalMessages = assistantMessageExists 
+          ? messagesWithUser 
+          : [...messagesWithUser, messageToStore];
+        
+        console.log('[ProspectChatContext] Final messages array length:', finalMessages.length, 
+          'user messages:', finalMessages.filter(m => m.role === 'user').length,
+          'assistant messages:', finalMessages.filter(m => m.role === 'assistant').length,
+          'has user message:', finalMessages.some(m => m.id === userMessage.id),
+          'user message IDs:', finalMessages.filter(m => m.role === 'user').map(m => m.id));
+        
+        // Update the ref to keep it in sync
+        if (stateRef.current) {
+          stateRef.current = {
+            ...stateRef.current,
+            messages: finalMessages,
+          };
+        }
+        
+        return {
+          ...prev,
+          sessionId: data.sessionId,
+          messages: finalMessages,
+          preferences:
+            Object.keys(preferencesUpdate).length > 0
+              ? { ...prev.preferences, ...preferencesUpdate }
+              : prev.preferences,
+          isLoading: false,
+        };
+      });
     } catch (error: any) {
       console.error('Prospect chat error:', error);
       setState((prev) => ({
@@ -523,11 +591,17 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         messages: prev.messages.filter((m) => m.id !== userMessage.id),
       }));
     }
-  }, [state.sessionId, state.messages, state.preferences, state.profileCompletionMode, state.userId]);
+  }, []); // Empty dependency array - use refs for state values
 
   // Save session when state changes
   useEffect(() => {
     if (state.sessionId) {
+      const userMessages = state.messages.filter(m => m.role === 'user');
+      const assistantMessages = state.messages.filter(m => m.role === 'assistant');
+      console.log('[ProspectChatContext] Saving session - total messages:', state.messages.length,
+        'user messages:', userMessages.length,
+        'assistant messages:', assistantMessages.length);
+      
       const session: ProspectSession = {
         sessionId: state.sessionId,
         createdAt: new Date().toISOString(),
@@ -585,27 +659,33 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     // Clear the pending action from the message
-    setState((prev) => ({
-      ...prev,
-      messages: prev.messages.map((m) =>
+    let updatedMessages: ProspectMessage[] = [];
+    setState((prev) => {
+      updatedMessages = prev.messages.map((m) =>
         m.id === messageId
           ? { ...m, metadata: { ...m.metadata, pendingAction: undefined } }
           : m
-      ),
-    }));
+      );
+      return {
+        ...prev,
+        messages: updatedMessages,
+      };
+    });
 
     try {
+      // Use ref to get latest state values to avoid stale closure issues
+      const currentState = stateRef.current!;
       const response = await fetch('/api/ai/prospect/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: state.sessionId,
+          sessionId: currentState.sessionId,
           message: `[User approved: ${action.label || action.toolName}. Execute the action now.]`,
-          conversationHistory: state.messages,
-          gatheredPreferences: state.preferences,
-          profileCompletionMode: state.profileCompletionMode,
-          userId: state.userId,
-          userProfile: state.userProfile,
+          conversationHistory: updatedMessages,
+          gatheredPreferences: currentState.preferences,
+          profileCompletionMode: currentState.profileCompletionMode,
+          userId: currentState.userId,
+          userProfile: currentState.userProfile,
           approvedAction: action,
         }),
       });
@@ -632,7 +712,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         error: error.message || 'Failed to save profile. Please try again.',
       }));
     }
-  }, [state.sessionId, state.messages, state.preferences, state.profileCompletionMode, state.userId, state.userProfile]);
+  }, []); // Empty dependency array - use refs for state values
 
   // Cancel a pending action
   const cancelAction = useCallback((messageId: string) => {
@@ -669,6 +749,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     const initialQuery = searchParams?.get('q');
     if (initialQuery && initialQuery.trim()) {
       initialQueryProcessed.current = true;
+      console.log('[ProspectChatContext] Processing initial query:', initialQuery.trim());
       // Send the initial message
       sendMessage(initialQuery.trim());
     }

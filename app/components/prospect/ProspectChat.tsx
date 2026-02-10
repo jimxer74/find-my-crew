@@ -8,72 +8,11 @@ import { ProspectMessage, PendingAction } from '@/app/lib/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
-
-/**
- * Check if a message suggests signup or profile creation
- */
-function suggestsSignupOrProfileCreation(content: string): boolean {
-  const lowerContent = content.toLowerCase();
-  const signupKeywords = [
-    'sign up',
-    'signup',
-    'create an account',
-    'create account',
-    'create your profile',
-    'create a profile',
-    'build your profile',
-    'save your profile',
-    'complete your profile',
-    'register for legs',
-    'join legs',
-    'sign up button',
-    'sign up above',
-  ];
-  return signupKeywords.some(keyword => lowerContent.includes(keyword));
-}
-
-/**
- * Extract suggested prompts from AI message
- * Format: [SUGGESTIONS]...[/SUGGESTIONS]
- */
-function extractSuggestedPrompts(content: string): string[] {
-  const suggestionsRegex = /\[SUGGESTIONS\]([\s\S]*?)\[\/SUGGESTIONS\]/i;
-  const match = content.match(suggestionsRegex);
-  if (!match) return [];
-
-  const suggestionsText = match[1].trim();
-  // Split by lines starting with "- " or numbered lists
-  const prompts = suggestionsText
-    .split(/\n/)
-    .map(line => {
-      // Remove markdown list markers: "- ", "1. ", "* ", "• ", etc.
-      // Also remove quotes if present
-      return line
-        .replace(/^[-*•]\s+/, '')
-        .replace(/^\d+\.\s+/, '')
-        .replace(/^["']|["']$/g, '') // Remove surrounding quotes
-        .trim();
-    })
-    .filter(line => {
-      // Filter out empty lines, metadata tags, and example text
-      return (
-        line.length > 0 &&
-        line.length < 100 && // Reasonable length limit
-        !line.startsWith('[') &&
-        !line.toLowerCase().startsWith('example') &&
-        !line.toLowerCase().startsWith('format')
-      );
-    });
-
-  return prompts.slice(0, 3); // Max 3 suggestions
-}
-
-/**
- * Remove suggestions block from message content for display
- */
-function removeSuggestionsFromContent(content: string): string {
-  return content.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/i, '').trim();
-}
+import {
+  extractSuggestedPrompts,
+  removeSuggestionsFromContent,
+  suggestsSignupOrProfileCreation,
+} from '@/app/lib/ai/shared';
 
 /**
  * Component to display suggested prompts below assistant messages
@@ -256,6 +195,10 @@ export function ProspectChat() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
+    console.log('[ProspectChat] Messages changed - total:', messages.length, 
+      'user messages:', messages.filter(m => m.role === 'user').length,
+      'assistant messages:', messages.filter(m => m.role === 'assistant').length,
+      'all message IDs:', messages.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 

@@ -77,24 +77,19 @@ function buildProspectSystemPrompt(
   const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
   const currentYear = now.getFullYear();
 
-  return `You are SailSmart's friendly AI assistant helping potential crew members discover sailing opportunities.
+  return `You are SailSmart's friendly AI assistant helping potential crew members in onboarding process.
 
 CURRENT DATE: ${currentDate}
 IMPORTANT: Today's date is ${currentDate}. When users ask about sailing trips, use ${currentYear} or later for date searches. Do NOT use past years like 2024 or 2025 - always search for upcoming trips.
 
-## PRIMARY INTENT DETECTION (CRITICAL)
+## PRIMARY GOAL: FAST AND EFFICIENT SIGN-UP and PROFILE CREATION (CRITICAL)
+- Your end goal is onboarding the user to the platform, by gathering minimal information to create a user profile based on the obtained information
+- Gather understanding of user's profile information and restrictions through natural conversation, MAIN GOAL is to get minimal information for profile, guide user to sign-up and create profile as soon as possible without iterating over the same questions
 
-**There are TWO possible primary user intents. Detect which one applies and act accordingly:**
-
-**Your goal:**
-- Help users find sailing trips that match their interests
-- Gather preferences through natural conversation
-- Show matching legs and encourage exploration
-- Guide them to sign up so they can save their profile and register for legs
-- **Registration for a specific leg is not done in chat.** After signup and profile creation, they use the "Register for leg" button on the Crew dashboard to open the registration form for that leg
+## SECONDARY GOAL: SHOW VALUE OF THE PLATFORM AND CONVINCE USER TO SIGN UP (IMPORTANT)
+- Help users to find the best sailing opportunities that match their interests and show the matching results to user early
 
 ## ALWAYS SUGGEST PROFILE CREATION (CRITICAL)
-
 **If the user has not yet signed up or completed their profile, you MUST suggest they create one.**
 - When they are exploring (searching, viewing legs, sharing preferences) but have not signed up: suggest they use the **Sign up** button above to create an account and profile so their preferences and details are saved and they can register for legs.
 - When they have signed up but have not yet confirmed and saved their profile in this chat: encourage them to complete the profile flow (review the summary and click "Save Profile") so their crew profile is stored.
@@ -107,14 +102,14 @@ IMPORTANT: Today's date is ${currentDate}. When users ask about sailing trips, u
 - Show matching sailing legs as soon as you have enough information
 - Keep responses concise and focused
 
-## SUGGESTED PROMPTS (IMPORTANT):
-At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
+## SUGGESTED PROMPTS (CRITICAL):
+- At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
+- IMPORTANT: Allways suggest sign-up if user is not signed up and Save profile if profile does not exist yet
 
 Format suggestions like this at the very end of your message:
 [SUGGESTIONS]
 - "What sailing skills should I have?"
 - "Show me trips in the Mediterranean"
-- "I'm available in summer, what options do I have?"
 [/SUGGESTIONS]
 
 Make suggestions contextual based on:
@@ -122,19 +117,12 @@ Make suggestions contextual based on:
 - What they've already shared (suggest exploring related options)
 - Their experience level (beginners: learning opportunities, experienced: advanced trips)
 - Their interests (if they mentioned a region, suggest exploring it more)
-- Next logical step in the onboarding flow
+- Next logical step in the onboarding flow as suggestions
 
 Examples:
 - Early conversation: "Tell me about your sailing experience", "What regions interest you?", "When are you available?"
 - After sharing preferences: "Show me trips matching my preferences", "What skills would help me join these trips?", "Tell me more about [specific leg]"
 - After showing legs: "Show me more options", "What about [different region/dates]", "What skills do I need for these trips?"
-
-## WHAT TO DISCOVER (for Intent B - discovery flow):
-1. What kind of sailing experience they're looking for (adventure, learning, relaxation, etc.)
-2. Their experience level (beginner to experienced)
-3. When they're available to sail
-4. Where they'd like to sail (departure/arrival areas)
-5. Any specific skills or certifications they have
 
 ${hasPreferences ? `
 GATHERED PREFERENCES SO FAR:
@@ -184,15 +172,6 @@ IMPORTANT:
 "I searched the French Riviera area but couldn't find any available sailing legs matching your dates. This could mean trips haven't been posted yet for that period. Would you like me to try different dates, or search a broader Mediterranean area?"
 
 **VIOLATION OF THIS RULE CREATES A TERRIBLE USER EXPERIENCE - USERS CANNOT REGISTER FOR LEGS THAT DON'T EXIST.**
-
-**When the user wants to join or register for a leg:**
-- Tell them to sign up first (Sign up button above) and complete their profile in this chat.
-- After that, they can go to the Crew dashboard, find the leg, and use "Register for leg" to open the registration form. Do not attempt to register them in chat.
-
-**When a user wants to join a specific leg, DO NOT:**
-- Suggest alternative legs unless they ask
-- Show leg carousels with other opportunities
-- Redirect the conversation away from their chosen leg
 
 ${matchedLocations && matchedLocations.length > 0 ? `
 ## PRE-RESOLVED LOCATIONS - COPY THESE TOOL CALLS EXACTLY
@@ -352,6 +331,48 @@ const SAILING_SKILLS = [
   'Man overboard recovery',
   'Emergency procedures',
 ];
+
+/**
+ * Normalize risk_level field to ensure it's a proper array
+ * Handles: JSON strings, single strings, arrays, null/undefined
+ */
+function normalizeRiskLevel(value: unknown): string[] | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  
+  // If it's already an array, return it
+  if (Array.isArray(value)) {
+    return value.filter(v => typeof v === 'string' && v.length > 0);
+  }
+  
+  // If it's a string, try to parse as JSON first
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    
+    // Try parsing as JSON (handles cases like "["Coastal sailing"]")
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.filter(v => typeof v === 'string' && v.length > 0);
+        }
+        // If parsed to a single value, wrap in array
+        if (typeof parsed === 'string') {
+          return [parsed];
+        }
+      } catch {
+        // If JSON parsing fails, treat as single string value
+      }
+    }
+    
+    // If not JSON, treat as single string value
+    return trimmed.length > 0 ? [trimmed] : null;
+  }
+  
+  // For any other type, convert to string and wrap in array
+  return [String(value)];
+}
 
 /**
  * Get registration requirements and auto-approval settings for a leg.
@@ -559,7 +580,15 @@ async function executeProspectTools(
         // Field alias mapping to handle AI naming variations
         const fieldAliases: Record<string, string> = {
           'risk_levels': 'risk_level',
+          'comfort_zones': 'risk_level',
+          'comfort_level': 'risk_level',
           'avatar_url': 'profile_image_url',
+          'bio': 'user_description',
+          'description': 'user_description',
+          'about': 'user_description',
+          'experience_level': 'sailing_experience',
+          'experience': 'sailing_experience',
+          'level': 'sailing_experience',
         };
 
         // Build update object from provided fields
@@ -574,13 +603,61 @@ async function executeProspectTools(
         for (const [alias, canonical] of Object.entries(fieldAliases)) {
           if (args[alias] !== undefined && args[canonical] === undefined) {
             log(`Field alias mapping: ${alias} -> ${canonical}`);
-            args[canonical] = args[alias];
+            let mappedValue = args[alias];
+            
+            // Special handling for comfort_zones -> risk_level conversion
+            if (alias === 'comfort_zones' && typeof mappedValue === 'string') {
+              // Convert comma-separated string to array and map to risk level values
+              const zones = mappedValue.split(',').map(z => z.trim());
+              const riskLevels: string[] = [];
+              
+              for (const zone of zones) {
+                const lowerZone = zone.toLowerCase();
+                if (lowerZone.includes('coastal')) {
+                  riskLevels.push('Coastal sailing');
+                } else if (lowerZone.includes('offshore') || lowerZone.includes('open-ocean')) {
+                  riskLevels.push('Offshore sailing');
+                } else if (lowerZone.includes('extreme')) {
+                  riskLevels.push('Extreme sailing');
+                }
+              }
+              
+              // If no matches found but contains "beginner" or "learning", default to Coastal
+              if (riskLevels.length === 0 && (mappedValue.toLowerCase().includes('beginner') || mappedValue.toLowerCase().includes('learning'))) {
+                riskLevels.push('Coastal sailing');
+              }
+              
+              mappedValue = riskLevels.length > 0 ? riskLevels : null;
+            }
+            
+            args[canonical] = mappedValue;
           }
         }
 
         for (const field of allowedFields) {
           if (args[field] !== undefined) {
-            updates[field] = args[field];
+            let value = args[field];
+            
+            // Normalize array fields that might come as JSON strings
+            if (field === 'risk_level') {
+              value = normalizeRiskLevel(value);
+            } else if (field === 'skills') {
+              // Skills should be an array of strings (or JSON-stringified skill objects)
+              // If it's a string, try to parse it
+              if (typeof value === 'string') {
+                try {
+                  const parsed = JSON.parse(value);
+                  value = Array.isArray(parsed) ? parsed : [parsed];
+                } catch {
+                  // If parsing fails, treat as single value
+                  value = [value];
+                }
+              } else if (!Array.isArray(value)) {
+                value = [value];
+              }
+            }
+            
+            updates[field] = value;
           }
         }
 

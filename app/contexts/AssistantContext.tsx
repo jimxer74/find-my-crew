@@ -41,6 +41,9 @@ interface AssistantState {
     action: AIPendingAction;
   } | null;
   awaitingInputActions: string[]; // Action IDs that are awaiting user input
+  profileSuggestions: string[] | null; // Profile-based suggested prompts
+  suggestionsLoading: boolean; // Loading state for suggestions generation
+  suggestionsGeneratedAt: number | null; // Timestamp for cache expiry
 }
 
 interface AssistantContextType extends AssistantState {
@@ -64,6 +67,7 @@ interface AssistantContextType extends AssistantState {
   hideInputModal: () => void;
   submitInput: (actionId: string, value: string | string[]) => Promise<void>;
   redirectToProfile: (actionId: string, section: string, field: string) => void;
+  generateProfileSuggestions: () => Promise<void>;
   pendingActionsCount: number;
 }
 
@@ -122,6 +126,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     lastActionResult: null,
     activeInputModal: null,
     awaitingInputActions: [],
+    profileSuggestions: null,
+    suggestionsLoading: false,
+    suggestionsGeneratedAt: null,
   });
 
   const openAssistant = useCallback(() => {
@@ -144,7 +151,14 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setCurrentConversation = useCallback((id: string | null) => {
-    setState(prev => ({ ...prev, currentConversationId: id, messages: [] }));
+    setState(prev => ({
+      ...prev,
+      currentConversationId: id,
+      messages: [],
+      // Clear suggestions when switching conversations
+      profileSuggestions: null,
+      suggestionsGeneratedAt: null,
+    }));
   }, []);
 
   const loadConversations = useCallback(async () => {
@@ -170,6 +184,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           currentConversationId: id,
           messages: data.messages,
           isLoading: false,
+          // Clear suggestions when loading existing conversation
+          profileSuggestions: null,
+          suggestionsGeneratedAt: null,
         }));
       }
     } catch (error) {
@@ -183,6 +200,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       ...prev,
       currentConversationId: null,
       messages: [],
+      // Clear suggestions when creating new conversation (will regenerate on next open)
+      profileSuggestions: null,
+      suggestionsGeneratedAt: null,
     }));
   }, []);
 
@@ -283,6 +303,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           error: null,
           errorDetails: null,
           lastFailedMessage: null,
+          // Clear suggestions once conversation starts
+          profileSuggestions: null,
+          suggestionsGeneratedAt: null,
         };
       });
 
@@ -835,6 +858,61 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     };
   }, [loadPendingActions]);
 
+  // Generate profile-based suggestions (background, non-blocking)
+  const generateProfileSuggestions = useCallback(async () => {
+    // Check cache: don't regenerate if suggestions exist and are fresh (< 5 minutes)
+    const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+    if (
+      state.profileSuggestions &&
+      state.suggestionsGeneratedAt &&
+      Date.now() - state.suggestionsGeneratedAt < CACHE_DURATION_MS
+    ) {
+      console.log('[AssistantContext] Using cached profile suggestions');
+      return;
+    }
+
+    // Only generate if conversation is empty (new conversation)
+    if (state.messages.length > 0) {
+      console.log('[AssistantContext] Skipping suggestion generation - conversation has messages');
+      return;
+    }
+
+    setState((prev) => ({ ...prev, suggestionsLoading: true }));
+
+    try {
+      console.log('[AssistantContext] Generating profile suggestions...');
+      const response = await fetch('/api/ai/assistant/generate-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate suggestions');
+      }
+
+      const data = await response.json();
+      console.log('[AssistantContext] Profile suggestions generated', {
+        count: data.suggestions?.length,
+        suggestions: data.suggestions,
+      });
+
+      setState((prev) => ({
+        ...prev,
+        profileSuggestions: data.suggestions || null,
+        suggestionsGeneratedAt: data.generatedAt || Date.now(),
+        suggestionsLoading: false,
+      }));
+    } catch (error: any) {
+      console.error('[AssistantContext] Failed to generate profile suggestions:', error);
+      setState((prev) => ({
+        ...prev,
+        suggestionsLoading: false,
+        // Don't set error - this is background operation, failures are silent
+      }));
+    }
+  }, [state.profileSuggestions, state.suggestionsGeneratedAt, state.messages.length]);
+
   const value: AssistantContextType = {
     ...state,
     openAssistant,
@@ -857,6 +935,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     hideInputModal,
     submitInput,
     redirectToProfile,
+    generateProfileSuggestions,
     pendingActionsCount: state.pendingActions.filter(a => a.status === 'pending').length,
   };
 

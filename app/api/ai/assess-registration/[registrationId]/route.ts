@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { callAI } from '@/app/lib/ai/service';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 
 // Extend timeout for AI assessment (can take up to 60+ seconds)
 export const maxDuration = 90; // 90 seconds
@@ -227,19 +228,17 @@ export async function POST(
     };
 
     try {
-      // Try to extract JSON from response (handle cases where AI wraps JSON in markdown)
-      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        assessment = JSON.parse(jsonMatch[0]);
-        console.log(`[AI Assessment API] Successfully parsed assessment:`, {
-          matchScore: assessment.match_score,
-          recommendation: assessment.recommendation,
-          reasoningLength: assessment.reasoning?.length || 0,
-        });
-      } else {
-        console.error(`[AI Assessment API] No JSON found in AI response. Full response:`, aiResponse);
-        throw new Error('No JSON found in AI response');
-      }
+      // Parse JSON from AI response using shared utility
+      assessment = parseJsonObjectFromAIResponse(aiResponse) as {
+        match_score: number;
+        reasoning: string;
+        recommendation: 'approve' | 'deny' | 'review';
+      };
+      console.log(`[AI Assessment API] Successfully parsed assessment:`, {
+        matchScore: assessment.match_score,
+        recommendation: assessment.recommendation,
+        reasoningLength: assessment.reasoning?.length || 0,
+      });
     } catch (parseError) {
       console.error(`[AI Assessment API] Failed to parse AI response:`, {
         error: parseError,

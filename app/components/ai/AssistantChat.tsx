@@ -10,9 +10,62 @@ import { TextInputModal } from './TextInputModal';
 import { MultiSelectInputModal } from './MultiSelectInputModal';
 import { ChatLegCarousel } from './ChatLegCarousel';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import {
+  extractSuggestedPrompts,
+  removeSuggestionsFromContent,
+} from '@/app/lib/ai/shared';
 
+/**
+ * Component to display suggested prompts below assistant messages
+ */
+function SuggestedPrompts({
+  prompts,
+  onSelect,
+  disabled = false,
+}: {
+  prompts: string[];
+  onSelect: (prompt: string) => void;
+  disabled?: boolean;
+}) {
+  if (prompts.length === 0) return null;
 
+  const handleClick = (prompt: string) => {
+    if (!disabled) {
+      onSelect(prompt);
+    }
+  };
 
+  return (
+    <div className="mt-3 pt-3 border-t border-border/50">
+      <p className="text-xs text-muted-foreground mb-2 font-medium">Try asking:</p>
+      <div className="flex flex-wrap gap-2">
+        {prompts.map((prompt, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => handleClick(prompt)}
+            disabled={disabled}
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 hover:shadow-sm active:bg-primary/25 rounded-lg transition-all border border-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary/10"
+            title={`Click to send: ${prompt}`}
+          >
+            <svg
+              className="w-3.5 h-3.5 flex-shrink-0"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+            <span className="text-left">{prompt}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 /**
  * Parse message content and render inline references as clickable elements.
@@ -197,6 +250,9 @@ export function AssistantChat() {
     openAssistant,
     closeAssistant,
     redirectToProfile,
+    profileSuggestions,
+    suggestionsLoading,
+    generateProfileSuggestions,
   } = useAssistant();
 
   const [inputValue, setInputValue] = useState('');
@@ -320,6 +376,17 @@ export function AssistantChat() {
     router.push(path);
   };
 
+  // Trigger profile suggestion generation when assistant opens and conversation is empty
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && !suggestionsLoading) {
+      // Small delay to ensure component is mounted
+      const timer = setTimeout(() => {
+        generateProfileSuggestions();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, messages.length, suggestionsLoading, generateProfileSuggestions]);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -383,9 +450,28 @@ export function AssistantChat() {
             <p className="text-sm max-w-xs mx-auto">
               {userRoles?.includes('owner') ? t('greetingMessageOwner') : t('greetingMessageCrew')}
             </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              {getContextAwareSuggestions(userRoles, sendMessage, t)}
-            </div>
+            {/* Show profile-based suggestions if available, otherwise fallback to context-aware */}
+            {profileSuggestions && profileSuggestions.length > 0 ? (
+              <div className="mt-4">
+                <SuggestedPrompts
+                  prompts={profileSuggestions}
+                  onSelect={sendMessage}
+                  disabled={isLoading}
+                />
+              </div>
+            ) : suggestionsLoading ? (
+              <div className="mt-4 flex justify-center">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
+                {getContextAwareSuggestions(userRoles, sendMessage, t)}
+              </div>
+            )}
           </div>
         )}
 
@@ -403,9 +489,22 @@ export function AssistantChat() {
             >
               <div className="text-sm whitespace-pre-wrap break-words">
                 {message.role === 'assistant'
-                  ? renderMessageWithLegLinks(message.content, handleLegClick, handleRegisterClick, handleCloseAndRedirect)
+                  ? renderMessageWithLegLinks(
+                      removeSuggestionsFromContent(message.content),
+                      handleLegClick,
+                      handleRegisterClick,
+                      handleCloseAndRedirect
+                    )
                   : message.content}
               </div>
+              {/* Show suggested prompts from AI response */}
+              {message.role === 'assistant' && (
+                <SuggestedPrompts
+                  prompts={extractSuggestedPrompts(message.content)}
+                  onSelect={(prompt) => sendMessage(prompt)}
+                  disabled={isLoading}
+                />
+              )}
               {message.role === 'assistant' && message.metadata?.toolCalls && (
                 <div className="mt-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
                   {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}

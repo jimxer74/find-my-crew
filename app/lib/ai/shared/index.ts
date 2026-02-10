@@ -79,3 +79,23 @@ export {
   toolsToOpenAIFormat,
   toolsToPromptFormat,
 } from './tools';
+
+// Response parsing utilities
+export {
+  removeMarkdownCodeBlocks,
+  extractJsonFromText,
+  fixJsonErrors,
+  parseJsonFromAIResponse,
+  parseJsonArrayFromAIResponse,
+  parseJsonObjectFromAIResponse,
+  type ParseJsonOptions,
+} from './response-parsing';
+
+// Message content parsing utilities
+export {
+  extractSuggestedPrompts,
+  removeSuggestionsFromContent,
+  extractLegReferences,
+  extractRegistrationReferences,
+  suggestsSignupOrProfileCreation,
+} from './message-parsing';
