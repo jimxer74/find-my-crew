@@ -1,0 +1,78 @@
+  // Atlantic / US & Canada East Coast additions
+  {
+    name: 'New England',
+    aliases: [
+      'new england', 'maine', 'cape cod', 'nantucket', 'martha\'s vineyard', 'boston coast',
+      'newport ri', 'rhode island', 'block island', 'boston', 'marblehead', 'gloucester', 'portland me'
+    ],
+    category: 'atlantic',
+    bbox: { 
+      minLng: -71.0, 
+      minLat: 41.0, 
+      maxLng: -66.0, 
+      maxLat: 45.0 
+    },
+    description: 'New England coast – classic summer cruising with rocky shores, historic harbors, lobster, islands, and protected sounds; from Cape Cod to Maine’s rugged beauty',
+  },
+  {
+    name: 'Chesapeake Bay',
+    aliases: [
+      'chesapeake', 'chesapeake bay', 'annapolis', 'baltimore', 'norfolk', 'solomons island',
+      'tangier island', 'smith island', 'st michaels', 'oxford md', 'east coast icw'
+    ],
+    category: 'atlantic',
+    bbox: { 
+      minLng: -76.8, 
+      minLat: 36.8, 
+      maxLng: -75.8, 
+      maxLat: 39.8 
+    },
+    description: 'Chesapeake Bay – largest US Atlantic estuary with thousands of miles of protected waters, creeks, historic towns, excellent marinas, crabs, and wildlife; ideal for relaxed gunkholing and ICW connections',
+  },
+  {
+    name: 'Florida Keys',
+    aliases: [
+      'florida keys', 'key west', 'dry tortugas', 'marquesas keys', 'key largo', 'islamorada',
+      'marathon', 'key biscayne', 'florida keys & bahamas jump-off'
+    ],
+    category: 'atlantic',
+    bbox: { 
+      minLng: -83.0, 
+      minLat: 24.0, 
+      maxLng: -80.0, 
+      maxLat: 25.5 
+    },
+    description: 'Florida Keys – string of tropical islands with turquoise waters, coral reefs, excellent snorkeling/diving, laid-back keys vibe, and easy hops to the Bahamas; year-round warm cruising',
+  },
+
+  // Pacific / US & Canada West Coast (expanding your existing PNW entries)
+  {
+    name: 'San Juan Islands & Salish Sea',
+    aliases: [
+      'san juan islands', 'puget sound', 'salish sea', 'friday harbor', 'orcas island',
+      'lopez island', 'san juan island', 'anacortes', 'bellingham', 'port townsend'
+    ],
+    category: 'pacific',
+    bbox: { 
+      minLng: -123.5, 
+      minLat: 47.8, 
+      maxLng: -122.5, 
+      maxLat: 49.0 
+    },
+    description: 'San Juan Islands & Salish Sea – protected island archipelago in the Pacific Northwest with orcas, bald eagles, forested anchorages, charming harbors, and easy hops between US and Canadian waters',
+  },
+  {
+    name: 'British Columbia Coast / Inside Passage',
+    aliases: [
+      'inside passage', 'bc coast', 'vancouver island', 'gulf islands', 'desolation sound',
+      'johnstone strait', 'broughton archipelago', 'victoria bc', 'prince rupert', 'haida gwaii'
+    ],
+    category: 'pacific',
+    bbox: { 
+      minLng: -134.0, 
+      minLat: 48.0, 
+      maxLng: -123.0, 
+      maxLat: 55.0 
+    },
+    description: 'British Columbia Inside Passage – dramatic protected waterways from Vancouver Island to Southeast Alaska with fjords, glaciers, wildlife (bears, whales), remote anchorages, and stunning wilderness cruising',
+  },

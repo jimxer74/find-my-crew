@@ -1,0 +1,57 @@
+[HMR] connected
+Header.tsx:41 [Header] 📊 Dispatching closeAllDialogs event for route change
+SignupModal.tsx:32 [SignupModal] prospectPreferences changed: {}
+SignupModal.tsx:33 [SignupModal] Extracted prefilledName: 
+SignupModal.tsx:39 [SignupModal] Modal state - isOpen: false prefilledName:  prospectPreferences: {}
+ProspectChat.tsx:187 [ProspectChat] Messages changed - total: 0 user messages: 0 assistant messages: 0 all message IDs: []
+ProspectChat.tsx:200 [ProspectChat] 🔍 DEBUG - Button Visibility Check: {isAuthenticated: false, hasExistingProfile: false, messagesLength: 0, Header button (when messages > 0): false, Welcome button (when messages === 0): false, …}
+ProspectChatContext.tsx:180 [ProspectChatContext] Loaded session from localStorage - total messages: 6 user messages: 3 assistant messages: 3
+ProspectChatContext.tsx:347 [ProspectChatContext] 🔍 Checking auth state on mount...
+ProspectChatContext.tsx:651 [ProspectChat] Registering consentSetupCompleted event listener
+ProspectChatContext.tsx:413 [ProspectChatContext] Auth state changed: SIGNED_IN user: e2f81be4-d07b-424a-ad1b-767452dd95f9
+AssistantContext.tsx:729 [AssistantContext] 📊 Auth state change: SIGNED_IN session: true
+AssistantContext.tsx:731 [AssistantContext] 📊 User signed in, loading pending actions
+AssistantContext.tsx:372 [AssistantContext] 🔍 loadPendingActions called
+AssistantContext.tsx:835 [AssistantContext] 📊 Cleanup auth listener: SIGNED_IN session: true
+AssistantContext.tsx:837 [AssistantContext] 📊 User signed in, starting cleanup interval
+ProspectChat.tsx:200 [ProspectChat] 🔍 DEBUG - Button Visibility Check: {isAuthenticated: true, hasExistingProfile: false, messagesLength: 0, Header button (when messages > 0): false, Welcome button (when messages === 0): false, …}
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Are you interested in trips matching your experience level and language skills?"  
+- "Would you like help checking available legs for your sailing preferences?"  
+- "Do you need clarification on sp
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Yes, save my profile!"
+- "Can I add anything else?"
+- "Show me trips in the Mediterranean."
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Show me coastal legs near the Canary Islands"
+- "What skills are needed for ocean crossings?"
+- "Search wider Atlantic departure zones"
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Are you interested in trips matching your experience level and language skills?"  
+- "Would you like help checking available legs for your sailing preferences?"  
+- "Do you need clarification on sp
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Yes, save my profile!"
+- "Can I add anything else?"
+- "Show me trips in the Mediterranean."
+message-parsing.ts:49 [extractSuggestedPrompts] Found suggestions text: - "Show me coastal legs near the Canary Islands"
+- "What skills are needed for ocean crossings?"
+- "Search wider Atlantic departure zones"
+SignupModal.tsx:32 [SignupModal] prospectPreferences changed: {fullName: 'Arango Armatilainen'}
+SignupModal.tsx:33 [SignupModal] Extracted prefilledName: Arango Armatilainen
+SignupModal.tsx:39 [SignupModal] Modal state - isOpen: false prefilledName: Arango Armatilainen prospectPreferences: {fullName: 'Arango Armatilainen'}
+ProspectChat.tsx:187 [ProspectChat] Messages changed - total: 6 user messages: 3 assistant messages: 3 all message IDs: (6) [{…}, {…}, {…}, {…}, {…}, {…}]
+ProspectChat.tsx:200 [ProspectChat] 🔍 DEBUG - Button Visibility Check: {isAuthenticated: true, hasExistingProfile: false, messagesLength: 6, Header button (when messages > 0): false, Welcome button (when messages === 0): false, …}
+ProspectChatContext.tsx:866 [ProspectChatContext] Saving session - total messages: 6 user messages: 3 assistant messages: 3
+SignupModal.tsx:32 [SignupModal] prospectPreferences changed: {fullName: 'Arango Armatilainen'}
+SignupModal.tsx:33 [SignupModal] Extracted prefilledName: Arango Armatilainen
+SignupModal.tsx:39 [SignupModal] Modal state - isOpen: false prefilledName: Arango Armatilainen prospectPreferences: {fullName: 'Arango Armatilainen'}
+useNotifications.ts:210 [useNotifications] Realtime subscription status: SUBSCRIBED
+AssistantContext.tsx:375 [AssistantContext] 📡 API response status: 200
+AssistantContext.tsx:379 [AssistantContext] 📦 Received data: {actions: Array(0), count: 0}
+AssistantContext.tsx:393 [AssistantContext] ✅ Transformed actions: []
+AssistantContext.tsx:394 [AssistantContext] 📊 Transformed actions count: 0
+AssistantContext.tsx:395 [AssistantContext] 📊 First transformed action: undefined
+AssistantContext.tsx:396 [AssistantContext] 📊 Actions array type: true
+AssistantContext.tsx:398 [AssistantContext] 🔄 Setting state with actions: []
+AssistantContext.tsx:398 [AssistantContext] 🔄 Setting state with actions: []
+
+
+Profile in database:
+[{"idx":6,"id":"e2f81be4-d07b-424a-ad1b-767452dd95f9","full_name":"Arango Armatilainen","user_description":"[Craft a compelling bio from their story]","certifications":null,"phone":null,"created_at":"2026-02-10 12:47:36.337+00","updated_at":"2026-02-10 12:47:35.863+00","username":"arango_armatilainen_mlglizuy","risk_level":["Coastal sailing","Offshore sailing"],"sailing_preferences":"Transatlantic crossing from Canary Islands, available now","skills":["{\"skill_name\":\"technical_skills\",\"description\":\"8 years carpentry experience, boat maintenance\"}","{\"skill_name\":\"sailing_experience\",\"description\":\"Gibraltar crossing on Neel 47, teen sailing courses\"}","{\"skill_name\":\"physical_fitness\",\"description\":\"Yoga teacher, good physical condition\"}"],"sailing_experience":2,"profile_image_url":null,"roles":["crew"],"profile_completion_percentage":88,"profile_completed_at":null,"email":"uiui@uiui","language":"en"}]
