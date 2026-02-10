@@ -247,7 +247,7 @@ function buildToolInstructions(profileCompletion?: boolean): string {
   const tools = profileCompletion ? getToolsForProspectProfileCompletion() : getToolsForProspect();
   const toolsDescription = toolsToPromptFormat(tools);
 
-  return `
+  const baseInstructions = `
 AVAILABLE TOOLS:
 ${toolsDescription}
 
@@ -270,6 +270,22 @@ For simple text searches:
 After receiving tool results, provide a helpful response to the user using the [[leg:UUID:Name]] format for any legs you want to highlight.
 
 IMPORTANT: Always use a tool when the user mentions wanting to sail somewhere or asks about available trips. Don't just respond conversationally - search for actual legs!`;
+
+  if (profileCompletion) {
+    return baseInstructions + `
+
+**CRITICAL FOR PROFILE COMPLETION MODE:**
+
+When the user confirms they want to save their profile (e.g., "yes", "save it", "go ahead"), you MUST call \`update_user_profile\`:
+
+\`\`\`tool_call
+{"name": "update_user_profile", "arguments": {"user_description": "...", "sailing_experience": 2, "risk_level": ["Coastal sailing"], "skills": [{"skill_name": "technical_skills", "description": "..."}], ...}}
+\`\`\`
+
+DO NOT just respond with text saying you saved it - you MUST include the tool call block above!`;
+  }
+
+  return baseInstructions;
 }
 
 /**
@@ -1368,9 +1384,12 @@ ${getSkillsStructure()}
 - Format as a readable list showing each field and its value
 - Ask: "Does this capture your profile correctly? Just say 'yes' or 'ok' and I'll save it for you."
 - **YOU must determine the user's intent from their response:**
-  - **If the user confirms** (e.g., "yes", "ok", "sounds good", "correct", "save it", "go ahead", "that's right", etc.), **call \`update_user_profile\` immediately** - execute the tool call directly without waiting
+  - **If the user confirms** (e.g., "yes", "ok", "sounds good", "correct", "save it", "go ahead", "that's right", "yes, save my profile", etc.), **YOU MUST IMMEDIATELY call \`update_user_profile\` tool** - DO NOT just respond with text saying you saved it. You MUST include the tool call in your response.
   - **If the user rejects or wants changes** (e.g., "no", "wrong", "change", "edit", "not correct", "modify", etc.), help them modify the profile data first - do NOT call update_user_profile
   - **If the user's response is ambiguous or unclear**, present the profile summary again and ask for clear confirmation - do NOT call update_user_profile yet
+- **CRITICAL: When user confirms, your response MUST include BOTH:**
+  1. A tool call block: \`\`\`tool_call\n{"name": "update_user_profile", "arguments": {...}}\n\`\`\`
+  2. A friendly confirmation message to the user
 - **Your decision to call \`update_user_profile\` should be based on your understanding of the user's intent** - if they confirmed, call it immediately; if they rejected or were ambiguous, do not call it
 - **Always encourage the user to confirm and save** so their profile is stored; the session goal is to get the profile saved. If they hesitate, explain that saving the profile lets boat owners see their experience when they register for legs.
 
@@ -1392,6 +1411,8 @@ Make suggestions contextual:
 - After saving: suggest next steps ("How do I register for legs?", "Show me sailing opportunities")
 
 **Example of CORRECT behavior:**
+
+**Step 1 - Present profile summary:**
 User previously said: "I have 8 years carpentry experience, did a Gibraltar crossing on a Neel 47, took teen sailing courses, I'm a yoga teacher, available now for transatlantic from Canaries"
 
 Your response should be:
@@ -1408,9 +1429,21 @@ Your response should be:
 
 Does this look right?"
 
+**Step 2 - When user confirms (e.g., "Yes, save my profile"):**
+Your response MUST include the tool call:
+
+\`\`\`tool_call
+{"name": "update_user_profile", "arguments": {"user_description": "[the bio you crafted]", "sailing_experience": 2, "risk_level": ["Coastal sailing", "Offshore sailing"], "skills": [{"skill_name": "technical_skills", "description": "8 years carpentry experience, boat maintenance"}, {"skill_name": "sailing_experience", "description": "Gibraltar crossing on Neel 47, teen sailing courses"}, {"skill_name": "physical_fitness", "description": "Yoga teacher, good physical condition"}], "sailing_preferences": "Transatlantic crossing from Canary Islands, available now"}}
+\`\`\`
+
+Perfect! I've saved your profile! ✅
+
+You're all set! Your crew profile is now complete and boat owners will be able to see your experience when you register for legs.
+
 Note: Map "carpentry" to "technical_skills", "yoga" to "physical_fitness" - use ONLY config skill names!
 
-**DO NOT** respond with "I still need your bio, experience level..." when the user already provided this information!`;
+**DO NOT** respond with "I still need your bio, experience level..." when the user already provided this information!
+**DO NOT** just say "I saved your profile" without including the tool call block above!`;
   }
 
   const toolInstructions = buildToolInstructions(isProfileCompletionMode);
