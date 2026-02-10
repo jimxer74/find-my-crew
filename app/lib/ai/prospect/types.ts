@@ -104,4 +104,6 @@ export interface ProspectChatResponse {
   sessionId: string;
   message: ProspectMessage;
   extractedPreferences?: Partial<ProspectPreferences>;
+  /** Flag indicating that profile was successfully created - triggers cleanup of prospect data */
+  profileCreated?: boolean;
 }

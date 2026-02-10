@@ -143,8 +143,8 @@ ${preferences.sailingGoals ? `- Sailing goals: ${preferences.sailingGoals}` : ''
 ${preferences.experienceLevel ? `- Experience level: ${preferences.experienceLevel}/4` : ''}
 ${preferences.preferredDates?.start ? `- Available: ${preferences.preferredDates.start} to ${preferences.preferredDates.end}` : ''}
 ${preferences.preferredLocations?.length ? `- Preferred locations: ${preferences.preferredLocations.join(', ')}` : ''}
-${preferences.skills?.length ? `- Skills: ${preferences.skills.join(', ')}` : ''}
 ${preferences.riskLevels?.length ? `- Comfort level: ${preferences.riskLevels.join(', ')}` : ''}
+**NOTE:** Skills are NOT shown here - extract them ONLY from the conversation history below. Do NOT reuse skills from previous sessions.
 ` : ''}
 
 RESPONSE FORMAT:
@@ -702,6 +702,7 @@ async function executeProspectTools(
               }
               
               log(`Normalized skills: ${JSON.stringify(normalizedSkills)}`);
+              log(`📊 Skills being saved to database:`, normalizedSkills.map(s => ({ skill_name: s.skill_name, description_length: s.description?.length || 0 })));
               value = normalizedSkills;
             }
             
@@ -739,6 +740,11 @@ async function executeProspectTools(
             updates.roles = ['crew'];
             log('Profile has no roles set, adding default crew role');
           }
+
+          log('Profile exists, updating profile:', {
+            ...updates,
+            skills: updates.skills ? JSON.stringify(updates.skills) : 'not updating',
+          });
 
           const { data, error } = await supabase
             .from('profiles')
@@ -795,7 +801,10 @@ async function executeProspectTools(
             insertData.email = email;
           }
 
-          log('Profile does not exist, inserting new profile:', insertData);
+          log('Profile does not exist, inserting new profile:', {
+            ...insertData,
+            skills: insertData.skills ? JSON.stringify(insertData.skills) : '[]',
+          });
 
           const { data, error } = await supabase
             .from('profiles')
@@ -1190,11 +1199,25 @@ export async function prospectChat(
   log('👤 User profile:', request.userProfile || '(none)');
 
   const sessionId = request.sessionId || `prospect_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  const preferences = request.gatheredPreferences || {};
+  let preferences = request.gatheredPreferences || {};
   const history = request.conversationHistory || [];
   const authenticatedUserId = request.authenticatedUserId || null;
   const userProfile = request.userProfile || null;
   const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
+  
+  // CRITICAL: For authenticated users in profile completion mode, DO NOT pass skills from preferences
+  // Skills should ONLY be extracted from conversation history, not from stale localStorage data
+  if (isProfileCompletionMode && authenticatedUserId) {
+    log('🧹 Profile completion mode: Clearing skills from preferences to prevent stale data');
+    preferences = {
+      ...preferences,
+      skills: undefined, // Remove skills - they should only come from conversation
+    };
+    log('📋 Preferences after cleaning (skills removed):', {
+      ...preferences,
+      skills: 'REMOVED (will be extracted from conversation only)',
+    });
+  }
 
   // Check if user already has a profile (simple check - just existence)
   let hasExistingProfile = false;
@@ -1402,7 +1425,14 @@ Note: Map "carpentry" to "technical_skills", "yoga" to "physical_fitness" - use 
   ];
 
   // Add history (limited)
+  // CRITICAL: For profile completion mode, ensure we're not including stale conversation with old skills
   const recentHistory = history.slice(-MAX_HISTORY_MESSAGES);
+  log('📜 Conversation history being sent to AI:', {
+    totalMessages: history.length,
+    recentMessages: recentHistory.length,
+    messageRoles: recentHistory.map(m => m.role),
+  });
+  
   for (const msg of recentHistory) {
     messages.push({ role: msg.role, content: msg.content });
   }
@@ -1515,6 +1545,7 @@ You're now ready to start using all the platform features. Click "View Journeys"
         sessionId,
         message: responseMessage,
         extractedPreferences: undefined,
+        profileCreated: true, // Flag to trigger cleanup of prospect data
       };
     }
 

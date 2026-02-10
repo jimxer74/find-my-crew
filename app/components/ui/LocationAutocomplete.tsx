@@ -106,13 +106,55 @@ export function LocationAutocomplete({
     // Debounce API calls - wait 300ms after user stops typing
     const timeoutId = setTimeout(async () => {
       // Search cruising regions first (instant, no API call)
-      const cruisingResults = searchLocation(query);
-      const cruisingSuggestions: Suggestion[] = cruisingResults
+      // Use a custom search for autocomplete that matches prefixes
+      const normalizedQuery = query.toLowerCase().trim();
+      const cruisingMatches: LocationSearchResult[] = [];
+      
+      // Import getAllRegions to search through all regions
+      const { getAllRegions } = await import('@/app/lib/geocoding/locations');
+      const allRegions = getAllRegions();
+      
+      for (const region of allRegions) {
+        // Check if query matches region name (prefix match)
+        const normalizedName = region.name.toLowerCase();
+        if (normalizedName.startsWith(normalizedQuery) || normalizedName.includes(normalizedQuery)) {
+          cruisingMatches.push({
+            region,
+            matchedOn: 'name',
+            matchedTerm: region.name,
+          });
+          continue;
+        }
+        
+        // Check aliases
+        for (const alias of region.aliases) {
+          const normalizedAlias = alias.toLowerCase();
+          if (normalizedAlias.startsWith(normalizedQuery) || normalizedAlias.includes(normalizedQuery)) {
+            cruisingMatches.push({
+              region,
+              matchedOn: 'alias',
+              matchedTerm: alias,
+            });
+            break;
+          }
+        }
+      }
+      
+      // Sort by relevance: exact prefix matches first, then by length
+      cruisingMatches.sort((a, b) => {
+        const aStartsWith = a.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+        const bStartsWith = b.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        return a.matchedTerm.length - b.matchedTerm.length;
+      });
+      
+      const cruisingSuggestions: Suggestion[] = cruisingMatches
         .slice(0, 5) // Limit to top 5 cruising regions
         .map((result: LocationSearchResult) => ({
           id: `cruising-${result.region.name}`,
           name: result.region.name,
-          subtitle: `Cruising Area • ${formatCategory(result.region.category)}`,
+          subtitle: 'Cruising location',
           isCruisingRegion: true,
           category: result.region.category,
           description: result.region.description,
@@ -315,9 +357,9 @@ export function LocationAutocomplete({
                 {suggestion.name}
               </div>
               {suggestion.subtitle && (
-                <div className={`text-sm ${
+                <div className={`text-xs ${
                   suggestion.isCruisingRegion
-                    ? 'text-sky-600/80 dark:text-sky-400/80'
+                    ? 'text-sky-600/80 dark:text-sky-400/80 font-normal'
                     : 'text-muted-foreground'
                 }`}>
                   {suggestion.subtitle}

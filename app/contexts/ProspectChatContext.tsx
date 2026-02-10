@@ -173,13 +173,28 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const isProfileCompletionMode = searchParams?.get('profile_completion') === 'true';
 
       // Load localStorage data first - this contains the conversation history
-      const localSession = loadSession();
+      let localSession = loadSession();
       if (localSession) {
         const userMessages = localSession.conversation.filter(m => m.role === 'user');
         const assistantMessages = localSession.conversation.filter(m => m.role === 'assistant');
         console.log('[ProspectChatContext] Loaded session from localStorage - total messages:', localSession.conversation.length,
           'user messages:', userMessages.length,
-          'assistant messages:', assistantMessages.length);
+          'assistant messages:', assistantMessages.length,
+          'sessionId:', localSession.sessionId);
+        
+        // CRITICAL: For authenticated users, clear localStorage if session IDs don't match
+        // This prevents loading old conversation history from previous users
+        // We'll check this after we get the cookie session ID below
+        
+        // CRITICAL: Clear skills from preferences if they exist - skills should ONLY come from conversation, not localStorage
+        // This prevents stale skills from previous sessions being reused
+        if (localSession.gatheredPreferences?.skills) {
+          console.log('[ProspectChatContext] 🧹 Removing stale skills from loaded preferences:', localSession.gatheredPreferences.skills);
+          const { skills, ...prefsWithoutSkills } = localSession.gatheredPreferences;
+          localSession.gatheredPreferences = prefsWithoutSkills;
+          // Save cleaned preferences back to localStorage
+          saveSession(localSession);
+        }
         
         // Extract PROSPECT_NAME from all assistant messages if not already in preferences
         // This ensures the name persists even if it was extracted in an earlier message
@@ -206,24 +221,33 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const cookieSession = await fetchSessionFromCookie();
 
       if (cookieSession) {
+        // CRITICAL: If localStorage session ID doesn't match cookie session ID, clear localStorage
+        // This prevents loading old conversation history from previous users/sessions
+        if (localSession && localSession.sessionId !== cookieSession.sessionId) {
+          console.log('[ProspectChatContext] 🧹 Session ID mismatch - clearing old localStorage data. Old:', localSession.sessionId, 'New:', cookieSession.sessionId);
+          localStorage.removeItem(STORAGE_KEY);
+          localSession = null; // Treat as no session
+        }
+        
         // Check if localStorage data matches the cookie session
         if (localSession && localSession.sessionId === cookieSession.sessionId) {
           // Restore full session from localStorage
           // Only clear fullName if this is a page refresh (session exists but no active conversation)
           // If there are messages, keep the fullName as it was extracted during the conversation
-          const preferencesToUse = localSession.conversation.length === 0
+          const sessionToUse = localSession; // Store reference for TypeScript
+          const preferencesToUse = sessionToUse.conversation.length === 0
             ? (() => {
                 // New/empty session - clear fullName
-                const prefs = { ...localSession.gatheredPreferences };
+                const prefs = { ...sessionToUse.gatheredPreferences };
                 delete prefs.fullName;
                 return prefs;
               })()
-            : localSession.gatheredPreferences; // Active conversation - keep fullName
+            : sessionToUse.gatheredPreferences; // Active conversation - keep fullName
           
           // Only update localStorage if we cleared fullName
-          if (localSession.conversation.length === 0 && localSession.gatheredPreferences?.fullName) {
+          if (sessionToUse.conversation.length === 0 && sessionToUse.gatheredPreferences?.fullName) {
             const updatedSession: ProspectSession = {
-              ...localSession,
+              ...sessionToUse,
               gatheredPreferences: preferencesToUse,
             };
             saveSession(updatedSession);
@@ -232,32 +256,46 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           setState((prev) => ({
             ...prev,
             sessionId: cookieSession.sessionId,
-            messages: localSession.conversation,
+            messages: sessionToUse.conversation,
             preferences: preferencesToUse,
-            viewedLegs: localSession.viewedLegs,
+            viewedLegs: sessionToUse.viewedLegs,
           }));
-          setIsReturningUser(localSession.conversation.length > 0);
+          setIsReturningUser(sessionToUse.conversation.length > 0);
         } else if (localSession && localSession.conversation.length > 0) {
-          // localStorage has conversation data - preserve it even if cookie doesn't match
-          // This ensures conversation history survives when user leaves and comes back
-          // Keep fullName since there's an active conversation
-          console.log('[ProspectChatContext] Preserving localStorage session with conversation data, updating sessionId to match cookie');
-          // Update localStorage session with new cookie session ID to keep them in sync
-          const updatedSession: ProspectSession = {
-            ...localSession,
-            sessionId: cookieSession.sessionId,
-            lastActiveAt: new Date().toISOString(),
-            // Keep existing preferences including fullName
-          };
-          saveSession(updatedSession);
-          setState((prev) => ({
-            ...prev,
-            sessionId: cookieSession.sessionId,
-            messages: localSession.conversation,
-            preferences: localSession.gatheredPreferences,
-            viewedLegs: localSession.viewedLegs,
-          }));
-          setIsReturningUser(localSession.conversation.length > 0);
+          // This branch should not be reached if we cleared localSession above
+          // But if it is, we should still check session ID match
+          const sessionToUse = localSession; // Store reference for TypeScript
+          if (sessionToUse.sessionId === cookieSession.sessionId) {
+            // localStorage has conversation data - preserve it even if cookie doesn't match
+            // This ensures conversation history survives when user leaves and comes back
+            // Keep fullName since there's an active conversation
+            console.log('[ProspectChatContext] Preserving localStorage session with conversation data, updating sessionId to match cookie');
+            // Update localStorage session with new cookie session ID to keep them in sync
+            const updatedSession: ProspectSession = {
+              ...sessionToUse,
+              sessionId: cookieSession.sessionId,
+              lastActiveAt: new Date().toISOString(),
+              // Keep existing preferences including fullName
+            };
+            saveSession(updatedSession);
+            setState((prev) => ({
+              ...prev,
+              sessionId: cookieSession.sessionId,
+              messages: sessionToUse.conversation,
+              preferences: sessionToUse.gatheredPreferences,
+              viewedLegs: sessionToUse.viewedLegs,
+            }));
+            setIsReturningUser(sessionToUse.conversation.length > 0);
+          } else {
+            // Session IDs don't match - start fresh
+            console.log('[ProspectChatContext] Session ID mismatch in else branch - starting fresh');
+            setState((prev) => ({
+              ...prev,
+              sessionId: cookieSession.sessionId,
+              preferences: {}, // Clear preferences for new session
+            }));
+            setIsReturningUser(false);
+          }
         } else {
           // Cookie exists but localStorage is empty or has no conversation
           // Start fresh with the cookie session ID - clear any old preferences including fullName
@@ -271,19 +309,20 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       } else {
         // No cookie session - fallback to localStorage only (legacy support)
         if (localSession) {
+          const sessionToUse = localSession; // Store reference for TypeScript
           // Only clear fullName if there's no active conversation
-          const preferencesToUse = localSession.conversation.length === 0
+          const preferencesToUse = sessionToUse.conversation.length === 0
             ? (() => {
-                const prefs = { ...localSession.gatheredPreferences };
+                const prefs = { ...sessionToUse.gatheredPreferences };
                 delete prefs.fullName;
                 return prefs;
               })()
-            : localSession.gatheredPreferences;
+            : sessionToUse.gatheredPreferences;
           
           // Only update localStorage if we cleared fullName
-          if (localSession.conversation.length === 0 && localSession.gatheredPreferences?.fullName) {
+          if (sessionToUse.conversation.length === 0 && sessionToUse.gatheredPreferences?.fullName) {
             const updatedSession: ProspectSession = {
-              ...localSession,
+              ...sessionToUse,
               gatheredPreferences: preferencesToUse,
             };
             saveSession(updatedSession);
@@ -291,12 +330,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           
           setState((prev) => ({
             ...prev,
-            sessionId: localSession.sessionId,
-            messages: localSession.conversation,
+            sessionId: sessionToUse.sessionId,
+            messages: sessionToUse.conversation,
             preferences: preferencesToUse,
-            viewedLegs: localSession.viewedLegs,
+            viewedLegs: sessionToUse.viewedLegs,
           }));
-          setIsReturningUser(localSession.conversation.length > 0);
+          setIsReturningUser(sessionToUse.conversation.length > 0);
         }
       }
 
@@ -872,6 +911,56 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
 
+      // Check if profile was successfully created - if so, clear all prospect data
+      if (data.profileCreated === true) {
+        console.log('[ProspectChatContext] 🎉 Profile created successfully! Clearing all prospect data...');
+        
+        // Clear all prospect data: messages, preferences, viewed legs, session
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(STORAGE_KEY);
+          console.log('[ProspectChatContext] ✅ Cleared localStorage');
+        }
+        await clearSessionCookie();
+        console.log('[ProspectChatContext] ✅ Cleared server session cookie');
+
+        // Fetch a new session ID from server
+        const newSession = await fetchSessionFromCookie();
+        console.log('[ProspectChatContext] ✅ Fetched new session ID:', newSession?.sessionId);
+
+        // Clear all prospect state but preserve authentication
+        // Only show the congratulations message (no previous chat history)
+        // CRITICAL: Clear preferences completely including skills to prevent stale data
+        const clearedPreferences: ProspectPreferences = {};
+        console.log('[ProspectChatContext] 🧹 Cleared preferences (including skills):', clearedPreferences);
+        
+        // CRITICAL: Update stateRef BEFORE setState to prevent useEffect from saving stale data
+        const clearedState = {
+          sessionId: newSession?.sessionId || null,
+          messages: data.message ? [data.message] : [], // Only the congratulations message
+          preferences: clearedPreferences, // Completely empty preferences object
+          viewedLegs: [], // Clear viewed legs
+          isLoading: false,
+          error: null,
+          profileCompletionMode: false,
+          // Preserve authentication state
+          isAuthenticated: currentState.isAuthenticated,
+          userId: currentState.userId,
+          userProfile: currentState.userProfile,
+          consentGrantedForProfileCompletion: currentState.consentGrantedForProfileCompletion,
+          hasExistingProfile: true, // Profile now exists
+        };
+        
+        // Update ref immediately to prevent stale saves
+        if (stateRef.current) {
+          stateRef.current = clearedState;
+        }
+        
+        setState(clearedState);
+        setIsReturningUser(false);
+        console.log('[ProspectChatContext] ✅ All prospect data cleared (messages, preferences, skills, viewedLegs), profile creation complete. Showing congratulations message only.');
+        return;
+      }
+
       // Parse [PROSPECT_NAME: ...] from assistant message to prefill signup form
       // Also check all previous messages to ensure we don't lose a name that was extracted earlier
       const assistantContent = data.message?.content ?? '';
@@ -1016,10 +1105,25 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const assistantMessages = state.messages.filter(m => m.role === 'assistant');
       console.log('[ProspectChatContext] Saving session - total messages:', state.messages.length,
         'user messages:', userMessages.length,
-        'assistant messages:', assistantMessages.length);
+        'assistant messages:', assistantMessages.length,
+        'sessionId:', state.sessionId);
+      
+      // CRITICAL: Don't save if we just cleared everything (empty messages and empty preferences)
+      // This prevents overwriting the cleared state after profile creation
+      if (state.messages.length === 0 && Object.keys(state.preferences).length === 0) {
+        console.log('[ProspectChatContext] ⏭️ Skipping save - state is cleared (likely after profile creation)');
+        return;
+      }
       
       // Load existing session to preserve createdAt
       const existingSession = loadSession();
+      
+      // CRITICAL: Only save if session IDs match - prevents saving to wrong session
+      if (existingSession && existingSession.sessionId !== state.sessionId) {
+        console.log('[ProspectChatContext] ⚠️ Session ID mismatch - not saving. Existing:', existingSession.sessionId, 'Current:', state.sessionId);
+        return;
+      }
+      
       const session: ProspectSession = {
         sessionId: state.sessionId,
         createdAt: existingSession?.createdAt || new Date().toISOString(),
