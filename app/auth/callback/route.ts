@@ -125,7 +125,8 @@ export async function GET(request: Request) {
       }
 
       // Determine redirect based on context and profile
-      let redirectPath = '/'; // Default to home
+      // Always redirect to role-specific homepage
+      let redirectPath = '/crew'; // Default to crew homepage
 
       // If user came from prospect chat, redirect back to chat with profile completion mode
       if (isFromProspect) {
@@ -133,13 +134,14 @@ export async function GET(request: Request) {
         console.log('LOGIN CALLBACK, prospect user - redirecting to chat for profile completion');
       } else if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
+        // Priority: owner > crew (if user has both roles)
         if (profile.roles.includes('owner')) {
-          redirectPath = origin + '/owner/journeys';
+          redirectPath = '/owner/dashboard';
         } else if (profile.roles.includes('crew')) {
-          redirectPath = origin + '/crew';
+          redirectPath = '/crew';
         }
       }
-      // If no profile or no roles, redirect to home (can browse limited)
+      // If no profile or no roles, default to crew homepage
       let url = new URL(redirectPath, request.url)
       console.log('LOGIN CALLBACK, user found', url);
 

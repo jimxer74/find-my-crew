@@ -42,18 +42,19 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: 
           .eq('id', data.user.id)
           .single();
 
-        // Determine redirect based on profile and roles
-        let redirectPath = '/'; // Default to home
+        // Always redirect to role-specific homepage
+        let redirectPath = '/crew'; // Default to crew homepage
         
         if (profile && profile.roles && profile.roles.length > 0) {
           // User has roles - redirect based on primary role
+          // Priority: owner > crew (if user has both roles)
           if (profile.roles.includes('owner')) {
-            redirectPath = '/owner/boats';
+            redirectPath = '/owner/dashboard';
           } else if (profile.roles.includes('crew')) {
             redirectPath = '/crew';
           }
         }
-        // If no profile or no roles, redirect to home (can browse limited)
+        // If no profile or no roles, default to crew homepage
         
         onClose();
         router.push(redirectPath);

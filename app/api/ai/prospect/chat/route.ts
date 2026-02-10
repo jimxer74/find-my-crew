@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     let supabase;
     let authenticatedUserId: string | null = null;
 
-    // Check if profile completion mode with authenticated user
-    if (body.profileCompletionMode && body.userId) {
+    // Check if user is authenticated (either in profile completion mode or has existing profile)
+    if (body.userId) {
       // Create authenticated Supabase client
       const cookieStore = await cookies();
       supabase = createServerClient(
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && user.id === body.userId) {
         authenticatedUserId = user.id;
-        log('Authenticated user for profile completion:', authenticatedUserId);
+        log('Authenticated user', { userId: authenticatedUserId, profileCompletionMode: body.profileCompletionMode });
       } else {
-        log('User authentication failed for profile completion mode');
+        log('User authentication failed');
       }
     } else {
       // Create Supabase client with service role for reading public data

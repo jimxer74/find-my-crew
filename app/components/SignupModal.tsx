@@ -21,15 +21,36 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
   const [error, setError] = useState<string | null>(null);
 
   // Prefill full name from prospect chat when user shared it before signup
+  // Check multiple possible property names to ensure we catch it
   const prefilledName =
     (prospectPreferences?.fullName as string)?.trim() ||
     (prospectPreferences?.full_name as string)?.trim() ||
     '';
+  
+  // Log whenever prospectPreferences change
   useEffect(() => {
+    console.log('[SignupModal] prospectPreferences changed:', prospectPreferences);
+    console.log('[SignupModal] Extracted prefilledName:', prefilledName);
+  }, [prospectPreferences, prefilledName]);
+  
+  useEffect(() => {
+    // Always set the name when modal opens if we have a prefilled name
+    // Also update if prefilledName changes while modal is open
+    console.log('[SignupModal] Modal state - isOpen:', isOpen, 'prefilledName:', prefilledName, 'prospectPreferences:', prospectPreferences);
     if (isOpen && prefilledName) {
+      console.log('[SignupModal] Prefilling full name:', prefilledName, 'current fullName:', fullName);
       setFullName(prefilledName);
+    } else if (isOpen && !prefilledName) {
+      // Log when modal opens but no name is available
+      console.log('[SignupModal] Modal opened but no prefilled name available. prospectPreferences:', prospectPreferences);
+    } else if (!isOpen) {
+      // Clear the form when modal closes
+      setFullName('');
+      setEmail('');
+      setPassword('');
+      setError(null);
     }
-  }, [isOpen, prefilledName]);
+  }, [isOpen, prefilledName, prospectPreferences]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

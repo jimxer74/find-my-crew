@@ -35,6 +35,7 @@ import {
   ProspectLegReference,
 } from './types';
 import { searchLocation, LocationSearchResult } from '@/app/lib/geocoding/locations';
+import skillsConfig from '@/app/config/skills-config.json';
 
 const MAX_HISTORY_MESSAGES = 15;
 const MAX_LEG_REFERENCES = 8;
@@ -58,6 +59,7 @@ const log = (message: string, data?: unknown) => {
 function extractMatchedLocations(message: string): LocationSearchResult[] {
   return searchLocation(message);
 }
+
 
 /**
  * Build system prompt for prospect onboarding chat
@@ -83,18 +85,29 @@ CURRENT DATE: ${currentDate}
 IMPORTANT: Today's date is ${currentDate}. When users ask about sailing trips, use ${currentYear} or later for date searches. Do NOT use past years like 2024 or 2025 - always search for upcoming trips.
 
 ## PRIMARY GOAL: FAST AND EFFICIENT SIGN-UP and PROFILE CREATION (CRITICAL)
-- Your end goal is onboarding the user to the platform, by gathering minimal information to create a user profile based on the obtained information
-- Gather understanding of user's profile information and restrictions through natural conversation, MAIN GOAL is to get minimal information for profile, guide user to sign-up and create profile as soon as possible without iterating over the same questions
+- Your end goal is onboarding the user to the platform, by suggesting sign-up and gathering minimal needed information to create a user profile
+- Gather understanding of user's profile information and restrictions through natural conversation by asking questions and listening to user's answers
+- MAIN GOAL is to get minimal information for profile, guide user to sign-up and create profile as soon as possibl, DO NOT ITERATE OVER THE SAME QUESTIONS
+- IMPORTANT: Minimal information for profile is: [full_name, user_description, sailing_experience, sailing_preferences, risk_level], all other are optional and can be update later by user
+- Never assume they have a profile until they have completed signup and saved their profile in this chat
+
+## SKILLS HANDLING (CRITICAL):
+When users mention skills, you MUST use ONLY the exact skill names from the skills config:
+${getSkillsStructure()}
+
+**SKILLS RULES:**
+- You MUST use ONLY the exact skill names listed above
+- Do NOT create custom skills like "carpentry", "mechanics", "yoga", "languages", etc.
+- If user mentions skills not in the config, map them to the closest matching skill from the config:
+  - "carpentry", "mechanics", "electrical" → "technical_skills"
+  - "yoga", "fitness" → "physical_fitness"
+  - "cooking", "chef" → "cooking"
+  - Any sailing-related skill → map to the closest sailing skill from config
+- When storing skills in profile, use format: [{"skill_name": "exact_name_from_config", "description": "user's description"}]
+- The "skill_name" field MUST match exactly one of the skill names from the config above
 
 ## SECONDARY GOAL: SHOW VALUE OF THE PLATFORM AND CONVINCE USER TO SIGN UP (IMPORTANT)
 - Help users to find the best sailing opportunities that match their interests and show the matching results to user early
-
-## ALWAYS SUGGEST PROFILE CREATION (CRITICAL)
-**If the user has not yet signed up or completed their profile, you MUST suggest they create one.**
-- When they are exploring (searching, viewing legs, sharing preferences) but have not signed up: suggest they use the **Sign up** button above to create an account and profile so their preferences and details are saved and they can register for legs.
-- When they have signed up but have not yet confirmed and saved their profile in this chat: encourage them to complete the profile flow (review the summary and click "Save Profile") so their crew profile is stored.
-- Do this naturally and consistently: e.g. after showing legs, after they share something about themselves, or when they express interest in a specific leg. You don't need to say it in every single message, but do bring it up regularly when relevant (e.g. "To save your preferences and create your crew profile so you can register for legs, use the **Sign up** button above!" or "Once you've signed up, I'll help you build your profile so boat owners can see your experience.").
-- Never assume they have a profile until they have completed signup and saved their profile in this chat.
 
 ## CONVERSATION STYLE:
 - Be warm, enthusiastic, and conversational
@@ -307,30 +320,19 @@ const RISK_LEVEL_DEFINITIONS = {
 };
 
 /**
- * Available sailing skills
+ * Available sailing skills - EXACTLY from skills-config.json
+ * CRITICAL: Only use these exact skill names. Do not create custom skills.
  */
-const SAILING_SKILLS = [
-  'Helming',
-  'Navigation',
-  'Sail trimming',
-  'Anchoring',
-  'Line handling',
-  'Winching',
-  'Docking/Mooring',
-  'Weather forecasting',
-  'Diesel engine maintenance',
-  'Electrical systems',
-  'Plumbing/Watermaker',
-  'Cooking/Provisioning',
-  'First aid',
-  'Radio operation (VHF)',
-  'Radar operation',
-  'Spinnaker handling',
-  'Heavy weather sailing',
-  'Night sailing',
-  'Man overboard recovery',
-  'Emergency procedures',
-];
+const SAILING_SKILLS = skillsConfig.general.map(skill => skill.name);
+
+/**
+ * Get skills structure from config for AI instructions
+ */
+function getSkillsStructure(): string {
+  return skillsConfig.general.map(skill => 
+    `- **${skill.name}**: ${skill.infoText}`
+  ).join('\n');
+}
 
 /**
  * Normalize risk_level field to ensure it's a proper array
@@ -472,7 +474,8 @@ async function executeProspectTools(
           name: toolCall.name,
           result: {
             skills: SAILING_SKILLS,
-            note: 'These are common sailing skills. Users can also add custom skills.',
+            skillsStructure: skillsConfig.general,
+            note: 'CRITICAL: You MUST use ONLY these exact skill names from the config. Do NOT create custom skills. Each skill should be stored as an object with "skill_name" (the exact name from config) and "description" (user-provided text describing their experience with that skill).',
           },
         });
         continue;
@@ -642,19 +645,48 @@ async function executeProspectTools(
             if (field === 'risk_level') {
               value = normalizeRiskLevel(value);
             } else if (field === 'skills') {
-              // Skills should be an array of strings (or JSON-stringified skill objects)
-              // If it's a string, try to parse it
+              // Skills should be an array of skill objects with skill_name and description
+              // CRITICAL: Validate that skill_name matches exactly with skills-config.json
+              let skillsArray: unknown[] = [];
+              
               if (typeof value === 'string') {
                 try {
                   const parsed = JSON.parse(value);
-                  value = Array.isArray(parsed) ? parsed : [parsed];
+                  skillsArray = Array.isArray(parsed) ? parsed : [parsed];
                 } catch {
                   // If parsing fails, treat as single value
-                  value = [value];
+                  skillsArray = [value];
                 }
-              } else if (!Array.isArray(value)) {
-                value = [value];
+              } else if (Array.isArray(value)) {
+                skillsArray = value;
+              } else {
+                skillsArray = [value];
               }
+              
+              // Validate and normalize skills to use only config skill names
+              const validSkillNames = new Set(SAILING_SKILLS);
+              const normalizedSkills: Array<{ skill_name: string; description: string }> = [];
+              
+              for (const skill of skillsArray) {
+                if (typeof skill === 'string') {
+                  // If it's just a string, check if it's a valid skill name
+                  if (validSkillNames.has(skill)) {
+                    normalizedSkills.push({ skill_name: skill, description: '' });
+                  }
+                } else if (skill && typeof skill === 'object') {
+                  // If it's an object, validate skill_name
+                  const skillObj = skill as Record<string, unknown>;
+                  const skillName = (skillObj.skill_name || skillObj.name || skillObj.skillName) as string | undefined;
+                  if (skillName && typeof skillName === 'string' && validSkillNames.has(skillName)) {
+                    normalizedSkills.push({
+                      skill_name: skillName,
+                      description: (skillObj.description || skillObj.desc || '') as string,
+                    });
+                  }
+                }
+              }
+              
+              value = normalizedSkills;
             }
             
             updates[field] = value;
@@ -1148,6 +1180,21 @@ export async function prospectChat(
   const userProfile = request.userProfile || null;
   const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
 
+  // Check if user already has a profile (authenticated user with existing profile)
+  let hasExistingProfile = false;
+  if (authenticatedUserId && !isProfileCompletionMode) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('roles, profile_completion_percentage')
+      .eq('id', authenticatedUserId)
+      .maybeSingle();
+    
+    if (profile && profile.roles && profile.roles.length > 0) {
+      hasExistingProfile = true;
+      log('✅ User already has a profile with roles:', profile.roles);
+    }
+  }
+
   // Handle approved action - execute the held tool call directly
   if (request.approvedAction && authenticatedUserId) {
     const actionName = request.approvedAction.toolName;
@@ -1194,6 +1241,22 @@ export async function prospectChat(
   // Build prompts with pre-resolved locations
   let systemPrompt = buildProspectSystemPrompt(preferences, matchedLocations);
 
+  // Add instructions if user already has a profile
+  if (hasExistingProfile && authenticatedUserId) {
+    systemPrompt += `
+
+## USER ALREADY HAS A PROFILE
+
+**IMPORTANT:** This user is already logged in and has an existing profile with roles. They can start searching for matching sailing trips right away!
+
+- The user already has an account and profile - no need to suggest signup or profile creation
+- Focus on helping them find sailing opportunities that match their interests
+- They can register for legs directly from the Crew dashboard
+- Be welcoming and acknowledge they're already set up: "Great to see you back! You're all set with your profile. Let me help you find some amazing sailing opportunities."
+
+**Your goal:** Help them discover and explore sailing trips, not onboarding.`;
+  }
+
   // Add profile completion instructions if in that mode
   if (isProfileCompletionMode) {
     systemPrompt += `
@@ -1206,7 +1269,7 @@ You are now helping an authenticated user complete their profile after signing u
 
 You MUST carefully review the ENTIRE conversation history above. The user has likely already shared detailed information about themselves including:
 - Their sailing experience and background
-- Skills (sailing skills AND other useful skills like carpentry, mechanics, cooking, etc.)
+- Skills: CRITICAL - Map any mentioned skills to the exact skill names from the config (see skills section below). Do NOT create custom skills.
 - Certifications or training
 - What kind of sailing they're looking for
 - Their availability and preferred locations
@@ -1228,20 +1291,19 @@ ${(() => {
 })()}
 
 **PRIORITY (CRITICAL):**
-- Your **FIRST** response MUST be to extract profile from the conversation and **PRESENT the profile summary** to the user. Get the user to confirm, then call \`update_user_profile\` so the profile is stored. Registration for legs is done on the Crew dashboard, not in this chat.
+- Your **FIRST** response MUST be to extract profile from the conversation and **PRESENT the profile summary** to the user. Get the user to confirm, then call \`update_user_profile\` so the profile is stored.
 
 **Your workflow in this mode:**
 1. **FIRST:** Carefully read ALL previous messages in the conversation
 2. **EXTRACT** all profile-relevant information the user has shared:
    - Bio/description: Any personal story, background, journey, personality traits
    - Experience: Sailing courses, trips, crossings, time on water
-   - Skills: Both sailing skills AND practical skills (carpentry, mechanics, cooking, yoga, etc.)
+   - Skills: CRITICAL - You MUST use ONLY the exact skill names from the skills config (see below). Map user's described skills to the closest matching skill from the config. Each skill should be stored as an object: {"skill_name": "exact_name_from_config", "description": "user's description of their experience"}
    - Certifications: Any sailing qualifications mentioned
    - Comfort zones: Based on experience (if they've done ocean crossings, they're comfortable offshore)
    - Preferences: Where they want to sail, what they're looking for
 3. **PRESENT** a comprehensive profile summary based on what you extracted
 4. **ASK** only for information that is genuinely missing (not mentioned at all)
-5. **GET CONFIRMATION** before saving
 
 **Profile fields to populate:**
 1. **full_name** - ${userProfile?.fullName ? `"${userProfile.fullName}"` : 'Extract from conversation or ask'}
@@ -1249,14 +1311,28 @@ ${(() => {
 3. **sailing_preferences** - What they're looking for: routes, regions, trip types
 4. **sailing_experience** - 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper. Determine from their described experience.
 5. **risk_level** - Array: "Coastal sailing", "Offshore sailing", "Extreme sailing". Infer from their experience level.
-6. **skills** - Array of ALL useful skills (sailing AND practical: carpentry, mechanics, electrical, cooking, languages, etc.)
+6. **skills** - CRITICAL: Array of skill objects. You MUST use ONLY these exact skill names from the config:
+${getSkillsStructure()}
+
+**SKILLS RULES (CRITICAL):**
+- You MUST use ONLY the exact skill names listed above
+- Do NOT create custom skills like "carpentry", "mechanics", "yoga", etc.
+- If user mentions skills not in the config, map them to the closest matching skill from the config (e.g., "carpentry" → "technical_skills", "cooking" → "cooking")
+- Each skill must be an object: {"skill_name": "exact_name_from_config", "description": "user's description"}
+- The "skill_name" field MUST match exactly one of the skill names from the config above
+- Example: {"skill_name": "navigation", "description": "I have 5 years experience using GPS and chartplotters"}
+
 7. **certifications** - Any sailing certifications or courses mentioned
 
-**CRITICAL: APPROVAL REQUIRED FOR PROFILE UPDATES**
+**CRITICAL: AUTO-SAVE ON USER CONFIRMATION**
 - FIRST present a clear summary of ALL extracted profile data
 - Format as a readable list showing each field and its value
-- Ask: "Does this capture your profile correctly? I'll save it once you confirm."
-- ONLY call \`update_user_profile\` AFTER explicit user confirmation
+- Ask: "Does this capture your profile correctly? Just say 'yes' or 'ok' and I'll save it for you."
+- **YOU must determine the user's intent from their response:**
+  - **If the user confirms** (e.g., "yes", "ok", "sounds good", "correct", "save it", "go ahead", "that's right", etc.), **call \`update_user_profile\` immediately** - execute the tool call directly without waiting
+  - **If the user rejects or wants changes** (e.g., "no", "wrong", "change", "edit", "not correct", "modify", etc.), help them modify the profile data first - do NOT call update_user_profile
+  - **If the user's response is ambiguous or unclear**, present the profile summary again and ask for clear confirmation - do NOT call update_user_profile yet
+- **Your decision to call \`update_user_profile\` should be based on your understanding of the user's intent** - if they confirmed, call it immediately; if they rejected or were ambiguous, do not call it
 - **Always encourage the user to confirm and save** so their profile is stored; the session goal is to get the profile saved. If they hesitate, explain that saving the profile lets boat owners see their experience when they register for legs.
 
 **Available tools:** (see full list below) include profile tools (update_user_profile, get_profile_completion_status) and search tools. No registration tools – registration is done on the Crew dashboard.
@@ -1264,7 +1340,7 @@ ${(() => {
 **Registration:** Registration for legs is done on the Crew dashboard (leg details panel), not in this chat. Your only goal here is to gather profile information and save it with \`update_user_profile\`. After the profile is saved, the user can use "Register for leg" on any leg in the Crew dashboard.
 
 **SUGGESTED PROMPTS:**
-At the end of your response, include 2-3 suggested follow-up questions to help guide the user through profile completion. Format like this:
+At the end of your response, include 2-3 suggested follow-up questions to help save the profile in format like this: 
 [SUGGESTIONS]
 - "Can you add more details about my sailing experience?"
 - "What other skills should I include?"
@@ -1285,10 +1361,15 @@ Your response should be:
 • **Bio:** [Craft a compelling bio from their story]
 • **Experience:** Competent Crew (Level 2) - sailing courses, Gibraltar crossing, regular sailing experience
 • **Comfort zones:** Coastal sailing, Offshore sailing
-• **Skills:** Carpentry, Boat maintenance, Electrical systems, Yoga instruction, Sailing
+• **Skills:** 
+  - technical_skills: "8 years carpentry experience, boat maintenance"
+  - sailing_experience: "Gibraltar crossing on Neel 47, teen sailing courses"
+  - physical_fitness: "Yoga teacher, good physical condition"
 • **Preferences:** Transatlantic crossing from Canary Islands, available now
 
 Does this look right?"
+
+Note: Map "carpentry" to "technical_skills", "yoga" to "physical_fitness" - use ONLY config skill names!
 
 **DO NOT** respond with "I still need your bio, experience level..." when the user already provided this information!`;
   }
@@ -1315,13 +1396,10 @@ Does this look right?"
 
   log('💬 Total messages for AI:', messages.length);
 
-  // Tools that require user approval before execution (action tools)
-  const APPROVAL_REQUIRED_TOOLS = ['update_user_profile'];
-
   // Process with tool loop
+  // The AI decides whether to call update_user_profile based on user confirmation intent
   let allToolCalls: ToolCall[] = [];
   let allLegRefs: ProspectLegReference[] = [];
-  let pendingAction: { toolName: string; arguments: Record<string, unknown> } | undefined;
   let currentMessages = [...messages];
   let iterations = 0;
   let finalContent = '';
@@ -1364,46 +1442,10 @@ Does this look right?"
       break;
     }
 
-    // Separate approval-required tool calls from auto-executable ones
-    const autoExecuteTools: ToolCall[] = [];
-    for (const tc of toolCalls) {
-      if (isProfileCompletionMode && APPROVAL_REQUIRED_TOOLS.includes(tc.name)) {
-        // Hold this tool call as pending - requires user approval
-        log(`⏸️ Holding ${tc.name} as pending action (requires user approval)`);
-        pendingAction = {
-          toolName: tc.name,
-          arguments: tc.arguments as Record<string, unknown>,
-        };
-      } else {
-        autoExecuteTools.push(tc);
-      }
-    }
-
-    // If we have a pending action and content, break the loop - show content + pending action to user
-    if (pendingAction && content.trim()) {
-      finalContent = content;
-      allToolCalls.push(...autoExecuteTools);
-      // Execute any remaining auto-execute tools (e.g. get_profile_completion_status)
-      if (autoExecuteTools.length > 0) {
-        await executeProspectTools(supabase, autoExecuteTools, authenticatedUserId);
-      }
-      log('✅ Content ready with pending action for user approval');
-      break;
-    }
-
-    // If only a pending action and no content, tell the AI to present a summary
-    if (pendingAction && !content.trim()) {
-      currentMessages.push(
-        { role: 'assistant', content: result.text },
-        { role: 'user', content: 'SYSTEM: Present the profile data summary to the user for review before saving. Do NOT call update_user_profile yet. Show a clear summary and ask the user to confirm.' }
-      );
-      pendingAction = undefined; // Reset - let the AI present summary first
-      continue;
-    }
-
-    // Execute auto-executable tools
-    allToolCalls.push(...autoExecuteTools);
-    const toolResults = await executeProspectTools(supabase, autoExecuteTools.length > 0 ? autoExecuteTools : toolCalls, authenticatedUserId);
+    // Execute all tool calls - AI decides whether to call update_user_profile based on user confirmation
+    // If AI calls update_user_profile, it means it detected user confirmation and we execute it directly
+    allToolCalls.push(...toolCalls);
+    const toolResults = await executeProspectTools(supabase, toolCalls, authenticatedUserId);
 
     log('');
     log('📊 TOOL RESULTS:');
@@ -1471,11 +1513,6 @@ Does this look right?"
         arguments: tc.arguments as Record<string, unknown>,
       })) : undefined,
       legReferences: allLegRefs.length > 0 ? allLegRefs : undefined,
-      pendingAction: pendingAction ? {
-        toolName: pendingAction.toolName,
-        arguments: pendingAction.arguments,
-        label: 'Save Profile',
-      } : undefined,
     },
   };
 
@@ -1487,7 +1524,6 @@ Does this look right?"
   log('📤 FINAL RESPONSE:', `${filteredContent.length} chars`);
   log('📊 Tool calls:', allToolCalls.length);
   log('🦵 Leg refs:', allLegRefs.length);
-  log('⏸️ Pending action:', pendingAction ? `${pendingAction.toolName}` : 'none');
   log('');
 
   return {

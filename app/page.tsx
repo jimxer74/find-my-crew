@@ -9,6 +9,7 @@ import { Footer } from '@/app/components/Footer';
 import { LoginModal } from '@/app/components/LoginModal';
 import { SignupModal } from '@/app/components/SignupModal';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 const STORAGE_KEY = 'prospect_session';
 const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
@@ -16,6 +17,7 @@ const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
 export default function WelcomePage() {
   const t = useTranslations('welcome');
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -23,6 +25,56 @@ export default function WelcomePage() {
   const [sessionType, setSessionType] = useState<'crew' | 'owner' | null>(null);
   const [sessionContext, setSessionContext] = useState<string | null>(null);
   const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
+  const [isCheckingRole, setIsCheckingRole] = useState(true);
+
+  // Check if user is logged in and redirect to role-specific homepage
+  useEffect(() => {
+    async function checkUserAndRedirect() {
+      // Wait for auth to finish loading
+      if (authLoading) return;
+
+      // If user is not logged in, continue showing welcome page
+      if (!user) {
+        setIsCheckingRole(false);
+        return;
+      }
+
+      // Check for AI signup flag first (don't redirect if signup is pending)
+      const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
+      if (signupPending) {
+        setIsCheckingRole(false);
+        return; // Let the consent handler deal with this
+      }
+
+      // User is logged in - check their roles
+      const supabase = getSupabaseBrowserClient();
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('roles')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile && profile.roles && profile.roles.length > 0) {
+          // User has roles - redirect based on primary role
+          // Priority: owner > crew (if user has both roles)
+          if (profile.roles.includes('owner')) {
+            router.push('/owner/dashboard');
+            return;
+          } else if (profile.roles.includes('crew')) {
+            router.push('/crew');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check user profile:', error);
+      }
+
+      setIsCheckingRole(false);
+    }
+
+    checkUserAndRedirect();
+  }, [user, authLoading, router]);
 
   // Check if user just signed up from AI assistant and redirect after consent is completed.
   // Flow A (email signup): User clicks email link → lands here → consent modal appears → user completes → redirect
@@ -127,6 +179,18 @@ export default function WelcomePage() {
     // Navigate to chat with the initial query
     router.push(`/welcome/chat?q=${encodeURIComponent(query)}`);
   };
+
+  // Show loading state while checking authentication and roles
+  if (authLoading || isCheckingRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

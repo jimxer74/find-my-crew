@@ -63,6 +63,8 @@ interface ProspectChatState {
   consentGrantedForProfileCompletion: boolean;
   /** True after user has successfully saved profile via update_user_profile (approve "Save Profile"). Enables showing Join buttons. */
   hasCompletedProfileCreation: boolean;
+  /** True if user is already logged in and has an existing profile when they first access the chat */
+  hasExistingProfile: boolean;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -156,6 +158,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     userProfile: null,
     consentGrantedForProfileCompletion: false,
     hasCompletedProfileCreation: false,
+    hasExistingProfile: false,
   });
 
   // Keep stateRef in sync with state
@@ -180,6 +183,26 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         console.log('[ProspectChatContext] Loaded session from localStorage - total messages:', localSession.conversation.length,
           'user messages:', userMessages.length,
           'assistant messages:', assistantMessages.length);
+        
+        // Extract PROSPECT_NAME from all assistant messages if not already in preferences
+        // This ensures the name persists even if it was extracted in an earlier message
+        if (!localSession.gatheredPreferences?.fullName) {
+          for (const msg of assistantMessages) {
+            const nameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
+            if (nameMatch?.[1]?.trim()) {
+              const extractedName = nameMatch[1].trim();
+              console.log('[ProspectChatContext] Found PROSPECT_NAME in stored message:', extractedName);
+              // Update preferences with extracted name
+              localSession.gatheredPreferences = {
+                ...localSession.gatheredPreferences,
+                fullName: extractedName,
+              };
+              // Save updated preferences back to localStorage
+              saveSession(localSession);
+              break; // Use first found name
+            }
+          }
+        }
       }
 
       // First, get session ID from HttpOnly cookie
@@ -189,46 +212,91 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         // Check if localStorage data matches the cookie session
         if (localSession && localSession.sessionId === cookieSession.sessionId) {
           // Restore full session from localStorage
+          // Only clear fullName if this is a page refresh (session exists but no active conversation)
+          // If there are messages, keep the fullName as it was extracted during the conversation
+          const preferencesToUse = localSession.conversation.length === 0
+            ? (() => {
+                // New/empty session - clear fullName
+                const prefs = { ...localSession.gatheredPreferences };
+                delete prefs.fullName;
+                return prefs;
+              })()
+            : localSession.gatheredPreferences; // Active conversation - keep fullName
+          
+          // Only update localStorage if we cleared fullName
+          if (localSession.conversation.length === 0 && localSession.gatheredPreferences?.fullName) {
+            const updatedSession: ProspectSession = {
+              ...localSession,
+              gatheredPreferences: preferencesToUse,
+            };
+            saveSession(updatedSession);
+          }
+          
           setState((prev) => ({
             ...prev,
             sessionId: cookieSession.sessionId,
             messages: localSession.conversation,
-            preferences: localSession.gatheredPreferences,
+            preferences: preferencesToUse,
             viewedLegs: localSession.viewedLegs,
           }));
           setIsReturningUser(localSession.conversation.length > 0);
-        } else if (isProfileCompletionMode && localSession) {
-          // In profile completion mode, PRESERVE localStorage data even if cookie doesn't match
-          // This ensures conversation history survives the signup process
-          console.log('[ProspectChatContext] Profile completion mode - preserving localStorage session');
+        } else if (localSession && localSession.conversation.length > 0) {
+          // localStorage has conversation data - preserve it even if cookie doesn't match
+          // This ensures conversation history survives when user leaves and comes back
+          // Keep fullName since there's an active conversation
+          console.log('[ProspectChatContext] Preserving localStorage session with conversation data, updating sessionId to match cookie');
+          // Update localStorage session with new cookie session ID to keep them in sync
+          const updatedSession: ProspectSession = {
+            ...localSession,
+            sessionId: cookieSession.sessionId,
+            lastActiveAt: new Date().toISOString(),
+            // Keep existing preferences including fullName
+          };
+          saveSession(updatedSession);
           setState((prev) => ({
             ...prev,
-            sessionId: localSession.sessionId,
+            sessionId: cookieSession.sessionId,
             messages: localSession.conversation,
             preferences: localSession.gatheredPreferences,
             viewedLegs: localSession.viewedLegs,
           }));
           setIsReturningUser(localSession.conversation.length > 0);
         } else {
-          // Cookie exists but localStorage is stale or missing (and not in profile completion)
-          // Clear localStorage and start fresh with the cookie session ID
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem(STORAGE_KEY);
-          }
+          // Cookie exists but localStorage is empty or has no conversation
+          // Start fresh with the cookie session ID - clear any old preferences including fullName
           setState((prev) => ({
             ...prev,
             sessionId: cookieSession.sessionId,
+            preferences: {}, // Clear preferences for new session
           }));
           setIsReturningUser(false);
         }
       } else {
         // No cookie session - fallback to localStorage only (legacy support)
         if (localSession) {
+          // Only clear fullName if there's no active conversation
+          const preferencesToUse = localSession.conversation.length === 0
+            ? (() => {
+                const prefs = { ...localSession.gatheredPreferences };
+                delete prefs.fullName;
+                return prefs;
+              })()
+            : localSession.gatheredPreferences;
+          
+          // Only update localStorage if we cleared fullName
+          if (localSession.conversation.length === 0 && localSession.gatheredPreferences?.fullName) {
+            const updatedSession: ProspectSession = {
+              ...localSession,
+              gatheredPreferences: preferencesToUse,
+            };
+            saveSession(updatedSession);
+          }
+          
           setState((prev) => ({
             ...prev,
             sessionId: localSession.sessionId,
             messages: localSession.conversation,
-            preferences: localSession.gatheredPreferences,
+            preferences: preferencesToUse,
             viewedLegs: localSession.viewedLegs,
           }));
           setIsReturningUser(localSession.conversation.length > 0);
@@ -268,6 +336,106 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       checkProfileCompletionMode();
     }
   }, [isInitialized, searchParams]);
+
+  // Check if user is already logged in and has a profile when they first access the chat
+  useEffect(() => {
+    async function checkExistingProfile() {
+      // Skip if already in profile completion mode or if messages exist (user already started chatting)
+      const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+      if (isProfileCompletion || state.messages.length > 0) {
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Check if user has a profile with roles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('roles, profile_completion_percentage')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (profile && profile.roles && profile.roles.length > 0) {
+          // User is logged in and has a profile with roles
+          const knownProfile = extractKnownProfile(user);
+          setState((prev) => ({
+            ...prev,
+            isAuthenticated: true,
+            userId: user.id,
+            userProfile: knownProfile,
+            hasExistingProfile: true,
+            hasCompletedProfileCreation: true, // They already have a profile, so this is true
+          }));
+          console.log('[ProspectChat] User already has profile:', user.id, 'roles:', profile.roles);
+        }
+      }
+    }
+
+    if (isInitialized) {
+      checkExistingProfile();
+    }
+  }, [isInitialized, searchParams, state.messages.length]);
+
+  // Listen for auth state changes to update isAuthenticated when user logs in/out
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[ProspectChatContext] Auth state changed:', event, 'user:', session?.user?.id);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        // User just signed in - check if they have a profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('roles, profile_completion_percentage')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        const knownProfile = extractKnownProfile(session.user);
+        
+        if (profile && profile.roles && profile.roles.length > 0) {
+          // User has a profile with roles
+          setState((prev) => ({
+            ...prev,
+            isAuthenticated: true,
+            userId: session.user.id,
+            userProfile: knownProfile,
+            hasExistingProfile: true,
+            hasCompletedProfileCreation: true,
+          }));
+          console.log('[ProspectChatContext] User signed in with existing profile:', session.user.id);
+        } else {
+          // User signed in but no profile yet - set authenticated but not completed
+          setState((prev) => ({
+            ...prev,
+            isAuthenticated: true,
+            userId: session.user.id,
+            userProfile: knownProfile,
+            hasExistingProfile: false,
+            hasCompletedProfileCreation: false,
+          }));
+          console.log('[ProspectChatContext] User signed in without profile:', session.user.id);
+        }
+      } else if (event === 'SIGNED_OUT') {
+        // User signed out - clear authentication state
+        setState((prev) => ({
+          ...prev,
+          isAuthenticated: false,
+          userId: null,
+          userProfile: null,
+          hasExistingProfile: false,
+          hasCompletedProfileCreation: false,
+        }));
+        console.log('[ProspectChatContext] User signed out');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Check on mount if consent was just completed (handles case where event fired before component mounted)
   // This is a fallback for race conditions where consent completes before ProspectChatContext mounts
@@ -520,14 +688,70 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       // Parse [PROSPECT_NAME: ...] from assistant message to prefill signup form
+      // Also check all previous messages to ensure we don't lose a name that was extracted earlier
       const assistantContent = data.message?.content ?? '';
+      // Reuse currentState from above (line 567) - get fresh ref state for checking previous messages
+      const latestState = stateRef.current!;
+      let extractedName: string | undefined;
+      
+      // First check the latest assistant message for PROSPECT_NAME tag
+      console.log('[ProspectChatContext] Checking for PROSPECT_NAME in assistant content:', assistantContent.substring(0, 200));
       const nameMatch = assistantContent.match(PROSPECT_NAME_TAG_REGEX);
-      const extractedName = nameMatch?.[1]?.trim();
+      if (nameMatch?.[1]?.trim()) {
+        extractedName = nameMatch[1].trim();
+        console.log('[ProspectChatContext] ✅ Extracted PROSPECT_NAME from latest assistant message:', extractedName);
+      } else {
+        console.log('[ProspectChatContext] No PROSPECT_NAME tag found in latest message, checking previous messages...');
+        // If not in latest message, check all previous assistant messages
+        for (const msg of latestState.messages) {
+          if (msg.role === 'assistant') {
+            const prevNameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
+            if (prevNameMatch?.[1]?.trim()) {
+              extractedName = prevNameMatch[1].trim();
+              console.log('[ProspectChatContext] ✅ Found PROSPECT_NAME in previous assistant message:', extractedName, 'from message:', msg.content.substring(0, 100));
+              break;
+            }
+          }
+        }
+        
+        // Also check user messages for name patterns (fallback if AI didn't tag it)
+        // Look for patterns like "Name: ...", "My name is ...", "I'm ...", etc.
+        if (!extractedName) {
+          console.log('[ProspectChatContext] Checking user messages for name patterns...');
+          const namePatterns = [
+            /(?:^|\s)(?:name|i'm|i am|call me|it's|it is)[\s:]+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/i,
+            /(?:^|\s)(?:name|i'm|i am|call me|it's|it is)[\s:]+([A-Z][a-zA-Z]+)/i,
+          ];
+          
+          // Check latest user message first, then previous ones
+          const userMessages = [...latestState.messages, userMessage].filter(m => m.role === 'user').reverse();
+          for (const msg of userMessages) {
+            for (const pattern of namePatterns) {
+              const match = msg.content.match(pattern);
+              if (match?.[1]?.trim() && match[1].trim().length > 2) {
+                extractedName = match[1].trim();
+                console.log('[ProspectChatContext] ✅ Extracted name from user message pattern:', extractedName, 'from:', msg.content.substring(0, 100));
+                break;
+              }
+            }
+            if (extractedName) break;
+          }
+        }
+        
+        if (!extractedName) {
+          console.log('[ProspectChatContext] ❌ No name found in any messages');
+        }
+      }
+      
       const preferencesUpdate: Partial<ProspectPreferences> = data.extractedPreferences
         ? { ...data.extractedPreferences }
         : {};
+      // Always set fullName if extracted (even if it was from a previous message)
       if (extractedName) {
         preferencesUpdate.fullName = extractedName;
+      } else if (latestState.preferences?.fullName) {
+        // Preserve existing fullName if no new extraction
+        preferencesUpdate.fullName = latestState.preferences.fullName;
       }
       // Strip the tag from the message so the user doesn't see it
       const cleanedContent = extractedName
@@ -570,14 +794,21 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           };
         }
         
+        const updatedPreferences = Object.keys(preferencesUpdate).length > 0
+          ? { ...prev.preferences, ...preferencesUpdate }
+          : prev.preferences;
+        
+        // Log when fullName is set/updated
+        if (preferencesUpdate.fullName) {
+          console.log('[ProspectChatContext] Updated preferences with fullName:', preferencesUpdate.fullName);
+          console.log('[ProspectChatContext] Full preferences object:', updatedPreferences);
+        }
+        
         return {
           ...prev,
           sessionId: data.sessionId,
           messages: finalMessages,
-          preferences:
-            Object.keys(preferencesUpdate).length > 0
-              ? { ...prev.preferences, ...preferencesUpdate }
-              : prev.preferences,
+          preferences: updatedPreferences,
           isLoading: false,
         };
       });
@@ -602,9 +833,11 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         'user messages:', userMessages.length,
         'assistant messages:', assistantMessages.length);
       
+      // Load existing session to preserve createdAt
+      const existingSession = loadSession();
       const session: ProspectSession = {
         sessionId: state.sessionId,
-        createdAt: new Date().toISOString(),
+        createdAt: existingSession?.createdAt || new Date().toISOString(),
         lastActiveAt: new Date().toISOString(),
         conversation: state.messages,
         gatheredPreferences: state.preferences,
@@ -641,6 +874,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       userProfile: null,
       consentGrantedForProfileCompletion: false,
       hasCompletedProfileCreation: false,
+      hasExistingProfile: false,
     });
     setIsReturningUser(false);
   }, []);
