@@ -194,13 +194,29 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     bbox: { minLng: -4.0, minLat: 51.0, maxLng: 9.0, maxLat: 62.0 },
     description: 'North Sea between UK and Scandinavia',
   },
-  {
-    name: 'Norway',
-    aliases: ['norwegian coast', 'fjords', 'oslo', 'bergen', 'lofoten'],
-    category: 'northern_europe',
-    bbox: { minLng: 4.0, minLat: 57.0, maxLng: 31.0, maxLat: 71.5 },
-    description: 'Norwegian coast including fjords',
+
+  { name: 'Norway',
+  aliases: [
+    'norwegian coast', 
+    'fjords', 
+    'oslo', 
+    'bergen', 
+    'lofoten',
+    'norway fjords',
+    'norwegian fjords',
+    'scandinavian coast',
+    'north cape',
+    'troms og finnmark coast'
+  ],
+  category: 'northern_europe',
+  bbox: { 
+    minLng: 4.0, 
+    minLat: 57.8, 
+    maxLng: 31.5, 
+    maxLat: 71.5 
   },
+  description: 'Norwegian coast including fjords',
+},
 
   // Pacific (common transit routes)
   {

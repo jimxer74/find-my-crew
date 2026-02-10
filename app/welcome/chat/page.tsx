@@ -24,7 +24,7 @@ export default function ProspectChatPage() {
         <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <div className="flex items-center gap-3">
             <Link
-              href="/welcome"
+              href="/"
               className="p-2 -ml-2 hover:bg-accent rounded-md transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               title={t('back')}
             >
@@ -40,7 +40,7 @@ export default function ProspectChatPage() {
                 height={28}
                 className="object-contain"
               />
-              <span className="font-semibold text-foreground">SailSmart Assistant</span>
+              <span className="font-semibold text-foreground">SailSmart Onboarding Assistant</span>
             </div>
           </div>
         </header>

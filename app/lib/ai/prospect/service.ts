@@ -658,7 +658,22 @@ async function executeProspectTools(
                   skillsArray = [value];
                 }
               } else if (Array.isArray(value)) {
-                skillsArray = value;
+                // Handle array of JSON strings (common case from AI tool calls)
+                skillsArray = value.map(item => {
+                  if (typeof item === 'string') {
+                    // Try to parse if it looks like JSON
+                    if (item.trim().startsWith('{') || item.trim().startsWith('[')) {
+                      try {
+                        return JSON.parse(item);
+                      } catch {
+                        // If parsing fails, return as-is
+                        return item;
+                      }
+                    }
+                    return item;
+                  }
+                  return item;
+                });
               } else {
                 skillsArray = [value];
               }
@@ -686,6 +701,7 @@ async function executeProspectTools(
                 }
               }
               
+              log(`Normalized skills: ${JSON.stringify(normalizedSkills)}`);
               value = normalizedSkills;
             }
             
@@ -1457,6 +1473,50 @@ Note: Map "carpentry" to "technical_skills", "yoga" to "physical_fitness" - use 
         log(`  [${i}] ${r.name}: ✅ ${resultStr.substring(0, 200)}${resultStr.length > 200 ? '...' : ''}`);
       }
     });
+
+    // Check if update_user_profile succeeded - if so, return congratulations message immediately
+    const profileUpdateResult = toolResults.find(r => r.name === 'update_user_profile' && !r.error);
+    if (profileUpdateResult) {
+      log('🎉 Profile update successful! Returning congratulations message instead of AI response.');
+      
+      const congratulationsMessage = `🎉 **Congratulations! Welcome to SailSmart!**
+
+You've successfully completed a major milestone - your profile has been created and saved! 
+
+**What's next?**
+- 🗺️ **Explore sailing opportunities** - Browse available legs and journeys
+- ⛵ **Register for legs** - Join sailing trips that match your interests
+- 👥 **Connect with boat owners** - They can now see your profile and skills
+- ✏️ **Edit your profile anytime** - Update your information from your profile page
+
+You're now ready to start using all the platform features. Click "View Journeys" to begin exploring amazing sailing adventures!`;
+
+      const responseMessage: ProspectMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        role: 'assistant',
+        content: congratulationsMessage,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          toolCalls: allToolCalls.map(tc => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: tc.arguments as Record<string, unknown>,
+          })),
+        },
+      };
+
+      log('');
+      log('╔══════════════════════════════════════════════════════════════╗');
+      log('║     PROSPECT CHAT - PROFILE CREATED (CONGRATULATIONS)        ║');
+      log('╚══════════════════════════════════════════════════════════════╝');
+      log('');
+
+      return {
+        sessionId,
+        message: responseMessage,
+        extractedPreferences: undefined,
+      };
+    }
 
     // Extract leg references
     const newRefs = extractLegReferences(toolResults);

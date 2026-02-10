@@ -94,6 +94,7 @@ export async function GET(request: NextRequest) {
     const { normalizeSkillNames } = require('@/app/lib/skillUtils');
 
     // Transform waypoints from GeoJSON to { lng, lat, name } format
+    // Ensure all fields from RPC are preserved, especially journey_risk_level
     const transformedData = (data || []).map((leg: any) => {
       const transformWaypoint = (waypointData: any) => {
         if (!waypointData || !waypointData.coordinates) {
@@ -108,6 +109,10 @@ export async function GET(request: NextRequest) {
 
       return {
         ...leg,
+        // Ensure journey_risk_level is preserved (RPC returns it as array)
+        journey_risk_level: leg.journey_risk_level || null,
+        // Ensure leg_risk_level field name is consistent
+        leg_risk_level: leg.leg_risk_level || leg.risk_level || null,
         skills: normalizeSkillNames(leg.skills || []),
         start_waypoint: transformWaypoint(leg.start_waypoint),
         end_waypoint: transformWaypoint(leg.end_waypoint),

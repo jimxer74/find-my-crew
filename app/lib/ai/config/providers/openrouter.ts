@@ -5,6 +5,7 @@ export interface ProviderModelConfig {
 }
 
 export const openrouterConfig = {
+  /*
   dev: {
     models: [
       'openrouter/free',
@@ -18,7 +19,7 @@ export const openrouterConfig = {
     maxTokens: 4000
     
   },
-/*
+*/
   dev: {
     models: [
       'anthropic/claude-sonnet-4-5',
@@ -30,7 +31,6 @@ export const openrouterConfig = {
     temperature: 0.3,
     maxTokens: 8000
   },
-*/
   prod: {
     models: [
       'anthropic/claude-sonnet-4-5',

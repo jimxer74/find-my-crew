@@ -59,7 +59,14 @@ export default function CrewHomePage() {
         .single();
 
       if (!error && data) {
-        setUserSkills(data.skills || []);
+        // Normalize skills to canonical format (extract skill names from JSON objects)
+        const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
+        const normalizedSkills = normalizeSkillNames(data.skills || []);
+        
+        console.log('[CrewHomePage] Loaded user skills (raw):', data.skills);
+        console.log('[CrewHomePage] Loaded user skills (normalized):', normalizedSkills);
+        
+        setUserSkills(normalizedSkills);
         setUserExperienceLevel(data.sailing_experience || null);
         setUserRiskLevel(data.risk_level || null);
       }

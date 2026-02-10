@@ -334,44 +334,21 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized, searchParams]);
 
-  // Check if user is already logged in and has a profile when they first access the chat
+  // NOTE: Profile check is now handled by the onAuthStateChange hook below
+  // This useEffect was redundant and caused timing issues - removed
+
+  // Listen for auth state changes to update isAuthenticated when user logs in/out
+  // This runs IMMEDIATELY on mount to check auth state and profile
   useEffect(() => {
-    async function checkExistingProfile() {
-      // Skip if already in profile completion mode
-      const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
-      if (isProfileCompletion) {
-        return;
-      }
-
-      const supabase = getSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (user) {
-        // User is authenticated - set isAuthenticated to true
-        const knownProfile = extractKnownProfile(user);
-        
-        // Check if user has a profile (simple check - just existence)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        setState((prev) => ({
-          ...prev,
-          isAuthenticated: true, // User exists = authenticated
-          userId: user.id,
-          userProfile: knownProfile,
-          hasExistingProfile: !!profile, // Simple check: profile exists or not
-        }));
-        
-        if (profile) {
-          console.log('[ProspectChat] User has profile:', user.id);
-        } else {
-          console.log('[ProspectChat] User authenticated but no profile yet:', user.id);
-        }
-      } else {
-        // No user - ensure isAuthenticated is false
+    const supabase = getSupabaseBrowserClient();
+    
+    // Check initial auth state on mount - this runs immediately, not waiting for isInitialized
+    async function checkAuthAndProfile() {
+      console.log('[ProspectChatContext] 🔍 Checking auth state on mount...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('[ProspectChatContext] ❌ Auth check error:', authError);
         setState((prev) => ({
           ...prev,
           isAuthenticated: false,
@@ -379,38 +356,137 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           userProfile: null,
           hasExistingProfile: false,
         }));
+        return;
       }
-    }
 
-    if (isInitialized) {
-      checkExistingProfile();
-    }
-  }, [isInitialized, searchParams]);
-
-  // Listen for auth state changes to update isAuthenticated when user logs in/out
-  useEffect(() => {
-    const supabase = getSupabaseBrowserClient();
-    
-    // Check initial auth state on mount
-    supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
         const knownProfile = extractKnownProfile(user);
-        // Check if user has a profile (simple check - just existence)
-        supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle()
-          .then(({ data: profile }) => {
+        console.log('[ProspectChatContext] 🔍 User found, checking profile...', { userId: user.id });
+        
+        // Use retry mechanism to wait for session to be fully established
+        const queryProfileWithRetry = async (retryCount = 0): Promise<void> => {
+          try {
+            console.log('[ProspectChatContext] 🔍 Initial check - Querying profiles table for user:', user.id, '(attempt', retryCount + 1, ')');
+            console.log('[ProspectChatContext] 🔍 Initial check - Supabase client exists:', !!supabase);
+            
+            // First verify session is available
+            const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !currentSession) {
+              if (retryCount < 3) {
+                console.warn('[ProspectChatContext] ⚠️ Initial check - Session not ready yet, retrying in 500ms...');
+                setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+                // Set auth state but don't query profile yet
+                setState((prev) => ({
+                  ...prev,
+                  isAuthenticated: true,
+                  userId: user.id,
+                  userProfile: knownProfile,
+                  hasExistingProfile: false,
+                }));
+                return;
+              }
+              console.warn('[ProspectChatContext] ⚠️ Initial check - Session not ready after retries, setting auth state only');
+              setState((prev) => ({
+                ...prev,
+                isAuthenticated: true,
+                userId: user.id,
+                userProfile: knownProfile,
+                hasExistingProfile: false,
+              }));
+              return;
+            }
+            
+            const queryStart = Date.now();
+            const profileQuery = supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', user.id)
+              .maybeSingle();
+            
+            console.log('[ProspectChatContext] 🔍 Initial check - Query promise created, awaiting...');
+            
+            const { data: profile, error: profileError } = await profileQuery;
+            
+            const queryDuration = Date.now() - queryStart;
+            console.log('[ProspectChatContext] 🔍 Initial check - Profile query completed in', queryDuration, 'ms');
+            console.log('[ProspectChatContext] 🔍 Initial check - Profile query result:', {
+              hasProfile: !!profile,
+              profile,
+              error: profileError,
+              queryDuration,
+            });
+
+            if (profileError) {
+              // Check if it's a session/auth error
+              const errorMsg = profileError.message?.toLowerCase() || '';
+              if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
+                console.warn('[ProspectChatContext] ⚠️ Initial check - Auth session error, retrying in 500ms...');
+                setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+                return;
+              }
+              
+              console.error('[ProspectChatContext] ❌ Initial auth check - Profile query error:', {
+                userId: user.id,
+                error: profileError,
+                errorCode: profileError.code,
+                errorMessage: profileError.message,
+                errorDetails: profileError,
+              });
+            }
+
+            const hasProfile = !!profile;
+            console.log('[ProspectChatContext] 🔍 Initial check - Setting hasExistingProfile to:', hasProfile);
+
             setState((prev) => ({
               ...prev,
               isAuthenticated: true, // User exists = authenticated
               userId: user.id,
               userProfile: knownProfile,
-              hasExistingProfile: !!profile, // Simple check: profile exists or not
+              hasExistingProfile: hasProfile, // Simple check: profile exists or not
             }));
-            console.log('[ProspectChatContext] Initial auth check - user authenticated:', user.id, 'has profile:', !!profile);
-          });
+            console.log('[ProspectChatContext] ✅ Initial auth check - User authenticated:', {
+              userId: user.id,
+              profileExists: hasProfile,
+              profileData: profile,
+              profileError: profileError ? { code: profileError.code, message: profileError.message } : null,
+              hasExistingProfile: hasProfile,
+              isAuthenticated: true,
+            });
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isSessionError = errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('auth');
+            
+            if (isSessionError && retryCount < 3) {
+              console.warn('[ProspectChatContext] ⚠️ Initial check - Session error caught, retrying in 500ms...');
+              setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+              // Set auth state but don't set profile - will retry
+              setState((prev) => ({
+                ...prev,
+                isAuthenticated: true,
+                userId: user.id,
+                userProfile: knownProfile,
+                hasExistingProfile: false,
+              }));
+            } else {
+              console.error('[ProspectChatContext] ❌ Initial auth check - Exception during profile check:', error);
+              console.error('[ProspectChatContext] ❌ Initial auth check - Exception details:', {
+                message: errorMessage,
+                stack: error instanceof Error ? error.stack : undefined,
+                error,
+              });
+              setState((prev) => ({
+                ...prev,
+                isAuthenticated: true,
+                userId: user.id,
+                userProfile: knownProfile,
+                hasExistingProfile: false,
+              }));
+            }
+          }
+        };
+        
+        // Start the retry process
+        queryProfileWithRetry();
       } else {
         setState((prev) => ({
           ...prev,
@@ -421,12 +497,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         }));
         console.log('[ProspectChatContext] Initial auth check - no user');
       }
-    });
+    }
+
+    // Run immediately on mount
+    checkAuthAndProfile();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[ProspectChatContext] Auth state changed:', event, 'user:', session?.user?.id);
       
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('[ProspectChatContext] 🔍 SIGNED_IN - Checking profile for user:', session.user.id);
         // User just signed in - set authenticated, then check profile
         const knownProfile = extractKnownProfile(session.user);
         
@@ -438,23 +518,92 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           userProfile: knownProfile,
         }));
         
-        // Then check if they have a profile (simple check - just existence)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        // Check if they have a profile (simple check - just existence)
+        // Use a retry mechanism to wait for session to be fully established
+        const queryProfileWithRetry = async (retryCount = 0): Promise<void> => {
+          try {
+            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Verifying session before querying profile (attempt', retryCount + 1, ')...');
+            
+            // Verify session first
+            const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !currentSession) {
+              if (retryCount < 3) {
+                console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Session not ready, retrying in 500ms...');
+                setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+                return;
+              }
+              console.error('[ProspectChatContext] ❌ SIGNED_IN - Session not available after retries:', sessionError);
+              return;
+            }
+            
+            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Session verified, querying profiles table for user:', session.user.id);
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            
+            console.log('[ProspectChatContext] ✅ SIGNED_IN - Profile query COMPLETED!');
+            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Profile query result:', {
+              hasProfile: !!profile,
+              profile,
+              error: profileError,
+              errorCode: profileError?.code,
+              errorMessage: profileError?.message,
+            });
+            
+            if (profileError) {
+              // Check if it's a session/auth error
+              const errorMsg = profileError.message?.toLowerCase() || '';
+              if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
+                console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Auth session error, retrying in 500ms...');
+                setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+                return;
+              }
+              
+              console.error('[ProspectChatContext] ❌ SIGNED_IN - Profile query error:', {
+                userId: session.user.id,
+                error: profileError,
+                errorCode: profileError.code,
+                errorMessage: profileError.message,
+              });
+            }
+            
+            const hasProfile = !!profile;
+            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Setting hasExistingProfile to:', hasProfile);
+            
+            setState((prev) => {
+              console.log('[ProspectChatContext] 🔍 SIGNED_IN - setState callback, prev.hasExistingProfile:', prev.hasExistingProfile);
+              return {
+                ...prev,
+                hasExistingProfile: hasProfile,
+              };
+            });
+            
+            console.log('[ProspectChatContext] ✅ SIGNED_IN - State updated, hasExistingProfile:', hasProfile);
+          } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            const isSessionError = errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('auth');
+            
+            if (isSessionError && retryCount < 3) {
+              console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Session error caught, retrying in 500ms...');
+              setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
+            } else {
+              console.error('[ProspectChatContext] ❌ SIGNED_IN - Exception during profile check:', error);
+              console.error('[ProspectChatContext] ❌ SIGNED_IN - Error details:', {
+                message: errorMessage,
+                error,
+              });
+              setState((prev) => ({
+                ...prev,
+                hasExistingProfile: false,
+              }));
+            }
+          }
+        };
         
-        setState((prev) => ({
-          ...prev,
-          hasExistingProfile: !!profile, // Simple check: profile exists or not
-        }));
-        
-        if (profile) {
-          console.log('[ProspectChatContext] User signed in with existing profile:', session.user.id);
-        } else {
-          console.log('[ProspectChatContext] User signed in without profile:', session.user.id);
-        }
+        // Start the retry process
+        queryProfileWithRetry();
       } else if (event === 'SIGNED_OUT') {
         // User signed out - clear authentication state
         setState((prev) => ({
@@ -888,30 +1037,38 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearSession = useCallback(async () => {
+    console.log('[ProspectChatContext] 🧹 Clearing prospect chat session...');
+    
     // Clear both localStorage and server cookie
     if (typeof window !== 'undefined') {
       localStorage.removeItem(STORAGE_KEY);
+      console.log('[ProspectChatContext] ✅ Cleared localStorage');
     }
     await clearSessionCookie();
+    console.log('[ProspectChatContext] ✅ Cleared server session cookie');
 
     // Fetch a new session ID from server
     const newSession = await fetchSessionFromCookie();
+    console.log('[ProspectChatContext] ✅ Fetched new session ID:', newSession?.sessionId);
 
-    setState({
+    // Preserve authentication state - don't clear user auth info when clearing chat
+    setState((prev) => ({
       sessionId: newSession?.sessionId || null,
-      messages: [],
-      preferences: {},
-      viewedLegs: [],
+      messages: [], // Clear all messages
+      preferences: {}, // Clear all preferences (including fullName)
+      viewedLegs: [], // Clear viewed legs
       isLoading: false,
       error: null,
       profileCompletionMode: false,
-      isAuthenticated: false,
-      userId: null,
-      userProfile: null,
-      consentGrantedForProfileCompletion: false,
-      hasExistingProfile: false,
-    });
+      // Preserve authentication state
+      isAuthenticated: prev.isAuthenticated,
+      userId: prev.userId,
+      userProfile: prev.userProfile,
+      consentGrantedForProfileCompletion: prev.consentGrantedForProfileCompletion,
+      hasExistingProfile: prev.hasExistingProfile,
+    }));
     setIsReturningUser(false);
+    console.log('[ProspectChatContext] ✅ Session cleared - chat data removed, auth state preserved');
   }, []);
 
   const addViewedLeg = useCallback((legId: string) => {

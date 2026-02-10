@@ -72,7 +72,7 @@ export function calculateMatchPercentage(
   const match = matchRiskLevel(userRiskLevel || [], legRiskLevel, journeyRiskLevel);
   let legFactors = normalizedLegSkills.length + 2;
   // Add if risk level or experience level matches
-  let userFactors = matchingSkills.length += matchExperienceLevel ? 1 : 0;
+  let userFactors = matchingSkills.length + (matchExperienceLevel ? 1 : 0);
   userFactors += match ? 1 : 0;
 
   const matchPercentage = Math.round((userFactors / legFactors) * 100);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { ProspectMessage, PendingAction } from '@/app/lib/ai/prospect/types';
@@ -159,6 +159,7 @@ function QuickSuggestions({
 export function ProspectChat() {
   const t = useTranslations('common');
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const {
     messages,
@@ -176,6 +177,9 @@ export function ProspectChat() {
     cancelAction,
   } = useProspectChat();
 
+  // Check if this is profile completion mode
+  const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+
   const [inputValue, setInputValue] = useState('');
   const [showAuthForm, setShowAuthForm] = useState<'signup' | 'login' | null>(null);
   const [isNavigatingToCrew, setIsNavigatingToCrew] = useState(false);
@@ -190,6 +194,23 @@ export function ProspectChat() {
       'all message IDs:', messages.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Debug: Log authentication and profile state
+  useEffect(() => {
+    const shouldShowHeaderButton = messages.length > 0 && hasExistingProfile && isAuthenticated;
+    const shouldShowWelcomeButton = messages.length === 0 && hasExistingProfile && isAuthenticated;
+    const shouldShowBottomButton = hasExistingProfile && isAuthenticated;
+    
+    console.log('[ProspectChat] 🔍 DEBUG - Button Visibility Check:', {
+      isAuthenticated,
+      hasExistingProfile,
+      messagesLength: messages.length,
+      'Header button (when messages > 0)': shouldShowHeaderButton,
+      'Welcome button (when messages === 0)': shouldShowWelcomeButton,
+      'Bottom button': shouldShowBottomButton,
+      'All conditions met': hasExistingProfile && isAuthenticated,
+    });
+  }, [isAuthenticated, hasExistingProfile, messages.length]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -283,8 +304,8 @@ export function ProspectChat() {
             Onboarding assistant
           </span>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* View Journeys - show when user is authenticated and has a profile; clears chat and goes to /crew */}
-            {hasExistingProfile && isAuthenticated && (
+            {/* View Journeys - show when user is authenticated and has a profile OR profile_completion=true */}
+            {((hasExistingProfile && isAuthenticated) || (isProfileCompletion && isAuthenticated)) && (
               <button
                 onClick={handleViewJourneys}
                 disabled={isNavigatingToCrew}
@@ -344,7 +365,36 @@ export function ProspectChat() {
                 <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            {hasExistingProfile ? (
+            {isProfileCompletion && isAuthenticated ? (
+              <>
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  🎉 Welcome to SailSmart!
+                </h3>
+                <p className="text-sm max-w-sm mx-auto mb-4">
+                  Congratulations! You've successfully completed the first step and created your profile. You're now ready to explore amazing sailing opportunities!
+                </p>
+                <div className="flex justify-center mb-4">
+                  <button
+                    onClick={handleViewJourneys}
+                    disabled={isNavigatingToCrew}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    View Journeys
+                  </button>
+                </div>
+              </>
+            ) : hasExistingProfile && isAuthenticated ? (
               <>
                 <h3 className="text-lg font-medium text-foreground mb-2">
                   Welcome back! You're all set
@@ -375,47 +425,17 @@ export function ProspectChat() {
               </>
             ) : (
               <>
-                {/* Show View Journeys button if user is authenticated and has a profile */}
-                {isAuthenticated && hasExistingProfile ? (
-                  <div className="flex flex-col items-center gap-4">
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      Welcome back! You're all set
-                    </h3>
-                    <p className="text-sm max-w-sm mx-auto mb-4 text-center">
-                      You already have an account and profile. You can start searching for sailing trips!
-                    </p>
-                    <button
-                      onClick={handleViewJourneys}
-                      disabled={isNavigatingToCrew}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                      View Journeys
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-lg font-medium text-foreground mb-2">
-                      {isReturningUser ? 'Welcome back!' : 'Find Your Perfect Sailing Adventure'}
-                    </h3>
-                    <p className="text-sm max-w-sm mx-auto mb-4">
-                      {isReturningUser
-                        ? "Ready to continue exploring? Let's pick up where we left off."
-                        : "Tell me about your sailing dreams and I'll help you find the perfect opportunity. No sign-up needed to start exploring!"}
-                    </p>
-                    {/* Sign up button for unauthenticated users - visible from the start */}
-                    {/* Don't show if user is authenticated OR has existing profile */}
-                    {!isAuthenticated && !hasExistingProfile && !showAuthForm && (
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  {isReturningUser ? 'Welcome back!' : 'Find Your Perfect Sailing Adventure'}
+                </h3>
+                <p className="text-sm max-w-sm mx-auto mb-4">
+                  {isReturningUser
+                    ? "Ready to continue exploring? Let's pick up where we left off."
+                    : "Tell me about your sailing dreams and I'll help you find the perfect opportunity. No sign-up needed to start exploring!"}
+                </p>
+                {/* Sign up button for unauthenticated users - visible from the start */}
+                {/* Don't show if user is authenticated OR has existing profile */}
+                {!isAuthenticated && !hasExistingProfile && !showAuthForm && (
                   <div className="flex justify-center mb-4">
                     <button
                       onClick={() => setShowAuthForm('signup')}
@@ -435,8 +455,6 @@ export function ProspectChat() {
                       Sign up to save your profile and join legs
                     </button>
                   </div>
-                    )}
-                  </>
                 )}
               </>
             )}
@@ -478,9 +496,35 @@ export function ProspectChat() {
                   disabled={isLoading}
                 />
               )}
+              {/* Show "View Journeys" button after congratulations message (profile creation success) */}
+              {message.role === 'assistant' && 
+               (message.content.includes('Congratulations! Welcome to SailSmart!') || 
+                message.metadata?.toolCalls?.some(tc => tc.name === 'update_user_profile')) && 
+               isAuthenticated && (
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <button
+                    onClick={handleViewJourneys}
+                    disabled={isNavigatingToCrew}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm w-full justify-center"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    View Journeys
+                  </button>
+                </div>
+              )}
               {/* Show inline sign-up button after assistant messages if user is not authenticated and doesn't have a profile */}
               {/* Don't show if user is authenticated or has existing profile */}
-              {message.role === 'assistant' && !isAuthenticated && !hasExistingProfile &&
+              {message.role === 'assistant' && !isAuthenticated &&
                 (
                 <div className="mt-3 pt-3 border-t border-border/50">
                   <button
@@ -603,9 +647,9 @@ export function ProspectChat() {
         </div>
       </div>
 
-      {/* View Journeys CTA when profile exists - clear prospect data and go to /crew */}
-      {/* Show for users who have a profile */}
-      {hasExistingProfile && isAuthenticated && (
+      {/* View Journeys CTA when profile exists or profile_completion=true - clear prospect data and go to /crew */}
+      {/* Show for users who have a profile OR just completed profile creation */}
+      {((hasExistingProfile && isAuthenticated)) && (
         <div className="border-t border-border px-4 py-3 bg-primary/5">
           <div className="max-w-2xl lg:max-w-4xl mx-auto flex justify-center">
             <button
@@ -630,8 +674,8 @@ export function ProspectChat() {
         </div>
       )}
 
-      {/* Input area - only show for users without existing profile */}
-      {!hasExistingProfile && (
+      {/* Input area - only show for users without existing profile and not in profile completion mode */}
+      {!hasExistingProfile && !(isProfileCompletion && isAuthenticated) && (
         <div className="border-t border-border p-4 bg-card">
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">

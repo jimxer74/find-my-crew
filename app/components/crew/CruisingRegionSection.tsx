@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -29,11 +29,7 @@ export function CruisingRegionSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchLegs();
-  }, [region]);
-
-  const fetchLegs = async () => {
+  const fetchLegs = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -55,15 +51,34 @@ export function CruisingRegionSection({
 
       // Calculate match scores for each leg using the canonical function
       const legsWithScores = (data.legs || []).map((leg: any) => {
+        // Debug logging to compare with LegDetailsPanel
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[CruisingRegionSection] Calculating match for leg:', {
+            leg_id: leg.leg_id || leg.id,
+            leg_name: leg.leg_name || leg.name,
+            leg_skills: leg.skills || [],
+            leg_risk_level: leg.leg_risk_level || leg.risk_level,
+            journey_risk_level: leg.journey_risk_level,
+            user_skills: userSkills,
+            user_risk_level: userRiskLevel,
+            user_experience_level: userExperienceLevel,
+            leg_min_experience_level: leg.min_experience_level,
+          });
+        }
+        
         const matchPercentage = calculateMatchPercentage(
           userSkills,
           leg.skills || [],
           userRiskLevel,
-          leg.risk_level || null,
-          null, // journey risk level not available here
+          leg.leg_risk_level || leg.risk_level || null,
+          leg.journey_risk_level || null,
           userExperienceLevel,
           leg.min_experience_level || null
         );
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[CruisingRegionSection] Calculated match percentage:', matchPercentage, 'for leg:', leg.leg_name || leg.name);
+        }
         const experienceMatches = userExperienceLevel
           ? userExperienceLevel >= (leg.min_experience_level || 1)
           : true;
@@ -89,7 +104,11 @@ export function CruisingRegionSection({
     } finally {
       setLoading(false);
     }
-  };
+  }, [region, userSkills, userExperienceLevel, userRiskLevel]);
+
+  useEffect(() => {
+    fetchLegs();
+  }, [fetchLegs]);
 
   // Handle leg click - navigate to dashboard with leg selected
   const handleLegClick = (leg: LegListItemData) => {
