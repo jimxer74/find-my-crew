@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { formatDate } from '@/app/lib/dateFormat';
@@ -321,6 +321,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
   const [hasProfileSharingConsent, setHasProfileSharingConsent] = useState<boolean | null>(null);
   const [checkingProfileConsent, setCheckingProfileConsent] = useState(false);
+  const [registrationStatusChecked, setRegistrationStatusChecked] = useState(false);
 
   // Safety effect: If requirements exist but requirements form is not shown, show it
   useEffect(() => {
@@ -363,9 +364,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   useEffect(() => {
     if (!user || !leg.leg_id) {
       setRegistrationStatus(null);
+      setRegistrationStatusChecked(false);
       return;
     }
 
+    setRegistrationStatusChecked(false);
     const loadRegistrationStatus = async () => {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
@@ -377,10 +380,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error loading registration status:', error);
+        setRegistrationStatus(null);
+        setRegistrationStatusChecked(true);
         return;
       }
 
       setRegistrationStatus(data?.status || null);
+      setRegistrationStatusChecked(true);
     };
 
     loadRegistrationStatus();
@@ -420,26 +426,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     checkProfileSharingConsent();
   }, [user]);
 
-  // Auto-open registration form when initialOpenRegistration is true
-  const initialRegistrationTriggeredRef = useRef(false);
-  useEffect(() => {
-    // Only trigger once per panel open
-    if (initialOpenRegistration && isOpen && user && !initialRegistrationTriggeredRef.current && !registrationStatus) {
-      initialRegistrationTriggeredRef.current = true;
-      // Delay slightly to allow consent checks to complete
-      const timer = setTimeout(() => {
-        handleRegister();
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-    // Reset the ref when panel closes
-    if (!isOpen) {
-      initialRegistrationTriggeredRef.current = false;
-    }
-  }, [initialOpenRegistration, isOpen, user, registrationStatus]);
-
   // Check if journey has requirements when register button is clicked
-  const checkRequirements = async () => {
+  const checkRequirements = useCallback(async () => {
     try {
       // Check requirements first (required)
       let reqs: any[] = [];
@@ -560,10 +548,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     } finally {
       setIsCheckingRequirements(false);
     }
-  };
+  }, [leg]);
 
   // Handle register button click
-  const handleRegister = async () => {
+  const handleRegister = useCallback(async () => {
     // Check profile sharing consent first
     if (hasProfileSharingConsent === false) {
       setRegistrationError('Profile sharing consent is required to register for legs. Please update your privacy settings.');
@@ -575,7 +563,48 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setRequirementsAnswers([]);
     // Check requirements first
     await checkRequirements();
-  };
+  }, [hasProfileSharingConsent, checkRequirements]);
+
+  // Auto-open registration form when initialOpenRegistration is true
+  const initialRegistrationTriggeredRef = useRef(false);
+  useEffect(() => {
+    console.log('[LegDetailsPanel] Auto-open registration check:', {
+      initialOpenRegistration,
+      isOpen,
+      hasUser: !!user,
+      hasLeg: !!leg,
+      legId: leg?.leg_id,
+      registrationStatus,
+      registrationStatusChecked,
+      alreadyTriggered: initialRegistrationTriggeredRef.current,
+    });
+    
+    // Only trigger once per panel open
+    // Wait for registration status to be checked, then only auto-open if no existing registration
+    if (
+      initialOpenRegistration && 
+      isOpen && 
+      user && 
+      leg && 
+      leg.leg_id && 
+      !initialRegistrationTriggeredRef.current && 
+      registrationStatusChecked &&
+      registrationStatus === null
+    ) {
+      console.log('[LegDetailsPanel] ✅ Triggering auto-open registration');
+      initialRegistrationTriggeredRef.current = true;
+      // Delay slightly to allow consent checks to complete and leg data to be ready
+      const timer = setTimeout(() => {
+        console.log('[LegDetailsPanel] Executing handleRegister() for auto-open');
+        handleRegister();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    // Reset the ref when panel closes
+    if (!isOpen) {
+      initialRegistrationTriggeredRef.current = false;
+    }
+  }, [initialOpenRegistration, isOpen, user, registrationStatus, registrationStatusChecked, leg, handleRegister]);
 
   // Handle requirements form completion - now includes notes and submits directly
   const handleRequirementsComplete = async (answers: any[], notes: string) => {

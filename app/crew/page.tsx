@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -14,6 +14,8 @@ import {
 import { CruisingRegionSection } from '@/app/components/crew/CruisingRegionSection';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { Footer } from '@/app/components/Footer';
+import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
+import { LegListItemData } from '@/app/components/crew/LegListItem';
 
 export default function CrewHomePage() {
   const t = useTranslations('crewHome');
@@ -30,6 +32,8 @@ export default function CrewHomePage() {
   const [userRiskLevel, setUserRiskLevel] = useState<string[] | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(5);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [selectedLeg, setSelectedLeg] = useState<LegListItemData | null>(null);
 
   // Sort regions by distance when user location is available
   useEffect(() => {
@@ -75,6 +79,12 @@ export default function CrewHomePage() {
 
     loadProfile();
   }, [user]);
+
+  // Handle Join button click - open registration dialog
+  const handleJoinClick = useCallback((leg: LegListItemData) => {
+    setSelectedLeg(leg);
+    setRegistrationDialogOpen(true);
+  }, []);
 
   // Loading state
   if (authLoading || userLocation.loading) {
@@ -152,6 +162,7 @@ export default function CrewHomePage() {
                   userSkills={userSkills}
                   userExperienceLevel={userExperienceLevel}
                   userRiskLevel={userRiskLevel}
+                  onJoinClick={handleJoinClick}
                 />
               ))}
 
@@ -186,6 +197,25 @@ export default function CrewHomePage() {
 
       {/* Footer */}
       <Footer />
+
+      {/* Registration Dialog */}
+      <LegRegistrationDialog
+        isOpen={registrationDialogOpen}
+        onClose={() => {
+          setRegistrationDialogOpen(false);
+          setSelectedLeg(null);
+        }}
+        leg={selectedLeg ? {
+          leg_id: selectedLeg.leg_id,
+          journey_id: selectedLeg.journey_id || '',
+          leg_name: selectedLeg.leg_name,
+          journey_name: selectedLeg.journey_name || '',
+        } : null}
+        onSuccess={() => {
+          // Registration successful - could refresh data or show success message
+          console.log('Registration successful!');
+        }}
+      />
     </div>
   );
 }

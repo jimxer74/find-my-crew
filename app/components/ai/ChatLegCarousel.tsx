@@ -199,7 +199,7 @@ export function ChatLegCarousel({
                   e.stopPropagation();
                   onJoinClick(leg.leg_id, leg.leg_name);
                 }}
-                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
+                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
                 title={`Join ${legs[index]?.name || 'this leg'}`}
               >
                 <svg

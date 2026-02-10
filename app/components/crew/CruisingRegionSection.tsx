@@ -14,6 +14,7 @@ type CruisingRegionSectionProps = {
   userSkills?: string[];
   userExperienceLevel?: number | null;
   userRiskLevel?: string[] | null;
+  onJoinClick?: (leg: LegListItemData) => void;
 };
 
 export function CruisingRegionSection({
@@ -21,6 +22,7 @@ export function CruisingRegionSection({
   userSkills = [],
   userExperienceLevel = null,
   userRiskLevel = null,
+  onJoinClick,
 }: CruisingRegionSectionProps) {
   const t = useTranslations('crewHome');
   const router = useRouter();
@@ -115,9 +117,14 @@ export function CruisingRegionSection({
     router.push(`/crew/dashboard?legId=${leg.leg_id}`);
   };
 
-  // Handle Join - open dashboard with leg and register=true (opens registration form)
-  const handleJoinClick = (leg: LegListItemData) => {
-    router.push(`/crew/dashboard?legId=${leg.leg_id}&register=true`);
+  // Handle Join - use provided handler or default to navigation
+  const handleJoinClickInternal = (leg: LegListItemData) => {
+    if (onJoinClick) {
+      onJoinClick(leg);
+    } else {
+      // Fallback to navigation if no handler provided
+      router.push(`/crew/dashboard?legId=${leg.leg_id}&register=true`);
+    }
   };
 
   // Build URL for "View on Map" link
@@ -184,7 +191,7 @@ export function CruisingRegionSection({
       <LegCarousel
         legs={legs}
         onLegClick={handleLegClick}
-        onJoinClick={user ? handleJoinClick : undefined}
+        onJoinClick={user ? handleJoinClickInternal : undefined}
         loading={loading}
         showMoreUrl={getMapUrl()}
       />

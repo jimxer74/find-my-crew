@@ -8,6 +8,7 @@ import { ProspectMessage, PendingAction, ProspectLegReference } from '@/app/lib/
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
+import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -182,6 +183,8 @@ export function ProspectChat() {
   const [inputValue, setInputValue] = useState('');
   const [showAuthForm, setShowAuthForm] = useState<'signup' | 'login' | null>(null);
   const [isNavigatingToCrew, setIsNavigatingToCrew] = useState(false);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -265,21 +268,10 @@ export function ProspectChat() {
     }
   };
 
-  // Open Crew dashboard with this leg selected and registration form open (only shown when signed up + profile created)
+  // Open registration dialog (only shown when signed up + profile created)
   const handleJoinClick = (legId: string, _legName: string) => {
-    const url = `/crew/dashboard?legId=${encodeURIComponent(legId)}&register=true`;
-    const isMobileScreen = typeof window !== 'undefined' && window.innerWidth < 768;
-    if (isMobileScreen) {
-      window.location.href = `${url}&from=assistant`;
-    } else {
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.target = '_blank';
-      anchor.rel = 'noopener noreferrer';
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-    }
+    setSelectedLegId(legId);
+    setRegistrationDialogOpen(true);
   };
 
   // Clear prospect chat/session and go to crew homepage (after profile created)
@@ -638,6 +630,20 @@ export function ProspectChat() {
         onClose={() => setShowAuthForm(null)}
         onSwitchToSignup={() => setShowAuthForm('signup')}
         fromProspect
+      />
+
+      {/* Registration dialog */}
+      <LegRegistrationDialog
+        isOpen={registrationDialogOpen}
+        onClose={() => {
+          setRegistrationDialogOpen(false);
+          setSelectedLegId(null);
+        }}
+        legId={selectedLegId}
+        onSuccess={() => {
+          // Refresh or show success message
+          console.log('Registration successful!');
+        }}
       />
     </div>
   );

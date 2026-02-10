@@ -10,6 +10,7 @@ import { TextInputModal } from './TextInputModal';
 import { MultiSelectInputModal } from './MultiSelectInputModal';
 import { ChatLegCarousel } from './ChatLegCarousel';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -77,7 +78,8 @@ function renderMessageWithLegLinks(
   content: string,
   onLegClick: (legId: string) => void,
   onRegisterClick: (legId: string) => void,
-  onCloseAndRedirect?: (path: string) => void
+  onCloseAndRedirect?: (path: string) => void,
+  hideLegBadgesOnMobile?: boolean
 ): React.ReactNode {
   // Combined regex to match leg, register, and close_chat patterns
   const refRegex = /\[\[(leg|register|close_chat):([^:\]]+):([^\]]+)\]\]/gi;
@@ -146,12 +148,12 @@ function renderMessageWithLegLinks(
         </button>
       );
     } else {
-      // Regular leg link
+      // Regular leg link - hide on mobile if hideLegBadgesOnMobile is true
       parts.push(
         <button
           key={`leg-${keyIndex++}`}
           onClick={() => onLegClick(legId)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-blue-200 dark:text-blue-300 bg-blue-800 dark:bg-blue-500/40 hover:bg-blue-500 dark:hover:bg-blue-800/50 rounded-full transition-colors font-medium text-sm cursor-pointer"
+          className={`inline-flex items-center gap-1 px-2 py-0.5 text-blue-200 dark:text-blue-300 bg-blue-800 dark:bg-blue-500/40 hover:bg-blue-500 dark:hover:bg-blue-800/50 rounded-full transition-colors font-medium text-sm cursor-pointer ${hideLegBadgesOnMobile ? 'hidden md:inline-flex' : ''}`}
           title={`View ${legName}`}
         >
           <svg
@@ -258,6 +260,8 @@ export function AssistantChat() {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
+  const [selectedLegId, setSelectedLegId] = useState<string | null>(null);
 
   // Mobile detection
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -365,9 +369,10 @@ export function AssistantChat() {
     router.push(`/crew/dashboard?legId=${legId}&from=assistant`);
   };
 
-  // Handle clicking on a register reference - navigate to dashboard and open registration form
-  const handleRegisterClick = (legId: string) => {
-    router.push(`/crew/dashboard?legId=${legId}&register=true&from=assistant`);
+  // Handle clicking on a register reference - open registration dialog
+  const handleRegisterClick = (legId: string, _legName?: string) => {
+    setSelectedLegId(legId);
+    setRegistrationDialogOpen(true);
   };
 
   // Handle close chat and redirect - close assistant panel and navigate to specified path
@@ -493,7 +498,9 @@ export function AssistantChat() {
                       removeSuggestionsFromContent(message.content),
                       handleLegClick,
                       handleRegisterClick,
-                      handleCloseAndRedirect
+                      handleCloseAndRedirect,
+                      // Hide leg badges on mobile when legReferences exist (carousel will show instead)
+                      isMobile && message.metadata?.legReferences && message.metadata.legReferences.length > 0
                     )
                   : message.content}
               </div>
@@ -510,15 +517,16 @@ export function AssistantChat() {
                   {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}
                 </div>
               )}
-              {/* Show leg references as carousel */}
+              {/* Show leg references as carousel - Mobile only */}
               {message.role === 'assistant' &&
                message.metadata?.legReferences &&
                message.metadata.legReferences.length > 0 &&
-               !message.content.includes('[[leg:') && (
-                <div className="mt-3 -mx-2">
+               isMobile && (
+                <div className="mt-3 -mx-2 md:hidden">
                   <ChatLegCarousel
                     legs={message.metadata.legReferences}
                     onLegClick={handleLegClick}
+                    onJoinClick={handleRegisterClick}
                     compact={true}
                   />
                 </div>
@@ -684,6 +692,20 @@ export function AssistantChat() {
       )}
         </>
       )}
+
+      {/* Registration Dialog */}
+      <LegRegistrationDialog
+        isOpen={registrationDialogOpen}
+        onClose={() => {
+          setRegistrationDialogOpen(false);
+          setSelectedLegId(null);
+        }}
+        legId={selectedLegId}
+        onSuccess={() => {
+          // Registration successful
+          console.log('Registration successful!');
+        }}
+      />
     </div>
   );
 }
