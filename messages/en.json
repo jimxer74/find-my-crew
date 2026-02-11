@@ -668,6 +668,7 @@
       "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people.",
       "cta": "Coming Soon",
       "postPlaceholder": "Post your boat and journey details...",
+      "continueJourney": "You are almost there - continue your journey",
       "postDialogTitle": "Post your crew demand",
       "postDialogPlaceholder": "Describe your boat, journey, and crew requirements. The AI will help you create your listing.",
       "features": {

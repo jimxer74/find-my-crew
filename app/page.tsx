@@ -11,6 +11,7 @@ import { SignupModal } from '@/app/components/SignupModal';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@/app/lib/prospect/sessionService';
+import * as ownerSessionService from '@/app/lib/owner/sessionService';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
 
@@ -149,6 +150,8 @@ export default function WelcomePage() {
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [isComboSearchMode, setIsComboSearchMode] = useState(false);
   const [isOwnerPostMode, setIsOwnerPostMode] = useState(false);
+  const [hasOwnerSession, setHasOwnerSession] = useState(false);
+  const [ownerSessionContext, setOwnerSessionContext] = useState<string | null>(null);
 
   // Check if user is logged in and redirect to role-specific homepage
   useEffect(() => {
@@ -299,8 +302,79 @@ export default function WelcomePage() {
     checkExistingSession();
   }, []);
 
+  // Check for existing owner onboarding session on mount
+  useEffect(() => {
+    async function checkExistingOwnerSession() {
+      try {
+        const response = await fetch('/api/owner/session', {
+          credentials: 'include',
+        });
+
+        if (!response.ok) return;
+
+        const cookieData = await response.json();
+        const sessionId = cookieData.sessionId;
+
+        if (!sessionId || cookieData.isNewSession) {
+          return;
+        }
+
+        const session = await ownerSessionService.loadSession(sessionId);
+
+        if (session && session.conversation && session.conversation.length > 0) {
+          setHasOwnerSession(true);
+
+          const firstUserMessage = session.conversation.find(
+            (msg: { role: string; content: string }) => msg.role === 'user'
+          );
+          if (firstUserMessage) {
+            const content = firstUserMessage.content;
+            setOwnerSessionContext(content.length > 60 ? content.substring(0, 60) + '...' : content);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to check owner session:', e);
+      }
+    }
+
+    checkExistingOwnerSession();
+  }, []);
+
   const handleContinueConversation = () => {
     router.push('/welcome/crew');
+  };
+
+  const handleContinueOwnerConversation = () => {
+    router.push('/welcome/owner');
+  };
+
+  const handleClearOwnerSession = async () => {
+    try {
+      const response = await fetch('/api/owner/session', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const cookieData = await response.json();
+        const sessionId = cookieData.sessionId;
+
+        if (sessionId) {
+          try {
+            await ownerSessionService.deleteSession(sessionId);
+            console.log('[Frontpage] ✅ Deleted owner session from database');
+          } catch (error) {
+            console.error('[Frontpage] Error deleting owner session:', error);
+          }
+        }
+      }
+
+      await fetch('/api/owner/session', { method: 'DELETE' });
+    } catch (e) {
+      console.error('Failed to clear owner session:', e);
+    }
+
+    setHasOwnerSession(false);
+    setOwnerSessionContext(null);
   };
 
   const handleClearSession = async () => {
@@ -423,8 +497,8 @@ export default function WelcomePage() {
 
       {/* Main content - dual column layout or single column when session exists */}
       <main className="flex-1 flex flex-col md:flex-row min-h-screen">
-        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode */}
-        {!isOwnerPostMode && (
+        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode or owner session exists */}
+        {!isOwnerPostMode && !hasOwnerSession && (
         <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
           hasExistingSession && sessionType === 'crew' || isComboSearchMode
             ? 'flex-1 min-h-screen'
@@ -621,8 +695,8 @@ export default function WelcomePage() {
         </div>
         )}
 
-        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode */}
-        {(isOwnerPostMode || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
+        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode or owner session exists */}
+        {(isOwnerPostMode || hasOwnerSession || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
           <div className="relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-h-[50vh] md:min-h-screen min-w-0">
             {/* Warm/amber overlay for owner side */}
             <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
@@ -654,22 +728,71 @@ export default function WelcomePage() {
                 {t('owner.subtitle')}
               </p>
 
-              <p className="text-sm md:text-base text-white/80 mb-8">
+              <p className="text-sm md:text-base text-white/80 mb-6">
                 {t('owner.description')}
               </p>
 
-              <div className="w-full max-w-sm mx-auto">
-                <button
-                  type="button"
-                  onClick={() => setIsOwnerPostMode(true)}
-                  className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
-                >
-                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  <span className="text-gray-500 truncate">{t('owner.postPlaceholder')}</span>
-                </button>
-              </div>
+              {!hasOwnerSession && (
+                <div className="w-full max-w-sm mx-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsOwnerPostMode(true)}
+                    className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
+                  >
+                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span className="text-gray-500 truncate">{t('owner.postPlaceholder')}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Continue owner onboarding - shown when owner session exists */}
+              {hasOwnerSession && (
+                <div className="w-full mx-auto max-w-full sm:max-w-sm md:max-w-lg mt-4">
+                  <div className="relative">
+                    <button
+                      onClick={handleContinueOwnerConversation}
+                      className="w-full px-4 py-3 pr-12 flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/25 transition-colors text-left"
+                    >
+                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <svg
+                          className="w-4 h-4 text-white"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white font-medium">{t('owner.continueJourney')}</p>
+                        {ownerSessionContext && (
+                          <p className="text-xs text-white/70 truncate">&quot;{ownerSessionContext}&quot;</p>
+                        )}
+                      </div>
+                      <svg
+                        className="w-4 h-4 text-white/50 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
