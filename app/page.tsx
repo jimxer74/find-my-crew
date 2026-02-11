@@ -95,7 +95,7 @@ export default function WelcomePage() {
       if (aiConsent) {
         // AI consent granted → redirect to assistant for AI-powered profile completion
         console.log('AI signup + AI consent granted → redirecting to assistant for profile completion');
-        router.push('/welcome/chat?profile_completion=true');
+        router.push('/welcome/crew?profile_completion=true');
       } else {
         // AI consent NOT granted → redirect to manual profile setup page
         console.log('AI signup + AI consent NOT granted → redirecting to profile setup page');
@@ -179,7 +179,7 @@ export default function WelcomePage() {
   }, []);
 
   const handleContinueConversation = () => {
-    router.push('/welcome/chat');
+    router.push('/welcome/crew');
   };
 
   const handleClearSession = async () => {
@@ -239,7 +239,7 @@ export default function WelcomePage() {
       params.set('profile', data.profile);
     }
     
-    router.push(`/welcome/chat?${params.toString()}`);
+    router.push(`/welcome/crew?${params.toString()}`);
   };
 
   // Show loading state while checking authentication and roles
@@ -372,6 +372,7 @@ export default function WelcomePage() {
                   <div className="flex-1 min-w-0 max-w-full overflow-hidden">
                     <ComboSearchBox 
                       onSubmit={handleComboSearch} 
+                      compactMode={!isComboSearchMode}
                       onFocusChange={(isFocused) => {
                         // Only enter combo search mode when focus is gained, don't exit when focus is lost
                         if (isFocused && !isComboSearchMode) {

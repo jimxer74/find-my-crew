@@ -251,9 +251,27 @@ ${allWaypoints.length > 2
     const text = result.text;
 
     console.log('AI Response:', text);
+    console.log('AI Response length:', text.length);
 
     // Parse the JSON response using shared utility
-    const generatedData = parseJsonObjectFromAIResponse(text);
+    let generatedData;
+    try {
+      generatedData = parseJsonObjectFromAIResponse(text);
+    } catch (parseError: any) {
+      console.error('Failed to parse JSON from AI response:', parseError.message);
+      console.error('Response preview:', text.substring(0, 500));
+      console.error('Response end:', text.substring(Math.max(0, text.length - 200)));
+      
+      // If parsing fails, return a helpful error message
+      return NextResponse.json(
+        { 
+          error: 'Failed to parse AI response. The response may have been truncated.',
+          details: parseError.message,
+          responseLength: text.length,
+        },
+        { status: 500 }
+      );
+    }
 
     // Validate the structure
     if (!generatedData.journeyName || !generatedData.legs || !Array.isArray(generatedData.legs)) {

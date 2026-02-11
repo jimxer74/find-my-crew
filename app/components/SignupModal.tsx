@@ -10,9 +10,11 @@ type SignupModalProps = {
   onSwitchToLogin: () => void;
   /** When provided, stores prospect preferences in user metadata and uses prospect redirect flow. fullName prefills the name field if the user shared it in chat. */
   prospectPreferences?: Record<string, unknown>;
+  /** Custom redirect path after signup. If not provided, defaults to /welcome/crew for prospect flow or / for other flows. */
+  redirectPath?: string;
 };
 
-export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferences }: SignupModalProps) {
+export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferences, redirectPath }: SignupModalProps) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -88,16 +90,21 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
 
       if (authData.user) {
         // Set flag so the app knows to continue in profile completion mode
-        if (prospectPreferences) {
+        // Set for both prospect and owner flows (when preferences are provided)
+        if (prospectPreferences || redirectPath?.includes('profile_completion')) {
           localStorage.setItem('ai_assistant_signup_pending', 'true');
         }
 
         onClose();
 
-        // For prospect flow, stay on the chat page with profile_completion mode
-        // The consent modal will open on this page, and after consent the chat continues
-        if (prospectPreferences) {
-          router.push('/welcome/chat?profile_completion=true');
+        // Determine redirect path
+        if (redirectPath) {
+          // Use custom redirect path if provided (e.g., for owner chat)
+          router.push(redirectPath);
+        } else if (prospectPreferences) {
+          // For prospect flow, stay on the chat page with profile_completion mode
+          // The consent modal will open on this page, and after consent the chat continues
+          router.push('/welcome/crew?profile_completion=true');
         } else {
           // Non-prospect signup - redirect to home page
           router.push('/');
@@ -123,9 +130,20 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
       localStorage.setItem('ai_assistant_signup_pending', 'true');
     }
 
-    const redirectTo = prospectPreferences
-      ? `${window.location.origin}/auth/callback?from=prospect`
-      : `${window.location.origin}/auth/callback`;
+    // Determine OAuth callback redirect
+    let callbackPath = '/auth/callback';
+    if (redirectPath) {
+      // If custom redirect path provided, determine callback parameter
+      if (redirectPath.includes('/welcome/owner')) {
+        callbackPath = '/auth/callback?from=owner';
+      } else if (redirectPath.includes('/welcome/crew')) {
+        callbackPath = '/auth/callback?from=prospect';
+      }
+    } else if (prospectPreferences) {
+      callbackPath = '/auth/callback?from=prospect';
+    }
+
+    const redirectTo = `${window.location.origin}${callbackPath}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',

@@ -85,6 +85,53 @@ export function extractJsonFromText(
 export function fixJsonErrors(jsonText: string): string {
   let fixed = jsonText.trim();
 
+  // First, handle truncated strings by finding unclosed quotes
+  // Track quote positions and determine which ones are opening vs closing
+  const quotePositions: number[] = [];
+  let i = 0;
+  while (i < fixed.length) {
+    if (fixed[i] === '"') {
+      // Check if it's escaped
+      if (i === 0 || fixed[i - 1] !== '\\') {
+        quotePositions.push(i);
+      }
+    }
+    i++;
+  }
+
+  // If we have an odd number of quotes, the last one opened a string that wasn't closed
+  if (quotePositions.length % 2 !== 0) {
+    const lastQuoteIndex = quotePositions[quotePositions.length - 1];
+    const afterLastQuote = fixed.substring(lastQuoteIndex + 1);
+    
+    // Check if there's any content after the last quote that suggests truncation
+    // If the string doesn't end with a quote and there's content, it's likely truncated
+    if (!fixed.endsWith('"') && afterLastQuote.length > 0) {
+      // Find where the truncated string should end
+      // Look for the next structural character (comma, closing brace/bracket) or end of string
+      const nextStructural = afterLastQuote.search(/[,\]\}]/);
+      if (nextStructural === -1) {
+        // No structural character found - the string goes to the end, close it
+        fixed = fixed + '"';
+      } else {
+        // There's content after - close the string before the structural character
+        // But first, check if we should preserve the content after
+        const truncatedPart = afterLastQuote.substring(0, nextStructural);
+        const afterTruncated = afterLastQuote.substring(nextStructural);
+        
+        // If the truncated part looks like it's part of the string value, close it
+        // Otherwise, it might be a new field starting
+        if (truncatedPart.trim().length > 0 && !truncatedPart.match(/^\s*:/)) {
+          // Close the string and keep the structural content
+          fixed = fixed.substring(0, lastQuoteIndex + 1 + nextStructural) + '"' + afterTruncated;
+        }
+      }
+    } else if (!fixed.endsWith('"')) {
+      // Ends without quote but no content after - just add closing quote
+      fixed = fixed + '"';
+    }
+  }
+
   // Count and balance braces/brackets
   let openBraces = (fixed.match(/\{/g) || []).length;
   let closeBraces = (fixed.match(/\}/g) || []).length;
@@ -107,17 +154,6 @@ export function fixJsonErrors(jsonText: string): string {
   // Fix trailing commas in arrays/objects
   fixed = fixed.replace(/,\s*}/g, '}');
   fixed = fixed.replace(/,\s*]/g, ']');
-
-  // Handle truncated strings (ends with unclosed quote)
-  // This is a basic fix - more sophisticated handling may be needed
-  if (fixed.match(/"[^"]*$/)) {
-    // If ends with unclosed quote, try to close it
-    const lastQuoteIndex = fixed.lastIndexOf('"');
-    if (lastQuoteIndex > 0 && !fixed.substring(lastQuoteIndex + 1).match(/[,\]\}]/)) {
-      // Only fix if it's clearly truncated
-      fixed = fixed.substring(0, lastQuoteIndex + 1);
-    }
-  }
 
   return fixed;
 }
@@ -163,17 +199,69 @@ export function parseJsonFromAIResponse(
     log('Successfully parsed JSON', { type: Array.isArray(parsed) ? 'array' : 'object' });
     return parsed;
   } catch (parseError: any) {
-    log('JSON parse failed', { error: parseError.message, jsonText: jsonText.substring(0, 200) });
+    const errorPosition = parseError.message.match(/position (\d+)/)?.[1];
+    const position = errorPosition ? parseInt(errorPosition, 10) : null;
+    
+    log('JSON parse failed', { 
+      error: parseError.message, 
+      position,
+      jsonText: position 
+        ? jsonText.substring(Math.max(0, position - 100), Math.min(jsonText.length, position + 100))
+        : jsonText.substring(0, 200)
+    });
     
     // If fixErrors was enabled and still failed, try one more aggressive fix
     if (fixErrors) {
       try {
-        const aggressiveFix = fixJsonErrors(jsonText);
+        // Try a more aggressive fix: if we can identify the truncated field, close it properly
+        let aggressiveFix = fixJsonErrors(jsonText);
+        
+        // Additional fix: if error mentions "Unterminated string", try to close all open strings
+        if (parseError.message.includes('Unterminated string')) {
+          // Find all quote positions
+          const quotePositions: number[] = [];
+          for (let i = 0; i < aggressiveFix.length; i++) {
+            if (aggressiveFix[i] === '"' && (i === 0 || aggressiveFix[i - 1] !== '\\')) {
+              quotePositions.push(i);
+            }
+          }
+          
+          // If odd number of quotes, the last one opened an unclosed string
+          if (quotePositions.length % 2 !== 0) {
+            const lastQuotePos = quotePositions[quotePositions.length - 1];
+            const afterQuote = aggressiveFix.substring(lastQuotePos + 1);
+            
+            // If the response ends without a closing quote, close it
+            if (!aggressiveFix.endsWith('"')) {
+              // Find where to close - look for structural characters or just close at end
+              const nextComma = afterQuote.indexOf(',');
+              const nextBrace = afterQuote.indexOf('}');
+              const nextBracket = afterQuote.indexOf(']');
+              
+              const nextStructural = Math.min(
+                nextComma === -1 ? Infinity : nextComma,
+                nextBrace === -1 ? Infinity : nextBrace,
+                nextBracket === -1 ? Infinity : nextBracket
+              );
+              
+              if (nextStructural === Infinity) {
+                // No structural character found - close at the end
+                aggressiveFix = aggressiveFix + '"';
+              } else {
+                // Close before the structural character
+                const beforeStructural = aggressiveFix.substring(0, lastQuotePos + 1 + nextStructural);
+                const afterStructural = aggressiveFix.substring(lastQuotePos + 1 + nextStructural);
+                aggressiveFix = beforeStructural.trim() + '"' + afterStructural;
+              }
+            }
+          }
+        }
+        
         const parsed = JSON.parse(aggressiveFix);
         log('Successfully parsed after aggressive fix');
         return parsed;
-      } catch (retryError) {
-        log('Aggressive fix also failed', { error: retryError });
+      } catch (retryError: any) {
+        log('Aggressive fix also failed', { error: retryError.message });
       }
     }
     

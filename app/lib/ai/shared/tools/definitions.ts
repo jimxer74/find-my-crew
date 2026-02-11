@@ -771,4 +771,419 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ['registrationId', 'reason'],
     },
   },
+
+  // ============================================================
+  // OWNER ONBOARDING TOOLS - For owner onboarding flow
+  // ============================================================
+  {
+    name: 'fetch_boat_details_from_sailboatdata',
+    description:
+      'Fetch detailed boat specifications from sailboatdata.com using screenscraping. Use this when user mentions a boat make/model to automatically fill in boat details. Returns comprehensive boat specs including dimensions, performance metrics, and descriptions.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        make_model: {
+          type: 'string',
+          description: 'Boat make and model (e.g., "Bavaria 46", "Hallberg-Rassy 38")',
+        },
+        slug: {
+          type: 'string',
+          description: 'Optional: URL slug from search results for more reliable lookup',
+        },
+      },
+      required: ['make_model'],
+    },
+  },
+  {
+    name: 'generate_journey_route',
+    description:
+      'Generate a sailing journey route with legs and waypoints using AI. Use this when user describes a route (start location, end location, waypoints, dates). Returns structured journey data with legs. Can handle speed-based planning if boat speed is provided.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        startLocation: {
+          type: 'object',
+          description: 'Start location with name and coordinates',
+          properties: {
+            name: { type: 'string' },
+            lat: { type: 'number' },
+            lng: { type: 'number' },
+          },
+          required: ['name', 'lat', 'lng'],
+        },
+        endLocation: {
+          type: 'object',
+          description: 'End location with name and coordinates',
+          properties: {
+            name: { type: 'string' },
+            lat: { type: 'number' },
+            lng: { type: 'number' },
+          },
+          required: ['name', 'lat', 'lng'],
+        },
+        intermediateWaypoints: {
+          type: 'array',
+          description: 'Optional intermediate waypoints',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              lat: { type: 'number' },
+              lng: { type: 'number' },
+            },
+            required: ['name', 'lat', 'lng'],
+          },
+        },
+        boatId: {
+          type: 'string',
+          description: 'Required for speed-based planning',
+        },
+        startDate: {
+          type: 'string',
+          description: 'Journey start date (ISO format YYYY-MM-DD)',
+        },
+        endDate: {
+          type: 'string',
+          description: 'Journey end date (ISO format YYYY-MM-DD)',
+        },
+        useSpeedPlanning: {
+          type: 'boolean',
+          description: 'Whether to calculate leg dates based on boat speed',
+        },
+        boatSpeed: {
+          type: 'number',
+          description: 'Boat average cruising speed in knots (for speed-based planning)',
+        },
+        risk_level: {
+          type: 'array',
+          description: 'Optional journey risk level(s) for auto-creation. Use when user has specified preferred risk.',
+          items: {
+            type: 'string',
+            enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],
+          },
+        },
+        skills: {
+          type: 'array',
+          description: 'Optional required skills for journey. Use when user has specified skills.',
+          items: { type: 'string' },
+        },
+        min_experience_level: {
+          type: 'number',
+          description: 'Optional minimum experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
+          minimum: 1,
+          maximum: 4,
+        },
+        cost_model: {
+          type: 'string',
+          description: 'Optional cost sharing model for the journey. Use when user has specified how costs are shared.',
+          enum: ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'],
+        },
+        cost_info: {
+          type: 'string',
+          description: 'Optional free text for owners to inform crew about costs (e.g. shared food, fuel split, crew fee). No strict format.',
+        },
+      },
+      required: ['startLocation', 'endLocation', 'boatId'],
+    },
+  },
+  {
+    name: 'get_owner_boats',
+    description: "Get all boats owned by the current user. Use this to check if user already has boats or to list boats for journey creation.",
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum number of boats to return (default 50)',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_owner_journeys',
+    description: "Get all journeys owned by the current user. Use this to check if user already has journeys or to list journeys.",
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Maximum number of journeys to return (default 50)',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_boat_completion_status',
+    description: "Check if boat information is complete. Returns which fields are filled and which are missing. Use this to guide users through boat creation.",
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        boatId: {
+          type: 'string',
+          description: 'Optional: Check specific boat. If not provided, checks if user has any boats.',
+        },
+      },
+    },
+  },
+  {
+    name: 'get_journey_completion_status',
+    description: "Check if journey information is complete. Returns which fields are filled and which are missing. Use this to guide users through journey creation.",
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        journeyId: {
+          type: 'string',
+          description: 'Optional: Check specific journey. If not provided, checks if user has any journeys.',
+        },
+      },
+    },
+  },
+  {
+    name: 'create_boat',
+    description:
+      'Create a new boat for the owner. Use this after gathering boat information from the user and confirming with them. IMPORTANT: Before calling this, use fetch_boat_details_from_sailboatdata to get detailed specs if user provided make/model.',
+    access: 'owner',
+    category: 'action',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Boat name',
+        },
+        type: {
+          type: 'string',
+          description: 'Sailboat category',
+          enum: ['Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers', 'Performance cruisers', 'Multihulls', 'Expedition sailboats'],
+        },
+        make_model: {
+          type: 'string',
+          description: 'Boat make and model (e.g., "Bavaria 46")',
+        },
+        capacity: {
+          type: 'number',
+          description: 'Number of people the boat can accommodate',
+        },
+        home_port: {
+          type: 'string',
+          description: 'Home port location',
+        },
+        country_flag: {
+          type: 'string',
+          description: 'ISO 3166-1 alpha-2 country code (e.g., US, GB, FR)',
+        },
+        loa_m: {
+          type: 'number',
+          description: 'Length overall in meters',
+        },
+        beam_m: {
+          type: 'number',
+          description: 'Beam width in meters',
+        },
+        max_draft_m: {
+          type: 'number',
+          description: 'Maximum draft in meters',
+        },
+        displcmt_m: {
+          type: 'number',
+          description: 'Displacement in kg',
+        },
+        average_speed_knots: {
+          type: 'number',
+          description: 'Average cruising speed in knots',
+        },
+        link_to_specs: {
+          type: 'string',
+          description: 'URL to boat specifications (e.g., sailboatdata.com)',
+        },
+        characteristics: {
+          type: 'string',
+          description: 'Boat characteristics description (hull design, construction, rigging, keel type)',
+        },
+        capabilities: {
+          type: 'string',
+          description: 'Boat capabilities description (sailing conditions, range, single-handed capability)',
+        },
+        accommodations: {
+          type: 'string',
+          description: 'Interior layout description (berths, galley, head, storage)',
+        },
+        sa_displ_ratio: {
+          type: 'number',
+          description: 'Sail area to displacement ratio',
+        },
+        ballast_displ_ratio: {
+          type: 'number',
+          description: 'Ballast to displacement ratio',
+        },
+        displ_len_ratio: {
+          type: 'number',
+          description: 'Displacement to length ratio',
+        },
+        comfort_ratio: {
+          type: 'number',
+          description: 'Comfort ratio',
+        },
+        capsize_screening: {
+          type: 'number',
+          description: 'Capsize screening formula value',
+        },
+        hull_speed_knots: {
+          type: 'number',
+          description: 'Hull speed in knots',
+        },
+        ppi_pounds_per_inch: {
+          type: 'number',
+          description: 'Pounds per inch immersion',
+        },
+      },
+      required: ['name', 'type', 'make_model', 'capacity'],
+    },
+  },
+  {
+    name: 'create_journey',
+    description:
+      'Create a new journey for an owner\'s boat. Requires boat_id. IMPORTANT: Before calling this, use generate_journey_route to plan the journey with legs and waypoints if user provided route information.',
+    access: 'owner',
+    category: 'action',
+    parameters: {
+      type: 'object',
+      properties: {
+        boat_id: {
+          type: 'string',
+          description: 'UUID of the boat for this journey',
+        },
+        name: {
+          type: 'string',
+          description: 'Journey name',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Journey start date (ISO format YYYY-MM-DD)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'Journey end date (ISO format YYYY-MM-DD)',
+        },
+        description: {
+          type: 'string',
+          description: 'Journey description',
+        },
+        risk_level: {
+          type: 'array',
+          description: 'Array of risk levels',
+          items: {
+            type: 'string',
+            enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],
+          },
+        },
+        skills: {
+          type: 'array',
+          description: 'Required skills for this journey (array of skill names)',
+          items: {
+            type: 'string',
+          },
+        },
+        min_experience_level: {
+          type: 'number',
+          description: 'Minimum required experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
+          minimum: 1,
+          maximum: 4,
+        },
+        cost_model: {
+          type: 'string',
+          description: 'Cost sharing model for the journey',
+          enum: ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'],
+        },
+        cost_info: {
+          type: 'string',
+          description: 'Free text for owners to inform crew about costs (e.g. shared food, fuel split). No strict format.',
+        },
+      },
+      required: ['boat_id', 'name'],
+    },
+  },
+  {
+    name: 'create_leg',
+    description:
+      'Create a leg within a journey. Use this after creating a journey to add individual legs with waypoints. Can be called multiple times to create multiple legs for a journey.',
+    access: 'owner',
+    category: 'action',
+    parameters: {
+      type: 'object',
+      properties: {
+        journey_id: {
+          type: 'string',
+          description: 'UUID of the journey this leg belongs to',
+        },
+        name: {
+          type: 'string',
+          description: 'Leg name',
+        },
+        start_date: {
+          type: 'string',
+          description: 'Leg start date (ISO format YYYY-MM-DD)',
+        },
+        end_date: {
+          type: 'string',
+          description: 'Leg end date (ISO format YYYY-MM-DD)',
+        },
+        crew_needed: {
+          type: 'number',
+          description: 'Number of crew members needed for this leg',
+        },
+        waypoints: {
+          type: 'array',
+          description: 'Array of waypoints for this leg',
+          items: {
+            type: 'object',
+            properties: {
+              index: {
+                type: 'number',
+                description: 'Waypoint index (0-based, sequential)',
+              },
+              name: {
+                type: 'string',
+                description: 'Waypoint name (port/town/city)',
+              },
+              geocode: {
+                type: 'object',
+                description: 'Waypoint coordinates',
+                properties: {
+                  type: {
+                    type: 'string',
+                    enum: ['Point'],
+                  },
+                  coordinates: {
+                    type: 'array',
+                    description: '[longitude, latitude]',
+                    items: {
+                      type: 'number',
+                    },
+                    minItems: 2,
+                    maxItems: 2,
+                  },
+                },
+                required: ['type', 'coordinates'],
+              },
+            },
+            required: ['index', 'name', 'geocode'],
+          },
+        },
+      },
+      required: ['journey_id', 'name', 'waypoints'],
+    },
+  },
 ];

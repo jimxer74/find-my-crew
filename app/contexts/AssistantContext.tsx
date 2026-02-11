@@ -732,7 +732,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         loadPendingActions();
 
         // Copy pending leg registration for assistant flow (e.g. if user lands on crew page).
-        // Do NOT remove pending_leg_registration here – the prospect flow (welcome/chat) needs it
+        // Do NOT remove pending_leg_registration here – the prospect flow (welcome/crew) needs it
         // after consent to pass to trigger-profile-completion and profile save. ProspectChatContext
         // clears it after use (e.g. after registration is sent with approveAction).
         if (typeof window !== 'undefined') {

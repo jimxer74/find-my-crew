@@ -67,7 +67,7 @@ export default function WelcomePage() {
   }, []);
 
   const handleContinueConversation = () => {
-    router.push('/welcome/chat');
+    router.push('/welcome/crew');
   };
 
   const handleClearSession = async () => {
@@ -92,7 +92,7 @@ export default function WelcomePage() {
     if (!query) return;
 
     // Navigate to chat with the initial query
-    router.push(`/welcome/chat?q=${encodeURIComponent(query)}`);
+    router.push(`/welcome/crew?q=${encodeURIComponent(query)}`);
   };
 
   return (

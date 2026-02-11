@@ -54,7 +54,8 @@ export async function GET(request: Request) {
 
       // Check if this user has prospect preferences to sync (from in-chat signup)
       const prospectPreferences = user.user_metadata?.prospect_preferences;
-      const isFromProspect = from === 'prospect' || !!prospectPreferences;
+      const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner');
+      const isFromOwner = from === 'owner';
 
       // Profile is optional - don't create automatically
       const { data: profile } = await supabase
@@ -128,9 +129,13 @@ export async function GET(request: Request) {
       // Always redirect to role-specific homepage
       let redirectPath = '/crew'; // Default to crew homepage
 
-      // If user came from prospect chat, redirect back to chat with profile completion mode
-      if (isFromProspect) {
-        redirectPath = '/welcome/chat?profile_completion=true';
+      // If user came from owner chat, redirect back to owner chat with profile completion mode
+      if (isFromOwner) {
+        redirectPath = '/welcome/owner?profile_completion=true';
+        console.log('LOGIN CALLBACK, owner user - redirecting to owner chat for profile completion');
+      } else if (isFromProspect) {
+        // If user came from prospect chat, redirect back to chat with profile completion mode
+        redirectPath = '/welcome/crew?profile_completion=true';
         console.log('LOGIN CALLBACK, prospect user - redirecting to chat for profile completion');
       } else if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role

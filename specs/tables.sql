@@ -216,6 +216,7 @@ create table if not exists public.journeys (
   skills       text[] default '{}',  -- Required skills for this journey (array of skill names)
   min_experience_level integer,  -- Minimum required experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
   cost_model   cost_model default 'Not defined',
+  cost_info    text,  -- Free text for owners to inform crew about costs (semantics left to owner)
   state        journey_state not null default 'In planning',
   is_ai_generated boolean default false,
   ai_prompt    text,
@@ -1306,6 +1307,98 @@ create policy "Users can delete own sessions"
 -- Service role can access all sessions (for cleanup jobs and session linking)
 create policy "Service role can manage all sessions"
   on public.prospect_sessions
+  for all
+  using (auth.jwt() ->> 'role' = 'service_role');
+
+
+-- ============================================================================
+-- TABLE: owner_sessions
+-- ============================================================================
+
+create table if not exists public.owner_sessions (
+  session_id uuid primary key,
+  -- CRITICAL: user_id is NULL for unauthenticated users (before signup)
+  -- After signup, this gets linked to auth.users(id)
+  user_id uuid references auth.users(id) on delete cascade, -- NULLABLE for unauthenticated users
+  -- Optional: email for linking sessions before signup (if user shares email)
+  -- This helps link sessions when user signs up with same email
+  email text,
+  conversation jsonb not null default '[]'::jsonb,
+  gathered_preferences jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  last_active_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '7 days')
+);
+
+-- Indexes for performance
+create index if not exists idx_owner_sessions_user_id 
+  on public.owner_sessions(user_id) 
+  where user_id is not null;
+
+-- Index for email-based session linking (before signup)
+create index if not exists idx_owner_sessions_email 
+  on public.owner_sessions(email) 
+  where email is not null and user_id is null;
+
+create index if not exists idx_owner_sessions_expires 
+  on public.owner_sessions(expires_at);
+
+create index if not exists idx_owner_sessions_last_active 
+  on public.owner_sessions(last_active_at);
+
+-- Enable Row Level Security
+alter table public.owner_sessions enable row level security;
+
+-- RLS Policies
+-- CRITICAL: Allow unauthenticated access to sessions with user_id = NULL
+-- This enables owner users to access their sessions before signup
+-- Security: API routes MUST validate session_id from cookie matches requested session
+
+-- SELECT: Unauthenticated users can view sessions with user_id = NULL
+create policy "Unauthenticated users can view their owner sessions"
+  on public.owner_sessions
+  for select
+  using (user_id is null);
+
+-- INSERT: Unauthenticated users can create sessions with user_id = NULL
+create policy "Unauthenticated users can create owner sessions"
+  on public.owner_sessions
+  for insert
+  with check (user_id is null);
+
+-- UPDATE: Unauthenticated users can update sessions with user_id = NULL
+create policy "Unauthenticated users can update their owner sessions"
+  on public.owner_sessions
+  for update
+  using (user_id is null)
+  with check (user_id is null);
+
+-- DELETE: Unauthenticated users can delete sessions with user_id = NULL
+create policy "Unauthenticated users can delete their owner sessions"
+  on public.owner_sessions
+  for delete
+  using (user_id is null);
+
+-- Authenticated users can access their own sessions
+create policy "Users can view own owner sessions"
+  on public.owner_sessions
+  for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update own owner sessions"
+  on public.owner_sessions
+  for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Users can delete own owner sessions"
+  on public.owner_sessions
+  for delete
+  using (auth.uid() = user_id);
+
+-- Service role can access all sessions (for cleanup jobs and session linking)
+create policy "Service role can manage all owner sessions"
+  on public.owner_sessions
   for all
   using (auth.jwt() ->> 'role' = 'service_role');
 

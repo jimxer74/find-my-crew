@@ -493,6 +493,103 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     }
   }
 
+  // Method 6: Custom token format: <|start|>assistant<|channel|>...<|message|>{"name": "...", "arguments": {...}}<|call|>
+  // Some models (like certain OpenRouter models) use this token-based format
+  // Also handles variations like: <|message|>...JSON...<|call|> or just JSON between these tokens
+  const tokenFormatRegex = /<\|message\|>([\s\S]*?)<\|call\|>/gi;
+  
+  while ((match = tokenFormatRegex.exec(text)) !== null) {
+    // Skip if already processed
+    if (content.indexOf(match[0]) === -1) continue;
+    
+    try {
+      const inner = match[1].trim();
+      
+      // First try to parse the inner content directly as JSON
+      let toolCallJson: any = null;
+      try {
+        toolCallJson = JSON.parse(inner);
+      } catch {
+        // If direct parse fails, try to extract JSON from the inner content
+        const extractedJson = extractJsonFromText(inner);
+        if (extractedJson) {
+          try {
+            toolCallJson = JSON.parse(extractedJson);
+          } catch {
+            log('Failed to parse extracted JSON from token format');
+          }
+        }
+      }
+      
+      if (toolCallJson && toolCallJson.name && typeof toolCallJson.name === 'string') {
+        toolCalls.push({
+          id: `tc_${Date.now()}_${toolCallIndex++}`,
+          name: toolCallJson.name,
+          arguments: toolCallJson.arguments || {},
+        });
+        content = content.replace(match[0], '').trim();
+        log('Parsed token format tool call:', toolCallJson.name);
+      }
+    } catch (e) {
+      log('Failed to parse token format tool call', e);
+    }
+  }
+
+  // Method 7: Plain JSON object format (no wrapper, just {"name": "...", "arguments": {...}})
+  // Some models output tool calls as standalone JSON objects without any markers
+  // Only check if no tool calls were found yet and the content looks like a tool call
+  if (toolCalls.length === 0) {
+    const trimmedContent = content.trim();
+    
+    // Check if content starts with a JSON object
+    if (trimmedContent.startsWith('{')) {
+      try {
+        // First, try to parse the entire content as JSON
+        let toolCallJson: any;
+        let jsonStartIndex = 0;
+        let jsonEndIndex = trimmedContent.length;
+        
+        try {
+          toolCallJson = JSON.parse(trimmedContent);
+          // Successfully parsed entire content as JSON
+        } catch {
+          // Try to extract JSON from text if there's extra content before/after
+          const extractedJson = extractJsonFromText(content);
+          if (extractedJson) {
+            try {
+              toolCallJson = JSON.parse(extractedJson);
+              // Find the position of the extracted JSON in the original content
+              jsonStartIndex = content.indexOf(extractedJson);
+              jsonEndIndex = jsonStartIndex + extractedJson.length;
+            } catch {
+              // Extraction found something but it's not valid JSON
+              toolCallJson = null;
+            }
+          }
+        }
+
+        // Check if this is a tool call format (has "name" and optionally "arguments")
+        if (toolCallJson && toolCallJson.name && typeof toolCallJson.name === 'string') {
+          toolCalls.push({
+            id: `tc_${Date.now()}_${toolCallIndex++}`,
+            name: toolCallJson.name,
+            arguments: toolCallJson.arguments || {},
+          });
+          
+          // Remove the JSON from content, preserving any text before/after
+          const beforeJson = content.substring(0, jsonStartIndex).trim();
+          const afterJson = content.substring(jsonEndIndex).trim();
+          content = (beforeJson + ' ' + afterJson).trim();
+          
+          log('Parsed plain JSON tool call:', toolCallJson.name);
+        }
+      } catch (e) {
+        // Not a tool call JSON, continue with normal content
+        log('Content is not a plain JSON tool call');
+      }
+    }
+  }
+
   return { content, toolCalls };
 }
 

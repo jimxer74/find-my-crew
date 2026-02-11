@@ -25,6 +25,7 @@ type JourneyFormData = {
   risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
   skills: string[];
   min_experience_level: ExperienceLevel | null;
+  cost_info: string;
   state: JourneyState;
 };
 
@@ -42,6 +43,7 @@ const initialFormData: JourneyFormData = {
   risk_level: null,
   skills: [],
   min_experience_level: 1,
+  cost_info: '',
   state: 'In planning',
 };
 
@@ -166,6 +168,7 @@ export default function CreateJourneyPage() {
       risk_level: formData.risk_level ? [formData.risk_level] : [],
       skills: normalizedSkills,
       min_experience_level: formData.min_experience_level || 1,
+      cost_info: formData.cost_info || null,
       state: formData.state,
       updated_at: new Date().toISOString(),
       created_at: new Date().toISOString(),
@@ -322,6 +325,22 @@ export default function CreateJourneyPage() {
                   className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
                   placeholder="Describe what makes this journey special..."
                 />
+              </div>
+
+              <div>
+                <label htmlFor="cost_info" className="block text-sm font-medium text-foreground mb-1">
+                  Cost Information
+                </label>
+                <textarea
+                  id="cost_info"
+                  name="cost_info"
+                  rows={2}
+                  value={formData.cost_info}
+                  onChange={handleChange}
+                  className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
+                  placeholder="e.g. Shared food, fuel split, crew fee..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">Free text for crew about costs. No strict format.</p>
               </div>
 
               <div>

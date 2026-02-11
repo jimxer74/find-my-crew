@@ -280,6 +280,7 @@ export async function searchLegsByBbox(
   const matchingLegIds = await findLegsInBbox(supabase, departureBbox || null, arrivalBbox || null);
 
   if (matchingLegIds.length === 0) {
+    log('No legs matched spatial criteria - check: 1) Published legs exist, 2) Waypoints have valid locations, 3) RPC find_legs_by_location exists and has correct grants');
     return {
       legs: [],
       count: 0,
@@ -488,9 +489,15 @@ export async function findLegsInBbox(
       });
 
       if (!error && data) {
-        return (data as { id: string }[]).map((row) => row.id);
+        const ids = (data as { id: string }[]).map((row) => row.id);
+        log('RPC find_legs_by_location succeeded:', { count: ids.length, ids: ids.slice(0, 5) });
+        return ids;
       }
-      log('RPC not available, using fallback approach:', error?.message);
+      log('RPC find_legs_by_location failed, using fallback:', {
+        error: error?.message,
+        code: error?.code,
+        details: error?.details,
+      });
     }
 
     // Fallback: fetch waypoints and filter in memory
@@ -502,8 +509,8 @@ export async function findLegsInBbox(
 }
 
 /**
- * Fallback method to find legs when RPC is not available
- * Fetches waypoints and filters in memory
+ * Fallback method to find legs when RPC find_legs_by_location fails
+ * Uses get_waypoints_coords_for_bbox_search RPC (returns lng/lat) or inline waypoint fetch
  */
 async function findLegsInBboxFallback(
   supabase: SupabaseClient,
@@ -512,7 +519,44 @@ async function findLegsInBboxFallback(
 ): Promise<string[]> {
   log('Using fallback bbox search');
 
-  // Get all legs with their waypoints
+  // Try RPC that returns coordinates (avoids EWKB parsing)
+  const { data: coordRows, error: rpcError } = await supabase.rpc('get_waypoints_coords_for_bbox_search');
+
+  if (!rpcError && coordRows && Array.isArray(coordRows)) {
+    const rows = coordRows as { leg_id: string; waypoint_index: number; lng: number; lat: number }[];
+    // Group by leg_id: collect {index, lng, lat}, then take index 0 = start, max index = end
+    const legCoordsByIdx = new Map<string, Map<number, { lng: number; lat: number }>>();
+    for (const row of rows) {
+      if (!legCoordsByIdx.has(row.leg_id)) {
+        legCoordsByIdx.set(row.leg_id, new Map());
+      }
+      legCoordsByIdx.get(row.leg_id)!.set(row.waypoint_index, { lng: row.lng, lat: row.lat });
+    }
+
+    const matchingLegIds: string[] = [];
+    for (const [legId, idxMap] of legCoordsByIdx) {
+      const indices = Array.from(idxMap.keys()).sort((a, b) => a - b);
+      const start = idxMap.get(0) ?? null;
+      const end = indices.length > 0 ? idxMap.get(indices[indices.length - 1]) ?? null : null;
+      let departureMatch = !departureBbox;
+      let arrivalMatch = !arrivalBbox;
+      if (departureBbox && start) {
+        departureMatch = isPointInBbox(start.lng, start.lat, departureBbox);
+      }
+      if (arrivalBbox && end) {
+        arrivalMatch = isPointInBbox(end.lng, end.lat, arrivalBbox);
+      }
+      if (departureMatch && arrivalMatch) {
+        matchingLegIds.push(legId);
+      }
+    }
+    log('Fallback (RPC coords) found matching legs:', matchingLegIds.length);
+    return matchingLegIds;
+  }
+
+  log('get_waypoints_coords_for_bbox_search not available, trying direct waypoint fetch:', rpcError?.message);
+
+  // Legacy fallback: direct select (Supabase may return EWKB - extractCoordinates may fail)
   const { data: legs, error } = await supabase
     .from('legs')
     .select(`
@@ -539,7 +583,6 @@ async function findLegsInBboxFallback(
     const waypoints = (leg as any).waypoints || [];
     if (waypoints.length === 0) continue;
 
-    // Sort waypoints by index
     const sortedWaypoints = waypoints.sort((a: any, b: any) => a.index - b.index);
     const startWaypoint = sortedWaypoints.find((w: any) => w.index === 0);
     const endWaypoint = sortedWaypoints[sortedWaypoints.length - 1];
@@ -547,7 +590,6 @@ async function findLegsInBboxFallback(
     let departureMatch = true;
     let arrivalMatch = true;
 
-    // Check departure location
     if (departureBbox && startWaypoint?.location) {
       const coords = extractCoordinates(startWaypoint.location);
       if (coords) {
@@ -557,7 +599,6 @@ async function findLegsInBboxFallback(
       }
     }
 
-    // Check arrival location
     if (arrivalBbox && endWaypoint?.location) {
       const coords = extractCoordinates(endWaypoint.location);
       if (coords) {
@@ -572,6 +613,6 @@ async function findLegsInBboxFallback(
     }
   }
 
-  log('Fallback found matching legs:', matchingLegIds.length);
+  log('Fallback (direct) found matching legs:', matchingLegIds.length);
   return matchingLegIds;
 }

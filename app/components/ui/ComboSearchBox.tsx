@@ -41,6 +41,8 @@ interface ComboSearchBoxProps {
   className?: string;
   onFocusChange?: (isFocused: boolean) => void;
   isFocusedControlled?: boolean; // If true, parent controls focus state
+  /** When true, show only a single search input (no segments). Used when both owner/crew columns visible on desktop. */
+  compactMode?: boolean;
 }
 
 // Availability Dialog Component
@@ -235,7 +237,7 @@ function ProfileDialog({
 }
 
 // Desktop ComboSearchBox Component
-function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled }: ComboSearchBoxProps) {
+function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: ComboSearchBoxProps) {
   const [whereFrom, setWhereFrom] = useState<Location | null>(null);
   const [whereTo, setWhereTo] = useState<Location | null>(null);
   const [availabilityFreeText, setAvailabilityFreeText] = useState('');
@@ -385,6 +387,34 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         break;
     }
   };
+
+  // Compact mode: single search input when both owner/crew columns visible
+  if (compactMode) {
+    return (
+      <div className={`w-full max-w-full ${className}`}>
+        <button
+          type="button"
+          onClick={() => onFocusChange?.(true)}
+          className="w-full h-[64px] flex items-center gap-3 px-4 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white transition-colors text-left"
+        >
+          <svg
+            className="w-5 h-5 text-gray-400 flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <span className="text-sm text-gray-500 truncate">Search sailing trips by location, dates...</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`w-full max-w-full ${className}`}>
@@ -762,7 +792,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 }
 
 // Mobile Wizard Component
-function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled }: ComboSearchBoxProps) {
+function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: ComboSearchBoxProps) {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<1 | 2>(1);
   const [whereFrom, setWhereFrom] = useState<Location | null>(null);
@@ -1141,7 +1171,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
 }
 
 // Main Component with Responsive Detection
-export function ComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled }: ComboSearchBoxProps) {
+export function ComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: ComboSearchBoxProps) {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -1155,8 +1185,8 @@ export function ComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
   }, []);
 
   if (isMobile) {
-    return <MobileComboSearchBox onSubmit={onSubmit} className={className} onFocusChange={onFocusChange} isFocusedControlled={isFocusedControlled} />;
+    return <MobileComboSearchBox onSubmit={onSubmit} className={className} onFocusChange={onFocusChange} isFocusedControlled={isFocusedControlled} compactMode={compactMode} />;
   }
 
-  return <DesktopComboSearchBox onSubmit={onSubmit} className={className} onFocusChange={onFocusChange} isFocusedControlled={isFocusedControlled} />;
+  return <DesktopComboSearchBox onSubmit={onSubmit} className={className} onFocusChange={onFocusChange} isFocusedControlled={isFocusedControlled} compactMode={compactMode} />;
 }

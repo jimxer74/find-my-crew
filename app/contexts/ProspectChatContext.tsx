@@ -670,7 +670,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     }
   }, [isInitialized]);
 
-  // Listen for consent completion event (OAuth flow: user is already on /welcome/chat)
+  // Listen for consent completion event (OAuth flow: user is already on /welcome/crew)
   // When consent modal closes, check if AI consent was granted.
   // If yes → activate profile completion mode. If no → redirect to manual profile setup.
   // IMPORTANT: Always register the listener (not conditional) to avoid race conditions.

@@ -204,6 +204,7 @@ export default function ProposeJourneyPage() {
         boat_id: selectedBoatId,
         name: generatedJourney.journeyName,
         description: generatedJourney.description || '',
+        cost_info: null,
         state: 'In planning',
         is_ai_generated: true,
         ai_prompt: aiPrompt || null,

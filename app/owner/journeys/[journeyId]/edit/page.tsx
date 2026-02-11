@@ -31,6 +31,7 @@ type Journey = {
   description: string;
   risk_level: 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
   cost_model: CostModel | null;
+  cost_info: string;
   skills: string[];
   min_experience_level: ExperienceLevel | null;
   state: JourneyState;
@@ -55,6 +56,7 @@ export default function EditJourneyPage() {
     description: '',
     risk_level: null,
     cost_model: null,
+    cost_info: '',
     skills: [],
     min_experience_level: 1,
     state: 'In planning',
@@ -138,6 +140,7 @@ export default function EditJourneyPage() {
         description: data.description || '',
         risk_level: riskLevel,
         cost_model: data.cost_model || null,
+        cost_info: data.cost_info || '',
         skills: displaySkills,
         min_experience_level: (data.min_experience_level as ExperienceLevel | null) || 1,
         state: data.state || 'In planning',
@@ -227,6 +230,7 @@ export default function EditJourneyPage() {
       description: formData.description || null,
       risk_level: formData.risk_level || [],
       cost_model: formData.cost_model || 'Not defined',
+      cost_info: formData.cost_info || null,
       skills: normalizedSkills,
       min_experience_level: formData.min_experience_level || 1,
       state: formData.state,
@@ -534,6 +538,21 @@ export default function EditJourneyPage() {
               value={formData.cost_model || null}
               onChange={(cost_model) => setFormData(prev => ({ ...prev, cost_model }))}
             />
+            <div className="mt-4">
+              <label htmlFor="cost_info" className="block text-sm font-medium text-foreground mb-1">
+                Cost Information
+              </label>
+              <textarea
+                id="cost_info"
+                name="cost_info"
+                rows={2}
+                value={formData.cost_info}
+                onChange={(e) => setFormData(prev => ({ ...prev, cost_info: e.target.value }))}
+                className="w-full rounded-md border border-border px-3 py-2 bg-input-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-ring"
+                placeholder="e.g. Shared food, fuel split, crew fee..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">Free text for crew about costs. No strict format.</p>
+            </div>
           </CollapsibleSection>
 
           {/* Skills & Experience Section */}
