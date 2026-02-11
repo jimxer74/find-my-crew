@@ -1,10 +1,10 @@
 ---
 id: TASK-097
 title: Combo SearchBox in front page
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-11 09:44'
-updated_date: '2026-02-11 10:32'
+updated_date: '2026-02-11 13:12'
 labels: []
 dependencies: []
 ---
