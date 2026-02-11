@@ -495,8 +495,8 @@ Parameters:
 Authorization: Caller must own the boat associated with the leg.';
 
 -- RPC Function: insert_journey_with_risk
--- Inserts a journey with risk_level as text[] (cast to risk_level[] in SQL)
--- Bypasses PostgREST enum[] serialization issues
+-- Inserts a journey with risk_level as text[] (cast to scalar risk_level in SQL)
+-- Bypasses PostgREST enum serialization. journeys.risk_level is scalar enum in production.
 create or replace function public.insert_journey_with_risk(
   p_boat_id uuid,
   p_name text,
@@ -518,7 +518,7 @@ as $$
 declare
   v_journey_id uuid;
   v_owner_id uuid;
-  v_risk_level risk_level[];
+  v_risk_level risk_level;  -- scalar enum
 begin
   select owner_id into v_owner_id from boats where id = p_boat_id;
   if v_owner_id is null then
@@ -528,10 +528,8 @@ begin
     raise exception 'Unauthorized: You do not own this boat';
   end if;
 
-  select coalesce(
-    array_agg(r::risk_level),
-    '{}'::risk_level[]
-  ) into v_risk_level
+  -- Take first valid risk_level (column is scalar enum)
+  select (array_agg(r::risk_level))[1] into v_risk_level
   from unnest(coalesce(p_risk_level, array[]::text[])) as r
   where r in ('Coastal sailing', 'Offshore sailing', 'Extreme sailing');
 
@@ -557,8 +555,8 @@ $$;
 grant execute on function public.insert_journey_with_risk(uuid, text, text, date, date, text[], text[], integer, text, text, text) to authenticated;
 
 comment on function public.insert_journey_with_risk is
-'Inserts a journey with risk_level as text[] (cast to risk_level[] in SQL).
-Bypasses PostgREST enum[] serialization issues.
+'Inserts a journey with risk_level as text[] (takes first valid, casts to scalar risk_level).
+Bypasses PostgREST enum serialization. journeys.risk_level is scalar enum in production.
 Authorization: Caller must own the boat.';
 
 

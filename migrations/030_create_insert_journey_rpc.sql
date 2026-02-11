@@ -1,5 +1,6 @@
 -- Migration: Create insert_journey_with_risk RPC
--- Bypasses PostgREST enum[] serialization by accepting text[] and casting to risk_level[] in SQL
+-- Bypasses PostgREST enum[] serialization by accepting text[] and casting to risk_level in SQL
+-- Note: journeys.risk_level is scalar enum in production (single value), not array
 
 DROP FUNCTION IF EXISTS public.insert_journey_with_risk(
   uuid, text, text, date, date, text[], text[], integer, text, text, text
@@ -26,7 +27,7 @@ AS $$
 DECLARE
   v_journey_id uuid;
   v_owner_id uuid;
-  v_risk_level risk_level[];
+  v_risk_level risk_level;  -- scalar enum
 BEGIN
   -- Verify boat ownership
   SELECT owner_id INTO v_owner_id FROM boats WHERE id = p_boat_id;
@@ -37,11 +38,8 @@ BEGIN
     RAISE EXCEPTION 'Unauthorized: You do not own this boat';
   END IF;
 
-  -- Cast text[] to risk_level[] (only valid enum labels)
-  SELECT COALESCE(
-    array_agg(r::risk_level),
-    '{}'::risk_level[]
-  ) INTO v_risk_level
+  -- Take first valid risk_level from array (column is scalar enum)
+  SELECT (array_agg(r::risk_level))[1] INTO v_risk_level
   FROM unnest(COALESCE(p_risk_level, ARRAY[]::text[])) AS r
   WHERE r IN ('Coastal sailing', 'Offshore sailing', 'Extreme sailing');
 
