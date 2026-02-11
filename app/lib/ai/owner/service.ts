@@ -547,8 +547,8 @@ async function createJourneyAndLegsFromRoute(
   const firstLeg = routeData.legs[0];
   const lastLeg = routeData.legs[routeData.legs.length - 1];
 
-  // Ensure risk_level is a flat array of valid enum strings (PostgreSQL risk_level enum)
-  // PostgREST/Supabase mishandles JSON arrays for enum[] - use PostgreSQL array literal string instead
+  // Ensure risk_level is a flat array of valid enum strings
+  // Use RPC to bypass PostgREST enum[] serialization (insert_journey_with_risk accepts text[])
   const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
   let rawRisk: unknown = metadata.risk_level;
   if (typeof rawRisk === 'string') {
@@ -558,50 +558,40 @@ async function createJourneyAndLegsFromRoute(
       rawRisk = [];
     }
   }
-  let riskLevelArray = (Array.isArray(rawRisk) ? rawRisk : [])
+  const riskLevelArray = (Array.isArray(rawRisk) ? rawRisk : [])
     .flat(2)
     .filter((v): v is string => typeof v === 'string')
     .map(v => v.trim())
     .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
-  const hasInvalid = riskLevelArray.some(v => !validRiskLevels.includes(v) || v.includes('[') || v.includes(']'));
-  if (hasInvalid) riskLevelArray = [];
+  const costModel = metadata.cost_model && ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'].includes(metadata.cost_model)
+    ? metadata.cost_model
+    : 'Not defined';
 
-  // Use PostgreSQL array literal format to avoid PostgREST enum[] serialization issues
-  const riskLevelPgLiteral = riskLevelArray.length > 0
-    ? `{${riskLevelArray.map(v => `"${v.replace(/"/g, '\\"')}"`).join(',')}}`
-    : '{}';
+  const { data: journeyId, error: rpcError } = await supabase.rpc('insert_journey_with_risk', {
+    p_boat_id: boatId,
+    p_name: routeData.journeyName,
+    p_description: routeData.description || null,
+    p_start_date: firstLeg?.start_date ?? metadata.startDate ?? null,
+    p_end_date: lastLeg?.end_date ?? metadata.endDate ?? null,
+    p_risk_level: riskLevelArray,
+    p_skills: metadata.skills || [],
+    p_min_experience_level: metadata.min_experience_level ?? 1,
+    p_cost_model: costModel,
+    p_cost_info: metadata.cost_info || null,
+    p_state: 'In planning',
+  });
 
-  const journeyData = {
-    boat_id: boatId,
-    name: routeData.journeyName,
-    description: routeData.description || null,
-    start_date: firstLeg?.start_date ?? metadata.startDate ?? null,
-    end_date: lastLeg?.end_date ?? metadata.endDate ?? null,
-    risk_level: riskLevelPgLiteral,
-    skills: metadata.skills || [],
-    min_experience_level: metadata.min_experience_level ?? 1,
-    cost_model: metadata.cost_model && ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'].includes(metadata.cost_model)
-      ? metadata.cost_model
-      : 'Not defined',
-    cost_info: metadata.cost_info || null,
-    state: 'In planning',
-  };
-
-  const { data: journey, error: journeyError } = await supabase
-    .from('journeys')
-    .insert(journeyData)
-    .select('id, name')
-    .single();
-
-  if (journeyError || !journey) {
+  if (rpcError || !journeyId) {
     return {
       journeyId: '',
       journeyName: routeData.journeyName,
       legsCreated: 0,
-      error: `Failed to create journey: ${journeyError?.message || 'Unknown error'}`,
+      error: `Failed to create journey: ${rpcError?.message || 'Unknown error'}`,
     };
   }
+
+  const journey = { id: journeyId, name: routeData.journeyName };
 
   let legsCreated = 0;
 
@@ -1654,11 +1644,6 @@ Return ONLY the JSON object, nothing else.`;
     const journeyRiskLevel = (normalizeRiskLevel(args.risk_level) || [])
       .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
-    // Use PostgreSQL array literal format to avoid PostgREST enum[] serialization issues
-    const riskLevelPgLiteral = journeyRiskLevel.length > 0
-      ? `{${journeyRiskLevel.map(v => `"${v.replace(/"/g, '\\"')}"`).join(',')}}`
-      : '{}';
-
     let journeySkills: string[] = [];
     if (Array.isArray(args.skills)) {
       journeySkills = args.skills.filter(s => typeof s === 'string');
@@ -1671,61 +1656,38 @@ Return ONLY the JSON object, nothing else.`;
       }
     }
 
-    const journeyData: Record<string, unknown> = {
-          boat_id: args.boat_id as string,
-          name: args.name as string,
-          start_date: args.start_date as string | undefined || null,
-          end_date: args.end_date as string | undefined || null,
-          description: args.description as string | undefined || null,
-          risk_level: riskLevelPgLiteral,
-          skills: journeySkills,
-          min_experience_level: args.min_experience_level as number | undefined || 1,
-          cost_model: costModel,
-          cost_info: (args.cost_info as string) || null,
-          state: 'In planning',
-        };
+    const { data: journeyId, error: rpcError } = await supabase.rpc('insert_journey_with_risk', {
+      p_boat_id: args.boat_id as string,
+      p_name: args.name as string,
+      p_start_date: (args.start_date as string) || null,
+      p_end_date: (args.end_date as string) || null,
+      p_description: (args.description as string) || null,
+      p_risk_level: journeyRiskLevel,
+      p_skills: journeySkills,
+      p_min_experience_level: (args.min_experience_level as number) ?? 1,
+      p_cost_model: costModel,
+      p_cost_info: (args.cost_info as string) || null,
+      p_state: 'In planning',
+    });
 
-        // Verify boat ownership
-        const { data: boat, error: boatError } = await supabase
-          .from('boats')
-          .select('owner_id')
-          .eq('id', journeyData.boat_id)
-          .eq('owner_id', authenticatedUserId!)
-          .single();
+    if (rpcError || !journeyId) {
+      results.push({
+        name: toolCall.name,
+        result: null,
+        error: `Failed to create journey: ${rpcError?.message || 'Unknown error'}`,
+      });
+      continue;
+    }
 
-        if (boatError || !boat) {
-          results.push({
-            name: toolCall.name,
-            result: null,
-            error: 'Boat not found or you do not own this boat',
-          });
-          continue;
-        }
-
-        const { data, error } = await supabase
-          .from('journeys')
-          .insert(journeyData)
-          .select('id, name')
-          .single();
-
-        if (error) {
-          results.push({
-            name: toolCall.name,
-            result: null,
-            error: `Failed to create journey: ${error.message}`,
-          });
-          continue;
-        }
-
-        results.push({
-          name: toolCall.name,
-          result: {
-            success: true,
-            journeyId: data.id,
-            journeyName: data.name,
-            message: `Journey "${data.name}" created successfully`,
-          },
-        });
+    results.push({
+      name: toolCall.name,
+      result: {
+        success: true,
+        journeyId,
+        journeyName: args.name,
+        message: `Journey "${args.name}" created successfully`,
+      },
+    });
         continue;
       }
 

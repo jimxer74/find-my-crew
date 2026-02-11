@@ -494,6 +494,73 @@ Parameters:
   - waypoints_param: JSONB array of {index, name, lng, lat}
 Authorization: Caller must own the boat associated with the leg.';
 
+-- RPC Function: insert_journey_with_risk
+-- Inserts a journey with risk_level as text[] (cast to risk_level[] in SQL)
+-- Bypasses PostgREST enum[] serialization issues
+create or replace function public.insert_journey_with_risk(
+  p_boat_id uuid,
+  p_name text,
+  p_description text,
+  p_start_date date,
+  p_end_date date,
+  p_risk_level text[],
+  p_skills text[],
+  p_min_experience_level integer,
+  p_cost_model text,
+  p_cost_info text,
+  p_state text default 'In planning'
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_journey_id uuid;
+  v_owner_id uuid;
+  v_risk_level risk_level[];
+begin
+  select owner_id into v_owner_id from boats where id = p_boat_id;
+  if v_owner_id is null then
+    raise exception 'Boat not found: %', p_boat_id;
+  end if;
+  if v_owner_id != auth.uid() then
+    raise exception 'Unauthorized: You do not own this boat';
+  end if;
+
+  select coalesce(
+    array_agg(r::risk_level),
+    '{}'::risk_level[]
+  ) into v_risk_level
+  from unnest(coalesce(p_risk_level, array[]::text[])) as r
+  where r in ('Coastal sailing', 'Offshore sailing', 'Extreme sailing');
+
+  insert into journeys (
+    boat_id, name, description, start_date, end_date,
+    risk_level, skills, min_experience_level, cost_model, cost_info, state
+  )
+  values (
+    p_boat_id, p_name, p_description, p_start_date, p_end_date,
+    v_risk_level,
+    coalesce(p_skills, '{}'),
+    coalesce(p_min_experience_level, 1),
+    coalesce(p_cost_model, 'Not defined')::cost_model,
+    p_cost_info,
+    coalesce(p_state, 'In planning')::journey_state
+  )
+  returning id into v_journey_id;
+
+  return v_journey_id;
+end;
+$$;
+
+grant execute on function public.insert_journey_with_risk(uuid, text, text, date, date, text[], text[], integer, text, text, text) to authenticated;
+
+comment on function public.insert_journey_with_risk is
+'Inserts a journey with risk_level as text[] (cast to risk_level[] in SQL).
+Bypasses PostgREST enum[] serialization issues.
+Authorization: Caller must own the boat.';
+
 
 -- ============================================================================
 -- TABLE: registrations
