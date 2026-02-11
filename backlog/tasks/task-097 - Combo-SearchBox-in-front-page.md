@@ -52,16 +52,27 @@ Third Page:
 ### Overview
 Replace the current single textarea search input on the landing page (`app/page.tsx`) with a segmented combo search box containing 4 fields: Where from, Where to, Availability, and Profile. The component should integrate seamlessly with existing LocationAutocomplete and DateRangePicker components, and pass structured data to the prospect chat AI.
 
+**Key Requirements:**
+- **Desktop**: Single segmented input field with 4 segments visible side-by-side
+- **Mobile**: Single search input that opens a full-width dialog with wizard-like multi-page flow
+- Both versions should pass the same structured data to `/welcome/chat`
+
 ### Phase 1: Component Architecture
 
 #### 1.1 Create ComboSearchBox Component
 **File:** `app/components/ui/ComboSearchBox.tsx`
 
-**Structure:**
+**Structure (Desktop):**
 - Main container with segmented appearance (4 segments + search button)
 - Each segment is clickable and expands when focused
 - Search button positioned at the end (disabled when all fields empty)
-- Responsive design (mobile-friendly)
+- All segments visible in single horizontal row
+
+**Structure (Mobile):**
+- Single search input box with search icon button
+- Clicking input opens full-width dialog overlay
+- Dialog contains wizard with 3 pages
+- Responsive detection: Show desktop version on >= 768px, mobile version on < 768px
 
 **State Management:**
 ```typescript
@@ -85,12 +96,19 @@ interface ComboSearchBoxProps {
 }
 ```
 
-**Key Features:**
+**Key Features (Desktop):**
 - Visual dividers between segments (vertical lines)
 - Each segment shows placeholder when empty, truncated value when filled
 - Clear button ("x") appears on hover/focus for each filled segment
 - Smooth transitions for focus states
-- Mobile: Stack segments vertically or use horizontal scroll
+- All segments visible in single row
+
+**Key Features (Mobile):**
+- Single search input box with search button
+- Clicking input opens full-width dialog overlay
+- Wizard-like multi-page flow within dialog
+- Each page has "Next" button (except last page which has "Search")
+- Back button to navigate between pages
 
 #### 1.2 Segment Components
 
@@ -110,13 +128,34 @@ interface ComboSearchBoxProps {
 - When clicking calendar icon, open DateRangePicker dialog
 - Both freeText and dateRange can coexist
 
-**Profile Segment:**
+**Profile Segment (Desktop):**
 - Click opens dialog with textarea
 - Dialog title: "Add Profile Information"
 - Textarea with placeholder: "Paste your profile or describe your sailing experience..."
 - Character counter (optional)
 - Save/Cancel buttons
 - Display truncated preview in segment (e.g., first 30 chars + "...")
+
+**Mobile Wizard Structure:**
+- **Page 1 - Locations:**
+  - Where from: Full-width LocationAutocomplete
+  - Where to: Full-width LocationAutocomplete
+  - Next button (bottom, full-width or prominent)
+  - Page indicator at top
+  
+- **Page 2 - Availability:**
+  - Free text input (full-width)
+  - Calendar icon button to open DateRangePicker
+  - DateRangePicker opens in nested dialog
+  - Back button (left) and Next button (right)
+  - Page indicator at top
+  
+- **Page 3 - Profile:**
+  - Textarea (full-width, multi-line)
+  - Placeholder: "Paste your profile or describe your sailing experience..."
+  - Back button (left) and Search button (right)
+  - Page indicator at top
+  - Search button submits and navigates to `/welcome/chat`
 
 ### Phase 2: Integration with Existing Components
 
@@ -341,45 +380,151 @@ if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
   Use these bounding boxes when searching for matching legs to ensure accurate geographic matching.
   ```
 
-### Phase 6: Styling and UX
+### Phase 6: Mobile Wizard Implementation
 
-#### 6.1 Visual Design
+#### 6.1 Mobile Search Input and Dialog Component
+**File:** `app/components/ui/ComboSearchBox.tsx` (or separate `ComboSearchMobileWizard.tsx`)
+
+**Mobile Input (Initial State):**
+- Single search input box (similar to current textarea but styled as input)
+- Search icon button on the right
+- Placeholder: "Search for sailing opportunities..." or similar
+- When clicked/focused, opens full-width dialog (does NOT allow typing in the input itself)
+- Input is read-only - serves as trigger for dialog
+
+**Dialog Structure:**
+- Full-width dialog overlay (fixed positioning, `inset-0`)
+- Backdrop with blur/opacity
+- Multi-page wizard with page indicators
+- Smooth page transitions (slide animation)
+- Back/Next navigation buttons
+- Close button (X) in top-right corner
+- Dialog should be focus-trapped (Tab navigation stays within dialog)
+
+#### 6.2 Wizard Pages
+
+**Page 1: Locations**
+- Where from: LocationAutocomplete (full width)
+- Where to: LocationAutocomplete (full width)
+- "Next" button (enabled if at least one location filled)
+- Page indicator: "Step 1 of 3"
+
+**Page 2: Availability**
+- Free text input field (full width)
+- Calendar icon button to open DateRangePicker
+- DateRangePicker opens in nested dialog/modal
+- "Back" button (left side)
+- "Next" button (right side, enabled if availability filled or user can skip)
+- Page indicator: "Step 2 of 3"
+
+**Page 3: Profile**
+- Textarea for profile input (full width, multi-line)
+- Placeholder: "Paste your profile or describe your sailing experience..."
+- "Back" button (left side)
+- "Search" button (right side, enabled if profile filled or user can skip)
+- Page indicator: "Step 3 of 3"
+
+#### 6.3 Wizard State Management
+```typescript
+interface WizardState {
+  currentPage: 1 | 2 | 3;
+  whereFrom: Location | null;
+  whereTo: Location | null;
+  availability: {
+    freeText: string;
+    dateRange: DateRange | null;
+  };
+  profile: string;
+}
+```
+
+**Navigation Logic:**
+- Next button: Validate current page, move to next page
+- Back button: Move to previous page, preserve data
+- Close button: Close dialog, optionally save draft to localStorage
+- Search button: Validate all pages, submit and close dialog
+
+#### 6.4 Responsive Detection
+- Use `useMediaQuery` or `window.innerWidth` to detect mobile vs desktop
+- Breakpoint: `< 768px` (or `< 640px` for tablet)
+- Show appropriate component based on screen size
+
+### Phase 7: Styling and UX
+
+#### 7.1 Desktop Visual Design
 - Segmented appearance: subtle borders/dividers between segments
 - Focus state: highlighted border, slight elevation/shadow
 - Disabled search button: grayed out, non-clickable
 - Active search button: blue background, white icon
-- Mobile: Consider horizontal scroll or stacked layout
+- Consistent with existing landing page styling
 
-#### 6.2 Interactions
+#### 7.2 Mobile Visual Design
+- Dialog: Full-width overlay with backdrop blur
+- Page transitions: Slide animation between pages
+- Page indicators: Dots or "Step X of 3" text at top
+- Buttons: Full-width or prominent placement
+- Inputs: Full-width with proper spacing
+- Close button: Fixed top-right, always visible
+
+#### 7.3 Desktop Interactions
 - Click segment → focus and activate input
 - Click outside → blur and collapse (if applicable)
 - Clear button ("x"): appears on hover/focus, clears that segment
 - Search button: only enabled if at least one field has value
 - Keyboard navigation: Tab between segments, Enter to submit
 
-#### 6.3 Accessibility
-- Proper ARIA labels for each segment
-- Keyboard navigation support
-- Screen reader announcements
+#### 7.4 Mobile Interactions
+- Click search input → open dialog
+- Swipe gestures: Optional swipe left/right to navigate pages
+- Back button: Navigate to previous page
+- Next button: Navigate to next page (with validation)
+- Close button: Close dialog, optionally show "Discard changes?" confirmation
+- DateRangePicker: Opens in nested modal/dialog overlay
+
+#### 7.5 Accessibility
+- Proper ARIA labels for each segment/page
+- Keyboard navigation support (Tab, Enter, Escape)
+- Screen reader announcements for page changes
 - Focus indicators
+- Mobile: Ensure dialog is focus-trapped
+- Mobile: Announce page changes to screen readers
 
-### Phase 7: Testing
+### Phase 8: Testing
 
-#### 7.1 Component Testing
+#### 8.1 Desktop Component Testing
 - Test each segment independently
-- Test clearing functionality
+- Test clearing functionality ("x" buttons)
 - Test form submission with various combinations
-- Test mobile responsiveness
+- Test keyboard navigation (Tab, Enter)
+- Test focus states and transitions
+- Test truncation of long values
 
-#### 7.2 Integration Testing
-- Test navigation to `/welcome/chat` with parameters
+#### 8.2 Mobile Component Testing
+- Test dialog opening/closing
+- Test wizard page navigation (Next/Back)
+- Test page validation (Next button enabled/disabled)
+- Test data persistence across page navigation
+- Test DateRangePicker in nested dialog
+- Test ProfileDialog textarea
+- Test swipe gestures (if implemented)
+- Test close button with unsaved changes
+
+#### 8.3 Responsive Testing
+- Test breakpoint detection (< 768px)
+- Test switching between desktop/mobile views
+- Test on various screen sizes (phone, tablet, desktop)
+- Test orientation changes (portrait/landscape)
+
+#### 8.4 Integration Testing
+- Test navigation to `/welcome/chat` with parameters (both desktop and mobile)
 - Test parameter parsing in ProspectChatContext
 - Test AI receives correct structured data
 - Test with cruising regions (verify bbox is passed)
 - Test with date ranges
 - Test with profile text
+- Verify both desktop and mobile paths produce same URL parameters
 
-#### 7.3 Edge Cases
+#### 8.5 Edge Cases
 - Empty form submission (should be disabled)
 - Only one field filled
 - All fields filled
@@ -387,8 +532,11 @@ if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
 - Special characters in inputs
 - Invalid date ranges
 - Location autocomplete edge cases
+- Mobile: Closing dialog mid-wizard (should preserve data or show confirmation)
+- Mobile: Browser back button during wizard (should close dialog)
+- Mobile: Very long location names (truncation)
 
-### Phase 8: Documentation
+### Phase 9: Documentation
 
 #### 8.1 Component Documentation
 - JSDoc comments for ComboSearchBox component
@@ -402,17 +550,39 @@ if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
 
 ### Implementation Order
 
-1. **Create ComboSearchBox component** (Phase 1)
+**Phase 1: Core Components**
+1. **Create ComboSearchBox component** (Desktop version first)
 2. **Create ProfileDialog component** (Phase 2.3)
 3. **Integrate LocationAutocomplete** (Phase 2.1)
 4. **Integrate DateRangePicker** (Phase 2.2)
 5. **Define data structure** (Phase 3)
-6. **Replace search input in landing page** (Phase 4)
-7. **Update ProspectChatContext** (Phase 5)
-8. **Review/update AI prompting** (Phase 5.2)
-9. **Styling and polish** (Phase 6)
-10. **Testing** (Phase 7)
-11. **Documentation** (Phase 8)
+
+**Phase 2: Mobile Implementation**
+6. **Create mobile wizard dialog component** (Phase 6)
+7. **Implement wizard page navigation** (Phase 6.2)
+8. **Add responsive detection** (Phase 6.4)
+9. **Integrate mobile wizard with main component**
+
+**Phase 3: Integration**
+10. **Replace search input in landing page** (Phase 4)
+11. **Update ProspectChatContext** (Phase 5)
+12. **Review/update AI prompting** (Phase 5.2)
+
+**Phase 4: Polish**
+13. **Desktop styling and polish** (Phase 7.1-7.3)
+14. **Mobile styling and polish** (Phase 7.2-7.4)
+15. **Accessibility improvements** (Phase 7.5)
+
+**Phase 5: Quality Assurance**
+16. **Desktop testing** (Phase 8.1)
+17. **Mobile testing** (Phase 8.2)
+18. **Responsive testing** (Phase 8.3)
+19. **Integration testing** (Phase 8.4)
+20. **Edge case testing** (Phase 8.5)
+
+**Phase 6: Documentation**
+21. **Component documentation** (Phase 9)
+22. **Update task documentation**
 
 ### Dependencies
 
@@ -424,9 +594,16 @@ if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
 
 ### Notes
 
-- Consider reusing existing Dialog component from shadcn/ui if available
-- Ensure mobile experience is smooth (may need horizontal scroll for segments)
-- Preserve existing session detection logic
-- Consider adding analytics tracking for combo search usage
-- Future enhancement: Save recent searches/locations
+- **Mobile-First Consideration**: Mobile version is significantly different from desktop - treat as separate component with shared data structure
+- **Dialog Component**: Use existing Dialog component from shadcn/ui or create custom full-width overlay
+- **Wizard Navigation**: Consider using a state machine or step-based navigation library for cleaner code
+- **Data Persistence**: Consider saving wizard progress to localStorage if user closes dialog mid-flow
+- **Session Logic**: Preserve existing session detection logic - combo box should only show when no existing session
+- **Analytics**: Consider adding analytics tracking for combo search usage (desktop vs mobile, completion rates)
+- **Future Enhancements**: 
+  - Save recent searches/locations
+  - Allow skipping optional fields in mobile wizard
+  - Add progress indicator showing which fields are filled
+  - Add "Clear all" functionality
+  - Add draft saving for mobile wizard
 <!-- SECTION:PLAN:END -->

@@ -17,6 +17,7 @@ export type DateRangePickerProps = {
   className?: string;
   disableClickOutside?: boolean;
   isInDialog?: boolean;
+  allowSingleDate?: boolean; // If true, allows selecting just one date (sets both start and end to the same date)
 };
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -34,6 +35,7 @@ export function DateRangePicker({
   className = '',
   disableClickOutside = false,
   isInDialog = false,
+  allowSingleDate = false,
 }: DateRangePickerProps) {
   const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -102,20 +104,39 @@ export function DateRangePicker({
     if (minDate && clickedDate < minDate) return;
     if (maxDate && clickedDate > maxDate) return;
 
-    if (selectingStart || !tempRange.start) {
-      // Starting a new selection
-      setTempRange({ start: clickedDate, end: null });
-      setSelectingStart(false);
-    } else {
-      // Completing the range
-      if (clickedDate < tempRange.start) {
-        // If clicked date is before start, make it the new start
-        setTempRange({ start: clickedDate, end: tempRange.start });
+    if (allowSingleDate) {
+      // Single date mode: clicking a date sets both start and end to that date
+      // If clicking the same date again, clear the selection
+      // User must click Save to confirm the selection
+      const isSameDate = tempRange.start && 
+                         tempRange.end &&
+                         tempRange.start.getTime() === clickedDate.getTime() &&
+                         tempRange.end.getTime() === clickedDate.getTime();
+      
+      if (isSameDate) {
+        // Same date clicked - clear selection
+        setTempRange({ start: null, end: null });
       } else {
-        // Normal case: set end date
-        setTempRange({ start: tempRange.start, end: clickedDate });
+        // Set both start and end to the clicked date
+        setTempRange({ start: clickedDate, end: clickedDate });
       }
-      setSelectingStart(true);
+    } else {
+      // Range selection mode (original behavior)
+      if (selectingStart || !tempRange.start) {
+        // Starting a new selection
+        setTempRange({ start: clickedDate, end: null });
+        setSelectingStart(false);
+      } else {
+        // Completing the range
+        if (clickedDate < tempRange.start) {
+          // If clicked date is before start, make it the new start
+          setTempRange({ start: clickedDate, end: tempRange.start });
+        } else {
+          // Normal case: set end date
+          setTempRange({ start: tempRange.start, end: clickedDate });
+        }
+        setSelectingStart(true);
+      }
     }
   };
 
@@ -138,6 +159,10 @@ export function DateRangePicker({
   const isDateInRange = (day: number, month: Date): boolean => {
     if (!tempRange.start || !tempRange.end) return false;
     const date = new Date(month.getFullYear(), month.getMonth(), day);
+    // In single date mode, only highlight if it's the exact same date
+    if (allowSingleDate) {
+      return date.getTime() === tempRange.start.getTime() && date.getTime() === tempRange.end.getTime();
+    }
     return date >= tempRange.start && date <= tempRange.end;
   };
 
@@ -283,7 +308,9 @@ export function DateRangePicker({
       {/* Availability label - shown on large screens */}
       <div className="hidden lg:block mb-4 pb-4 border-b border-border">
         <h3 className="text-lg font-semibold text-foreground">Availability</h3>
-        <p className="text-sm text-muted-foreground mt-1">Select your available date range</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          {allowSingleDate ? 'Select your available date' : 'Select your available date range'}
+        </p>
       </div>
 
       {/* Calendar view - one month on small screens, two months on large screens */}

@@ -1,23 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { searchLocation, type LocationSearchResult } from '@/app/lib/geocoding/locations';
-
-export type Location = {
-  name: string;
-  lat: number;
-  lng: number;
-  countryCode?: string;  // ISO 3166-1 alpha-2 code (e.g., US, GB, FR)
-  countryName?: string;  // Full country name
-  isCruisingRegion?: boolean;  // True if this is a predefined cruising area
-  bbox?: {  // Bounding box for cruising regions
-    minLng: number;
-    minLat: number;
-    maxLng: number;
-    maxLat: number;
-  };
-};
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { getAllRegions, type LocationSearchResult } from '@/app/lib/geocoding/locations';
+import type { Location } from './LocationAutocomplete';
 
 // Unified suggestion type for both Mapbox and cruising regions
 type Suggestion = {
@@ -34,57 +19,56 @@ type Suggestion = {
   bbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
 };
 
-export type LocationAutocompleteProps = {
-  id?: string;
-  label?: string;
+export type ComboLocationInputProps = {
   value: string;
+  onInputChange: (value: string) => void;
   onChange: (location: Location) => void;
-  onInputChange?: (value: string) => void;
   placeholder?: string;
-  required?: boolean;
-  types?: string;
   className?: string;
   autoFocus?: boolean;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  resetKey?: string | number; // Key to force reset when location is selected externally
 };
 
-export function LocationAutocomplete({
-  id,
-  label,
+export function ComboLocationInput({
   value,
-  onChange,
   onInputChange,
+  onChange,
   placeholder = 'e.g., Barcelona, Spain',
-  required = false,
-  types = 'region, city, country, place',
   className = '',
   autoFocus = false,
-  inputRef: externalInputRef,
-}: LocationAutocompleteProps) {
+  resetKey,
+}: ComboLocationInputProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [inputValue, setInputValue] = useState(value);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
-  const internalInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = externalInputRef || internalInputRef;
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const inputRef = useRef<HTMLInputElement>(null);
+  const lastResetKeyRef = useRef<string | number | undefined>(resetKey);
 
-  // Sync input value with prop value
+  // ONLY sync inputValue when resetKey changes (location selection)
+  // Do NOT sync from value prop during typing - that's what was causing the issue
   useEffect(() => {
+    if (resetKey !== undefined && resetKey !== lastResetKeyRef.current && resetKey !== '') {
+      setInputValue(value);
+      lastResetKeyRef.current = resetKey;
+    }
+  }, [resetKey, value]);
+  
+  // Initialize lastResetKeyRef and inputValue on mount
+  useEffect(() => {
+    if (resetKey !== undefined) {
+      lastResetKeyRef.current = resetKey;
+    }
     setInputValue(value);
-  }, [value]);
+  }, []);
 
   // Auto-focus input when autoFocus prop is true
   useEffect(() => {
     if (autoFocus && inputRef.current) {
-      // Use requestAnimationFrame to ensure DOM is ready, then focus
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 0);
-      });
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     }
   }, [autoFocus]);
 
@@ -95,14 +79,6 @@ export function LocationAutocomplete({
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  };
-
-  // Format category name for display
-  const formatCategory = (category: string): string => {
-    return category
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
   };
 
   // Fetch location suggestions from Mapbox Search Box API and cruising regions with debouncing
@@ -131,8 +107,6 @@ export function LocationAutocomplete({
       const normalizedQuery = query.toLowerCase().trim();
       const cruisingMatches: LocationSearchResult[] = [];
       
-      // Import getAllRegions to search through all regions
-      const { getAllRegions } = await import('@/app/lib/geocoding/locations');
       const allRegions = getAllRegions();
       
       for (const region of allRegions) {
@@ -161,26 +135,8 @@ export function LocationAutocomplete({
         }
       }
       
-      // Deduplicate by region name - a region might match both by name and alias
-      const uniqueRegions = new Map<string, LocationSearchResult>();
-      for (const match of cruisingMatches) {
-        const regionName = match.region.name;
-        if (!uniqueRegions.has(regionName)) {
-          uniqueRegions.set(regionName, match);
-        } else {
-          // If already exists, prefer the one with better match (starts with query)
-          const existing = uniqueRegions.get(regionName)!;
-          const existingStartsWith = existing.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-          const currentStartsWith = match.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-          if (currentStartsWith && !existingStartsWith) {
-            uniqueRegions.set(regionName, match);
-          }
-        }
-      }
-      
       // Sort by relevance: exact prefix matches first, then by length
-      const deduplicatedMatches = Array.from(uniqueRegions.values());
-      deduplicatedMatches.sort((a, b) => {
+      cruisingMatches.sort((a, b) => {
         const aStartsWith = a.matchedTerm.toLowerCase().startsWith(normalizedQuery);
         const bStartsWith = b.matchedTerm.toLowerCase().startsWith(normalizedQuery);
         if (aStartsWith && !bStartsWith) return -1;
@@ -188,7 +144,7 @@ export function LocationAutocomplete({
         return a.matchedTerm.length - b.matchedTerm.length;
       });
       
-      const cruisingSuggestions: Suggestion[] = deduplicatedMatches
+      const cruisingSuggestions: Suggestion[] = cruisingMatches
         .slice(0, 5) // Limit to top 5 cruising regions
         .map((result: LocationSearchResult) => ({
           id: `cruising-${result.region.name}`,
@@ -223,7 +179,7 @@ export function LocationAutocomplete({
           `q=${encodeURIComponent(query)}&` +
           `access_token=${accessToken}&` +
           `session_token=${sessionToken}&` +
-          `types=${encodeURIComponent(types)}&` +
+          `types=region,city,country,place&` +
           `limit=10&` +
           `language=en`
         );
@@ -334,8 +290,6 @@ export function LocationAutocomplete({
         });
 
         setInputValue(locationName);
-        // Don't call onInputChange when selecting from suggestions - only onChange
-        // onInputChange should only be called when user is typing
         setShowSuggestions(false);
         setSuggestions([]);
         sessionTokenRef.current = null; // Reset session token
@@ -347,39 +301,16 @@ export function LocationAutocomplete({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    
+    // Update local state immediately - this is what user sees
     setInputValue(newValue);
-    if (onInputChange) {
-      onInputChange(newValue);
-    }
+    
+    // Notify parent - this will update value prop in parent
+    onInputChange(newValue);
+    
+    // Fetch suggestions
     fetchLocationSuggestions(newValue);
   };
-
-  // Update dropdown position when input position changes or suggestions appear
-  useEffect(() => {
-    const updatePosition = () => {
-      if (inputRef.current) {
-        const rect = inputRef.current.getBoundingClientRect();
-        // Make dropdown wider - at least 400px or 2x input width, whichever is larger
-        const minWidth = 400;
-        const dropdownWidth = Math.max(minWidth, rect.width * 2);
-        setDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: dropdownWidth,
-        });
-      }
-    };
-
-    if (showSuggestions && suggestions.length > 0 && inputRef.current) {
-      updatePosition();
-      window.addEventListener('scroll', updatePosition, true);
-      window.addEventListener('resize', updatePosition);
-      return () => {
-        window.removeEventListener('scroll', updatePosition, true);
-        window.removeEventListener('resize', updatePosition);
-      };
-    }
-  }, [showSuggestions, suggestions.length]);
 
   const handleInputFocus = () => {
     if (suggestions.length > 0) {
@@ -393,57 +324,43 @@ export function LocationAutocomplete({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ zIndex: 100 }}>
-      {label && (
-        <label htmlFor={id} className="block text-sm font-medium text-foreground mb-1">
-          {label}
-          {required && <span className="text-destructive ml-1">*</span>}
-        </label>
-      )}
+    <div className={`relative ${className}`}>
       <input
         ref={inputRef}
         type="text"
-        id={id}
         value={inputValue}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
         placeholder={placeholder}
-        className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+        className="w-full px-3 py-2 border-0 bg-transparent focus:outline-none focus:ring-0 text-sm"
+        autoComplete="off"
+        spellCheck="false"
       />
-      {showSuggestions && suggestions.length > 0 && typeof document !== 'undefined' && createPortal(
-        <div
-          ref={dropdownRef}
-          className="fixed z-[200] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
-          style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
-          }}
-        >
+      {showSuggestions && suggestions.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-y-auto pointer-events-auto">
           {suggestions.map((suggestion) => (
             <button
               key={suggestion.id}
               type="button"
               onClick={() => handleLocationSelect(suggestion)}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors border-b border-gray-200 last:border-b-0"
+              className="w-full text-left px-4 py-2 hover:bg-accent transition-colors border-b border-border last:border-b-0"
             >
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-card-foreground">
                 {suggestion.name}
               </div>
               {suggestion.subtitle && (
                 <div className={`text-xs ${
                   suggestion.isCruisingRegion
-                    ? 'text-sky-600 font-normal'
-                    : 'text-gray-600'
+                    ? 'text-sky-600/80 dark:text-sky-400/80 font-normal'
+                    : 'text-muted-foreground'
                 }`}>
                   {suggestion.subtitle}
                 </div>
               )}
             </button>
           ))}
-        </div>,
-        document.body
+        </div>
       )}
     </div>
   );

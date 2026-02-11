@@ -1452,12 +1452,78 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const initialQuery = searchParams?.get('q');
-    if (initialQuery && initialQuery.trim()) {
+    // Check for new combo search parameters
+    const whereFromParam = searchParams?.get('whereFrom');
+    const whereToParam = searchParams?.get('whereTo');
+    const availabilityTextParam = searchParams?.get('availabilityText');
+    const availabilityStartParam = searchParams?.get('availabilityStart');
+    const availabilityEndParam = searchParams?.get('availabilityEnd');
+    const profileParam = searchParams?.get('profile');
+    const legacyQueryParam = searchParams?.get('q');
+
+    // Process combo search parameters
+    if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
       initialQueryProcessed.current = true;
-      console.log('[ProspectChatContext] Processing initial query:', initialQuery.trim());
-      // Send the initial message
-      sendMessage(initialQuery.trim());
+      console.log('[ProspectChatContext] Processing combo search parameters');
+
+      const parts: string[] = [];
+
+      if (profileParam) {
+        parts.push(`Profile: ${profileParam}`);
+      }
+
+      if (whereFromParam) {
+        try {
+          const location = JSON.parse(whereFromParam);
+          parts.push(`Looking to sail from: ${location.name}`);
+          if (location.isCruisingRegion && location.bbox) {
+            parts.push(`(Cruising Region: ${location.name}, Bounding Box: ${JSON.stringify(location.bbox)})`);
+          }
+        } catch (e) {
+          console.error('[ProspectChatContext] Error parsing whereFrom:', e);
+          parts.push(`Looking to sail from: ${whereFromParam}`);
+        }
+      }
+
+      if (whereToParam) {
+        try {
+          const location = JSON.parse(whereToParam);
+          parts.push(`Looking to sail to: ${location.name}`);
+          if (location.isCruisingRegion && location.bbox) {
+            parts.push(`(Cruising Region: ${location.name}, Bounding Box: ${JSON.stringify(location.bbox)})`);
+          }
+        } catch (e) {
+          console.error('[ProspectChatContext] Error parsing whereTo:', e);
+          parts.push(`Looking to sail to: ${whereToParam}`);
+        }
+      }
+
+      if (availabilityTextParam || availabilityStartParam) {
+        let availText = availabilityTextParam || '';
+        if (availabilityStartParam && availabilityEndParam) {
+          try {
+            const start = new Date(availabilityStartParam);
+            const end = new Date(availabilityEndParam);
+            const dateStr = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
+            availText = availText ? `${availText} (${dateStr})` : dateStr;
+          } catch (e) {
+            console.error('[ProspectChatContext] Error parsing dates:', e);
+          }
+        }
+        if (availText) {
+          parts.push(`Available: ${availText}`);
+        }
+      }
+
+      const initialMessage = parts.join('\n');
+      if (initialMessage) {
+        sendMessage(initialMessage);
+      }
+    } else if (legacyQueryParam && legacyQueryParam.trim()) {
+      // Fallback to legacy 'q' parameter
+      initialQueryProcessed.current = true;
+      console.log('[ProspectChatContext] Processing legacy initial query:', legacyQueryParam.trim());
+      sendMessage(legacyQueryParam.trim());
     }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 

@@ -12,6 +12,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@/app/lib/prospect/sessionService';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
+import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
 
 const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
 
@@ -21,12 +22,12 @@ export default function WelcomePage() {
   const { user, loading: authLoading } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [hasExistingSession, setHasExistingSession] = useState(false);
   const [sessionType, setSessionType] = useState<'crew' | 'owner' | null>(null);
   const [sessionContext, setSessionContext] = useState<string | null>(null);
   const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
+  const [isComboSearchMode, setIsComboSearchMode] = useState(false);
 
   // Check if user is logged in and redirect to role-specific homepage
   useEffect(() => {
@@ -216,13 +217,29 @@ export default function WelcomePage() {
     setSessionLegs([]);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    const query = searchQuery.trim();
-    if (!query) return;
-
-    // Navigate to chat with the initial query
-    router.push(`/welcome/chat?q=${encodeURIComponent(query)}`);
+  const handleComboSearch = (data: ComboSearchData) => {
+    const params = new URLSearchParams();
+    
+    if (data.whereFrom) {
+      params.set('whereFrom', JSON.stringify(data.whereFrom));
+    }
+    if (data.whereTo) {
+      params.set('whereTo', JSON.stringify(data.whereTo));
+    }
+    if (data.availability.freeText) {
+      params.set('availabilityText', data.availability.freeText);
+    }
+    if (data.availability.dateRange?.start) {
+      params.set('availabilityStart', data.availability.dateRange.start.toISOString());
+    }
+    if (data.availability.dateRange?.end) {
+      params.set('availabilityEnd', data.availability.dateRange.end.toISOString());
+    }
+    if (data.profile) {
+      params.set('profile', data.profile);
+    }
+    
+    router.push(`/welcome/chat?${params.toString()}`);
   };
 
   // Show loading state while checking authentication and roles
@@ -270,25 +287,26 @@ export default function WelcomePage() {
         </Link>
       </div>
 
+
       {/* Main content - dual column layout or single column when session exists */}
       <main className="flex-1 flex flex-col md:flex-row min-h-screen">
         {/* Crew Column (Right on desktop, First on mobile) */}
         <div className={`relative flex items-center justify-center p-6 md:p-12 ${
-          hasExistingSession && sessionType === 'crew'
+          hasExistingSession && sessionType === 'crew' || isComboSearchMode
             ? 'flex-1 min-h-screen'
             : 'flex-1 order-1 md:order-2 min-h-[50vh] md:min-h-screen'
         }`}>
           {/* Blue overlay for crew side - only show when dual column */}
-          {!(hasExistingSession && sessionType === 'crew') && (
+          {!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode && (
             <div className="absolute inset-0 bg-blue-900/60 backdrop-blur-[2px] -z-10" />
           )}
           {/* Lighter overlay for single column mode */}
-          {hasExistingSession && sessionType === 'crew' && (
+          {(hasExistingSession && sessionType === 'crew') || isComboSearchMode ? (
             <div className="absolute inset-0 bg-blue-900/40 backdrop-blur-[1px] -z-10" />
-          )}
+          ) : null}
 
           <div className={`w-full text-center text-white ${
-            hasExistingSession && sessionType === 'crew' ? 'max-w-full sm:max-w-md md:max-w-2xl' : 'max-w-full sm:max-w-md'
+            (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-full sm:max-w-md md:max-w-2xl' : 'max-w-full sm:max-w-md'
           }`}>
             <div className="mb-4">
               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
@@ -326,42 +344,45 @@ export default function WelcomePage() {
               {t('crew.description')}
             </p>
 
-            {/* Search input */}
-            <form onSubmit={handleSearch} className={`w-full mx-auto ${
-              hasExistingSession && sessionType === 'crew' ? 'max-w-full sm:max-w-sm md:max-w-lg' : 'max-w-full sm:max-w-sm'
-            }`}>
-              <div className="relative flex items-center">
-                <textarea
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSearch(e);
-                    }
-                  }}
-                  placeholder="Where and when do you want to sail?"
-                  rows={2}
-                  className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500"
-                />
-                <button
-                  type="submit"
-                  disabled={!searchQuery.trim()}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                  aria-label="Search"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle cx="11" cy="11" r="8" strokeWidth="2" />
-                    <path strokeLinecap="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
-                  </svg>
-                </button>
+            {/* Combo Search Box */}
+            {!hasExistingSession && (
+              <div className={`w-full mx-auto ${
+                (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-full sm:max-w-2xl md:max-w-4xl' : 'max-w-full sm:max-w-2xl md:max-w-5xl'
+              }`}>
+                <div className="flex items-center gap-3">
+                  {/* Back button - shown when combo search mode is active */}
+                  {isComboSearchMode && (
+                    <button
+                      onClick={() => {
+                        setIsComboSearchMode(false);
+                        // Blur any active inputs
+                        const activeElement = document.activeElement as HTMLElement;
+                        if (activeElement && activeElement.blur) {
+                          activeElement.blur();
+                        }
+                      }}
+                      className="flex-shrink-0 p-2.5 min-h-[44px] min-w-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center"
+                      aria-label="Back"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  )}
+                  <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                    <ComboSearchBox 
+                      onSubmit={handleComboSearch} 
+                      onFocusChange={(isFocused) => {
+                        // Only enter combo search mode when focus is gained, don't exit when focus is lost
+                        if (isFocused && !isComboSearchMode) {
+                          setIsComboSearchMode(true);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
-            </form>
+            )}
 
             {/* Continue conversation link */}
             {hasExistingSession && (
@@ -465,8 +486,8 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists */}
-        {!(hasExistingSession && sessionType === 'crew') && (
+        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode is active */}
+        {!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode && (
           <div className="flex-1 relative order-2 md:order-1 min-h-[50vh] md:min-h-screen flex items-center justify-center p-6 md:p-12">
             {/* Warm/amber overlay for owner side */}
             <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
@@ -493,11 +514,11 @@ export default function WelcomePage() {
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
                 {t('owner.title')}
               </h1>
-
+{/*}
               <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
                 {t('owner.subtitle')}
               </p>
-
+*/}
               <p className="text-sm md:text-base text-white/80 mb-8">
                 {t('owner.description')}
               </p>
