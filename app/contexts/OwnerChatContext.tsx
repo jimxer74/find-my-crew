@@ -93,6 +93,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
   const stateRef = useRef<OwnerChatState | null>(null);
   const initSessionRunRef = useRef(false);
   const profileCompletionProcessed = useRef(false);
+  const initialCrewDemandProcessed = useRef(false);
 
   const [state, setState] = useState<OwnerChatState>({
     sessionId: null,
@@ -681,6 +682,21 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     initSessionRunRef.current = false;
     setIsInitialized(false);
   }, [state.sessionId]);
+
+  // Process initial crew demand from URL (from front page owner post)
+  useEffect(() => {
+    if (!isInitialized || initialCrewDemandProcessed.current || state.isLoading) {
+      return;
+    }
+    const crewDemandParam = searchParams?.get('crewDemand');
+    const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+    if (!crewDemandParam?.trim() || isProfileCompletion) {
+      return;
+    }
+    initialCrewDemandProcessed.current = true;
+    console.log('[OwnerChatContext] Processing initial crew demand from URL');
+    sendMessage(crewDemandParam.trim());
+  }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
   return (
     <OwnerChatContext.Provider

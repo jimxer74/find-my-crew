@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { LocationAutocomplete, type Location } from './LocationAutocomplete';
 import { DateRangePicker, type DateRange } from './DateRangePicker';
 
@@ -34,6 +35,7 @@ export interface ComboSearchData {
     dateRange: DateRange | null;
   };
   profile: string;
+  aiProcessingConsent?: boolean;
 }
 
 interface ComboSearchBoxProps {
@@ -147,13 +149,18 @@ function ProfileDialog({
   onClose,
   value,
   onSave,
+  aiProcessingLabel,
+  aiProcessingDesc,
 }: {
   isOpen: boolean;
   onClose: () => void;
   value: string;
-  onSave: (profile: string) => void;
+  onSave: (profile: string, aiProcessingConsent: boolean) => void;
+  aiProcessingLabel: string;
+  aiProcessingDesc: string;
 }) {
   const [profileText, setProfileText] = useState(value);
+  const [aiConsent, setAiConsent] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -167,9 +174,11 @@ function ProfileDialog({
   }, [isOpen]);
 
   const handleSave = () => {
-    onSave(profileText);
+    onSave(profileText, aiConsent);
     onClose();
   };
+
+  const canSave = profileText.trim().length > 0 && aiConsent;
 
   if (!isOpen) return null;
 
@@ -206,14 +215,34 @@ function ProfileDialog({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <textarea
             ref={textareaRef}
             value={profileText}
             onChange={(e) => setProfileText(e.target.value)}
-            placeholder="Paste your profile or describe your sailing experience..."
+            placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
             className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 resize-none"
           />
+          {/* AI Consent */}
+          <div className="flex items-start justify-between gap-4 pt-2">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900">{aiProcessingLabel}</p>
+              <p className="text-sm text-gray-500 mt-0.5">{aiProcessingDesc}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAiConsent(!aiConsent)}
+              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+                aiConsent ? 'bg-blue-600' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                  aiConsent ? 'right-1' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Footer */}
@@ -226,7 +255,8 @@ function ProfileDialog({
           </button>
           <button
             onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={!canSave}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Save
           </button>
@@ -238,11 +268,13 @@ function ProfileDialog({
 
 // Desktop ComboSearchBox Component
 function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: ComboSearchBoxProps) {
+  const tPrivacy = useTranslations('settings.privacy');
   const [whereFrom, setWhereFrom] = useState<Location | null>(null);
   const [whereTo, setWhereTo] = useState<Location | null>(null);
   const [availabilityFreeText, setAvailabilityFreeText] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [profile, setProfile] = useState('');
+  const [profileAiConsent, setProfileAiConsent] = useState(false);
   const [focusedSegment, setFocusedSegment] = useState<'whereFrom' | 'whereTo' | 'availability' | 'profile' | null>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
@@ -364,6 +396,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         dateRange: dateRange.start || dateRange.end ? dateRange : null,
       },
       profile,
+      aiProcessingConsent: profile.trim().length > 0 ? profileAiConsent : undefined,
     };
     onSubmit(data);
   };
@@ -384,33 +417,24 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         break;
       case 'profile':
         setProfile('');
+        setProfileAiConsent(false);
         break;
     }
   };
 
-  // Compact mode: single search input when both owner/crew columns visible
+  // Compact mode: single search input when both owner/crew columns visible (front page crew column)
   if (compactMode) {
     return (
       <div className={`w-full max-w-full ${className}`}>
         <button
           type="button"
           onClick={() => onFocusChange?.(true)}
-          className="w-full h-[64px] flex items-center gap-3 px-4 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors text-left"
+          className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
         >
-          <svg
-            className="w-5 h-5 text-gray-400 flex-shrink-0"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
+          <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          <span className="text-sm text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
+          <span className="text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
         </button>
       </div>
     );
@@ -418,13 +442,13 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
   return (
     <div className={`w-full max-w-full ${className}`}>
-      <div className="relative flex items-stretch bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-[64px] w-full max-w-full">
+      <div className="relative flex items-stretch bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-14 w-full max-w-full">
         {/* Where From Segment */}
         <div
-          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20 rounded-l-xl' : ''}`}
+          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20 rounded-l-xl' : ''}`}
         >
           {/* Divider with white space */}
-          <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
+          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
           {focusedSegment === 'whereFrom' ? (
             <div className="w-full px-3 pt-1.5 pb-0.5 flex flex-col h-full overflow-visible">
               <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where from</label>
@@ -444,7 +468,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
                     }
                   }}
                   placeholder="Where from"
-                  className="border-0 w-full min-w-0 [&_input]:py-2 [&_input]:h-[40px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
+                  className="border-0 w-full min-w-0 [&_input]:py-1.5 [&_input]:h-[32px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
                   autoFocus={true}
                   inputRef={whereFromInputRef}
                 />
@@ -452,7 +476,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
             </div>
           ) : (
             <div
-              className="w-full px-3 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
+              className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
               onClick={() => {
                 const currentValue = whereFrom?.name || '';
                 setWhereFromInputValue(currentValue);
@@ -487,10 +511,10 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
         {/* Where To Segment */}
         <div
-          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereTo' ? 'bg-blue-50 z-20' : ''}`}
+          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereTo' ? 'bg-blue-50 z-20' : ''}`}
         >
           {/* Divider with white space */}
-          <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
+          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
           {focusedSegment === 'whereTo' ? (
             <div className="w-full px-3 pt-1.5 pb-0.5 flex flex-col h-full overflow-visible">
               <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where to</label>
@@ -510,7 +534,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
                     }
                   }}
                   placeholder="Where to"
-                  className="border-0 w-full min-w-0 [&_input]:py-2 [&_input]:h-[40px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
+                  className="border-0 w-full min-w-0 [&_input]:py-1.5 [&_input]:h-[32px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
                   autoFocus={true}
                   inputRef={whereToInputRef}
                 />
@@ -518,7 +542,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
             </div>
           ) : (
             <div
-              className="w-full px-3 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
+              className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
               onClick={() => {
                 const currentValue = whereTo?.name || '';
                 setWhereToInputValue(currentValue);
@@ -553,17 +577,17 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
         {/* Availability Segment */}
         <div
-          className="flex-1 relative h-[64px] flex flex-col min-w-0 overflow-hidden"
+          className="flex-1 relative h-14 flex flex-col min-w-0 overflow-hidden"
         >
           {/* Divider with white space */}
-          <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
+          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
           {/* Calendar icon - always visible, positioned absolutely to the right */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               setIsDatePickerOpen(true);
             }}
-            className="absolute right-3 bottom-3 p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0 z-10"
+            className="absolute right-2 bottom-2 p-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0 z-10"
             aria-label="Select dates"
           >
             <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -571,7 +595,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
             </svg>
           </button>
           {focusedSegment === 'availability' ? (
-            <div className="w-full px-3 pr-14 pt-1.5 pb-0.5 flex flex-col h-full overflow-hidden">
+            <div className="w-full px-3 pr-12 pt-1 pb-0.5 flex flex-col h-full overflow-hidden">
               <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight relative z-20">Availability</label>
               <div className="flex-1 flex items-center -mt-0.5 min-w-0 overflow-hidden">
                 <div className="flex-1 relative min-w-0">
@@ -601,7 +625,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
                       return parts.join(', ');
                     })()}
                     placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
-                    className="w-full min-w-0 px-3 py-2 h-[40px] text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-0 cursor-pointer"
+                    className="w-full min-w-0 px-3 py-1.5 h-[32px] text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-0 cursor-pointer"
                     readOnly
                     onClick={() => {
                       setIsAvailabilityDialogOpen(true);
@@ -634,7 +658,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
             </div>
           ) : (
             <div
-              className="w-full px-3 pr-14 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
+              className="w-full px-3 pr-12 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
               onClick={() => {
                 setFocusedSegment('availability');
                 setIsAvailabilityDialogOpen(true);
@@ -668,10 +692,10 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
         {/* Profile Segment */}
         <div
-          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-hidden ${focusedSegment === 'profile' ? 'bg-blue-50' : ''}`}
+          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-hidden ${focusedSegment === 'profile' ? 'bg-blue-50' : ''}`}
         >
           <div
-            className="w-full px-3 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
+            className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
             onClick={() => {
               setFocusedSegment('profile');
               setIsProfileDialogOpen(true);
@@ -706,7 +730,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         <button
           onClick={handleSubmit}
           disabled={!hasAnyValue}
-          className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-[64px] min-w-[60px] flex items-center justify-center border-4 border-white"
+          className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-14 min-w-[48px] flex items-center justify-center border-2 border-white"
           aria-label="Search"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -737,10 +761,14 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
           setFocusedSegment(null);
         }}
         value={profile}
-        onSave={(newProfile) => {
+        onSave={(newProfile, aiConsent) => {
           setProfile(newProfile);
+          setProfileAiConsent(aiConsent);
+          setIsProfileDialogOpen(false);
           setFocusedSegment(null);
         }}
+        aiProcessingLabel={tPrivacy('aiProcessing')}
+        aiProcessingDesc={tPrivacy('aiProcessingDesc')}
       />
 
       {/* Date Range Picker Dialog */}
@@ -793,6 +821,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
 // Mobile Wizard Component
 function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: ComboSearchBoxProps) {
+  const tPrivacy = useTranslations('settings.privacy');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<1 | 2>(1);
   const [whereFrom, setWhereFrom] = useState<Location | null>(null);
@@ -800,6 +829,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
   const [availabilityFreeText, setAvailabilityFreeText] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>({ start: null, end: null });
   const [profile, setProfile] = useState('');
+  const [profileAiConsent, setProfileAiConsent] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [whereFromInputValue, setWhereFromInputValue] = useState('');
   const [whereToInputValue, setWhereToInputValue] = useState('');
@@ -843,6 +873,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
         dateRange: dateRange.start || dateRange.end ? dateRange : null,
       },
       profile,
+      aiProcessingConsent: profile.trim().length > 0 ? profileAiConsent : undefined,
     };
     onSubmit(data);
     setIsWizardOpen(false);
@@ -853,6 +884,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
     setAvailabilityFreeText('');
     setDateRange({ start: null, end: null });
     setProfile('');
+    setProfileAiConsent(false);
   };
 
   const canGoToNextPage = () => {
@@ -880,54 +912,19 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
     }
   };
 
-  // Check if any input is provided
-  const hasInput = () => {
-    return !!(
-      whereFrom ||
-      whereTo ||
-      whereFromInputValue.trim() ||
-      whereToInputValue.trim() ||
-      availabilityFreeText.trim() ||
-      dateRange.start ||
-      dateRange.end ||
-      profile.trim()
-    );
-  };
-
-  const isSearchDisabled = !hasInput();
-
   return (
     <div className={`w-full ${className}`}>
-      {/* Mobile Search Input */}
-      <div className="relative">
-        <input
-          type="text"
-          readOnly
-          placeholder="Search for sailing opportunities..."
-          className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 cursor-pointer"
-          onClick={() => setIsWizardOpen(true)}
-        />
-        <button
-          type="button"
-          disabled={isSearchDisabled}
-          className={`absolute right-1 top-1 bottom-1 p-2 rounded-lg transition-colors min-w-[44px] flex items-center justify-center border border-white ${
-            isSearchDisabled
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-          aria-label="Search"
-          onClick={() => {
-            if (!isSearchDisabled) {
-              setIsWizardOpen(true);
-            }
-          }}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <circle cx="11" cy="11" r="8" strokeWidth="2" />
-            <path strokeLinecap="round" strokeWidth="2" d="M21 21l-4.35-4.35" />
-          </svg>
-        </button>
-      </div>
+      {/* Mobile Search Input - matches desktop/owner box: pencil icon on left, no magnifying glass */}
+      <button
+        type="button"
+        onClick={() => setIsWizardOpen(true)}
+        className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-blue-400 flex items-center gap-3 cursor-pointer transition-colors"
+      >
+        <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        </svg>
+        <span className="text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
+      </button>
 
       {/* Mobile Wizard Dialog */}
       {isWizardOpen && (
@@ -1091,16 +1088,38 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
 
               {/* Page 2: Profile */}
               {currentPage === 2 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
-                    Profile
-                  </label>
-                  <textarea
-                    value={profile}
-                    onChange={(e) => setProfile(e.target.value)}
-                    placeholder="Paste your profile or describe your sailing experience..."
-                    className="w-full min-h-[300px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
-                  />
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
+                      Profile
+                    </label>
+                    <textarea
+                      value={profile}
+                      onChange={(e) => setProfile(e.target.value)}
+                      placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
+                      className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+                    />
+                  </div>
+                  {/* AI Consent */}
+                  <div className="flex items-start justify-between gap-4 pt-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{tPrivacy('aiProcessing')}</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tPrivacy('aiProcessingDesc')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setProfileAiConsent(!profileAiConsent)}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+                        profileAiConsent ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                          profileAiConsent ? 'right-1' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1129,7 +1148,8 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
               ) : (
                 <button
                   onClick={handleWizardSubmit}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors ml-auto"
+                  disabled={profile.trim().length > 0 && !profileAiConsent}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ml-auto"
                 >
                   Search
                 </button>

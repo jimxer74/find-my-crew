@@ -130,8 +130,8 @@
   },
   "home": {
     "hero": {
-      "titleOwner": "Find Your Perfect Crew",
-      "titleCrew": "Find Your Next Sailing Adventure",
+      "titleOwner": "Find Your Next Perfect Crew",
+      "titleCrew": "Find Your Sailing Adventure",
       "subtitle": "Connect boat owners with experienced crew members for unforgettable sailing adventures",
       "browseJourneys": "Open map view",
       "searchJourneys": "Open map view",
@@ -218,7 +218,7 @@
     "viewRegistrations": "View registrations",
     "browse": {
       "title": "Browse Journeys",
-      "subtitle": "Find your next sailing adventure",
+      "subtitle": "Find your sailing adventure",
       "noResults": "No journeys found",
       "noResultsDescription": "Try adjusting your filters or check back later for new opportunities.",
       "filters": {
@@ -652,9 +652,9 @@
   "welcome": {
     "login": "Log in",
     "crew": {
-      "title": "Find Your Next Sailing Adventure",
+      "title": "For Crew",
       "subtitle": "Discover your dream sailing opportunities",
-      "description": "Tell us where you want to sail and post your sailing profile - let us take care of the rest!",
+      "description": "Tell us where you want to sail and post your sailing profile, SailSmart will find the perfect boats and skippers for you!",
       "cta": "Start now",
       "features": {
         "discover": "Discover sailing opportunities worldwide",
@@ -663,10 +663,13 @@
       }
     },
     "owner": {
-      "title": "Find Your Perfect Crew",
+      "title": "For Skippers",
       "subtitle": "Connect with perfect crew for your voyages",
       "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people.",
       "cta": "Coming Soon",
+      "postPlaceholder": "Post your boat and journey details...",
+      "postDialogTitle": "Post your crew demand",
+      "postDialogPlaceholder": "Describe your boat, journey, and crew requirements. The AI will help you create your listing.",
       "features": {
         "post": "Post your journeys and routes",
         "match": "AI-powered crew matching",

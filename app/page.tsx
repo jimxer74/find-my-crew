@@ -16,8 +16,128 @@ import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboS
 
 const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
 
+function OwnerPostDialog({
+  isOpen,
+  onClose,
+  onSave,
+  title,
+  placeholder,
+  aiProcessingLabel,
+  aiProcessingDesc,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (crewDemand: string, aiProcessingConsent: boolean) => void;
+  title: string;
+  placeholder: string;
+  aiProcessingLabel: string;
+  aiProcessingDesc: string;
+}) {
+  const [crewDemand, setCrewDemand] = useState('');
+  const [aiConsent, setAiConsent] = useState(false);
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  React.useEffect(() => {
+    if (isOpen && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleSave = () => {
+    onSave(crewDemand.trim(), aiConsent);
+  };
+
+  const canSave = crewDemand.trim().length > 0 && aiConsent;
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="owner-post-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 id="owner-post-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <textarea
+            ref={textareaRef}
+            value={crewDemand}
+            onChange={(e) => setCrewDemand(e.target.value)}
+            placeholder={placeholder}
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+          />
+          {/* AI Consent - same layout as crew Profile Dialog */}
+          <div className="flex items-start justify-between gap-4 pt-2">
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-foreground">{aiProcessingLabel}</p>
+              <p className="text-sm text-muted-foreground mt-0.5">{aiProcessingDesc}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAiConsent(!aiConsent)}
+              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+                aiConsent ? 'bg-primary' : 'bg-muted'
+              }`}
+            >
+              <span
+                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                  aiConsent ? 'right-1' : 'left-1'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!canSave}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function WelcomePage() {
   const t = useTranslations('welcome');
+  const tPrivacy = useTranslations('settings.privacy');
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -28,6 +148,7 @@ export default function WelcomePage() {
   const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [isComboSearchMode, setIsComboSearchMode] = useState(false);
+  const [isOwnerPostMode, setIsOwnerPostMode] = useState(false);
 
   // Check if user is logged in and redirect to role-specific homepage
   useEffect(() => {
@@ -238,8 +359,20 @@ export default function WelcomePage() {
     if (data.profile) {
       params.set('profile', data.profile);
     }
+    if (data.aiProcessingConsent === true) {
+      params.set('aiProcessingConsent', 'true');
+    }
     
     router.push(`/welcome/crew?${params.toString()}`);
+  };
+
+  const handleOwnerPost = (crewDemand: string, aiProcessingConsent: boolean) => {
+    const params = new URLSearchParams();
+    params.set('crewDemand', crewDemand);
+    if (aiProcessingConsent) {
+      params.set('aiProcessingConsent', 'true');
+    }
+    router.push(`/welcome/owner?${params.toString()}`);
   };
 
   // Show loading state while checking authentication and roles
@@ -290,8 +423,9 @@ export default function WelcomePage() {
 
       {/* Main content - dual column layout or single column when session exists */}
       <main className="flex-1 flex flex-col md:flex-row min-h-screen">
-        {/* Crew Column (Right on desktop, First on mobile) */}
-        <div className={`relative flex items-center justify-center p-6 md:p-12 ${
+        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode */}
+        {!isOwnerPostMode && (
+        <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
           hasExistingSession && sessionType === 'crew' || isComboSearchMode
             ? 'flex-1 min-h-screen'
             : 'flex-1 order-1 md:order-2 min-h-[50vh] md:min-h-screen'
@@ -305,9 +439,8 @@ export default function WelcomePage() {
             <div className="absolute inset-0 bg-blue-900/40 backdrop-blur-[1px] -z-10" />
           ) : null}
 
-          <div className={`w-full text-center text-white ${
-            (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-full sm:max-w-md md:max-w-2xl' : 'max-w-full sm:max-w-md'
-          }`}>
+          {/* Use consistent max-width to prevent header shift when ComboSearchBox is focused */}
+          <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
             <div className="mb-4">
               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                 <svg
@@ -335,11 +468,11 @@ export default function WelcomePage() {
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
               {t('crew.title')}
             </h1>
-{/*}
+
             <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
               {t('crew.subtitle')}
             </p>
-*/}      
+      
             <p className="text-sm md:text-base text-white/80 mb-6">
               {t('crew.description')}
             </p>
@@ -347,7 +480,7 @@ export default function WelcomePage() {
             {/* Combo Search Box */}
             {!hasExistingSession && (
               <div className={`w-full mx-auto ${
-                (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-full sm:max-w-2xl md:max-w-4xl' : 'max-w-full sm:max-w-2xl md:max-w-5xl'
+                (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-sm sm:max-w-2xl md:max-w-4xl' : 'max-w-sm'
               }`}>
                 <div className="flex items-center gap-3">
                   {/* Back button - shown when combo search mode is active */}
@@ -486,14 +619,15 @@ export default function WelcomePage() {
             )}
           </div>
         </div>
+        )}
 
-        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode is active */}
-        {!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode && (
-          <div className="flex-1 relative order-2 md:order-1 min-h-[50vh] md:min-h-screen flex items-center justify-center p-6 md:p-12">
+        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode */}
+        {(isOwnerPostMode || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
+          <div className="relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-h-[50vh] md:min-h-screen min-w-0">
             {/* Warm/amber overlay for owner side */}
             <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
 
-            <div className="max-w-md text-center text-white">
+            <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
               <div className="mb-4">
                 <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                   <svg
@@ -515,25 +649,47 @@ export default function WelcomePage() {
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
                 {t('owner.title')}
               </h1>
-{/*}
+
               <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
                 {t('owner.subtitle')}
               </p>
-*/}
+
               <p className="text-sm md:text-base text-white/80 mb-8">
                 {t('owner.description')}
               </p>
 
-              <button
-                disabled
-                className="inline-flex items-center justify-center gap-2 px-8 py-4 min-h-[52px] bg-white/30 text-white/70 rounded-lg font-semibold text-lg cursor-not-allowed border border-white/20"
-              >
-                {t('owner.cta')}
-              </button>
+              <div className="w-full max-w-sm mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsOwnerPostMode(true)}
+                  className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
+                >
+                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  <span className="text-gray-500 truncate">{t('owner.postPlaceholder')}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
       </main>
+
+      {/* Owner Post Dialog - shown when user clicks owner input */}
+      {isOwnerPostMode && (
+        <OwnerPostDialog
+          isOpen={isOwnerPostMode}
+          onClose={() => setIsOwnerPostMode(false)}
+          onSave={(crewDemand, aiProcessingConsent) => {
+            handleOwnerPost(crewDemand, aiProcessingConsent);
+            setIsOwnerPostMode(false);
+          }}
+          title={t('owner.postDialogTitle')}
+          placeholder={t('owner.postDialogPlaceholder')}
+          aiProcessingLabel={tPrivacy('aiProcessing')}
+          aiProcessingDesc={tPrivacy('aiProcessingDesc')}
+        />
+      )}
 
       {/* Footer */}
       <Footer />

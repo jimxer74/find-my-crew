@@ -667,6 +667,9 @@
       "subtitle": "Yhdistä kokeneet purjehtijat matkoillesi",
       "description": "Julkaise purjehdussuunnitelmasi ja anna pätevien miehistön jäsenten löytää sinut. Tekoälypohjainen yhdistäminen auttaa löytämään oikeat ihmiset seikkailuusi.",
       "cta": "Tulossa Pian",
+      "postPlaceholder": "Julkaise veneesi ja matkatiedot...",
+      "postDialogTitle": "Julkaise miehistötarpeesi",
+      "postDialogPlaceholder": "Kuvaa veneesi, matkasi ja miehistövaatimuksesi. Tekoäly auttaa luomaan ilmoituksesi.",
       "features": {
         "post": "Julkaise matkasi ja reittisi",
         "match": "Tekoälypohjainen miehistön yhdistäminen",
