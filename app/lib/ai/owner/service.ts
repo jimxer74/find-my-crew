@@ -989,42 +989,102 @@ async function executeOwnerTools(
         }
 
         try {
-          // Call internal API endpoint
-          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/sailboatdata/fetch-details`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ make_model, slug }),
-          });
+          // Call fetchSailboatDetails directly (avoids HTTP self-call which fails in serverless)
+          const { fetchSailboatDetails } = await import('@/app/lib/sailboatdata_queries');
+          const details = await fetchSailboatDetails(make_model.trim(), slug?.trim());
 
-          if (!response.ok) {
-            // Try AI fallback
-            const aiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/fill-boat-details`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ make_model }),
-            });
-
-            if (!aiResponse.ok) {
-              results.push({
-                name: toolCall.name,
-                result: null,
-                error: 'Failed to fetch boat details from both screenscraping and AI',
-              });
-              continue;
-            }
-
-            const aiData = await aiResponse.json();
+          if (details) {
             results.push({
               name: toolCall.name,
-              result: aiData.boatDetails || null,
+              result: {
+                type: details.type || null,
+                capacity: details.capacity ?? null,
+                loa_m: details.loa_m ?? null,
+                beam_m: details.beam_m ?? null,
+                max_draft_m: details.max_draft_m ?? null,
+                displcmt_m: details.displcmt_m ?? null,
+                average_speed_knots: details.average_speed_knots ?? null,
+                characteristics: details.characteristics || '',
+                capabilities: details.capabilities || '',
+                accommodations: details.accommodations || '',
+                link_to_specs: details.link_to_specs || '',
+                sa_displ_ratio: details.sa_displ_ratio ?? null,
+                ballast_displ_ratio: details.ballast_displ_ratio ?? null,
+                displ_len_ratio: details.displ_len_ratio ?? null,
+                comfort_ratio: details.comfort_ratio ?? null,
+                capsize_screening: details.capsize_screening ?? null,
+                hull_speed_knots: details.hull_speed_knots ?? null,
+                ppi_pounds_per_inch: details.ppi_pounds_per_inch ?? null,
+              },
             });
             continue;
           }
 
-          const data = await response.json();
+          // Screenscraping returned null - try AI fallback
+          const { callAI } = await import('@/app/lib/ai/service');
+          const { parseJsonObjectFromAIResponse } = await import('@/app/lib/ai/shared');
+          const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(make_model.trim())}&sort-select&sailboats_per_page=50`;
+          const prompt = `You are a sailing expert with comprehensive knowledge of sailboats from www.sailboatdata.com database.
+
+A user wants detailed information about the sailboat: "${make_model.trim()}"
+
+The search URL on sailboatdata.com would be: ${searchUrl}
+
+Your task: Provide comprehensive details about this sailboat in JSON format. Use your knowledge of sailboats from sailboatdata.com and general sailing expertise.
+
+CRITICAL REQUIREMENTS:
+1. Return ONLY valid JSON, no markdown, no code blocks, no explanations
+2. Use exact values from sailboatdata.com when available
+3. For sailboat category, choose ONE from: "Daysailers", "Coastal cruisers", "Traditional offshore cruisers", "Performance cruisers", "Multihulls", "Expedition sailboats"
+4. Return in metric units if available
+
+Return a JSON object with this exact structure:
+{
+  "type": "one of the categories above or null",
+  "capacity": number,
+  "loa_m": number,
+  "beam_m": number,
+  "displcmt_m": number,
+  "average_speed_knots": number,
+  "characteristics": "string",
+  "capabilities": "string",
+  "accommodations": "string",
+  "link_to_specs": "string",
+  "sa_displ_ratio": number or null,
+  "ballast_displ_ratio": number or null,
+  "displ_len_ratio": number or null,
+  "comfort_ratio": number or null,
+  "capsize_screening": number or null,
+  "hull_speed_knots": number or null,
+  "ppi_pounds_per_inch": number or null
+}
+
+Return ONLY the JSON object, nothing else.`;
+
+          const aiResult = await callAI({ useCase: 'boat-details', prompt });
+          const boatDetails = parseJsonObjectFromAIResponse(aiResult.text);
           results.push({
             name: toolCall.name,
-            result: data.boatDetails || null,
+            result: {
+              type: boatDetails.type || null,
+              capacity: boatDetails.capacity ?? null,
+              loa_m: boatDetails.loa_m ?? null,
+              beam_m: boatDetails.beam_m ?? null,
+              max_draft_m: boatDetails.max_draft_m ?? null,
+              displcmt_m: boatDetails.displcmt_m ?? null,
+              average_speed_knots: boatDetails.average_speed_knots ?? null,
+              characteristics: boatDetails.characteristics || '',
+              capabilities: boatDetails.capabilities || '',
+              accommodations: boatDetails.accommodations || '',
+              link_to_specs: boatDetails.link_to_specs || '',
+              sa_displ_ratio: boatDetails.sa_displ_ratio ?? null,
+              ballast_displ_ratio: boatDetails.ballast_displ_ratio ?? null,
+              displ_len_ratio: boatDetails.displ_len_ratio ?? null,
+              comfort_ratio: boatDetails.comfort_ratio ?? null,
+              capsize_screening: boatDetails.capsize_screening ?? null,
+              hull_speed_knots: boatDetails.hull_speed_knots ?? null,
+              ppi_pounds_per_inch: boatDetails.ppi_pounds_per_inch ?? null,
+            },
           });
         } catch (e: any) {
           results.push({
