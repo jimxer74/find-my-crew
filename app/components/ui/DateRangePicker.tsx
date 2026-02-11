@@ -105,23 +105,41 @@ export function DateRangePicker({
     if (maxDate && clickedDate > maxDate) return;
 
     if (allowSingleDate) {
-      // Single date mode: clicking a date sets both start and end to that date
-      // If clicking the same date again, clear the selection
-      // User must click Save to confirm the selection
-      const isSameDate = tempRange.start && 
-                         tempRange.end &&
-                         tempRange.start.getTime() === clickedDate.getTime() &&
-                         tempRange.end.getTime() === clickedDate.getTime();
-      
-      if (isSameDate) {
-        // Same date clicked - clear selection
-        setTempRange({ start: null, end: null });
+      // Dual mode: supports both single date and range selection
+      if (!tempRange.start) {
+        // First click: set start date
+        setTempRange({ start: clickedDate, end: null });
+        setSelectingStart(false);
+      } else if (!tempRange.end) {
+        // Second click: can set end date (range) or same date (single date)
+        if (clickedDate.getTime() === tempRange.start.getTime()) {
+          // Same date clicked - set both to same date (single date mode)
+          setTempRange({ start: clickedDate, end: clickedDate });
+          setSelectingStart(true);
+        } else if (clickedDate < tempRange.start) {
+          // Clicked date is before start - make it the new start
+          setTempRange({ start: clickedDate, end: tempRange.start });
+          setSelectingStart(true);
+        } else {
+          // Normal case: set end date (range mode)
+          setTempRange({ start: tempRange.start, end: clickedDate });
+          setSelectingStart(true);
+        }
       } else {
-        // Set both start and end to the clicked date
-        setTempRange({ start: clickedDate, end: clickedDate });
+        // Both dates already set - clicking starts a new selection
+        if (clickedDate.getTime() === tempRange.start.getTime() && 
+            clickedDate.getTime() === tempRange.end.getTime()) {
+          // Clicking the same single date again - clear selection
+          setTempRange({ start: null, end: null });
+          setSelectingStart(true);
+        } else {
+          // Start new selection
+          setTempRange({ start: clickedDate, end: null });
+          setSelectingStart(false);
+        }
       }
     } else {
-      // Range selection mode (original behavior)
+      // Range selection mode only (original behavior)
       if (selectingStart || !tempRange.start) {
         // Starting a new selection
         setTempRange({ start: clickedDate, end: null });
@@ -157,13 +175,27 @@ export function DateRangePicker({
   };
 
   const isDateInRange = (day: number, month: Date): boolean => {
-    if (!tempRange.start || !tempRange.end) return false;
+    if (!tempRange.start) return false;
     const date = new Date(month.getFullYear(), month.getMonth(), day);
-    // In single date mode, only highlight if it's the exact same date
-    if (allowSingleDate) {
-      return date.getTime() === tempRange.start.getTime() && date.getTime() === tempRange.end.getTime();
+    
+    // If only start date is selected (no end date yet), don't highlight range
+    if (!tempRange.end) return false;
+    
+    // Check if date is within the range (inclusive)
+    const startTime = tempRange.start.getTime();
+    const endTime = tempRange.end.getTime();
+    const dateTime = date.getTime();
+    
+    // Handle both single date (start === end) and range (start < end or start > end)
+    if (startTime === endTime) {
+      // Single date: highlight only if it's the exact same date
+      return dateTime === startTime;
+    } else {
+      // Range: highlight dates between start and end (inclusive)
+      const minTime = Math.min(startTime, endTime);
+      const maxTime = Math.max(startTime, endTime);
+      return dateTime >= minTime && dateTime <= maxTime;
     }
-    return date >= tempRange.start && date <= tempRange.end;
   };
 
   const isStartDate = (day: number, month: Date): boolean => {

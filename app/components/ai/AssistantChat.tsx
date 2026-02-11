@@ -505,13 +505,16 @@ export function AssistantChat() {
                   : message.content}
               </div>
               {/* Show suggested prompts from AI response */}
-              {message.role === 'assistant' && (
-                <SuggestedPrompts
-                  prompts={extractSuggestedPrompts(message.content)}
-                  onSelect={(prompt) => sendMessage(prompt)}
-                  disabled={isLoading}
-                />
-              )}
+              {message.role === 'assistant' && (() => {
+                const { prompts } = extractSuggestedPrompts(message.content);
+                return prompts.length > 0 ? (
+                  <SuggestedPrompts
+                    prompts={prompts}
+                    onSelect={(prompt) => sendMessage(prompt)}
+                    disabled={isLoading}
+                  />
+                ) : null;
+              })()}
               {message.role === 'assistant' && message.metadata?.toolCalls && (
                 <div className="mt-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
                   {t('used')} {message.metadata.toolCalls.map(tc => tc.name).join(', ')}

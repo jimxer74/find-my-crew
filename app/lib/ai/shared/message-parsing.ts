@@ -8,10 +8,11 @@
 /**
  * Extract suggested prompts from AI message
  * Format: [SUGGESTIONS]...[/SUGGESTIONS]
+ * Returns array of prompts and index of the most important one (if marked with [IMPORTANT])
  */
-export function extractSuggestedPrompts(content: string): string[] {
+export function extractSuggestedPrompts(content: string): { prompts: string[]; importantIndex: number | null } {
   if (!content || typeof content !== 'string') {
-    return [];
+    return { prompts: [], importantIndex: null };
   }
 
   // Case-insensitive regex to match [SUGGESTIONS]...[/SUGGESTIONS] blocks
@@ -39,7 +40,7 @@ export function extractSuggestedPrompts(content: string): string[] {
       if (lastResortMatch && lastResortMatch[1]) {
         suggestionsText = lastResortMatch[1].trim();
       } else {
-        return [];
+        return { prompts: [], importantIndex: null };
       }
     }
   }
@@ -49,14 +50,23 @@ export function extractSuggestedPrompts(content: string): string[] {
     console.log('[extractSuggestedPrompts] Found suggestions text:', suggestionsText.substring(0, 200));
   }
   
+  let importantIndex: number | null = null;
+  
   // Split by newlines and process each line
   const prompts = suggestionsText
     .split(/\r?\n/) // Handle both \n and \r\n
-    .map(line => {
+    .map((line, index) => {
       let cleaned = line.trim();
       
       // Skip empty lines early
-      if (!cleaned) return '';
+      if (!cleaned) return { text: '', isImportant: false };
+      
+      // Check for [IMPORTANT] tag (case-insensitive, can be before or after list marker)
+      const hasImportantTag = /\[IMPORTANT\]/i.test(cleaned);
+      if (hasImportantTag) {
+        // Remove the [IMPORTANT] tag
+        cleaned = cleaned.replace(/\[IMPORTANT\]/gi, '').trim();
+      }
       
       // Remove markdown list markers: "- ", "1. ", "* ", "• ", etc.
       cleaned = cleaned.replace(/^[-*•]\s+/, '');
@@ -68,9 +78,10 @@ export function extractSuggestedPrompts(content: string): string[] {
       cleaned = cleaned.replace(/^["'""'']+/, ''); // Remove quotes at start (regular and smart quotes)
       cleaned = cleaned.replace(/["'""'']+$/, ''); // Remove quotes at end (regular and smart quotes)
       
-      return cleaned.trim();
+      return { text: cleaned.trim(), isImportant: hasImportantTag };
     })
-    .filter(line => {
+    .filter(item => {
+      const line = item.text;
       // Filter out empty lines, metadata tags, and example text
       if (!line || line.length === 0) return false;
       
@@ -87,7 +98,17 @@ export function extractSuggestedPrompts(content: string): string[] {
       );
     });
 
-  return prompts.slice(0, 5); // Max 5 suggestions
+  // Find the index of the important suggestion
+  const filteredPrompts = prompts.map(item => item.text);
+  const importantItem = prompts.find(item => item.isImportant);
+  if (importantItem) {
+    importantIndex = filteredPrompts.indexOf(importantItem.text);
+  }
+
+  return { 
+    prompts: filteredPrompts.slice(0, 5), // Max 5 suggestions
+    importantIndex: importantIndex !== null && importantIndex >= 0 ? importantIndex : null
+  };
 }
 
 /**

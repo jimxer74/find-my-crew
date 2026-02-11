@@ -43,6 +43,102 @@ interface ComboSearchBoxProps {
   isFocusedControlled?: boolean; // If true, parent controls focus state
 }
 
+// Availability Dialog Component
+function AvailabilityDialog({
+  isOpen,
+  onClose,
+  value,
+  onSave,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  value: string;
+  onSave: (availabilityText: string) => void;
+}) {
+  const [availabilityText, setAvailabilityText] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setAvailabilityText(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleSave = () => {
+    onSave(availabilityText);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div
+        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="availability-dialog-title"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 id="availability-dialog-title" className="text-lg font-semibold text-gray-900">
+            Availability
+          </h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label="Close"
+          >
+            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-4">
+          <input
+            ref={inputRef}
+            type="text"
+            value={availabilityText}
+            onChange={(e) => setAvailabilityText(e.target.value)}
+            placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
+            className="w-full px-4 py-3 text-base text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500"
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Profile Dialog Component
 function ProfileDialog({
   isOpen,
@@ -147,11 +243,13 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
   const [profile, setProfile] = useState('');
   const [focusedSegment, setFocusedSegment] = useState<'whereFrom' | 'whereTo' | 'availability' | 'profile' | null>(null);
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isAvailabilityDialogOpen, setIsAvailabilityDialogOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [whereFromInputValue, setWhereFromInputValue] = useState('');
   const [whereToInputValue, setWhereToInputValue] = useState('');
   const whereFromInputRef = useRef<HTMLInputElement>(null);
   const whereToInputRef = useRef<HTMLInputElement>(null);
+  const availabilityInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize input values when segments are focused
   useEffect(() => {
@@ -180,15 +278,23 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         }, 0);
       });
     }
+    if (focusedSegment === 'availability' && availabilityInputRef.current) {
+      // Focus the input when availability segment is clicked
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          availabilityInputRef.current?.focus();
+        }, 0);
+      });
+    }
   }, [focusedSegment]);
 
   // Notify parent when focus state changes
   useEffect(() => {
-    const isFocused = focusedSegment !== null || isProfileDialogOpen || isDatePickerOpen;
+    const isFocused = focusedSegment !== null || isProfileDialogOpen || isAvailabilityDialogOpen || isDatePickerOpen;
     if (!isFocusedControlled) {
       onFocusChange?.(isFocused);
     }
-  }, [focusedSegment, isProfileDialogOpen, isDatePickerOpen, onFocusChange, isFocusedControlled]);
+  }, [focusedSegment, isProfileDialogOpen, isAvailabilityDialogOpen, isDatePickerOpen, onFocusChange, isFocusedControlled]);
 
   // Clear focus when parent requests it (via isFocusedControlled)
   useEffect(() => {
@@ -206,7 +312,20 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
     if (dateRange.start && dateRange.end) {
       const startStr = dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const endStr = dateRange.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-      parts.push(`${startStr} - ${endStr}`);
+      // Check if it's a single date (start and end are the same day)
+      const isSameDay = dateRange.start.getTime() === dateRange.end.getTime() ||
+        (dateRange.start.getDate() === dateRange.end.getDate() &&
+         dateRange.start.getMonth() === dateRange.end.getMonth() &&
+         dateRange.start.getFullYear() === dateRange.end.getFullYear());
+      if (isSameDay) {
+        parts.push(`Starting from: ${startStr}`);
+      } else {
+        parts.push(`${startStr} - ${endStr}`);
+      }
+    } else if (dateRange.start) {
+      // Only start date selected
+      const startStr = dateRange.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      parts.push(`Starting from: ${startStr}`);
     }
     if (availabilityFreeText) {
       parts.push(availabilityFreeText);
@@ -272,7 +391,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
       <div className="relative flex items-stretch bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-[64px] w-full max-w-full">
         {/* Where From Segment */}
         <div
-          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20' : ''}`}
+          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20 rounded-l-xl' : ''}`}
         >
           {/* Divider with white space */}
           <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
@@ -404,46 +523,98 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
         {/* Availability Segment */}
         <div
-          className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-hidden ${focusedSegment === 'availability' ? 'bg-blue-50' : ''}`}
+          className="flex-1 relative h-[64px] flex flex-col min-w-0 overflow-hidden"
         >
           {/* Divider with white space */}
           <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
+          {/* Calendar icon - always visible, positioned absolutely to the right */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsDatePickerOpen(true);
+            }}
+            className="absolute right-3 bottom-3 p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0 z-10"
+            aria-label="Select dates"
+          >
+            <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </button>
           {focusedSegment === 'availability' ? (
-            <div className="w-full px-3 pt-1.5 pb-0.5 flex flex-col h-full overflow-hidden">
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Availability</label>
+            <div className="w-full px-3 pr-14 pt-1.5 pb-0.5 flex flex-col h-full overflow-hidden">
+              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight relative z-20">Availability</label>
               <div className="flex-1 flex items-center -mt-0.5 min-w-0 overflow-hidden">
-                <input
-                  type="text"
-                  value={availabilityFreeText}
-                  onChange={(e) => setAvailabilityFreeText(e.target.value)}
-                  onFocus={() => {
-                    // Open date picker when text field is focused
-                    setIsDatePickerOpen(true);
-                  }}
-                  placeholder="e.g., next summer, June to August"
-                  className="w-full min-w-0 px-3 py-2 h-[40px] text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  autoFocus
-                  onBlur={() => {
-                    // Delay to allow date picker interactions
-                    setTimeout(() => {
-                      if (!isDatePickerOpen) {
-                        setFocusedSegment(null);
+                <div className="flex-1 relative min-w-0">
+                  <input
+                    ref={availabilityInputRef}
+                    type="text"
+                    value={(() => {
+                      // Combine free text and date range in the input value
+                      const parts: string[] = [];
+                      if (availabilityFreeText) {
+                        parts.push(availabilityFreeText);
                       }
-                    }, 200);
-                  }}
-                />
+                      if (dateRange.start && dateRange.end) {
+                        // Check if it's a single date
+                        const isSameDay = dateRange.start.getTime() === dateRange.end.getTime() ||
+                          (dateRange.start.getDate() === dateRange.end.getDate() &&
+                           dateRange.start.getMonth() === dateRange.end.getMonth() &&
+                           dateRange.start.getFullYear() === dateRange.end.getFullYear());
+                        if (isSameDay) {
+                          parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
+                        } else {
+                          parts.push(`${dateRange.start.toLocaleDateString()} - ${dateRange.end.toLocaleDateString()}`);
+                        }
+                      } else if (dateRange.start) {
+                        parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
+                      }
+                      return parts.join(', ');
+                    })()}
+                    placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
+                    className="w-full min-w-0 px-3 py-2 h-[40px] text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-0 cursor-pointer"
+                    readOnly
+                    onClick={() => {
+                      setIsAvailabilityDialogOpen(true);
+                    }}
+                    onBlur={() => {
+                      // Delay to allow date picker interactions
+                      setTimeout(() => {
+                        if (!isDatePickerOpen && !isAvailabilityDialogOpen) {
+                          setFocusedSegment(null);
+                        }
+                      }, 200);
+                    }}
+                  />
+                  {(dateRange.start || dateRange.end) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDateRange({ start: null, end: null });
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                      aria-label="Clear date"
+                    >
+                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
             <div
-              className="w-full px-3 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
-              onClick={() => setFocusedSegment('availability')}
+              className="w-full px-3 pr-14 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
+              onClick={() => {
+                setFocusedSegment('availability');
+                setIsAvailabilityDialogOpen(true);
+              }}
             >
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Availability</label>
+              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight relative z-20">Availability</label>
               <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
                 {availabilityFreeText || dateRange.start ? (
-                  <div className="flex items-center justify-between w-full group min-w-0 max-w-full overflow-hidden">
-                    <span className="text-sm text-gray-900 block truncate flex-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                  <div className="flex items-center justify-between group min-w-0 overflow-hidden w-full">
+                    <span className="text-sm text-gray-900 block truncate flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
                       {formatAvailabilityDisplay()}
                     </span>
                     <button
@@ -469,8 +640,6 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         <div
           className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-hidden ${focusedSegment === 'profile' ? 'bg-blue-50' : ''}`}
         >
-          {/* Divider with white space */}
-          <div className="absolute right-0 top-2 bottom-2 w-px bg-gray-200" />
           <div
             className="w-full px-3 pt-1.5 pb-0.5 h-[64px] flex flex-col cursor-pointer overflow-hidden"
             onClick={() => {
@@ -478,7 +647,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
               setIsProfileDialogOpen(true);
             }}
           >
-            <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Profile</label>
+            <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Sailing profile</label>
             <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
               {profile ? (
                 <div className="flex items-center w-full group min-w-0 overflow-hidden">
@@ -507,7 +676,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         <button
           onClick={handleSubmit}
           disabled={!hasAnyValue}
-          className="p-2.5 bg-blue-600 text-white rounded-r-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-[64px] min-w-[60px] flex items-center justify-center border border-white"
+          className="p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors h-[64px] min-w-[60px] flex items-center justify-center border-4 border-white"
           aria-label="Search"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -518,6 +687,19 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
       </div>
 
       {/* Profile Dialog */}
+      <AvailabilityDialog
+        isOpen={isAvailabilityDialogOpen}
+        onClose={() => {
+          setIsAvailabilityDialogOpen(false);
+          setFocusedSegment(null);
+        }}
+        value={availabilityFreeText}
+        onSave={(newAvailabilityText) => {
+          setAvailabilityFreeText(newAvailabilityText);
+          setIsAvailabilityDialogOpen(false);
+          setFocusedSegment(null);
+        }}
+      />
       <ProfileDialog
         isOpen={isProfileDialogOpen}
         onClose={() => {
@@ -582,7 +764,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 // Mobile Wizard Component
 function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled }: ComboSearchBoxProps) {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<1 | 2 | 3>(1);
+  const [currentPage, setCurrentPage] = useState<1 | 2>(1);
   const [whereFrom, setWhereFrom] = useState<Location | null>(null);
   const [whereTo, setWhereTo] = useState<Location | null>(null);
   const [availabilityFreeText, setAvailabilityFreeText] = useState('');
@@ -644,29 +826,45 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
   };
 
   const canGoToNextPage = () => {
-    switch (currentPage) {
-      case 1:
-        return whereFrom || whereTo;
-      case 2:
-        return true; // Availability is optional
-      case 3:
-        return true; // Profile is optional
-      default:
-        return false;
-    }
+    // Allow navigation forward regardless of values - all fields are optional
+    return true;
   };
 
   const handleNext = () => {
-    if (currentPage < 3 && canGoToNextPage()) {
-      setCurrentPage((prev) => (prev + 1) as 1 | 2 | 3);
+    if (currentPage < 2 && canGoToNextPage()) {
+      setCurrentPage((prev) => (prev + 1) as 1 | 2);
     }
   };
 
-  const handleBack = () => {
+  const handleBack = (e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    // Blur any focused elements
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     if (currentPage > 1) {
-      setCurrentPage((prev) => (prev - 1) as 1 | 2 | 3);
+      setCurrentPage((prev) => (prev - 1) as 1 | 2);
     }
   };
+
+  // Check if any input is provided
+  const hasInput = () => {
+    return !!(
+      whereFrom ||
+      whereTo ||
+      whereFromInputValue.trim() ||
+      whereToInputValue.trim() ||
+      availabilityFreeText.trim() ||
+      dateRange.start ||
+      dateRange.end ||
+      profile.trim()
+    );
+  };
+
+  const isSearchDisabled = !hasInput();
 
   return (
     <div className={`w-full ${className}`}>
@@ -681,9 +879,18 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
         />
         <button
           type="button"
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+          disabled={isSearchDisabled}
+          className={`absolute right-1 top-1 bottom-1 p-2 rounded-lg transition-colors min-w-[44px] flex items-center justify-center border border-white ${
+            isSearchDisabled
+              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
           aria-label="Search"
-          onClick={() => setIsWizardOpen(true)}
+          onClick={() => {
+            if (!isSearchDisabled) {
+              setIsWizardOpen(true);
+            }
+          }}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="8" strokeWidth="2" />
@@ -702,18 +909,19 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
             }
           }}
         >
-          <div className="flex-1 bg-white flex flex-col overflow-hidden">
+          <div className="flex-1 bg-card flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Step {currentPage} of 3
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {currentPage === 1 && 'Where do you want to sail'}
+                {currentPage === 2 && 'Tell us about you and your sailing preferences'}
               </h2>
               <button
                 onClick={() => setIsWizardOpen(false)}
-                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 aria-label="Close"
               >
-                <svg className="w-6 h-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-6 h-6 text-gray-900 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
@@ -721,107 +929,166 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
-              {/* Page 1: Locations */}
+              {/* Page 1: Locations and Availability */}
               {currentPage === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
                       Where from
                     </label>
-                    <LocationAutocomplete
-                      value={whereFromInputValue}
-                      onChange={(location) => {
-                        setWhereFrom(location);
-                        setWhereFromInputValue(location.name);
-                      }}
-                      onInputChange={setWhereFromInputValue}
-                      placeholder="Where from"
-                    />
+                    <div className="relative">
+                      <LocationAutocomplete
+                        value={whereFromInputValue}
+                        onChange={(location) => {
+                          setWhereFrom(location);
+                          setWhereFromInputValue(location.name);
+                        }}
+                        onInputChange={setWhereFromInputValue}
+                        placeholder="Where from"
+                        className="[&_input]:text-gray-900 [&_input]:dark:text-gray-100 [&_input]:bg-white [&_input]:dark:bg-gray-800 [&_input]:border-gray-300 [&_input]:dark:border-gray-600"
+                      />
+                      {whereFromInputValue && (
+                        <button
+                          onClick={() => {
+                            setWhereFrom(null);
+                            setWhereFromInputValue('');
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          aria-label="Clear"
+                        >
+                          <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
                       Where to
                     </label>
-                    <LocationAutocomplete
-                      value={whereToInputValue}
-                      onChange={(location) => {
-                        setWhereTo(location);
-                        setWhereToInputValue(location.name);
-                      }}
-                      onInputChange={setWhereToInputValue}
-                      placeholder="Where to"
-                    />
+                    <div className="relative">
+                      <LocationAutocomplete
+                        value={whereToInputValue}
+                        onChange={(location) => {
+                          setWhereTo(location);
+                          setWhereToInputValue(location.name);
+                        }}
+                        onInputChange={setWhereToInputValue}
+                        placeholder="Where to"
+                        className="[&_input]:text-gray-900 [&_input]:dark:text-gray-100 [&_input]:bg-white [&_input]:dark:bg-gray-800 [&_input]:border-gray-300 [&_input]:dark:border-gray-600"
+                      />
+                      {whereToInputValue && (
+                        <button
+                          onClick={() => {
+                            setWhereTo(null);
+                            setWhereToInputValue('');
+                          }}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                          aria-label="Clear"
+                        >
+                          <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {/* Page 2: Availability */}
-              {currentPage === 2 && (
-                <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
                       Availability
                     </label>
                     <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={availabilityFreeText}
-                        onChange={(e) => setAvailabilityFreeText(e.target.value)}
-                        placeholder="e.g., next summer, June to August"
-                        className="flex-1 px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-                      />
+                      <div className="flex-1 relative">
+                        <input
+                          type="text"
+                          value={(() => {
+                            // Combine free text and date range in the input value
+                            const parts: string[] = [];
+                            if (availabilityFreeText) {
+                              parts.push(availabilityFreeText);
+                            }
+                            if (dateRange.start && dateRange.end) {
+                              // Check if it's a single date
+                              const isSameDay = dateRange.start.getTime() === dateRange.end.getTime() ||
+                                (dateRange.start.getDate() === dateRange.end.getDate() &&
+                                 dateRange.start.getMonth() === dateRange.end.getMonth() &&
+                                 dateRange.start.getFullYear() === dateRange.end.getFullYear());
+                              if (isSameDay) {
+                                parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
+                              } else {
+                                parts.push(`${dateRange.start.toLocaleDateString()} - ${dateRange.end.toLocaleDateString()}`);
+                              }
+                            } else if (dateRange.start) {
+                              parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
+                            }
+                            return parts.join(', ');
+                          })()}
+                          onChange={(e) => {
+                            // Only update free text, preserve date range
+                            setAvailabilityFreeText(e.target.value);
+                          }}
+                          placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
+                          className="w-full px-3 py-2 pr-10 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        />
+                        {(dateRange.start || dateRange.end) && (
+                          <button
+                            onClick={() => {
+                              setDateRange({ start: null, end: null });
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Clear date"
+                          >
+                            <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
                       <button
                         onClick={() => setIsDatePickerOpen(true)}
-                        className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                        className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
                         aria-label="Select dates"
                       >
-                        <svg className="w-5 h-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5 text-gray-900 dark:text-gray-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
                       </button>
                     </div>
-                    {(dateRange.start || dateRange.end) && (
-                      <div className="text-sm text-gray-600">
-                        {dateRange.start && dateRange.end
-                          ? `${dateRange.start.toLocaleDateString()} - ${dateRange.end.toLocaleDateString()}`
-                          : dateRange.start
-                          ? `From: ${dateRange.start.toLocaleDateString()}`
-                          : ''}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
 
-              {/* Page 3: Profile */}
-              {currentPage === 3 && (
+              {/* Page 2: Profile */}
+              {currentPage === 2 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
                     Profile
                   </label>
                   <textarea
                     value={profile}
                     onChange={(e) => setProfile(e.target.value)}
                     placeholder="Paste your profile or describe your sailing experience..."
-                    className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 resize-none"
+                    className="w-full min-h-[300px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
                   />
                 </div>
               )}
             </div>
 
             {/* Footer Navigation */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 flex-shrink-0 gap-2">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 gap-2">
               {currentPage > 1 ? (
                 <button
-                  onClick={handleBack}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  type="button"
+                  onClick={(e) => handleBack(e)}
+                  className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors z-50"
                 >
                   Back
                 </button>
               ) : (
                 <div />
               )}
-              {currentPage < 3 ? (
+              {currentPage < 2 ? (
                 <button
                   onClick={handleNext}
                   disabled={!canGoToNextPage()}

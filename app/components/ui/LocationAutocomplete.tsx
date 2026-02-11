@@ -45,7 +45,7 @@ export type LocationAutocompleteProps = {
   types?: string;
   className?: string;
   autoFocus?: boolean;
-  inputRef?: React.RefObject<HTMLInputElement>;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 };
 
 export function LocationAutocomplete({

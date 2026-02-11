@@ -21,10 +21,12 @@ import {
  */
 function SuggestedPrompts({
   prompts,
+  importantIndex,
   onSelect,
   disabled = false,
 }: {
   prompts: string[];
+  importantIndex: number | null;
   onSelect: (prompt: string) => void;
   disabled?: boolean;
 }) {
@@ -40,18 +42,25 @@ function SuggestedPrompts({
     <div className="mt-3 pt-3 border-t border-border/50">
       <p className="text-xs text-muted-foreground mb-2 font-medium">Suggestions:</p>
       <div className="flex flex-wrap gap-2">
-        {prompts.map((prompt, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => handleClick(prompt)}
-            disabled={disabled}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-full transition-all border border-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary/10"
-            title={`Click to send: ${prompt}`}
-          >
-            <span className="text-left">{prompt}</span>
-          </button>
-        ))}
+        {prompts.map((prompt, i) => {
+          const isImportant = importantIndex !== null && i === importantIndex;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => handleClick(prompt)}
+              disabled={disabled}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-all border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                isImportant
+                  ? 'text-white bg-primary hover:bg-primary/90 border-primary shadow-md ring-2 ring-primary/30'
+                  : 'text-primary bg-primary/10 hover:bg-primary/20 border-primary/20 disabled:hover:bg-primary/10'
+              }`}
+              title={`Click to send: ${prompt}`}
+            >
+              <span className="text-left">{prompt}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -449,13 +458,17 @@ export function ProspectChat() {
                   : message.content}
               </div>
               {/* Show suggested prompts from AI response */}
-              {message.role === 'assistant' && (
-                <SuggestedPrompts
-                  prompts={extractSuggestedPrompts(message.content)}
-                  onSelect={handleSuggestionSelect}
-                  disabled={isLoading}
-                />
-              )}
+              {message.role === 'assistant' && (() => {
+                const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
+                return prompts.length > 0 ? (
+                  <SuggestedPrompts
+                    prompts={prompts}
+                    importantIndex={isAuthenticated ? importantIndex : null}
+                    onSelect={handleSuggestionSelect}
+                    disabled={isLoading}
+                  />
+                ) : null;
+              })()}
               {/* Show fallback suggestion badge after 3+ user messages (profile completion mode) */}
               {/* Only show on the LAST assistant message to avoid showing it multiple times */}
               {(() => {
@@ -488,10 +501,11 @@ export function ProspectChat() {
                 }
                 
                 return shouldShowBadge ? (
-                  <div className="mt-3 pt-3 border-t border-border/50">
+                  <div className="mt-3 pt-3 border-t border-border/50 flex justify-end">
                     <button
                       onClick={() => setShowProfileExtractionModal(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-lg transition-colors border border-amber-200 dark:border-amber-800"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+                      title="Skip the AI assistant and fill in your profile manually"
                     >
                       <svg
                         className="w-4 h-4"
@@ -502,9 +516,9 @@ export function ProspectChat() {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                       </svg>
-                      I want to skip the Assistant and fill in my profile myself
+                      Exit Assistant
                     </button>
                   </div>
                 ) : null;

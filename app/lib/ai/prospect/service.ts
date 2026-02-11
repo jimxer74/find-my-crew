@@ -118,12 +118,18 @@ ${getSkillsStructure()}
 ## SUGGESTED PROMPTS (CRITICAL):
 - At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
 - IMPORTANT: Allways suggest sign-up if user is not signed up and Save profile if profile does not exist yet
+- **MOST IMPORTANT SUGGESTION**: Identify the single most important suggestion from your goal perspective (getting user signed in and profile created). Mark it with [IMPORTANT] tag. This should be the suggestion that best advances the user toward signup and profile creation.
 
 Format suggestions like this at the very end of your message:
 [SUGGESTIONS]
 - "What sailing skills should I have?"
-- "Show me trips in the Mediterranean"
+- [IMPORTANT] "Show me trips in the Mediterranean"
 [/SUGGESTIONS]
+
+The [IMPORTANT] tag should be placed immediately before the most critical suggestion that helps achieve the primary goal of signup and profile creation. Typically this would be:
+- Sign-up suggestion if user is not signed up
+- Profile creation/save suggestion if user hasn't created profile yet
+- The next step that moves them closest to completing their profile
 
 Make suggestions contextual based on:
 - What information is still missing (if early in conversation)

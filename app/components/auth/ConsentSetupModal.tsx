@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -23,6 +23,19 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
   const [marketing, setMarketing] = useState(false);
 
   const canSave = privacyPolicy && termsOfService;
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    // Save original overflow style
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    // Disable body scroll
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      // Restore original overflow style when modal closes
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
 
   const handleSave = async () => {
     if (!canSave) {
@@ -136,8 +149,27 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
-      <div className="bg-card rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+    <div 
+      className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4"
+      onClick={(e) => {
+        // Prevent closing by clicking backdrop - this is a required modal
+        // Only stop propagation if clicking the backdrop itself, not the modal content
+        if (e.target === e.currentTarget) {
+          e.stopPropagation();
+        }
+      }}
+    >
+      <div 
+        className="bg-card rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => {
+          // Allow all clicks inside the modal content
+          e.stopPropagation();
+        }}
+        onMouseDown={(e) => {
+          // Ensure mouse events work
+          e.stopPropagation();
+        }}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="text-center mb-6">
