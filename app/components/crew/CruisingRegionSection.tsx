@@ -41,7 +41,7 @@ export function CruisingRegionSection({
         min_lat: region.bbox.minLat.toString(),
         max_lng: region.bbox.maxLng.toString(),
         max_lat: region.bbox.maxLat.toString(),
-        limit: '5',
+        limit: '20',
       });
 
       const response = await fetch(`/api/legs/by-region?${params}`);

@@ -175,14 +175,6 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
     description: 'Bay of Biscay between France and Spain – challenging but rewarding passage waters',
   },
 
-  // Caribbean & Americas
-  {
-    name: 'BVI/USVI',
-    aliases: ['british virgin islands', 'bvi', 'us virgin islands', 'usvi', 'virgin islands', 'tortola', 'st thomas', 'st john', 'virgin gorda'],
-    category: 'caribbean',
-    bbox: { minLng: -65.0, minLat: 17.5, maxLng: -64.0, maxLat: 18.8 },
-    description: 'British and US Virgin Islands – the Caribbean charter capital with short hops and protected waters',
-  },
   // ... (keeping most of your Caribbean entries unchanged as they are solid; only adding aliases where useful)
 
   // Atlantic / US & Canada East Coast additions
@@ -378,20 +370,29 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
   },
 
 
-
   // Northern Europe
   {
-    name: 'Norway',
+    name: 'Scandinavia & Finland',
     aliases: [
-      'norwegian coast', 'fjords', 'oslo', 'bergen', 'lofoten',
-      'norway fjords', 'norwegian fjords', 'scandinavian coast',
-      'north cape', 'troms og finnmark coast', 'geiranger', 'stavanger'
+      'scandinavia', 'nordic', 'norway', 'sweden', 'finland', 
+      'norwegian coast', 'fjords', 'oslo', 'bergen', 'lofoten', 
+      'norway fjords', 'norwegian fjords', 'geiranger', 'stavanger',
+      'swedish coast', 'baltic sea sweden', 'stockholm archipelago', 
+      'gulf of bothnia', 'göteborg', 'malmö', 'visby', 'gothenburg',
+      'archipelago', 'helsinki', 'turku','oulu', 'aland islands', 
+      'saimaa', 'päijänne','kallavesi','saaristomeri','åland','ahvenanmaa', 
+      'gulf of finland', 'baltic sea',
+      'nordic countries', 'scandinavian peninsula', 'nordics'
     ],
     category: 'northern_europe',
-    bbox: { minLng: 4.0, minLat: 57.8, maxLng: 31.5, maxLat: 71.5 },
-    description: 'Norwegian coast including fjords – dramatic scenery, midnight sun and abundant wildlife',
-  },
-  // ... (Baltic, British Isles, etc. kept as good)
+    bbox: { 
+      minLng: 4.0,     // Western Norway (with buffer)
+      minLat: 55.0,    // Southern tip of Sweden (Skåne) + buffer
+      maxLng: 31.5,    // Eastern Finland + Russian border area buffer
+      maxLat: 71.5     // Northern Norway (Finnmark) + buffer
+    },
+    description: 'Scandinavia including Norway, Sweden, and Finland – dramatic Norwegian fjords, extensive Swedish and Finnish archipelagos, Baltic Sea coastlines, Gulf of Bothnia, thousands of inland lakes, midnight sun, northern lights, and abundant wildlife',
+  },  // ... (Baltic, British Isles, etc. kept as good)
 
   // Indian Ocean & Exotics
   {

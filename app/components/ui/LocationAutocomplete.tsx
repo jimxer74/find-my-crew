@@ -351,7 +351,14 @@ export function LocationAutocomplete({
     if (onInputChange) {
       onInputChange(newValue);
     }
-    fetchLocationSuggestions(newValue);
+    // Trigger search if query is long enough
+    if (newValue.length >= 2) {
+      fetchLocationSuggestions(newValue);
+    } else {
+      // Clear suggestions if query is too short
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   };
 
   // Update dropdown position when input position changes or suggestions appear
@@ -362,9 +369,15 @@ export function LocationAutocomplete({
         // Make dropdown wider - at least 400px or 2x input width, whichever is larger
         const minWidth = 400;
         const dropdownWidth = Math.max(minWidth, rect.width * 2);
+        
+        // Use getBoundingClientRect for accurate positioning relative to viewport
+        // Then add scroll offsets for proper positioning in portal
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+        
         setDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
+          top: rect.bottom + scrollTop + 4,
+          left: rect.left + scrollLeft,
           width: dropdownWidth,
         });
       }
@@ -372,6 +385,9 @@ export function LocationAutocomplete({
 
     if (showSuggestions && suggestions.length > 0 && inputRef.current) {
       updatePosition();
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(updatePosition);
+      
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
       return () => {
@@ -379,17 +395,42 @@ export function LocationAutocomplete({
         window.removeEventListener('resize', updatePosition);
       };
     }
-  }, [showSuggestions, suggestions.length]);
+  }, [showSuggestions, suggestions.length, inputValue]);
 
   const handleInputFocus = () => {
     if (suggestions.length > 0) {
       setShowSuggestions(true);
     }
+    // Trigger search if there's already input value
+    if (inputValue && inputValue.length >= 2) {
+      fetchLocationSuggestions(inputValue);
+    }
   };
 
-  const handleInputBlur = () => {
+  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Check if focus is moving to the dropdown
+    const relatedTarget = e.relatedTarget as HTMLElement;
+    if (relatedTarget && dropdownRef.current && dropdownRef.current.contains(relatedTarget)) {
+      return; // Don't hide if clicking into dropdown
+    }
     // Delay hiding suggestions to allow click on suggestion
-    setTimeout(() => setShowSuggestions(false), 200);
+    setTimeout(() => {
+      // Double-check that we're not clicking into the dropdown
+      const activeElement = document.activeElement;
+      if (activeElement && dropdownRef.current && dropdownRef.current.contains(activeElement)) {
+        return; // Still focused on dropdown
+      }
+      // Also check if dropdown still exists and is visible
+      if (!dropdownRef.current || !showSuggestions) {
+        return;
+      }
+      setShowSuggestions(false);
+    }, 200);
+  };
+  
+  // Handle click on dropdown to prevent blur
+  const handleDropdownMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent input blur
   };
 
   return (
@@ -414,28 +455,38 @@ export function LocationAutocomplete({
       {showSuggestions && suggestions.length > 0 && typeof document !== 'undefined' && createPortal(
         <div
           ref={dropdownRef}
-          className="fixed z-[200] bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
+          className="fixed z-[9999] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto location-autocomplete-dropdown"
           style={{
-            top: dropdownPosition.top,
-            left: dropdownPosition.left,
-            width: dropdownPosition.width,
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999,
           }}
+          onMouseDown={handleDropdownMouseDown}
+          data-location-autocomplete="true"
         >
           {suggestions.map((suggestion) => (
             <button
               key={suggestion.id}
               type="button"
-              onClick={() => handleLocationSelect(suggestion)}
-              className="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors border-b border-gray-200 last:border-b-0"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleLocationSelect(suggestion);
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault(); // Prevent input blur
+              }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b border-gray-200 dark:border-gray-700 last:border-b-0 focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700"
             >
-              <div className="font-medium text-gray-900">
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {suggestion.name}
               </div>
               {suggestion.subtitle && (
                 <div className={`text-xs ${
                   suggestion.isCruisingRegion
-                    ? 'text-sky-600 font-normal'
-                    : 'text-gray-600'
+                    ? 'text-sky-600 dark:text-sky-400 font-normal'
+                    : 'text-gray-600 dark:text-gray-400'
                 }`}>
                   {suggestion.subtitle}
                 </div>

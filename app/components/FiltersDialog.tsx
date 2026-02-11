@@ -33,10 +33,21 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
   // Close dialog when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
+      const target = event.target as HTMLElement;
       // Don't close if clicking on the button or the dialog
       if (buttonRef?.current?.contains(target) || dialogRef.current?.contains(target)) {
         return;
+      }
+      // Don't close if clicking on LocationAutocomplete dropdown (rendered via portal)
+      // Check if the clicked element has the data attribute or is inside such element
+      let element: HTMLElement | null = target;
+      while (element) {
+        if (element.getAttribute('data-location-autocomplete') === 'true' ||
+            element.closest('[data-location-autocomplete="true"]')) {
+          // This is the LocationAutocomplete dropdown
+          return;
+        }
+        element = element.parentElement;
       }
       onClose();
     };
@@ -374,6 +385,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                       onChange={(loc) => {
                         setTempLocation(loc);
                         setTempLocationInput(loc.name);
+                        // Don't close dialog - user might want to select arrival location too
                       }}
                       onInputChange={(value) => {
                         setTempLocationInput(value);
@@ -420,6 +432,7 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                       onChange={(loc) => {
                         setTempArrivalLocation(loc);
                         setTempArrivalLocationInput(loc.name);
+                        // Don't close dialog - user might want to adjust other filters
                       }}
                       onInputChange={(value) => {
                         setTempArrivalLocationInput(value);
