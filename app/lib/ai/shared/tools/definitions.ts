@@ -860,7 +860,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         risk_level: {
           type: 'array',
-          description: 'Optional journey risk level(s) for auto-creation. Use when user has specified preferred risk.',
+          description: 'Optional journey risk level(s). MUST be an array of strings, e.g. ["Offshore sailing"]. Never pass a single string or JSON string.',
           items: {
             type: 'string',
             enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],

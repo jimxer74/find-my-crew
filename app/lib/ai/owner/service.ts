@@ -140,7 +140,10 @@ function normalizeRiskLevel(value: unknown): string[] | null {
     return [];
   }
 
-  const arr = toArray(value);
+  const validValues = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+  const arr = toArray(value).filter(
+    v => v && validValues.includes(v) && !v.includes('[') && !v.includes(']')
+  );
   return arr.length > 0 ? arr : null;
 }
 
@@ -555,19 +558,24 @@ async function createJourneyAndLegsFromRoute(
       rawRisk = [];
     }
   }
-  const riskLevelArray = (Array.isArray(rawRisk) ? rawRisk : [])
+  let riskLevelArray = (Array.isArray(rawRisk) ? rawRisk : [])
     .flat(2)
     .filter((v): v is string => typeof v === 'string')
     .map(v => v.trim())
-    .filter(v => v && validRiskLevels.includes(v));
+    .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
+  // Final safety: if any value would be invalid for PostgreSQL enum, use empty array
+  const hasInvalid = riskLevelArray.some(v => !validRiskLevels.includes(v) || v.includes('[') || v.includes(']'));
+  if (hasInvalid) riskLevelArray = [];
+
+  // Build journeyData - use new array reference to avoid any serialization issues
   const journeyData = {
     boat_id: boatId,
     name: routeData.journeyName,
     description: routeData.description || null,
     start_date: firstLeg?.start_date ?? metadata.startDate ?? null,
     end_date: lastLeg?.end_date ?? metadata.endDate ?? null,
-    risk_level: riskLevelArray,
+    risk_level: riskLevelArray.length > 0 ? [...riskLevelArray] : [],
     skills: metadata.skills || [],
     min_experience_level: metadata.min_experience_level ?? 1,
     cost_model: metadata.cost_model && ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'].includes(metadata.cost_model)
@@ -1432,7 +1440,7 @@ Return ONLY the JSON object, nothing else.`;
           // Normalize risk_level (AI may pass string "["Offshore sailing"]" instead of array)
           const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
           const normalizedRiskLevel = (normalizeRiskLevel(args.risk_level) || [])
-            .filter(v => validRiskLevels.includes(v));
+            .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
           // Normalize skills (AI may pass as string)
           let normalizedSkills: string[] = [];
@@ -1641,7 +1649,7 @@ Return ONLY the JSON object, nothing else.`;
 
     const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
     const journeyRiskLevel = (normalizeRiskLevel(args.risk_level) || [])
-      .filter(v => validRiskLevels.includes(v));
+      .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
     let journeySkills: string[] = [];
     if (Array.isArray(args.skills)) {
