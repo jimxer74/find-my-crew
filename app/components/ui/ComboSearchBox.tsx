@@ -395,7 +395,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         <button
           type="button"
           onClick={() => onFocusChange?.(true)}
-          className="w-full h-[64px] flex items-center gap-3 px-4 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white transition-colors text-left"
+          className="w-full h-[64px] flex items-center gap-3 px-4 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors text-left"
         >
           <svg
             className="w-5 h-5 text-gray-400 flex-shrink-0"
@@ -410,7 +410,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
               d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
             />
           </svg>
-          <span className="text-sm text-gray-500 truncate">Search sailing trips by location, dates...</span>
+          <span className="text-sm text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
         </button>
       </div>
     );
@@ -418,7 +418,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
 
   return (
     <div className={`w-full max-w-full ${className}`}>
-      <div className="relative flex items-stretch bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-[64px] w-full max-w-full">
+      <div className="relative flex items-stretch bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-[64px] w-full max-w-full">
         {/* Where From Segment */}
         <div
           className={`flex-1 relative h-[64px] flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20 rounded-l-xl' : ''}`}
@@ -904,7 +904,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
           type="text"
           readOnly
           placeholder="Search for sailing opportunities..."
-          className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/95 backdrop-blur-sm border-0 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 cursor-pointer"
+          className="w-full px-4 py-3 pr-14 text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 cursor-pointer"
           onClick={() => setIsWizardOpen(true)}
         />
         <button
