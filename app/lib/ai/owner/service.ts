@@ -548,7 +548,7 @@ async function createJourneyAndLegsFromRoute(
   const lastLeg = routeData.legs[routeData.legs.length - 1];
 
   // Ensure risk_level is a flat array of valid enum strings (PostgreSQL risk_level enum)
-  // AI may pass string "["Offshore sailing"]" or array - must never pass string to DB
+  // PostgREST/Supabase mishandles JSON arrays for enum[] - use PostgreSQL array literal string instead
   const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
   let rawRisk: unknown = metadata.risk_level;
   if (typeof rawRisk === 'string') {
@@ -564,18 +564,21 @@ async function createJourneyAndLegsFromRoute(
     .map(v => v.trim())
     .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
-  // Final safety: if any value would be invalid for PostgreSQL enum, use empty array
   const hasInvalid = riskLevelArray.some(v => !validRiskLevels.includes(v) || v.includes('[') || v.includes(']'));
   if (hasInvalid) riskLevelArray = [];
 
-  // Build journeyData - use new array reference to avoid any serialization issues
+  // Use PostgreSQL array literal format to avoid PostgREST enum[] serialization issues
+  const riskLevelPgLiteral = riskLevelArray.length > 0
+    ? `{${riskLevelArray.map(v => `"${v.replace(/"/g, '\\"')}"`).join(',')}}`
+    : '{}';
+
   const journeyData = {
     boat_id: boatId,
     name: routeData.journeyName,
     description: routeData.description || null,
     start_date: firstLeg?.start_date ?? metadata.startDate ?? null,
     end_date: lastLeg?.end_date ?? metadata.endDate ?? null,
-    risk_level: riskLevelArray.length > 0 ? [...riskLevelArray] : [],
+    risk_level: riskLevelPgLiteral,
     skills: metadata.skills || [],
     min_experience_level: metadata.min_experience_level ?? 1,
     cost_model: metadata.cost_model && ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'].includes(metadata.cost_model)
@@ -1651,6 +1654,11 @@ Return ONLY the JSON object, nothing else.`;
     const journeyRiskLevel = (normalizeRiskLevel(args.risk_level) || [])
       .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
 
+    // Use PostgreSQL array literal format to avoid PostgREST enum[] serialization issues
+    const riskLevelPgLiteral = journeyRiskLevel.length > 0
+      ? `{${journeyRiskLevel.map(v => `"${v.replace(/"/g, '\\"')}"`).join(',')}}`
+      : '{}';
+
     let journeySkills: string[] = [];
     if (Array.isArray(args.skills)) {
       journeySkills = args.skills.filter(s => typeof s === 'string');
@@ -1669,7 +1677,7 @@ Return ONLY the JSON object, nothing else.`;
           start_date: args.start_date as string | undefined || null,
           end_date: args.end_date as string | undefined || null,
           description: args.description as string | undefined || null,
-          risk_level: journeyRiskLevel,
+          risk_level: riskLevelPgLiteral,
           skills: journeySkills,
           min_experience_level: args.min_experience_level as number | undefined || 1,
           cost_model: costModel,
