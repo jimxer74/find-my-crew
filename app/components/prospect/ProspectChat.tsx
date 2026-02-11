@@ -437,7 +437,9 @@ export function ProspectChat() {
           </div>
         )}
 
-        {messages.map((message) => (
+        {messages
+          .filter((message) => message.role !== 'system')
+          .map((message) => (
           <div
             key={message.id}
             className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}

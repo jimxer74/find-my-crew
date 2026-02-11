@@ -155,9 +155,9 @@ export default function CrewHomePage() {
             </div>
           ) : (
             <>
-              {sortedRegions.slice(0, visibleRegionsCount).map((region) => (
+              {sortedRegions.slice(0, visibleRegionsCount).map((region, index) => (
                 <CruisingRegionSection
-                  key={region.name}
+                  key={`${region.name}-${region.bbox.minLng}-${region.bbox.minLat}-${region.bbox.maxLng}-${region.bbox.maxLat}-${index}`}
                   region={region}
                   userSkills={userSkills}
                   userExperienceLevel={userExperienceLevel}

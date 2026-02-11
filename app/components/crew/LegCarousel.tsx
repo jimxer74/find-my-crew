@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { LegListItem, LegListItemData } from './LegListItem';
@@ -12,6 +12,13 @@ type LegCarouselProps = {
   loading?: boolean;
   showMoreUrl?: string;
   maxLegsBeforeShowMore?: number;
+};
+
+// Group legs by journey ID
+type LegGroup = {
+  journeyId: string | null; // null for single legs without journey
+  legs: LegListItemData[];
+  isGrouped: boolean; // true if multiple legs, false if single leg
 };
 
 export function LegCarousel({
@@ -28,9 +35,37 @@ export function LegCarousel({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
+  // Track selected leg index per journey group (key: journeyId or leg_id for single legs)
+  const [selectedLegIndices, setSelectedLegIndices] = useState<Map<string, number>>(new Map());
 
   // Determine if we should show the "show more" card
   const showShowMoreCard = showMoreUrl && legs.length >= maxLegsBeforeShowMore;
+
+  // Group legs by journey_id
+  const legGroups = useMemo<LegGroup[]>(() => {
+    const groups: LegGroup[] = [];
+    const journeyMap = new Map<string | null, LegListItemData[]>();
+
+    // Group legs by journey_id
+    legs.forEach((leg) => {
+      const journeyId = leg.journey_id || null;
+      if (!journeyMap.has(journeyId)) {
+        journeyMap.set(journeyId, []);
+      }
+      journeyMap.get(journeyId)!.push(leg);
+    });
+
+    // Create groups
+    journeyMap.forEach((legsInJourney, journeyId) => {
+      groups.push({
+        journeyId,
+        legs: legsInJourney,
+        isGrouped: legsInJourney.length > 1,
+      });
+    });
+
+    return groups;
+  }, [legs]);
 
   // Check scroll position to show/hide arrows
   const checkScrollPosition = () => {
@@ -61,7 +96,7 @@ export function LegCarousel({
       }
       window.removeEventListener('resize', checkScrollPosition);
     };
-  }, [legs]);
+  }, [legGroups]);
 
   const scroll = (direction: 'left' | 'right') => {
     const container = scrollContainerRef.current;
@@ -94,6 +129,28 @@ export function LegCarousel({
       </div>
     );
   }
+
+  // Get selected leg index for a journey group
+  const getSelectedLegIndex = (group: LegGroup): number => {
+    const key = group.journeyId || group.legs[0].leg_id;
+    return selectedLegIndices.get(key) ?? 0;
+  };
+
+  // Set selected leg index for a journey group
+  const setSelectedLegIndex = (group: LegGroup, index: number) => {
+    const key = group.journeyId || group.legs[0].leg_id;
+    setSelectedLegIndices((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(key, index);
+      return newMap;
+    });
+  };
+
+  // Get the currently displayed leg for a group
+  const getDisplayedLeg = (group: LegGroup): LegListItemData => {
+    const selectedIndex = getSelectedLegIndex(group);
+    return group.legs[selectedIndex];
+  };
 
   if (legs.length === 0) {
     return null;
@@ -133,55 +190,84 @@ export function LegCarousel({
           msOverflowStyle: 'none',
         }}
       >
-        {legs.map((leg) => (
-          <div
-            key={leg.leg_id}
-            className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start relative"
-          >
-            <LegListItem
-              leg={leg}
-              onClick={onLegClick}
-              displayOptions={{
-                showCarousel: true,
-                showMatchBadge: true,
-                showLegName: true,
-                showJourneyName: false,
-                showLocations: true,
-                showDates: true,
-                showDuration: true,
-                showBoatInfo: false,
-                carouselHeight: 'h-32 sm:h-40',
-                compact: true,
-              }}
-            />
-            {onJoinClick && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onJoinClick(leg);
-                }}
-                className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
-                title={t('joinLeg')}
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                  />
-                </svg>
-                {t('join')}
-              </button>
-            )}
-          </div>
-        ))}
+        {legGroups.map((group) => {
+          const displayedLeg = getDisplayedLeg(group);
+          const selectedIndex = getSelectedLegIndex(group);
+
+          return (
+            <div
+              key={group.journeyId || displayedLeg.leg_id}
+              className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start"
+            >
+              <div className="relative">
+                <LegListItem
+                  leg={displayedLeg}
+                  onClick={onLegClick}
+                  displayOptions={{
+                    showCarousel: true,
+                    showMatchBadge: true,
+                    showLegName: true,
+                    showJourneyName: false,
+                    showLocations: true,
+                    showDates: true,
+                    showDuration: true,
+                    showBoatInfo: false,
+                    carouselHeight: 'h-32 sm:h-40',
+                    compact: true,
+                  }}
+                />
+                {onJoinClick && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onJoinClick(displayedLeg);
+                    }}
+                    className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
+                    title={t('joinLeg')}
+                  >
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                      />
+                    </svg>
+                    {t('join')}
+                  </button>
+                )}
+              </div>
+              {/* Tab buttons for grouped legs */}
+              {group.isGrouped && (
+                <div className="flex items-center justify-center gap-1 mt-2">
+                  {group.legs.map((leg, legIndex) => (
+                    <button
+                      key={leg.leg_id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedLegIndex(group, legIndex);
+                      }}
+                      className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                        legIndex === selectedIndex
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                      title={`Leg ${legIndex + 1}: ${leg.leg_name}`}
+                    >
+                      {legIndex + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
 
         {/* Show More Card */}
         {showShowMoreCard && (
@@ -212,7 +298,7 @@ export function LegCarousel({
       </div>
 
       {/* Mobile Swipe Hint - shown only on first render when there are more items */}
-      {!hasScrolled && canScrollRight && legs.length > 1 && (
+      {!hasScrolled && canScrollRight && legGroups.length > 1 && (
         <div className="flex md:hidden items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground animate-pulse">
           <svg
             className="w-4 h-4"
