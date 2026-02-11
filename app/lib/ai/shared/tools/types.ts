@@ -36,6 +36,8 @@ export interface ToolParameterProperty {
   required?: string[];
   minimum?: number;
   maximum?: number;
+  minItems?: number;
+  maxItems?: number;
 }
 
 /**

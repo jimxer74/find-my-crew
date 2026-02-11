@@ -445,18 +445,19 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
 
   // Auto-save session when messages or preferences change
   useEffect(() => {
-    if (!state.sessionId || !isInitialized) return;
+    const sessionId = state.sessionId;
+    if (!sessionId || !isInitialized) return;
 
     const saveTimeout = setTimeout(async () => {
       try {
         const session: OwnerSession = {
-          sessionId: state.sessionId!,
+          sessionId,
           createdAt: new Date().toISOString(),
           lastActiveAt: new Date().toISOString(),
           conversation: state.messages,
           gatheredPreferences: state.preferences,
         };
-        await sessionService.saveSession(state.sessionId, session);
+        await sessionService.saveSession(sessionId, session);
       } catch (error: any) {
         // Enhanced error logging to capture all details
         console.error('[OwnerChatContext] ❌ Error auto-saving session:', {
