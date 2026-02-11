@@ -1382,34 +1382,29 @@ Return ONLY the JSON object, nothing else.`;
             speed = boat?.average_speed_knots || undefined;
           }
 
-          // Call internal API endpoint
-          const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/generate-journey`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              startLocation,
-              endLocation,
-              intermediateWaypoints,
-              boatId,
-              startDate,
-              endDate,
-              useSpeedPlanning: useSpeedPlanning && !!speed,
-              boatSpeed: speed,
-            }),
+          // Call shared function directly (avoids HTTP self-call which fails in serverless)
+          const { generateJourneyRoute } = await import('@/app/lib/ai/generateJourney');
+          const journeyResult = await generateJourneyRoute({
+            startLocation,
+            endLocation,
+            intermediateWaypoints,
+            boatId,
+            startDate,
+            endDate,
+            useSpeedPlanning: useSpeedPlanning && !!speed,
+            boatSpeed: speed,
           });
 
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
+          if (!journeyResult.success) {
             results.push({
               name: toolCall.name,
               result: null,
-              error: errorData.error || 'Failed to generate journey route',
+              error: journeyResult.error,
             });
             continue;
           }
 
-          const data = await response.json();
-          const routeData = data.data;
+          const routeData = journeyResult.data;
 
           if (!routeData || !routeData.journeyName || !routeData.legs) {
             results.push({
