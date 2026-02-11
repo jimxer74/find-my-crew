@@ -113,38 +113,35 @@ const RISK_LEVEL_DEFINITIONS = {
 const SAILING_SKILLS = skillsConfig.general.map(skill => skill.name);
 
 /**
- * Normalize risk_level field to ensure it's a proper array
+ * Normalize risk_level field to ensure it's a proper array of enum strings.
+ * Handles AI passing: array, string "["Offshore sailing"]", double-encoded JSON, etc.
  */
 function normalizeRiskLevel(value: unknown): string[] | null {
   if (value === null || value === undefined) {
     return null;
   }
-  
-  if (Array.isArray(value)) {
-    return value.filter(v => typeof v === 'string' && v.length > 0);
-  }
-  
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    
-    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(v => typeof v === 'string' && v.length > 0);
-        }
-        if (typeof parsed === 'string') {
-          return [parsed];
-        }
-      } catch {
-        // If JSON parsing fails, treat as single string value
-      }
+
+  function toArray(val: unknown): string[] {
+    if (Array.isArray(val)) {
+      return val.flatMap(v => (typeof v === 'string' ? [v.trim()] : toArray(v))).filter(Boolean);
     }
-    
-    return trimmed.length > 0 ? [trimmed] : null;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return toArray(parsed);
+        } catch {
+          return trimmed.length > 0 ? [trimmed] : [];
+        }
+      }
+      return trimmed.length > 0 ? [trimmed] : [];
+    }
+    return [];
   }
-  
-  return [String(value)];
+
+  const arr = toArray(value);
+  return arr.length > 0 ? arr : null;
 }
 
 /**
@@ -547,13 +544,21 @@ async function createJourneyAndLegsFromRoute(
   const firstLeg = routeData.legs[0];
   const lastLeg = routeData.legs[routeData.legs.length - 1];
 
+  // Ensure risk_level is a flat array of valid enum strings (PostgreSQL risk_level enum)
+  const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+  const riskLevelArray = (metadata.risk_level || [])
+    .flat(2) // Flatten nested arrays (AI may pass [[...]])
+    .filter((v): v is string => typeof v === 'string')
+    .map(v => v.trim())
+    .filter(v => v && validRiskLevels.includes(v));
+
   const journeyData = {
     boat_id: boatId,
     name: routeData.journeyName,
     description: routeData.description || null,
     start_date: firstLeg?.start_date ?? metadata.startDate ?? null,
     end_date: lastLeg?.end_date ?? metadata.endDate ?? null,
-    risk_level: metadata.risk_level || [],
+    risk_level: riskLevelArray,
     skills: metadata.skills || [],
     min_experience_level: metadata.min_experience_level ?? 1,
     cost_model: metadata.cost_model && ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'].includes(metadata.cost_model)
