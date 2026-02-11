@@ -545,9 +545,18 @@ async function createJourneyAndLegsFromRoute(
   const lastLeg = routeData.legs[routeData.legs.length - 1];
 
   // Ensure risk_level is a flat array of valid enum strings (PostgreSQL risk_level enum)
+  // AI may pass string "["Offshore sailing"]" or array - must never pass string to DB
   const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
-  const riskLevelArray = (metadata.risk_level || [])
-    .flat(2) // Flatten nested arrays (AI may pass [[...]])
+  let rawRisk: unknown = metadata.risk_level;
+  if (typeof rawRisk === 'string') {
+    try {
+      rawRisk = JSON.parse(rawRisk.trim());
+    } catch {
+      rawRisk = [];
+    }
+  }
+  const riskLevelArray = (Array.isArray(rawRisk) ? rawRisk : [])
+    .flat(2)
     .filter((v): v is string => typeof v === 'string')
     .map(v => v.trim())
     .filter(v => v && validRiskLevels.includes(v));
