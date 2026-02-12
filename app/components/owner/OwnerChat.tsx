@@ -110,12 +110,13 @@ export default function OwnerChat() {
     error,
     sendMessage,
     clearError,
-    clearSession,
     approveAction,
     cancelAction,
     isAuthenticated,
     userId,
     preferences,
+    sessionEmail,
+    hasSessionEmail,
     hasExistingProfile,
     hasBoat,
     hasJourney,
@@ -163,12 +164,6 @@ export default function OwnerChat() {
     sendMessage(message);
   };
 
-  const handleStartFresh = () => {
-    if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
-      clearSession();
-    }
-  };
-
   const handleApproveAction = async (messageId: string, action: PendingAction) => {
     await approveAction(messageId, action);
   };
@@ -187,37 +182,193 @@ export default function OwnerChat() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      {/* Chat header */}
-      {messages.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-card gap-2">
-          <span className="text-sm text-muted-foreground truncate">
-            Owner Onboarding Assistant
-          </span>
-          <button
-            onClick={handleStartFresh}
-            disabled={isLoading}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Start Fresh
-          </button>
-        </div>
-      )}
-
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-4">
-          {/* Congrats / Welcome onboard - when profile, boat, and journey are all created */}
+          {messages.length === 0 && !isLoading && (
+            <div className="text-center text-muted-foreground py-8">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
+                <svg
+                  className="w-10 h-10 text-primary"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                Welcome to Owner Onboarding
+              </h3>
+              <p className="text-sm max-w-sm mx-auto mb-4">
+                I&apos;ll help you create your profile, add your boat, and plan your first journey. Let&apos;s get started!
+              </p>
+              {!isAuthenticated && (
+                <div className="flex justify-center gap-2 mt-4">
+                  {/* Show primary action based on whether session already has known email */}
+                  {hasSessionEmail ? (
+                    <button
+                      onClick={() => setIsLoginModalOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
+                    >
+                      Log In to Continue
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsSignupModalOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
+                    >
+                      Sign Up
+                    </button>
+                  )}
+                  {/* Show secondary action */}
+                  {hasSessionEmail ? (
+                    <button
+                      onClick={() => setIsSignupModalOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                    >
+                      Create New Account
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsLoginModalOpen(true)}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                    >
+                      Log In
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {messages
+            .filter((message) => message.role !== 'system')
+            .map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[85%] rounded-lg px-4 py-2 ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground'
+                  }`}
+                >
+                  <div className="text-sm whitespace-pre-wrap break-words">
+                    {message.role === 'assistant'
+                      ? removeSuggestionsFromContent(message.content)
+                      : message.content}
+                  </div>
+                  {/* Show suggested prompts from AI response */}
+                  {message.role === 'assistant' && (() => {
+                    const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
+                    return prompts.length > 0 ? (
+                      <SuggestedPrompts
+                        prompts={prompts}
+                        importantIndex={importantIndex}
+                        onSelect={handleSuggestionSelect}
+                        disabled={isLoading}
+                      />
+                    ) : null;
+                  })()}
+                  {/* Show pending action approval UI */}
+                  {message.role === 'assistant' && message.metadata?.pendingAction && (
+                    <PendingActionCard
+                      action={message.metadata.pendingAction}
+                      onApprove={() => handleApproveAction(message.id, message.metadata!.pendingAction!)}
+                      onCancel={() => handleCancelAction(message.id)}
+                      disabled={isLoading}
+                    />
+                  )}
+                  {/* Show inline action button after assistant messages if user is not authenticated */}
+                  {message.role === 'assistant' && !isAuthenticated && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      {hasSessionEmail ? (
+                        <div className="flex flex-col items-start gap-2">
+                          {sessionEmail && (
+                            <p className="text-xs text-muted-foreground">
+                              Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
+                            </p>
+                          )}
+                          <button
+                            onClick={() => setIsLoginModalOpen(true)}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                            </svg>
+                            Log In to Continue
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setIsSignupModalOpen(true)}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                          </svg>
+                          Sign up to continue
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="bg-muted rounded-lg px-4 py-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <svg
+                    className="animate-spin h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  <span>Thinking...</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Congrats / Welcome onboard - render as the last item in the chain */}
           {isFullyOnboarded && (
             <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
               <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
@@ -278,142 +429,6 @@ export default function OwnerChat() {
             </div>
           )}
 
-          {messages.length === 0 && !isLoading && (
-            <div className="text-center text-muted-foreground py-8">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
-                <svg
-                  className="w-10 h-10 text-primary"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">
-                Welcome to Owner Onboarding
-              </h3>
-              <p className="text-sm max-w-sm mx-auto mb-4">
-                I&apos;ll help you create your profile, add your boat, and plan your first journey. Let&apos;s get started!
-              </p>
-              {!isAuthenticated && (
-                <div className="flex justify-center gap-2 mt-4">
-                  <button
-                    onClick={() => setIsSignupModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
-                  >
-                    Sign Up
-                  </button>
-                  <button
-                    onClick={() => setIsLoginModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
-                  >
-                    Log In
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {messages
-            .filter((message) => message.role !== 'system')
-            .map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
-                  <div className="text-sm whitespace-pre-wrap break-words">
-                    {message.role === 'assistant'
-                      ? removeSuggestionsFromContent(message.content)
-                      : message.content}
-                  </div>
-                  {/* Show suggested prompts from AI response */}
-                  {message.role === 'assistant' && (() => {
-                    const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
-                    return prompts.length > 0 ? (
-                      <SuggestedPrompts
-                        prompts={prompts}
-                        importantIndex={importantIndex}
-                        onSelect={handleSuggestionSelect}
-                        disabled={isLoading}
-                      />
-                    ) : null;
-                  })()}
-                  {/* Show pending action approval UI */}
-                  {message.role === 'assistant' && message.metadata?.pendingAction && (
-                    <PendingActionCard
-                      action={message.metadata.pendingAction}
-                      onApprove={() => handleApproveAction(message.id, message.metadata!.pendingAction!)}
-                      onCancel={() => handleCancelAction(message.id)}
-                      disabled={isLoading}
-                    />
-                  )}
-                  {/* Show inline sign-up button after assistant messages if user is not authenticated */}
-                  {message.role === 'assistant' && !isAuthenticated && (
-                    <div className="mt-3 pt-3 border-t border-border/50">
-                      <button
-                        onClick={() => setIsSignupModalOpen(true)}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                        </svg>
-                        Sign up to continue
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-muted rounded-lg px-4 py-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <svg
-                    className="animate-spin h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  <span>Thinking...</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -433,30 +448,32 @@ export default function OwnerChat() {
         </div>
       )}
 
-      {/* Input area */}
-      <div className="border-t border-border bg-card p-4">
-        <div className="max-w-2xl lg:max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <textarea
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message..."
-              disabled={isLoading}
-              rows={1}
-              className="flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!inputValue.trim() || isLoading}
-              className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Send
-            </button>
-          </form>
+      {/* Input area - hidden once onboarding is fully completed */}
+      {!isFullyOnboarded && (
+        <div className="border-t border-border bg-card p-4">
+          <div className="max-w-2xl lg:max-w-4xl mx-auto">
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+                disabled={isLoading}
+                rows={1}
+                className="flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              />
+              <button
+                type="submit"
+                disabled={!inputValue.trim() || isLoading}
+                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send
+              </button>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Signup Modal */}
       <SignupModal

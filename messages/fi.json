@@ -739,5 +739,11 @@
     "postJourneyPromptMessage": "Olet äskettäin suorittanut matkan \"{journeyName}\". Jaa palautteesi auttaaksesi meitä parantamaan!",
     "maybeLater": "Ehkä myöhemmin",
     "dontShowAgain": "Älä näytä uudelleen"
+  },
+  "onboarding": {
+    "completeSignup": "Rekisteröidy",
+    "createProfile": "Luo profiili",
+    "createBoat": "Luo vene",
+    "createFirstJourney": "Luo ensimmäinen matka"
   }
 }

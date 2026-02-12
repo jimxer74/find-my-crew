@@ -38,6 +38,7 @@ export async function loadSession(sessionId: string): Promise<ProspectSession | 
  * - Uses session_id from cookie
  * - Automatically links to user_id if authenticated
  * - Stores email if user shares it in conversation
+ * - Stores user's email when available from auth
  */
 export async function saveSession(sessionId: string, session: ProspectSession): Promise<void> {
   try {
@@ -46,7 +47,16 @@ export async function saveSession(sessionId: string, session: ProspectSession): 
       messagesCount: session.conversation?.length || 0,
       preferencesKeys: Object.keys(session.gatheredPreferences || {}),
       viewedLegsCount: session.viewedLegs?.length || 0,
+      onboardingState: session.onboardingState || 'signup_pending',
     });
+
+    // Get user's email from Supabase auth if available
+    // Note: This is handled in the API route instead to avoid importing server-only code in client components
+    const userEmail = null;
+
+    // Email will be extracted from auth context in the API route
+    // No need to add it to gatheredPreferences here
+    const sessionWithUserEmail = session;
 
     const response = await fetch('/api/prospect/session/data', {
       method: 'POST',
@@ -54,7 +64,7 @@ export async function saveSession(sessionId: string, session: ProspectSession): 
         'Content-Type': 'application/json',
       },
       credentials: 'include', // Include cookies
-      body: JSON.stringify({ session }),
+      body: JSON.stringify({ session: sessionWithUserEmail }),
     });
 
     if (!response.ok) {
@@ -139,11 +149,13 @@ export async function deleteSession(sessionId: string): Promise<void> {
  * Link session to authenticated user (called after signup)
  * - Links by session_id (current session)
  * - Also links by email (all sessions with matching email)
+ * @param postSignupOnboarding - When true, marks session for after-consent API to redirect and trigger profile completion
  */
 export async function linkSessionToUser(
   sessionId: string,
   userId: string,
-  email?: string
+  email?: string,
+  options?: { postSignupOnboarding?: boolean }
 ): Promise<void> {
   try {
     const response = await fetch('/api/prospect/session/link', {
@@ -152,7 +164,7 @@ export async function linkSessionToUser(
         'Content-Type': 'application/json',
       },
       credentials: 'include', // Include cookies
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, postSignupOnboarding: options?.postSignupOnboarding }),
     });
 
     if (!response.ok) {
@@ -161,6 +173,33 @@ export async function linkSessionToUser(
     }
   } catch (error: any) {
     console.error('[SessionService] Error linking session:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update onboarding state for a prospect session
+ */
+export async function updateOnboardingState(
+  sessionId: string,
+  newState: string
+): Promise<void> {
+  try {
+    const response = await fetch('/api/prospect/session/data', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Include cookies
+      body: JSON.stringify({ onboarding_state: newState }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Failed to update onboarding state: ${response.statusText}`);
+    }
+  } catch (error: any) {
+    console.error('[ProspectSessionService] Error updating onboarding state:', error);
     throw error;
   }
 }

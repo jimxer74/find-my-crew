@@ -24,11 +24,41 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify user is a crew member
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('roles, skills, sailing_experience, risk_level')
       .eq('id', user.id)
       .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      // Handle specific error codes
+      if (profileError.code === 'PGRST116') {
+        // Profile not found - user doesn't have a profile yet
+        return NextResponse.json(
+          { error: 'User profile not found', details: 'Please complete your profile first' },
+          { status: 404 }
+        );
+      }
+      if (profileError.code === 'PGRST301') {
+        // Forbidden - authentication issue
+        return NextResponse.json(
+          { error: 'Authentication required', details: 'Please log in again' },
+          { status: 401 }
+        );
+      }
+      if (profileError.code === 'PGRST302') {
+        // Not Acceptable - likely a malformed request
+        return NextResponse.json(
+          { error: 'Invalid request format', details: 'Please check your request' },
+          { status: 406 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'Error fetching user profile', details: profileError.message },
+        { status: 500 }
+      );
+    }
 
     if (!profile || !hasCrewRole(profile)) {
       return NextResponse.json(
@@ -40,7 +70,17 @@ export async function GET(request: NextRequest) {
     // Get user's registrations with leg IDs
     const { data: registrations, error: regError } = await supabase
       .from('registrations')
-      .select('id, leg_id, status, notes, created_at, updated_at, ai_match_score, ai_match_reasoning, auto_approved')
+      .select(`
+        id,
+        leg_id,
+        status,
+        notes,
+        created_at,
+        updated_at,
+        ai_match_score,
+        ai_match_reasoning,
+        auto_approved
+      `)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
@@ -94,12 +134,22 @@ export async function GET(request: NextRequest) {
             owner_id
           )
         )
-      `)
+      `, { count: 'exact' })
       .in('id', legIds);
 
     if (legsError) {
       console.error('Error fetching leg details:', legsError);
       console.error('Legs error details:', JSON.stringify(legsError, null, 2));
+
+      // Handle specific error codes
+      if (legsError.code === 'PGRST302') {
+        // Not Acceptable - likely a malformed request
+        return NextResponse.json(
+          { error: 'Invalid request format for leg details', details: 'Please check your request' },
+          { status: 406 }
+        );
+      }
+
       return NextResponse.json(
         { error: 'Failed to fetch leg details', details: legsError.message, code: legsError.code },
         { status: 500 }

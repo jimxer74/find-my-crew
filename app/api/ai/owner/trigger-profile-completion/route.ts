@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { ownerChat } from '@/app/lib/ai/owner/service';
 import type { KnownUserProfile, OwnerMessage, OwnerPreferences } from '@/app/lib/ai/owner/types';
+import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
@@ -74,6 +75,19 @@ export async function POST(request: NextRequest) {
     });
 
     log('Trigger completed', { sessionId: response.sessionId, messageId: response.message?.id });
+
+    // Mark session so returning users don't get duplicate triggers
+    const sid = response.sessionId ?? sessionId;
+    if (sid) {
+      const db = await getSupabaseServerClient();
+      await db
+        .from('owner_sessions')
+        .update({ profile_completion_triggered_at: new Date().toISOString() })
+        .eq('session_id', sid)
+        .eq('user_id', user.id);
+      log('Marked profile_completion_triggered_at', { sessionId: sid });
+    }
+
     return NextResponse.json({
       sessionId: response.sessionId,
       message: response.message,

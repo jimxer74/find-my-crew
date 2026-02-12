@@ -46,9 +46,6 @@ export function InlineChatSignupForm({
         userMetadata.prospect_preferences = preferences;
       }
 
-      // Store flag to redirect back to assistant after email confirmation
-      localStorage.setItem('ai_assistant_signup_pending', 'true');
-
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -83,8 +80,6 @@ export function InlineChatSignupForm({
     if (preferences) {
       localStorage.setItem('prospect_signup_preferences', JSON.stringify(preferences));
     }
-    // Store flag to redirect back to assistant after OAuth
-    localStorage.setItem('ai_assistant_signup_pending', 'true');
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',

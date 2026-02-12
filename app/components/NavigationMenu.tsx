@@ -6,11 +6,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useRouter, usePathname } from 'next/navigation';
 import { ThemeToggle } from '@/app/components/ui/ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
+import { useProfile } from '@/app/lib/profile/useProfile';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;
@@ -22,6 +24,7 @@ type NavigationMenuContentProps = {
   onOpenLogin?: () => void;
   onOpenSignup?: () => void;
   profileFullName?: string | null;
+  handleRedirect?: (userId: string, router: any) => Promise<void>;
 };
 // Helper function to get initials from full name
 function getInitials(name: string): string {
@@ -38,53 +41,14 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
   const { userRoles, roleLoading } = useUserRoles();
   const router = useRouter();
   const pathname = usePathname();
+  const { handleRedirect } = useProfileRedirect();
+  const { profile, loading: profileLoading } = useProfile();
   const [isOpen, setIsOpen] = useState(false);
-  const [profileFullName, setProfileFullName] = useState<string | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Fetch current profile full_name to ensure avatar shows the most recent name
-  useEffect(() => {
-    const fetchProfileFullName = async () => {
-      if (!user) {
-        setProfileFullName(null);
-        return;
-      }
-
-      try {
-        const supabase = getSupabaseBrowserClient();
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.warn('[NavigationMenu] Failed to fetch profile full_name:', error.message);
-          // Fallback to auth metadata if profile fetch fails
-          setProfileFullName(user.user_metadata?.full_name || user.email);
-        } else {
-          setProfileFullName(data?.full_name || user.email);
-        }
-      } catch (err) {
-        console.error('[NavigationMenu] Error fetching profile:', err);
-        // Fallback to auth metadata
-        setProfileFullName(user.user_metadata?.full_name || user.email);
-      }
-    };
-
-    fetchProfileFullName();
-
-    // Listen for profile updates to refresh the name
-    const handleProfileUpdate = () => {
-      fetchProfileFullName();
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-    return () => {
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, [user]);
+  // Get profile full name
+  const profileFullName = profile?.full_name || null;
 
   // Close menu when route changes
   useEffect(() => {
@@ -168,7 +132,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
         {user ? (           
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary hover:bg-primary/80 text-primary-foreground font-semibold text-sm mr-3 flex-shrink-0">
-            {getInitials(profileFullName || user.user_metadata?.full_name || user.email)}
+            {getInitials(profile?.full_name || user.user_metadata?.full_name || user.email)}
           </div>
         
       ) : (
@@ -209,6 +173,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
               onOpenLogin={onOpenLogin}
               onOpenSignup={onOpenSignup}
               profileFullName={profileFullName}
+              handleRedirect={handleRedirect}
             />
           </div>
         </div>,
@@ -219,7 +184,9 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 }
 
 // Content component that can be used in both modal and page modes
-export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, profileFullName }: NavigationMenuContentProps) {
+export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, profileFullName, handleRedirect }: NavigationMenuContentProps) {
+  // Get profile from context
+  const { profile } = useProfile();
   const t = useTranslations('navigation');
   const tAuth = useTranslations('auth');
   const tSettings = useTranslations('settings');
@@ -242,7 +209,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
   // Note: User roles are now handled by UserRolesContext, removing duplicate logic
 
   // Helper function to handle navigation on mobile menu page
-  const handleNavClick = (href: string, e?: React.MouseEvent) => {
+  const handleNavClick = async (href: string, e?: React.MouseEvent) => {
     // Prevent default if event is provided (for Link components)
     if (e) {
       e.preventDefault();
@@ -254,7 +221,17 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('closeAllDialogs'));
     }
-    // Navigate immediately - router.push will handle the navigation
+
+    // Special handling for profile links - check for onboarding sessions
+    if (href === '/profile' && user && handleRedirect) {
+      // Use setTimeout to ensure dialogs are closed before navigation
+      setTimeout(async () => {
+        await handleRedirect(user.id, router);
+      }, 50);
+      return;
+    }
+
+    // Navigate immediately for other links
     // Use setTimeout to ensure dialogs are closed before navigation
     setTimeout(() => {
       router.push(href);
@@ -293,13 +270,12 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
                     />
                   </svg>
                 </div>
-                
-  
+
                 {/* Name + Email stacked vertically */}
                 <div className="flex flex-col min-w-0">
                 <span className="font-medium">{t('myProfile')}</span>
                 <span className="text-xs text-muted-foreground truncate">
-                {profileFullName || user.user_metadata?.full_name || user.email}
+                {profile?.full_name || user.user_metadata?.full_name || user.email}
                 </span>
                 <span className="text-xs text-muted-foreground truncate">
                 {user.email}

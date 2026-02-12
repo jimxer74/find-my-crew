@@ -2,10 +2,10 @@
 
 import { useEffect, useState, ReactNode } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { hasFeatureAccess, FeatureName } from '@/app/lib/auth/featureAccess';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
 import Link from 'next/link';
+import { useProfile } from '@/app/lib/profile/useProfile';
 
 type FeatureGateProps = {
   feature: FeatureName;
@@ -14,15 +14,15 @@ type FeatureGateProps = {
   showPrompt?: boolean;
 };
 
-export function FeatureGate({ 
-  feature, 
-  children, 
+export function FeatureGate({
+  feature,
+  children,
   fallback,
-  showPrompt = true 
+  showPrompt = true
 }: FeatureGateProps) {
   const { user } = useAuth();
+  const { profile, loading } = useProfile();
   const [profileStatus, setProfileStatus] = useState<{ exists: boolean; hasRoles: boolean; roles: string[]; completionPercentage: number } | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -32,18 +32,25 @@ export function FeatureGate({
         roles: [],
         completionPercentage: 0,
       });
-      setLoading(false);
       return;
     }
 
-    const loadProfileStatus = async () => {
-      const status = await checkProfile(user.id);
-      setProfileStatus(status);
-      setLoading(false);
-    };
-
-    loadProfileStatus();
-  }, [user]);
+    if (profile) {
+      setProfileStatus({
+        exists: true,
+        hasRoles: (profile.roles || []).length > 0,
+        roles: profile.roles || [],
+        completionPercentage: profile.profile_completion_percentage || 0,
+      });
+    } else {
+      setProfileStatus({
+        exists: false,
+        hasRoles: false,
+        roles: [],
+        completionPercentage: 0,
+      });
+    }
+  }, [user, profile]);
 
   if (loading) {
     return null; // Or a loading spinner

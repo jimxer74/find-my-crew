@@ -60,12 +60,18 @@ interface ProspectChatState {
   isAuthenticated: boolean;
   userId: string | null;
   userProfile: KnownUserProfile | null;
+  /** Email stored in prospect_sessions.email for current session */
+  sessionEmail: string | null;
+  /** True when prospect_sessions.email is set for current session */
+  hasSessionEmail: boolean;
   /** True only after user has completed signup AND granted AI consent (consentSetupCompleted with aiProcessingConsent) */
   consentGrantedForProfileCompletion: boolean;
   /** True if user has a profile (regardless of completion status) */
   hasExistingProfile: boolean;
   /** Count of user messages sent after signup (for fallback strategy) */
   userMessageCountAfterSignup: number;
+  /** Onboarding state: signup_pending, consent_pending, profile_pending, completed */
+  onboardingState: string;
 }
 
 interface ProspectChatContextType extends ProspectChatState {
@@ -78,6 +84,7 @@ interface ProspectChatContextType extends ProspectChatState {
   isReturningUser: boolean;
   /** Trigger fallback profile extraction modal */
   triggerFallbackProfileExtraction: () => void;
+  updateOnboardingState: (state: string) => Promise<void>;
 }
 
 const ProspectChatContext = createContext<ProspectChatContextType | null>(null);
@@ -120,9 +127,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     userId: null,
     userProfile: null,
+    sessionEmail: null,
+    hasSessionEmail: false,
     consentGrantedForProfileCompletion: false,
     hasExistingProfile: false,
     userMessageCountAfterSignup: 0,
+    onboardingState: 'signup_pending',
   });
 
   // Keep stateRef in sync with state
@@ -258,7 +268,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               messages: shouldSetMessages ? sessionToUse.conversation : prev.messages,
               preferences: preferencesToUse,
               viewedLegs: sessionToUse.viewedLegs,
+              sessionEmail: sessionToUse.sessionEmail ?? null,
+              hasSessionEmail: sessionToUse.hasSessionEmail === true,
               userMessageCountAfterSignup: loadedMessageCount,
+              onboardingState: sessionToUse.onboardingState || 'signup_pending',
             };
           });
           setIsReturningUser(sessionToUse.conversation.length > 0);
@@ -271,8 +284,43 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             messages: [],
             preferences: {},
             viewedLegs: [],
+            sessionEmail: null,
+            hasSessionEmail: false,
+            onboardingState: 'signup_pending',
           }));
           setIsReturningUser(false);
+        }
+
+        // FALLBACK: Link session if onAuthStateChange fired before we had sessionId
+        const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
+        if (sessionId && isProfileCompletion) {
+          const supabase = getSupabaseBrowserClient();
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            try {
+              await sessionService.linkSessionToUser(
+                sessionId,
+                user.id,
+                user.email || undefined,
+                { postSignupOnboarding: true }
+              );
+              console.log('[ProspectChatContext] ✅ Fallback: linked prospect session to user:', user.id);
+
+              // Update onboarding state to consent_pending after signup
+              try {
+                await sessionService.updateOnboardingState(sessionId, 'consent_pending');
+                setState((prev) => ({
+                  ...prev,
+                  onboardingState: 'consent_pending',
+                }));
+                console.log('[ProspectChatContext] ✅ Fallback: updated onboarding state to consent_pending');
+              } catch (stateError) {
+                console.error('[ProspectChatContext] Error updating onboarding state after fallback signup:', stateError);
+              }
+            } catch (err) {
+              console.error('[ProspectChatContext] Fallback link failed:', err);
+            }
+          }
         }
 
         setIsInitialized(true);
@@ -302,6 +350,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             isAuthenticated: true, // User exists = authenticated
             userId: user.id,
             userProfile: knownProfile,
+            sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+            hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
           }));
           console.log('Profile completion mode activated for user:', user.id, 'known profile:', knownProfile);
         }
@@ -370,6 +420,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                   isAuthenticated: true,
                   userId: user.id,
                   userProfile: knownProfile,
+                  sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+                  hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
                   hasExistingProfile: false,
                 }));
                 return;
@@ -380,6 +432,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: true,
                 userId: user.id,
                 userProfile: knownProfile,
+                sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+                hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
                 hasExistingProfile: false,
               }));
               return;
@@ -431,6 +485,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               isAuthenticated: true, // User exists = authenticated
               userId: user.id,
               userProfile: knownProfile,
+              sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+              hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
               hasExistingProfile: hasProfile, // Simple check: profile exists or not
             }));
             console.log('[ProspectChatContext] ✅ Initial auth check - User authenticated:', {
@@ -454,6 +510,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: true,
                 userId: user.id,
                 userProfile: knownProfile,
+                sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+                hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
                 hasExistingProfile: false,
               }));
             } else {
@@ -468,6 +526,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 isAuthenticated: true,
                 userId: user.id,
                 userProfile: knownProfile,
+                sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+                hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
                 hasExistingProfile: false,
               }));
             }
@@ -501,14 +561,28 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         
         // CRITICAL: Link prospect session to authenticated user after signup
         const currentSessionId = stateRef.current?.sessionId;
+        const isProfileCompletion = typeof window !== 'undefined' && window.location.search.includes('profile_completion=true');
         if (currentSessionId) {
           try {
             await sessionService.linkSessionToUser(
               currentSessionId,
               session.user.id,
-              session.user.email || undefined
+              session.user.email || undefined,
+              { postSignupOnboarding: isProfileCompletion }
             );
             console.log('[ProspectChatContext] ✅ Linked prospect session to user:', session.user.id);
+
+            // Update onboarding state to consent_pending after signup
+            try {
+              await sessionService.updateOnboardingState(currentSessionId, 'consent_pending');
+              setState((prev) => ({
+                ...prev,
+                onboardingState: 'consent_pending',
+              }));
+              console.log('[ProspectChatContext] ✅ Updated onboarding state to consent_pending');
+            } catch (stateError) {
+              console.error('[ProspectChatContext] Error updating onboarding state after signup:', stateError);
+            }
           } catch (error) {
             console.error('[ProspectChatContext] Error linking session to user:', error);
             // Don't fail signup if linking fails - non-critical
@@ -521,6 +595,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           isAuthenticated: true, // User exists = authenticated
           userId: session.user.id,
           userProfile: knownProfile,
+          sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+          hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
         }));
         
         // Check if they have a profile (simple check - just existence)
@@ -627,127 +703,17 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Check on mount if consent was just completed (handles case where event fired before component mounted)
-  // This is a fallback for race conditions where consent completes before ProspectChatContext mounts
+  // Trigger profile completion when landing with profile_completion=true OR returning user (incomplete profile + linked session)
   useEffect(() => {
-    async function checkPendingConsentCompletion() {
-      const signupPending = typeof window !== 'undefined'
-        ? localStorage.getItem('ai_assistant_signup_pending')
-        : null;
+    async function handleProfileCompletionMode() {
+      const isProfileCompletionFromUrl = searchParams?.get('profile_completion') === 'true';
 
-      if (!signupPending) return;
-
-      // Check if consent was recently completed (within last 5 seconds) by checking user_consents
-      const supabase = getSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: consentData } = await supabase
-        .from('user_consents')
-        .select('consent_setup_completed_at, ai_processing_consent')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (consentData?.consent_setup_completed_at) {
-        const completedAt = new Date(consentData.consent_setup_completed_at);
-        const now = new Date();
-        const secondsSinceCompletion = (now.getTime() - completedAt.getTime()) / 1000;
-
-        // If consent was completed within last 10 seconds, trigger profile completion
-        if (secondsSinceCompletion < 10) {
-          console.log('[ProspectChat] Detected recent consent completion on mount - triggering profile completion');
-          // Manually trigger the handler logic
-          const event = new CustomEvent('consentSetupCompleted', {
-            detail: { aiProcessingConsent: consentData.ai_processing_consent ?? false },
-          });
-          window.dispatchEvent(event);
-        }
-      }
-    }
-
-    if (isInitialized) {
-      checkPendingConsentCompletion();
-    }
-  }, [isInitialized]);
-
-  // Listen for consent completion event (OAuth flow: user is already on /welcome/crew)
-  // When consent modal closes, check if AI consent was granted.
-  // If yes → activate profile completion mode. If no → redirect to manual profile setup.
-  // IMPORTANT: Always register the listener (not conditional) to avoid race conditions.
-  // Check the flag INSIDE the handler to catch events that fire before/after mount.
-  useEffect(() => {
-    const handleConsentCompleted = async (event: Event) => {
-      // Check if this is a signup from prospect chat flow (check INSIDE handler to avoid race conditions)
-      const signupPending = typeof window !== 'undefined'
-        ? localStorage.getItem('ai_assistant_signup_pending')
-        : null;
-
-      // Only process if there's a pending signup from the prospect chat flow
-      if (!signupPending) {
-        console.log('[ProspectChat] Consent completed event received but no ai_assistant_signup_pending flag - ignoring');
-        return;
-      }
-
-      console.log('[ProspectChat] Consent completed event received - processing profile completion trigger');
-
-      const customEvent = event as CustomEvent<{ aiProcessingConsent: boolean }>;
-      const aiConsent = customEvent.detail?.aiProcessingConsent ?? false;
-
-      // Clear the signup flag immediately to prevent duplicate processing
-      localStorage.removeItem('ai_assistant_signup_pending');
-
-      if (!aiConsent) {
-        // AI consent NOT granted → redirect to manual profile setup
-        console.log('[ProspectChat] Consent completed without AI consent → redirecting to profile setup');
-        router.push('/profile-setup');
-        return;
-      }
-
-      // AI consent granted → activate profile completion mode and mark consent as given
-      // (trigger message will only fire when this flag is true)
-      console.log('[ProspectChat] Consent completed with AI consent → entering profile completion mode');
-
-      // Prevent duplicate processing
-      if (profileCompletionProcessed.current) {
-        console.log('[ProspectChat] Profile completion already processed - skipping duplicate trigger');
-        return;
-      }
+      if (profileCompletionProcessed.current || !isInitialized) return;
 
       const supabase = getSupabaseBrowserClient();
       const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) return;
 
-      if (authError || !user) {
-        console.error('[ProspectChat] Failed to get authenticated user:', authError);
-        setState((prev) => ({
-          ...prev,
-          error: 'Authentication error. Please refresh and try again.',
-        }));
-        return;
-      }
-
-      const knownProfile = extractKnownProfile(user);
-      profileCompletionProcessed.current = true;
-
-      // Recalculate user message count from existing messages when entering profile completion mode
-      const currentMessages = stateRef.current?.messages || [];
-      const userMessageCount = currentMessages.filter(m => m.role === 'user').length;
-
-      setState((prev) => ({
-        ...prev,
-        profileCompletionMode: true,
-        isAuthenticated: true, // User exists = authenticated
-        userId: user.id,
-        userProfile: knownProfile,
-        consentGrantedForProfileCompletion: true,
-        isLoading: true,
-        error: null,
-        userMessageCountAfterSignup: userMessageCount, // Initialize counter from existing messages
-      }));
-      
-      console.log('[ProspectChatContext] 📊 Initialized user message count on profile completion mode:', userMessageCount);
-
-      // Trigger profile completion via backend API (sends SYSTEM message server-side and returns AI response)
-      // Load session from API instead of localStorage
       const currentSessionId = stateRef.current?.sessionId;
       let session: ProspectSession | null = null;
       if (currentSessionId) {
@@ -758,39 +724,64 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      try {
-        console.log('[ProspectChat] Calling /api/ai/prospect/trigger-profile-completion', {
-          sessionId: session?.sessionId,
-          historyLength: session?.conversation?.length ?? 0,
-        });
+      // Returning user: no URL param, session has messages, not yet triggered, no profile
+      const isReturningUser =
+        !isProfileCompletionFromUrl &&
+        session &&
+        session.conversation.length > 0 &&
+        !session.profileCompletionTriggeredAt;
 
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      const hasProfile = !!profile;
+
+      const shouldTrigger =
+        isProfileCompletionFromUrl ||
+        (isReturningUser && !hasProfile);
+
+      if (!shouldTrigger) return;
+      if (profileCompletionProcessed.current) return;
+
+      profileCompletionProcessed.current = true;
+      const knownProfile = extractKnownProfile(user);
+      const currentMessages = stateRef.current?.messages || [];
+      const userMessageCount = currentMessages.filter(m => m.role === 'user').length;
+
+      setState((prev) => ({
+        ...prev,
+        profileCompletionMode: true,
+        isAuthenticated: true,
+        userId: user.id,
+        userProfile: knownProfile,
+        sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
+        hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
+        consentGrantedForProfileCompletion: true,
+        isLoading: true,
+        error: null,
+        userMessageCountAfterSignup: userMessageCount,
+      }));
+
+      try {
         const res = await fetch('/api/ai/prospect/trigger-profile-completion', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include', // ensure cookies (session) are sent for auth
+          credentials: 'include',
           body: JSON.stringify({
-            sessionId: session?.sessionId ?? undefined,
-            conversationHistory: session?.conversation ?? [],
-            gatheredPreferences: session?.gatheredPreferences ?? {},
+            sessionId: session?.sessionId ?? currentSessionId ?? undefined,
+            conversationHistory: session?.conversation ?? currentMessages,
+            gatheredPreferences: session?.gatheredPreferences ?? stateRef.current?.preferences ?? {},
             userProfile: knownProfile,
           }),
         });
-
         const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.userMessage ?? data.error ?? 'Failed to start profile completion');
-        }
-
+        if (!res.ok) throw new Error(data.userMessage ?? data.error ?? 'Failed to start profile completion');
         const assistantMessage = data.message;
         if (!assistantMessage || typeof assistantMessage.content !== 'string') {
           throw new Error('Invalid profile completion response. Please try again.');
         }
-
-        console.log('[ProspectChat] Profile completion trigger successful', {
-          messageId: assistantMessage.id,
-          contentLength: assistantMessage.content.length,
-        });
 
         const triggerUserMessage: ProspectMessage = {
           id: `user_trigger_${Date.now()}`,
@@ -803,9 +794,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           ...prev,
           sessionId: data.sessionId ?? prev.sessionId,
           messages: [...prev.messages, triggerUserMessage, assistantMessage],
-          preferences: data.extractedPreferences
-            ? { ...prev.preferences, ...data.extractedPreferences }
-            : prev.preferences,
+          preferences: data.extractedPreferences ? { ...prev.preferences, ...data.extractedPreferences } : prev.preferences,
           isLoading: false,
         }));
       } catch (err: any) {
@@ -817,16 +806,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           error: err.message ?? 'Failed to start profile completion. You can continue the conversation below.',
         }));
       }
-    };
+    }
 
-    // Always register the listener (not conditional) to catch events that fire at any time
-    console.log('[ProspectChat] Registering consentSetupCompleted event listener');
-    window.addEventListener('consentSetupCompleted', handleConsentCompleted);
-    return () => {
-      console.log('[ProspectChat] Removing consentSetupCompleted event listener');
-      window.removeEventListener('consentSetupCompleted', handleConsentCompleted);
-    };
-  }, [router]);
+    if (isInitialized) handleProfileCompletionMode();
+  }, [isInitialized, searchParams]);
 
   const sendMessage = useCallback(async (message: string) => {
     console.log('[ProspectChatContext] sendMessage called with:', message);
@@ -846,6 +829,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           return {
             ...prev,
             preferences: updatedPreferences,
+            sessionEmail: extractedEmail,
+            hasSessionEmail: true,
           };
         }
         return prev;
@@ -1042,9 +1027,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           isAuthenticated: currentState.isAuthenticated,
           userId: currentState.userId,
           userProfile: currentState.userProfile,
+          sessionEmail: currentState.sessionEmail,
+          hasSessionEmail: currentState.hasSessionEmail,
           consentGrantedForProfileCompletion: currentState.consentGrantedForProfileCompletion,
           hasExistingProfile: true, // Profile now exists
           userMessageCountAfterSignup: currentState.userMessageCountAfterSignup, // Preserve counter
+          onboardingState: 'completed', // Profile creation completed
         };
         
         // Update ref immediately to prevent stale saves
@@ -1312,7 +1300,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(async () => {
     console.log('[ProspectChatContext] 🧹 Clearing prospect chat session...');
-    
+
     // Clear session from database and server cookie
     const currentSessionId = stateRef.current?.sessionId;
     if (currentSessionId) {
@@ -1344,12 +1332,34 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       isAuthenticated: prev.isAuthenticated,
       userId: prev.userId,
       userProfile: prev.userProfile,
+      sessionEmail: null,
+      hasSessionEmail: false,
       consentGrantedForProfileCompletion: prev.consentGrantedForProfileCompletion,
       hasExistingProfile: prev.hasExistingProfile,
+      onboardingState: 'signup_pending',
     }));
     setIsReturningUser(false);
     console.log('[ProspectChatContext] ✅ Session cleared - chat data removed, auth state preserved');
   }, []);
+
+  const updateOnboardingState = useCallback(async (newState: string) => {
+    if (!state.sessionId || !state.userId) {
+      console.warn('[ProspectChatContext] Cannot update onboarding state: no session or user');
+      return;
+    }
+
+    try {
+      await sessionService.updateOnboardingState(state.sessionId, newState);
+      // Update local state
+      setState((prev) => ({
+        ...prev,
+        onboardingState: newState,
+      }));
+      console.log('[ProspectChatContext] ✅ Updated onboarding state to:', newState);
+    } catch (error) {
+      console.error('[ProspectChatContext] Error updating onboarding state:', error);
+    }
+  }, [state.sessionId, state.userId]);
 
   const addViewedLeg = useCallback((legId: string) => {
     setState((prev) => ({
@@ -1541,6 +1551,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     cancelAction,
     isReturningUser,
     triggerFallbackProfileExtraction,
+    updateOnboardingState,
   };
 
   return (

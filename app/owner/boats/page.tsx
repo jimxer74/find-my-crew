@@ -6,12 +6,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
 import { NewBoatWizard } from '@/app/components/manage/NewBoatWizard';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
-import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { Footer } from '@/app/components/Footer';
+import { useProfile } from '@/app/lib/profile/useProfile';
+import { checkProfile } from '@/app/lib/profile/checkProfile';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 export default function BoatsPage() {
   const t = useTranslations('boats');

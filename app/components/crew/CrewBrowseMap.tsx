@@ -11,10 +11,11 @@ import { LegList } from './LegList';
 import { LegBrowsePane } from './LegBrowsePane';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useProfile } from '@/app/lib/profile/useProfile';
 import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@/app/lib/skillMatching';
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@/app/types/cost-models';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
     
 type Leg = {
@@ -128,6 +129,7 @@ export function CrewBrowseMap({
   const [isLegsPaneMinimized, setIsLegsPaneMinimized] = useState(false);
   const { user } = useAuth();
   const { filters, lastUpdated } = useFilters();
+  const { profile, loading: profileLoading } = useProfile();
   const filtersRef = useRef(filters);
   const viewportDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLoadingRef = useRef(false);
@@ -339,53 +341,23 @@ export function CrewBrowseMap({
     });
   }, [legs]);
 
-  // Load user's skills and experience level from profile
+  // Load user's skills and experience level from profile using useProfile hook
   useEffect(() => {
-    if (!user) {
+    if (!user || profileLoading) {
       setUserSkills([]);
       userSkillsRef.current = [];
       setUserExperienceLevel(null);
       userExperienceLevelRef.current = null;
+      setUserRiskLevel(null);
+      userRiskLevelRef.current = null;
       return;
     }
 
-    const loadUserProfile = async () => {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('skills, sailing_experience, risk_level')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        // Profile doesn't exist (PGRST116) - this is expected for users without profiles
-        if (error.code === 'PGRST116') {
-          // User doesn't have a profile yet - set empty values
-          setUserSkills([]);
-          userSkillsRef.current = [];
-          setUserExperienceLevel(null);
-          userExperienceLevelRef.current = null;
-          setUserRiskLevel(null);
-          userRiskLevelRef.current = null;
-          return;
-        }
-        // Other errors should be logged
-        console.error('[CrewBrowseMap] Error loading user profile:', error);
-        setUserSkills([]);
-        userSkillsRef.current = [];
-        setUserExperienceLevel(null);
-        userExperienceLevelRef.current = null;
-        setUserRiskLevel(null);
-        userRiskLevelRef.current = null;
-        return;
-      }
-
+    if (profile) {
       // Load skills - keep in canonical format for matching
-      if (data?.skills && Array.isArray(data.skills)) {
-        // Parse skills from JSON strings to extract skill_name
-        // Skills are stored as: ['{"skill_name": "first_aid", "description": "..."}', ...]
-        const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
-        const parsedSkills = normalizeSkillNames(data.skills);
+      if (profile.skills && Array.isArray(profile.skills)) {
+        const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+        const parsedSkills = normalizeSkillNames(profile.skills);
         console.log('[CrewBrowseMap] User skills loaded (canonical):', parsedSkills);
         setUserSkills(parsedSkills);
         userSkillsRef.current = parsedSkills;
@@ -395,33 +367,48 @@ export function CrewBrowseMap({
       }
 
       // Load experience level
-      if (data?.sailing_experience !== null && data?.sailing_experience !== undefined) {
-        const experienceLevel = data.sailing_experience as number;
-        console.log('[CrewBrowseMap] User experience level loaded:', experienceLevel);
-        setUserExperienceLevel(experienceLevel);
-        userExperienceLevelRef.current = experienceLevel;
+      if (profile.sailing_experience !== null && profile.sailing_experience !== undefined) {
+        const experienceLevel = typeof profile.sailing_experience === 'string'
+          ? parseInt(profile.sailing_experience, 10)
+          : profile.sailing_experience;
+        if (!isNaN(experienceLevel)) {
+          console.log('[CrewBrowseMap] User experience level loaded:', experienceLevel);
+          setUserExperienceLevel(experienceLevel);
+          userExperienceLevelRef.current = experienceLevel;
+        }
       } else {
         setUserExperienceLevel(null);
         userExperienceLevelRef.current = null;
       }
 
       // Load risk level
-      if (data?.risk_level && Array.isArray(data.risk_level)) {
-        const parsedRiskLevel = data.risk_level;
+      if (profile.risk_level && Array.isArray(profile.risk_level)) {
+        const parsedRiskLevel = profile.risk_level;
         setUserRiskLevel(parsedRiskLevel);
         userRiskLevelRef.current = parsedRiskLevel;
       } else {
         setUserRiskLevel(null);
         userRiskLevelRef.current = null;
       }
-    };
+    } else {
+      // Profile doesn't exist - set empty values
+      setUserSkills([]);
+      userSkillsRef.current = [];
+      setUserExperienceLevel(null);
+      userExperienceLevelRef.current = null;
+      setUserRiskLevel(null);
+      userRiskLevelRef.current = null;
+    }
+  }, [user, profile, profileLoading]);
+
+  // Load user registrations (separate from profile data)
+  useEffect(() => {
+    if (!user) {
+      setUserRegistrations(new Map());
+      return;
+    }
 
     const loadUserRegistrations = async () => {
-      if (!user) {
-        setUserRegistrations(new Map());
-        return;
-      }
-
       try {
         const supabase = getSupabaseBrowserClient();
         const { data, error } = await supabase
@@ -452,7 +439,6 @@ export function CrewBrowseMap({
       }
     };
 
-    loadUserProfile();
     loadUserRegistrations();
   }, [user]);
 

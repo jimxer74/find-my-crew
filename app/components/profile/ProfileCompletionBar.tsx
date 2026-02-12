@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MissingFieldsIndicator } from './MissingFieldsIndicator';
+import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 
 type ProfileCompletionBarProps = {
   showLink?: boolean;
@@ -13,42 +14,33 @@ type ProfileCompletionBarProps = {
 
 export function ProfileCompletionBar({ showLink = true, compact = false }: ProfileCompletionBarProps) {
   const { user } = useAuth();
-  const [completionPercentage, setCompletionPercentage] = useState<number | null>(null);
-  const [hasProfile, setHasProfile] = useState<boolean>(false);
+  const router = useRouter();
+  const { handleRedirect } = useProfileRedirect();
+  const { profile, loading, isValidUser } = useProfile();
 
-  useEffect(() => {
-    if (!user) {
-      setHasProfile(false);
-      setCompletionPercentage(0);
-      return;
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (user) {
+      await handleRedirect(user.id, router);
     }
+  };
 
-    const loadProfileStatus = async () => {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('profile_completion_percentage, roles')
-        .eq('id', user.id)
-        .single();
+  const handleMissingFieldsClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (user) {
+      await handleRedirect(user.id, router);
+    }
+  };
 
-      if (data && !error) {
-        setHasProfile(true);
-        setCompletionPercentage(data.profile_completion_percentage || 0);
-      } else {
-        setHasProfile(false);
-        setCompletionPercentage(0);
-      }
-    };
+  const hasProfile = isValidUser && profile !== null;
+  const completionPercentage = profile?.profile_completion_percentage ?? 0;
 
-    loadProfileStatus();
-  }, [user]);
-
-  if (completionPercentage === null) {
+  if (loading) {
     return null;
   }
 
   // Don't show if profile is complete
-  if (completionPercentage === 100) {
+  if (completionPercentage === 100 || !isValidUser) {
     return null;
   }
 
@@ -65,7 +57,7 @@ export function ProfileCompletionBar({ showLink = true, compact = false }: Profi
           {completionPercentage}%
         </span>
         {showLink && (
-          <Link href="/profile" className="text-xs text-primary hover:underline whitespace-nowrap">
+          <Link href="#" onClick={handleProfileClick} className="text-xs text-primary hover:underline whitespace-nowrap">
             Complete
           </Link>
         )}
@@ -89,7 +81,8 @@ export function ProfileCompletionBar({ showLink = true, compact = false }: Profi
       </div>
       {showLink && (
         <Link
-          href="/profile"
+          href="#"
+          onClick={handleProfileClick}
           className="text-xs text-primary hover:underline inline-flex items-center gap-1"
         >
           {hasProfile ? 'Complete your profile' : 'Create your profile'}
@@ -100,7 +93,7 @@ export function ProfileCompletionBar({ showLink = true, compact = false }: Profi
       )}
       {hasProfile && completionPercentage !== null && completionPercentage < 100 && (
         <div className="mt-2">
-          <MissingFieldsIndicator variant="compact" showTitle={false} />
+          <MissingFieldsIndicator variant="compact" showTitle={false} handleRedirect={handleMissingFieldsClick} />
         </div>
       )}
     </div>

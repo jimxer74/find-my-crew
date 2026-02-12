@@ -3,22 +3,24 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
-import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '../ui/MatchBadge';
 import { CostModelBadge } from '../ui/CostModelBadge';
 import { CostModelIcon } from '../ui/CostModelIcon';
 import { matchRiskLevel } from '@/app/lib/skillMatching';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { ImageCarousel } from '../ui/ImageCarousel';
+import { useProfile } from '@/app/lib/profile/useProfile';
+import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -136,6 +138,9 @@ type LegDetailsPanelProps = {
 };
 
 export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange, initialOpenRegistration = false }: LegDetailsPanelProps) {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { handleRedirect } = useProfileRedirect();
   const [isMinimized, setIsMinimized] = useState(false);
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
@@ -144,6 +149,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [journeyDescription, setJourneyDescription] = useState<string | null>(null);
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  const handleProfileSetupClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (user) {
+      await handleRedirect(user.id, router, true); // true for profile setup
+    }
+  };
+
   // Calculate distance between start and end waypoints (nautical miles)
   const calculateDistance = (): number | null => {
     if (!leg.start_waypoint || !leg.end_waypoint) return null;
@@ -207,7 +220,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
   };
 
-  const { user } = useAuth();
   const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
@@ -341,24 +353,22 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
   }, [hasRequirements, showRegistrationModal, showRequirementsForm]);
 
-  // Check profile status
+  // Use shared useProfile hook for profile status
+  const { profile } = useProfile();
+
   useEffect(() => {
-    if (!user) {
+    if (!user || !profile) {
       setProfileStatus({ exists: false, hasRoles: false, completionPercentage: 0 });
       return;
     }
 
-    const loadProfileStatus = async () => {
-      const status = await checkProfile(user.id);
-      setProfileStatus({
-        exists: status.exists,
-        hasRoles: status.hasRoles,
-        completionPercentage: status.completionPercentage,
-      });
-    };
-
-    loadProfileStatus();
-  }, [user]);
+    const roles = profile.roles || [];
+    setProfileStatus({
+      exists: true,
+      hasRoles: roles.length > 0,
+      completionPercentage: profile.profile_completion_percentage || 0,
+    });
+  }, [user, profile]);
 
   // Load registration status when leg changes
   useEffect(() => {
@@ -1548,7 +1558,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </Link>
               ) : !profileStatus?.exists || !profileStatus.hasRoles ? (
                 <Link
-                  href="/profile-setup"
+                  href="#"
+                  onClick={handleProfileSetupClick}
                   className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center"
                 >
                   Complete profile to register

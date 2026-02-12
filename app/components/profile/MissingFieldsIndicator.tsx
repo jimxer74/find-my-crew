@@ -2,73 +2,74 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   calculateProfileCompletion,
   type ProfileDataForCompletion,
   type ProfileFieldStatus,
 } from '@/app/lib/profile/completionCalculator';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
+import { useProfile } from '@/app/lib/profile/useProfile';
 
 type MissingFieldsIndicatorProps = {
   variant?: 'inline' | 'list' | 'compact';
   showTitle?: boolean;
   profileData?: ProfileDataForCompletion | null;
+  handleRedirect?: (e: React.MouseEvent) => void;
 };
 
-export function MissingFieldsIndicator({ 
+export function MissingFieldsIndicator({
   variant = 'list',
   showTitle = true,
-  profileData = null
+  profileData = null,
+  handleRedirect: customHandleRedirect
 }: MissingFieldsIndicatorProps) {
   const { user } = useAuth();
+  const router = useRouter();
+  const { handleRedirect } = useProfileRedirect();
+  const { profile, loading } = useProfile();
   const [missingFields, setMissingFields] = useState<ProfileFieldStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (customHandleRedirect) {
+      customHandleRedirect(e);
+    } else if (user) {
+      await handleRedirect(user.id, router);
+    }
+  };
 
   const computeMissing = useCallback((data: ProfileDataForCompletion) => {
     const result = calculateProfileCompletion(data);
     setMissingFields(result.missingFields);
-    setLoading(false);
   }, []);
 
-  const checkMissingFields = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    // If profileData is provided as prop, use it directly
-    if (profileData) {
-      computeMissing(profileData);
-      return;
-    }
-
-    // Otherwise, fetch from database
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('username, full_name, phone, sailing_experience, risk_level, skills, sailing_preferences, roles')
-      .eq('id', user.id)
-      .single();
-
-    if (error || !data) {
-      setLoading(false);
-      return;
-    }
-
-    computeMissing(data);
-  }, [user, profileData, computeMissing]);
-
-  useEffect(() => {
-    checkMissingFields();
-  }, [checkMissingFields]);
-
-  // Update when profileData prop changes
+  // Use profile data from the shared hook or prop
   useEffect(() => {
     if (profileData) {
+      // Use prop data if provided
       computeMissing(profileData);
+    } else if (profile) {
+      // Use shared hook data - convert to compatible format
+      const compatibleProfile = {
+        username: profile.username,
+        full_name: profile.full_name,
+        phone: profile.phone,
+        sailing_experience: profile.sailing_experience,
+        // Convert string to array if needed
+        risk_level: profile.risk_level ? (Array.isArray(profile.risk_level) ? profile.risk_level : [profile.risk_level]) : null,
+        // Convert string array to unknown array
+        skills: profile.skills as unknown[],
+        sailing_preferences: profile.sailing_preferences ? profile.sailing_preferences.join(', ') : null,
+        roles: profile.roles,
+      };
+      computeMissing(compatibleProfile);
+    } else {
+      // No profile data available
+      setMissingFields([]);
     }
-  }, [profileData, computeMissing]);
+  }, [profile, profileData, computeMissing]);
 
   // Listen for profile updates
   useEffect(() => {
@@ -76,20 +77,20 @@ export function MissingFieldsIndicator({
 
     const handleProfileUpdate = () => {
       // Refresh missing fields when profile is updated
-      checkMissingFields();
+      // The useProfile hook will automatically update profile state
     };
 
     window.addEventListener('profileUpdated', handleProfileUpdate);
     return () => {
       window.removeEventListener('profileUpdated', handleProfileUpdate);
     };
-  }, [checkMissingFields]);
+  }, []);
 
   if (loading) {
     return null;
   }
 
-  if (missingFields.length === 0) {
+  if (missingFields.length === 0 && !profileData) {
     return null; // Profile is complete
   }
 
@@ -108,7 +109,7 @@ export function MissingFieldsIndicator({
         {missingFields.map((field, index) => (
           <span key={field.name}>
             {index > 0 && ', '}
-            <Link href="/profile" className="text-primary hover:underline">
+            <Link href="#" onClick={handleProfileClick} className="text-primary hover:underline">
               {field.label}
             </Link>
           </span>
@@ -157,7 +158,8 @@ export function MissingFieldsIndicator({
                     />
                   </svg>
                   <Link
-                    href="/profile"
+                    href="#"
+                    onClick={handleProfileClick}
                     className="text-sm text-foreground hover:text-primary transition-colors"
                   >
                     {field.label}
@@ -170,7 +172,8 @@ export function MissingFieldsIndicator({
       </div>
       <div className="mt-4 pt-3 border-t border-border">
         <Link
-          href="/profile"
+          href="#"
+          onClick={handleProfileClick}
           className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1"
         >
           Complete your profile

@@ -311,7 +311,8 @@ function parsePythonDictManual(pythonStr: string): Record<string, unknown> {
  * 2. Python-style function calls: ```tool_code default_api.search_legs_by_location(...) ```
  * 3. XML-like format: <tool_call><function=name>...</function></tool_call>
  * 4. Delimiter format: <|tool_calls_start|>...<|tool_calls_end|>
- * 5. Simple function format: <function=name>...</function>
+ * 5. Single delimiter format: <|tool_call_start|>...[tool_name(...)]...<|tool_call_end|>
+ * 6. Simple function format: <function=name>...</function>
  */
 export function parseToolCalls(text: string): { content: string; toolCalls: ToolCall[] } {
   const toolCalls: ToolCall[] = [];
@@ -439,7 +440,90 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     }
   }
 
-  // Method 4: Simple function format <function=name>...</function> (without tool_call wrapper)
+  // Method 4: Single delimiter format <|tool_call_start|> ... <|tool_call_end|>
+  // Supports common outputs such as:
+  // - <|tool_call_start|>[generate_journey_route(...)]<|tool_call_end|>
+  // - <|tool_call_start|>{"name":"...","arguments":{...}}<|tool_call_end|>
+  const singleDelimiterRegex = /<\|tool_call_start\|>([\s\S]*?)<\|tool_call_end\|>/g;
+
+  while ((match = singleDelimiterRegex.exec(text)) !== null) {
+    try {
+      const rawInner = match[1].trim();
+      const unwrappedInner = rawInner.startsWith('[') && rawInner.endsWith(']')
+        ? rawInner.slice(1, -1).trim()
+        : rawInner;
+
+      let parsedAny = false;
+
+      // 4a) Python-style function call, e.g. generate_journey_route(...)
+      const pythonCall = parsePythonFunctionCall(unwrappedInner);
+      if (pythonCall) {
+        toolCalls.push({
+          id: `tc_${Date.now()}_${toolCallIndex++}`,
+          name: pythonCall.name,
+          arguments: pythonCall.arguments,
+        });
+        parsedAny = true;
+        log('Parsed single-delimiter Python tool call:', pythonCall.name);
+      }
+
+      // 4b) JSON object/array payload
+      if (!parsedAny) {
+        const candidates = [rawInner, unwrappedInner, extractJsonFromText(rawInner), extractJsonFromText(unwrappedInner)]
+          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
+
+        for (const candidate of candidates) {
+          let parsed: unknown;
+          try {
+            parsed = JSON.parse(candidate);
+          } catch {
+            try {
+              parsed = tryFixAndParseJson(candidate);
+            } catch {
+              continue;
+            }
+          }
+
+          if (Array.isArray(parsed)) {
+            for (const item of parsed) {
+              const toolItem = item as { name?: unknown; arguments?: unknown };
+              if (typeof toolItem?.name === 'string') {
+                toolCalls.push({
+                  id: `tc_${Date.now()}_${toolCallIndex++}`,
+                  name: toolItem.name,
+                  arguments: (toolItem.arguments as Record<string, unknown>) || {},
+                });
+                parsedAny = true;
+              }
+            }
+          } else {
+            const toolObj = parsed as { name?: unknown; arguments?: unknown };
+            if (typeof toolObj?.name === 'string') {
+              toolCalls.push({
+                id: `tc_${Date.now()}_${toolCallIndex++}`,
+                name: toolObj.name,
+                arguments: (toolObj.arguments as Record<string, unknown>) || {},
+              });
+              parsedAny = true;
+            }
+          }
+
+          if (parsedAny) {
+            log('Parsed single-delimiter JSON tool call');
+            break;
+          }
+        }
+      }
+
+      if (parsedAny) {
+        content = content.replace(match[0], '').trim();
+      }
+    } catch {
+      log('Failed to parse single delimiter tool call');
+    }
+  }
+
+  // Method 5: Simple function format <function=name>...</function> (without tool_call wrapper)
   const simpleFunctionRegex = /<function=(\w+)>([\s\S]*?)<\/function>/gi;
 
   while ((match = simpleFunctionRegex.exec(text)) !== null) {
@@ -459,7 +543,7 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     log('Parsed simple function call:', functionName);
   }
 
-  // Method 5: Inline tool_call format without code fences (e.g., "tool_call {"name": "...", ...}")
+  // Method 6: Inline tool_call format without code fences (e.g., "tool_call {"name": "...", ...}")
   // Some models output this format without markdown code blocks
   const inlineToolCallRegex = /tool_call\s*(\{[\s\S]*?"name"\s*:\s*"[^"]+[\s\S]*?\})\s*(?:\n|$)/gi;
 
@@ -493,7 +577,7 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     }
   }
 
-  // Method 6: Custom token format: <|start|>assistant<|channel|>...<|message|>{"name": "...", "arguments": {...}}<|call|>
+  // Method 7: Custom token format: <|start|>assistant<|channel|>...<|message|>{"name": "...", "arguments": {...}}<|call|>
   // Some models (like certain OpenRouter models) use this token-based format
   // Also handles variations like: <|message|>...JSON...<|call|> or just JSON between these tokens
   const tokenFormatRegex = /<\|message\|>([\s\S]*?)<\|call\|>/gi;
@@ -535,7 +619,7 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
     }
   }
 
-  // Method 7: Plain JSON object format (no wrapper, just {"name": "...", "arguments": {...}})
+  // Method 8: Plain JSON object format (no wrapper, just {"name": "...", "arguments": {...}})
   // Some models output tool calls as standalone JSON objects without any markers
   // Only check if no tool calls were found yet and the content looks like a tool call
   if (toolCalls.length === 0) {

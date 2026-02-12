@@ -86,6 +86,14 @@ export interface OwnerSession {
   lastActiveAt: string;
   conversation: OwnerMessage[];
   gatheredPreferences: OwnerPreferences;
+  /** Email stored in owner_sessions.email for the current session */
+  sessionEmail?: string | null;
+  /** True when owner_sessions.email is set for this session */
+  hasSessionEmail?: boolean;
+  /** When profile completion SYSTEM message was sent; null = not yet triggered */
+  profileCompletionTriggeredAt?: string | null;
+  /** Onboarding state: signup_pending, consent_pending, profile_pending, boat_pending, journey_pending, completed */
+  onboardingState?: string;
 }
 
 /** Known user profile data from signup/OAuth metadata */

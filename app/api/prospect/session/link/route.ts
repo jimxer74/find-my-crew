@@ -31,14 +31,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { email } = body as { email?: string };
+    const body = await request.json().catch(() => ({}));
+    const { email, postSignupOnboarding } = body as { email?: string; postSignupOnboarding?: boolean };
+    const normalizedEmail = (email || user.email || '').toLowerCase().trim() || null;
 
     // Link current session by session_id
     const { error: linkError } = await supabase.rpc('link_prospect_session_to_user', {
       p_session_id: sessionId,
       p_user_id: user.id,
-      p_user_email: email || user.email || null,
+      p_user_email: normalizedEmail,
     });
 
     if (linkError) {
@@ -50,16 +51,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Also link any other sessions with matching email (if email provided)
-    if (email || user.email) {
-      const emailToUse = email || user.email!;
+    if (normalizedEmail) {
       const { error: linkByEmailError } = await supabase.rpc('link_prospect_sessions_by_email', {
         p_user_id: user.id,
-        p_user_email: emailToUse,
+        p_user_email: normalizedEmail,
       });
 
       if (linkByEmailError) {
         // Log but don't fail - linking by email is optional
         console.warn('[Session Link API] Warning linking sessions by email:', linkByEmailError);
+      }
+    }
+
+    // Ensure current session has email when available (even if already linked)
+    if (normalizedEmail) {
+      const { error: ensureEmailError } = await supabase
+        .from('prospect_sessions')
+        .update({ email: normalizedEmail })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .is('email', null);
+
+      if (ensureEmailError) {
+        console.warn('[Session Link API] Warning ensuring current session email:', ensureEmailError);
+      }
+    }
+
+    // Set onboarding state to consent_pending for post-signup onboarding
+    if (postSignupOnboarding) {
+      const { error: stateError } = await supabase
+        .from('prospect_sessions')
+        .update({ onboarding_state: 'consent_pending' })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id);
+
+      if (stateError) {
+        console.warn('[Prospect Session Link API] Could not set onboarding_state:', stateError);
+      } else {
+        console.log('[Prospect Session Link API] ✅ Set onboarding_state to consent_pending');
       }
     }
 

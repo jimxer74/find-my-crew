@@ -17,9 +17,8 @@ export function MainContent({ children }: MainContentProps) {
   const searchParams = useSearchParams();
 
   // Routes that don't have a header and shouldn't have top padding
-  // Exact match routes (e.g. homepage '/') and prefix match routes (e.g. '/welcome/*')
   const noHeaderExactRoutes = ['/'];
-  const noHeaderPrefixRoutes = ['/welcome'];
+  const noHeaderPrefixRoutes: string[] = ['/welcome'];
   const isMinimalMode = searchParams?.get('minimal') === '1';
   const isNoHeaderRoute =
     noHeaderExactRoutes.includes(pathname || '') ||

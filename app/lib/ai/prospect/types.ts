@@ -75,6 +75,14 @@ export interface ProspectSession {
   conversation: ProspectMessage[];
   gatheredPreferences: ProspectPreferences;
   viewedLegs: string[]; // IDs of legs user clicked on
+  /** Email stored in prospect_sessions.email for the current session */
+  sessionEmail?: string | null;
+  /** True when prospect_sessions.email is set for this session */
+  hasSessionEmail?: boolean;
+  /** When profile completion SYSTEM message was sent; null = not yet triggered */
+  profileCompletionTriggeredAt?: string | null;
+  /** Onboarding state: signup_pending, consent_pending, profile_pending, completed */
+  onboardingState?: string;
 }
 
 /** Known user profile data from signup/OAuth metadata */

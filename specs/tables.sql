@@ -1299,9 +1299,12 @@ create table if not exists public.prospect_sessions (
   conversation jsonb not null default '[]'::jsonb,
   gathered_preferences jsonb not null default '{}'::jsonb,
   viewed_legs text[] default '{}'::text[],
+  onboarding_state varchar(50) not null default 'signup_pending', -- Onboarding state: signup_pending, consent_pending, profile_pending, completed
   created_at timestamptz not null default now(),
   last_active_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '7 days')
+  expires_at timestamptz not null default (now() + interval '7 days'),
+  post_signup_onboarding_pending boolean not null default false,
+  profile_completion_triggered_at timestamptz null
 );
 
 -- Indexes for performance
@@ -1390,9 +1393,12 @@ create table if not exists public.owner_sessions (
   email text,
   conversation jsonb not null default '[]'::jsonb,
   gathered_preferences jsonb not null default '{}'::jsonb,
+  onboarding_state varchar(50) not null default 'signup_pending', -- Onboarding state: signup_pending, consent_pending, profile_pending, boat_pending, journey_pending, completed
   created_at timestamptz not null default now(),
   last_active_at timestamptz not null default now(),
-  expires_at timestamptz not null default (now() + interval '7 days')
+  expires_at timestamptz not null default (now() + interval '7 days'),
+  post_signup_onboarding_pending boolean not null default false,
+  profile_completion_triggered_at timestamptz null
 );
 
 -- Indexes for performance

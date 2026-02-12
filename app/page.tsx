@@ -14,8 +14,8 @@ import * as sessionService from '@/app/lib/prospect/sessionService';
 import * as ownerSessionService from '@/app/lib/owner/sessionService';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
-
-const AI_SIGNUP_FLAG = 'ai_assistant_signup_pending';
+import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@/app/components/onboarding/OnboardingSteps';
+import type { OwnerPreferences } from '@/app/lib/ai/owner/types';
 
 function OwnerPostDialog({
   isOpen,
@@ -75,10 +75,10 @@ function OwnerPostDialog({
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -91,7 +91,7 @@ function OwnerPostDialog({
             value={crewDemand}
             onChange={(e) => setCrewDemand(e.target.value)}
             placeholder={placeholder}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
           />
           {/* AI Consent - same layout as crew Profile Dialog */}
           <div className="flex items-start justify-between gap-4 pt-2">
@@ -102,8 +102,8 @@ function OwnerPostDialog({
             <button
               type="button"
               onClick={() => setAiConsent(!aiConsent)}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                aiConsent ? 'bg-primary' : 'bg-muted'
+              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 ${
+                aiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'
               }`}
             >
               <span
@@ -119,14 +119,14 @@ function OwnerPostDialog({
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-amber-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={!canSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Save
           </button>
@@ -145,13 +145,20 @@ export default function WelcomePage() {
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [hasExistingSession, setHasExistingSession] = useState(false);
   const [sessionType, setSessionType] = useState<'crew' | 'owner' | null>(null);
-  const [sessionContext, setSessionContext] = useState<string | null>(null);
   const [sessionLegs, setSessionLegs] = useState<Array<{ id: string; name: string }>>([]);
+  const [sessionMessages, setSessionMessages] = useState<any[]>([]);
+  const [ownerSessionMessages, setOwnerSessionMessages] = useState<any[]>([]);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [isComboSearchMode, setIsComboSearchMode] = useState(false);
   const [isOwnerPostMode, setIsOwnerPostMode] = useState(false);
   const [hasOwnerSession, setHasOwnerSession] = useState(false);
-  const [ownerSessionContext, setOwnerSessionContext] = useState<string | null>(null);
+  const [ownerSessionPreferences, setOwnerSessionPreferences] = useState<OwnerPreferences>({});
+  const [crewHasProfile, setCrewHasProfile] = useState(false);
+  const [ownerHasProfile, setOwnerHasProfile] = useState(false);
+  const [ownerHasBoat, setOwnerHasBoat] = useState(false);
+  const [ownerHasJourney, setOwnerHasJourney] = useState(false);
+  const [onboardingState, setOnboardingState] = useState<string>('signup_pending');
+  const [ownerOnboardingState, setOwnerOnboardingState] = useState<string>('signup_pending');
 
   // Check if user is logged in and redirect to role-specific homepage
   useEffect(() => {
@@ -165,13 +172,6 @@ export default function WelcomePage() {
         return;
       }
 
-      // Check for AI signup flag first (don't redirect if signup is pending)
-      const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
-      if (signupPending) {
-        setIsCheckingRole(false);
-        return; // Let the consent handler deal with this
-      }
-
       // User is logged in - check their roles
       const supabase = getSupabaseBrowserClient();
       try {
@@ -182,6 +182,27 @@ export default function WelcomePage() {
           .maybeSingle();
 
         if (profile && profile.roles && profile.roles.length > 0) {
+          // Keep user on frontpage if they have a pending owner onboarding session.
+          // This prevents redirecting to dashboard when onboarding should continue.
+          if (profile.roles.includes('owner')) {
+            const { data: pendingOwnerSession, error: pendingOwnerSessionError } = await supabase
+              .from('owner_sessions')
+              .select('session_id')
+              .eq('user_id', user.id)
+              .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
+              .limit(1)
+              .maybeSingle();
+
+            if (pendingOwnerSessionError) {
+              console.error('Failed to check pending owner session:', pendingOwnerSessionError);
+            }
+
+            if (pendingOwnerSession) {
+              setIsCheckingRole(false);
+              return;
+            }
+          }
+
           // User has roles - redirect based on primary role
           // Priority: owner > crew (if user has both roles)
           if (profile.roles.includes('owner')) {
@@ -201,37 +222,6 @@ export default function WelcomePage() {
 
     checkUserAndRedirect();
   }, [user, authLoading, router]);
-
-  // Check if user just signed up from AI assistant and redirect after consent is completed.
-  // Flow A (email signup): User clicks email link → lands here → consent modal appears → user completes → redirect
-  // Flow B (OAuth signup): Handled in ProspectChatContext (no page reload needed)
-  useEffect(() => {
-    const signupPending = localStorage.getItem(AI_SIGNUP_FLAG);
-    if (!signupPending) return;
-
-    const handleConsentCompleted = async (event: Event) => {
-      const customEvent = event as CustomEvent<{ aiProcessingConsent: boolean }>;
-      const aiConsent = customEvent.detail?.aiProcessingConsent ?? false;
-
-      // Consent is done - clear the signup flag
-      localStorage.removeItem(AI_SIGNUP_FLAG);
-
-      if (aiConsent) {
-        // AI consent granted → redirect to assistant for AI-powered profile completion
-        console.log('AI signup + AI consent granted → redirecting to assistant for profile completion');
-        router.push('/welcome/crew?profile_completion=true');
-      } else {
-        // AI consent NOT granted → redirect to manual profile setup page
-        console.log('AI signup + AI consent NOT granted → redirecting to profile setup page');
-        router.push('/profile-setup');
-      }
-    };
-
-    window.addEventListener('consentSetupCompleted', handleConsentCompleted);
-    return () => {
-      window.removeEventListener('consentSetupCompleted', handleConsentCompleted);
-    };
-  }, [router]);
 
   // Check for existing conversation on mount - load from API instead of localStorage
   useEffect(() => {
@@ -258,19 +248,13 @@ export default function WelcomePage() {
         
         if (session && session.conversation && session.conversation.length > 0) {
           setHasExistingSession(true);
-          // For now, all prospect sessions are 'crew' type
-          // Future: detect owner sessions from a different storage key
           setSessionType('crew');
 
-          // Extract context from first user message or preferences
-          const firstUserMessage = session.conversation.find(
-            (msg: { role: string; content: string }) => msg.role === 'user'
-          );
-          if (firstUserMessage) {
-            // Truncate if too long
-            const content = firstUserMessage.content;
-            setSessionContext(content.length > 60 ? content.substring(0, 60) + '...' : content);
-          }
+          // Store session messages for use in steps indicator
+          setSessionMessages(session.conversation);
+
+          // Extract onboarding state
+          setOnboardingState(session.onboardingState || 'signup_pending');
 
           // Extract unique leg references from all messages
           const legs = new Map<string, string>();
@@ -283,13 +267,13 @@ export default function WelcomePage() {
               }
             }
           }
-          
+
           // Also check viewedLegs from session
           if (session.viewedLegs && session.viewedLegs.length > 0) {
             // If we have viewed leg IDs but not names, we could fetch them
             // For now, we'll rely on legReferences from messages
           }
-          
+
           // Convert to array and limit to 4 legs
           const legArray = Array.from(legs.entries()).map(([id, name]) => ({ id, name }));
           setSessionLegs(legArray.slice(0, 4));
@@ -323,14 +307,11 @@ export default function WelcomePage() {
 
         if (session && session.conversation && session.conversation.length > 0) {
           setHasOwnerSession(true);
+          setOwnerSessionMessages(session.conversation);
+          setOwnerSessionPreferences(session.gatheredPreferences || {});
 
-          const firstUserMessage = session.conversation.find(
-            (msg: { role: string; content: string }) => msg.role === 'user'
-          );
-          if (firstUserMessage) {
-            const content = firstUserMessage.content;
-            setOwnerSessionContext(content.length > 60 ? content.substring(0, 60) + '...' : content);
-          }
+          // Extract owner onboarding state
+          setOwnerOnboardingState(session.onboardingState || 'signup_pending');
         }
       } catch (e) {
         console.error('Failed to check owner session:', e);
@@ -339,6 +320,54 @@ export default function WelcomePage() {
 
     checkExistingOwnerSession();
   }, []);
+
+  // Reset onboarding state when user logs out
+  useEffect(() => {
+    if (!user) {
+      setCrewHasProfile(false);
+      setOwnerHasProfile(false);
+      setOwnerHasBoat(false);
+      setOwnerHasJourney(false);
+    }
+  }, [user]);
+
+  // Fetch crew profile when user is logged in and has crew session
+  useEffect(() => {
+    if (!user || !hasExistingSession || sessionType !== 'crew') return;
+
+    const supabase = getSupabaseBrowserClient();
+    supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setCrewHasProfile(!!data));
+  }, [user, hasExistingSession, sessionType]);
+
+  // Fetch owner profile/boats/journeys when user is logged in and has owner session
+  useEffect(() => {
+    if (!user || !hasOwnerSession) return;
+
+    const supabase = getSupabaseBrowserClient();
+    Promise.all([
+      supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
+      supabase.from('boats').select('id').eq('owner_id', user.id).limit(1),
+    ]).then(([profileRes, boatsRes]) => {
+      setOwnerHasProfile(!!profileRes.data);
+      const boatIds = boatsRes.data?.map((b) => b.id) ?? [];
+      if (boatIds.length > 0) {
+        supabase
+          .from('journeys')
+          .select('id')
+          .in('boat_id', boatIds)
+          .limit(1)
+          .then(({ data }) => setOwnerHasJourney((data?.length ?? 0) > 0));
+      } else {
+        setOwnerHasJourney(false);
+      }
+      setOwnerHasBoat(boatIds.length > 0);
+    });
+  }, [user, hasOwnerSession]);
 
   const handleContinueConversation = () => {
     router.push('/welcome/crew');
@@ -374,7 +403,10 @@ export default function WelcomePage() {
     }
 
     setHasOwnerSession(false);
-    setOwnerSessionContext(null);
+    setOwnerSessionPreferences({});
+    setOwnerHasProfile(false);
+    setOwnerHasBoat(false);
+    setOwnerHasJourney(false);
   };
 
   const handleClearSession = async () => {
@@ -408,8 +440,8 @@ export default function WelcomePage() {
     // Reset state to show full welcome page
     setHasExistingSession(false);
     setSessionType(null);
-    setSessionContext(null);
     setSessionLegs([]);
+    setCrewHasProfile(false);
   };
 
   const handleComboSearch = (data: ComboSearchData) => {
@@ -592,19 +624,64 @@ export default function WelcomePage() {
               </div>
             )}
 
-            {/* Continue conversation link */}
-            {hasExistingSession && (
-              <div className={`w-full mx-auto mt-4 ${
-                sessionType === 'crew' ? 'max-w-full sm:max-w-sm md:max-w-lg' : 'max-w-full sm:max-w-sm'
-              }`}>
-                <div className="relative">
-                  <button
-                    onClick={handleContinueConversation}
-                    className="w-full px-4 py-3 pr-12 flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/25 transition-colors text-left"
+            {/* Onboarding steps - always shown; header + link only when session exists */}
+            <div className="w-full mt-6 md:mt-8">
+              {hasExistingSession && sessionType === 'crew' && (
+                <button
+                  onClick={handleContinueConversation}
+                  className="inline-flex items-center gap-1.5 text-sm text-white font-medium hover:text-white/90 hover:underline transition-colors mb-2"
+                >
+                  You are almost there – continue your journey
+                  <svg
+                    className="w-4 h-4 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              )}
+              <div className="w-full">
+                <CrewOnboardingStepsInline
+                  layout="homepage"
+                  isAuthenticated={!!user}
+                  hasExistingProfile={crewHasProfile}
+                  onboardingState={onboardingState}
+                  messagesLength={sessionMessages?.length || 0}
+                />
+              </div>
+              {hasExistingSession && sessionType === 'crew' && sessionLegs.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
+                  {sessionLegs.map((leg) => (
+                    <button
+                      key={leg.id}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const url = `/crew/dashboard?legId=${leg.id}`;
+                        const isMobileScreen = window.innerWidth < 768;
+                        if (isMobileScreen) {
+                          window.location.href = url;
+                        } else {
+                          const anchor = document.createElement('a');
+                          anchor.href = url;
+                          anchor.target = '_blank';
+                          anchor.rel = 'noopener noreferrer';
+                          document.body.appendChild(anchor);
+                          anchor.click();
+                          document.body.removeChild(anchor);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 hover:border-white/30 transition-colors cursor-pointer"
+                      title={`View ${leg.name}`}
+                    >
                       <svg
-                        className="w-4 h-4 text-white"
+                        className="w-3 h-3 text-white/70"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -613,84 +690,21 @@ export default function WelcomePage() {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth="2"
-                          d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                         />
                       </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white font-medium">You are allmost there - continue your journey</p>
-                      {sessionContext && (
-                        <p className="text-xs text-white/70 truncate">&quot;{sessionContext}&quot;</p>
-                      )}
-                    </div>
-                    <svg
-                      className="w-4 h-4 text-white/50 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </button>
+                      {leg.name.length > 20 ? leg.name.substring(0, 20) + '...' : leg.name}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Leg badges */}
-                {sessionLegs.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
-                    {sessionLegs.map((leg) => (
-                      <button
-                        key={leg.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const url = `/crew/dashboard?legId=${leg.id}`;
-                          const isMobileScreen = window.innerWidth < 768;
-                          if (isMobileScreen) {
-                            window.location.href = url;
-                          } else {
-                            // Desktop: open in new tab
-                            const anchor = document.createElement('a');
-                            anchor.href = url;
-                            anchor.target = '_blank';
-                            anchor.rel = 'noopener noreferrer';
-                            document.body.appendChild(anchor);
-                            anchor.click();
-                            document.body.removeChild(anchor);
-                          }
-                        }}
-                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 hover:border-white/30 transition-colors cursor-pointer"
-                        title={`View ${leg.name}`}
-                      >
-                        <svg
-                          className="w-3 h-3 text-white/70"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                        {leg.name.length > 20 ? leg.name.substring(0, 20) + '...' : leg.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
         )}
@@ -737,62 +751,51 @@ export default function WelcomePage() {
                   <button
                     type="button"
                     onClick={() => setIsOwnerPostMode(true)}
-                    className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
+                    className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border border-amber-200/80 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
                   >
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-amber-700/90 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    <span className="text-gray-500 truncate">{t('owner.postPlaceholder')}</span>
+                    <span className="text-amber-700/80 truncate">{t('owner.postPlaceholder')}</span>
                   </button>
                 </div>
               )}
 
-              {/* Continue owner onboarding - shown when owner session exists */}
-              {hasOwnerSession && (
-                <div className="w-full mx-auto max-w-full sm:max-w-sm md:max-w-lg mt-4">
-                  <div className="relative">
-                    <button
-                      onClick={handleContinueOwnerConversation}
-                      className="w-full px-4 py-3 pr-12 flex items-center gap-3 bg-white/15 backdrop-blur-sm rounded-xl border border-white/20 hover:bg-white/25 transition-colors text-left"
+              {/* Onboarding steps - always shown; header + link only when session exists */}
+              <div className="w-full mt-6 md:mt-8">
+                {hasOwnerSession && (
+                  <button
+                    onClick={handleContinueOwnerConversation}
+                    className="inline-flex items-center gap-1.5 text-sm text-amber-100 font-medium hover:text-amber-200 hover:underline transition-colors mb-2"
+                  >
+                    {t('owner.continueJourney')}
+                    <svg
+                      className="w-4 h-4 flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <svg
-                          className="w-4 h-4 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium">{t('owner.continueJourney')}</p>
-                        {ownerSessionContext && (
-                          <p className="text-xs text-white/70 truncate">&quot;{ownerSessionContext}&quot;</p>
-                        )}
-                      </div>
-                      <svg
-                        className="w-4 h-4 text-white/50 flex-shrink-0"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </button>
+                )}
+                <div className="w-full">
+                  <OwnerOnboardingStepsInline
+                    layout="homepage"
+                    isAuthenticated={!!user}
+                    hasExistingProfile={ownerHasProfile}
+                    hasBoat={ownerHasBoat}
+                    hasJourney={ownerHasJourney}
+                    onboardingState={ownerOnboardingState}
+                    messagesLength={ownerSessionMessages?.length || 0}
+                  />
                 </div>
-              )}
+              </div>
             </div>
           </div>
         )}

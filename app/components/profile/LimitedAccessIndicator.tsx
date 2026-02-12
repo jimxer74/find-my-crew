@@ -1,16 +1,30 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 
 type LimitedAccessIndicatorProps = {
   message?: string;
   showCompleteProfileCTA?: boolean;
 };
 
-export function LimitedAccessIndicator({ 
+export function LimitedAccessIndicator({
   message = "Complete your profile to see full leg details and register",
-  showCompleteProfileCTA = true 
+  showCompleteProfileCTA = true
 }: LimitedAccessIndicatorProps) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const { handleRedirect } = useProfileRedirect();
+
+  const handleProfileClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (user) {
+      await handleRedirect(user.id, router);
+    }
+  };
+
   return (
     <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 mb-4">
       <div className="flex items-start gap-3">
@@ -31,7 +45,8 @@ export function LimitedAccessIndicator({
           <p className="text-sm text-foreground font-medium mb-1">{message}</p>
           {showCompleteProfileCTA && (
             <Link
-              href="/profile"
+              href="#"
+              onClick={handleProfileClick}
               className="text-sm text-primary hover:underline font-medium inline-flex items-center gap-1"
             >
               Complete your profile

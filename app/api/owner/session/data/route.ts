@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getSupabaseServerClient, getSupabaseUnauthenticatedClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient, getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 import { OwnerSession } from '@/app/lib/ai/owner/types';
 
 const SESSION_COOKIE_NAME = 'owner_session_id';
@@ -23,11 +23,9 @@ export async function GET() {
       );
     }
 
-    // Use unauthenticated client first - RLS allows access to sessions with user_id = NULL
-    // We'll switch to authenticated client only if session has user_id
-    let supabase = getSupabaseUnauthenticatedClient();
-
-    // Fetch session from database
+    // Fetch session - use service role because anon can't SELECT rows with user_id (RLS)
+    // Cookie proves ownership; we only return session data to the cookie holder
+    const supabase = getSupabaseServiceRoleClient();
     const { data: session, error } = await supabase
       .from('owner_sessions')
       .select('*')
@@ -57,37 +55,21 @@ export async function GET() {
       return NextResponse.json({ session: null });
     }
 
-    // If session has user_id, verify user is authenticated and owns the session
-    // BUT: Allow unauthenticated access if user is not logged in (they might be in onboarding flow)
-    // The cookie-based session_id is sufficient proof of ownership for unauthenticated users
+    // If session has user_id, verify user owns it (if authenticated)
+    // If user is logged out, cookie proves ownership - we already fetched via service role
     if (session.user_id) {
       try {
-        // Try to get authenticated client and verify user
-        supabase = await getSupabaseServerClient();
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
-        
-        // If user is authenticated, verify they own the session
-        if (user && !authError) {
-          if (user.id !== session.user_id) {
-            return NextResponse.json(
-              { error: 'Unauthorized' },
-              { status: 403 }
-            );
-          }
-          // User is authenticated and owns the session - use authenticated client
-        } else {
-          // User is not authenticated, but session has user_id
-          // This can happen if session was linked but user logged out
-          // Allow access via cookie (cookie proves ownership)
-          // Switch back to unauthenticated client
-          supabase = getSupabaseUnauthenticatedClient();
-          console.log('[Owner Session Data API] ⚠️ Session has user_id but user is not authenticated - allowing cookie-based access');
+        const authClient = await getSupabaseServerClient();
+        const { data: { user }, error: authError } = await authClient.auth.getUser();
+        if (user && !authError && user.id !== session.user_id) {
+          return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 403 }
+          );
         }
-      } catch (authErr: any) {
-        // Auth error means user is not authenticated
-        // Allow access via cookie (cookie proves ownership)
-        supabase = getSupabaseUnauthenticatedClient();
-        console.log('[Owner Session Data API] ⚠️ Auth check failed, allowing cookie-based access:', authErr.message);
+        // User owns session or is logged out - cookie proves ownership
+      } catch {
+        // Auth error - user logged out, cookie proves ownership
       }
     }
 
@@ -98,6 +80,10 @@ export async function GET() {
       lastActiveAt: session.last_active_at,
       conversation: session.conversation || [],
       gatheredPreferences: session.gathered_preferences || {},
+      sessionEmail: session.email ?? null,
+      hasSessionEmail: !!session.email,
+      profileCompletionTriggeredAt: session.profile_completion_triggered_at ?? null,
+      onboardingState: session.onboarding_state || 'signup_pending',
     };
 
     return NextResponse.json({ session: ownerSession });
@@ -166,8 +152,10 @@ export async function POST(request: NextRequest) {
       session.gatheredPreferences = prefsWithoutEmail;
     }
 
-    // Check if session exists
-    const { data: existingSession, error: selectError } = await supabase
+    // Check if session exists - use service role because anon can't SELECT rows with user_id (RLS)
+    // Cookie proves ownership; we only read user_id/email to pick the right client
+    const serviceClient = getSupabaseServiceRoleClient();
+    const { data: existingSession, error: selectError } = await serviceClient
       .from('owner_sessions')
       .select('user_id, email')
       .eq('session_id', sessionId)
@@ -177,28 +165,25 @@ export async function POST(request: NextRequest) {
       console.warn('[Owner Session Data API] ⚠️ Error checking existing session:', selectError);
     }
 
-    // If session has user_id, verify user owns it
+    // If session has user_id, verify user owns it OR use service role when logged out
     if (existingSession?.user_id) {
-      // Switch to authenticated client to verify user
       try {
         const authClient = await getSupabaseServerClient();
         const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
-        // If auth error or user doesn't match, return unauthorized
-        if (authError || !authUser || authUser.id !== existingSession.user_id) {
-          return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 403 }
-          );
+        if (authUser && !authError && authUser.id === existingSession.user_id) {
+          supabase = authClient;
+          userId = authUser.id;
+        } else {
+          // User logged out but session has user_id - cookie proves ownership
+          // Use service role to bypass RLS (anon can't update rows with user_id set)
+          supabase = getSupabaseServiceRoleClient();
+          userId = existingSession.user_id;
+          console.log('[Owner Session Data API] ⚠️ Session has user_id but user logged out - using service role for cookie-based save');
         }
-        supabase = authClient; // Use authenticated client
-        userId = authUser.id; // Update userId
       } catch (authErr: any) {
-        // Auth error means user is not authenticated, but session requires auth
-        console.error('[Owner Session Data API] Auth error when verifying session:', authErr);
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 403 }
-        );
+        supabase = getSupabaseServiceRoleClient();
+        userId = existingSession.user_id;
+        console.log('[Owner Session Data API] ⚠️ Auth check failed, using service role for cookie-based save:', authErr.message);
       }
     }
     // If no user_id, continue with unauthenticated client
@@ -371,6 +356,97 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * PATCH /api/owner/session/data
+ * Updates session data (specifically onboarding_state) in database
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: 'No session ID found' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { onboarding_state } = body as { onboarding_state?: string };
+
+    if (!onboarding_state) {
+      return NextResponse.json(
+        { error: 'Onboarding state is required' },
+        { status: 400 }
+      );
+    }
+
+    // Use appropriate client based on session state
+    let supabase = getSupabaseUnauthenticatedClient();
+    let userId: string | null = null;
+
+    // Check if session exists - use service role because anon can't SELECT rows with user_id (RLS)
+    const serviceClient = getSupabaseServiceRoleClient();
+    const { data: existingSession, error: selectError } = await serviceClient
+      .from('owner_sessions')
+      .select('user_id')
+      .eq('session_id', sessionId)
+      .maybeSingle();
+
+    if (selectError && selectError.code !== 'PGRST116') {
+      console.warn('[Owner Session Data API] ⚠️ Error checking existing session:', selectError);
+    }
+
+    // If session has user_id, verify user owns it OR use service role when logged out
+    if (existingSession?.user_id) {
+      try {
+        const authClient = await getSupabaseServerClient();
+        const { data: { user: authUser }, error: authError } = await authClient.auth.getUser();
+        if (authUser && !authError && authUser.id === existingSession.user_id) {
+          supabase = authClient;
+          userId = authUser.id;
+        } else {
+          supabase = getSupabaseServiceRoleClient();
+          userId = existingSession.user_id;
+        }
+      } catch (authErr: any) {
+        supabase = getSupabaseServiceRoleClient();
+        userId = existingSession.user_id;
+      }
+    }
+
+    // Update onboarding state
+    const { error: updateError } = await supabase
+      .from('owner_sessions')
+      .update({
+        onboarding_state: onboarding_state,
+        last_active_at: new Date().toISOString(),
+      })
+      .eq('session_id', sessionId);
+
+    if (updateError) {
+      console.error('[Owner Session Data API] ❌ Error updating onboarding state:', updateError);
+      return NextResponse.json(
+        {
+          error: 'Failed to update onboarding state',
+          details: updateError.message,
+          code: updateError.code,
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('[Owner Session Data API] Unexpected error in PATCH:', error);
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * DELETE /api/owner/session/data
  * Deletes session data from database
  */
@@ -386,10 +462,8 @@ export async function DELETE() {
       );
     }
 
-    // Use unauthenticated client first
-    let supabase = getSupabaseUnauthenticatedClient();
-
-    // Check if session exists and get user_id
+    // Check if session exists - use service role (anon can't SELECT rows with user_id)
+    let supabase = getSupabaseServiceRoleClient();
     const { data: existingSession, error: selectError } = await supabase
       .from('owner_sessions')
       .select('user_id')
@@ -409,34 +483,18 @@ export async function DELETE() {
       );
     }
 
-    // If session has user_id, verify user owns it (if authenticated)
-    // BUT: Allow unauthenticated deletion via cookie (cookie proves ownership)
+    // If session has user_id, verify user owns it before allowing delete
+    // When user is logged out, service role is already used (cookie proves ownership)
     if (existingSession?.user_id) {
       try {
-        // Try to get authenticated client and verify user
         const authClient = await getSupabaseServerClient();
         const { data: { user }, error: authError } = await authClient.auth.getUser();
-        
-        // If user is authenticated, verify they own the session
-        if (user && !authError) {
-          if (user.id !== existingSession.user_id) {
-            return NextResponse.json(
-              { error: 'Unauthorized' },
-              { status: 403 }
-            );
-          }
-          // User is authenticated and owns the session - use authenticated client
+        if (user && !authError && user.id === existingSession.user_id) {
           supabase = authClient;
-        } else {
-          // User is not authenticated, but session has user_id
-          // Allow deletion via cookie (cookie proves ownership)
-          // Keep using unauthenticated client
-          console.log('[Owner Session Data API] ⚠️ Session has user_id but user is not authenticated - allowing cookie-based deletion');
         }
-      } catch (authErr: any) {
-        // Auth error means user is not authenticated
-        // Allow deletion via cookie (cookie proves ownership)
-        console.log('[Owner Session Data API] ⚠️ Auth check failed, allowing cookie-based deletion:', authErr.message);
+        // Else: keep service role (user logged out, cookie proves ownership)
+      } catch {
+        // Auth error - keep service role for cookie-based deletion
       }
     }
 

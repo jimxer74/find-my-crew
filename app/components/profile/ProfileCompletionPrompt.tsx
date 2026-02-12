@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { MissingFieldsIndicator } from './MissingFieldsIndicator';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useProfile } from '@/app/lib/profile/useProfile';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type ProfileCompletionPromptProps = {
@@ -11,43 +13,76 @@ type ProfileCompletionPromptProps = {
   showCompletionPercentage?: boolean;
 };
 
-export function ProfileCompletionPrompt({ 
+export function ProfileCompletionPrompt({
   variant = 'banner',
-  showCompletionPercentage = true 
+  showCompletionPercentage = true
 }: ProfileCompletionPromptProps) {
   const { user } = useAuth();
-  const [completionPercentage, setCompletionPercentage] = useState<number | null>(null);
-  const [hasProfile, setHasProfile] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const router = useRouter();
+  const { profile, loading: profileLoading, isValidUser } = useProfile();
+  const [hasOnboardingSession, setHasOnboardingSession] = useState<boolean>(false);
+  const [onboardingSessionType, setOnboardingSessionType] = useState<'owner' | 'prospect' | null>(null);
+
+  // Derive completion percentage and profile status from shared hook
+  const completionPercentage = profile?.profile_completion_percentage ?? 0;
+  const hasProfile = isValidUser && profile !== null;
+  const loading = profileLoading;
 
   useEffect(() => {
     if (!user) {
-      setHasProfile(false);
-      setCompletionPercentage(0);
-      setLoading(false);
+      setHasOnboardingSession(false);
       return;
     }
 
-    const loadProfileStatus = async () => {
-      setLoading(true);
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('profile_completion_percentage, roles')
-        .eq('id', user.id)
-        .single();
+    const checkOnboardingSessions = async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
 
-      if (data && !error) {
-        setHasProfile(true);
-        setCompletionPercentage(data.profile_completion_percentage || 0);
-      } else {
-        setHasProfile(false);
-        setCompletionPercentage(0);
+        // Check for owner onboarding session with pending states
+        const { data: ownerSession, error: ownerError } = await supabase
+          .from('owner_sessions')
+          .select('session_id')
+          .eq('user_id', user.id)
+          .in('onboarding_state', ['profile_pending', 'boat_pending', 'journey_pending'])
+          .limit(1)
+          .maybeSingle();
+
+        // Check for prospect onboarding session with pending states
+        const { data: prospectSession, error: prospectError } = await supabase
+          .from('prospect_sessions')
+          .select('session_id')
+          .eq('user_id', user.id)
+          .eq('onboarding_state', 'profile_pending')
+          .limit(1)
+          .maybeSingle();
+
+        if (ownerError || prospectError) {
+          console.warn('Error checking onboarding sessions:', ownerError || prospectError);
+          setHasOnboardingSession(false);
+          return;
+        }
+
+        const hasSession = !!ownerSession || !!prospectSession;
+        setHasOnboardingSession(hasSession);
+
+        if (hasSession) {
+          // Determine the correct session type based on which session exists
+          if (ownerSession) {
+            setOnboardingSessionType('owner');
+          } else if (prospectSession) {
+            setOnboardingSessionType('prospect');
+          }
+        }
+      } catch (error) {
+        console.warn('Error checking onboarding sessions:', error);
+        setHasOnboardingSession(false);
       }
-      setLoading(false);
     };
 
-    loadProfileStatus();
+    checkOnboardingSessions();
+
+
+
   }, [user]);
 
   // Don't render anything while loading to prevent flash
@@ -56,9 +91,14 @@ export function ProfileCompletionPrompt({
   }
 
   // Don't show if profile is complete (100%) or user has roles
-  if (completionPercentage === 100 || (hasProfile && completionPercentage !== null && completionPercentage > 80)) {
+  if (completionPercentage === 100 || (hasProfile && completionPercentage > 80)) {
     return null;
   }
+
+  console.log('[ProfileCompletionPrompt] onboardingSessionType', onboardingSessionType);
+  console.log('[ProfileCompletionPrompt] hasOnboardingSession', hasOnboardingSession);
+  console.log('[ProfileCompletionPrompt] completionPercentage', completionPercentage);
+
 
   if (variant === 'banner') {
     return (
@@ -80,15 +120,21 @@ export function ProfileCompletionPrompt({
             </svg>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">
-                {hasProfile 
-                  ? `Complete your profile get better matches${showCompletionPercentage && completionPercentage !== null ? ` (${completionPercentage}% complete)` : ''}`
+                {hasProfile
+                  ? `Complete your profile get better matches${showCompletionPercentage && hasProfile ? ` (${completionPercentage}% complete)` : ''}`
                   : 'Create your profile to see full leg details and register for journeys'}
               </p>
             </div>
           </div>
           <Link
-            href="/profile"
-            className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
+              href={
+                onboardingSessionType === 'owner'
+                  ? '/welcome/owner'
+                  : onboardingSessionType === 'prospect'
+                  ? '/welcome/crew'
+                  : '/profile'
+              }
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             {hasProfile ? 'Complete Profile' : 'Create Profile'}
           </Link>
@@ -127,7 +173,7 @@ export function ProfileCompletionPrompt({
                 ? `You're ${completionPercentage}% done! Complete your profile to unlock all features and see full leg details.`
                 : 'Create a profile to see exact dates, skipper information, and register for sailing journeys.'}
             </p>
-            {showCompletionPercentage && completionPercentage !== null && hasProfile && (
+            {showCompletionPercentage && hasProfile && (
               <div className="mb-4">
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                   <span>Profile Completion</span>
@@ -141,13 +187,19 @@ export function ProfileCompletionPrompt({
                 </div>
               </div>
             )}
-            {hasProfile && completionPercentage !== null && completionPercentage < 100 && (
+            {hasProfile && completionPercentage < 100 && (
               <div className="mb-4">
                 <MissingFieldsIndicator variant="list" showTitle={false} />
               </div>
             )}
             <Link
-              href="/profile"
+              href={
+                onboardingSessionType === 'owner'
+                  ? '/welcome/owner'
+                  : onboardingSessionType === 'prospect'
+                  ? '/welcome/crew'
+                  : '/profile'
+              }
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
             >
               {hasProfile ? 'Complete Profile' : 'Create Profile'}

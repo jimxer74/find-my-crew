@@ -57,6 +57,45 @@ export async function GET(request: Request) {
       const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner');
       const isFromOwner = from === 'owner';
 
+      const [
+        pendingOwnerSessionRes,
+        pendingProspectSessionRes,
+        existingOwnerSessionRes,
+        existingProspectSessionRes,
+      ] = await Promise.all([
+        supabase
+          .from('owner_sessions')
+          .select('session_id')
+          .eq('user_id', user.id)
+          .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('prospect_sessions')
+          .select('session_id')
+          .eq('user_id', user.id)
+          .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending'])
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('owner_sessions')
+          .select('session_id, conversation')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('prospect_sessions')
+          .select('session_id, conversation')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle(),
+      ]);
+
+      const pendingOwnerSession = pendingOwnerSessionRes.data;
+      const pendingProspectSession = pendingProspectSessionRes.data;
+      const existingOwnerSession = existingOwnerSessionRes.data as { conversation?: unknown[] } | null;
+      const existingProspectSession = existingProspectSessionRes.data as { conversation?: unknown[] } | null;
+
       // Profile is optional - don't create automatically
       const { data: profile } = await supabase
         .from('profiles')
@@ -137,6 +176,18 @@ export async function GET(request: Request) {
         // If user came from prospect chat, redirect back to chat with profile completion mode
         redirectPath = '/welcome/crew?profile_completion=true';
         console.log('LOGIN CALLBACK, prospect user - redirecting to chat for profile completion');
+      } else if (pendingOwnerSession) {
+        redirectPath = '/welcome/owner';
+        console.log('LOGIN CALLBACK, pending owner session - redirecting to owner chat');
+      } else if (pendingProspectSession) {
+        redirectPath = '/welcome/crew';
+        console.log('LOGIN CALLBACK, pending prospect session - redirecting to crew chat');
+      } else if (existingOwnerSession?.conversation && existingOwnerSession.conversation.length > 0) {
+        redirectPath = '/welcome/owner';
+        console.log('LOGIN CALLBACK, existing owner conversation - redirecting to owner chat');
+      } else if (existingProspectSession?.conversation && existingProspectSession.conversation.length > 0) {
+        redirectPath = '/welcome/crew';
+        console.log('LOGIN CALLBACK, existing prospect conversation - redirecting to crew chat');
       } else if (profile && profile.roles && profile.roles.length > 0) {
         // User has roles - redirect based on primary role
         // Priority: owner > crew (if user has both roles)

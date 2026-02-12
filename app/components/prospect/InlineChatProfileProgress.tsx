@@ -1,6 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
+import { useState } from 'react';
 
 type ProfileField = {
   name: string;
@@ -24,9 +28,25 @@ export function InlineChatProfileProgress({
   completionPercentage,
   onContinueToProfile,
 }: InlineChatProfileProgressProps) {
+  const { user } = useAuth();
+  const router = useRouter();
+  const { handleRedirect } = useProfileRedirect();
+  const [redirecting, setRedirecting] = useState(false);
+
   const filledCount = fields.filter((f) => f.filled).length;
   const totalRequired = fields.filter((f) => f.required).length;
   const filledRequired = fields.filter((f) => f.required && f.filled).length;
+
+  const handleContinueToProfile = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (redirecting) return;
+
+    setRedirecting(true);
+    if (user) {
+      await handleRedirect(user.id, router);
+    }
+    onContinueToProfile?.();
+  };
 
   return (
     <div className="bg-muted rounded-lg p-4 max-w-sm">
@@ -119,9 +139,9 @@ export function InlineChatProfileProgress({
 
       {/* Link to full profile */}
       <Link
-        href="/profile"
+        href="#"
         className="flex items-center justify-center gap-2 w-full py-2 px-4 text-sm font-medium text-primary border border-primary/30 rounded-md hover:bg-primary/10 transition-colors"
-        onClick={onContinueToProfile}
+        onClick={handleContinueToProfile}
       >
         <span>Continue to full profile</span>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

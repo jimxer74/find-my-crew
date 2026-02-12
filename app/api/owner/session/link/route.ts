@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { email } = body as { email?: string };
+    const body = await request.json().catch(() => ({}));
+    const { email, postSignupOnboarding } = body as { email?: string; postSignupOnboarding?: boolean };
 
     // User must be authenticated to link sessions
     const supabase = await getSupabaseServerClient();
@@ -36,10 +36,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const normalizedEmail = (email || user.email || '').toLowerCase().trim() || null;
+
     // Link current session by session_id
     const { error: linkCurrentError } = await supabase
       .from('owner_sessions')
-      .update({ user_id: user.id })
+      .update({
+        user_id: user.id,
+        ...(normalizedEmail ? { email: normalizedEmail } : {}),
+      })
       .eq('session_id', sessionId)
       .is('user_id', null); // Only update if user_id is null
 
@@ -49,18 +54,47 @@ export async function POST(request: NextRequest) {
       console.log('[Owner Session Link API] ✅ Linked current session to user:', user.id);
     }
 
+    // Ensure current session has email when available (even if already linked)
+    if (normalizedEmail) {
+      const { error: ensureEmailError } = await supabase
+        .from('owner_sessions')
+        .update({ email: normalizedEmail })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .is('email', null);
+
+      if (ensureEmailError) {
+        console.error('[Owner Session Link API] Error ensuring current session email:', ensureEmailError);
+      }
+    }
+
     // Link all sessions with matching email (if email provided)
-    if (email) {
+    if (normalizedEmail) {
       const { error: linkEmailError } = await supabase
         .from('owner_sessions')
         .update({ user_id: user.id })
-        .eq('email', email.toLowerCase().trim())
+        .eq('email', normalizedEmail)
         .is('user_id', null); // Only update if user_id is null
 
       if (linkEmailError) {
         console.error('[Owner Session Link API] Error linking sessions by email:', linkEmailError);
       } else {
         console.log('[Owner Session Link API] ✅ Linked sessions by email to user:', user.id);
+      }
+    }
+
+    // Set onboarding state to consent_pending for post-signup onboarding
+    if (postSignupOnboarding) {
+      const { error: stateError } = await supabase
+        .from('owner_sessions')
+        .update({ onboarding_state: 'consent_pending' })
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id);
+
+      if (stateError) {
+        console.warn('[Owner Session Link API] Could not set onboarding_state:', stateError);
+      } else {
+        console.log('[Owner Session Link API] ✅ Set onboarding_state to consent_pending');
       }
     }
 

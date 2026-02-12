@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { useProfile } from '@/app/lib/profile/useProfile';
 import { useUserLocation } from '@/app/hooks/useUserLocation';
 import {
   LocationRegion,
@@ -23,14 +23,11 @@ export default function CrewHomePage() {
   const tDashboard = useTranslations('crewDashboard');
   const { user, loading: authLoading } = useAuth();
   const userLocation = useUserLocation();
+  const { profile, loading: profileLoading } = useProfile();
 
   const [sortedRegions, setSortedRegions] = useState<
     Array<LocationRegion & { distance: number }>
   >([]);
-  const [userSkills, setUserSkills] = useState<string[]>([]);
-  const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
-  const [userRiskLevel, setUserRiskLevel] = useState<string[] | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
   const [visibleRegionsCount, setVisibleRegionsCount] = useState(5);
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<LegListItemData | null>(null);
@@ -44,41 +41,20 @@ export default function CrewHomePage() {
     }
   }, [userLocation.loading, userLocation.lat, userLocation.lng]);
 
-  // Load user profile (skills, experience level, and risk level)
-  useEffect(() => {
-    if (!user) {
-      setUserSkills([]);
-      setUserExperienceLevel(null);
-      setUserRiskLevel(null);
-      setProfileLoading(false);
-      return;
-    }
+  // Extract user profile data from useProfile hook
+  const userSkills = useMemo(() => {
+    if (!profile?.skills) return [];
+    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    return normalizeSkillNames(profile.skills);
+  }, [profile?.skills]);
 
-    const loadProfile = async () => {
-      const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('skills, sailing_experience, risk_level')
-        .eq('id', user.id)
-        .single();
+  const userExperienceLevel = useMemo(() => {
+    return profile?.sailing_experience || null;
+  }, [profile?.sailing_experience]);
 
-      if (!error && data) {
-        // Normalize skills to canonical format (extract skill names from JSON objects)
-        const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
-        const normalizedSkills = normalizeSkillNames(data.skills || []);
-        
-        console.log('[CrewHomePage] Loaded user skills (raw):', data.skills);
-        console.log('[CrewHomePage] Loaded user skills (normalized):', normalizedSkills);
-        
-        setUserSkills(normalizedSkills);
-        setUserExperienceLevel(data.sailing_experience || null);
-        setUserRiskLevel(data.risk_level || null);
-      }
-      setProfileLoading(false);
-    };
-
-    loadProfile();
-  }, [user]);
+  const userRiskLevel = useMemo(() => {
+    return profile?.risk_level || null;
+  }, [profile?.risk_level]);
 
   // Handle Join button click - open registration dialog
   const handleJoinClick = useCallback((leg: LegListItemData) => {
@@ -87,13 +63,13 @@ export default function CrewHomePage() {
   }, []);
 
   // Loading state
-  if (authLoading || userLocation.loading) {
+  if (authLoading || userLocation.loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">
-            {userLocation.loading ? t('detectingLocation') : tCommon('loading')}
+            {userLocation.loading || profileLoading ? t('detectingLocation') : tCommon('loading')}
           </p>
         </div>
       </div>

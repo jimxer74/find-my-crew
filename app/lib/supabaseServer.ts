@@ -51,3 +51,16 @@ export function getSupabaseUnauthenticatedClient(): SupabaseClient {
     }
   );
 }
+
+/**
+ * Get Supabase service role client - bypasses RLS
+ * Use ONLY when cookie/session proves ownership and user is logged out
+ * (e.g. updating session with user_id when user logged out after signup)
+ */
+export function getSupabaseServiceRoleClient(): SupabaseClient {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for service role operations');
+  }
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, key);
+}

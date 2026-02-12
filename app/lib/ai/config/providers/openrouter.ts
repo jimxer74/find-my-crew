@@ -22,9 +22,8 @@ export const openrouterConfig = {
 */
   dev: {
     models: [
-      // Try first some free models
-    //'nousresearch/deephermes-3-mistral-24b-preview',
-    //'qwen/qwen3-4b:free',
+    // First try any free models
+    //'openrouter/free',
       // Then try some paid models
     'openai/gpt-oss-20b',
     'openai/gpt-oss-120b',

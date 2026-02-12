@@ -74,7 +74,9 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
 
       const redirectTo = prospectPreferences
         ? `${window.location.origin}/auth/callback?from=prospect`
-        : undefined;
+        : redirectPath?.includes('/welcome/owner')
+          ? `${window.location.origin}/auth/callback?from=owner`
+          : undefined;
 
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -89,12 +91,6 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
       if (authError) throw authError;
 
       if (authData.user) {
-        // Set flag so the app knows to continue in profile completion mode
-        // Set for both prospect and owner flows (when preferences are provided)
-        if (prospectPreferences || redirectPath?.includes('profile_completion')) {
-          localStorage.setItem('ai_assistant_signup_pending', 'true');
-        }
-
         onClose();
 
         // Determine redirect path
@@ -127,7 +123,6 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
     // Store preferences in localStorage before OAuth redirect (will be lost otherwise)
     if (prospectPreferences) {
       localStorage.setItem('prospect_signup_preferences', JSON.stringify(prospectPreferences));
-      localStorage.setItem('ai_assistant_signup_pending', 'true');
     }
 
     // Determine OAuth callback redirect

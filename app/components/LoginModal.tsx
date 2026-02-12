@@ -35,26 +35,76 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: 
       if (authError) throw authError;
 
       if (data.user) {
-        // Get user profile to determine roles (profile is optional)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('roles')
-          .eq('id', data.user.id)
-          .single();
+        const [
+          profileRes,
+          pendingOwnerSessionRes,
+          pendingProspectSessionRes,
+          existingOwnerSessionRes,
+          existingProspectSessionRes,
+        ] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('roles')
+            .eq('id', data.user.id)
+            .maybeSingle(),
+          supabase
+            .from('owner_sessions')
+            .select('session_id')
+            .eq('user_id', data.user.id)
+            .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('prospect_sessions')
+            .select('session_id')
+            .eq('user_id', data.user.id)
+            .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending'])
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('owner_sessions')
+            .select('session_id, conversation')
+            .eq('user_id', data.user.id)
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('prospect_sessions')
+            .select('session_id, conversation')
+            .eq('user_id', data.user.id)
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-        // Always redirect to role-specific homepage
-        let redirectPath = '/crew'; // Default to crew homepage
-        
-        if (profile && profile.roles && profile.roles.length > 0) {
-          // User has roles - redirect based on primary role
-          // Priority: owner > crew (if user has both roles)
+        const profile = profileRes.data;
+        const pendingOwnerSession = pendingOwnerSessionRes.data;
+        const pendingProspectSession = pendingProspectSessionRes.data;
+        const existingOwnerSession = existingOwnerSessionRes.data as { conversation?: unknown[] } | null;
+        const existingProspectSession = existingProspectSessionRes.data as { conversation?: unknown[] } | null;
+
+        let redirectPath = '/crew';
+
+        // Priority 1: pending onboarding sessions must stay in AI chat
+        if (pendingOwnerSession) {
+          redirectPath = '/welcome/owner';
+        } else if (pendingProspectSession) {
+          redirectPath = '/welcome/crew';
+        }
+        // Priority 2: existing onboarding conversations should continue in AI chat
+        else if (existingOwnerSession?.conversation && existingOwnerSession.conversation.length > 0) {
+          redirectPath = '/welcome/owner';
+        } else if (existingProspectSession?.conversation && existingProspectSession.conversation.length > 0) {
+          redirectPath = '/welcome/crew';
+        }
+        // Priority 3: role-based default routes
+        else if (profile?.roles?.length) {
           if (profile.roles.includes('owner')) {
             redirectPath = '/owner/dashboard';
           } else if (profile.roles.includes('crew')) {
             redirectPath = '/crew';
           }
+        } else {
+          redirectPath = '/profile-setup';
         }
-        // If no profile or no roles, default to crew homepage
         
         onClose();
         router.push(redirectPath);

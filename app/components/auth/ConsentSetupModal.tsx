@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type ConsentSetupModalProps = {
@@ -10,6 +11,7 @@ type ConsentSetupModalProps = {
 };
 
 export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,7 +48,6 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
     setLoading(true);
     setError(null);
 
-
     console.log('handleSave starting...');
     const supabase = getSupabaseBrowserClient();
     const now = new Date().toISOString();
@@ -64,8 +65,8 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         marketing_consent_at: now,
       };
 
-
       console.log('consentData: ', consentData);
+
       // Try to update existing consent record
       const { error: updateError, count } = await supabase
         .from('user_consents')
@@ -73,10 +74,9 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         .eq('user_id', userId);
 
       console.log('updateError: ', updateError);
-      console.log('Error: ', error);
       console.log('count: ', count);
-        // If no rows were updated (record doesn't exist), insert new record
 
+      // If no rows were updated (record doesn't exist), insert new record
       if (updateError || count === 0 || count === null) {
         const { error: insertError } = await supabase
           .from('user_consents')
@@ -131,15 +131,33 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
 
       await supabase.from('consent_audit_log').insert(auditLogs);
 
-      // Dispatch event so other components (e.g. ProspectChat, homepage) can react
-      // to consent completion and know whether AI consent was granted
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('consentSetupCompleted', {
-          detail: { aiProcessingConsent: aiProcessing },
-        }));
+      // Check if user is already on an onboarding page
+      const isOnOnboardingPage = window.location.pathname.startsWith('/welcome');
+      console.log('[ConsentSetupModal] isOnOnboardingPage:', isOnOnboardingPage, 'pathname:', window.location.pathname);
+
+      // Server-driven post-signup flow: API returns redirect path (owner vs crew)
+      // Only redirect if user is NOT already on an onboarding page
+      if (!isOnOnboardingPage) {
+        console.log('[ConsentSetupModal] Redirecting user after consent (not on onboarding page)');
+        const res = await fetch('/api/onboarding/after-consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ aiProcessingConsent: aiProcessing }),
+        });
+        const data = await res.json().catch(() => ({}));
+
+        if (data.redirect) {
+          console.log('[ConsentSetupModal] Redirecting to:', data.redirect);
+          router.push(data.redirect);
+          return;
+        }
+      } else {
+        console.log('[ConsentSetupModal] User already on onboarding page, not redirecting');
       }
 
       onComplete();
+
     } catch (err: any) {
       console.error('Error saving consents:', err);
       setError(err.message || 'Failed to save preferences. Please try again.');

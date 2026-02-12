@@ -739,5 +739,11 @@
     "postJourneyPromptMessage": "You recently completed \"{journeyName}\". Share your feedback to help us improve!",
     "maybeLater": "Maybe later",
     "dontShowAgain": "Don't show again"
+  },
+  "onboarding": {
+    "completeSignup": "Sign-up",
+    "createProfile": "Create profile",
+    "createBoat": "Add boat",
+    "createFirstJourney": "Post journey"
   }
 }

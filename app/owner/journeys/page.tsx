@@ -9,8 +9,8 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { Pagination } from '@/app/components/ui/Pagination';
 import { formatDate } from '@/app/lib/dateFormat';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
-import { checkProfile } from '@/app/lib/profile/checkProfile';
 import { Footer } from '@/app/components/Footer';
+import { useProfile } from '@/app/lib/profile/useProfile';
 
 export default function JourneysPage() {
   const t = useTranslations('journeys');
@@ -30,6 +30,7 @@ export default function JourneysPage() {
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { profile } = useProfile();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -41,15 +42,15 @@ export default function JourneysPage() {
       checkOwnerRole();
       loadJourneys();
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, profile]);
 
-  const checkOwnerRole = async () => {
-    if (!user) {
+  const checkOwnerRole = () => {
+    if (!user || !profile) {
       setHasOwnerRole(false);
       return;
     }
-    const status = await checkProfile(user.id);
-    setHasOwnerRole(status.exists && status.roles.includes('owner'));
+    const roles = profile.roles || [];
+    setHasOwnerRole(roles.includes('owner'));
   };
 
   const loadJourneys = async () => {
