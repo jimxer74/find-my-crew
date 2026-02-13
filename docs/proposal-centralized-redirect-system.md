@@ -92,7 +92,7 @@ The main service that determines redirect paths based on user context.
 
 5. **Role-Based Redirects** (Priority 5)
    - Based on user profile roles
-   - Owner: `/owner/dashboard` → `/owner/boats`
+   - Owner: `/owner` (!note route is not implemented yet, but will be)
    - Crew: `/crew`
 
 6. **New User Redirects** (Priority 6)

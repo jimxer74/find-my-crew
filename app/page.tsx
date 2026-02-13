@@ -12,6 +12,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@/app/lib/prospect/sessionService';
 import * as ownerSessionService from '@/app/lib/owner/sessionService';
+import { shouldStayOnHomepage, redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
 import { OwnerComboSearchBox, type OwnerComboSearchData } from '@/app/components/ui/OwnerComboSearchBox';
@@ -174,49 +175,18 @@ export default function WelcomePage() {
         return;
       }
 
-      // User is logged in - check their roles
-      const supabase = getSupabaseBrowserClient();
       try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('roles')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        if (profile && profile.roles && profile.roles.length > 0) {
-          // Keep user on frontpage if they have a pending owner onboarding session.
-          // This prevents redirecting to dashboard when onboarding should continue.
-          if (profile.roles.includes('owner')) {
-            const { data: pendingOwnerSession, error: pendingOwnerSessionError } = await supabase
-              .from('owner_sessions')
-              .select('session_id')
-              .eq('user_id', user.id)
-              .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
-              .limit(1)
-              .maybeSingle();
-
-            if (pendingOwnerSessionError) {
-              console.error('Failed to check pending owner session:', pendingOwnerSessionError);
-            }
-
-            if (pendingOwnerSession) {
-              setIsCheckingRole(false);
-              return;
-            }
-          }
-
-          // User has roles - redirect based on primary role
-          // Priority: owner > crew (if user has both roles)
-          if (profile.roles.includes('owner')) {
-            router.push('/owner/dashboard');
-            return;
-          } else if (profile.roles.includes('crew')) {
-            router.push('/crew');
-            return;
-          }
+        // Check if user should stay on homepage (pending onboarding)
+        const shouldStay = await shouldStayOnHomepage(user.id);
+        if (shouldStay) {
+          setIsCheckingRole(false);
+          return;
         }
+
+        // Otherwise redirect based on context
+        await redirectAfterAuth(user.id, 'root', router);
       } catch (error) {
-        console.error('Failed to check user profile:', error);
+        console.error('[RootRoute] Failed to determine redirect:', error);
       }
 
       setIsCheckingRole(false);

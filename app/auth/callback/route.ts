@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { getRedirectResponse } from '@/app/lib/routing/redirectHelpers.server';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -164,44 +165,16 @@ export async function GET(request: Request) {
         return response;
       }
 
-      // Determine redirect based on context and profile
-      // Always redirect to role-specific homepage
-      let redirectPath = '/crew'; // Default to crew homepage
+      // Use centralized redirect service
+      // Pass the supabase client to avoid importing server code in client components
+      const additionalContext = {
+        isFacebookLogin,
+        fromOwner: isFromOwner,
+        fromProspect: isFromProspect,
+        isNewUser,
+      };
 
-      // If user came from owner chat, redirect back to owner chat with profile completion mode
-      if (isFromOwner) {
-        redirectPath = '/welcome/owner?profile_completion=true';
-        console.log('LOGIN CALLBACK, owner user - redirecting to owner chat for profile completion');
-      } else if (isFromProspect) {
-        // If user came from prospect chat, redirect back to chat with profile completion mode
-        redirectPath = '/welcome/crew?profile_completion=true';
-        console.log('LOGIN CALLBACK, prospect user - redirecting to chat for profile completion');
-      } else if (pendingOwnerSession) {
-        redirectPath = '/welcome/owner';
-        console.log('LOGIN CALLBACK, pending owner session - redirecting to owner chat');
-      } else if (pendingProspectSession) {
-        redirectPath = '/welcome/crew';
-        console.log('LOGIN CALLBACK, pending prospect session - redirecting to crew chat');
-      } else if (existingOwnerSession?.conversation && existingOwnerSession.conversation.length > 0) {
-        redirectPath = '/welcome/owner';
-        console.log('LOGIN CALLBACK, existing owner conversation - redirecting to owner chat');
-      } else if (existingProspectSession?.conversation && existingProspectSession.conversation.length > 0) {
-        redirectPath = '/welcome/crew';
-        console.log('LOGIN CALLBACK, existing prospect conversation - redirecting to crew chat');
-      } else if (profile && profile.roles && profile.roles.length > 0) {
-        // User has roles - redirect based on primary role
-        // Priority: owner > crew (if user has both roles)
-        if (profile.roles.includes('owner')) {
-          redirectPath = '/owner/dashboard';
-        } else if (profile.roles.includes('crew')) {
-          redirectPath = '/crew';
-        }
-      }
-      // If no profile or no roles, default to crew homepage
-      let url = new URL(redirectPath, request.url)
-      console.log('LOGIN CALLBACK, user found', url);
-
-      return NextResponse.redirect(url);
+      return await getRedirectResponse(user.id, 'oauth', request, additionalContext, supabase);
     }
   }
   let url = new URL(origin + '/', request.url)

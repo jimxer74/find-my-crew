@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
 
 export default function LoginPage() {
   const t = useTranslations('auth.login');
@@ -30,118 +31,8 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Get user profile to determine roles (profile is optional)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('roles')
-          .eq('id', data.user.id)
-          .single();
-
-        // Check if user has pending onboarding sessions
-        const { data: ownerSession } = await supabase
-          .from('owner_sessions')
-          .select('session_id')
-          .eq('user_id', data.user.id)
-          .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
-          .limit(1)
-          .maybeSingle();
-
-        const { data: prospectSession } = await supabase
-          .from('prospect_sessions')
-          .select('session_id')
-          .eq('user_id', data.user.id)
-          .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending'])
-          .limit(1)
-          .maybeSingle();
-
-        // Check if user has sessions with profile completion triggered
-        const { data: ownerProfileCompletionSession } = await supabase
-          .from('owner_sessions')
-          .select('session_id')
-          .eq('user_id', data.user.id)
-          .not('profile_completion_triggered_at', 'is', null)
-          .limit(1)
-          .maybeSingle();
-
-        const { data: prospectProfileCompletionSession } = await supabase
-          .from('prospect_sessions')
-          .select('session_id')
-          .eq('user_id', data.user.id)
-          .not('profile_completion_triggered_at', 'is', null)
-          .limit(1)
-          .maybeSingle();
-
-        // Check if user has existing sessions (not pending) with conversation history
-        const { data: existingOwnerSession } = await supabase
-          .from('owner_sessions')
-          .select('session_id, conversation')
-          .eq('user_id', data.user.id)
-          .limit(1)
-          .maybeSingle();
-
-        const { data: existingProspectSession } = await supabase
-          .from('prospect_sessions')
-          .select('session_id, conversation')
-          .eq('user_id', data.user.id)
-          .limit(1)
-          .maybeSingle();
-
-        let redirectPath = '/crew'; // Default to crew homepage
-
-        console.log('[Login Debug] User data:', {
-          userId: data.user.id,
-          email: data.user.email,
-          ownerSession: ownerSession,
-          prospectSession: prospectSession,
-          ownerProfileCompletionSession: ownerProfileCompletionSession,
-          prospectProfileCompletionSession: prospectProfileCompletionSession,
-          existingOwnerSession: existingOwnerSession,
-          existingProspectSession: existingProspectSession,
-          profile: profile
-        });
-
-        // Priority 1: Check for pending onboarding sessions
-        if (ownerSession) {
-          console.log('[Login] Redirecting to owner onboarding (pending session)');
-          redirectPath = '/welcome/owner';
-        } else if (prospectSession) {
-          console.log('[Login] Redirecting to crew onboarding (pending session)');
-          redirectPath = '/welcome/crew';
-        }
-        // Priority 2: Check for profile completion triggered sessions
-        else if (ownerProfileCompletionSession) {
-          console.log('[Login] Redirecting to owner onboarding (profile completion triggered)');
-          redirectPath = '/welcome/owner';
-        } else if (prospectProfileCompletionSession) {
-          console.log('[Login] Redirecting to crew onboarding (profile completion triggered)');
-          redirectPath = '/welcome/crew';
-        }
-        // Priority 3: Check for existing onboarding sessions with conversation history
-        else if (existingOwnerSession && existingOwnerSession.conversation && existingOwnerSession.conversation.length > 0) {
-          console.log('[Login] Redirecting to owner onboarding (existing conversation)');
-          redirectPath = '/welcome/owner';
-        } else if (existingProspectSession && existingProspectSession.conversation && existingProspectSession.conversation.length > 0) {
-          console.log('[Login] Redirecting to crew onboarding (existing conversation)');
-          redirectPath = '/welcome/crew';
-        }
-        // Priority 4: Check profile roles
-        else if (profile && profile.roles && profile.roles.length > 0) {
-          // User has roles - redirect based on primary role
-          // Priority: owner > crew (if user has both roles)
-          if (profile.roles.includes('owner')) {
-            redirectPath = '/owner/dashboard';
-          } else if (profile.roles.includes('crew')) {
-            redirectPath = '/crew';
-          }
-        }
-        // Priority 5: No profile, redirect to profile setup
-        else {
-          redirectPath = '/profile-setup';
-        }
-
-        console.log('[Login] Redirecting user to:', redirectPath);
-        router.push(redirectPath);
-        router.refresh();
+        // Use centralized redirect service
+        await redirectAfterAuth(data.user.id, 'login', router);
       }
     } catch (err: any) {
       setError(err.message || t('errors.invalidCredentials'));

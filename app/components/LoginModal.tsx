@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
 
 type LoginModalProps = {
   isOpen: boolean;
@@ -35,80 +36,10 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: 
       if (authError) throw authError;
 
       if (data.user) {
-        const [
-          profileRes,
-          pendingOwnerSessionRes,
-          pendingProspectSessionRes,
-          existingOwnerSessionRes,
-          existingProspectSessionRes,
-        ] = await Promise.all([
-          supabase
-            .from('profiles')
-            .select('roles')
-            .eq('id', data.user.id)
-            .maybeSingle(),
-          supabase
-            .from('owner_sessions')
-            .select('session_id')
-            .eq('user_id', data.user.id)
-            .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending', 'boat_pending', 'journey_pending'])
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from('prospect_sessions')
-            .select('session_id')
-            .eq('user_id', data.user.id)
-            .in('onboarding_state', ['signup_pending', 'consent_pending', 'profile_pending'])
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from('owner_sessions')
-            .select('session_id, conversation')
-            .eq('user_id', data.user.id)
-            .limit(1)
-            .maybeSingle(),
-          supabase
-            .from('prospect_sessions')
-            .select('session_id, conversation')
-            .eq('user_id', data.user.id)
-            .limit(1)
-            .maybeSingle(),
-        ]);
-
-        const profile = profileRes.data;
-        const pendingOwnerSession = pendingOwnerSessionRes.data;
-        const pendingProspectSession = pendingProspectSessionRes.data;
-        const existingOwnerSession = existingOwnerSessionRes.data as { conversation?: unknown[] } | null;
-        const existingProspectSession = existingProspectSessionRes.data as { conversation?: unknown[] } | null;
-
-        let redirectPath = '/crew';
-
-        // Priority 1: pending onboarding sessions must stay in AI chat
-        if (pendingOwnerSession) {
-          redirectPath = '/welcome/owner';
-        } else if (pendingProspectSession) {
-          redirectPath = '/welcome/crew';
-        }
-        // Priority 2: existing onboarding conversations should continue in AI chat
-        else if (existingOwnerSession?.conversation && existingOwnerSession.conversation.length > 0) {
-          redirectPath = '/welcome/owner';
-        } else if (existingProspectSession?.conversation && existingProspectSession.conversation.length > 0) {
-          redirectPath = '/welcome/crew';
-        }
-        // Priority 3: role-based default routes
-        else if (profile?.roles?.length) {
-          if (profile.roles.includes('owner')) {
-            redirectPath = '/owner/dashboard';
-          } else if (profile.roles.includes('crew')) {
-            redirectPath = '/crew';
-          }
-        } else {
-          redirectPath = '/profile-setup';
-        }
-        
+        // Use centralized redirect service
+        const source = fromProspect ? 'prospect' : 'login';
         onClose();
-        router.push(redirectPath);
-        router.refresh();
+        await redirectAfterAuth(data.user.id, source, router);
       }
     } catch (err: any) {
       setError(err.message || 'Invalid email or password');

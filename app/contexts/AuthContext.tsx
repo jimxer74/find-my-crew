@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '../lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
@@ -19,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
@@ -32,13 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Redirect to home page on logout
+      if (event === 'SIGNED_OUT') {
+        router.push('/');
+        router.refresh();
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [router]);
 
   const signOut = async () => {
     const supabase = getSupabaseBrowserClient();
