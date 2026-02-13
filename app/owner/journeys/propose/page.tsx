@@ -346,6 +346,7 @@ export default function ProposeJourneyPage() {
                       setError(null);
                     }}
                     placeholder="e.g., Barcelona, Spain"
+                    excludeCruisingRegions={true}
                   />
                   <LocationAutocomplete
                     id="end_location"
@@ -360,6 +361,7 @@ export default function ProposeJourneyPage() {
                       setError(null);
                     }}
                     placeholder="e.g., Palma, Mallorca"
+                    excludeCruisingRegions={true}
                   />
                 </div>
 
@@ -404,6 +406,7 @@ export default function ProposeJourneyPage() {
                                 setError(null);
                               }}
                               placeholder="e.g., Ibiza, Spain"
+                              excludeCruisingRegions={true}
                             />
                           </div>
                           <button

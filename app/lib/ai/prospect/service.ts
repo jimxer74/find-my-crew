@@ -18,6 +18,7 @@ import {
   normalizeLocationArgs,
   normalizeBboxArgs,
   formatToolResultsForAI,
+  sanitizeContent,
   searchPublishedLegs,
   searchLegsByBbox,
   ToolCall,
@@ -65,10 +66,14 @@ function extractMatchedLocations(message: string): LocationSearchResult[] {
  * Build system prompt for prospect onboarding chat
  * @param preferences - User's gathered preferences
  * @param matchedLocations - Pre-resolved locations from the location registry
+ * @param userProfile - User profile data from signup/OAuth (optional)
+ * @param isAuthenticated - Whether the user is authenticated (optional)
  */
 function buildProspectSystemPrompt(
   preferences: ProspectPreferences,
-  matchedLocations?: LocationSearchResult[]
+  matchedLocations?: LocationSearchResult[],
+  userProfile?: { fullName?: string | null; email?: string | null; phone?: string | null; avatarUrl?: string | null } | null,
+  isAuthenticated?: boolean
 ): string {
   const hasPreferences = Object.keys(preferences).some(
     key => preferences[key as keyof ProspectPreferences] !== undefined
@@ -79,7 +84,22 @@ function buildProspectSystemPrompt(
   const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD
   const currentYear = now.getFullYear();
 
+  // Build user info section when authenticated and userProfile is available
+  const shouldShowUserInfo = isAuthenticated && userProfile;
+  const userInfoSection = shouldShowUserInfo ? (() => {
+    const known: string[] = [];
+    if (userProfile?.fullName) known.push(`- **Name:** "${userProfile.fullName}"`);
+    if (userProfile?.email) known.push(`- **Email:** "${userProfile.email}"`);
+    if (userProfile?.phone) known.push(`- **Phone:** "${userProfile.phone}"`);
+    if (userProfile?.avatarUrl) known.push(`- **Profile photo:** Already set`);
+    if (known.length > 0) {
+      return `\n**FROM SIGNUP/OAUTH:**\n${known.join('\n')}\n`;
+    }
+    return '';
+  })() : '';
+
   return `You are SailSmart's friendly AI assistant helping potential crew members in onboarding process.
+${userInfoSection}
 
 CURRENT DATE: ${currentDate}
 IMPORTANT: Today's date is ${currentDate}. When users ask about sailing trips, use ${currentYear} or later for date searches. Do NOT use past years like 2024 or 2025 - always search for upcoming trips.
@@ -114,6 +134,24 @@ ${getSkillsStructure()}
 - Ask one or two questions at a time, not long lists
 - Show matching sailing legs as soon as you have enough information
 - Keep responses concise and focused
+
+## TOOL CALL FORMATTING (CRITICAL):
+
+When explaining tool usage to users, use natural language only. DO NOT include:
+- Code blocks with markdown code fence format containing tool_call
+- Text markers like "TOOL CALL:" or headers
+- Example JSON syntax showing tool call structure
+- Any technical tool call syntax or format examples
+- XML-style tool call tags
+- Delimiter formats like tool_call_start markers
+
+INSTEAD, describe what will happen in plain language:
+- ✅ "I'll search for sailing trips matching your preferences."
+- ✅ "Let me find some great options for you."
+- ❌ "I'll call the search_legs_by_location tool: [showing tool call syntax]"
+- ❌ "TOOL CALL: [example tool call format]"
+
+The tool calls happen automatically in the background - you don't need to show users the technical details.
 
 ## SUGGESTED PROMPTS (CRITICAL):
 - At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
@@ -1367,7 +1405,7 @@ export async function prospectChat(
   }
 
   // Build prompts with pre-resolved locations
-  let systemPrompt = buildProspectSystemPrompt(preferences, matchedLocations);
+  let systemPrompt = buildProspectSystemPrompt(preferences, matchedLocations, userProfile, !!authenticatedUserId);
 
   // Add instructions if user already has a profile
   if (hasExistingProfile && authenticatedUserId) {
@@ -1589,7 +1627,8 @@ Note: Map "carpentry" to "technical_skills", "yoga" to "physical_fitness" - use 
     }
 
     if (toolCalls.length === 0) {
-      finalContent = content;
+      // Sanitize content to remove any malformed tool call syntax
+      finalContent = sanitizeContent(content, false);
       log('✅ No tool calls, final content ready');
       break;
     }

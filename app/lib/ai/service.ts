@@ -449,10 +449,19 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
 
     // Get configuration for current environment (with optional provider override)
     const envConfig = getCurrentConfig();
-    const providers = envConfig.providers;
+    
+    // Check for use-case-specific configuration override
+    const useCaseConfig = envConfig.useCaseOverrides?.[useCase];
+    
+    // Use use-case-specific providers if available, otherwise fall back to default
+    const providers = useCaseConfig?.providers || envConfig.providers;
     if (!providers || providers.length === 0) {
       throw new AIServiceError(`No providers configured for environment: ${getCurrentEnvironment()}`);
     }
+
+    // Use use-case-specific defaults if available, otherwise use environment defaults
+    const defaultTemp = useCaseConfig?.temperature ?? envConfig.defaultTemperature;
+    const defaultMaxTokens = useCaseConfig?.maxTokens ?? envConfig.defaultMaxTokens;
 
     const errors: Array<{ provider: AIProvider; model: string; error: string }> = [];
 
@@ -469,8 +478,9 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
       // Try each model for this provider
       for (const model of config.models) {
       try {
-        const finalTemperature = temperature ?? config.temperature ?? 0.7;
-        const finalMaxTokens = maxTokens ?? config.maxTokens ?? 1000;
+        // Priority: explicit parameter > provider config > use-case default > environment default
+        const finalTemperature = temperature ?? config.temperature ?? defaultTemp ?? 0.7;
+        const finalMaxTokens = maxTokens ?? config.maxTokens ?? defaultMaxTokens ?? 1000;
 
         console.log(`Trying ${config.provider}/${model} for use case: ${useCase}`);
 

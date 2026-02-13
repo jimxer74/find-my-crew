@@ -11,6 +11,7 @@ export {
   normalizeDateArgs,
   normalizeLocationArgs,
   formatToolResultsForAI,
+  sanitizeContent,
   type ToolCall,
   type ToolResult,
 } from './tool-utils';

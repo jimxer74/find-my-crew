@@ -30,7 +30,7 @@ export default function JourneysPage() {
   const [deletingJourneyId, setDeletingJourneyId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { profile } = useProfile();
+  const { profile, loading: profileLoading } = useProfile();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -38,13 +38,19 @@ export default function JourneysPage() {
       return;
     }
 
-    if (user) {
+    // Wait for profile to finish loading before checking role
+    if (user && !profileLoading) {
       checkOwnerRole();
       loadJourneys();
     }
-  }, [user, authLoading, router, profile]);
+  }, [user, authLoading, router, profile, profileLoading]);
 
   const checkOwnerRole = () => {
+    // Don't set role to false if profile is still loading
+    if (profileLoading) {
+      return;
+    }
+    
     if (!user || !profile) {
       setHasOwnerRole(false);
       return;
@@ -205,7 +211,7 @@ export default function JourneysPage() {
     }
   };
 
-  if (authLoading || loading || hasOwnerRole === null) {
+  if (authLoading || loading || profileLoading || hasOwnerRole === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">{tCommon('loading')}</div>

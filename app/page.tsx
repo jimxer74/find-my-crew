@@ -14,6 +14,7 @@ import * as sessionService from '@/app/lib/prospect/sessionService';
 import * as ownerSessionService from '@/app/lib/owner/sessionService';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
+import { OwnerComboSearchBox, type OwnerComboSearchData } from '@/app/components/ui/OwnerComboSearchBox';
 import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@/app/components/onboarding/OnboardingSteps';
 import type { OwnerPreferences } from '@/app/lib/ai/owner/types';
 
@@ -150,6 +151,7 @@ export default function WelcomePage() {
   const [ownerSessionMessages, setOwnerSessionMessages] = useState<any[]>([]);
   const [isCheckingRole, setIsCheckingRole] = useState(true);
   const [isComboSearchMode, setIsComboSearchMode] = useState(false);
+  const [isOwnerComboSearchMode, setIsOwnerComboSearchMode] = useState(false);
   const [isOwnerPostMode, setIsOwnerPostMode] = useState(false);
   const [hasOwnerSession, setHasOwnerSession] = useState(false);
   const [ownerSessionPreferences, setOwnerSessionPreferences] = useState<OwnerPreferences>({});
@@ -481,6 +483,37 @@ export default function WelcomePage() {
     router.push(`/welcome/owner?${params.toString()}`);
   };
 
+  const handleOwnerComboSearch = (data: OwnerComboSearchData) => {
+    const params = new URLSearchParams();
+    
+    // Journey details
+    if (data.journeyDetails.startLocation) {
+      params.set('startLocation', JSON.stringify(data.journeyDetails.startLocation));
+    }
+    if (data.journeyDetails.endLocation) {
+      params.set('endLocation', JSON.stringify(data.journeyDetails.endLocation));
+    }
+    if (data.journeyDetails.startDate) {
+      params.set('startDate', data.journeyDetails.startDate);
+    }
+    if (data.journeyDetails.endDate) {
+      params.set('endDate', data.journeyDetails.endDate);
+    }
+    if (data.journeyDetails.waypoints.length > 0) {
+      params.set('waypoints', JSON.stringify(data.journeyDetails.waypoints));
+    }
+    
+    // Skipper/Crew profiles
+    if (data.skipperCrewProfiles.text) {
+      params.set('crewDemand', data.skipperCrewProfiles.text);
+    }
+    if (data.skipperCrewProfiles.aiProcessingConsent) {
+      params.set('aiProcessingConsent', 'true');
+    }
+    
+    router.push(`/welcome/owner?${params.toString()}`);
+  };
+
   // Show loading state while checking authentication and roles
   if (authLoading || isCheckingRole) {
     return (
@@ -529,8 +562,8 @@ export default function WelcomePage() {
 
       {/* Main content - dual column layout or single column when session exists */}
       <main className="flex-1 flex flex-col md:flex-row min-h-screen">
-        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode or owner session exists */}
-        {!isOwnerPostMode && !hasOwnerSession && (
+        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode, owner combo search mode, or owner session exists */}
+        {!isOwnerPostMode && !isOwnerComboSearchMode && !hasOwnerSession && (
         <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
           hasExistingSession && sessionType === 'crew' || isComboSearchMode
             ? 'flex-1 min-h-screen'
@@ -709,11 +742,21 @@ export default function WelcomePage() {
         </div>
         )}
 
-        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode or owner session exists */}
-        {(isOwnerPostMode || hasOwnerSession || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
-          <div className="relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-h-[50vh] md:min-h-screen min-w-0">
+        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode, owner combo search mode, or owner session exists */}
+        {(isOwnerPostMode || isOwnerComboSearchMode || hasOwnerSession || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
+          <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-w-0 ${
+            isOwnerComboSearchMode || hasOwnerSession
+              ? 'min-h-screen'
+              : 'min-h-[50vh] md:min-h-screen'
+          }`}>
             {/* Warm/amber overlay for owner side */}
-            <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
+            {!(isOwnerComboSearchMode || hasOwnerSession) && (
+              <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
+            )}
+            {/* Lighter overlay for combo search mode */}
+            {(isOwnerComboSearchMode || hasOwnerSession) && (
+              <div className="absolute inset-0 bg-amber-900/40 backdrop-blur-[1px] -z-10" />
+            )}
 
             <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
               <div className="mb-4">
@@ -747,17 +790,42 @@ export default function WelcomePage() {
               </p>
 
               {!hasOwnerSession && (
-                <div className="w-full max-w-sm mx-auto">
-                  <button
-                    type="button"
-                    onClick={() => setIsOwnerPostMode(true)}
-                    className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border border-amber-200/80 rounded-xl shadow-lg hover:bg-white/90 transition-colors flex items-center gap-3 cursor-pointer"
-                  >
-                    <svg className="w-5 h-5 text-amber-700/90 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    <span className="text-amber-700/80 truncate">{t('owner.postPlaceholder')}</span>
-                  </button>
+                <div className={`w-full mx-auto ${
+                  isOwnerComboSearchMode ? 'max-w-sm sm:max-w-2xl md:max-w-4xl' : 'max-w-sm'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    {/* Back button - shown when combo search mode is active */}
+                    {isOwnerComboSearchMode && (
+                      <button
+                        onClick={() => {
+                          setIsOwnerComboSearchMode(false);
+                          // Blur any active inputs
+                          const activeElement = document.activeElement as HTMLElement;
+                          if (activeElement && activeElement.blur) {
+                            activeElement.blur();
+                          }
+                        }}
+                        className="flex-shrink-0 p-2.5 min-h-[44px] min-w-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center"
+                        aria-label="Back"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                      </button>
+                    )}
+                    <div className="flex-1 min-w-0 max-w-full overflow-hidden">
+                      <OwnerComboSearchBox 
+                        onSubmit={handleOwnerComboSearch} 
+                        compactMode={!isOwnerComboSearchMode}
+                        onFocusChange={(isFocused) => {
+                          // Only enter combo search mode when focus is gained, don't exit when focus is lost
+                          if (isFocused && !isOwnerComboSearchMode) {
+                            setIsOwnerComboSearchMode(true);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 

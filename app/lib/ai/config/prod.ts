@@ -1,21 +1,8 @@
-import { AIProvider } from './';
+import { AIProvider, EnvironmentConfig, UseCase } from './';
 import { openrouterConfig } from './providers/openrouter';
 import { deepseekConfig } from './providers/deepseek';
 import { groqConfig } from './providers/groq';
 import { geminiConfig } from './providers/gemini';
-
-interface AIProviderConfig {
-  provider: AIProvider;
-  models: string[];
-  temperature: number;
-  maxTokens: number;
-}
-
-interface EnvironmentConfig {
-  providers: AIProviderConfig[];
-  defaultTemperature: number;
-  defaultMaxTokens: number;
-}
 
 export const prodConfig: EnvironmentConfig = {
   providers: [
@@ -45,5 +32,88 @@ export const prodConfig: EnvironmentConfig = {
     }
   ],
   defaultTemperature: 0.3,
-  defaultMaxTokens: 8000
+  defaultMaxTokens: 8000,
+  // Use-case-specific overrides for production
+  useCaseOverrides: {
+    // Premium models for conversational chat (better reasoning, tool calling)
+    'owner-chat': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.3,  // Lower temperature for more deterministic tool calls
+          maxTokens: 8000
+        }
+      ],
+      temperature: 0.3,  // Lower temperature for more deterministic tool calls
+      maxTokens: 8000
+    },
+    'prospect-chat': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.7,
+          maxTokens: 6000
+        }
+      ],
+      temperature: 0.7,
+      maxTokens: 6000
+    },
+    // Cheaper models for simple extraction tasks
+    'boat-details': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.2,
+          maxTokens: 4000
+        }
+      ],
+      temperature: 0.2,
+      maxTokens: 4000
+    },
+    // Fast, cheap models for suggestions
+    'suggest-sailboats': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.3,
+          maxTokens: 2000
+        }
+      ],
+      temperature: 0.3,
+      maxTokens: 2000
+    },
+    // High-quality models for journey generation (complex reasoning)
+    'generate-journey': {
+      providers: [
+        {
+          provider: 'openrouter',
+          // Use auto-mode to automatically select the best model based on the context
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.5,
+          maxTokens: 20000
+        }
+      ],
+      temperature: 0.5,
+      maxTokens: 8000
+    },
+    // Simple models for assistant chat (complex reasoning)
+    'assistant-chat': {
+      providers: [
+        {
+          provider: 'openrouter',
+          // Use auto-mode to automatically select the best model based on the context
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.5,
+          maxTokens: 8000
+        }
+      ],
+      temperature: 0.5,
+      maxTokens: 8000
+    }
+  },
+  
 };

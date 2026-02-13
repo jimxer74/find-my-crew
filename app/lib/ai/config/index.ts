@@ -27,10 +27,25 @@ export interface AIProviderConfig {
   maxTokens?: number;
 }
 
+/**
+ * Use-case-specific model configuration override
+ * Allows fine-grained control over models, temperature, and maxTokens per use case
+ */
+export interface UseCaseModelConfig {
+  /** Optional: Override provider order for this use case */
+  providers?: AIProviderConfig[];
+  /** Optional: Override default temperature for this use case */
+  temperature?: number;
+  /** Optional: Override default maxTokens for this use case */
+  maxTokens?: number;
+}
+
 export interface EnvironmentConfig {
   providers: AIProviderConfig[];
   defaultTemperature: number;
   defaultMaxTokens: number;
+  /** Optional: Use-case-specific overrides for model selection */
+  useCaseOverrides?: Partial<Record<UseCase, UseCaseModelConfig>>;
 }
 
 /**
@@ -142,4 +157,12 @@ function getProviderSpecificConfig(provider: AIProvider): EnvironmentConfig {
     defaultTemperature: providerConfig.temperature || 0.5,
     defaultMaxTokens: providerConfig.maxTokens || 4000
   };
+}
+
+/**
+ * Get use-case-specific configuration if available, otherwise return null
+ */
+export function getUseCaseConfig(useCase: UseCase, env: 'development' | 'production' = getCurrentEnvironment()): UseCaseModelConfig | null {
+  const config = getAIConfigForEnv(env);
+  return config.useCaseOverrides?.[useCase] || null;
 }

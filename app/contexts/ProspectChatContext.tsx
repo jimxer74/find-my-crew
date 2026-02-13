@@ -962,6 +962,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       if (data.profileCreated === true) {
         console.log('[ProspectChatContext] 🎉 Profile created successfully! Clearing all prospect data...');
         
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: ['roles', 'profile_completion_percentage', 'full_name', 'user_description'],
+              timestamp: Date.now()
+            }
+          }));
+        }
+        
         // CRITICAL: Collect all leg references from previous messages BEFORE clearing
         // This allows displaying them after the congratulations message
         const allPreviousLegRefs: ProspectLegReference[] = [];

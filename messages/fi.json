@@ -671,6 +671,8 @@
       "continueJourney": "Olet melkein valmis - jatka matkaasi",
       "postDialogTitle": "Julkaise miehistötarpeesi",
       "postDialogPlaceholder": "Kuvaa veneesi, matkasi ja miehistövaatimuksesi. Tekoäly auttaa luomaan ilmoituksesi.",
+      "skipperCrewDialogTitle": "Skipperin Profiili ja Miehistövaatimukset",
+      "skipperCrewDialogPlaceholder": "Kuvaa skipperin profiilisi, miehistövaatimukset, mieltymykset ja kaikki muut tärkeät tiedot mahdollisille miehistön jäsenille...",
       "features": {
         "post": "Julkaise matkasi ja reittisi",
         "match": "Tekoälypohjainen miehistön yhdistäminen",

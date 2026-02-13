@@ -1024,6 +1024,19 @@ export function CrewBrowseMap({
               return;
             }
 
+            // On mobile, expand viewport bounds so get_legs_in_viewport returns more legs
+            // and waypoints at the bottom of the screen (list area) are included
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+            if (isMobile) {
+              const lngExtent = maxLng - minLng;
+              const latExtent = maxLat - minLat;
+              const margin = 0.15; // 15% expansion on each side
+              minLng = Math.max(-180, minLng - lngExtent * margin);
+              maxLng = Math.min(180, maxLng + lngExtent * margin);
+              minLat = Math.max(-90, minLat - latExtent * margin);
+              maxLat = Math.min(90, maxLat + latExtent * margin);
+            }
+
             // Check if viewport has changed significantly
             // If lastLoadedBoundsRef is null, it means filters changed and we should force reload
             const newBounds = { minLng, minLat, maxLng, maxLat };

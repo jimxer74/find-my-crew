@@ -680,10 +680,37 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       // Trigger onboarding state transitions
       if (data.profileCreated === true) {
         updateOnboardingState('boat_pending');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: ['roles', 'profile_completion_percentage'],
+              timestamp: Date.now()
+            }
+          }));
+        }
       } else if (data.boatCreated === true) {
         updateOnboardingState('journey_pending');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: [],
+              timestamp: Date.now()
+            }
+          }));
+        }
       } else if (data.journeyCreated === true) {
         updateOnboardingState('completed');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: [],
+              timestamp: Date.now()
+            }
+          }));
+        }
       }
     } catch (err: any) {
       console.error('[OwnerChatContext] Error sending message:', err);
@@ -752,10 +779,37 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       // Trigger onboarding state transitions
       if (data.profileCreated === true) {
         updateOnboardingState('boat_pending');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: ['roles', 'profile_completion_percentage'],
+              timestamp: Date.now()
+            }
+          }));
+        }
       } else if (data.boatCreated === true) {
         updateOnboardingState('journey_pending');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: [],
+              timestamp: Date.now()
+            }
+          }));
+        }
       } else if (data.journeyCreated === true) {
         updateOnboardingState('completed');
+        // Dispatch profileUpdated event to refresh profile state
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdated', {
+            detail: {
+              updatedFields: [],
+              timestamp: Date.now()
+            }
+          }));
+        }
       }
     } catch (err: any) {
       console.error('[OwnerChatContext] Error approving action:', err);
@@ -837,9 +891,54 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     if (!crewDemandParam?.trim() || isProfileCompletion) {
       return;
     }
+    
+    // Parse journey details from URL params
+    const startLocationParam = searchParams?.get('startLocation');
+    const endLocationParam = searchParams?.get('endLocation');
+    const waypointsParam = searchParams?.get('waypoints');
+    const startDateParam = searchParams?.get('startDate');
+    const endDateParam = searchParams?.get('endDate');
+    
+    let journeyDetailsText = '';
+    if (startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam) {
+      const journeyParts: string[] = [];
+      
+      try {
+        if (startLocationParam) {
+          const startLoc = JSON.parse(startLocationParam);
+          journeyParts.push(`Start location: ${startLoc.name}`);
+        }
+        if (endLocationParam) {
+          const endLoc = JSON.parse(endLocationParam);
+          journeyParts.push(`End location: ${endLoc.name}`);
+        }
+        if (startDateParam) {
+          journeyParts.push(`Start date: ${startDateParam}`);
+        }
+        if (endDateParam) {
+          journeyParts.push(`End date: ${endDateParam}`);
+        }
+        if (waypointsParam) {
+          const waypoints = JSON.parse(waypointsParam);
+          if (Array.isArray(waypoints) && waypoints.length > 0) {
+            const waypointNames = waypoints.map((wp: any) => wp.name).filter(Boolean).join(', ');
+            if (waypointNames) {
+              journeyParts.push(`Waypoints: ${waypointNames}`);
+            }
+          }
+        }
+        
+        if (journeyParts.length > 0) {
+          journeyDetailsText = `\n\nJourney details:\n${journeyParts.join('\n')}`;
+        }
+      } catch (error) {
+        console.error('[OwnerChatContext] Error parsing journey details from URL:', error);
+      }
+    }
+    
     initialCrewDemandProcessed.current = true;
-    console.log('[OwnerChatContext] Processing initial crew demand from URL');
-    sendMessage(crewDemandParam.trim());
+    console.log('[OwnerChatContext] Processing initial crew demand from URL', { hasJourneyDetails: !!journeyDetailsText });
+    sendMessage(crewDemandParam.trim() + journeyDetailsText);
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
   return (

@@ -18,6 +18,7 @@ import {
   normalizeLocationArgs,
   normalizeBboxArgs,
   formatToolResultsForAI,
+  sanitizeContent,
   ToolCall,
   // Tool registry
   getToolsForUser,
@@ -217,20 +218,34 @@ function buildOwnerSystemPrompt(
 
   const isUserAuthenticated = isAuthenticated ?? false;
   
+  // Build user info section when authenticated and userProfile is available
+  const shouldShowUserInfo = isUserAuthenticated && userProfile;
+  const userInfoSection = shouldShowUserInfo ? (() => {
+    const known: string[] = [];
+    if (userProfile?.fullName) known.push(`- **Name:** "${userProfile.fullName}"`);
+    if (userProfile?.email) known.push(`- **Email:** "${userProfile.email}"`);
+    if (userProfile?.phone) known.push(`- **Phone:** "${userProfile.phone}"`);
+    if (userProfile?.avatarUrl) known.push(`- **Profile photo:** Already set`);
+    if (known.length > 0) {
+      return `\n**FROM SIGNUP/OAUTH:**\n${known.join('\n')}\n`;
+    }
+    return '';
+  })() : '';
+  
   let prompt = `You are SailSmart's friendly AI assistant helping boat owners and skippers complete their onboarding.
 
 CURRENT DATE: ${currentDate}
 
 ## AUTHENTICATION STATUS:
 ${isUserAuthenticated ? '✅ User is signed up and authenticated' : '❌ User is NOT signed up yet - SIGNUP IS REQUIRED FIRST'}
-
-## PRIMARY GOAL: Complete Owner Onboarding (CRITICAL)
+${userInfoSection}
+## PRIMARY GOAL: Complete Owner Onboarding AS FAST AS POSSIBLE (CRITICAL)
 
 ${isUserAuthenticated ? `
 **FOR AUTHENTICATED USERS:** Your goal is to guide the user through three main steps:
 1. **Profile Creation** - Gather owner profile information and save it (if not already done)
-2. **Boat Creation** - Help create their boat with detailed specifications (if not already done)
-3. **First Journey Creation** - Assist in creating their first sailing journey with legs (if not already done)
+2. **Boat Creation** - Help create their boat with detailed specifications (if not already done).
+3. **First Journey Creation** - Assist in creating their first sailing journey - IMPORTANT: Do not propose to create a journey if the user does not have a boat or it is not created yet.
 
 **CRITICAL FIRST STEP:** When you receive a message from an authenticated user, you MUST immediately check what's already completed by calling these tools:
 - get_profile_completion_status
@@ -244,7 +259,7 @@ ${hasProfile ? '✅ Profile: Created' : '❌ Profile: Not created'}
 ${hasBoat ? '✅ Boat: Created' : '❌ Boat: Not created'}
 ${hasJourney ? '✅ Journey: Created' : '❌ Journey: Not created'}
 
-**FLEXIBLE FLOW:** Guide the user based on what's missing. Check completion status FIRST, then guide them to the next missing piece. The user can complete these in any order - adapt to their needs.
+**STRICT FLOW:** Guide user through the onboarding process in the following order: profile, boat, journey. Check completion status FIRST, then guide them to the next missing piece.
 ` : `
 **FOR UNAUTHENTICATED USERS (NOT SIGNED UP YET):**
 
@@ -269,23 +284,51 @@ ${hasJourney ? '✅ Journey: Created' : '❌ Journey: Not created'}
 - Explain what SailSmart offers
 - Guide them to sign up
 - Answer general questions about the platform
+
 `}
 
-## CONVERSATION STYLE:
-- Be warm, enthusiastic, and conversational
-- Ask one or two questions at a time, not long lists
-- Gather information naturally through conversation
-- Confirm before creating (boat, journey) - present summary and get user approval
-- Keep responses concise and focused
+## CONVERSATION RULES:
+- Be warm, enthusiastic, but efficient and concise
+- Ask only ONE or MAX TWO questions at a time, not long lists
+- Gather information by asking questions and pair it with a SUGGESTED PROMPTS
+- Confirm before creating (profile, boat, journey) - present summary and get user approval
+- Keep responses polite but very short and to the point and ALLWAYS always SUGGEST PROMPTS
+
+## TOOL CALL FORMATTING (CRITICAL):
+
+When explaining tool usage to users, use natural language only. DO NOT include:
+- Code blocks with markdown code fence format containing tool_call
+- Text markers like "TOOL CALL:" or headers
+- Example JSON syntax showing tool call structure
+- Any technical tool call syntax or format examples
+- XML-style tool call tags
+- Delimiter formats like tool_call_start markers
+
+INSTEAD, describe what will happen in plain language:
+- ✅ "I'll create your boat profile now."
+- ✅ "Let me save your profile information."
+- ❌ "I'll call the create_boat tool: [showing tool call syntax]"
+- ❌ "TOOL CALL: [example tool call format]"
+
+The tool calls happen automatically in the background - you don't need to show users the technical details.
+
+## SUGGESTED PROMPTS: (IMPORTANT: MUST BE A SUGGESTED ACTION BY THE USER TO COMPLETE THE ONBOARDING PROCESS OR A VALUE FOR MISSING DATA FIELD)
+At the end of your response, include 1 or 2 suggested follow-up actions by the user to complete the onboarding process:
+[SUGGESTIONS]
+- Contextual suggestested value for missing data fields
+- Contextual suggested action (e.g. create boat, create journey, update profile, etc.) to complete the onboarding process.
+[/SUGGESTIONS]
 
 ## SKILLS HANDLING (CRITICAL):
 When users mention skills, you MUST use ONLY the exact skill names from the skills config:
 ${getSkillsStructure()}
 
 **SKILLS RULES:**
+- IMPORTANT: If user has not provided any skills, do not suggest to add any skills, skills are optional
 - You MUST use ONLY the exact skill names listed above
 - Do NOT create custom skills
 - When storing skills in profile, use format: [{"skill_name": "exact_name_from_config", "description": "user's description"}]
+- IMPORTANT: Skills are optional and can be left empty if the user does not have any skills.
 
 ## PROFILE CREATION:
 ${isProfileCompletionMode ? `
@@ -317,7 +360,7 @@ ${(() => {
 
 **PRIORITY:** Present profile summary FIRST, get confirmation, then call \`update_user_profile\` with roles: ['owner'].
 ` : `
-- Gather minimal needed information: [full_name, user_description, sailing_experience, sailing_preferences, risk_level]
+- Gather minimal needed information: [full_name, user_description, sailing_experience]
 - When user confirms, call \`update_user_profile\` with roles: ['owner'] (CRITICAL - must set owner role)
 - **When the user tells you their full name**, include tag: [OWNER_NAME: Their Full Name]
 `}
@@ -331,7 +374,10 @@ ${(() => {
    - Pre-fills: type, capacity, LOA, beam, displacement, performance metrics, characteristics, capabilities, accommodations
 5. Gather additional info: boat name, home port, country flag
 6. Present complete boat summary to user for confirmation
-7. Call \`create_boat\` tool after user confirms
+7. Call \`create_boat\` tool IMMEDIATELY when user confirms the boat summary
+   - User confirmation phrases include: "yes", "confirm", "that's correct", "looks good", "accurate", "proceed", "create it", "go ahead", "that's right", "correct", "ok", "okay", "sounds good", "I confirm", or any positive acknowledgment
+   - If user says "Confirm if..." or asks you to confirm, they are confirming - proceed with create_boat
+   - After presenting the summary, ANY positive response from the user means they confirm - call create_boat immediately
 
 **Boat Fields:**
 - Required: name, type, make_model, capacity
@@ -358,19 +404,12 @@ ${preferences.boatMakeModel ? `- Boat: ${preferences.boatMakeModel}` : ''}
 ${preferences.journeyName ? `- Journey: ${preferences.journeyName}` : ''}
 ` : ''}
 
-## SUGGESTED PROMPTS:
-At the end of your response, include 2-3 suggested follow-up questions:
-[SUGGESTIONS]
-- Contextual suggestions based on what's missing
-- [IMPORTANT] tag for most critical next step
-[/SUGGESTIONS]
-
 **When the user tells you their full name**, include tag: [OWNER_NAME: Their Full Name] at the end of your message.
 
 ## TOOLS AVAILABLE:
-- Profile: update_user_profile, get_profile_completion_status
-- Boat: fetch_boat_details_from_sailboatdata, create_boat, get_owner_boats, get_boat_completion_status
-- Journey: generate_journey_route (creates journey + legs automatically), get_owner_journeys
+- update_user_profile, get_profile_completion_status get_profile_completion_status
+- fetch_boat_details_from_sailboatdata, create_boat, get_owner_boats, get_boat_completion_status get_owner_boats, get_boat_completion_status
+- generate_journey_route (creates journey + legs automatically), get_owner_journeys get_owner_journeys
 - Definitions: get_experience_level_definitions, get_risk_level_definitions, get_skills_definitions
 
 **CRITICAL:** Always check completion status before proceeding. Guide user to next missing piece.`;
@@ -456,6 +495,8 @@ When the user greets you or asks about onboarding, you MUST immediately check wh
 4. get_owner_boats (to see if they have boats)
 5. get_owner_journeys (to see if they have journeys)
 
+**CRITICAL: YOU MUST ACTUALLY CALL TOOLS, NOT SHOW EXAMPLES**
+
 **TO USE A TOOL, wrap it in a code block like this:**
 
 \`\`\`tool_call
@@ -484,19 +525,105 @@ When the user greets you or asks about onboarding, you MUST immediately check wh
 {"name": "get_owner_journeys", "arguments": {}}
 \`\`\`
 
-**IMPORTANT:**
+**CRITICAL TOOL CALL RULES:**
+- DO NOT include "TOOL CALL:" markers or headers before tool calls
+- DO NOT show example syntax like {"name": "...", "arguments": {...}} as text
+- DO NOT use placeholder text like {...} in arguments - provide complete, valid JSON
+- YOU MUST provide complete, valid JSON with all required arguments filled in
+- The tool call MUST be parseable - if it's not, it won't execute
 - Each tool call MUST be in its own separate code block
 - The format is: \`\`\`tool_call followed by a newline, then JSON, then \`\`\`
 - JSON must have "name" (string) and "arguments" (object) keys
 - Empty arguments use {} not null or undefined
 - After calling tools, wait for the results before responding to the user
 
+**BEFORE claiming a tool was called, verify:**
+- You actually included a valid tool_call code block
+- The JSON is complete (no {...} placeholders)
+- All required arguments are provided
+- The tool call format matches the examples exactly
+
+**CRITICAL: DO NOT claim a tool was called unless you see tool results**
+- Only say "I've created..." or "I've called..." after you receive tool results
+- If you don't see tool results, the tool wasn't called
+- Wait for tool results before claiming success
+
 **TOOL USAGE GUIDELINES:**
 - ALWAYS check completion status tools FIRST when starting a conversation
 - Use tools to gather information before making recommendations
 - Always confirm with user before creating boat or journey
 - Use fetch_boat_details_from_sailboatdata before create_boat
+
+**CRITICAL: RECOGNIZING USER CONFIRMATIONS**
+When you present a boat summary and the user responds with ANY of these, they are CONFIRMING:
+- "yes", "confirm", "that's correct", "looks good", "accurate", "proceed", "create it", "go ahead", "that's right", "correct", "ok", "okay", "sounds good", "I confirm"
+- Questions like "Confirm if..." or "Is this accurate?" followed by your summary = user is confirming
+- After you show a summary, if user says anything positive or asks you to proceed, CALL THE TOOL IMMEDIATELY
+- Do NOT ask for confirmation again after user has already confirmed - just call create_boat
+
+**CRITICAL: EXTRACTING BOAT DATA FOR create_boat TOOL CALL**
+When user confirms the boat summary, you MUST:
+1. **Look back at conversation history** to find:
+   - **Tool results from fetch_boat_details_from_sailboatdata** - this contains type, capacity, loa_m, beam_m, displcmt_m, average_speed_knots, characteristics, capabilities, accommodations, link_to_specs
+   - **Your previous summary message** - this shows what you presented to the user
+   - **User messages** - for boat name, home_port, country_flag if provided
+2. **Extract ALL boat details** from these sources:
+   - **name**: The boat name (if user provided one, otherwise use make_model as name)
+   - **type**: The boat type from fetch_boat_details_from_sailboatdata (e.g., "Traditional offshore cruisers", "Coastal cruisers")
+   - **make_model**: The make and model (e.g., "Hallberg-Rassy 44") - from user's original request or fetch_boat_details_from_sailboatdata
+   - **capacity**: The number of people from fetch_boat_details_from_sailboatdata (must be a number, e.g., 6)
+   - **Optional fields**: loa_m, beam_m, displcmt_m, average_speed_knots, characteristics, capabilities, accommodations, link_to_specs, home_port, country_flag, etc.
+3. **Call create_boat IMMEDIATELY** with the extracted data - do NOT claim it's created without calling the tool
+4. **Use the EXACT values** from tool results and conversation - do not guess or use placeholders
+5. **If any required field is missing**, you MUST ask the user for it before calling create_boat
+
+**Example: If your summary showed:**
+- Name: Hallberg-Rassy 44
+- Type: Traditional offshore cruiser
+- Capacity: 6 people
+- Length Overall (LOA): 13.41 meters
+- Average Speed: 7 knots
+
+**Then you MUST call:**
+\`\`\`tool_call
+{"name": "create_boat", "arguments": {"name": "Hallberg-Rassy 44", "type": "Traditional offshore cruisers", "make_model": "Hallberg-Rassy 44", "capacity": 6, "loa_m": 13.41, "average_speed_knots": 7}}
+\`\`\`
+
+**CRITICAL RULES:**
+- NEVER claim "I've created..." without actually calling the tool
+- ALWAYS extract data from your previous summary message
+- ALL required fields (name, type, make_model, capacity) MUST be present
+- capacity MUST be a number (not text like "6 people" - use just 6)
+- If you don't have all required fields, ask the user for missing information
 - **JOURNEY:** generate_journey_route automatically creates the journey AND all legs - do NOT call create_journey or create_leg after it. Just inform the user their journey is ready.
+
+**generate_journey_route REQUIRED ARGUMENTS:**
+Before calling generate_journey_route, you MUST have ALL of these:
+1. **boatId** (string, UUID): REQUIRED - Get this by calling get_owner_boats first
+2. **startLocation** (object): REQUIRED - Must have {name: string, lat: number, lng: number}
+3. **endLocation** (object): REQUIRED - Must have {name: string, lat: number, lng: number}
+4. **intermediateWaypoints** (array, optional): Array of waypoint objects, each with {name: string, lat: number, lng: number}
+5. **startDate** (string, optional): Journey start date in YYYY-MM-DD format
+6. **endDate** (string, optional): Journey end date in YYYY-MM-DD format
+7. **useSpeedPlanning** (boolean, optional, defaults to true): Whether to calculate leg dates based on boat speed. Defaults to true - speed planning will be used automatically if boat speed is available.
+8. **boatSpeed** (number, optional): Boat average cruising speed in knots. If not provided, will be fetched automatically from boat data.
+
+**BEFORE calling generate_journey_route:**
+1. Call get_owner_boats to get the boat ID (required!)
+2. Gather all journey details from the user (start, end, waypoints, dates)
+3. Ensure you have ALL required arguments (boatId, startLocation, endLocation)
+4. Only then call generate_journey_route with complete arguments
+5. DO NOT use placeholder text like {...} - provide actual values
+
+**Example of CORRECT generate_journey_route call:**
+\`\`\`tool_call
+{"name": "generate_journey_route", "arguments": {"boatId": "abc-123-def", "startLocation": {"name": "Panama Canal", "lat": 9.0, "lng": -79.5}, "endLocation": {"name": "Acapulco", "lat": 16.8, "lng": -99.9}, "intermediateWaypoints": [{"name": "Papagayo Gulf", "lat": 10.5, "lng": -85.7}], "startDate": "2026-02-25", "endDate": "2026-04-15"}}
+\`\`\`
+
+**Example of WRONG generate_journey_route call (DO NOT DO THIS):**
+\`\`\`tool_call
+{"name": "generate_journey_route", "arguments": {...}}
+\`\`\`
 `;
 }
 
@@ -530,7 +657,8 @@ async function createJourneyAndLegsFromRoute(
     cost_info?: string;
     startDate?: string;
     endDate?: string;
-  }
+  },
+  aiPrompt?: string
 ): Promise<{ journeyId: string; journeyName: string; legsCreated: number; error?: string }> {
   // Verify boat ownership
   const { data: boat, error: boatError } = await supabase
@@ -580,6 +708,8 @@ async function createJourneyAndLegsFromRoute(
     p_cost_model: costModel,
     p_cost_info: metadata.cost_info || null,
     p_state: 'In planning',
+    p_ai_prompt: aiPrompt || null,
+    p_is_ai_generated: !!aiPrompt,
   });
 
   if (rpcError || !journeyId) {
@@ -652,7 +782,8 @@ async function executeOwnerTools(
   authenticatedUserId: string | null,
   hasProfile?: boolean,
   hasBoat?: boolean,
-  hasJourney?: boolean
+  hasJourney?: boolean,
+  aiPrompt?: string
 ): Promise<Array<{ name: string; result: unknown; error?: string }>> {
   const results: Array<{ name: string; result: unknown; error?: string }> = [];
 
@@ -1371,7 +1502,8 @@ Return ONLY the JSON object, nothing else.`;
         const boatId = args.boatId as string;
         const startDate = args.startDate as string | undefined;
         const endDate = args.endDate as string | undefined;
-        const useSpeedPlanning = args.useSpeedPlanning as boolean | undefined;
+        // Default useSpeedPlanning to true if not provided
+        const useSpeedPlanning = (args.useSpeedPlanning as boolean | undefined) ?? true;
         const boatSpeed = args.boatSpeed as number | undefined;
 
         if (!startLocation || !endLocation || !boatId) {
@@ -1384,9 +1516,9 @@ Return ONLY the JSON object, nothing else.`;
         }
 
         try {
-          // Get boat speed if not provided but useSpeedPlanning is true
+          // Always try to get boat speed if not provided (useSpeedPlanning defaults to true)
           let speed = boatSpeed;
-          if (useSpeedPlanning && !speed) {
+          if (!speed) {
             const { data: boat } = await supabase
               .from('boats')
               .select('average_speed_knots')
@@ -1398,6 +1530,7 @@ Return ONLY the JSON object, nothing else.`;
           }
 
           // Call shared function directly (avoids HTTP self-call which fails in serverless)
+          // Use speed planning if speed is available (defaults to true)
           const { generateJourneyRoute } = await import('@/app/lib/ai/generateJourney');
           const journeyResult = await generateJourneyRoute({
             startLocation,
@@ -1462,7 +1595,8 @@ Return ONLY the JSON object, nothing else.`;
               cost_info: args.cost_info as string | undefined,
               startDate: startDate as string | undefined,
               endDate: endDate as string | undefined,
-            }
+            },
+            aiPrompt
           );
 
           if (createResult.error) {
@@ -1668,6 +1802,8 @@ Return ONLY the JSON object, nothing else.`;
       p_cost_model: costModel,
       p_cost_info: (args.cost_info as string) || null,
       p_state: 'In planning',
+      p_ai_prompt: aiPrompt || null,
+      p_is_ai_generated: !!aiPrompt,
     });
 
     if (rpcError || !journeyId) {
@@ -1908,7 +2044,22 @@ export async function ownerChat(
       arguments: request.approvedAction.arguments,
     };
 
-    const toolResults = await executeOwnerTools(supabase, [toolCall], authenticatedUserId, hasProfile, hasBoat, hasJourney);
+    // Build prompt text for saving (includes system prompt + conversation up to this point)
+    // Note: For approved actions, we build a minimal prompt since this happens before the full message loop
+    // The prompt will include system instructions and the user's current request
+    const systemPrompt = buildOwnerSystemPrompt(
+      preferences,
+      [],
+      hasProfile,
+      hasBoat,
+      hasJourney,
+      isProfileCompletionMode,
+      userProfile,
+      !!authenticatedUserId
+    );
+    const toolInstructions = buildToolInstructions(!!authenticatedUserId, hasProfile, hasBoat, hasJourney);
+    const approvedActionPrompt = `${systemPrompt}\n\n${toolInstructions}\n\nuser: ${request.message}`;
+    const toolResults = await executeOwnerTools(supabase, [toolCall], authenticatedUserId, hasProfile, hasBoat, hasJourney, approvedActionPrompt);
     const result = toolResults[0];
 
     let responseContent: string;
@@ -2009,7 +2160,14 @@ export async function ownerChat(
     log('');
     log(`🔄 ITERATION ${iterations}/${MAX_TOOL_ITERATIONS}`);
 
+    // Build prompt text for AI call
     const promptText = currentMessages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+    
+    // Build full prompt text for saving to database (includes system prompt + conversation)
+    // This will be passed to tool execution to save with journeys
+    const fullPromptText = currentMessages
+      .map(m => `${m.role === 'system' ? 'system' : m.role}: ${m.content}`)
+      .join('\n\n');
 
     const result = await callAI({
       useCase: 'owner-chat',
@@ -2027,13 +2185,41 @@ export async function ownerChat(
     log('🔧 PARSED TOOL CALLS:', toolCalls.length);
 
     if (toolCalls.length === 0) {
-      finalContent = content;
+      // Check if AI tried to call a tool but failed to parse
+      const attemptedToolCall = /(?:tool_call|generate_journey_route|create_boat|create_journey|update_user_profile)/i.test(result.text);
+      const hasToolCallSyntax = /```(?:tool_calls?|tool_code)/i.test(result.text) || /<tool_call>/i.test(result.text);
+      
+      if (attemptedToolCall || hasToolCallSyntax) {
+        // AI tried to call a tool but it failed to parse
+        log('⚠️ AI attempted tool call but parsing failed - providing feedback');
+        const feedbackMessage = `\n\n**ERROR: Your tool call failed to parse. Please try again with complete, valid JSON.**\n\nCommon issues:\n- Missing required arguments (use {...} placeholders)\n- Invalid JSON format\n- Incomplete tool call syntax\n\nPlease retry the tool call with all required arguments filled in. Do not use placeholder text like {...} - provide actual values.`;
+        
+        currentMessages.push(
+          { role: 'assistant', content: result.text },
+          { role: 'user', content: feedbackMessage }
+        );
+        
+        // Continue loop to retry instead of breaking
+        continue;
+      }
+      
+      // Sanitize content to remove any malformed tool call syntax
+      finalContent = sanitizeContent(content, false);
+      
+      // Solution 4: Detect and prevent hallucination
+      // Check if AI claimed a tool was called when it wasn't
+      const claimedToolCall = /(?:created|called|executed|ran|completed|I've created|I've called).*?(?:generate_journey_route|create_journey|create_boat|update_user_profile|journey|boat|profile)/i;
+      if (claimedToolCall.test(finalContent) && toolCalls.length === 0) {
+        log('⚠️ AI hallucinated tool call success - adding correction');
+        finalContent += '\n\n**Note:** I attempted to call the tool, but the tool call format was incorrect and could not be parsed. Please try again or let me know if you need help with the correct format.';
+      }
+      
       log('✅ No tool calls, final content ready');
       break;
     }
 
     allToolCalls.push(...toolCalls);
-    const toolResults = await executeOwnerTools(supabase, toolCalls, authenticatedUserId, hasProfile, hasBoat, hasJourney);
+    const toolResults = await executeOwnerTools(supabase, toolCalls, authenticatedUserId, hasProfile, hasBoat, hasJourney, fullPromptText);
 
     log('📊 TOOL RESULTS:');
     toolResults.forEach((r, i) => {
@@ -2066,9 +2252,27 @@ export async function ownerChat(
     if (routeResult && (routeResult.result as { journeyCreated?: boolean })?.journeyCreated) {
       journeyCreated = true;
       log('🎉 Journey and legs created via generate_journey_route!');
+      
+      // Journey is already created - return final success message directly
+      // No need to call AI again since journey creation is complete
+      const routeResultData = routeResult.result as { journeyName?: string; legsCreated?: number; journeyId?: string };
+      finalContent = `🎉 **Congratulations! Your journey has been created successfully!**
+
+**Journey:** ${routeResultData.journeyName || 'Your journey'}
+**Legs created:** ${routeResultData.legsCreated || 0}
+
+Your journey is now ready for you to review and manage. You can:
+- View and edit your journey details
+- Manage legs and waypoints
+- Start accepting crew registrations when ready
+
+**You've completed the onboarding process!** You're now ready to start planning and managing your sailing adventures.`;
+      
+      log('✅ Journey created via generate_journey_route - returning final response directly');
+      break;
     }
 
-    // Add tool results for next iteration
+    // Add tool results for next iteration (only if journey wasn't created)
     const toolResultsText = formatToolResultsForAI(toolResults);
     const contextMessage = `Tool results:\n${toolResultsText}\n\nNow provide a helpful response to the user.`;
 

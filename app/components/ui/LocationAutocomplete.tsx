@@ -46,6 +46,7 @@ export type LocationAutocompleteProps = {
   className?: string;
   autoFocus?: boolean;
   inputRef?: React.RefObject<HTMLInputElement | null>;
+  excludeCruisingRegions?: boolean; // When true, excludes predefined cruising regions from suggestions
 };
 
 export function LocationAutocomplete({
@@ -60,6 +61,7 @@ export function LocationAutocomplete({
   className = '',
   autoFocus = false,
   inputRef: externalInputRef,
+  excludeCruisingRegions = false,
 }: LocationAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -126,79 +128,83 @@ export function LocationAutocomplete({
 
     // Debounce API calls - wait 300ms after user stops typing
     const timeoutId = setTimeout(async () => {
-      // Search cruising regions first (instant, no API call)
-      // Use a custom search for autocomplete that matches prefixes
-      const normalizedQuery = query.toLowerCase().trim();
-      const cruisingMatches: LocationSearchResult[] = [];
+      // Search cruising regions first (instant, no API call) - only if not excluded
+      let cruisingSuggestions: Suggestion[] = [];
       
-      // Import getAllRegions to search through all regions
-      const { getAllRegions } = await import('@/app/lib/geocoding/locations');
-      const allRegions = getAllRegions();
-      
-      for (const region of allRegions) {
-        // Check if query matches region name (prefix match)
-        const normalizedName = region.name.toLowerCase();
-        if (normalizedName.startsWith(normalizedQuery) || normalizedName.includes(normalizedQuery)) {
-          cruisingMatches.push({
-            region,
-            matchedOn: 'name',
-            matchedTerm: region.name,
-          });
-          continue;
-        }
+      if (!excludeCruisingRegions) {
+        // Use a custom search for autocomplete that matches prefixes
+        const normalizedQuery = query.toLowerCase().trim();
+        const cruisingMatches: LocationSearchResult[] = [];
         
-        // Check aliases
-        for (const alias of region.aliases) {
-          const normalizedAlias = alias.toLowerCase();
-          if (normalizedAlias.startsWith(normalizedQuery) || normalizedAlias.includes(normalizedQuery)) {
+        // Import getAllRegions to search through all regions
+        const { getAllRegions } = await import('@/app/lib/geocoding/locations');
+        const allRegions = getAllRegions();
+        
+        for (const region of allRegions) {
+          // Check if query matches region name (prefix match)
+          const normalizedName = region.name.toLowerCase();
+          if (normalizedName.startsWith(normalizedQuery) || normalizedName.includes(normalizedQuery)) {
             cruisingMatches.push({
               region,
-              matchedOn: 'alias',
-              matchedTerm: alias,
+              matchedOn: 'name',
+              matchedTerm: region.name,
             });
-            break;
+            continue;
+          }
+          
+          // Check aliases
+          for (const alias of region.aliases) {
+            const normalizedAlias = alias.toLowerCase();
+            if (normalizedAlias.startsWith(normalizedQuery) || normalizedAlias.includes(normalizedQuery)) {
+              cruisingMatches.push({
+                region,
+                matchedOn: 'alias',
+                matchedTerm: alias,
+              });
+              break;
+            }
           }
         }
-      }
-      
-      // Deduplicate by region name - a region might match both by name and alias
-      const uniqueRegions = new Map<string, LocationSearchResult>();
-      for (const match of cruisingMatches) {
-        const regionName = match.region.name;
-        if (!uniqueRegions.has(regionName)) {
-          uniqueRegions.set(regionName, match);
-        } else {
-          // If already exists, prefer the one with better match (starts with query)
-          const existing = uniqueRegions.get(regionName)!;
-          const existingStartsWith = existing.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-          const currentStartsWith = match.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-          if (currentStartsWith && !existingStartsWith) {
+        
+        // Deduplicate by region name - a region might match both by name and alias
+        const uniqueRegions = new Map<string, LocationSearchResult>();
+        for (const match of cruisingMatches) {
+          const regionName = match.region.name;
+          if (!uniqueRegions.has(regionName)) {
             uniqueRegions.set(regionName, match);
+          } else {
+            // If already exists, prefer the one with better match (starts with query)
+            const existing = uniqueRegions.get(regionName)!;
+            const existingStartsWith = existing.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+            const currentStartsWith = match.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+            if (currentStartsWith && !existingStartsWith) {
+              uniqueRegions.set(regionName, match);
+            }
           }
         }
+        
+        // Sort by relevance: exact prefix matches first, then by length
+        const deduplicatedMatches = Array.from(uniqueRegions.values());
+        deduplicatedMatches.sort((a, b) => {
+          const aStartsWith = a.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+          const bStartsWith = b.matchedTerm.toLowerCase().startsWith(normalizedQuery);
+          if (aStartsWith && !bStartsWith) return -1;
+          if (!aStartsWith && bStartsWith) return 1;
+          return a.matchedTerm.length - b.matchedTerm.length;
+        });
+        
+        cruisingSuggestions = deduplicatedMatches
+          .slice(0, 5) // Limit to top 5 cruising regions
+          .map((result: LocationSearchResult) => ({
+            id: `cruising-${result.region.name}`,
+            name: result.region.name,
+            subtitle: 'Cruising location',
+            isCruisingRegion: true,
+            category: result.region.category,
+            description: result.region.description,
+            bbox: result.region.bbox,
+          }));
       }
-      
-      // Sort by relevance: exact prefix matches first, then by length
-      const deduplicatedMatches = Array.from(uniqueRegions.values());
-      deduplicatedMatches.sort((a, b) => {
-        const aStartsWith = a.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-        const bStartsWith = b.matchedTerm.toLowerCase().startsWith(normalizedQuery);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (!aStartsWith && bStartsWith) return 1;
-        return a.matchedTerm.length - b.matchedTerm.length;
-      });
-      
-      const cruisingSuggestions: Suggestion[] = deduplicatedMatches
-        .slice(0, 5) // Limit to top 5 cruising regions
-        .map((result: LocationSearchResult) => ({
-          id: `cruising-${result.region.name}`,
-          name: result.region.name,
-          subtitle: 'Cruising location',
-          isCruisingRegion: true,
-          category: result.region.category,
-          description: result.region.description,
-          bbox: result.region.bbox,
-        }));
 
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
       if (!accessToken) {

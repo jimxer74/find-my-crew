@@ -827,3 +827,74 @@ export function formatToolResultsForAI(
     return `Tool ${r.name} result:\n${JSON.stringify(r.result, null, 2)}`;
   }).join('\n\n');
 }
+
+/**
+ * Sanitize content by removing malformed tool call syntax patterns
+ * that weren't successfully parsed.
+ * 
+ * This removes example tool call syntax that the AI sometimes includes
+ * when explaining tool usage, preventing it from being shown to users.
+ * 
+ * @param content - The content string to sanitize
+ * @param hadSuccessfulToolCalls - Whether any tool calls were successfully parsed
+ * @returns Sanitized content with malformed tool call syntax removed
+ */
+export function sanitizeContent(
+  content: string, 
+  hadSuccessfulToolCalls: boolean = false
+): string {
+  let sanitized = content;
+  
+  // Remove common tool call example markers and headers
+  sanitized = sanitized.replace(/\*\*TOOL CALL:\*\*/gi, '');
+  sanitized = sanitized.replace(/TOOL CALL:\s*/gi, '');
+  sanitized = sanitized.replace(/^TOOL CALL\s*$/gim, '');
+  
+  // Remove unparsed code blocks with tool call language tags
+  // Only remove if they contain tool call-like content (have "name" field)
+  sanitized = sanitized.replace(
+    /```(?:tool_calls?|tool_code)\s*\n?([\s\S]*?)```/g,
+    (match, inner) => {
+      // Check if this looks like a tool call (has "name" field)
+      if (inner && inner.match(/"name"\s*:/i)) {
+        log('Removing malformed tool call code block');
+        return ''; // Remove it - it's a malformed tool call
+      }
+      return match; // Keep it - might be legitimate code example
+    }
+  );
+  
+  // Remove standalone JSON objects that look like tool calls but weren't parsed
+  // Pattern: { "name": "...", "arguments": {...} } on its own line or preceded by markers
+  sanitized = sanitized.replace(
+    /^\s*\{\s*"name"\s*:\s*"[^"]+"\s*,\s*"arguments"\s*:\s*\{[^}]*\}\s*\}\s*$/gm,
+    ''
+  );
+  
+  // Remove XML-style tool call tags that weren't parsed
+  sanitized = sanitized.replace(/<tool_call>\s*[\s\S]*?<\/tool_call>/gi, (match) => {
+    // Only remove if it looks like a tool call (has name attribute or name field)
+    if (match.match(/name\s*=/i) || match.match(/"name"\s*:/i)) {
+      log('Removing malformed XML tool call');
+      return '';
+    }
+    return match;
+  });
+  
+  // Remove delimiter formats that weren't parsed
+  sanitized = sanitized.replace(/<\|tool_call_start\|>[\s\S]*?<\|tool_call_end\|>/gi, (match) => {
+    // Only remove if it contains tool call-like content
+    if (match.match(/"name"\s*:/i) || match.match(/name\s*=/i)) {
+      log('Removing malformed delimiter tool call');
+      return '';
+    }
+    return match;
+  });
+  
+  // Clean up extra whitespace and empty lines
+  sanitized = sanitized.replace(/\n{3,}/g, '\n\n');
+  sanitized = sanitized.replace(/^\s+$/gm, ''); // Remove lines with only whitespace
+  sanitized = sanitized.trim();
+  
+  return sanitized;
+}
