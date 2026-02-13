@@ -17,7 +17,9 @@ export function CrewOnboardingSteps({
   hasExistingProfile,
   onboardingState,
   messagesLength = 0,
-}: CrewOnboardingStepsProps & { messagesLength?: number }) {
+  hasActiveSession = false,
+  onCurrentStepClick,
+}: CrewOnboardingStepsProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }) {
   const t = useTranslations('onboarding');
 
   // Consider signup completed if user is authenticated OR has previous interactions
@@ -53,6 +55,9 @@ export function CrewOnboardingSteps({
         status:
           s.completed ? 'completed' : i === activeIndex ? 'current' : 'upcoming',
       }))}
+      hasActiveSession={hasActiveSession}
+      onCurrentStepClick={onCurrentStepClick}
+      userRole="crew"
     />
   );
 }
@@ -73,7 +78,9 @@ export function OwnerOnboardingSteps({
   hasJourney,
   onboardingState,
   messagesLength = 0,
-}: OwnerOnboardingStepsProps & { messagesLength?: number }) {
+  hasActiveSession = false,
+  onCurrentStepClick,
+}: OwnerOnboardingStepsProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }) {
   const t = useTranslations('onboarding');
 
   // Consider signup completed if user is authenticated OR has previous interactions
@@ -113,6 +120,9 @@ export function OwnerOnboardingSteps({
         status:
           s.completed ? 'completed' : i === activeIndex ? 'current' : 'upcoming',
       }))}
+      hasActiveSession={hasActiveSession}
+      onCurrentStepClick={onCurrentStepClick}
+      userRole="owner"
     />
   );
 }
@@ -123,9 +133,22 @@ export interface OnboardingStepsBarProps {
   variant?: 'default' | 'banner';
   /** Homepage: full width, vertical on small screens, horizontal on larger */
   layout?: 'inline' | 'homepage';
+  /** Whether there's an active onboarding session */
+  hasActiveSession?: boolean;
+  /** Callback when current step is clicked */
+  onCurrentStepClick?: () => void;
+  /** User role to determine navigation route */
+  userRole?: 'owner' | 'crew';
 }
 
-function OnboardingStepsBar({ steps, variant = 'default', layout = 'inline' }: OnboardingStepsBarProps) {
+function OnboardingStepsBar({ 
+  steps, 
+  variant = 'default', 
+  layout = 'inline',
+  hasActiveSession = false,
+  onCurrentStepClick,
+  userRole,
+}: OnboardingStepsBarProps) {
   if (steps.length === 0) return null;
 
   const isBanner = variant === 'banner';
@@ -262,23 +285,37 @@ function OnboardingStepsBar({ steps, variant = 'default', layout = 'inline' }: O
           ))}
         </div>
       )}
-      {steps.map((step, index) => (
+      {steps.map((step, index) => {
+        const isCurrentStep = step.status === 'current';
+        const isClickable = isCurrentStep && hasActiveSession && onCurrentStepClick;
+        const wrapperClassName = `flex shrink-0 ${isHomepage ? 'flex-col items-center gap-1 justify-center' : 'items-center gap-1.5 sm:gap-2'} ${isClickable ? 'cursor-pointer group' : ''}`;
+        
+        return (
         <React.Fragment key={index}>
-          <div className={`flex shrink-0 ${isHomepage ? 'flex-col items-center gap-1 justify-center' : 'items-center gap-1.5 sm:gap-2'}`}>
+          {isClickable ? (
+            <button
+              className={wrapperClassName}
+              onClick={onCurrentStepClick}
+              aria-label={`Continue ${step.label}`}
+            >
             <span
-              className={`flex shrink-0 items-center justify-center rounded-full text-sm font-medium transition-colors ${
+              className={`flex shrink-0 items-center justify-center rounded-full text-sm font-medium transition-all ${
                 isBanner
                   ? step.status === 'completed'
                     ? 'h-9 w-9 bg-white/30 text-white'
                     : step.status === 'current'
-                      ? 'h-9 w-9 bg-white/30 text-white ring-2 ring-white border border-white/35'
+                      ? hasActiveSession
+                        ? 'h-9 w-9 bg-white/40 text-white ring-2 ring-white border-2 border-white/50 shadow-lg shadow-white/20 animate-pulse'
+                        : 'h-9 w-9 bg-white/30 text-white ring-2 ring-white border border-white/35'
                       : 'h-9 w-9 bg-white/10 text-white/60 border border-white/25'
                   : step.status === 'completed'
                     ? 'h-8 w-8 bg-primary text-primary-foreground'
                     : step.status === 'current'
-                      ? 'h-8 w-8 bg-primary/20 text-primary ring-2 ring-primary'
+                      ? hasActiveSession
+                        ? 'h-8 w-8 bg-primary/30 text-primary ring-2 ring-primary ring-offset-2 shadow-lg shadow-primary/20 animate-pulse'
+                        : 'h-8 w-8 bg-primary/20 text-primary ring-2 ring-primary'
                       : 'h-8 w-8 bg-muted text-muted-foreground'
-              }`}
+              } hover:scale-110 hover:shadow-xl`}
               aria-hidden
             >
               {step.status === 'completed' ? (
@@ -305,18 +342,90 @@ function OnboardingStepsBar({ steps, variant = 'default', layout = 'inline' }: O
                   ? step.status === 'completed'
                     ? 'text-white/60 line-through'
                     : step.status === 'current'
-                      ? 'text-white'
+                      ? hasActiveSession
+                        ? 'text-white font-semibold'
+                        : 'text-white'
                       : 'text-white/60'
                   : step.status === 'completed'
                     ? 'text-muted-foreground line-through'
                     : step.status === 'current'
-                      ? 'text-foreground'
+                      ? hasActiveSession
+                        ? 'text-foreground font-semibold'
+                        : 'text-foreground'
                       : 'text-muted-foreground'
-              }`}
+              } group-hover:underline`}
             >
               {step.label}
+              <svg
+                className="inline-block ml-1 h-3 w-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
             </span>
-          </div>
+          </button>
+          ) : (
+            <div className={wrapperClassName}>
+              <span
+                className={`flex shrink-0 items-center justify-center rounded-full text-sm font-medium transition-all ${
+                  isBanner
+                    ? step.status === 'completed'
+                      ? 'h-9 w-9 bg-white/30 text-white'
+                      : step.status === 'current'
+                        ? 'h-9 w-9 bg-white/30 text-white ring-2 ring-white border border-white/35'
+                        : 'h-9 w-9 bg-white/10 text-white/60 border border-white/25'
+                    : step.status === 'completed'
+                      ? 'h-8 w-8 bg-primary text-primary-foreground'
+                      : step.status === 'current'
+                        ? 'h-8 w-8 bg-primary/20 text-primary ring-2 ring-primary'
+                        : 'h-8 w-8 bg-muted text-muted-foreground'
+                }`}
+                aria-hidden
+              >
+                {step.status === 'completed' ? (
+                  <svg
+                    className={isBanner ? 'h-2.5 w-2.5' : 'h-3 w-3'}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  index + 1
+                )}
+              </span>
+              <span
+                className={`text-sm font-medium whitespace-nowrap ${isHomepage ? 'text-center' : ''} ${
+                  isBanner
+                    ? step.status === 'completed'
+                      ? 'text-white/60 line-through'
+                      : step.status === 'current'
+                        ? 'text-white'
+                        : 'text-white/60'
+                    : step.status === 'completed'
+                      ? 'text-muted-foreground line-through'
+                      : step.status === 'current'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+          )}
           {index < steps.length - 1 && (
             <div
               className={`rounded shrink-0 ${
@@ -332,7 +441,8 @@ function OnboardingStepsBar({ steps, variant = 'default', layout = 'inline' }: O
             />
           )}
         </React.Fragment>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -343,10 +453,10 @@ export interface OnboardingStepsInlineProps {
 
 /** Compact inline steps for homepage banner - same steps/status, different styling */
 export function CrewOnboardingStepsInline(
-  props: CrewOnboardingStepsProps & OnboardingStepsInlineProps & { messagesLength?: number }
+  props: CrewOnboardingStepsProps & OnboardingStepsInlineProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }
 ) {
   const t = useTranslations('onboarding');
-  const { layout = 'inline', messagesLength = 0, ...stepProps } = props;
+  const { layout = 'inline', messagesLength = 0, hasActiveSession = false, onCurrentStepClick, ...stepProps } = props;
 
   // Consider signup completed if user is authenticated OR has previous interactions
   const hasAccount = stepProps.isAuthenticated || messagesLength > 0;
@@ -381,16 +491,19 @@ export function CrewOnboardingStepsInline(
         status:
           s.completed ? 'completed' : i === activeIndex ? 'current' : 'upcoming',
       }))}
+      hasActiveSession={hasActiveSession}
+      onCurrentStepClick={onCurrentStepClick}
+      userRole="crew"
     />
   );
 }
 
 /** Compact inline steps for homepage banner - same steps/status, different styling */
 export function OwnerOnboardingStepsInline(
-  props: OwnerOnboardingStepsProps & OnboardingStepsInlineProps & { messagesLength?: number }
+  props: OwnerOnboardingStepsProps & OnboardingStepsInlineProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }
 ) {
   const t = useTranslations('onboarding');
-  const { layout = 'inline', messagesLength = 0, ...stepProps } = props;
+  const { layout = 'inline', messagesLength = 0, hasActiveSession = false, onCurrentStepClick, ...stepProps } = props;
 
   // Consider signup completed if user is authenticated OR has previous interactions
   const hasAccount = stepProps.isAuthenticated || messagesLength > 0;
@@ -430,6 +543,9 @@ export function OwnerOnboardingStepsInline(
         status:
           s.completed ? 'completed' : i === activeIndex ? 'current' : 'upcoming',
       }))}
+      hasActiveSession={hasActiveSession}
+      onCurrentStepClick={onCurrentStepClick}
+      userRole="owner"
     />
   );
 }

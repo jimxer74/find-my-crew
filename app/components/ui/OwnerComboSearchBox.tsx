@@ -381,11 +381,11 @@ function SkipperCrewProfilesDialog({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
               What to include:
             </h3>
-            <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-amber-800 dark:text-amber-200 space-y-1 list-disc list-inside">
               <li>Your skipper profile and sailing experience</li>
               <li>Boat details</li>
               <li>Crew requirements and preferences</li>
@@ -398,14 +398,15 @@ function SkipperCrewProfilesDialog({
             value={crewDemand}
             onChange={(e) => setCrewDemand(e.target.value)}
             placeholder={placeholder}
+            maxLength={2000}
             className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
           />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between gap-4 p-4 border-t border-gray-200 dark:border-gray-700">
           {/* AI Consent */}
-          <div className="flex items-start justify-between gap-4 pt-2">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground">{aiProcessingLabel}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">{aiProcessingDesc}</p>
-            </div>
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setAiConsent(!aiConsent)}
@@ -419,24 +420,25 @@ function SkipperCrewProfilesDialog({
                 }`}
               />
             </button>
+            <p className="text-sm text-muted-foreground">Allow AI to process the data that you provide</p>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-amber-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Save
-          </button>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-amber-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -554,7 +556,11 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
       <div className={`w-full ${className}`}>
         <button
           type="button"
-          onClick={() => setIsJourneyDialogOpen(true)}
+          onClick={() => {
+            // Just notify parent to enter combo search mode (hide crew side)
+            // Don't open dialog by default
+            onFocusChange?.(true);
+          }}
           className="w-full h-14 px-4 text-left text-sm text-gray-900 bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-amber-400 flex items-center gap-3 cursor-pointer transition-colors"
         >
           <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -562,39 +568,6 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
           </svg>
           <span className="text-gray-500 truncate">{t('postPlaceholder')}</span>
         </button>
-
-        <JourneyDetailsDialog
-          isOpen={isJourneyDialogOpen}
-          onClose={() => setIsJourneyDialogOpen(false)}
-          onSave={(data) => {
-            setJourneyDetails(data);
-            setIsJourneyDialogOpen(false);
-            // Open skipper/crew dialog next
-            setIsSkipperCrewDialogOpen(true);
-          }}
-        />
-
-        <SkipperCrewProfilesDialog
-          isOpen={isSkipperCrewDialogOpen}
-          onClose={() => {
-            setIsSkipperCrewDialogOpen(false);
-            // Auto-submit if skipper/crew text is provided
-            if (skipperCrewText.trim()) {
-              handleSubmit();
-            }
-          }}
-          onSave={(text, consent) => {
-            setSkipperCrewText(text);
-            setSkipperCrewAiConsent(consent);
-            setIsSkipperCrewDialogOpen(false);
-            // Always submit when saving skipper/crew details
-            handleSubmit();
-          }}
-          title={t('skipperCrewDialogTitle')}
-          placeholder={t('skipperCrewDialogPlaceholder')}
-          aiProcessingLabel={tPrivacy('aiProcessing')}
-          aiProcessingDesc={tPrivacy('aiProcessingDesc')}
-        />
       </div>
     );
   }

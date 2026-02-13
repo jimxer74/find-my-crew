@@ -655,6 +655,7 @@
       "title": "Löydä Seuraava Seikkailusi",
       "subtitle": "Löydä purjehdusmahdollisuuksia jotka vastaavat taitojasi ja unelmiasi",
       "description": "Kerro mitä etsit, ja tekoälyavustajamme auttaa sinua löytämään täydellisen purjehduskokemuksen - rekisteröitymistä ei tarvita aloittaaksesi tutkimisen.",
+      "descriptionSingle": "Kerro mitä etsit, ja tekoälyavustajamme auttaa sinua löytämään täydellisen purjehduskokemuksen - rekisteröitymistä ei tarvita aloittaaksesi tutkimisen.",
       "cta": "Aloita Tutkiminen",
       "features": {
         "discover": "Löydä purjehdusmahdollisuuksia maailmanlaajuisesti",
@@ -666,6 +667,7 @@
       "title": "Löydä Täydellinen Miehistö",
       "subtitle": "Yhdistä kokeneet purjehtijat matkoillesi",
       "description": "Julkaise purjehdussuunnitelmasi ja anna pätevien miehistön jäsenten löytää sinut. Tekoälypohjainen yhdistäminen auttaa löytämään oikeat ihmiset seikkailuusi.",
+      "descriptionSingle": "Julkaise purjehdussuunnitelmasi ja anna pätevien miehistön jäsenten löytää sinut. Tekoälypohjainen yhdistäminen auttaa löytämään oikeat ihmiset seikkailuusi.",
       "cta": "Tulossa Pian",
       "postPlaceholder": "Julkaise veneesi ja matkatiedot...",
       "continueJourney": "Olet melkein valmis - jatka matkaasi",

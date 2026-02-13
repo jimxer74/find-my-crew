@@ -655,6 +655,7 @@
       "title": "For Crew",
       "subtitle": "Discover your dream sailing opportunities",
       "description": "Tell us where you want to sail and post your sailing profile, SailSmart will find the perfect boats and skippers for you!",
+      "descriptionSingle": "Tell us where you want to sail and post your sailing profile, SailSmart will find the perfect boats and skippers for you!",
       "cta": "Start now",
       "features": {
         "discover": "Discover sailing opportunities worldwide",
@@ -665,7 +666,8 @@
     "owner": {
       "title": "For Skippers",
       "subtitle": "Connect with perfect crew for your voyages",
-      "description": "Post your sailing plans and let crew members find you. SailSmart matching helps you find the right people.",
+      "description": "Post your sailing plans and let crew members find you using SailSmart AI matching. You can add journey details specifically or include them in you Skipper & Crew profile. Don't have excat plans yet? Don't worry, you can allways add them later.",
+      "descriptionSingle": "Post your sailing plans and let crew members find you using SailSmart AI matching. You can add journey details specifically or include them in you Skipper & Crew profile. Don't have excat plans yet? Don't worry, you can allways add them later.",
       "cta": "Coming Soon",
       "postPlaceholder": "Post your boat and journey details...",
       "continueJourney": "You are almost there - continue your journey",

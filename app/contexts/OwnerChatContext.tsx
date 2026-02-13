@@ -488,8 +488,8 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           isLoading: false,
         }));
 
-        // After profile completion, update onboarding state to boat_pending
-        updateOnboardingState('boat_pending');
+        // Note: Onboarding state will be updated when profile is actually created
+        // (handled in handleSendMessage when data.profileCreated === true)
       } catch (error: any) {
         console.error('[OwnerChatContext] Error triggering profile completion:', error);
         setState((prev) => ({
@@ -678,16 +678,28 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       }));
 
       // Trigger onboarding state transitions
-      if (data.profileCreated === true) {
-        updateOnboardingState('boat_pending');
-        // Dispatch profileUpdated event to refresh profile state
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: ['roles', 'profile_completion_percentage'],
-              timestamp: Date.now()
-            }
-          }));
+      // Only update state if profile was actually created (verify it exists in DB)
+      if (data.profileCreated === true && state.userId) {
+        const supabase = getSupabaseBrowserClient();
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', state.userId)
+          .single();
+        
+        if (profileData) {
+          updateOnboardingState('boat_pending');
+          // Dispatch profileUpdated event to refresh profile state
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('profileUpdated', {
+              detail: {
+                updatedFields: ['roles', 'profile_completion_percentage'],
+                timestamp: Date.now()
+              }
+            }));
+          }
+        } else {
+          console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
         }
       } else if (data.boatCreated === true) {
         updateOnboardingState('journey_pending');
@@ -777,16 +789,28 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       }));
 
       // Trigger onboarding state transitions
-      if (data.profileCreated === true) {
-        updateOnboardingState('boat_pending');
-        // Dispatch profileUpdated event to refresh profile state
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: ['roles', 'profile_completion_percentage'],
-              timestamp: Date.now()
-            }
-          }));
+      // Only update state if profile was actually created (verify it exists in DB)
+      if (data.profileCreated === true && state.userId) {
+        const supabase = getSupabaseBrowserClient();
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', state.userId)
+          .single();
+        
+        if (profileData) {
+          updateOnboardingState('boat_pending');
+          // Dispatch profileUpdated event to refresh profile state
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('profileUpdated', {
+              detail: {
+                updatedFields: ['roles', 'profile_completion_percentage'],
+                timestamp: Date.now()
+              }
+            }));
+          }
+        } else {
+          console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
         }
       } else if (data.boatCreated === true) {
         updateOnboardingState('journey_pending');

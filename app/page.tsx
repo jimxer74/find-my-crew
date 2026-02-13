@@ -616,7 +616,9 @@ export default function WelcomePage() {
             </p>
       
             <p className="text-sm md:text-base text-white/80 mb-6">
-              {t('crew.description')}
+              {(hasExistingSession && sessionType === 'crew') || isComboSearchMode
+                ? t('crew.descriptionSingle')
+                : t('crew.description')}
             </p>
 
             {/* Combo Search Box */}
@@ -690,6 +692,8 @@ export default function WelcomePage() {
                   hasExistingProfile={crewHasProfile}
                   onboardingState={onboardingState}
                   messagesLength={sessionMessages?.length || 0}
+                  hasActiveSession={hasExistingSession && sessionType === 'crew'}
+                  onCurrentStepClick={handleContinueConversation}
                 />
               </div>
               {hasExistingSession && sessionType === 'crew' && sessionLegs.length > 0 && (
@@ -789,7 +793,9 @@ export default function WelcomePage() {
               </p>
 
               <p className="text-sm md:text-base text-white/80 mb-6">
-                {t('owner.description')}
+                {isOwnerComboSearchMode || hasOwnerSession
+                  ? t('owner.descriptionSingle')
+                  : t('owner.description')}
               </p>
 
               {!hasOwnerSession && (
@@ -864,6 +870,8 @@ export default function WelcomePage() {
                     hasJourney={ownerHasJourney}
                     onboardingState={ownerOnboardingState}
                     messagesLength={ownerSessionMessages?.length || 0}
+                    hasActiveSession={hasOwnerSession}
+                    onCurrentStepClick={handleContinueOwnerConversation}
                   />
                 </div>
               </div>

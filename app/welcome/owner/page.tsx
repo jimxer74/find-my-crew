@@ -43,6 +43,7 @@ function OwnerOnboardingContent() {
           hasJourney={hasJourney}
           onboardingState={onboardingState}
           messagesLength={messages.length}
+          hasActiveSession={messages.length > 0}
         />
       </OnboardingStickyBar>
 

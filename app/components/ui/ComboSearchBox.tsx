@@ -53,13 +53,19 @@ function AvailabilityDialog({
   onClose,
   value,
   onSave,
+  dateRange,
+  onDateRangeChange,
 }: {
   isOpen: boolean;
   onClose: () => void;
   value: string;
   onSave: (availabilityText: string) => void;
+  dateRange?: DateRange;
+  onDateRangeChange?: (range: DateRange) => void;
 }) {
   const [availabilityText, setAvailabilityText] = useState(value);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [localDateRange, setLocalDateRange] = useState<DateRange>(dateRange || { start: null, end: null });
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,79 +73,149 @@ function AvailabilityDialog({
   }, [value]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (dateRange) {
+      setLocalDateRange(dateRange);
+    }
+  }, [dateRange]);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current && !isDatePickerOpen) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, isDatePickerOpen]);
 
   const handleSave = () => {
     onSave(availabilityText);
+    if (onDateRangeChange) {
+      onDateRangeChange(localDateRange);
+    }
     onClose();
+  };
+
+  const handleDateRangeChange = (range: DateRange) => {
+    setLocalDateRange(range);
+    if (onDateRangeChange) {
+      onDateRangeChange(range);
+    }
   };
 
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
+    <>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="availability-dialog-title"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isDatePickerOpen) {
+            onClose();
+          }
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 id="availability-dialog-title" className="text-lg font-semibold text-gray-900">
-            Availability
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-            aria-label="Close"
-          >
-            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+        <div
+          className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="availability-dialog-title"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 id="availability-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Availability
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <input
-            ref={inputRef}
-            type="text"
-            value={availabilityText}
-            onChange={(e) => setAvailabilityText(e.target.value)}
-            placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
-            className="w-full px-4 py-3 text-base text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500"
-          />
-        </div>
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div>
+              <input
+                ref={inputRef}
+                type="text"
+                value={availabilityText}
+                onChange={(e) => setAvailabilityText(e.target.value)}
+                placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
+                className="w-full px-4 py-3 text-base text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+              />
+            </div>
+            
+            {/* Select specific dates button */}
+            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Select specific dates</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                  {localDateRange.start && localDateRange.end
+                    ? `${localDateRange.start.toLocaleDateString()} - ${localDateRange.end.toLocaleDateString()}`
+                    : localDateRange.start
+                    ? `Starting from: ${localDateRange.start.toLocaleDateString()}`
+                    : 'Choose start and end dates'}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDatePickerOpen(true)}
+                className="px-4 py-2 text-sm font-medium text-blue-700 dark:text-blue-300 bg-white dark:bg-gray-800 border border-blue-300 dark:border-blue-700 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {localDateRange.start || localDateRange.end ? 'Change dates' : 'Select dates'}
+              </button>
+            </div>
+          </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Save
-          </button>
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Date Range Picker Dialog */}
+      {isDatePickerOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsDatePickerOpen(false);
+            }
+          }}
+        >
+          <div
+            className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DateRangePicker
+              value={localDateRange}
+              onChange={handleDateRangeChange}
+              onClose={() => setIsDatePickerOpen(false)}
+              isInDialog={true}
+              disableClickOutside={true}
+              allowSingleDate={true}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -192,23 +268,23 @@ function ProfileDialog({
       }}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-dialog-title"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 id="profile-dialog-title" className="text-lg font-semibold text-gray-900">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 id="profile-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Add Profile Information
           </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -216,24 +292,38 @@ function ProfileDialog({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Instructions */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+              What to include:
+            </h3>
+            <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+              <li>Your sailing experience and skill level</li>
+              <li>Relevant certifications and qualifications</li>
+              <li>Preferences for trip types and destinations</li>
+              <li>Availability and any special requirements</li>
+            </ul>
+          </div>
+
           <textarea
             ref={textareaRef}
             value={profileText}
             onChange={(e) => setProfileText(e.target.value)}
             placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 resize-none"
+            maxLength={2000}
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
           />
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 flex items-center justify-between gap-4 p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
           {/* AI Consent */}
-          <div className="flex items-start justify-between gap-4 pt-2">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-900">{aiProcessingLabel}</p>
-              <p className="text-sm text-gray-500 mt-0.5">{aiProcessingDesc}</p>
-            </div>
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setAiConsent(!aiConsent)}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
-                aiConsent ? 'bg-blue-600' : 'bg-gray-200'
+              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 ${
+                aiConsent ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
             >
               <span
@@ -242,24 +332,25 @@ function ProfileDialog({
                 }`}
               />
             </button>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Allow AI to process the data that you provide</p>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Save
-          </button>
+          
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!canSave}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -321,6 +412,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
       });
     }
   }, [focusedSegment]);
+
 
   // Notify parent when focus state changes
   useEffect(() => {
@@ -441,18 +533,13 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
   }
 
   return (
-    <div className={`w-full max-w-full ${className}`}>
-      <div className="relative flex items-stretch bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-visible h-14 w-full max-w-full">
-        {/* Where From Segment */}
-        <div
-          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereFrom' ? 'bg-blue-50 z-20 rounded-l-xl' : ''}`}
-        >
-          {/* Divider with white space */}
-          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
-          {focusedSegment === 'whereFrom' ? (
-            <div className="w-full px-3 pt-1.5 pb-0.5 flex flex-col h-full overflow-visible">
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where from</label>
-              <div className="flex-1 flex items-center -mt-0.5 min-w-0 relative overflow-visible">
+    <div className={`w-full ${className}`}>
+      <div className="bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-hidden">
+        <div className="flex divide-x divide-gray-200 dark:divide-gray-700">
+          {/* Where From Segment */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {focusedSegment === 'whereFrom' ? (
+              <div className="w-full h-14 px-4 flex items-center relative bg-blue-50 dark:bg-blue-900/20 rounded-l-xl">
                 <LocationAutocomplete
                   value={whereFromInputValue}
                   onChange={(location) => {
@@ -462,63 +549,59 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
                   }}
                   onInputChange={(value) => {
                     setWhereFromInputValue(value);
-                    // Clear location if user is typing something different
                     if (whereFrom && value !== whereFrom.name) {
                       setWhereFrom(null);
                     }
                   }}
                   placeholder="Where from"
-                  className="border-0 w-full min-w-0 [&_input]:py-1.5 [&_input]:h-[32px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
+                  className="border-0 w-full [&_input]:py-2 [&_input]:h-full [&_input]:text-sm [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_input]:placeholder:text-gray-400 dark:[&_input]:placeholder:text-gray-500 [&>div]:z-50"
                   autoFocus={true}
                   inputRef={whereFromInputRef}
                 />
               </div>
-            </div>
-          ) : (
-            <div
-              className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
-              onClick={() => {
-                const currentValue = whereFrom?.name || '';
-                setWhereFromInputValue(currentValue);
-                setFocusedSegment('whereFrom');
-              }}
-            >
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where from</label>
-              <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
-                {whereFrom ? (
-                  <div className="flex items-center justify-between w-full group min-w-0 max-w-full overflow-hidden">
-                    <span className="text-sm text-gray-900 block truncate flex-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                      {whereFrom.name}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearSegment('whereFrom');
-                      }}
-                      className="ml-2 p-1 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                      aria-label="Clear"
-                    >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : null}
+            ) : (
+              <div
+                onClick={() => {
+                  const currentValue = whereFrom?.name || '';
+                  setWhereFromInputValue(currentValue);
+                  setFocusedSegment('whereFrom');
+                }}
+                className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative overflow-hidden"
+              >
+                <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  {whereFrom ? (
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{whereFrom.name}</span>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Where from</span>
+                  )}
+                </div>
+                {whereFrom && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearSegment('whereFrom');
+                    }}
+                    className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-2"
+                    aria-label="Clear"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Where To Segment */}
-        <div
-          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-visible ${focusedSegment === 'whereTo' ? 'bg-blue-50 z-20' : ''}`}
-        >
-          {/* Divider with white space */}
-          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
-          {focusedSegment === 'whereTo' ? (
-            <div className="w-full px-3 pt-1.5 pb-0.5 flex flex-col h-full overflow-visible">
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where to</label>
-              <div className="flex-1 flex items-center -mt-0.5 min-w-0 relative overflow-visible">
+          {/* Where To Segment */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            {focusedSegment === 'whereTo' ? (
+              <div className="w-full h-14 px-4 flex items-center relative bg-blue-50 dark:bg-blue-900/20">
                 <LocationAutocomplete
                   value={whereToInputValue}
                   onChange={(location) => {
@@ -528,218 +611,144 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
                   }}
                   onInputChange={(value) => {
                     setWhereToInputValue(value);
-                    // Clear location if user is typing something different
                     if (whereTo && value !== whereTo.name) {
                       setWhereTo(null);
                     }
                   }}
                   placeholder="Where to"
-                  className="border-0 w-full min-w-0 [&_input]:py-1.5 [&_input]:h-[32px] [&_input]:text-sm [&_input]:min-w-0 [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 [&_input]:placeholder:text-gray-400 [&>div]:z-50"
+                  className="border-0 w-full [&_input]:py-2 [&_input]:h-full [&_input]:text-sm [&_input]:bg-transparent [&_input]:border-0 [&_input]:focus:ring-0 [&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_input]:placeholder:text-gray-400 dark:[&_input]:placeholder:text-gray-500 [&>div]:z-50"
                   autoFocus={true}
                   inputRef={whereToInputRef}
                 />
               </div>
-            </div>
-          ) : (
-            <div
-              className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
-              onClick={() => {
-                const currentValue = whereTo?.name || '';
-                setWhereToInputValue(currentValue);
-                setFocusedSegment('whereTo');
-              }}
-            >
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Where to</label>
-              <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
-                {whereTo ? (
-                  <div className="flex items-center justify-between w-full group min-w-0 max-w-full overflow-hidden">
-                    <span className="text-sm text-gray-900 block truncate flex-1 min-w-0 max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                      {whereTo.name}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearSegment('whereTo');
-                      }}
-                      className="ml-2 p-1 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                      aria-label="Clear"
-                    >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Availability Segment */}
-        <div
-          className="flex-1 relative h-14 flex flex-col min-w-0 overflow-hidden"
-        >
-          {/* Divider with white space */}
-          <div className="absolute right-0 top-1.5 bottom-1.5 w-px bg-gray-200" />
-          {/* Calendar icon - always visible, positioned absolutely to the right */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsDatePickerOpen(true);
-            }}
-            className="absolute right-2 bottom-2 p-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex-shrink-0 z-10"
-            aria-label="Select dates"
-          >
-            <svg className="w-5 h-5 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
-          {focusedSegment === 'availability' ? (
-            <div className="w-full px-3 pr-12 pt-1 pb-0.5 flex flex-col h-full overflow-hidden">
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight relative z-20">Availability</label>
-              <div className="flex-1 flex items-center -mt-0.5 min-w-0 overflow-hidden">
-                <div className="flex-1 relative min-w-0">
-                  <input
-                    ref={availabilityInputRef}
-                    type="text"
-                    value={(() => {
-                      // Combine free text and date range in the input value
-                      const parts: string[] = [];
-                      if (availabilityFreeText) {
-                        parts.push(availabilityFreeText);
-                      }
-                      if (dateRange.start && dateRange.end) {
-                        // Check if it's a single date
-                        const isSameDay = dateRange.start.getTime() === dateRange.end.getTime() ||
-                          (dateRange.start.getDate() === dateRange.end.getDate() &&
-                           dateRange.start.getMonth() === dateRange.end.getMonth() &&
-                           dateRange.start.getFullYear() === dateRange.end.getFullYear());
-                        if (isSameDay) {
-                          parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
-                        } else {
-                          parts.push(`${dateRange.start.toLocaleDateString()} - ${dateRange.end.toLocaleDateString()}`);
-                        }
-                      } else if (dateRange.start) {
-                        parts.push(`Starting from: ${dateRange.start.toLocaleDateString()}`);
-                      }
-                      return parts.join(', ');
-                    })()}
-                    placeholder="Describe your availability, e.g. 'next summer', 'starting from June', 'flexible dates' etc."
-                    className="w-full min-w-0 px-3 py-1.5 h-[32px] text-sm text-gray-900 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-0 cursor-pointer"
-                    readOnly
-                    onClick={() => {
-                      setIsAvailabilityDialogOpen(true);
-                    }}
-                    onBlur={() => {
-                      // Delay to allow date picker interactions
-                      setTimeout(() => {
-                        if (!isDatePickerOpen && !isAvailabilityDialogOpen) {
-                          setFocusedSegment(null);
-                        }
-                      }, 200);
-                    }}
-                  />
-                  {(dateRange.start || dateRange.end) && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDateRange({ start: null, end: null });
-                      }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                      aria-label="Clear date"
-                    >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+            ) : (
+              <div
+                onClick={() => {
+                  const currentValue = whereTo?.name || '';
+                  setWhereToInputValue(currentValue);
+                  setFocusedSegment('whereTo');
+                }}
+                className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative overflow-hidden"
+              >
+                <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  {whereTo ? (
+                    <span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{whereTo.name}</span>
+                  ) : (
+                    <span className="text-gray-500 dark:text-gray-400">Where to</span>
                   )}
                 </div>
+                {whereTo && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      clearSegment('whereTo');
+                    }}
+                    className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-2"
+                    aria-label="Clear"
+                  >
+                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </div>
-            </div>
-          ) : (
+            )}
+          </div>
+
+          {/* Availability Segment */}
+          <div className="flex-1 min-w-0 overflow-hidden">
             <div
-              className="w-full px-3 pr-12 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
               onClick={() => {
                 setFocusedSegment('availability');
                 setIsAvailabilityDialogOpen(true);
               }}
+              className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative overflow-hidden"
             >
-              <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight relative z-20">Availability</label>
-              <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
+              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <div className="flex-1 min-w-0 overflow-hidden">
                 {availabilityFreeText || dateRange.start ? (
-                  <div className="flex items-center justify-between group min-w-0 overflow-hidden w-full">
-                    <span className="text-sm text-gray-900 block truncate flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                      {formatAvailabilityDisplay()}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        clearSegment('availability');
-                      }}
-                      className="ml-2 p-1 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                      aria-label="Clear"
-                    >
-                      <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : null}
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{formatAvailabilityDisplay()}</span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">Availability</span>
+                )}
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Profile Segment */}
-        <div
-          className={`flex-1 relative h-14 flex flex-col min-w-0 overflow-hidden ${focusedSegment === 'profile' ? 'bg-blue-50' : ''}`}
-        >
-          <div
-            className="w-full px-3 pt-1 pb-0.5 h-14 flex flex-col cursor-pointer overflow-hidden"
-            onClick={() => {
-              setFocusedSegment('profile');
-              setIsProfileDialogOpen(true);
-            }}
-          >
-            <label className="text-xs font-medium text-gray-500 mb-0 flex-shrink-0 text-left leading-tight">Sailing profile</label>
-            <div className="flex-1 flex items-center min-w-0 -mt-0.5 overflow-hidden">
-              {profile ? (
-                <div className="flex items-center w-full group min-w-0 overflow-hidden">
-                  <span className="text-sm text-gray-900 truncate flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap">
-                    {profile}
-                  </span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      clearSegment('profile');
-                    }}
-                    className="ml-2 p-1 rounded-full hover:bg-gray-100 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                    aria-label="Clear"
-                  >
-                    <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ) : null}
+              {(availabilityFreeText || dateRange.start) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearSegment('availability');
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Clear"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Post Button */}
-        <div className="flex-shrink-0">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!hasAnyValue}
-            className="h-14 px-6 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 rounded-r-xl"
-            aria-label="Post"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            <span>Post</span>
-          </button>
+          {/* Profile Segment */}
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <div
+              onClick={() => {
+                setFocusedSegment('profile');
+                setIsProfileDialogOpen(true);
+              }}
+              className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative overflow-hidden"
+            >
+              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                {profile ? (
+                  <span className="block text-xs text-gray-500 dark:text-gray-400 truncate">{truncateText(profile, 30)}</span>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">Sailing profile</span>
+                )}
+              </div>
+              {profile && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearSegment('profile');
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0 ml-2"
+                  aria-label="Clear"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Post Button */}
+          <div className="flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!hasAnyValue}
+              className="h-14 px-6 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 rounded-r-xl"
+              aria-label="Post"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span>Post</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -755,6 +764,10 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
           setAvailabilityFreeText(newAvailabilityText);
           setIsAvailabilityDialogOpen(false);
           setFocusedSegment(null);
+        }}
+        dateRange={dateRange}
+        onDateRangeChange={(range) => {
+          setDateRange(range);
         }}
       />
       <ProfileDialog
@@ -806,18 +819,6 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
         </div>
       )}
 
-      {/* Click outside to close focused segments - but don't block input interactions */}
-      {focusedSegment && focusedSegment !== 'profile' && (
-        <div
-          className="fixed inset-0 z-[5] pointer-events-none"
-          onClick={(e) => {
-            // Only close if clicking on the backdrop itself, not on any child elements
-            if (e.target === e.currentTarget) {
-              setFocusedSegment(null);
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -1092,6 +1093,19 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
               {/* Page 2: Profile */}
               {currentPage === 2 && (
                 <div className="space-y-4">
+                  {/* Instructions */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      What to include:
+                    </h3>
+                    <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                      <li>Your sailing experience and skill level</li>
+                      <li>Relevant certifications and qualifications</li>
+                      <li>Preferences for trip types and destinations</li>
+                      <li>Availability and any special requirements</li>
+                    </ul>
+                  </div>
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">
                       Profile
@@ -1100,35 +1114,38 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                       value={profile}
                       onChange={(e) => setProfile(e.target.value)}
                       placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
+                      maxLength={2000}
                       className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
                     />
-                  </div>
-                  {/* AI Consent */}
-                  <div className="flex items-start justify-between gap-4 pt-2">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{tPrivacy('aiProcessing')}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{tPrivacy('aiProcessingDesc')}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setProfileAiConsent(!profileAiConsent)}
-                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
-                        profileAiConsent ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
-                          profileAiConsent ? 'right-1' : 'left-1'
-                        }`}
-                      />
-                    </button>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Footer Navigation */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 gap-2">
+            <div className="sticky bottom-0 flex flex-col gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-card flex-shrink-0">
+              {/* AI Consent - only show on page 2 */}
+              {currentPage === 2 && (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setProfileAiConsent(!profileAiConsent)}
+                    className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 ${
+                      profileAiConsent ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                        profileAiConsent ? 'right-1' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Allow AI to process the data that you provide</p>
+                </div>
+              )}
+              
+              {/* Navigation Buttons */}
+              <div className="flex items-center justify-between gap-2">
               {currentPage > 1 ? (
                 <button
                   type="button"
@@ -1160,6 +1177,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                   <span>Post</span>
                 </button>
               )}
+              </div>
             </div>
           </div>
 
