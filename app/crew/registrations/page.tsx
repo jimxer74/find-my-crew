@@ -32,8 +32,7 @@ type RegistrationLeg = {
   boat_id: string;
   boat_name: string;
   boat_type: string | null;
-  boat_make: string | null;
-  boat_model: string | null;
+  boat_make_model: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
   owner_name: string | null;
@@ -293,9 +292,9 @@ export default function MyRegistrationsPage() {
                         {registration.boat_type && (
                           <p className="text-xs text-muted-foreground mb-1">{registration.boat_type}</p>
                         )}
-                        {(registration.boat_make || registration.boat_model) && (
+                        {registration.boat_make_model && (
                           <p className="text-xs text-muted-foreground">
-                            {registration.boat_make && registration.boat_model ? `${registration.boat_make} ${registration.boat_model}` : registration.boat_make || registration.boat_model || ''}
+                            {registration.boat_make_model}
                           </p>
                         )}
                       </div>

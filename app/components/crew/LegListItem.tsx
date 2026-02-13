@@ -15,8 +15,7 @@ export type LegListItemData = {
   journey_images: string[];
   boat_name: string;
   boat_image_url: string | null;
-  boat_make?: string | null;
-  boat_model?: string | null;
+  boat_make_model?: string | null;
   skill_match_percentage?: number;
   experience_level_matches?: boolean;
   start_waypoint: {
@@ -193,9 +192,9 @@ export function LegListItem({
         {options.showBoatInfo && (
           <p className={`text-muted-foreground truncate ${options.compact ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>
             {leg.boat_name}
-            {(leg.boat_make || leg.boat_model) && (
+            {leg.boat_make_model && (
               <span className="text-muted-foreground/70">
-                {' '}({leg.boat_make} {leg.boat_model})
+                {' '}({leg.boat_make_model})
               </span>
             )}
           </p>

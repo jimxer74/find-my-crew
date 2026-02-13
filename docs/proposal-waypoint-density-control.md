@@ -27,13 +27,14 @@ Sophisticated LLMs interpret this as permission to add many detailed waypoints f
 Add explicit waypoint density guidance in the prompt based on a `waypointDensity` parameter.
 
 **Parameters:**
-- `waypointDensity`: `'minimal' | 'moderate' | 'detailed'` (default: `'moderate'`)
+- `waypointDensity`: `'minimal' | 'moderate' | 'detailed'` (default: `'minimal'`)
 
 **Implementation:**
 1. Add `waypointDensity` parameter to `GenerateJourneyInput` interface
 2. Add corresponding instructions to the prompt based on density level
 3. Update tool definition to include this parameter
 4. Update AI instructions to guide the model on waypoint limits
+5. Add selection possibility to user interfaces, e.g to owner front page Journey details dialog and in /owner/journeys/propose dialog.
 
 **Prompt Instructions by Density:**
 

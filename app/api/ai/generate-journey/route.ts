@@ -4,7 +4,7 @@ import { generateJourneyRoute } from '@/app/lib/ai/generateJourney';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { startLocation, endLocation, intermediateWaypoints, boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = body;
+    const { startLocation, endLocation, intermediateWaypoints, boatId, startDate, endDate, useSpeedPlanning, boatSpeed, waypointDensity } = body;
 
     const result = await generateJourneyRoute({
       startLocation,
@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
       endDate,
       useSpeedPlanning,
       boatSpeed,
+      waypointDensity,
     });
 
     if (!result.success) {

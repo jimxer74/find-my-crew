@@ -607,6 +607,10 @@ Before calling generate_journey_route, you MUST have ALL of these:
 6. **endDate** (string, optional): Journey end date in YYYY-MM-DD format
 7. **useSpeedPlanning** (boolean, optional, defaults to true): Whether to calculate leg dates based on boat speed. Defaults to true - speed planning will be used automatically if boat speed is available.
 8. **boatSpeed** (number, optional): Boat average cruising speed in knots. If not provided, will be fetched automatically from boat data.
+9. **waypointDensity** (string, optional, defaults to 'moderate'): Control how many waypoints are created per leg:
+   - 'minimal': High-level planning only - 2 waypoints per leg (start + end ports only). Use for crew exchange planning.
+   - 'moderate': Balanced - max 4 waypoints per leg (start + end + up to 2 intermediate). Default and recommended for most journeys.
+   - 'detailed': Comprehensive routing - max 8 waypoints per leg. Use only when full navigation planning is needed.
 
 **BEFORE calling generate_journey_route:**
 1. Call get_owner_boats to get the boat ID (required!)
@@ -617,8 +621,15 @@ Before calling generate_journey_route, you MUST have ALL of these:
 
 **Example of CORRECT generate_journey_route call:**
 \`\`\`tool_call
-{"name": "generate_journey_route", "arguments": {"boatId": "abc-123-def", "startLocation": {"name": "Panama Canal", "lat": 9.0, "lng": -79.5}, "endLocation": {"name": "Acapulco", "lat": 16.8, "lng": -99.9}, "intermediateWaypoints": [{"name": "Papagayo Gulf", "lat": 10.5, "lng": -85.7}], "startDate": "2026-02-25", "endDate": "2026-04-15"}}
+{"name": "generate_journey_route", "arguments": {"boatId": "abc-123-def", "startLocation": {"name": "Panama Canal", "lat": 9.0, "lng": -79.5}, "endLocation": {"name": "Acapulco", "lat": 16.8, "lng": -99.9}, "intermediateWaypoints": [{"name": "Papagayo Gulf", "lat": 10.5, "lng": -85.7}], "startDate": "2026-02-25", "endDate": "2026-04-15", "waypointDensity": "moderate"}}
 \`\`\`
+
+**CRITICAL: WAYPOINT DENSITY SELECTION**
+- For crew exchange planning (most common use case), use "minimal" or "moderate"
+- "minimal" is best for high-level journey planning with focus on crew exchange points
+- "moderate" is the default and works well for most journeys
+- Only use "detailed" if user specifically requests detailed navigation planning
+- When in doubt, use "moderate" - it provides a good balance
 
 **Example of WRONG generate_journey_route call (DO NOT DO THIS):**
 \`\`\`tool_call
@@ -1505,6 +1516,7 @@ Return ONLY the JSON object, nothing else.`;
         // Default useSpeedPlanning to true if not provided
         const useSpeedPlanning = (args.useSpeedPlanning as boolean | undefined) ?? true;
         const boatSpeed = args.boatSpeed as number | undefined;
+        const waypointDensity = (args.waypointDensity as 'minimal' | 'moderate' | 'detailed' | undefined) || 'moderate';
 
         if (!startLocation || !endLocation || !boatId) {
           results.push({
@@ -1541,6 +1553,7 @@ Return ONLY the JSON object, nothing else.`;
             endDate,
             useSpeedPlanning: useSpeedPlanning && !!speed,
             boatSpeed: speed,
+            waypointDensity,
           });
 
           if (!journeyResult.success) {

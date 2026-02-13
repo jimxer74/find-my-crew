@@ -858,6 +858,11 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           type: 'number',
           description: 'Boat average cruising speed in knots (for speed-based planning)',
         },
+        waypointDensity: {
+          type: 'string',
+          enum: ['minimal', 'moderate', 'detailed'],
+          description: 'Control waypoint density: "minimal" for high-level planning (2 waypoints/leg - crew exchange points only), "moderate" for balanced (max 4/leg), "detailed" for comprehensive routing (max 8/leg). Defaults to "moderate".',
+        },
         risk_level: {
           type: 'array',
           description: 'Optional journey risk level(s). MUST be an array of strings, e.g. ["Offshore sailing"]. Never pass a single string or JSON string.',

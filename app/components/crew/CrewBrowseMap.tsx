@@ -37,8 +37,7 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
-  boat_make: string | null;
-  boat_model: string | null;
+  boat_make_model: string | null;
   owner_name: string | null;
   owner_image_url: string | null;
   min_experience_level: number | null;
@@ -678,8 +677,7 @@ export function CrewBrowseMap({
           boat_type: legData.boat_type,
           boat_image_url: legData.boat_image_url,
           boat_average_speed_knots: legData.boat_average_speed_knots,
-          boat_make: legData.boat_make,
-          boat_model: legData.boat_model,
+          boat_make_model: legData.boat_make_model,
           owner_name: legData.owner_name,
           owner_image_url: legData.owner_image_url,
           min_experience_level: legData.min_experience_level,
@@ -1558,8 +1556,7 @@ export function CrewBrowseMap({
                   boat_type: legData.boat_type,
                   boat_image_url: legData.boat_image_url,
                   boat_average_speed_knots: legData.boat_average_speed_knots,
-                  boat_make: legData.boat_make,
-                  boat_model: legData.boat_model,
+                  boat_make_model: legData.boat_make_model,
                   owner_name: legData.owner_name,
                   owner_image_url: legData.owner_image_url,
                   min_experience_level: legData.min_experience_level,

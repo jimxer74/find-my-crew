@@ -107,8 +107,7 @@ type Leg = {
   boat_type: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
-  boat_make: string | null;
-  boat_model: string | null;
+  boat_make_model: string | null;
   owner_name: string | null;
   owner_image_url: string | null;
   min_experience_level: number | null;
@@ -1446,12 +1445,30 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat</h3>
                   <div className="flex gap-3 items-start">
                     <div className="flex items-center gap-3 flex-shrink-0 relative w-16 h-16 rounded-full">
-                      <Image
-                        src={leg?.boat_image_url || ''}
-                        alt={leg?.boat_name || 'Boat'}
-                        fill
-                        className="object-cover w-16 h-16 rounded-lg"
-                      />
+                      {leg?.boat_image_url ? (
+                        <Image
+                          src={leg.boat_image_url}
+                          alt={leg?.boat_name || 'Boat'}
+                          fill
+                          className="object-cover w-16 h-16 rounded-lg"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center">
+                          <svg
+                            className="w-8 h-8 text-muted-foreground"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                            />
+                          </svg>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col">
                       <p className="text-foreground font-medium font-semibold">
@@ -1461,8 +1478,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         {leg?.boat_type || 'Boat type'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {leg?.boat_make || 'Boat make'}
-                        {leg?.boat_model || 'Boat model'}
+                        {leg?.boat_make_model || 'Boat make/model'}
                       </p>
                     </div>
                    </div>

@@ -8,8 +8,7 @@ type Leg = {
   journey_name?: string;
   boat_name: string;
   boat_image_url: string | null;
-  boat_make: string | null;
-  boat_model: string | null;
+  boat_make_model: string | null;
   owner_name: string | null;
   owner_image_url: string | null;
   journey_images?: string[];
@@ -46,8 +45,7 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
     journey_images: leg.journey_images || [],
     boat_name: leg.boat_name,
     boat_image_url: leg.boat_image_url,
-    boat_make: leg.boat_make,
-    boat_model: leg.boat_model,
+    boat_make_model: leg.boat_make_model,
     skill_match_percentage: leg.skill_match_percentage,
     experience_level_matches: leg.experience_level_matches,
     start_waypoint: leg.start_waypoint,

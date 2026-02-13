@@ -22,6 +22,7 @@ export interface GenerateJourneyInput {
   endDate?: string;
   useSpeedPlanning?: boolean;
   boatSpeed?: number;
+  waypointDensity?: 'minimal' | 'moderate' | 'detailed';
 }
 
 export interface GenerateJourneyResult {
@@ -52,7 +53,7 @@ export interface GenerateJourneyError {
  * Can be called directly from owner service (no HTTP) or from API route.
  */
 export async function generateJourneyRoute(input: GenerateJourneyInput): Promise<GenerateJourneyResult | GenerateJourneyError> {
-  const { startLocation, endLocation, intermediateWaypoints = [], boatId, startDate, endDate, useSpeedPlanning, boatSpeed } = input;
+  const { startLocation, endLocation, intermediateWaypoints = [], boatId, startDate, endDate, useSpeedPlanning, boatSpeed, waypointDensity = 'moderate' } = input;
 
   const startResult = validateLocation(startLocation, 'Start location');
   if (!startResult.valid) {
@@ -121,10 +122,39 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
 - Include start_date and end_date for each leg in the response`
     : '';
 
+  const waypointDensityInstructions = waypointDensity === 'minimal'
+    ? `\n\nWAYPOINT DENSITY: MINIMAL (High-level planning only)
+- Create ONLY crew exchange points (ports, marinas, towns, cities)
+- NO intermediate waypoints between leg start and end
+- Each leg should have exactly 2 waypoints: start port and end port
+- Focus on major ports/cities where crew can join/leave
+- This is for high-level journey planning, not detailed navigation
+- Maximum waypoints per leg: 2 (start + end only)
+- Do NOT add navigation waypoints, routing points, or intermediate stops`
+    : waypointDensity === 'moderate'
+    ? `\n\nWAYPOINT DENSITY: MODERATE (Balanced planning)
+- Primary focus: Crew exchange points (ports, marinas, towns, cities)
+- Include intermediate waypoints ONLY for:
+  * Major routing decisions (e.g., passing through a strait, avoiding dangerous area)
+  * Significant stops where crew might want to join/leave
+  * Major landmarks or islands that define the route
+- Do NOT add waypoints for minor navigation adjustments
+- Maximum waypoints per leg: 4 (start + end + up to 2 intermediate)
+- Prefer fewer waypoints - quality over quantity
+- This is for crew exchange planning, not detailed navigation`
+    : `\n\nWAYPOINT DENSITY: DETAILED (Comprehensive routing)
+- Include crew exchange points AND navigation waypoints
+- Add intermediate waypoints for:
+  * Safe routing around hazards
+  * Navigation waypoints for optimal passage
+  * Interesting stops or landmarks
+- Maximum waypoints per leg: 8
+- Use when detailed navigation planning is needed`;
+
   const prompt = `You are a sailing route planner. Generate a sailing journey with legs between locations.${waypointsInfo}
 
 Start Location: ${validatedStart.name} (approximately ${validatedStart.lat}, ${validatedStart.lng})
-End Location: ${validatedEnd.name} (approximately ${validatedEnd.lat}, ${validatedEnd.lng})${dateInfo}${speedPlanningInstructions}
+End Location: ${validatedEnd.name} (approximately ${validatedEnd.lat}, ${validatedEnd.lng})${dateInfo}${speedPlanningInstructions}${waypointDensityInstructions}
 
 CRITICAL RULES:
 1. Leg START and END waypoints MUST ALWAYS be at:
@@ -135,11 +165,12 @@ CRITICAL RULES:
    - Any location where crew can be exchanged (accessible by land/ferry)
    - NEVER in open ocean or remote sea locations
 
-2. Intermediate waypoints (between start and end of a leg) CAN be:
-   - Anywhere relevant for navigation
-   - Open ocean waypoints for routing
-   - Navigation points, buoys, or landmarks
-   - Used when needed for safe routing or interesting stops
+2. Intermediate waypoints (between start and end of a leg):
+   ${waypointDensity === 'minimal' 
+     ? '- MUST NOT be included - only start and end waypoints allowed'
+     : waypointDensity === 'moderate'
+     ? '- Can ONLY be included for major routing decisions or significant crew exchange points\n   - Do NOT add waypoints for minor navigation adjustments'
+     : '- Can be anywhere relevant for navigation\n   - Open ocean waypoints for routing\n   - Navigation points, buoys, or landmarks\n   - Used when needed for safe routing or interesting stops'}
 
 3. ${allWaypoints.length > 2
     ? `You MUST create legs that visit ALL waypoints in the specified order: ${allWaypoints.map(wp => wp.name).join(' → ')}. Each waypoint must be included as either a start or end point of a leg.`
