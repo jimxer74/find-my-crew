@@ -11,6 +11,7 @@ export interface OwnerComboSearchData {
     startDate: string | null;
     endDate: string | null;
     waypoints: Location[];
+    waypointDensity?: 'minimal' | 'moderate' | 'detailed';
   };
   skipperCrewProfiles: {
     text: string;
@@ -42,6 +43,7 @@ function JourneyDetailsDialog({
     startDate: string;
     endDate: string;
     waypoints: Location[];
+    waypointDensity: 'minimal' | 'moderate' | 'detailed';
   }) => void;
   initialData?: {
     startLocation: Location | null;
@@ -49,6 +51,7 @@ function JourneyDetailsDialog({
     startDate: string;
     endDate: string;
     waypoints: Location[];
+    waypointDensity?: 'minimal' | 'moderate' | 'detailed';
   };
 }) {
   const [startLocation, setStartLocation] = useState<Location | null>(initialData?.startLocation || null);
@@ -56,6 +59,7 @@ function JourneyDetailsDialog({
   const [startDate, setStartDate] = useState<string>(initialData?.startDate || '');
   const [endDate, setEndDate] = useState<string>(initialData?.endDate || '');
   const [waypoints, setWaypoints] = useState<Location[]>(initialData?.waypoints || []);
+  const [waypointDensity, setWaypointDensity] = useState<'minimal' | 'moderate' | 'detailed'>(initialData?.waypointDensity || 'moderate');
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -64,6 +68,7 @@ function JourneyDetailsDialog({
       setStartDate(initialData.startDate || '');
       setEndDate(initialData.endDate || '');
       setWaypoints(initialData.waypoints || []);
+      setWaypointDensity(initialData.waypointDensity || 'moderate');
     }
   }, [isOpen, initialData]);
 
@@ -86,6 +91,7 @@ function JourneyDetailsDialog({
       startDate,
       endDate,
       waypoints,
+      waypointDensity,
     });
   };
 
@@ -249,6 +255,26 @@ function JourneyDetailsDialog({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Waypoint Density Control */}
+          <div className="space-y-2">
+            <label htmlFor="waypoint-density" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
+              Waypoint Density
+            </label>
+            <select
+              id="waypoint-density"
+              value={waypointDensity}
+              onChange={(e) => setWaypointDensity(e.target.value as 'minimal' | 'moderate' | 'detailed')}
+              className="w-full px-3 py-2 min-h-[44px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm"
+            >
+              <option value="minimal">Minimal - High-level planning (2 waypoints/leg, crew exchange points only)</option>
+              <option value="moderate">Moderate - Balanced planning (max 4 waypoints/leg, recommended)</option>
+              <option value="detailed">Detailed - Comprehensive routing (max 8 waypoints/leg, full navigation planning)</option>
+            </select>
+            <p className="text-xs text-gray-500 dark:text-gray-400 text-left">
+              Controls how many waypoints are created per leg. Use "Minimal" for crew exchange planning, "Moderate" for most journeys, or "Detailed" for full navigation planning.
+            </p>
           </div>
         </div>
 
@@ -427,12 +453,14 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
     startDate: string;
     endDate: string;
     waypoints: Location[];
+    waypointDensity: 'minimal' | 'moderate' | 'detailed';
   }>({
     startLocation: null,
     endLocation: null,
     startDate: '',
     endDate: '',
     waypoints: [],
+    waypointDensity: 'moderate',
   });
   const [skipperCrewText, setSkipperCrewText] = useState('');
   const [skipperCrewAiConsent, setSkipperCrewAiConsent] = useState(false);
@@ -484,6 +512,10 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
   };
 
   const handleSubmit = () => {
+    // Only submit if skipper/crew text is provided
+    if (!skipperCrewText.trim()) {
+      return;
+    }
     const data: OwnerComboSearchData = {
       journeyDetails: {
         startLocation: journeyDetails.startLocation,
@@ -491,6 +523,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         startDate: journeyDetails.startDate || null,
         endDate: journeyDetails.endDate || null,
         waypoints: journeyDetails.waypoints,
+        waypointDensity: journeyDetails.waypointDensity,
       },
       skipperCrewProfiles: {
         text: skipperCrewText,
@@ -508,6 +541,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         startDate: '',
         endDate: '',
         waypoints: [],
+        waypointDensity: 'moderate',
       });
     } else {
       setSkipperCrewText('');
@@ -544,7 +578,8 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
           isOpen={isSkipperCrewDialogOpen}
           onClose={() => {
             setIsSkipperCrewDialogOpen(false);
-            if (journeyDetails.startLocation && journeyDetails.endLocation) {
+            // Auto-submit if skipper/crew text is provided
+            if (skipperCrewText.trim()) {
               handleSubmit();
             }
           }}
@@ -552,6 +587,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
             setSkipperCrewText(text);
             setSkipperCrewAiConsent(consent);
             setIsSkipperCrewDialogOpen(false);
+            // Always submit when saving skipper/crew details
             handleSubmit();
           }}
           title={t('skipperCrewDialogTitle')}
@@ -646,7 +682,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!hasAnyValue}
+              disabled={!skipperCrewText.trim()}
               className="h-14 px-6 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 rounded-r-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -708,12 +744,14 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     startDate: string;
     endDate: string;
     waypoints: Location[];
+    waypointDensity: 'minimal' | 'moderate' | 'detailed';
   }>({
     startLocation: null,
     endLocation: null,
     startDate: '',
     endDate: '',
     waypoints: [],
+    waypointDensity: 'moderate',
   });
   const [skipperCrewText, setSkipperCrewText] = useState('');
   const [skipperCrewAiConsent, setSkipperCrewAiConsent] = useState(false);
@@ -733,6 +771,10 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   }, [isFocusedControlled, isWizardOpen]);
 
   const handleWizardSubmit = () => {
+    // Only submit if skipper/crew text is provided
+    if (!skipperCrewText.trim()) {
+      return;
+    }
     const data: OwnerComboSearchData = {
       journeyDetails: {
         startLocation: journeyDetails.startLocation,
@@ -740,6 +782,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
         startDate: journeyDetails.startDate || null,
         endDate: journeyDetails.endDate || null,
         waypoints: journeyDetails.waypoints,
+        waypointDensity: journeyDetails.waypointDensity,
       },
       skipperCrewProfiles: {
         text: skipperCrewText,
@@ -756,17 +799,15 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
       startDate: '',
       endDate: '',
       waypoints: [],
+      waypointDensity: 'moderate',
     });
     setSkipperCrewText('');
     setSkipperCrewAiConsent(false);
   };
 
   const canGoToNextPage = () => {
-    // Page 1: Journey details - require at least start and end location
-    if (currentPage === 1) {
-      return journeyDetails.startLocation && journeyDetails.startLocation.lat !== 0 && journeyDetails.startLocation.lng !== 0 &&
-             journeyDetails.endLocation && journeyDetails.endLocation.lat !== 0 && journeyDetails.endLocation.lng !== 0;
-    }
+    // Page 1: Journey details - optional, can proceed without filling them
+    // Allow proceeding to next page even if journey details are not filled
     return true;
   };
 
@@ -850,7 +891,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                   <div className="grid grid-cols-1 gap-4">
                     <LocationAutocomplete
                       id="mobile_journey_start_location"
-                      label="Start Location *"
+                      label="Start Location"
                       value={journeyDetails.startLocation?.name || ''}
                       onChange={(location) => {
                         setJourneyDetails({ ...journeyDetails, startLocation: location });
@@ -859,13 +900,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                         setJourneyDetails({ ...journeyDetails, startLocation: { name: value, lat: 0, lng: 0 } });
                       }}
                       placeholder="e.g., Barcelona, Spain"
-                      required
                       excludeCruisingRegions={true}
                       className="[&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_label]:text-left"
                     />
                     <LocationAutocomplete
                       id="mobile_journey_end_location"
-                      label="End Location *"
+                      label="End Location"
                       value={journeyDetails.endLocation?.name || ''}
                       onChange={(location) => {
                         setJourneyDetails({ ...journeyDetails, endLocation: location });
@@ -874,7 +914,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                         setJourneyDetails({ ...journeyDetails, endLocation: { name: value, lat: 0, lng: 0 } });
                       }}
                       placeholder="e.g., Palma, Mallorca"
-                      required
                       excludeCruisingRegions={true}
                       className="[&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_label]:text-left"
                     />
@@ -967,6 +1006,26 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                         ))}
                       </div>
                     )}
+                  </div>
+
+                  {/* Waypoint Density Control */}
+                  <div className="space-y-2">
+                    <label htmlFor="mobile_waypoint-density" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
+                      Waypoint Density
+                    </label>
+                    <select
+                      id="mobile_waypoint-density"
+                      value={journeyDetails.waypointDensity}
+                      onChange={(e) => setJourneyDetails({ ...journeyDetails, waypointDensity: e.target.value as 'minimal' | 'moderate' | 'detailed' })}
+                      className="w-full px-3 py-2 min-h-[44px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-amber-400 text-sm"
+                    >
+                      <option value="minimal">Minimal - High-level planning (2 waypoints/leg, crew exchange points only)</option>
+                      <option value="moderate">Moderate - Balanced planning (max 4 waypoints/leg, recommended)</option>
+                      <option value="detailed">Detailed - Comprehensive routing (max 8 waypoints/leg, full navigation planning)</option>
+                    </select>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 text-left">
+                      Controls how many waypoints are created per leg. Use "Minimal" for crew exchange planning, "Moderate" for most journeys, or "Detailed" for full navigation planning.
+                    </p>
                   </div>
                 </div>
               )}

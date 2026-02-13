@@ -65,6 +65,7 @@ export default function ProposeJourneyPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [useSpeedPlanning, setUseSpeedPlanning] = useState(false);
+  const [waypointDensity, setWaypointDensity] = useState<'minimal' | 'moderate' | 'detailed'>('moderate');
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function ProposeJourneyPage() {
     setStartDate('');
     setEndDate('');
     setUseSpeedPlanning(false);
+    setWaypointDensity('moderate');
     setGeneratedJourney(null);
     setAiPrompt(null);
     setError(null);
@@ -174,6 +176,7 @@ export default function ProposeJourneyPage() {
           endDate: endDate || null,
           useSpeedPlanning,
           boatSpeed: selectedBoatSpeed || null,
+          waypointDensity,
         }),
       });
 
@@ -486,6 +489,29 @@ export default function ProposeJourneyPage() {
                       {!endDate && 'End date is required.'}
                     </p>
                   )}
+                </div>
+
+                {/* Waypoint Density Control */}
+                <div className="space-y-2">
+                  <label htmlFor="proposal_waypoint_density" className="block text-sm font-medium text-foreground">
+                    Waypoint Density
+                  </label>
+                  <select
+                    id="proposal_waypoint_density"
+                    value={waypointDensity}
+                    onChange={(e) => {
+                      setWaypointDensity(e.target.value as 'minimal' | 'moderate' | 'detailed');
+                      setError(null);
+                    }}
+                    className="w-full px-3 py-2 min-h-[44px] border border-border bg-input-background text-foreground rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-sm"
+                  >
+                    <option value="minimal">Minimal - High-level planning (2 waypoints/leg, crew exchange points only)</option>
+                    <option value="moderate">Moderate - Balanced planning (max 4 waypoints/leg, recommended)</option>
+                    <option value="detailed">Detailed - Comprehensive routing (max 8 waypoints/leg, full navigation planning)</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">
+                    Controls how many waypoints are created per leg. Use "Minimal" for crew exchange planning, "Moderate" for most journeys, or "Detailed" for full navigation planning.
+                  </p>
                 </div>
 
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">

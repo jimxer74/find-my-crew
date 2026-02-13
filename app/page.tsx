@@ -502,6 +502,9 @@ export default function WelcomePage() {
     if (data.journeyDetails.waypoints.length > 0) {
       params.set('waypoints', JSON.stringify(data.journeyDetails.waypoints));
     }
+    if (data.journeyDetails.waypointDensity) {
+      params.set('waypointDensity', data.journeyDetails.waypointDensity);
+    }
     
     // Skipper/Crew profiles
     if (data.skipperCrewProfiles.text) {

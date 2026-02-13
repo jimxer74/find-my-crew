@@ -898,9 +898,10 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     const waypointsParam = searchParams?.get('waypoints');
     const startDateParam = searchParams?.get('startDate');
     const endDateParam = searchParams?.get('endDate');
+    const waypointDensityParam = searchParams?.get('waypointDensity');
     
     let journeyDetailsText = '';
-    if (startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam) {
+    if (startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam || waypointDensityParam) {
       const journeyParts: string[] = [];
       
       try {
@@ -926,6 +927,14 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
               journeyParts.push(`Waypoints: ${waypointNames}`);
             }
           }
+        }
+        if (waypointDensityParam && ['minimal', 'moderate', 'detailed'].includes(waypointDensityParam)) {
+          const densityLabels = {
+            minimal: 'Minimal (high-level planning, crew exchange points only)',
+            moderate: 'Moderate (balanced planning, recommended)',
+            detailed: 'Detailed (comprehensive routing, full navigation planning)'
+          };
+          journeyParts.push(`Waypoint density preference: ${densityLabels[waypointDensityParam as keyof typeof densityLabels]}`);
         }
         
         if (journeyParts.length > 0) {
