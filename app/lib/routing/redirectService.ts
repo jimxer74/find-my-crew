@@ -14,7 +14,6 @@ class RedirectService {
     const checks = [
       () => this.checkPendingOnboardingSessions(context),
       () => this.checkProfileCompletionTriggered(context),
-      () => this.checkExistingConversations(context),
       () => this.checkSourceBasedRedirects(context),
       () => this.checkRoleBasedRedirects(context),
       () => this.checkNewUserRedirects(context),
@@ -152,7 +151,7 @@ class RedirectService {
     // Priority: owner > crew (if user has both roles)
     if (context.profile.roles.includes('owner')) {
       return {
-        path: '/owner/journeys',
+        path: '/owner/dashboard',
         reason: 'role_owner',
         priority: 5,
       };
