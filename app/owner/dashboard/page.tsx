@@ -17,10 +17,7 @@ export default function OwnerDashboard() {
     }
 
     if (user && !authLoading) {
-      // Redirect to boats page as default for owner dashboard
-      // This is a simple redirect, but we could use redirectAfterAuth for consistency
-      // However, since this is specifically the dashboard route, we'll keep it simple
-      router.push('/owner/boats');
+      router.push('/owner/journeys');
     }
   }, [user, authLoading, router]);
 

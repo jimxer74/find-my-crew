@@ -41,20 +41,6 @@ export function useProfile(): UseProfileReturn {
   const [error, setError] = useState<Error | null>(null);
   const [isValidUser, setIsValidUser] = useState(false);
 
-  // Debounced profile update handler
-  const handleProfileUpdate = useCallback(() => {
-    if (updateTimeout) {
-      clearTimeout(updateTimeout);
-    }
-    updateTimeout = setTimeout(() => {
-      if (user) {
-        // Clear cache entry to force fresh data fetch
-        profileCache.delete(user.id);
-        fetchProfile(user.id);
-      }
-    }, 500); // 500ms debounce for better performance
-  }, [user]);
-
   // Check if user exists in profiles table
   const checkUserExists = useCallback(async (userId: string): Promise<boolean> => {
     try {
@@ -151,6 +137,28 @@ export function useProfile(): UseProfileReturn {
       setLoading(false);
     }
   }, [checkUserExists, fetchProfileFromDB]);
+
+  // Profile update handler: immediate refetch when detail.immediate (e.g. after onboarding), else debounced
+  const handleProfileUpdate = useCallback((event?: Event) => {
+    if (updateTimeout) {
+      clearTimeout(updateTimeout);
+      updateTimeout = null;
+    }
+    const detail = (event as CustomEvent<{ immediate?: boolean }> | undefined)?.detail;
+    const immediate = detail?.immediate === true;
+
+    if (user) {
+      profileCache.delete(user.id);
+      if (immediate) {
+        fetchProfile(user.id);
+      } else {
+        updateTimeout = setTimeout(() => {
+          if (user) fetchProfile(user.id);
+          updateTimeout = null;
+        }, 500);
+      }
+    }
+  }, [user, fetchProfile]);
 
   // Initial fetch and user change handling
   useEffect(() => {

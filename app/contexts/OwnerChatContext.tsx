@@ -688,13 +688,13 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           .single();
         
         if (profileData) {
-          updateOnboardingState('boat_pending');
-          // Dispatch profileUpdated event to refresh profile state
+          await updateOnboardingState('boat_pending');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('profileUpdated', {
               detail: {
                 updatedFields: ['roles', 'profile_completion_percentage'],
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                immediate: true,
               }
             }));
           }
@@ -702,25 +702,17 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
         }
       } else if (data.boatCreated === true) {
-        updateOnboardingState('journey_pending');
-        // Dispatch profileUpdated event to refresh profile state
+        await updateOnboardingState('journey_pending');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: [],
-              timestamp: Date.now()
-            }
+            detail: { updatedFields: [], timestamp: Date.now(), immediate: true }
           }));
         }
       } else if (data.journeyCreated === true) {
-        updateOnboardingState('completed');
-        // Dispatch profileUpdated event to refresh profile state
+        await updateOnboardingState('completed');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: [],
-              timestamp: Date.now()
-            }
+            detail: { updatedFields: [], timestamp: Date.now(), immediate: true }
           }));
         }
       }
@@ -799,13 +791,13 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           .single();
         
         if (profileData) {
-          updateOnboardingState('boat_pending');
-          // Dispatch profileUpdated event to refresh profile state
+          await updateOnboardingState('boat_pending');
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('profileUpdated', {
               detail: {
                 updatedFields: ['roles', 'profile_completion_percentage'],
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                immediate: true,
               }
             }));
           }
@@ -813,25 +805,17 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
         }
       } else if (data.boatCreated === true) {
-        updateOnboardingState('journey_pending');
-        // Dispatch profileUpdated event to refresh profile state
+        await updateOnboardingState('journey_pending');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: [],
-              timestamp: Date.now()
-            }
+            detail: { updatedFields: [], timestamp: Date.now(), immediate: true }
           }));
         }
       } else if (data.journeyCreated === true) {
-        updateOnboardingState('completed');
-        // Dispatch profileUpdated event to refresh profile state
+        await updateOnboardingState('completed');
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('profileUpdated', {
-            detail: {
-              updatedFields: [],
-              timestamp: Date.now()
-            }
+            detail: { updatedFields: [], timestamp: Date.now(), immediate: true }
           }));
         }
       }

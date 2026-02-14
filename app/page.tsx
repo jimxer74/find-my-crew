@@ -163,36 +163,41 @@ export default function WelcomePage() {
   const [onboardingState, setOnboardingState] = useState<string>('signup_pending');
   const [ownerOnboardingState, setOwnerOnboardingState] = useState<string>('signup_pending');
 
-  // Check if user is logged in and redirect to role-specific homepage
+  // Check if user is logged in and redirect to role-specific homepage (with one retry on failure)
   useEffect(() => {
-    async function checkUserAndRedirect() {
-      // Wait for auth to finish loading
+    let cancelled = false;
+    async function checkUserAndRedirect(attempt = 1) {
       if (authLoading) return;
-
-      // If user is not logged in, continue showing welcome page
       if (!user) {
         setIsCheckingRole(false);
         return;
       }
 
       try {
-        // Check if user should stay on homepage (pending onboarding)
         const shouldStay = await shouldStayOnHomepage(user.id);
+        if (cancelled) return;
         if (shouldStay) {
           setIsCheckingRole(false);
           return;
         }
-
-        // Otherwise redirect based on context
         await redirectAfterAuth(user.id, 'root', router);
       } catch (error) {
         console.error('[RootRoute] Failed to determine redirect:', error);
+        if (cancelled || attempt >= 2) {
+          setIsCheckingRole(false);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 600));
+        if (cancelled) return;
+        await checkUserAndRedirect(2);
       }
-
-      setIsCheckingRole(false);
+      if (!cancelled) setIsCheckingRole(false);
     }
 
     checkUserAndRedirect();
+    return () => {
+      cancelled = true;
+    };
   }, [user, authLoading, router]);
 
   // Check for existing conversation on mount - load from API instead of localStorage

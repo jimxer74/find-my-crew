@@ -151,7 +151,7 @@ class RedirectService {
     // Priority: owner > crew (if user has both roles)
     if (context.profile.roles.includes('owner')) {
       return {
-        path: '/owner/dashboard',
+        path: '/owner/journeys',
         reason: 'role_owner',
         priority: 5,
       };

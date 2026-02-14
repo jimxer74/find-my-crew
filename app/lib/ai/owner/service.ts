@@ -210,8 +210,12 @@ ${getSkillsStructure()}`;
     case 'add_boat':
       stateAndGoal = `## CURRENT STEP: Add boat
 **State:** Profile created. Boat: none. Journey: none.
-**Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → then gather name, home_port if needed → present summary → when user confirms, call \`create_boat\` with name, type, make_model, capacity (and optional specs).`;
-      stepInstructions = `Required boat fields: name, type, make_model, capacity. User confirmation = "yes", "looks good", "confirm", etc. → call create_boat immediately.`;
+**Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.`;
+      stepInstructions = `**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. Required fields: name, type, make_model, capacity (number). Use data from fetch_boat_details_from_sailboatdata and your summary.`;
+      extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Example (replace with actual values from your summary and fetch_boat_details result):
+\`\`\`tool_call
+{"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6}}
+\`\`\``;
       break;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
@@ -1867,6 +1871,19 @@ export async function ownerChat(
     log('🔧 PARSED TOOL CALLS:', toolCalls.length);
 
     if (toolCalls.length === 0) {
+      // Add boat step: if user confirmed and AI showed a boat summary but didn't call create_boat, nudge once
+      const lastUserMessage = request.message.trim().toLowerCase();
+      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead)\b/.test(lastUserMessage));
+      const looksLikeBoatSummary = (/\b(name|type|capacity|make|model):\s*\S+/i.test(result.text) || /boat.*summary|here('s| is) (your|the) boat/i.test(result.text)) && !/create_boat|tool_call/.test(result.text);
+      if (currentStep === 'add_boat' && looksLikeConfirmation && looksLikeBoatSummary) {
+        log('⚠️ Add boat: user confirmed but no create_boat call - nudging AI');
+        currentMessages.push(
+          { role: 'assistant', content: result.text },
+          { role: 'user', content: 'The user confirmed. Call the create_boat tool now with the boat details you just summarized (name, type, make_model, capacity). Use valid JSON in a tool_call block.' }
+        );
+        continue;
+      }
+
       // Check if AI tried to call a tool but failed to parse
       const attemptedToolCall = /(?:tool_call|generate_journey_route|create_boat|create_journey|update_user_profile)/i.test(result.text);
       const hasToolCallSyntax = /```(?:tool_calls?|tool_code)/i.test(result.text) || /<tool_call>/i.test(result.text);
