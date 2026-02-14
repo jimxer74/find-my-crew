@@ -198,7 +198,8 @@ function buildOwnerPromptForStep(
     case 'create_profile':
       stateAndGoal = `## CURRENT STEP: Create profile
 **State:** Profile not created yet. Boat: none. Journey: none.
-**Goal:** Gather full_name, user_description, sailing_experience (and optionally risk_level, skills). Then call \`update_user_profile\` with **roles: ['owner']** (required). When the user gives their full name, include [OWNER_NAME: Their Full Name] in your message.`;
+**Goal:** Gather full_name, user_description, sailing_experience (and optionally risk_level, skills). Then call \`update_user_profile\` with **roles: ['owner']** (required). When the user gives their full name, include [OWNER_NAME: Their Full Name] in your message.
+**AFTER PROFILE IS CREATED:** You MUST propose the next step: add a boat. In [SUGGESTIONS] include e.g. "Add your boat" or "Let's add your boat so we can create journeys."`;
       stepInstructions = userInfo ? `**From signup/OAuth:**\n${userInfo}\n` : '';
       extra = `## SKILLS (optional)
 Use ONLY exact skill names from config. Format in profile: [{"skill_name": "exact_name", "description": "..."}]. Skills optional.
@@ -210,8 +211,10 @@ ${getSkillsStructure()}`;
     case 'add_boat':
       stateAndGoal = `## CURRENT STEP: Add boat
 **State:** Profile created. Boat: none. Journey: none.
-**Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.`;
-      stepInstructions = `**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. Required fields: name, type, make_model, capacity (number). Use data from fetch_boat_details_from_sailboatdata and your summary.`;
+**Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.
+**AFTER BOAT IS CREATED:** You MUST propose the next step: create a journey. In [SUGGESTIONS] include e.g. "Create your first journey" or "Let's plan your journey and add legs."`;
+      stepInstructions = `**READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
+**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. Required fields: name, type, make_model, capacity (number). Use data from fetch_boat_details_from_sailboatdata and your summary.`;
       extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Example (replace with actual values from your summary and fetch_boat_details result):
 \`\`\`tool_call
 {"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6}}
@@ -220,7 +223,8 @@ ${getSkillsStructure()}`;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
-**Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate, endDate, waypointDensity ("minimal" or "moderate"). Do not call get_owner_boats—boat id is above.`;
+**Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate, endDate, waypointDensity ("minimal" or "moderate"). Do not call get_owner_boats—boat id is above.
+**AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys" or "Invite crew to your legs."`;
       stepInstructions = `generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.`;
       break;
     case 'completed':
@@ -244,7 +248,9 @@ ${extra ? `\n${extra}` : ''}
 
 ## RULES
 - Be concise. One or two questions at a time. Confirm before creating (profile/boat/journey).
-- At the end, add [SUGGESTIONS] with 1–2 suggested next actions or values for missing fields. [/SUGGESTIONS]
+- **Use conversation history:** Before asking for any detail, check if the user already provided it earlier in the conversation (e.g. boat name, make/model, profile info). If they did, use that information and do not ask again—proceed to the next action (e.g. look up boat, show summary, or create).
+- **ALWAYS propose the next onboarding step:** After completing the current step (profile created, boat created, or journey created), your [SUGGESTIONS] MUST include one suggestion that moves the user to the next step (e.g. after profile → "Add your boat"; after boat → "Create your first journey"; after journey → "View your journeys" or "Invite crew"). Never end with only generic tips—always offer the concrete next step in the flow.
+- At the end of every response, add [SUGGESTIONS] with 1–2 items: at least one must be the next step in the flow when the current step is complete; the other can be a value for a missing field or a short tip. [/SUGGESTIONS]
 - Do not show tool_call JSON to the user; describe in plain language.`;
 }
 
@@ -1871,11 +1877,12 @@ export async function ownerChat(
     log('🔧 PARSED TOOL CALLS:', toolCalls.length);
 
     if (toolCalls.length === 0) {
-      // Add boat step: if user confirmed and AI showed a boat summary but didn't call create_boat, nudge once
+      // Add boat step: if user confirmed and AI either showed a boat summary or claimed boat was created (without calling create_boat), nudge once
       const lastUserMessage = request.message.trim().toLowerCase();
-      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead)\b/.test(lastUserMessage));
+      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead)\b/.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bconfirm\b.*\bboat\b/i.test(lastUserMessage));
       const looksLikeBoatSummary = (/\b(name|type|capacity|make|model):\s*\S+/i.test(result.text) || /boat.*summary|here('s| is) (your|the) boat/i.test(result.text)) && !/create_boat|tool_call/.test(result.text);
-      if (currentStep === 'add_boat' && looksLikeConfirmation && looksLikeBoatSummary) {
+      const looksLikeBoatCreatedWithoutTool = /(?:created successfully|boat profile.*created|your boat.*has been created|boat has been created)/i.test(result.text) && !/create_boat|tool_call/.test(result.text);
+      if (currentStep === 'add_boat' && looksLikeConfirmation && (looksLikeBoatSummary || looksLikeBoatCreatedWithoutTool)) {
         log('⚠️ Add boat: user confirmed but no create_boat call - nudging AI');
         currentMessages.push(
           { role: 'assistant', content: result.text },

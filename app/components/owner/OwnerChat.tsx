@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerMessage, PendingAction } from '@/app/lib/ai/owner/types';
 import { SignupModal } from '@/app/components/SignupModal';
@@ -391,8 +390,9 @@ export default function OwnerChat() {
                 You&apos;re all set. View your boat and journey details in the owner section.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
-                <Link
-                  href="/owner/boats"
+                <button
+                  type="button"
+                  onClick={() => router.push('/owner/boats')}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
                 >
                   <svg
@@ -407,9 +407,10 @@ export default function OwnerChat() {
                     <path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                   </svg>
                   View Boat Details
-                </Link>
-                <Link
-                  href="/owner/journeys"
+                </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/owner/journeys')}
                   className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
                 >
                   <svg
@@ -424,7 +425,7 @@ export default function OwnerChat() {
                     <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
                   </svg>
                   View Journey Details
-                </Link>
+                </button>
               </div>
             </div>
           )}

@@ -31,6 +31,7 @@ export default function JourneysPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { profile, loading: profileLoading } = useProfile();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -44,6 +45,17 @@ export default function JourneysPage() {
       loadJourneys();
     }
   }, [user, authLoading, router, profile, profileLoading]);
+
+  // Prevent infinite loading: after 8s allow page to render (FeatureGate will handle access)
+  useEffect(() => {
+    if (!user) return;
+    const t = window.setTimeout(() => {
+      setLoadingTimeout(true);
+      setLoading(false);
+      setHasOwnerRole((prev) => (prev === null ? false : prev));
+    }, 8000);
+    return () => clearTimeout(t);
+  }, [user]);
 
   const checkOwnerRole = () => {
     // Don't set role to false if profile is still loading
@@ -211,7 +223,8 @@ export default function JourneysPage() {
     }
   };
 
-  if (authLoading || loading || profileLoading || hasOwnerRole === null) {
+  const stillLoading = !loadingTimeout && (authLoading || loading || profileLoading || hasOwnerRole === null);
+  if (stillLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">{tCommon('loading')}</div>

@@ -12,7 +12,6 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
 import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { useProfile } from '@/app/lib/profile/useProfile';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;
@@ -37,7 +36,7 @@ function getInitials(name: string): string {
 
 
 export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { userRoles, roleLoading } = useUserRoles();
   const router = useRouter();
   const pathname = usePathname();
@@ -105,11 +104,8 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
 
   
   const handleLogout = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
     setIsOpen(false);
-    router.push('/');
-    router.refresh();
+    await signOut();
   };
 
   // Note: User roles are now handled by UserRolesContext, removing duplicate logic
@@ -190,7 +186,7 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
   const t = useTranslations('navigation');
   const tAuth = useTranslations('auth');
   const tSettings = useTranslations('settings');
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const { userRoles } = useUserRoles();
   const router = useRouter();
   const pathname = usePathname();
@@ -199,11 +195,8 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
   // Note: User roles are now handled by UserRolesContext, removing duplicate logic
 
   const handleLogout = async () => {
-    const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
     onClose?.();
-    router.push('/');
-    router.refresh();
+    await signOut();
   };
 
   // Note: User roles are now handled by UserRolesContext, removing duplicate logic

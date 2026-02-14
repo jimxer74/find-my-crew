@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { ownerChat } from '@/app/lib/ai/owner/service';
 import { OwnerChatRequest } from '@/app/lib/ai/owner/types';
+import { getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 
 // Debug logging helper
 const DEBUG = true;
@@ -122,6 +122,37 @@ export async function POST(request: NextRequest) {
       boatCreated: response.boatCreated,
       journeyCreated: response.journeyCreated,
     });
+
+    // Persist onboarding_state server-side so DB stays correct even if client update fails (e.g. cookie)
+    if (body.sessionId && (response.profileCreated || response.boatCreated || response.journeyCreated)) {
+      let newState: string | null = null;
+      if (response.journeyCreated) {
+        newState = 'completed';
+      } else if (response.boatCreated) {
+        newState = 'journey_pending';
+      } else if (response.profileCreated) {
+        newState = 'boat_pending';
+      }
+      if (newState) {
+        try {
+          const serviceClient = getSupabaseServiceRoleClient();
+          const { error: updateErr } = await serviceClient
+            .from('owner_sessions')
+            .update({
+              onboarding_state: newState,
+              last_active_at: new Date().toISOString(),
+            })
+            .eq('session_id', body.sessionId);
+          if (updateErr) {
+            console.error('[API Owner Chat Route] Failed to persist onboarding_state:', updateErr);
+          } else {
+            log('Persisted onboarding_state to', newState);
+          }
+        } catch (e) {
+          console.error('[API Owner Chat Route] Error persisting onboarding_state:', e);
+        }
+      }
+    }
 
     log('=== Owner chat completed successfully ===');
     return NextResponse.json(response);

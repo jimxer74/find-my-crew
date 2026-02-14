@@ -53,7 +53,11 @@ export function FeatureGate({
   }, [user, profile]);
 
   if (loading) {
-    return null; // Or a loading spinner
+    return (
+      <div className="min-h-[200px] flex items-center justify-center bg-background">
+        <span className="text-muted-foreground">Loading…</span>
+      </div>
+    );
   }
 
   const hasAccess = hasFeatureAccess(profileStatus, feature);

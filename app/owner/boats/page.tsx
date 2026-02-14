@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -25,6 +25,20 @@ export default function BoatsPage() {
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
   const [hasOwnerRole, setHasOwnerRole] = useState<boolean | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  const loadBoats = useCallback(async () => {
+    if (!user?.id) return;
+    const supabase = getSupabaseBrowserClient();
+    const { data, error } = await supabase
+      .from('boats')
+      .select('*')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false });
+    if (error) console.error('Error loading boats:', error);
+    else setBoats(data || []);
+    setLoading(false);
+  }, [user?.id]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -33,37 +47,35 @@ export default function BoatsPage() {
     }
 
     if (user) {
-      checkOwnerRole();
-      loadBoats();
+      let cancelled = false;
+      setLoading(true);
+      const timeoutId = window.setTimeout(() => {
+        if (cancelled) return;
+        setLoadingTimeout(true);
+        setLoading(false);
+        setHasOwnerRole((prev) => (prev === null ? false : prev));
+      }, 8000);
+
+      Promise.all([
+        checkProfile(user.id).then((status) => {
+          if (!cancelled) setHasOwnerRole(status.exists && status.roles.includes('owner'));
+        }),
+        loadBoats(),
+      ]).finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+          clearTimeout(timeoutId);
+        }
+      });
+
+      return () => {
+        cancelled = true;
+        clearTimeout(timeoutId);
+      };
     }
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, loadBoats]);
 
-  const checkOwnerRole = async () => {
-    if (!user) {
-      setHasOwnerRole(false);
-      return;
-    }
-    const status = await checkProfile(user.id);
-    setHasOwnerRole(status.exists && status.roles.includes('owner'));
-  };
-
-  const loadBoats = async () => {
-    const supabase = getSupabaseBrowserClient();
-    const { data, error } = await supabase
-      .from('boats')
-      .select('*')
-      .eq('owner_id', user?.id)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error loading boats:', error);
-    } else {
-      setBoats(data || []);
-    }
-    setLoading(false);
-  };
-
-  if (authLoading || loading || hasOwnerRole === null) {
+  if (!loadingTimeout && (authLoading || loading || hasOwnerRole === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">{tCommon('loading')}</div>

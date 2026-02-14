@@ -21,7 +21,7 @@ type UserData = {
 export default function PrivacySettingsPage() {
   const t = useTranslations('settings.privacy');
   const tCommon = useTranslations('common');
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
@@ -217,10 +217,8 @@ export default function PrivacySettingsPage() {
         throw new Error(data.error || 'Failed to delete account');
       }
 
-      // Sign out and redirect
-      const supabase = getSupabaseBrowserClient();
-      await supabase.auth.signOut();
-      router.push('/');
+      // Sign out and redirect to root
+      await signOut();
     } catch (err: any) {
       setError(err.message || 'Failed to delete account. Please try again.');
       setIsDeleting(false);
