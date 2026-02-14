@@ -913,13 +913,23 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       const journeyParts: string[] = [];
       
       try {
+        const formatLocationWithCoords = (loc: { name?: string; lat?: number; lng?: number }) => {
+          const name = loc?.name || '';
+          const lat = typeof loc?.lat === 'number' && !Number.isNaN(loc.lat) ? loc.lat : null;
+          const lng = typeof loc?.lng === 'number' && !Number.isNaN(loc.lng) ? loc.lng : null;
+          if (lat != null && lng != null && (lat !== 0 || lng !== 0)) {
+            return `${name} (lat ${lat}, lng ${lng})`;
+          }
+          return name;
+        };
+
         if (startLocationParam) {
           const startLoc = JSON.parse(startLocationParam);
-          journeyParts.push(`Start location: ${startLoc.name}`);
+          journeyParts.push(`Start location: ${formatLocationWithCoords(startLoc)}`);
         }
         if (endLocationParam) {
           const endLoc = JSON.parse(endLocationParam);
-          journeyParts.push(`End location: ${endLoc.name}`);
+          journeyParts.push(`End location: ${formatLocationWithCoords(endLoc)}`);
         }
         if (startDateParam) {
           journeyParts.push(`Start date: ${startDateParam}`);
@@ -930,9 +940,11 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         if (waypointsParam) {
           const waypoints = JSON.parse(waypointsParam);
           if (Array.isArray(waypoints) && waypoints.length > 0) {
-            const waypointNames = waypoints.map((wp: any) => wp.name).filter(Boolean).join(', ');
-            if (waypointNames) {
-              journeyParts.push(`Waypoints: ${waypointNames}`);
+            const waypointStrings = waypoints
+              .filter((wp: any) => wp?.name)
+              .map((wp: any) => formatLocationWithCoords(wp));
+            if (waypointStrings.length > 0) {
+              journeyParts.push(`Waypoints: ${waypointStrings.join(', ')}`);
             }
           }
         }

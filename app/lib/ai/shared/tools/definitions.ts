@@ -799,7 +799,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'generate_journey_route',
     description:
-      'Generate a sailing journey route with legs and waypoints using AI. Use this when user describes a route (start location, end location, waypoints, dates). Returns structured journey data with legs. Can handle speed-based planning if boat speed is provided.',
+      'Generate a sailing journey route with legs and waypoints using AI. For any journey that has a start and end location (e.g. Jamaica to San Blas), use this tool with startLocation, endLocation, boatId; it creates the journey and legs in one go. Use this when user describes a route (start location, end location, waypoints, dates). You must supply approximate lat/lng for each location from your geography knowledge—never ask the user for coordinates. Returns structured journey data with legs and an AI-assessed journey risk level (Coastal sailing, Offshore sailing, or Extreme sailing) which is used when creating the journey. Can handle speed-based planning if boat speed is provided.',
     access: 'owner',
     category: 'data',
     parameters: {
@@ -807,27 +807,27 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {
         startLocation: {
           type: 'object',
-          description: 'Start location with name and coordinates',
+          description: 'Start location: name and lat/lng. If the user provided coordinates (e.g. "Start location: X (lat 18, lng -76)"), use those; otherwise supply from your geography knowledge. Do NOT ask the user for coordinates.',
           properties: {
             name: { type: 'string' },
-            lat: { type: 'number' },
-            lng: { type: 'number' },
+            lat: { type: 'number', description: 'Approximate latitude (you supply from geography knowledge)' },
+            lng: { type: 'number', description: 'Approximate longitude (you supply from geography knowledge)' },
           },
           required: ['name', 'lat', 'lng'],
         },
         endLocation: {
           type: 'object',
-          description: 'End location with name and coordinates',
+          description: 'End location: name and lat/lng. If the user provided coordinates (e.g. "End location: X (lat 44, lng -63)"), use those; otherwise supply from your geography knowledge. Do NOT ask the user for coordinates.',
           properties: {
             name: { type: 'string' },
-            lat: { type: 'number' },
-            lng: { type: 'number' },
+            lat: { type: 'number', description: 'Approximate latitude (you supply from geography knowledge)' },
+            lng: { type: 'number', description: 'Approximate longitude (you supply from geography knowledge)' },
           },
           required: ['name', 'lat', 'lng'],
         },
         intermediateWaypoints: {
           type: 'array',
-          description: 'Optional intermediate waypoints',
+          description: 'Optional intermediate waypoints. If the user provided coordinates (e.g. "Waypoints: X (lat 23, lng -76), Y (lat 39, lng -76)"), use those; otherwise supply from your knowledge. Do not ask the user for coordinates.',
           items: {
             type: 'object',
             properties: {
@@ -1060,7 +1060,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'create_journey',
     description:
-      'Create a new journey for an owner\'s boat. Requires boat_id. IMPORTANT: Before calling this, use generate_journey_route to plan the journey with legs and waypoints if user provided route information.',
+      'Create a new journey for an owner\'s boat. Requires boat_id. Only for creating a journey without route/legs. For start-to-end routes, use generate_journey_route instead. IMPORTANT: Before calling this, use generate_journey_route to plan the journey with legs and waypoints if user provided route information.',
     access: 'owner',
     category: 'action',
     parameters: {

@@ -25,11 +25,16 @@ export interface GenerateJourneyInput {
   waypointDensity?: 'minimal' | 'moderate' | 'detailed';
 }
 
+export const JOURNEY_RISK_LEVELS = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'] as const;
+export type JourneyRiskLevel = (typeof JOURNEY_RISK_LEVELS)[number];
+
 export interface GenerateJourneyResult {
   success: true;
   data: {
     journeyName: string;
     description?: string;
+    /** AI-assessed overall journey risk: Coastal sailing, Offshore sailing, or Extreme sailing */
+    riskLevel?: JourneyRiskLevel;
     legs: Array<{
       name: string;
       start_date?: string;
@@ -90,7 +95,9 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
   const validatedWaypoints = waypointsResult.waypoints;
   const validatedStartDate = startDateResult.date;
   const validatedEndDate = endDateResult.date;
-  const validatedSpeed = speedResult.value;
+  // Use boat speed when provided; otherwise use default for date calculation when journey has dates (so leg dates are still computed)
+  const DEFAULT_CRUISING_SPEED_KNOTS = 6;
+  const validatedSpeed = speedResult.value ?? (validatedStartDate && validatedEndDate ? DEFAULT_CRUISING_SPEED_KNOTS : null);
 
   const allWaypoints = [validatedStart, ...validatedWaypoints, validatedEnd];
 
@@ -191,10 +198,17 @@ CRITICAL RULES:
    - Coordinates must be in [longitude, latitude] format
    - All coordinates must be valid numbers
 
+5. JOURNEY RISK LEVEL (required): Assess the overall journey and return exactly one risk level for the whole journey (not per leg):
+   - "Coastal sailing": Near-shore, sheltered waters, short passages, easy access to ports.
+   - "Offshore sailing": Open water, multi-day passages, out of sight of land, ocean crossings.
+   - "Extreme sailing": High latitude, heavy weather, remote areas, demanding conditions.
+   Include "riskLevel" at the top level of your JSON with exactly one of these three strings.
+
 Return ONLY valid JSON in this exact format:${useSpeedPlanning && validatedSpeed && validatedStartDate && validatedEndDate ? `
 {
   "journeyName": "Journey name here",
   "description": "Brief description of the journey",
+  "riskLevel": "Coastal sailing",
   "legs": [
     {
       "name": "Leg name",
@@ -232,6 +246,7 @@ Return ONLY valid JSON in this exact format:${useSpeedPlanning && validatedSpeed
 {
   "journeyName": "Journey name here",
   "description": "Brief description of the journey",
+  "riskLevel": "Coastal sailing",
   "legs": [
     {
       "name": "Leg name",
@@ -277,6 +292,7 @@ ${allWaypoints.length > 2
 - You must provide accurate, real coordinates for all waypoints - do not use placeholder values
 - For waypoints provided by the user, use their exact coordinates: ${allWaypoints.map((wp, idx) => `${wp.name}: [${wp.lng}, ${wp.lat}]`).join(', ')}
 - Coordinates are [longitude, latitude] format
+- riskLevel must be exactly one of: "Coastal sailing", "Offshore sailing", "Extreme sailing"
 - Return ONLY the JSON, no markdown, no code blocks`;
 
   try {
@@ -285,6 +301,14 @@ ${allWaypoints.length > 2
 
     if (!generatedData.journeyName || !generatedData.legs || !Array.isArray(generatedData.legs)) {
       return { success: false, error: 'Invalid response format from AI' };
+    }
+
+    // Validate and normalize AI-assessed journey risk level (optional; invalid/missing is not fatal)
+    const rawRisk = generatedData.riskLevel;
+    if (typeof rawRisk === 'string' && JOURNEY_RISK_LEVELS.includes(rawRisk as JourneyRiskLevel)) {
+      generatedData.riskLevel = rawRisk as JourneyRiskLevel;
+    } else {
+      delete generatedData.riskLevel;
     }
 
     for (let i = 0; i < generatedData.legs.length; i++) {

@@ -213,7 +213,9 @@ ${getSkillsStructure()}`;
 **State:** Profile created. Boat: none. Journey: none.
 **Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.
 **AFTER BOAT IS CREATED:** You MUST propose the next step: create a journey. In [SUGGESTIONS] include e.g. "Create your first journey" or "Let's plan your journey and add legs."`;
-      stepInstructions = `**READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
+      stepInstructions = `**In this step you may ONLY use fetch_boat_details_from_sailboatdata and create_boat. Do NOT call create_journey or generate_journey_route.**
+
+**READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
 **CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. Required fields: name, type, make_model, capacity (number). Use data from fetch_boat_details_from_sailboatdata and your summary.`;
       extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Example (replace with actual values from your summary and fetch_boat_details result):
 \`\`\`tool_call
@@ -225,7 +227,10 @@ ${getSkillsStructure()}`;
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
 **Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate, endDate, waypointDensity ("minimal" or "moderate"). Do not call get_owner_boats—boat id is above.
 **AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys" or "Invite crew to your legs."`;
-      stepInstructions = `generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.`;
+      stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
+
+generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
+**COORDINATES:** If the user's message includes journey details with coordinates in parentheses (e.g. "Start location: Kingston, Jamaica (lat 18.0, lng -76.8)"), use those exact lat/lng values in your generate_journey_route call. Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the user for latitude/longitude.`;
       break;
     case 'completed':
       stateAndGoal = `## CURRENT STEP: Completed
@@ -1119,10 +1124,14 @@ Return ONLY the JSON object, nothing else.`;
         );
 
         if (duplicateByName) {
+          // Treat "boat already exists" as step success so user can advance to journey (Fix 1)
           results.push({
             name: toolCall.name,
-            result: null,
-            error: `A boat named "${duplicateByName.name}" already exists. Please use a different name or update the existing boat.`,
+            result: {
+              boatAlreadyExists: true,
+              boatName: duplicateByName.name,
+              message: `This boat is already in your fleet. You can proceed to create your journey.`,
+            },
           });
           continue;
         }
@@ -1136,10 +1145,14 @@ Return ONLY the JSON object, nothing else.`;
           );
 
           if (duplicateByMakeModel) {
+            // Treat "boat already exists" as step success so user can advance (Fix 1)
             results.push({
               name: toolCall.name,
-              result: null,
-              error: `A boat with make/model "${duplicateByMakeModel.make_model}" already exists (named "${duplicateByMakeModel.name}"). Please use a different make/model or update the existing boat.`,
+              result: {
+                boatAlreadyExists: true,
+                boatName: duplicateByMakeModel.name,
+                message: `This boat is already in your fleet. You can proceed to create your journey.`,
+              },
             });
             continue;
           }
@@ -1209,12 +1222,13 @@ Return ONLY the JSON object, nothing else.`;
           if (!speed) {
             const { data: boat } = await supabase
               .from('boats')
-              .select('average_speed_knots')
+              .select('average_speed_knots, hull_speed_knots')
               .eq('id', boatId)
               .eq('owner_id', authenticatedUserId!)
               .single();
 
-            speed = boat?.average_speed_knots || undefined;
+            const hullSpeed = boat?.hull_speed_knots;
+            speed = boat?.average_speed_knots ?? (typeof hullSpeed === 'number' && hullSpeed > 0 ? hullSpeed * 0.8 : undefined);
           }
 
           // Call shared function directly (avoids HTTP self-call which fails in serverless)
@@ -1252,10 +1266,14 @@ Return ONLY the JSON object, nothing else.`;
             continue;
           }
 
-          // Normalize risk_level (AI may pass string "["Offshore sailing"]" instead of array)
+          // Normalize risk_level: prefer AI-assessed journey risk from generate result, else tool args
           const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
           const normalizedRiskLevel = (normalizeRiskLevel(args.risk_level) || [])
             .filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
+          const aiAssessedRisk = (routeData as { riskLevel?: string }).riskLevel;
+          const riskLevelForCreate = (aiAssessedRisk && validRiskLevels.includes(aiAssessedRisk))
+            ? [aiAssessedRisk]
+            : normalizedRiskLevel;
 
           // Normalize skills (AI may pass as string)
           let normalizedSkills: string[] = [];
@@ -1277,7 +1295,7 @@ Return ONLY the JSON object, nothing else.`;
             boatId,
             routeData,
             {
-              risk_level: normalizedRiskLevel,
+              risk_level: riskLevelForCreate,
               skills: normalizedSkills,
               min_experience_level: args.min_experience_level as number | undefined,
               cost_model: args.cost_model as string | undefined,
@@ -1298,6 +1316,9 @@ Return ONLY the JSON object, nothing else.`;
           }
 
           // Return summary for AI - journey and legs already created, proceed with rest
+          const riskNote = riskLevelForCreate.length > 0
+            ? ` Risk level: ${riskLevelForCreate[0]}.`
+            : '';
           results.push({
             name: toolCall.name,
             result: {
@@ -1305,7 +1326,8 @@ Return ONLY the JSON object, nothing else.`;
               journeyId: createResult.journeyId,
               journeyName: createResult.journeyName,
               legsCreated: createResult.legsCreated,
-              message: `Journey "${createResult.journeyName}" and ${createResult.legsCreated} leg(s) have been created successfully. [SYSTEM: Proceed with responding to the user - inform them their journey is ready. No need to call create_journey or create_leg tools.]`,
+              riskLevel: riskLevelForCreate[0] ?? null,
+              message: `Journey "${createResult.journeyName}" and ${createResult.legsCreated} leg(s) have been created successfully.${riskNote} [SYSTEM: Proceed with responding to the user - inform them their journey is ready. No need to call create_journey or create_leg tools.]`,
             },
           });
         } catch (e: any) {
@@ -1846,6 +1868,7 @@ export async function ownerChat(
   let profileCreated = false;
   let boatCreated = false;
   let journeyCreated = false;
+  let addBoatNudgeCount = 0;
 
   while (iterations < MAX_TOOL_ITERATIONS) {
     iterations++;
@@ -1883,10 +1906,19 @@ export async function ownerChat(
       const looksLikeBoatSummary = (/\b(name|type|capacity|make|model):\s*\S+/i.test(result.text) || /boat.*summary|here('s| is) (your|the) boat/i.test(result.text)) && !/create_boat|tool_call/.test(result.text);
       const looksLikeBoatCreatedWithoutTool = /(?:created successfully|boat profile.*created|your boat.*has been created|boat has been created)/i.test(result.text) && !/create_boat|tool_call/.test(result.text);
       if (currentStep === 'add_boat' && looksLikeConfirmation && (looksLikeBoatSummary || looksLikeBoatCreatedWithoutTool)) {
+        if (addBoatNudgeCount >= 2) {
+          log('⚠️ Add boat: nudge cap reached - suggesting boat may already exist');
+          currentMessages.push(
+            { role: 'assistant', content: result.text },
+            { role: 'user', content: 'The boat may already be in the user\'s fleet. Respond briefly that they can proceed to create their first journey and suggest "Create your first journey" as the next step. Do not call any tools.' }
+          );
+          continue;
+        }
         log('⚠️ Add boat: user confirmed but no create_boat call - nudging AI');
+        addBoatNudgeCount += 1;
         currentMessages.push(
           { role: 'assistant', content: result.text },
-          { role: 'user', content: 'The user confirmed. Call the create_boat tool now with the boat details you just summarized (name, type, make_model, capacity). Use valid JSON in a tool_call block.' }
+          { role: 'user', content: 'The user confirmed. You MUST call the create_boat tool in this response. Use exactly this structure with the boat details from your last message: ```tool_call\n{"name": "create_boat", "arguments": {"name": "...", "type": "...", "make_model": "...", "capacity": ...}}\n``` Replace the ... with the actual name, type, make_model, and capacity you already showed. No other tool is allowed in this step.' }
         );
         continue;
       }
@@ -1913,11 +1945,19 @@ export async function ownerChat(
       finalContent = sanitizeContent(content, false);
       
       // Solution 4: Detect and prevent hallucination
-      // Check if AI claimed a tool was called when it wasn't
+      // Only add correction when AI claims a tool was called but there was no successful call for that action in this request.
+      // If the tool actually succeeded in a previous iteration (e.g. create_boat), the follow-up message describing that success is not a hallucination.
       const claimedToolCall = /(?:created|called|executed|ran|completed|I've created|I've called).*?(?:generate_journey_route|create_journey|create_boat|update_user_profile|journey|boat|profile)/i;
-      if (claimedToolCall.test(finalContent) && toolCalls.length === 0) {
-        log('⚠️ AI hallucinated tool call success - adding correction');
-        finalContent += '\n\n**Note:** I attempted to call the tool, but the tool call format was incorrect and could not be parsed. Please try again or let me know if you need help with the correct format.';
+      const contentClaimsToolSuccess = claimedToolCall.test(finalContent) && toolCalls.length === 0;
+      if (contentClaimsToolSuccess) {
+        const describesActualSuccess =
+          (/\b(boat|create_boat)\b/i.test(finalContent) && boatCreated) ||
+          (/\b(profile|update_user_profile)\b/i.test(finalContent) && profileCreated) ||
+          (/\b(journey|generate_journey_route|create_journey)\b/i.test(finalContent) && journeyCreated);
+        if (!describesActualSuccess) {
+          log('⚠️ AI hallucinated tool call success - adding correction');
+          finalContent += '\n\n**Note:** I attempted to call the tool, but the tool call format was incorrect and could not be parsed. Please try again or let me know if you need help with the correct format.';
+        }
       }
       
       log('✅ No tool calls, final content ready');

@@ -201,6 +201,8 @@ export default function ProposeJourneyPage() {
     setLoading(true);
     setError(null);
 
+    const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+
     try {
       const supabase = getSupabaseBrowserClient();
       const journeyInsertData: any = {
@@ -215,6 +217,9 @@ export default function ProposeJourneyPage() {
 
       if (startDate) journeyInsertData.start_date = startDate;
       if (endDate) journeyInsertData.end_date = endDate;
+      if (generatedJourney.riskLevel && validRiskLevels.includes(generatedJourney.riskLevel)) {
+        journeyInsertData.risk_level = [generatedJourney.riskLevel];
+      }
 
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
@@ -553,6 +558,12 @@ export default function ProposeJourneyPage() {
                   </h3>
                   {generatedJourney.description && (
                     <p className="text-muted-foreground mb-4 text-sm">{generatedJourney.description}</p>
+                  )}
+                  {generatedJourney.riskLevel && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      <span className="font-medium text-card-foreground">Risk level: </span>
+                      {generatedJourney.riskLevel}
+                    </p>
                   )}
                   {(startDate || endDate) && (
                     <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
