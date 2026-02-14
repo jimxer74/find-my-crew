@@ -7,6 +7,14 @@
 
 import { ToolCall } from '../shared';
 
+/** Canonical onboarding step for owner flow. Used to restrict tools and simplify prompts. */
+export type OwnerStep =
+  | 'signup'
+  | 'create_profile'
+  | 'add_boat'
+  | 'post_journey'
+  | 'completed';
+
 /** A pending tool call action awaiting user approval */
 export interface PendingAction {
   toolName: string;
