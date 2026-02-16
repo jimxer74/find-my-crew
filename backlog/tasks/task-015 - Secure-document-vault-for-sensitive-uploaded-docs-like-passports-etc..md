@@ -4,7 +4,7 @@ title: 'Secure document vault for sensitive uploaded docs like passports, etc.'
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-16 17:20'
+updated_date: '2026-02-16 17:29'
 labels:
   - security
   - storage
@@ -335,7 +335,7 @@ CREATE POLICY "Owner delete" ON storage.objects FOR DELETE TO authenticated
    - Displays document via signed URL in sandboxed iframe
    - No right-click context menu (CSS: `pointer-events` control)
    - Watermark overlay with viewer's user ID + timestamp
-   - Auto-closes when signed URL expires (5 min timer)
+   - Auto-closes when signed URL expires (Expire time needs to be configurable)
    - No download button
 
 5. **GrantManagement** (panel within document detail)
