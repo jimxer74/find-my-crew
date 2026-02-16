@@ -1,10 +1,10 @@
 ---
 id: TASK-099
 title: Crew profile arrival & departure and availability preferences
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-13 14:09'
-updated_date: '2026-02-16 08:57'
+updated_date: '2026-02-16 09:09'
 labels: []
 dependencies: []
 ---
