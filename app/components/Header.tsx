@@ -148,7 +148,7 @@ export function Header() {
                 href="/feedback"
                 className="ml-2 px-2 py-0.5 text-xs font-semibold bg-yellow-400 text-yellow-900 rounded-full hover:bg-yellow-500 transition-colors text-center"
               >
-                ⚠ Beta release<span className="text-[8px] font-normal uppercase tracking-wider"><p>**Please read**</p></span>
+                ⚠ Beta 
               </Link>
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
