@@ -229,10 +229,9 @@ export const LOCATION_REGISTRY: LocationRegion[] = [
   name: 'Caribbean',
   aliases: ['caribbean', 'carib', 'west indies', 'caribbean sea'],
   category: 'caribbean',
-  bbox: { minLng: -89.0, minLat: 10.0, maxLng: -59.0, maxLat: 23.0 },
-  description: 'The entire Caribbean Sea – from the ABC Islands and Venezuela in the south to the Bahamas and Greater Antilles in the north; the world’s premier tropical cruising playground',
+  bbox: { minLng: -80.5, minLat: 9.0, maxLng: -59.0, maxLat: 23.0 },
+  description: 'The entire Caribbean Sea – from the ABC Islands and Venezuela in the south to the Bahamas and Greater Antilles in the north, now including the Panama/Colón area and Panama Canal Caribbean entrance; the world’s premier tropical cruising playground',
 },
-
 {
   name: 'Eastern Caribbean',
   aliases: ['east caribbean', 'windward islands', 'leeward islands', 'lesser antilles east'],

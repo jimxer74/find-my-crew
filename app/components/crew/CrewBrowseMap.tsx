@@ -1038,7 +1038,10 @@ export function CrewBrowseMap({
             // Check if viewport has changed significantly
             // If lastLoadedBoundsRef is null, it means filters changed and we should force reload
             const newBounds = { minLng, minLat, maxLng, maxLat };
-            if (lastLoadedBoundsRef.current !== null && !hasViewportChangedSignificantly(newBounds, lastLoadedBoundsRef.current)) {
+            const isFilterChange = lastLoadedBoundsRef.current === null;
+            const viewportChangedSignificantly = lastLoadedBoundsRef.current !== null && hasViewportChangedSignificantly(newBounds, lastLoadedBoundsRef.current);
+            
+            if (!isFilterChange && !viewportChangedSignificantly) {
               console.log('[CrewBrowseMap] Viewport has not changed significantly, skipping reload');
               isLoadingRef.current = false;
               setLoading(false);
@@ -1050,6 +1053,9 @@ export function CrewBrowseMap({
               minLat,
               maxLng,
               maxLat,
+              isFilterChange,
+              viewportChangedSignificantly,
+              lastLoadedBounds: lastLoadedBoundsRef.current,
             });
 
             const params = new URLSearchParams({
@@ -1080,36 +1086,43 @@ export function CrewBrowseMap({
               params.append('end_date', currentFilters.dateRange.end.toISOString().split('T')[0]);
             }
 
-            // Add departure location filter if set
-            // Use direct bbox for cruising regions, center point for regular locations
-            if (currentFilters.location?.lat && currentFilters.location?.lng) {
-              if (currentFilters.location.bbox) {
-                // Cruising region with predefined bounding box
-                params.append('departure_min_lng', currentFilters.location.bbox.minLng.toString());
-                params.append('departure_min_lat', currentFilters.location.bbox.minLat.toString());
-                params.append('departure_max_lng', currentFilters.location.bbox.maxLng.toString());
-                params.append('departure_max_lat', currentFilters.location.bbox.maxLat.toString());
-              } else {
-                // Regular location - API will calculate bbox from center
-                params.append('departure_lat', currentFilters.location.lat.toString());
-                params.append('departure_lng', currentFilters.location.lng.toString());
+            // Only apply location filters when filters changed explicitly (not when viewport changed significantly)
+            // When viewport changes significantly (user panning/zooming), use viewport bounds instead of restricting to filter locations
+            if (isFilterChange) {
+              // Filters changed - apply location filters
+              // Add departure location filter if set
+              // Use direct bbox for cruising regions, center point for regular locations
+              if (currentFilters.location?.lat && currentFilters.location?.lng) {
+                if (currentFilters.location.bbox) {
+                  // Cruising region with predefined bounding box
+                  params.append('departure_min_lng', currentFilters.location.bbox.minLng.toString());
+                  params.append('departure_min_lat', currentFilters.location.bbox.minLat.toString());
+                  params.append('departure_max_lng', currentFilters.location.bbox.maxLng.toString());
+                  params.append('departure_max_lat', currentFilters.location.bbox.maxLat.toString());
+                } else {
+                  // Regular location - API will calculate bbox from center
+                  params.append('departure_lat', currentFilters.location.lat.toString());
+                  params.append('departure_lng', currentFilters.location.lng.toString());
+                }
               }
-            }
 
-            // Add arrival location filter if set
-            // Use direct bbox for cruising regions, center point for regular locations
-            if (currentFilters.arrivalLocation?.lat && currentFilters.arrivalLocation?.lng) {
-              if (currentFilters.arrivalLocation.bbox) {
-                // Cruising region with predefined bounding box
-                params.append('arrival_min_lng', currentFilters.arrivalLocation.bbox.minLng.toString());
-                params.append('arrival_min_lat', currentFilters.arrivalLocation.bbox.minLat.toString());
-                params.append('arrival_max_lng', currentFilters.arrivalLocation.bbox.maxLng.toString());
-                params.append('arrival_max_lat', currentFilters.arrivalLocation.bbox.maxLat.toString());
-              } else {
-                // Regular location - API will calculate bbox from center
-                params.append('arrival_lat', currentFilters.arrivalLocation.lat.toString());
-                params.append('arrival_lng', currentFilters.arrivalLocation.lng.toString());
+              // Add arrival location filter if set
+              // Use direct bbox for cruising regions, center point for regular locations
+              if (currentFilters.arrivalLocation?.lat && currentFilters.arrivalLocation?.lng) {
+                if (currentFilters.arrivalLocation.bbox) {
+                  // Cruising region with predefined bounding box
+                  params.append('arrival_min_lng', currentFilters.arrivalLocation.bbox.minLng.toString());
+                  params.append('arrival_min_lat', currentFilters.arrivalLocation.bbox.minLat.toString());
+                  params.append('arrival_max_lng', currentFilters.arrivalLocation.bbox.maxLng.toString());
+                  params.append('arrival_max_lat', currentFilters.arrivalLocation.bbox.maxLat.toString());
+                } else {
+                  // Regular location - API will calculate bbox from center
+                  params.append('arrival_lat', currentFilters.arrivalLocation.lat.toString());
+                  params.append('arrival_lng', currentFilters.arrivalLocation.lng.toString());
+                }
               }
+            } else if (viewportChangedSignificantly) {
+              console.log('[CrewBrowseMap] Viewport changed significantly - using viewport bounds instead of location filters');
             }
 
             // Note: We no longer filter by skills in the API
