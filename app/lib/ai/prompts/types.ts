@@ -17,7 +17,8 @@ export type UseCase =
   | 'owner-chat'
   | 'general-conversation'
   | 'suggest-makers'
-  | 'suggest-models';
+  | 'suggest-models'
+  | 'document-classification';
 
 // Prompt format types
 export type PromptFormat = 'template' | 'builder' | 'constant';
@@ -49,7 +50,8 @@ export const USE_CASES = {
   OWNER_CHAT: 'owner-chat' as UseCase,
   GENERAL_CONVERSATION: 'general-conversation' as UseCase,
   SUGGEST_MAKERS: 'suggest-makers' as UseCase,
-  SUGGEST_MODELS: 'suggest-models' as UseCase
+  SUGGEST_MODELS: 'suggest-models' as UseCase,
+  DOCUMENT_CLASSIFICATION: 'document-classification' as UseCase
 } as const;
 
 // Test case structure for validating prompts
