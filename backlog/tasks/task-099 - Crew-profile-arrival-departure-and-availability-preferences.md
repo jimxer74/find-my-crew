@@ -4,7 +4,7 @@ title: Crew profile arrival & departure and availability preferences
 status: To Do
 assignee: []
 created_date: '2026-02-13 14:09'
-updated_date: '2026-02-16 08:16'
+updated_date: '2026-02-16 08:25'
 labels: []
 dependencies: []
 ---
@@ -38,73 +38,111 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 <!-- SECTION:PLAN:BEGIN -->
 ## Implementation Plan
 
-### Phase 1: Database & Types
-1. Create migration `005_add_crew_location_availability_preferences.sql` adding to `profiles`:
-   - `departure_location_name` (text), `departure_location_lat` (numeric), `departure_location_lng` (numeric), `departure_location_bbox` (geometry)
-   - `arrival_location_name` (text), `arrival_location_lat` (numeric), `arrival_location_lng` (numeric), `arrival_location_bbox` (geometry)
-   - `availability_start_date` (date), `availability_end_date` (date)
-   - GIST indexes on bbox columns, composite index on dates
+### Current State (Verified)
+
+**Database (`profiles` table):** No columns for departure/arrival locations or availability dates. Next migration number: 035.
+
+**AI Onboarding (`update_user_profile` tool):**
+- Allowed fields: `full_name`, `user_description`, `sailing_experience`, `risk_level`, `skills`, `sailing_preferences`, `certifications`, `phone`, `profile_image_url`
+- **MISSING:** No location or availability parameters — the AI cannot save these during onboarding
+- Field alias mapping exists (e.g., `comfort_zones` → `risk_level`) but nothing for locations
+- Tool definition in `app/lib/ai/shared/tools/definitions.ts` (line 305)
+- Tool execution handler in `app/lib/ai/prospect/service.ts` (line 698)
+
+**Profile Edit Page (`/app/profile/page.tsx`):**
+- SailingPreferencesSection has: risk level selector + sailing preferences textarea
+- **MISSING:** No location picker, no date range picker, no availability fields
+- FormData type does not include location/availability fields
+
+**Profile Completion Calculator (`app/lib/profile/completionCalculator.ts`):**
+- Tracks 8 fields: username, full_name, phone, sailing_experience, risk_level, skills, sailing_preferences, roles
+- Mirrored by a DB trigger (`migrations/002_fix_profile_completion_trigger.sql`)
+- Decision: Location/availability should NOT affect completion percentage (they're optional enhancements)
+
+---
+
+### Phase 1: Database Schema
+1. Create migration `035_add_crew_location_availability_preferences.sql`:
+   - Add to `profiles` table:
+     - `preferred_departure_location_name` text null
+     - `preferred_departure_location_lat` numeric null
+     - `preferred_departure_location_lng` numeric null
+     - `preferred_arrival_location_name` text null
+     - `preferred_arrival_location_lat` numeric null
+     - `preferred_arrival_location_lng` numeric null
+     - `availability_start_date` date null
+     - `availability_end_date` date null
+   - Add indexes on date columns
 2. Update `/specs/tables.sql` with new columns
-3. Add TypeScript types (`LocationPreference`, `CrewPreferences`) in `app/types/`
-4. Update GDPR deletion logic to clear new fields
+3. Update GDPR account deletion logic for new columns
 
-### Phase 2: UI Components
-1. Create `LocationPreferenceInput.tsx` — reusable wrapper around existing `LocationAutocomplete`
-2. Create `AvailabilityDateRangeInput.tsx` — date range selector using existing `DateRangePicker`
+### Phase 2: AI Onboarding Tool Update
+1. **Update tool definition** in `app/lib/ai/shared/tools/definitions.ts`:
+   - Add parameters to `update_user_profile`:
+     - `preferred_departure_location` (object: `{name, lat, lng}`)
+     - `preferred_arrival_location` (object: `{name, lat, lng}`)
+     - `availability_start_date` (string, ISO date)
+     - `availability_end_date` (string, ISO date)
+2. **Update tool execution handler** in `app/lib/ai/prospect/service.ts` (line 698+):
+   - Add new fields to `allowedFields` array (line 724)
+   - Add normalization logic for location objects → individual DB columns
+   - Add normalization for date strings
+3. **Update AI system prompt** in `app/lib/ai/prospect/service.ts`:
+   - Include location and availability in profile completion instructions
+   - Tell AI to ask about preferred sailing locations and availability dates
+   - Update the example `update_user_profile` call to include new fields
+4. **Also update owner service** (`app/lib/ai/owner/service.ts` line 615) if owners can also have these fields
 
-### Phase 3: Profile Edit (`/app/profile/page.tsx`)
-1. Update `FormData` type with new location/availability fields
-2. Add location & availability section to `SailingPreferencesSection`
-3. Update `loadProfile()` to read new fields
-4. Update `handleSubmit()` to save new fields
-5. Update profile completion calculator
+### Phase 3: Profile Edit Page
+1. **Update FormData type** in `SailingPreferencesSection.tsx`:
+   - Add location and availability fields
+2. **Add new section** to `SailingPreferencesSection.tsx`:
+   - "Preferred Locations" subsection with:
+     - Departure location using `LocationAutocomplete` component
+     - Arrival location using `LocationAutocomplete` component
+   - "Availability" subsection with:
+     - Start date picker
+     - End date picker
+3. **Update `/app/profile/page.tsx`**:
+   - Add new fields to FormData state
+   - Load new fields in `loadProfile()`
+   - Save new fields in `handleSubmit()`
 
-### Phase 4: Onboarding (`ProfileCreationWizard.tsx`)
-1. Add location & availability preferences step (or expand existing step)
-2. Show in review step with edit capability
-3. Include in `handleSaveProfile()` submission
+### Phase 4: Dashboard Filter Initialization
+1. Create `useProfilePreferencesAsFilters()` hook:
+   - Fetches user profile preferences
+   - Returns FilterContext-compatible initial state
+2. Update `/app/crew/dashboard/page.tsx`:
+   - On mount: if no session filters exist, populate from profile preferences
+3. Logic: session storage > profile preferences > empty defaults
 
-### Phase 5: Dashboard Filter Initialization
-1. Create `useProfilePreferencesAsFilters()` hook
-2. Update `/app/crew/dashboard/page.tsx` to call hook on mount
-3. Logic: session storage filters > profile preferences > empty defaults
+### Phase 5: /crew Listing Sort Enhancement
+1. Update `CruisingRegionSection.tsx`:
+   - Fetch user's location preferences
+   - Calculate distance from preferred departure/arrival to each leg
+   - Multi-factor score: skillMatch (50%) + departureProximity (25%) + arrivalProximity (25%)
+   - Sort carousel by score (best matches first)
 
-### Phase 6: /crew Listing Sort Enhancement
-1. Add distance calculation utilities (haversine or PostGIS)
-2. Update `CruisingRegionSection.tsx` sorting:
-   - Score = (skillMatch × 0.5) + (departurProximity × 0.25) + (arrivalProximity × 0.25)
-3. Best-matching legs appear first in carousel
+---
 
-### Phase 7: Testing & Refinement
-- Test profile edit save/load round-trip
-- Test onboarding with/without preferences
-- Test dashboard filter pre-population
-- Test /crew sorting with various preference combinations
-- Verify GDPR deletion
+### Key Files to Modify
+| File | Change |
+|------|--------|
+| `specs/tables.sql` | Add location/availability columns to profiles |
+| `migrations/035_*.sql` | New migration |
+| `app/lib/ai/shared/tools/definitions.ts` | Add params to `update_user_profile` tool |
+| `app/lib/ai/prospect/service.ts` | Update tool handler + system prompt |
+| `app/components/profile/sections/SailingPreferencesSection.tsx` | Add location/availability UI |
+| `app/profile/page.tsx` | Load/save new fields |
+| `app/crew/dashboard/page.tsx` | Filter initialization from preferences |
+| `app/components/crew/CruisingRegionSection.tsx` | Location-aware sorting |
+| `app/contexts/FilterContext.tsx` | Possible helper for preference loading |
+| GDPR deletion logic | Include new columns |
 
-## Key Architectural Decisions
-
-**Location storage:** Individual columns + PostGIS bbox (not JSON) — enables spatial queries and indexing.
-
-**Preference defaults:** All new fields nullable. Profiles work without preferences; they only enhance results when present.
-
-**Session vs profile filters:** Session storage takes precedence. Profile preferences are only used as initial defaults when no session filters exist.
-
-**Sorting algorithm:** Multi-factor weighted score combining skill match (50%), departure proximity (25%), and arrival proximity (25%). Weights can be tuned later.
-
-## Reuse of Existing Components
-- `LocationAutocomplete` — supports Mapbox locations + cruising regions
-- `DateRangePicker` — date range selection
-- `FilterContext` — already has location/date fields in its state
-- `skillMatching.ts` — extend for location-based scoring
-
-## Files to Modify
-- `/specs/tables.sql` — schema update
-- `/migrations/005_*.sql` — new migration
-- `/app/profile/page.tsx` — add preference fields to profile edit
-- `/app/components/profile/ProfileCreationWizard.tsx` — add onboarding step
-- `/app/components/crew/CruisingRegionSection.tsx` — location-aware sorting
-- `/app/crew/dashboard/page.tsx` — filter initialization from preferences
-- `/app/contexts/FilterContext.tsx` — possible helper for preference loading
-- GDPR deletion logic file — add new columns
+### Key Decisions
+- **No bbox for profile locations** — bbox is for search filtering; profile just needs name + lat/lng for distance calculations
+- **Location/availability NOT in completion calculator** — they're optional enhancements, not required profile fields
+- **AI extracts locations naturally** — during onboarding conversation, AI asks "where would you like to sail from?" and passes structured data to `update_user_profile`
+- **Session storage > profile preferences** — active session filters override profile defaults
+- **Reuse `LocationAutocomplete`** for profile edit page location pickers
 <!-- SECTION:PLAN:END -->
