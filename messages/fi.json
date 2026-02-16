@@ -106,6 +106,7 @@
     "forCrew": "Miehistölle",
     "appearance": "Ulkoasu",
     "completeProfile": "Täytä profiilisi ja valitse roolit käyttääksesi ominaisuuksia.",
+    "documentVault": "Asiakirjaholvi",
     "login": "Kirjaudu",
     "signUp": "Rekisteröidy",
     "loading": "Ladataan..."
@@ -749,5 +750,109 @@
     "createProfile": "Luo profiili",
     "createBoat": "Luo vene",
     "createFirstJourney": "Luo ensimmäinen matka"
+  },
+  "vault": {
+    "title": "Asiakirjaholvi",
+    "subtitle": "Tallenna ja hallitse arkaluontoisia asiakirjojasi turvallisesti",
+    "uploadDocument": "Lataa asiakirja",
+    "uploading": "Ladataan...",
+    "classifying": "Luokitellaan asiakirjaa...",
+    "noDocuments": "Ei asiakirjoja",
+    "noDocumentsDescription": "Lataa ensimmäinen asiakirjasi aloittaaksesi. Asiakirjasi tallennetaan turvallisesti ja salattuina.",
+    "searchPlaceholder": "Hae asiakirjoja...",
+    "allCategories": "Kaikki",
+    "filterByCategory": "Suodata kategorian mukaan",
+    "deleteConfirm": "Haluatko varmasti poistaa tämän asiakirjan? Tätä toimintoa ei voi peruuttaa.",
+    "deleteSuccess": "Asiakirja poistettu",
+    "uploadSuccess": "Asiakirja ladattu",
+    "classifySuccess": "Asiakirja luokiteltu",
+    "viewDocument": "Näytä asiakirja",
+    "manageAccess": "Hallitse pääsyä",
+    "accessLog": "Käyttöloki",
+    "delete": "Poista",
+    "reclassify": "Luokittele uudelleen",
+    "description": "Kuvaus",
+    "category": "Kategoria",
+    "uploadedOn": "Ladattu",
+    "fileSize": "Koko",
+    "expiresOn": "Vanhenee",
+    "confidence": "Varmuus",
+    "noMetadata": "Metatietoja ei löydetty",
+    "categories": {
+      "passport": "Passi",
+      "drivers_license": "Ajokortti",
+      "national_id": "Henkilökortti",
+      "sailing_license": "Veneilylupa",
+      "certification": "Sertifikaatti",
+      "insurance": "Vakuutus",
+      "boat_registration": "Venerekisteröinti",
+      "medical": "Lääkärintodistus",
+      "other": "Muu"
+    },
+    "upload": {
+      "title": "Lataa asiakirja",
+      "dropzone": "Vedä ja pudota tiedosto tähän tai klikkaa valitaksesi",
+      "allowedTypes": "PDF, JPG, PNG, WEBP enintään 10MB",
+      "descriptionLabel": "Kuvaus (valinnainen)",
+      "descriptionPlaceholder": "Lisää kuvaus tälle asiakirjalle...",
+      "categoryLabel": "Kategoria (valinnainen)",
+      "categoryPlaceholder": "Valitse tai anna tekoälyn luokitella",
+      "submit": "Lataa",
+      "autoClassify": "Luokittele tekoälyllä latauksen jälkeen"
+    },
+    "viewer": {
+      "title": "Suojattu asiakirjanäkymä",
+      "expiresIn": "Linkki vanhenee",
+      "expired": "Katselulinkki on vanhentunut",
+      "refreshLink": "Päivitä linkki",
+      "watermark": "Luottamuksellinen"
+    },
+    "grants": {
+      "title": "Käyttöoikeudet",
+      "noGrants": "Ei käyttöoikeuksia tälle asiakirjalle",
+      "grantAccess": "Myönnä pääsy",
+      "revoke": "Peruuta",
+      "revokeConfirm": "Peruuta pääsy tältä käyttäjältä?",
+      "revokeSuccess": "Pääsy peruutettu",
+      "grantSuccess": "Pääsy myönnetty",
+      "selectUser": "Valitse käyttäjä",
+      "purpose": "Tarkoitus",
+      "expiresAt": "Vanhenee",
+      "maxViews": "Enimmäiskatselut (valinnainen)",
+      "viewsUsed": "katselua käytetty",
+      "expired": "Vanhentunut",
+      "revoked": "Peruutettu",
+      "active": "Aktiivinen",
+      "purposes": {
+        "journey_registration": "Matkan rekisteröinti",
+        "identity_verification": "Henkilöllisyyden todentaminen",
+        "insurance_proof": "Vakuutustodistus",
+        "certification_check": "Sertifikaatin tarkistus",
+        "other": "Muu"
+      }
+    },
+    "shared": {
+      "title": "Jaettu minulle",
+      "noSharedDocuments": "Sinulle ei ole jaettu asiakirjoja",
+      "sharedBy": "Jakanut",
+      "purpose": "Tarkoitus",
+      "expiresIn": "Vanhenee",
+      "viewsRemaining": "katselua jäljellä"
+    },
+    "accessLog": {
+      "title": "Käyttöloki",
+      "noLogs": "Ei käyttötapahtumia",
+      "eventTypes": {
+        "upload": "Ladattu",
+        "view": "Katsottu",
+        "delete": "Poistettu",
+        "grant_create": "Pääsy myönnetty",
+        "grant_revoke": "Pääsy peruutettu",
+        "classify": "Luokiteltu",
+        "metadata_update": "Metatiedot päivitetty"
+      },
+      "accessGranted": "Myönnetty",
+      "accessDenied": "Estetty"
+    }
   }
 }

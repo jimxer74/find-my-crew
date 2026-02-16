@@ -106,6 +106,7 @@
     "forCrew": "For Crew",
     "appearance": "Appearance",
     "completeProfile": "Complete your profile and select roles to access features.",
+    "documentVault": "Document Vault",
     "login": "Log in",
     "signUp": "Sign up",
     "loading": "Loading..."
@@ -749,5 +750,109 @@
     "createProfile": "Create profile",
     "createBoat": "Add boat",
     "createFirstJourney": "Post journey"
+  },
+  "vault": {
+    "title": "Document Vault",
+    "subtitle": "Securely store and manage your sensitive documents",
+    "uploadDocument": "Upload Document",
+    "uploading": "Uploading...",
+    "classifying": "Classifying document...",
+    "noDocuments": "No documents yet",
+    "noDocumentsDescription": "Upload your first document to get started. Your documents are stored securely and encrypted.",
+    "searchPlaceholder": "Search documents...",
+    "allCategories": "All",
+    "filterByCategory": "Filter by category",
+    "deleteConfirm": "Are you sure you want to delete this document? This action cannot be undone.",
+    "deleteSuccess": "Document deleted successfully",
+    "uploadSuccess": "Document uploaded successfully",
+    "classifySuccess": "Document classified successfully",
+    "viewDocument": "View Document",
+    "manageAccess": "Manage Access",
+    "accessLog": "Access Log",
+    "delete": "Delete",
+    "reclassify": "Re-classify",
+    "description": "Description",
+    "category": "Category",
+    "uploadedOn": "Uploaded",
+    "fileSize": "Size",
+    "expiresOn": "Expires",
+    "confidence": "Confidence",
+    "noMetadata": "No metadata extracted",
+    "categories": {
+      "passport": "Passport",
+      "drivers_license": "Driver's License",
+      "national_id": "National ID",
+      "sailing_license": "Sailing License",
+      "certification": "Certification",
+      "insurance": "Insurance",
+      "boat_registration": "Boat Registration",
+      "medical": "Medical",
+      "other": "Other"
+    },
+    "upload": {
+      "title": "Upload Document",
+      "dropzone": "Drag and drop a file here, or click to select",
+      "allowedTypes": "PDF, JPG, PNG, WEBP up to 10MB",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "Add a description for this document...",
+      "categoryLabel": "Category (optional)",
+      "categoryPlaceholder": "Select or let AI classify",
+      "submit": "Upload",
+      "autoClassify": "Auto-classify with AI after upload"
+    },
+    "viewer": {
+      "title": "Secure Document Viewer",
+      "expiresIn": "Link expires in",
+      "expired": "Viewing link has expired",
+      "refreshLink": "Refresh Link",
+      "watermark": "Confidential"
+    },
+    "grants": {
+      "title": "Access Grants",
+      "noGrants": "No access grants for this document",
+      "grantAccess": "Grant Access",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke access for this user?",
+      "revokeSuccess": "Access revoked successfully",
+      "grantSuccess": "Access granted successfully",
+      "selectUser": "Select user",
+      "purpose": "Purpose",
+      "expiresAt": "Expires at",
+      "maxViews": "Max views (optional)",
+      "viewsUsed": "views used",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "active": "Active",
+      "purposes": {
+        "journey_registration": "Journey Registration",
+        "identity_verification": "Identity Verification",
+        "insurance_proof": "Insurance Proof",
+        "certification_check": "Certification Check",
+        "other": "Other"
+      }
+    },
+    "shared": {
+      "title": "Shared With Me",
+      "noSharedDocuments": "No documents have been shared with you",
+      "sharedBy": "Shared by",
+      "purpose": "Purpose",
+      "expiresIn": "Expires in",
+      "viewsRemaining": "views remaining"
+    },
+    "accessLog": {
+      "title": "Access Log",
+      "noLogs": "No access events recorded",
+      "eventTypes": {
+        "upload": "Uploaded",
+        "view": "Viewed",
+        "delete": "Deleted",
+        "grant_create": "Access granted",
+        "grant_revoke": "Access revoked",
+        "classify": "Classified",
+        "metadata_update": "Metadata updated"
+      },
+      "accessGranted": "Granted",
+      "accessDenied": "Denied"
+    }
   }
 }

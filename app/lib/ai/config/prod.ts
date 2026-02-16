@@ -113,6 +113,19 @@ export const prodConfig: EnvironmentConfig = {
       ],
       temperature: 0.5,
       maxTokens: 8000
+    },
+    // Vision model for document classification (low temperature for deterministic extraction)
+    'document-classification': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['google/gemini-2.0-flash'],
+          temperature: 0.1,
+          maxTokens: 1024
+        }
+      ],
+      temperature: 0.1,
+      maxTokens: 1024
     }
   },
   

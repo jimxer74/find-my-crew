@@ -225,7 +225,28 @@ export async function DELETE(request: NextRequest) {
     const feedbackDismissalsResult = await safeDelete('feedback_prompt_dismissals', { user_id: user.id }, supabase, user.id);
     deletionResults.push(feedbackDismissalsResult);
 
-    // 8. For owned boats: delete waypoints, legs, journeys, boats (cascade)
+    // 8. Delete document vault data
+    // Delete access logs first (references document_vault and auth.users)
+    if (serviceRoleKey && supabaseUrl) {
+      const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false }
+      });
+      const docAccessLogResult = await safeDelete('document_access_log', { document_owner_id: user.id }, adminClient, user.id);
+      deletionResults.push(docAccessLogResult);
+    } else {
+      const docAccessLogResult = await safeDelete('document_access_log', { document_owner_id: user.id }, supabase, user.id);
+      deletionResults.push(docAccessLogResult);
+    }
+
+    // Delete access grants where user is grantor (cascades from document_vault anyway, but explicit)
+    const docGrantsResult = await safeDelete('document_access_grants', { grantor_id: user.id }, supabase, user.id);
+    deletionResults.push(docGrantsResult);
+
+    // Delete document vault records (cascades remaining grants)
+    const docVaultResult = await safeDelete('document_vault', { owner_id: user.id }, supabase, user.id);
+    deletionResults.push(docVaultResult);
+
+    // 9. For owned boats: delete waypoints, legs, journeys, boats (cascade)
     const { data: ownedBoats, error: boatsError } = await supabase
       .from('boats')
       .select('id')
@@ -499,7 +520,7 @@ export async function DELETE(request: NextRequest) {
  * Handles boat-images and journey-images buckets
  */
 async function deleteStorageFilesForUser(userId: string, supabase: any): Promise<DeletionResult> {
-  const bucketNames = ['boat-images', 'journey-images'];
+  const bucketNames = ['boat-images', 'journey-images', 'secure-documents'];
   const result: DeletionResult = {
     success: true,
     table: 'storage',
@@ -687,7 +708,10 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
       { table: 'feedback_prompt_dismissals', column: 'user_id' },
       { table: 'registrations', column: 'user_id' },
       { table: 'boats', column: 'owner_id' },
-      { table: 'email_preferences', column: 'user_id' }
+      { table: 'email_preferences', column: 'user_id' },
+      { table: 'document_vault', column: 'owner_id' },
+      { table: 'document_access_grants', column: 'grantor_id' },
+      { table: 'document_access_log', column: 'document_owner_id' }
     ];
 
     for (const { table, column } of tablesToCheck) {
@@ -755,7 +779,10 @@ async function verifyUserDeletion(userId: string, supabase: any) {
     'registrations', 'notifications', 'email_preferences',
     'user_consents', 'consent_audit_log', 'ai_conversations',
     'ai_pending_actions', 'feedback', 'feedback_votes',
-    'feedback_prompt_dismissals'
+    'feedback_prompt_dismissals',
+    'document_vault',
+    'document_access_grants',
+    'document_access_log'
   ];
 
   const verificationResults: any[] = [];

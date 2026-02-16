@@ -515,6 +515,46 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
           {/* Divider */}
           <div className="border-t border-border my-1" />
 
+          {/* Document Vault - available to all authenticated users */}
+          {isMenuPage ? (
+            <button
+              onClick={() => handleNavClick('/vault')}
+              className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
+            >
+              <svg
+                className="w-5 h-5 mr-3 text-muted-foreground"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="font-medium">{t('documentVault')}</span>
+            </button>
+          ) : (
+            <Link
+              href="/vault"
+              onClick={(e) => handleNavClick('/vault', e)}
+              className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+            >
+              <svg
+                className="w-5 h-5 mr-3 text-muted-foreground"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <span className="font-medium">{t('documentVault')}</span>
+            </Link>
+          )}
+
           {/* Feedback */}
           { user && isMenuPage ? (
             <button
