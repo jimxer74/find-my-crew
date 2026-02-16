@@ -44,11 +44,12 @@ function OwnerOnboardingContent() {
           onboardingState={onboardingState}
           messagesLength={messages.length}
           hasActiveSession={messages.length > 0}
+          showNumbersOnly={true}
         />
       </OnboardingStickyBar>
 
       {/* Chat area - padding clears the sticky onboarding bar */}
-      <main className="flex-1 overflow-y-auto pt-28">
+      <main className="flex-1 overflow-y-auto pt-20">
         <OwnerChat />
       </main>
 

@@ -10,6 +10,7 @@ export interface CrewOnboardingStepsProps {
   isAuthenticated: boolean;
   hasExistingProfile: boolean;
   onboardingState?: string;
+  showNumbersOnly?: boolean;
 }
 
 export function CrewOnboardingSteps({
@@ -19,6 +20,7 @@ export function CrewOnboardingSteps({
   messagesLength = 0,
   hasActiveSession = false,
   onCurrentStepClick,
+  showNumbersOnly = false,
 }: CrewOnboardingStepsProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }) {
   const t = useTranslations('onboarding');
 
@@ -58,6 +60,7 @@ export function CrewOnboardingSteps({
       hasActiveSession={hasActiveSession}
       onCurrentStepClick={onCurrentStepClick}
       userRole="crew"
+      showNumbersOnly={showNumbersOnly}
     />
   );
 }
@@ -69,6 +72,7 @@ export interface OwnerOnboardingStepsProps {
   hasJourney: boolean;
   onboardingState?: string;
   preferences?: OwnerPreferences;
+  showNumbersOnly?: boolean;
 }
 
 export function OwnerOnboardingSteps({
@@ -80,6 +84,7 @@ export function OwnerOnboardingSteps({
   messagesLength = 0,
   hasActiveSession = false,
   onCurrentStepClick,
+  showNumbersOnly = false,
 }: OwnerOnboardingStepsProps & { messagesLength?: number; hasActiveSession?: boolean; onCurrentStepClick?: () => void }) {
   const t = useTranslations('onboarding');
 
@@ -123,6 +128,7 @@ export function OwnerOnboardingSteps({
       hasActiveSession={hasActiveSession}
       onCurrentStepClick={onCurrentStepClick}
       userRole="owner"
+      showNumbersOnly={showNumbersOnly}
     />
   );
 }
@@ -139,6 +145,8 @@ export interface OnboardingStepsBarProps {
   onCurrentStepClick?: () => void;
   /** User role to determine navigation route */
   userRole?: 'owner' | 'crew';
+  /** Show numbers as text (e.g. "1. Sign-up") instead of circles */
+  showNumbersOnly?: boolean;
 }
 
 function OnboardingStepsBar({ 
@@ -148,6 +156,7 @@ function OnboardingStepsBar({
   hasActiveSession = false,
   onCurrentStepClick,
   userRole,
+  showNumbersOnly = false,
 }: OnboardingStepsBarProps) {
   if (steps.length === 0) return null;
 
@@ -204,7 +213,9 @@ function OnboardingStepsBar({
             }`
           : isBanner
             ? 'relative flex items-center justify-center gap-1 sm:gap-2 flex-wrap py-0.5 min-h-[1.5rem] overflow-visible'
-            : 'relative flex items-center gap-1 sm:gap-3 flex-wrap overflow-x-auto overflow-y-visible py-1.5 min-h-[2.5rem]'
+            : showNumbersOnly
+              ? 'relative flex items-center gap-2 flex-wrap overflow-x-auto overflow-y-visible py-0'
+              : 'relative flex items-center gap-1 sm:gap-3 flex-wrap overflow-x-auto overflow-y-visible py-1.5 min-h-[2.5rem]'
       }
       role="progressbar"
       aria-valuenow={
@@ -288,6 +299,54 @@ function OnboardingStepsBar({
       {steps.map((step, index) => {
         const isCurrentStep = step.status === 'current';
         const isClickable = isCurrentStep && hasActiveSession && onCurrentStepClick;
+        
+        // When showNumbersOnly is true, render as "1. Sign-up" text instead of circles
+        if (showNumbersOnly) {
+          const stepText = `${index + 1}. ${step.label}`;
+          const textClassName = `text-sm font-medium whitespace-nowrap ${
+            step.status === 'completed'
+              ? 'text-muted-foreground line-through'
+              : step.status === 'current'
+                ? 'text-foreground font-semibold'
+                : 'text-muted-foreground'
+          }`;
+          
+          return (
+            <React.Fragment key={index}>
+              {isClickable ? (
+                <button
+                  onClick={onCurrentStepClick}
+                  className={`${textClassName} cursor-pointer hover:underline`}
+                  aria-label={`Continue ${step.label}`}
+                >
+                  {stepText}
+                  <svg
+                    className="inline-block ml-1 h-3 w-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              ) : (
+                <span className={textClassName}>
+                  {stepText}
+                </span>
+              )}
+              {index < steps.length - 1 && (
+                <span className="text-muted-foreground mx-2" aria-hidden>•</span>
+              )}
+            </React.Fragment>
+          );
+        }
+        
+        // Original circle rendering for homepage/banner variants
         const wrapperClassName = `flex shrink-0 ${isHomepage ? 'flex-col items-center gap-1 justify-center' : 'items-center gap-1.5 sm:gap-2'} ${isClickable ? 'cursor-pointer group' : ''}`;
         
         return (
