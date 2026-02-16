@@ -4,7 +4,7 @@ title: 'Secure document vault for sensitive uploaded docs like passports, etc.'
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-16 17:42'
+updated_date: '2026-02-16 17:54'
 labels:
   - security
   - storage
@@ -450,4 +450,20 @@ Add to deletion sequence (before boats deletion):
 - Secure document viewer
 - Grant management UI
 - Shared documents view
+
+## Phase 6: UI Components - DONE (2026-02-16)
+
+### Created Components
+- `app/vault/page.tsx` - Main vault page with auth guard, search, category filters, document grid, empty state
+- `app/components/vault/DocumentCard.tsx` - Card with category icon, file badges, metadata, expiry warnings, action bar (View, Manage Access, Delete)
+- `app/components/vault/DocumentUploadModal.tsx` - Drag-and-drop upload modal with file validation, category select, auto-classify toggle
+- `app/components/vault/SecureDocumentViewer.tsx` - Secure viewer with signed URL countdown, right-click prevention, watermark overlay, auto-expire
+- `app/components/vault/GrantManagementModal.tsx` - Grant management with create form (user ID, purpose, expiry, max views) and existing grants list with revoke
+
+### Navigation & i18n
+- Added Document Vault link to `NavigationMenu.tsx` (lock icon, visible to all authenticated users)
+- Added ~80 translation keys to `messages/en.json` and `messages/fi.json` (vault section + navigation key)
+
+### Type Verification
+- `npx tsc --noEmit` passes with zero errors in all new document vault files (81 pre-existing errors all in unrelated test files)
 <!-- SECTION:NOTES:END -->
