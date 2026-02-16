@@ -60,10 +60,15 @@ export function LegBrowsePane({
     <>
       {/* Main Pane */}
       <div
-        className={`fixed top-16 left-0 bottom-0 bg-background border-r border-border z-30 flex-col hidden md:flex transition-all duration-300 ease-out ${
+        className={`fixed top-0 left-0 bottom-0 bg-background border-r border-border z-30 flex-col hidden md:flex transition-all duration-300 ease-out ${
           isMinimized ? 'w-0' : 'w-[400px]'
         } ${className}`}
       >
+        {/* Clear area for logo and beta badge - matches header height */}
+        {!isMinimized && (
+          <div className="h-16 flex-shrink-0" aria-hidden="true" />
+        )}
+
         {/* Minimize button - Right edge of pane */}
         {!isMinimized && (
           <button

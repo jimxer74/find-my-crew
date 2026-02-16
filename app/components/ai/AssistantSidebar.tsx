@@ -95,7 +95,7 @@ export function AssistantSidebar() {
   return createPortal(
     <div
       ref={panelRef}
-      className="fixed top-16 bottom-0 right-0 w-full bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+      className="fixed top-16 bottom-0 right-0 w-full bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden rounded-t-lg md:rounded-t-none"
       style={isMobile ? undefined : { width: `${panelWidth}px` }}
     >
       {/* Resize handle - desktop only */}

@@ -137,9 +137,17 @@ export function Header() {
     return null;
   }
 
+  // Check if we're on the crew dashboard page
+  const isCrewDashboard = pathname === '/crew/dashboard';
+  
+  // Apply transparent styles for crew dashboard
+  const navClassName = isCrewDashboard
+    ? "fixed top-0 left-0 right-0 z-[110] w-full bg-transparent"
+    : "border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95";
+
   return (
     <>
-      <nav className="border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95">
+      <nav className={navClassName}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">

@@ -82,7 +82,7 @@ export default function CrewDashboard() {
   }
 
   return (
-    <div className="bg-background flex flex-col overflow-hidden h-[calc(100vh-4rem)]">
+    <div className="bg-background flex flex-col overflow-hidden fixed inset-0 h-screen w-screen">
       {/* Show profile completion prompt for signed-in users */}
       {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
 
@@ -155,7 +155,7 @@ export default function CrewDashboard() {
         </div>
       )}
 
-      <main className="flex-1 relative overflow-hidden" style={{ minHeight: 0 }}>
+      <main className="flex-1 relative overflow-hidden w-full h-full" style={{ minHeight: 0 }}>
         <CrewBrowseMap
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
           initialLegId={initialLegId}

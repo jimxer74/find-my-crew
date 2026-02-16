@@ -92,7 +92,7 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
   return createPortal(
     <div
       ref={dialogRef}
-      className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-[28rem] bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+      className="fixed top-16 bottom-0 right-0 w-full md:w-96 lg:w-[28rem] bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden rounded-t-lg md:rounded-t-none"
     >
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card">

@@ -145,7 +145,7 @@ export function NavigationMenu({ onOpenLogin, onOpenSignup }: NavigationMenuProp
       {isOpen && typeof document !== 'undefined' && createPortal(
         <div
           ref={panelRef}
-          className="fixed top-16 bottom-0 right-0 w-full md:w-60 lg:w-80 bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden"
+          className="fixed top-16 bottom-0 right-0 w-full md:w-60 lg:w-80 bg-card border-l border-border shadow-xl z-[120] flex flex-col overflow-hidden rounded-t-lg md:rounded-t-none"
         >
           {/* Header */}
           <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
