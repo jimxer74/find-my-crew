@@ -700,9 +700,9 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
             }
           }}
         >
-          <div className="flex-1 bg-card flex flex-col overflow-hidden">
+          <div className="flex-1 bg-white dark:bg-card flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-border flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {currentPage === 1 && 'Where & When to sail'}
                 {currentPage === 2 && 'Sailing profile'}
@@ -773,7 +773,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           aria-label="Clear"
                         >
-                          <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-4 h-4 text-gray-800 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -804,7 +804,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                           aria-label="Clear"
                         >
-                          <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <svg className="w-4 h-4 text-gray-800 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
@@ -819,10 +819,10 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                 <div className="space-y-4">
                   {/* Instructions */}
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
                     </h3>
-                    <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
                       <li>Your sailing experience and skill level</li>
                       <li>Relevant certifications and qualifications</li>
                       <li>Preferences for trip types and destinations</li>
@@ -847,7 +847,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
             </div>
 
             {/* Footer Navigation */}
-            <div className="sticky bottom-0 flex flex-col gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-card flex-shrink-0">
+            <div className="sticky bottom-0 flex flex-col gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-card flex-shrink-0">
               {/* AI Consent - only show on page 2 */}
               {currentPage === 2 && (
                 <div className="flex items-center gap-3">

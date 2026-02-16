@@ -881,9 +881,9 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
             }
           }}
         >
-          <div className="flex-1 bg-card flex flex-col overflow-hidden">
+          <div className="flex-1 bg-white dark:bg-card flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-border flex-shrink-0">
               <button
                 onClick={handleBack}
                 className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
@@ -979,7 +979,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                         onClick={() => {
                           setJourneyDetails({ ...journeyDetails, waypoints: [...journeyDetails.waypoints, { name: '', lat: 0, lng: 0 }] });
                         }}
-                        className="text-sm text-amber-600 dark:text-amber-400 hover:opacity-80 flex items-center gap-1"
+                        className="text-sm text-amber-900 dark:text-amber-400 hover:opacity-80 flex items-center gap-1 font-medium"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -1061,10 +1061,10 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                 <div className="space-y-4">
                   {/* Instructions */}
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
                     </h3>
-                    <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
                       <li>Your skipper profile and sailing experience</li>
                       <li>Boat details</li>
                       <li>Crew requirements and preferences</li>
@@ -1104,7 +1104,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border flex-shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-border flex-shrink-0">
               {currentPage === 1 ? (
                 <>
                   <button
