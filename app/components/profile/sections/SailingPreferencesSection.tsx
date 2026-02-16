@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
+import { LocationAutocomplete, type Location } from '@/app/components/ui/LocationAutocomplete';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 
 type SkillEntry = {
@@ -21,6 +23,10 @@ type FormData = {
   sailing_preferences: string;
   profile_image_url: string;
   roles: ('owner' | 'crew')[];
+  preferred_departure_location: Location | null;
+  preferred_arrival_location: Location | null;
+  availability_start_date: string;
+  availability_end_date: string;
 };
 
 type SailingPreferencesSectionProps = {
@@ -38,6 +44,9 @@ export function SailingPreferencesSection({
   onInfoClick,
   onClose,
 }: SailingPreferencesSectionProps) {
+  const [departureInput, setDepartureInput] = useState(formData.preferred_departure_location?.name || '');
+  const [arrivalInput, setArrivalInput] = useState(formData.preferred_arrival_location?.name || '');
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -82,6 +91,119 @@ export function SailingPreferencesSection({
           }`}
           placeholder="Describe your sailing goals, what kind of sailing excites you, any dietary restrictions, health considerations..."
         />
+      </div>
+
+      {/* Location & Availability Preferences */}
+      <div className="border-t border-border pt-6">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Location & Availability Preferences</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Set your preferred sailing locations and when you are available. These are used to personalize your search results and help skippers find matching crew.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Preferred Departure Location */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground">
+                Preferred Departure
+              </label>
+              {formData.preferred_departure_location && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, preferred_departure_location: null }));
+                    setDepartureInput('');
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <LocationAutocomplete
+              id="preferred_departure_location"
+              value={departureInput}
+              onChange={(location) => {
+                setFormData(prev => ({ ...prev, preferred_departure_location: location }));
+                setDepartureInput(location.name);
+              }}
+              onInputChange={setDepartureInput}
+              placeholder="e.g., Western Mediterranean, Barcelona..."
+            />
+            {formData.preferred_departure_location?.isCruisingRegion && (
+              <p className="text-xs text-sky-600 dark:text-sky-400 mt-1">
+                Cruising region selected
+              </p>
+            )}
+          </div>
+
+          {/* Preferred Arrival Location */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-foreground">
+                Preferred Arrival
+              </label>
+              {formData.preferred_arrival_location && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, preferred_arrival_location: null }));
+                    setArrivalInput('');
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <LocationAutocomplete
+              id="preferred_arrival_location"
+              value={arrivalInput}
+              onChange={(location) => {
+                setFormData(prev => ({ ...prev, preferred_arrival_location: location }));
+                setArrivalInput(location.name);
+              }}
+              onInputChange={setArrivalInput}
+              placeholder="e.g., Caribbean, Canary Islands..."
+            />
+            {formData.preferred_arrival_location?.isCruisingRegion && (
+              <p className="text-xs text-sky-600 dark:text-sky-400 mt-1">
+                Cruising region selected
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Availability Dates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="availability_start_date" className="block text-sm font-medium text-foreground mb-1">
+              Available From
+            </label>
+            <input
+              type="date"
+              id="availability_start_date"
+              name="availability_start_date"
+              value={formData.availability_start_date}
+              onChange={handleChange}
+              className="w-full px-3 py-2 text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            />
+          </div>
+          <div>
+            <label htmlFor="availability_end_date" className="block text-sm font-medium text-foreground mb-1">
+              Available Until
+            </label>
+            <input
+              type="date"
+              id="availability_end_date"
+              name="availability_end_date"
+              value={formData.availability_end_date}
+              onChange={handleChange}
+              min={formData.availability_start_date || undefined}
+              className="w-full px-3 py-2 text-base sm:text-sm border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

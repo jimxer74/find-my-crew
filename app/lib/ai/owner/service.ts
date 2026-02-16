@@ -636,7 +636,9 @@ async function executeOwnerTools(
         const allowedFields = [
           'full_name', 'user_description', 'sailing_experience',
           'risk_level', 'skills', 'sailing_preferences', 'certifications',
-          'phone', 'profile_image_url'
+          'phone', 'profile_image_url',
+          'preferred_departure_location', 'preferred_arrival_location',
+          'availability_start_date', 'availability_end_date'
         ];
 
         // Map aliases
@@ -691,8 +693,42 @@ async function executeOwnerTools(
               }
               
               value = normalizedSkills;
+            } else if (field === 'preferred_departure_location' || field === 'preferred_arrival_location') {
+              // Normalize location object - validate required fields, pass through bbox
+              if (value && typeof value === 'object') {
+                const loc = value as Record<string, unknown>;
+                if (typeof loc.name === 'string' && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+                  const normalized: Record<string, unknown> = { name: loc.name, lat: loc.lat, lng: loc.lng };
+                  if (typeof loc.isCruisingRegion === 'boolean') normalized.isCruisingRegion = loc.isCruisingRegion;
+                  if (loc.bbox && typeof loc.bbox === 'object') {
+                    const bbox = loc.bbox as Record<string, unknown>;
+                    if (typeof bbox.minLng === 'number' && typeof bbox.minLat === 'number' &&
+                        typeof bbox.maxLng === 'number' && typeof bbox.maxLat === 'number') {
+                      normalized.bbox = { minLng: bbox.minLng, minLat: bbox.minLat, maxLng: bbox.maxLng, maxLat: bbox.maxLat };
+                    }
+                  }
+                  if (typeof loc.countryCode === 'string') normalized.countryCode = loc.countryCode;
+                  if (typeof loc.countryName === 'string') normalized.countryName = loc.countryName;
+                  value = normalized;
+                } else {
+                  continue; // Skip invalid location
+                }
+              } else {
+                continue;
+              }
+            } else if (field === 'availability_start_date' || field === 'availability_end_date') {
+              if (typeof value === 'string') {
+                const dateMatch = value.match(/^\d{4}-\d{2}-\d{2}/);
+                if (dateMatch) {
+                  value = dateMatch[0];
+                } else {
+                  continue;
+                }
+              } else {
+                continue;
+              }
             }
-            
+
             updates[field] = value;
           }
         }

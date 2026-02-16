@@ -21,6 +21,7 @@ import {
   isProfileFieldMissing,
   type ProfileDataForCompletion,
 } from '@/app/lib/profile/completionCalculator';
+import { type Location } from '@/app/components/ui/LocationAutocomplete';
 
 type SkillEntry = {
   skill_name: string;
@@ -162,6 +163,10 @@ function ProfilePageContent() {
     sailing_preferences: '',
     profile_image_url: '',
     roles: [] as ('owner' | 'crew')[],
+    preferred_departure_location: null as Location | null,
+    preferred_arrival_location: null as Location | null,
+    availability_start_date: '' as string,
+    availability_end_date: '' as string,
   });
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -325,6 +330,10 @@ function ProfilePageContent() {
           sailing_preferences: '',
           profile_image_url: '',
           roles: initialRoles,
+          preferred_departure_location: null,
+          preferred_arrival_location: null,
+          availability_start_date: '',
+          availability_end_date: '',
         });
 
         setProfile({
@@ -374,6 +383,10 @@ function ProfilePageContent() {
         sailing_preferences: data.sailing_preferences || '',
         profile_image_url: data.profile_image_url || '',
         roles: roles,
+        preferred_departure_location: (data.preferred_departure_location as Location | null) || null,
+        preferred_arrival_location: (data.preferred_arrival_location as Location | null) || null,
+        availability_start_date: data.availability_start_date || '',
+        availability_end_date: data.availability_end_date || '',
       });
     }
     setLoading(false);
@@ -428,6 +441,10 @@ function ProfilePageContent() {
           skills: formData.skills.map(skill => JSON.stringify(skill)),
           sailing_preferences: formData.sailing_preferences || null,
           profile_image_url: formData.profile_image_url || null,
+          preferred_departure_location: formData.preferred_departure_location || null,
+          preferred_arrival_location: formData.preferred_arrival_location || null,
+          availability_start_date: formData.availability_start_date || null,
+          availability_end_date: formData.availability_end_date || null,
         })
         .select()
         .single();
@@ -449,6 +466,10 @@ function ProfilePageContent() {
           skills: formData.skills.map(skill => JSON.stringify(skill)),
           sailing_preferences: formData.sailing_preferences || null,
           profile_image_url: formData.profile_image_url || null,
+          preferred_departure_location: formData.preferred_departure_location || null,
+          preferred_arrival_location: formData.preferred_arrival_location || null,
+          availability_start_date: formData.availability_start_date || null,
+          availability_end_date: formData.availability_end_date || null,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id)

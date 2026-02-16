@@ -56,6 +56,14 @@ export default function CrewHomePage() {
     return profile?.risk_level || null;
   }, [profile?.risk_level]);
 
+  const userDepartureLocation = useMemo(() => {
+    return profile?.preferred_departure_location || null;
+  }, [profile?.preferred_departure_location]);
+
+  const userArrivalLocation = useMemo(() => {
+    return profile?.preferred_arrival_location || null;
+  }, [profile?.preferred_arrival_location]);
+
   // Handle Join button click - open registration dialog
   const handleJoinClick = useCallback((leg: LegListItemData) => {
     setSelectedLeg(leg);
@@ -138,6 +146,8 @@ export default function CrewHomePage() {
                   userSkills={userSkills}
                   userExperienceLevel={userExperienceLevel}
                   userRiskLevel={userRiskLevel}
+                  userDepartureLocation={userDepartureLocation}
+                  userArrivalLocation={userArrivalLocation}
                   onJoinClick={handleJoinClick}
                 />
               ))}

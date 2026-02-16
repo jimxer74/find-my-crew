@@ -95,6 +95,10 @@ create table public.profiles (
   profile_completed_at timestamp without time zone null,
   email text null,
   language varchar(5) null default 'en',  -- User preferred language (en, fi)
+  preferred_departure_location jsonb null,  -- Preferred departure location: {name, lat, lng, isCruisingRegion?, bbox?, countryCode?, countryName?}
+  preferred_arrival_location jsonb null,    -- Preferred arrival location: same shape as departure
+  availability_start_date date null,        -- When crew is available from
+  availability_end_date date null,          -- When crew is available until
   constraint profiles_pkey primary key (id),
   constraint profiles_language_check check (language in ('en', 'fi')),
   constraint profiles_username_key unique (username),
@@ -103,6 +107,7 @@ create table public.profiles (
 -- Indexes
 create unique index if not exists profiles_user_id_key on public.profiles (id);
 create index if not exists idx_profiles_email on public.profiles(email);
+create index if not exists idx_profiles_availability_dates on public.profiles (availability_start_date, availability_end_date) where availability_start_date is not null or availability_end_date is not null;
 
 -- Trigger to sync email from auth.users
 create or replace function public.sync_user_email()

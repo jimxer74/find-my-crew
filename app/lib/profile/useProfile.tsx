@@ -6,6 +6,16 @@ import { getSupabaseBrowserClient } from '../supabaseClient';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
+export type ProfileLocation = {
+  name: string;
+  lat: number;
+  lng: number;
+  isCruisingRegion?: boolean;
+  bbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
+  countryCode?: string;
+  countryName?: string;
+};
+
 export type ProfileData = {
   id: string;
   username: string | null;
@@ -17,6 +27,10 @@ export type ProfileData = {
   sailing_preferences: string[] | null;
   roles: string[] | null;
   profile_completion_percentage: number | null;
+  preferred_departure_location: ProfileLocation | null;
+  preferred_arrival_location: ProfileLocation | null;
+  availability_start_date: string | null;
+  availability_end_date: string | null;
 };
 
 type UseProfileReturn = {
@@ -68,7 +82,7 @@ export function useProfile(): UseProfileReturn {
       const supabase = getSupabaseBrowserClient();
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, username, full_name, phone, sailing_experience, risk_level, skills, sailing_preferences, roles, profile_completion_percentage')
+        .select('id, username, full_name, phone, sailing_experience, risk_level, skills, sailing_preferences, roles, profile_completion_percentage, preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date')
         .eq('id', userId)
         .single();
 

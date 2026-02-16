@@ -274,7 +274,7 @@ function ProfileDialog({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="profile-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="profile-dialog-title" className="text-lg font-semibold text-gray-950 dark:text-gray-100">
             Add Profile Information
           </h2>
           <button
@@ -282,7 +282,7 @@ function ProfileDialog({
             className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -292,10 +292,10 @@ function ProfileDialog({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
               What to include:
             </h3>
-            <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
               <li>Your sailing experience and skill level</li>
               <li>Relevant certifications and qualifications</li>
               <li>Preferences for trip types and destinations</li>
@@ -309,7 +309,7 @@ function ProfileDialog({
             onChange={(e) => setProfileText(e.target.value)}
             placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
             maxLength={2000}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-600 dark:placeholder:text-gray-400 resize-none"
           />
         </div>
 
@@ -330,14 +330,14 @@ function ProfileDialog({
                 }`}
               />
             </button>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Allow AI to process the data that you provide</p>
+            <p className="text-sm text-gray-700 dark:text-gray-400">Allow AI to process the data that you provide</p>
           </div>
           
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             >
               Cancel
             </button>

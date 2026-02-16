@@ -355,6 +355,60 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           type: 'string',
           description: "User's profile image URL (if known from OAuth provider)",
         },
+        preferred_departure_location: {
+          type: 'object',
+          description:
+            'Preferred departure/sailing-from location. Provide name and lat/lng from your geography knowledge. If the conversation contains a Cruising Region with Bounding Box data, you MUST include isCruisingRegion and bbox to preserve the sailing area.',
+          properties: {
+            name: { type: 'string', description: 'Location name (e.g., "Caribbean", "Barcelona, Spain")' },
+            lat: { type: 'number', description: 'Latitude' },
+            lng: { type: 'number', description: 'Longitude' },
+            isCruisingRegion: { type: 'boolean', description: 'True if this is a predefined cruising area' },
+            bbox: {
+              type: 'object',
+              description: 'Bounding box for cruising regions. Include this ONLY when bbox data appears in the conversation.',
+              properties: {
+                minLng: { type: 'number', description: 'Western boundary (longitude)' },
+                minLat: { type: 'number', description: 'Southern boundary (latitude)' },
+                maxLng: { type: 'number', description: 'Eastern boundary (longitude)' },
+                maxLat: { type: 'number', description: 'Northern boundary (latitude)' },
+              },
+              required: ['minLng', 'minLat', 'maxLng', 'maxLat'],
+            },
+          },
+          required: ['name', 'lat', 'lng'],
+        },
+        preferred_arrival_location: {
+          type: 'object',
+          description:
+            'Preferred arrival/sailing-to location. Same shape as preferred_departure_location. Provide name and lat/lng. Include bbox if cruising region data is in the conversation.',
+          properties: {
+            name: { type: 'string', description: 'Location name' },
+            lat: { type: 'number', description: 'Latitude' },
+            lng: { type: 'number', description: 'Longitude' },
+            isCruisingRegion: { type: 'boolean', description: 'True if this is a predefined cruising area' },
+            bbox: {
+              type: 'object',
+              description: 'Bounding box for cruising regions.',
+              properties: {
+                minLng: { type: 'number', description: 'Western boundary (longitude)' },
+                minLat: { type: 'number', description: 'Southern boundary (latitude)' },
+                maxLng: { type: 'number', description: 'Eastern boundary (longitude)' },
+                maxLat: { type: 'number', description: 'Northern boundary (latitude)' },
+              },
+              required: ['minLng', 'minLat', 'maxLng', 'maxLat'],
+            },
+          },
+          required: ['name', 'lat', 'lng'],
+        },
+        availability_start_date: {
+          type: 'string',
+          description: 'When the user is available from (ISO date YYYY-MM-DD)',
+        },
+        availability_end_date: {
+          type: 'string',
+          description: 'When the user is available until (ISO date YYYY-MM-DD)',
+        },
       },
     },
   },

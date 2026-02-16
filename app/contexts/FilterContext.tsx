@@ -103,6 +103,68 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Load profile preferences as filter defaults when no session filters exist
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    // Check if any filters were loaded from session storage
+    const hasSessionFilters =
+      filters.location !== null ||
+      filters.arrivalLocation !== null ||
+      filters.dateRange.start !== null ||
+      filters.dateRange.end !== null ||
+      filters.experienceLevel !== null ||
+      filters.riskLevel.length > 0;
+
+    if (hasSessionFilters) return;
+
+    const loadProfilePreferences = async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile) return;
+
+        const updates: Partial<FilterState> = {};
+
+        if (profile.preferred_departure_location) {
+          const loc = profile.preferred_departure_location as Location;
+          updates.location = loc;
+          updates.locationInput = loc.name;
+        }
+
+        if (profile.preferred_arrival_location) {
+          const loc = profile.preferred_arrival_location as Location;
+          updates.arrivalLocation = loc;
+          updates.arrivalLocationInput = loc.name;
+        }
+
+        if (profile.availability_start_date || profile.availability_end_date) {
+          updates.dateRange = {
+            start: profile.availability_start_date ? new Date(profile.availability_start_date + 'T00:00:00') : null,
+            end: profile.availability_end_date ? new Date(profile.availability_end_date + 'T00:00:00') : null,
+          };
+        }
+
+        if (Object.keys(updates).length > 0) {
+          setFilters(prev => ({ ...prev, ...updates }));
+          setLastUpdated(Date.now());
+        }
+      } catch (err) {
+        console.error('Error loading profile preferences as filter defaults:', err);
+      }
+    };
+
+    loadProfilePreferences();
+  }, [isInitialized]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Save to session storage whenever filters change (after initialization)
   useEffect(() => {
     if (!isInitialized || typeof window === 'undefined') return;

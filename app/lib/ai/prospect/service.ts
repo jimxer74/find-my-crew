@@ -719,7 +719,9 @@ async function executeProspectTools(
         const allowedFields = [
           'full_name', 'user_description', 'sailing_experience',
           'risk_level', 'skills', 'sailing_preferences', 'certifications',
-          'phone', 'profile_image_url'
+          'phone', 'profile_image_url',
+          'preferred_departure_location', 'preferred_arrival_location',
+          'availability_start_date', 'availability_end_date'
         ];
 
         // First, map any aliased field names to their canonical names
@@ -826,8 +828,55 @@ async function executeProspectTools(
               log(`Normalized skills: ${JSON.stringify(normalizedSkills)}`);
               log(`📊 Skills being saved to database:`, normalizedSkills.map(s => ({ skill_name: s.skill_name, description_length: s.description?.length || 0 })));
               value = normalizedSkills;
+            } else if (field === 'preferred_departure_location' || field === 'preferred_arrival_location') {
+              // Normalize location object - validate required fields, pass through bbox
+              if (value && typeof value === 'object') {
+                const loc = value as Record<string, unknown>;
+                if (typeof loc.name === 'string' && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+                  const normalized: Record<string, unknown> = {
+                    name: loc.name,
+                    lat: loc.lat,
+                    lng: loc.lng,
+                  };
+                  if (typeof loc.isCruisingRegion === 'boolean') {
+                    normalized.isCruisingRegion = loc.isCruisingRegion;
+                  }
+                  if (loc.bbox && typeof loc.bbox === 'object') {
+                    const bbox = loc.bbox as Record<string, unknown>;
+                    if (typeof bbox.minLng === 'number' && typeof bbox.minLat === 'number' &&
+                        typeof bbox.maxLng === 'number' && typeof bbox.maxLat === 'number') {
+                      normalized.bbox = { minLng: bbox.minLng, minLat: bbox.minLat, maxLng: bbox.maxLng, maxLat: bbox.maxLat };
+                    }
+                  }
+                  if (typeof loc.countryCode === 'string') normalized.countryCode = loc.countryCode;
+                  if (typeof loc.countryName === 'string') normalized.countryName = loc.countryName;
+                  log(`Normalized ${field}: ${JSON.stringify(normalized)}`);
+                  value = normalized;
+                } else {
+                  log(`Invalid ${field} - missing name/lat/lng, skipping`);
+                  continue;
+                }
+              } else {
+                log(`Invalid ${field} - not an object, skipping`);
+                continue;
+              }
+            } else if (field === 'availability_start_date' || field === 'availability_end_date') {
+              // Validate ISO date string
+              if (typeof value === 'string') {
+                const dateMatch = value.match(/^\d{4}-\d{2}-\d{2}/);
+                if (dateMatch) {
+                  value = dateMatch[0]; // Extract YYYY-MM-DD portion
+                  log(`Normalized ${field}: ${value}`);
+                } else {
+                  log(`Invalid ${field} format: ${value}, skipping`);
+                  continue;
+                }
+              } else {
+                log(`Invalid ${field} - not a string, skipping`);
+                continue;
+              }
             }
-            
+
             updates[field] = value;
           }
         }
@@ -1484,6 +1533,10 @@ ${getSkillsStructure()}
 - Example: {"skill_name": "navigation", "description": "I have 5 years experience using GPS and chartplotters"}
 
 7. **certifications** - Any sailing certifications or courses mentioned
+8. **preferred_departure_location** - Where the user wants to sail FROM. Extract from conversation. Provide as object: {"name": "...", "lat": number, "lng": number}. If the conversation contains cruising region bounding box data (e.g. \`(Cruising Region: Caribbean, Bounding Box: {"minLng":-89,"minLat":10,"maxLng":-59,"maxLat":23})\`), you MUST include isCruisingRegion and bbox: {"name": "Caribbean", "lat": 16.5, "lng": -74, "isCruisingRegion": true, "bbox": {"minLng": -89, "minLat": 10, "maxLng": -59, "maxLat": 23}}. For locations without bbox, provide lat/lng from your geography knowledge.
+9. **preferred_arrival_location** - Where the user wants to sail TO. Same format as departure location.
+10. **availability_start_date** - ISO date (YYYY-MM-DD) if the user mentioned when they are available from.
+11. **availability_end_date** - ISO date (YYYY-MM-DD) if the user mentioned when they are available until.
 
 **CRITICAL: AUTO-SAVE ON USER CONFIRMATION**
 - FIRST present a clear summary of ALL extracted profile data

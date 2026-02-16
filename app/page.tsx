@@ -72,7 +72,7 @@ function OwnerPostDialog({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="owner-post-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="owner-post-dialog-title" className="text-lg font-semibold text-gray-950 dark:text-gray-100">
             {title}
           </h2>
           <button
@@ -80,7 +80,7 @@ function OwnerPostDialog({
             className="p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -93,13 +93,13 @@ function OwnerPostDialog({
             value={crewDemand}
             onChange={(e) => setCrewDemand(e.target.value)}
             placeholder={placeholder}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-600 dark:placeholder:text-gray-400 resize-none"
           />
           {/* AI Consent - same layout as crew Profile Dialog */}
           <div className="flex items-start justify-between gap-4 pt-2">
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground">{aiProcessingLabel}</p>
-              <p className="text-sm text-muted-foreground mt-0.5">{aiProcessingDesc}</p>
+              <p className="font-medium text-gray-950 dark:text-gray-100">{aiProcessingLabel}</p>
+              <p className="text-sm text-gray-700 dark:text-gray-400 mt-0.5">{aiProcessingDesc}</p>
             </div>
             <button
               type="button"
@@ -121,7 +121,7 @@ function OwnerPostDialog({
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-amber-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
           >
             Cancel
           </button>

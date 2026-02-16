@@ -8,20 +8,66 @@ import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
+import { ProfileLocation } from '@/app/lib/profile/useProfile';
 
 type CruisingRegionSectionProps = {
   region: LocationRegion;
   userSkills?: string[];
   userExperienceLevel?: number | null;
   userRiskLevel?: string[] | null;
+  userDepartureLocation?: ProfileLocation | null;
+  userArrivalLocation?: ProfileLocation | null;
   onJoinClick?: (leg: LegListItemData) => void;
 };
+
+// Haversine distance in km between two coordinates
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+// Calculate proximity score (0-100) based on distance or bbox containment
+function proximityScore(
+  waypointLat: number | undefined,
+  waypointLng: number | undefined,
+  userLocation: ProfileLocation | null | undefined
+): number {
+  if (!userLocation || waypointLat == null || waypointLng == null) return 50; // neutral score
+
+  // If user selected a cruising region with bbox, check containment
+  if (userLocation.bbox) {
+    const { minLng, minLat, maxLng, maxLat } = userLocation.bbox;
+    if (
+      waypointLng >= minLng && waypointLng <= maxLng &&
+      waypointLat >= minLat && waypointLat <= maxLat
+    ) {
+      return 100; // inside preferred region
+    }
+    // Outside bbox: score based on distance to bbox center
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    const dist = haversineDistance(waypointLat, waypointLng, centerLat, centerLng);
+    return Math.max(0, 100 - (dist / 50)); // decay over ~5000km
+  }
+
+  // Point-to-point distance
+  const dist = haversineDistance(waypointLat, waypointLng, userLocation.lat, userLocation.lng);
+  return Math.max(0, 100 - (dist / 50)); // decay over ~5000km
+}
 
 export function CruisingRegionSection({
   region,
   userSkills = [],
   userExperienceLevel = null,
   userRiskLevel = null,
+  userDepartureLocation = null,
+  userArrivalLocation = null,
   onJoinClick,
 }: CruisingRegionSectionProps) {
   const t = useTranslations('crewHome');
@@ -83,12 +129,26 @@ export function CruisingRegionSection({
           })
         : rawLegs;
 
-      // Sort by match percentage only when user is authenticated
+      // Sort by multi-factor score when user is authenticated
       if (user) {
+        const hasLocationPrefs = !!(userDepartureLocation || userArrivalLocation);
         legsWithScores.sort((a: any, b: any) => {
-          const aScore = a.skill_match_percentage || 0;
-          const bScore = b.skill_match_percentage || 0;
-          return bScore - aScore;
+          const aSkill = a.skill_match_percentage || 0;
+          const bSkill = b.skill_match_percentage || 0;
+
+          if (!hasLocationPrefs) {
+            return bSkill - aSkill;
+          }
+
+          // Multi-factor: skill 50% + departure proximity 25% + arrival proximity 25%
+          const aDepProx = proximityScore(a.start_waypoint?.lat, a.start_waypoint?.lng, userDepartureLocation);
+          const bDepProx = proximityScore(b.start_waypoint?.lat, b.start_waypoint?.lng, userDepartureLocation);
+          const aArrProx = proximityScore(a.end_waypoint?.lat, a.end_waypoint?.lng, userArrivalLocation);
+          const bArrProx = proximityScore(b.end_waypoint?.lat, b.end_waypoint?.lng, userArrivalLocation);
+
+          const aTotal = aSkill * 0.5 + aDepProx * 0.25 + aArrProx * 0.25;
+          const bTotal = bSkill * 0.5 + bDepProx * 0.25 + bArrProx * 0.25;
+          return bTotal - aTotal;
         });
       }
 
@@ -99,7 +159,7 @@ export function CruisingRegionSection({
     } finally {
       setLoading(false);
     }
-  }, [region, user, userSkills, userExperienceLevel, userRiskLevel]);
+  }, [region, user, userSkills, userExperienceLevel, userRiskLevel, userDepartureLocation, userArrivalLocation]);
 
   useEffect(() => {
     fetchLegs();

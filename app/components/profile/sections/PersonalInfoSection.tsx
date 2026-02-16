@@ -1,6 +1,7 @@
 'use client';
 
 import { ExperienceLevel } from '@/app/types/experience-levels';
+import { type Location } from '@/app/components/ui/LocationAutocomplete';
 
 type SkillEntry = {
   skill_name: string;
@@ -20,6 +21,10 @@ type FormData = {
   sailing_preferences: string;
   profile_image_url: string;
   roles: ('owner' | 'crew')[];
+  preferred_departure_location: Location | null;
+  preferred_arrival_location: Location | null;
+  availability_start_date: string;
+  availability_end_date: string;
 };
 
 type PersonalInfoSectionProps = {

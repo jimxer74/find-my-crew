@@ -410,7 +410,7 @@ function SkipperCrewProfilesDialog({
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="skipper-crew-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="skipper-crew-dialog-title" className="text-lg font-semibold text-gray-950 dark:text-gray-100">
             {title}
           </h2>
           <button
@@ -418,7 +418,7 @@ function SkipperCrewProfilesDialog({
             className="p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
             aria-label="Close"
           >
-            <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -428,10 +428,10 @@ function SkipperCrewProfilesDialog({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-2">
+            <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">
               What to include:
             </h3>
-            <ul className="text-xs text-amber-800 dark:text-amber-200 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside">
               <li>Your skipper profile and sailing experience</li>
               <li>Boat details</li>
               <li>Crew requirements and preferences</li>
@@ -445,7 +445,7 @@ function SkipperCrewProfilesDialog({
             onChange={(e) => setCrewDemand(e.target.value)}
             placeholder={placeholder}
             maxLength={2000}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-600 dark:placeholder:text-gray-400 resize-none"
           />
         </div>
 
@@ -466,14 +466,14 @@ function SkipperCrewProfilesDialog({
                 }`}
               />
             </button>
-            <p className="text-sm text-muted-foreground">Allow AI to process the data that you provide</p>
+            <p className="text-sm text-gray-700 dark:text-gray-400">Allow AI to process the data that you provide</p>
           </div>
           
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-amber-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
             >
               Cancel
             </button>
