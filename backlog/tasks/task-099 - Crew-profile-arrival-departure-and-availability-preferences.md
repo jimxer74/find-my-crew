@@ -1,10 +1,10 @@
 ---
 id: TASK-099
 title: Crew profile arrival & departure and availability preferences
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-13 14:09'
-updated_date: '2026-02-16 09:09'
+updated_date: '2026-02-16 09:18'
 labels: []
 dependencies: []
 ---
@@ -23,14 +23,14 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Crew profile edit page has fields for preferred departure location, preferred arrival location, and availability date range
-- [ ] #2 Onboarding wizard includes a step for setting location and availability preferences
-- [ ] #3 Profile preferences persist to the database and load correctly on page refresh
-- [ ] #4 /crew/dashboard filters are pre-populated from profile preferences when no session filters exist
-- [ ] #5 /crew page carousel sorts legs by multi-factor score: skill match + location proximity + availability overlap
-- [ ] #6 Filtering logic works identically in /crew and /crew/dashboard
-- [ ] #7 GDPR account deletion clears all new preference fields
-- [ ] #8 Null/empty preferences are handled gracefully (no errors, default behavior preserved)
+- [x] #1 Crew profile edit page has fields for preferred departure location, preferred arrival location, and availability date range
+- [x] #2 Onboarding wizard includes a step for setting location and availability preferences
+- [x] #3 Profile preferences persist to the database and load correctly on page refresh
+- [x] #4 /crew/dashboard filters are pre-populated from profile preferences when no session filters exist
+- [x] #5 /crew page carousel sorts legs by multi-factor score: skill match + location proximity + availability overlap
+- [x] #6 Filtering logic works identically in /crew and /crew/dashboard
+- [x] #7 GDPR account deletion clears all new preference fields
+- [x] #8 Null/empty preferences are handled gracefully (no errors, default behavior preserved)
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -172,3 +172,32 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 - **Session storage > profile preferences** — active session filters override profile defaults
 - **Reuse `LocationAutocomplete`** for profile edit page — supports both Mapbox and cruising region search with bbox
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Summary
+
+### Phase 1: Database Schema
+- Created `migrations/035_add_crew_location_availability_preferences.sql` adding `preferred_departure_location` (jsonb), `preferred_arrival_location` (jsonb), `availability_start_date` (date), `availability_end_date` (date) to profiles table with partial index on date columns
+- Updated `specs/tables.sql` with new columns and index
+
+### Phase 2: AI Onboarding Tool
+- Updated `app/lib/ai/shared/tools/definitions.ts` with 4 new parameters (including bbox sub-object) on `update_user_profile` tool
+- Updated `app/lib/ai/prospect/service.ts` and `app/lib/ai/owner/service.ts` with allowedFields, location/date normalization, and system prompt instructions for bbox pass-through from conversation
+
+### Phase 3: Profile Edit Page
+- Rewrote `SailingPreferencesSection.tsx` with LocationAutocomplete fields (departure/arrival with clear buttons, cruising region indicators) and date inputs (available from/until)
+- Updated `app/profile/page.tsx` with formData state, loadProfile mapping, and handleSubmit for all 4 new fields
+
+### Phase 4: Dashboard Filter Initialization
+- Updated `FilterContext.tsx` with profile preference loading: when no session storage filters exist, fetches user's profile preferences from Supabase and populates departure/arrival locations (with bbox) and date range as initial filter values
+
+### Phase 5: /crew Listing Sort Enhancement
+- Added `ProfileLocation` type and new fields to `useProfile.tsx` (select query + type)
+- Updated `CruisingRegionSection.tsx` with haversine distance and bbox containment proximity scoring; multi-factor sort: skillMatch 50% + departureProximity 25% + arrivalProximity 25%
+- Updated `app/crew/page.tsx` to pass `userDepartureLocation` and `userArrivalLocation` props
+
+### GDPR
+Verified: existing delete-account route deletes entire profiles row, automatically covering new columns.
+<!-- SECTION:FINAL_SUMMARY:END -->
