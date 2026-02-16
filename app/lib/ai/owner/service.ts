@@ -105,8 +105,8 @@ const SAILING_SKILLS = skillsConfig.general.map(skill => skill.name);
 
 /** Tool names allowed per owner onboarding step. AI only sees these tools. */
 const TOOLS_BY_STEP: Record<OwnerStep, string[]> = {
-  signup: ['get_experience_level_definitions', 'get_risk_level_definitions', 'get_skills_definitions'],
-  create_profile: ['update_user_profile', 'get_experience_level_definitions', 'get_risk_level_definitions', 'get_skills_definitions'],
+  signup: ['search_matching_crew', 'get_experience_level_definitions', 'get_risk_level_definitions', 'get_skills_definitions'],
+  create_profile: ['search_matching_crew', 'update_user_profile', 'get_experience_level_definitions', 'get_risk_level_definitions', 'get_skills_definitions'],
   add_boat: ['fetch_boat_details_from_sailboatdata', 'create_boat'],
   post_journey: ['generate_journey_route'],
   completed: [],
@@ -239,12 +239,21 @@ Use data from fetch_boat_details_from_sailboatdata and your summary.`;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
-**Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate, endDate, waypointDensity ("minimal" or "moderate"). Do not call get_owner_boats—boat id is above.
+**Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), waypointDensity ("minimal" or "moderate"). 
+**CRITICAL:** If the user mentions dates anywhere in the conversation (e.g., "01/05/2026 - 30/05/2026" or "from May 1st to May 30th"), you MUST convert them to ISO format (YYYY-MM-DD) and pass them as startDate and endDate parameters to generate_journey_route.
 **AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys" or "Invite crew to your legs."`;
       stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
 
 generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
-**COORDINATES:** If the user's message includes journey details with coordinates in parentheses (e.g. "Start location: Kingston, Jamaica (lat 18.0, lng -76.8)"), use those exact lat/lng values in your generate_journey_route call. Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the user for latitude/longitude.`;
+**COORDINATES:** If the user's message includes journey details with coordinates in parentheses (e.g. "Start location: Kingston, Jamaica (lat 18.0, lng -76.8)"), use those exact lat/lng values in your generate_journey_route call. Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the user for latitude/longitude.
+**DATES:** If the user has mentioned any dates in the conversation history (e.g., "May 1-30", "01/05/2026 to 30/05/2026", "starting May 1st"), you MUST:
+1. Convert them to ISO format: YYYY-MM-DD (e.g., "2026-05-01")
+2. Pass them as startDate and endDate parameters in your generate_journey_route call
+3. Do NOT ask for dates again if they were already provided
+**Example with dates:**
+\`\`\`tool_call
+{"name": "generate_journey_route", "arguments": {"startLocation": {...}, "endLocation": {...}, "boatId": "...", "startDate": "2026-05-01", "endDate": "2026-05-30", "waypointDensity": "moderate"}}
+\`\`\``;
       break;
     case 'completed':
       stateAndGoal = `## CURRENT STEP: Completed
@@ -876,6 +885,64 @@ async function executeOwnerTools(
         continue;
       }
 
+      // Crew search tool
+      if (toolCall.name === 'search_matching_crew') {
+        try {
+          const { searchMatchingCrew } = await import('@/app/lib/crew/matching-service');
+          
+          // Build search parameters
+          const params: any = {
+            experienceLevel: args.experienceLevel as number | undefined,
+            riskLevels: args.riskLevels as string[] | undefined,
+            skills: args.skills as string[] | undefined,
+            limit: args.limit as number | undefined,
+            includePrivateInfo: !!authenticatedUserId,
+          };
+          
+          // Handle location parameter
+          if (args.location && typeof args.location === 'object') {
+            const loc = args.location as Record<string, unknown>;
+            params.location = {
+              lat: loc.lat as number,
+              lng: loc.lng as number,
+              radius: loc.radius as number | undefined,
+            };
+          }
+          
+          // Handle dateRange parameter
+          if (args.dateRange && typeof args.dateRange === 'object') {
+            const dateRange = args.dateRange as Record<string, unknown>;
+            params.dateRange = {
+              start: dateRange.start as string,
+              end: dateRange.end as string,
+            };
+          }
+          
+          const result = await searchMatchingCrew(supabase, params);
+          
+          results.push({
+            name: toolCall.name,
+            result: {
+              success: true,
+              matches: result.matches,
+              totalCount: result.totalCount,
+              isAuthenticated: !!authenticatedUserId,
+              note: authenticatedUserId 
+                ? 'Full crew profiles shown (authenticated user)'
+                : 'Anonymized profiles shown (sign up to see full details)',
+            },
+          });
+        } catch (error) {
+          log('Error searching for crew:', error);
+          results.push({
+            name: toolCall.name,
+            result: { success: false, matches: [], totalCount: 0 },
+            error: error instanceof Error ? error.message : 'Failed to search crew',
+          });
+        }
+        continue;
+      }
+
       // Boat tools
       if (toolCall.name === 'fetch_boat_details_from_sailboatdata') {
         const make_model = args.make_model as string;
@@ -1343,6 +1410,46 @@ Return ONLY the JSON object, nothing else.`;
         }
 
         log(`✅ Boat created successfully:`, JSON.stringify(data, null, 2));
+        
+        // Update boat_registry with AI-generated fields
+        if (boatData.make_model) {
+          try {
+            const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+            
+            // Prepare boat data for registry (including AI-generated fields)
+            const registryBoatData: any = {
+              type: boatData.type,
+              capacity: boatData.capacity,
+              loa_m: boatData.loa_m,
+              beam_m: boatData.beam_m,
+              max_draft_m: boatData.max_draft_m,
+              displcmt_m: boatData.displcmt_m,
+              average_speed_knots: boatData.average_speed_knots,
+              link_to_specs: boatData.link_to_specs,
+              characteristics: boatData.characteristics,
+              capabilities: boatData.capabilities,
+              accommodations: boatData.accommodations,
+              sa_displ_ratio: boatData.sa_displ_ratio,
+              ballast_displ_ratio: boatData.ballast_displ_ratio,
+              displ_len_ratio: boatData.displ_len_ratio,
+              comfort_ratio: boatData.comfort_ratio,
+              capsize_screening: boatData.capsize_screening,
+              hull_speed_knots: boatData.hull_speed_knots,
+              ppi_pounds_per_inch: boatData.ppi_pounds_per_inch,
+              make_model: boatData.make_model,
+            };
+            
+            await saveBoatRegistry(
+              boatData.make_model as string,
+              registryBoatData,
+              undefined
+            );
+            
+            log(`✅ Boat registry updated for make_model: ${boatData.make_model}`);
+          } catch (registryError) {
+            log(`⚠️ Failed to update boat registry: ${registryError instanceof Error ? registryError.message : 'Unknown error'}`);
+          }
+        }
         
         results.push({
           name: toolCall.name,
@@ -2248,6 +2355,7 @@ Your journey is now ready for you to review and manage. You can:
         name: tc.name,
         arguments: tc.arguments as Record<string, unknown>,
       })) : undefined,
+      toolResults: allToolResults.length > 0 ? allToolResults : undefined,
     },
   };
 

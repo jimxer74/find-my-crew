@@ -6,6 +6,7 @@ import { useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerMessage, PendingAction } from '@/app/lib/ai/owner/types';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
+import CrewCarousel from '@/app/components/crew/CrewCarousel';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -98,6 +99,33 @@ function PendingActionCard({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Component to display crew search results as a carousel
+ */
+function CrewSearchResults({
+  toolResult,
+  onCrewClick,
+}: {
+  toolResult: any;
+  onCrewClick?: (crewId: string) => void;
+}) {
+  if (!toolResult || !toolResult.matches || toolResult.matches.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-border/50">
+      <CrewCarousel
+        crewMembers={toolResult.matches}
+        loading={false}
+        onCrewClick={onCrewClick}
+        title={toolResult.isAuthenticated ? "Matching Crew Members" : "Preview: Matching Crew Members"}
+        subtitle={toolResult.note}
+      />
     </div>
   );
 }
@@ -284,6 +312,22 @@ export default function OwnerChat() {
                       disabled={isLoading}
                     />
                   )}
+                  {/* Show crew search results if present */}
+                  {message.role === 'assistant' && message.metadata?.toolResults && (() => {
+                    // Find search_matching_crew tool result
+                    const crewSearchResult = (message.metadata.toolResults as any[])?.find(
+                      (tr: any) => tr.name === 'search_matching_crew'
+                    );
+                    return crewSearchResult?.result ? (
+                      <CrewSearchResults
+                        toolResult={crewSearchResult.result}
+                        onCrewClick={(crewId) => {
+                          // Could navigate to crew profile or show details
+                          console.log('Crew clicked:', crewId);
+                        }}
+                      />
+                    ) : null;
+                  })()}
                   {/* Show inline action button after assistant messages if user is not authenticated */}
                   {message.role === 'assistant' && !isAuthenticated && (
                     <div className="mt-3 pt-3 border-t border-border/50">

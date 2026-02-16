@@ -172,6 +172,10 @@ export async function executeTool(
         result = await analyzeLegMatch(supabase, userId, args.legId as string);
         break;
 
+      case 'search_matching_crew':
+        result = await searchMatchingCrewTool(supabase, userId, args);
+        break;
+
       case 'fetch_all_boats':
         result = await fetchAllBoats(supabase, userId, args);
         break;
@@ -1239,6 +1243,56 @@ async function analyzeLegMatch(
     legMinExperienceLevel: (leg as any).min_experience_level,
     journeyMinExperienceLevel: journey?.min_experience_level,
     effectiveMinExperienceLevel: effectiveMinExpLevel,
+  };
+}
+
+async function searchMatchingCrewTool(
+  supabase: SupabaseClient,
+  userId: string | null,
+  args: Record<string, unknown>
+) {
+  const { searchMatchingCrew } = await import('@/app/lib/crew/matching-service');
+  
+  // Build search parameters
+  const params: any = {
+    experienceLevel: args.experienceLevel as number | undefined,
+    riskLevels: args.riskLevels as string[] | undefined,
+    skills: args.skills as string[] | undefined,
+    limit: args.limit as number | undefined,
+    includePrivateInfo: !!userId, // Only include names/images if authenticated
+  };
+  
+  // Handle location parameter
+  if (args.location && typeof args.location === 'object') {
+    const loc = args.location as Record<string, unknown>;
+    params.location = {
+      lat: loc.lat as number,
+      lng: loc.lng as number,
+      radius: loc.radius as number | undefined,
+    };
+  }
+  
+  // Handle dateRange parameter
+  if (args.dateRange && typeof args.dateRange === 'object') {
+    const dateRange = args.dateRange as Record<string, unknown>;
+    params.dateRange = {
+      start: dateRange.start as string,
+      end: dateRange.end as string,
+    };
+  }
+  
+  const result = await searchMatchingCrew(supabase, params);
+  
+  log(`Found ${result.matches.length} matching crew members (total: ${result.totalCount})`);
+  
+  return {
+    success: true,
+    matches: result.matches,
+    totalCount: result.totalCount,
+    isAuthenticated: !!userId,
+    note: userId 
+      ? 'Full crew profiles shown (authenticated user)'
+      : 'Anonymized profiles shown (sign up to see full details)',
   };
 }
 

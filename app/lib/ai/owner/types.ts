@@ -30,6 +30,7 @@ export interface OwnerMessage {
   timestamp: string;
   metadata?: {
     toolCalls?: ToolCall[];
+    toolResults?: Array<{ name: string; result: any; error?: string }>;
     /** Action tool calls that require user approval before execution */
     pendingAction?: PendingAction;
   };

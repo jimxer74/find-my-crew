@@ -110,8 +110,11 @@ export async function saveBoatRegistry(
 ): Promise<BoatRegistryEntry> {
   const supabase = getSupabaseServiceRoleClient();
   
+  // Normalize make_model to uppercase for consistent lookups
+  const normalizedMakeModel = makeModel.trim().toUpperCase();
+  
   const registryData = {
-    make_model: makeModel.trim(),
+    make_model: normalizedMakeModel,
     slug: slug?.trim() || null,
     type: boatData.type || null,
     capacity: boatData.capacity ?? null,
@@ -140,7 +143,7 @@ export async function saveBoatRegistry(
   const { data: existing } = await supabase
     .from('boat_registry')
     .select('id, fetch_count, characteristics, capabilities, accommodations')
-    .eq('make_model', makeModel.trim())
+    .eq('make_model', normalizedMakeModel)
     .single();
   
   if (existing) {

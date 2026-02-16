@@ -119,7 +119,7 @@ export const prodConfig: EnvironmentConfig = {
       providers: [
         {
           provider: 'openrouter',
-          models: ['google/gemini-2.0-flash'],
+          models: ['google/gemini-2.0-flash-001'],
           temperature: 0.1,
           maxTokens: 1024
         }
@@ -127,6 +127,7 @@ export const prodConfig: EnvironmentConfig = {
       temperature: 0.1,
       maxTokens: 1024
     }
+
   },
   
 };

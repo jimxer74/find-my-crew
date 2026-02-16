@@ -714,6 +714,64 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ['legId', 'answers'],
     },
   },
+  {
+    name: 'search_matching_crew',
+    description:
+      'Search for crew members that match specific requirements. Returns a list of qualified crew members with their profiles and match scores. Use this tool early in conversations with skippers to show them the value of the platform. Available to all users (unauthenticated users see anonymized results).',
+    access: 'public',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        experienceLevel: {
+          type: 'number',
+          description:
+            'Minimum experience level required: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
+        },
+        riskLevels: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'],
+          },
+          description:
+            'Acceptable risk/comfort levels for the crew. Coastal sailing = protected waters, Offshore sailing = bluewater passages, Extreme sailing = polar expeditions',
+        },
+        location: {
+          type: 'object',
+          description: 'Location and search radius for crew availability',
+          properties: {
+            name: { type: 'string', description: 'Human-readable location name' },
+            lat: { type: 'number', description: 'Latitude' },
+            lng: { type: 'number', description: 'Longitude' },
+            radius: {
+              type: 'number',
+              description: 'Search radius in kilometers (default 500)',
+            },
+          },
+          required: ['lat', 'lng'],
+        },
+        dateRange: {
+          type: 'object',
+          description: 'Date range for crew availability',
+          properties: {
+            start: { type: 'string', description: 'Start date (ISO format YYYY-MM-DD)' },
+            end: { type: 'string', description: 'End date (ISO format YYYY-MM-DD)' },
+          },
+        },
+        skills: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Required or preferred skills. Valid skill names: safety_and_mob, heavy_weather, night_sailing, watch_keeping, navigation, sailing_experience, certifications, physical_fitness, seasickness_management, first_aid, technical_skills, cooking, survival_skills',
+        },
+        limit: {
+          type: 'number',
+          description: 'Maximum number of matches to return (default 10, max 50)',
+        },
+      },
+    },
+  },
 
   // ============================================================
   // OWNER-ONLY TOOLS - Available only to users with owner role
@@ -853,7 +911,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
   {
     name: 'generate_journey_route',
     description:
-      'Generate a sailing journey route with legs and waypoints using AI. For any journey that has a start and end location (e.g. Jamaica to San Blas), use this tool with startLocation, endLocation, boatId; it creates the journey and legs in one go. Use this when user describes a route (start location, end location, waypoints, dates). You must supply approximate lat/lng for each location from your geography knowledge—never ask the user for coordinates. Returns structured journey data with legs and an AI-assessed journey risk level (Coastal sailing, Offshore sailing, or Extreme sailing) which is used when creating the journey. Can handle speed-based planning if boat speed is provided.',
+      'Generate a sailing journey route with legs and waypoints using AI. For any journey that has a start and end location (e.g. Jamaica to San Blas), use this tool with startLocation, endLocation, boatId; it creates the journey and legs in one go. Use this when user describes a route (start location, end location, waypoints, dates). You must supply approximate lat/lng for each location from your geography knowledge—never ask the user for coordinates. IMPORTANT: If the user mentioned dates anywhere in the conversation (e.g., "May 1-30" or "01/05/2026 to 30/05/2026"), convert them to ISO format (YYYY-MM-DD) and pass as startDate and endDate parameters. Returns structured journey data with legs and an AI-assessed journey risk level (Coastal sailing, Offshore sailing, or Extreme sailing) which is used when creating the journey. Can handle speed-based planning if boat speed is provided.',
     access: 'owner',
     category: 'data',
     parameters: {
@@ -898,11 +956,11 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         startDate: {
           type: 'string',
-          description: 'Journey start date (ISO format YYYY-MM-DD)',
+          description: 'Journey start date in ISO format (YYYY-MM-DD). IMPORTANT: If the user mentioned a start date anywhere in the conversation (e.g., "May 1st", "01/05/2026"), convert it to ISO format and include it here.',
         },
         endDate: {
           type: 'string',
-          description: 'Journey end date (ISO format YYYY-MM-DD)',
+          description: 'Journey end date in ISO format (YYYY-MM-DD). IMPORTANT: If the user mentioned an end date anywhere in the conversation (e.g., "May 30th", "30/05/2026"), convert it to ISO format and include it here.',
         },
         useSpeedPlanning: {
           type: 'boolean',

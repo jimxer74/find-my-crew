@@ -126,30 +126,51 @@ export async function POST(request: NextRequest) {
     // Persist onboarding_state server-side so DB stays correct even if client update fails (e.g. cookie)
     if (body.sessionId && (response.profileCreated || response.boatCreated || response.journeyCreated)) {
       let newState: string | null = null;
+      let shouldDeleteSession = false;
+      
       if (response.journeyCreated) {
         newState = 'completed';
+        shouldDeleteSession = true; // Delete session when onboarding is complete
       } else if (response.boatCreated) {
         newState = 'journey_pending';
       } else if (response.profileCreated) {
         newState = 'boat_pending';
       }
+      
       if (newState) {
         try {
           const serviceClient = getSupabaseServiceRoleClient();
-          const { error: updateErr } = await serviceClient
-            .from('owner_sessions')
-            .update({
-              onboarding_state: newState,
-              last_active_at: new Date().toISOString(),
-            })
-            .eq('session_id', body.sessionId);
-          if (updateErr) {
-            console.error('[API Owner Chat Route] Failed to persist onboarding_state:', updateErr);
+          
+          if (shouldDeleteSession) {
+            // Delete the session instead of updating to 'completed'
+            const { error: deleteErr } = await serviceClient
+              .from('owner_sessions')
+              .delete()
+              .eq('session_id', body.sessionId);
+            
+            if (deleteErr) {
+              console.error('[API Owner Chat Route] Failed to delete completed session:', deleteErr);
+            } else {
+              log('✅ Onboarding completed - session deleted successfully');
+            }
           } else {
-            log('Persisted onboarding_state to', newState);
+            // Update state for in-progress onboarding
+            const { error: updateErr } = await serviceClient
+              .from('owner_sessions')
+              .update({
+                onboarding_state: newState,
+                last_active_at: new Date().toISOString(),
+              })
+              .eq('session_id', body.sessionId);
+            
+            if (updateErr) {
+              console.error('[API Owner Chat Route] Failed to persist onboarding_state:', updateErr);
+            } else {
+              log('Persisted onboarding_state to', newState);
+            }
           }
         } catch (e) {
-          console.error('[API Owner Chat Route] Error persisting onboarding_state:', e);
+          console.error('[API Owner Chat Route] Error managing session state:', e);
         }
       }
     }

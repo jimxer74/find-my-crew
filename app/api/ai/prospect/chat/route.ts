@@ -121,7 +121,37 @@ export async function POST(request: NextRequest) {
       messageId: response.message?.id,
       hasLegReferences: !!response.message?.metadata?.legReferences,
       legReferencesCount: response.message?.metadata?.legReferences?.length || 0,
+      profileCreated: response.profileCreated,
     });
+
+    // Delete session when profile is created (onboarding completed)
+    if (body.sessionId && response.profileCreated) {
+      try {
+        const serviceClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+          {
+            auth: {
+              persistSession: false,
+              autoRefreshToken: false,
+            },
+          }
+        );
+        
+        const { error: deleteErr } = await serviceClient
+          .from('prospect_sessions')
+          .delete()
+          .eq('session_id', body.sessionId);
+        
+        if (deleteErr) {
+          console.error('[API Prospect Chat Route] Failed to delete completed session:', deleteErr);
+        } else {
+          log('✅ Crew onboarding completed - session deleted successfully');
+        }
+      } catch (e) {
+        console.error('[API Prospect Chat Route] Error deleting session:', e);
+      }
+    }
 
     // Debug: Log leg references if present
     if (response.message?.metadata?.legReferences?.length) {
