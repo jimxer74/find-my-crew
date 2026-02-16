@@ -1,10 +1,10 @@
 ---
 id: TASK-005
 title: AI assisted crew demand posting for the owners
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-23 17:13'
-updated_date: '2026-01-29 13:55'
+updated_date: '2026-02-16 17:04'
 labels:
   - ai
 dependencies: []
