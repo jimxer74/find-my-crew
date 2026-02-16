@@ -108,10 +108,15 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
           const hardDataResult = await hardDataResponse.json();
           const hardData = hardDataResult.boatDetails;
           console.log('Hard data fetched:', hardData);
+          
+          // Use the canonical make_model from parsed HTML (more reliable than search query)
+          const canonicalMakeModel = hardData.make_model || step1Data.selectedSailboat.name;
+          console.log('Canonical make_model for registry:', canonicalMakeModel);
 
           // Merge hard data
           newStep2Data = {
             ...newStep2Data,
+            makeModel: canonicalMakeModel, // Update with canonical name
             loa_m: hardData.loa_m ?? null,
             beam_m: hardData.beam_m ?? null,
             max_draft_m: hardData.max_draft_m ?? null,
@@ -133,7 +138,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                make_model: step1Data.selectedSailboat.name,
+                make_model: canonicalMakeModel, // Use canonical name
                 hardData: {
                   loa_m: hardData.loa_m,
                   beam_m: hardData.beam_m,
@@ -180,7 +185,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
 
               // Update boat registry with AI-generated descriptive fields
               // This ensures these fields are available for future lookups
-              if (step1Data.selectedSailboat?.name && (
+              if (canonicalMakeModel && (
                 reasonedData.characteristics || 
                 reasonedData.capabilities || 
                 reasonedData.accommodations
@@ -191,7 +196,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                      make_model: step1Data.selectedSailboat.name,
+                      make_model: canonicalMakeModel, // Use canonical name
                       characteristics: reasonedData.characteristics,
                       capabilities: reasonedData.capabilities,
                       accommodations: reasonedData.accommodations,

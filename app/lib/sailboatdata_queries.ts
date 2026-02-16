@@ -345,7 +345,8 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     if (details && details.make_model) {
       try {
         const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
-        await saveBoatRegistry(sailboatQueryStr.trim(), details, slug);
+        // Use details.make_model (from parsed HTML) as the canonical name for registry
+        await saveBoatRegistry(details.make_model, details, slug);
         console.log('✅ Saved to boat registry:', details.make_model);
       } catch (error) {
         // Registry save failure is non-fatal - continue with returning details
