@@ -204,7 +204,7 @@ function OnboardingStepsBar({
             }`
           : isBanner
             ? 'relative flex items-center justify-center gap-1 sm:gap-2 flex-wrap py-0.5 min-h-[1.5rem] overflow-visible'
-            : 'relative flex items-center gap-1 sm:gap-3 flex-wrap overflow-x-auto overflow-y-visible py-0.5 min-h-[1.75rem]'
+            : 'relative flex items-center gap-1 sm:gap-3 flex-wrap overflow-x-auto overflow-y-visible py-1.5 min-h-[2.5rem]'
       }
       role="progressbar"
       aria-valuenow={

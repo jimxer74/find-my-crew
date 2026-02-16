@@ -47,8 +47,8 @@ function OwnerOnboardingContent() {
         />
       </OnboardingStickyBar>
 
-      {/* Chat area */}
-      <main className="flex-1 overflow-y-auto pt-14">
+      {/* Chat area - padding clears the sticky onboarding bar */}
+      <main className="flex-1 overflow-y-auto pt-28">
         <OwnerChat />
       </main>
 

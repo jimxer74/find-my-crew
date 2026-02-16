@@ -24,11 +24,11 @@ export function OnboardingStickyBar({
 }: OnboardingStickyBarProps) {
   return (
     <div className="fixed top-0 left-0 right-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm shadow-sm overflow-visible">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2 overflow-visible">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 overflow-visible">
         <div className="flex items-center gap-3 min-w-0 flex-1 overflow-visible">
           <div className="min-w-0 flex-1 overflow-visible">
             <h2 className="text-sm font-semibold text-foreground truncate">{title}</h2>
-            <div className="mt-1 overflow-visible">{children}</div>
+            <div className="mt-1.5 overflow-visible">{children}</div>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 self-end sm:self-auto">
