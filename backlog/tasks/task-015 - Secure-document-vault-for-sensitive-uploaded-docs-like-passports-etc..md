@@ -4,7 +4,7 @@ title: 'Secure document vault for sensitive uploaded docs like passports, etc.'
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-16 17:29'
+updated_date: '2026-02-16 17:31'
 labels:
   - security
   - storage
@@ -23,7 +23,7 @@ Secure document vault for storing sensitive user documents (passports, licenses,
 
 - **Private encrypted storage** (Supabase private bucket with signed URL access)
 - **AI-powered auto-classification** on upload (document type, metadata extraction)
-- **Granular access grants** (time-limited, view-count-limited, purpose-bound sharing)
+- **Granular access grants** (time-limited configurable, view-count-limited, purpose-bound sharing to other user or AI model)
 - **Comprehensive audit logging** (immutable log of all access events)
 - **Security hardening** (no downloads for grantees, short-lived signed URLs, watermarking)
 - **GDPR compliance** (full deletion on account removal)
@@ -31,7 +31,7 @@ Secure document vault for storing sensitive user documents (passports, licenses,
 **User Roles in Context:**
 - **Crew members**: Upload personal documents (passport, licenses, certifications)
 - **Skippers/Owners**: Upload boat-related documents (insurance, registration, certificates) AND may request access to crew documents for journey compliance
-- **Access flow**: Document owner explicitly grants time-limited view access to specific users for specific purposes
+- **Access flow**: Document owner explicitly grants time-limited view access to specific users or AI for specific purposes / use cases --> These would need to extendable, so that new use cases can be introduced later.
 
 **Security Requirements:**
 - Documents are NEVER publicly accessible
@@ -39,7 +39,7 @@ Secure document vault for storing sensitive user documents (passports, licenses,
 - Sharing is explicit, time-limited, purpose-bound, and revocable
 - All access is audit-logged
 - No download capability for grantees (view-only)
-- Short-lived signed URLs (5 min) for viewing
+- Short-lived signed URLs (configurable time) for viewing
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
