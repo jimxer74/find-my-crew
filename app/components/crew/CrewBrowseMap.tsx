@@ -832,7 +832,24 @@ export function CrewBrowseMap({
     });
 
     // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    const navControl = new mapboxgl.NavigationControl();
+    map.current.addControl(navControl, 'bottom-right');
+    
+    // Add CSS to position controls above sign-in banner (when banner is present)
+    // The banner is approximately 70px tall, so we add 80px bottom margin
+    if (typeof document !== 'undefined') {
+      const styleId = 'crew-dashboard-map-controls-style';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+          .mapboxgl-ctrl-bottom-right {
+            bottom: 80px !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }
 
       // Handle viewport changes (move, zoom) - load legs when zoom > 3.5
       // Note: This function captures state at mount time, but we'll use refs for dynamic values

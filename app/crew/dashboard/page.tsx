@@ -86,9 +86,73 @@ export default function CrewDashboard() {
       {/* Show profile completion prompt for signed-in users */}
       {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
 
-      {/* Show notification banner for non-signed-in users - hide when coming from prospect chat */}
+      {/* "Back to Assistant" button - shown at top-left when navigated from prospect chat or assistant */}
+      {showBackButton && (
+        <div className="fixed top-16 left-0 z-50 px-4 py-2 md:hidden">
+          <button
+            onClick={() => router.push('/welcome/crew')}
+            className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-md shadow-md hover:bg-accent transition-all min-h-[44px]"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            <span className="font-medium text-sm text-foreground">
+              Back to Assistant
+            </span>
+          </button>
+        </div>
+      )}
+
+      {/* Back button - Mobile view top left (only show if Back to Assistant is not shown) */}
+      {!showBackButton && (
+        <div className="fixed top-0 left-0 z-[120] px-4 py-2 md:hidden">
+          <button
+            onClick={() => router.push('/crew')}
+            className="flex items-center gap-2 px-3 py-2 border border-border bg-background hover:bg-accent rounded-md transition-all min-h-[44px]"
+          >
+            <svg
+              className="w-5 h-5 text-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            <span className="font-medium text-sm text-foreground">
+              Back
+            </span>
+          </button>
+        </div>
+      )}
+
+      <main className="flex-1 relative overflow-hidden w-full h-full" style={{ minHeight: 0 }}>
+        <CrewBrowseMap
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
+          initialLegId={initialLegId}
+          initialOpenRegistration={openRegistration}
+          initialBounds={initialRegionBbox?.bbox}
+        />
+
+      </main>
+
+      {/* Show sign-in/sign-up banner at bottom for non-signed-in users - hide when coming from prospect chat */}
       {!user && !fromProspect && (
-        <div className="bg-primary/10 border-b border-primary/20 px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border px-4 py-3 shadow-lg">
           <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
             <div className="flex items-start gap-3 flex-1">
               <svg
@@ -127,43 +191,6 @@ export default function CrewDashboard() {
           </div>
         </div>
       )}
-
-      {/* "Back to Assistant" button - shown at top-left when navigated from prospect chat or assistant */}
-      {showBackButton && (
-        <div className="fixed top-16 left-0 z-50 px-4 py-2 md:hidden">
-          <button
-            onClick={() => router.push('/welcome/crew')}
-            className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-md shadow-md hover:bg-accent transition-all min-h-[44px]"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
-              />
-            </svg>
-            <span className="font-medium text-sm text-foreground">
-              Back to Assistant
-            </span>
-          </button>
-        </div>
-      )}
-
-      <main className="flex-1 relative overflow-hidden w-full h-full" style={{ minHeight: 0 }}>
-        <CrewBrowseMap
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }}
-          initialLegId={initialLegId}
-          initialOpenRegistration={openRegistration}
-          initialBounds={initialRegionBbox?.bbox}
-        />
-
-      </main>
     </div>
   );
 }

@@ -141,23 +141,29 @@ export function Header() {
   const isCrewDashboard = pathname === '/crew/dashboard';
   
   // Apply transparent styles for crew dashboard
+  // On desktop, start header after the left panel (400px) so it doesn't cover the panel
+  // On mobile, start from left offset to leave space for back button (~100px)
   const navClassName = isCrewDashboard
-    ? "fixed top-0 left-0 right-0 z-[110] w-full bg-transparent"
+    ? "fixed top-0 left-[100px] md:left-[400px] right-0 z-[110] bg-transparent"
     : "border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95";
 
   return (
     <>
       <nav className={navClassName}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`${isCrewDashboard ? 'px-2 md:max-w-7xl md:mx-auto md:px-4 md:sm:px-6 lg:px-8' : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8'}`}>
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <LogoWithText userRole={userRoles?.[0] || ''}/>
-              <Link
-                href="/feedback"
-                className="ml-2 px-2 py-0.5 text-xs font-semibold bg-yellow-400 text-yellow-900 rounded-full hover:bg-yellow-500 transition-colors text-center"
-              >
-                ⚠ Beta 
-              </Link>
+              {!isCrewDashboard && (
+                <>
+                  <LogoWithText userRole={userRoles?.[0] || ''}/>
+                  <Link
+                    href="/feedback"
+                    className="ml-2 px-2 py-0.5 text-xs font-semibold bg-yellow-400 text-yellow-900 rounded-full hover:bg-yellow-500 transition-colors text-center"
+                  >
+                    ⚠ Beta 
+                  </Link>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               {user && (userRoles?.includes('crew') || (userRoles === null && roleLoading)) && (

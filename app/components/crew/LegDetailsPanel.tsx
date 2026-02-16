@@ -141,6 +141,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const { user } = useAuth();
   const { handleRedirect } = useProfileRedirect();
   const [isMinimized, setIsMinimized] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
   const [isExperienceLevelDialogOpen, setIsExperienceLevelDialogOpen] = useState(false);
   const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
@@ -846,6 +847,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     );
   };
 
+
   // Prevent body scroll when panel is open
   useEffect(() => {
     if (isOpen) {
@@ -887,7 +889,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
       {/* Panel - Left Side on desktop, Full Screen on mobile - Overlays the map */}
       <div
-        className={`fixed top-16 md:top-16 left-0 right-0 md:right-auto bottom-0 md:bottom-0 bg-card border-r border-border shadow-2xl z-50 transition-all duration-300 ease-out ${
+        ref={panelRef}
+        className={`fixed top-16 md:top-0 left-0 right-0 md:right-auto bottom-0 md:bottom-0 bg-card border-r border-border shadow-2xl z-[120] transition-all duration-300 ease-out ${
           isOpen 
             ? isMinimized 
               ? 'w-0 md:w-0' 
@@ -970,7 +973,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {/* Close button - Desktop only - Top right inside panel */}
         {isOpen && !isMinimized && (
           <button
-            onClick={onClose}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onClose();
+            }}
             className="hidden md:flex absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all cursor-pointer"
             title="Close panel"
             aria-label="Close panel"
@@ -996,7 +1003,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           <>
             {/* Requirements Form - In pane */}
             {showRequirementsForm ? (
-              <div className="h-full">
+              <div className="h-full relative" style={{ zIndex: 1 }}>
                 <RegistrationRequirementsForm
                   journeyId={leg.journey_id}
                   legName={leg.leg_name}
@@ -1111,7 +1118,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
               </div>
             ) : (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full relative" style={{ zIndex: 1 }}>
               <div className="flex-1 overflow-y-auto min-h-0">
                 {/* Boat Image */}
                 {leg.boat_image_url || (journeyImages && journeyImages.length > 0) ? (

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { LegList, LegListItemData } from './LegList';
 import { CostModel } from '@/app/types/cost-models';
@@ -64,10 +65,6 @@ export function LegBrowsePane({
           isMinimized ? 'w-0' : 'w-[400px]'
         } ${className}`}
       >
-        {/* Clear area for logo and beta badge - matches header height */}
-        {!isMinimized && (
-          <div className="h-16 flex-shrink-0" aria-hidden="true" />
-        )}
 
         {/* Minimize button - Right edge of pane */}
         {!isMinimized && (
@@ -83,10 +80,31 @@ export function LegBrowsePane({
 
         {/* Header */}
         {!isMinimized && (
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-background">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-background">
             <h2 className="font-semibold text-foreground">
               {legs.length} Leg{legs.length !== 1 ? 's' : ''} in View
             </h2>
+            <Link
+              href="/crew"
+              className="flex items-center gap-1 px-2 py-1 text-sm text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
+              title="Back to Crew"
+              aria-label="Back to Crew"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <span className="hidden sm:inline">Back</span>
+            </Link>
           </div>
         )}
 
