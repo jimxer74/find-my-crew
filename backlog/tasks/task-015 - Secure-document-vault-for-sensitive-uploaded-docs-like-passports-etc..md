@@ -4,7 +4,7 @@ title: 'Secure document vault for sensitive uploaded docs like passports, etc.'
 status: In Progress
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-16 17:31'
+updated_date: '2026-02-16 17:42'
 labels:
   - security
   - storage
@@ -408,3 +408,46 @@ Add to deletion sequence (before boats deletion):
 - Anthropic Vision API access for document classification
 - Consider future: virus scanning integration, OCR for non-image PDFs
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Implementation Progress (2026-02-16)
+
+### Phase 1: Database Schema & Storage - DONE
+- Created `migrations/037_create_document_vault.sql` with 3 tables + storage policies
+- Updated `specs/tables.sql` (source of truth)
+
+### Phase 2: API Routes - DONE
+- `POST /api/documents/upload` - Upload with rate limiting, file validation, SHA-256 hash
+- `GET /api/documents` - List with category filter and search
+- `GET /api/documents/[id]` - Single document details
+- `GET /api/documents/[id]/view` - Signed URL generation (owner + grantee)
+- `PATCH /api/documents/[id]` - Update metadata (whitelisted fields only)
+- `DELETE /api/documents/[id]` - Delete document + storage file
+- `POST /api/documents/[id]/grants` - Create access grant with validation
+- `GET /api/documents/[id]/grants` - List grants with grantee profiles
+- `DELETE /api/documents/[id]/grants/[grantId]` - Revoke grant
+- `GET /api/documents/shared` - List documents shared with user
+- `GET /api/documents/[id]/access-log` - View audit trail
+- `POST /api/documents/[id]/classify` - AI classification with consent check
+
+### Phase 3: AI Classification - DONE
+- `app/lib/ai/documents/classification-service.ts` - Gemini Vision-based classification
+
+### Phase 4: Supporting Code - DONE
+- `app/lib/documents/types.ts` - All TypeScript types and constants
+- `app/lib/documents/audit.ts` - Audit logging helper
+
+### Phase 5: GDPR - DONE
+- Updated `app/api/user/delete-account/route.ts` with document vault cleanup
+- Added `secure-documents` bucket to storage cleanup
+- Added document tables to constraint checks and verification
+
+### Remaining (Phase 6: UI)
+- Document vault page (`/vault`)
+- Upload wizard component
+- Secure document viewer
+- Grant management UI
+- Shared documents view
+<!-- SECTION:NOTES:END -->
