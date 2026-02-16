@@ -135,23 +135,26 @@ function interpolateLatAtAntimeridian(
   lng2: number, lat2: number
 ): number {
   // Normalize longitudes for interpolation
-  // If crossing from east to west (positive to negative), adjust lng2
-  // If crossing from west to east (negative to positive), adjust lng1
+  // We need to adjust coordinates so they're in a continuous space
   let normalizedLng1 = lng1;
   let normalizedLng2 = lng2;
 
   if (lng1 > 0 && lng2 < 0) {
-    // Crossing from east to west
+    // Crossing from east to west (e.g., 175° to -175°)
+    // Adjust lng2 to be continuous: -175 becomes 185
     normalizedLng2 = lng2 + 360;
   } else if (lng1 < 0 && lng2 > 0) {
-    // Crossing from west to east
+    // Crossing from west to east (e.g., -175° to 175°)
+    // Adjust lng1 to be continuous: -175 becomes 185
     normalizedLng1 = lng1 + 360;
   }
 
-  // Find where the line crosses 180° (or 180° + 360° = 540° in normalized space)
-  const targetLng = lng1 > 0 ? 180 : 180 + 360;
+  // The antimeridian is at 180° (or -180°, same line)
+  // In our normalized space, we want to find where the line crosses 180°
+  const targetLng = 180;
 
-  // Linear interpolation: lat = lat1 + (lat2 - lat1) * (targetLng - normalizedLng1) / (normalizedLng2 - normalizedLng1)
+  // Linear interpolation: lat = lat1 + (lat2 - lat1) * t
+  // where t = (targetLng - normalizedLng1) / (normalizedLng2 - normalizedLng1)
   const t = (targetLng - normalizedLng1) / (normalizedLng2 - normalizedLng1);
   return lat1 + (lat2 - lat1) * t;
 }

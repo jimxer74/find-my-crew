@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { defaultLocale } from '@/i18n/config';
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FilterProvider } from "./contexts/FilterContext";
@@ -38,7 +39,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
-  const messages = await getMessages();
+  let messages;
+  
+  try {
+    messages = await getMessages();
+  } catch (error) {
+    console.error('[RootLayout] Failed to load messages for locale:', locale, error);
+    // Last resort: empty object to prevent context error
+    messages = {};
+  }
+
+  // Ensure messages is always an object (never null/undefined)
+  if (!messages || typeof messages !== 'object') {
+    console.warn('[RootLayout] Messages is invalid, using empty object');
+    messages = {};
+  }
 
   return (
     <html lang={locale} suppressHydrationWarning>
