@@ -4,7 +4,7 @@ title: Registration requirements refactoring
 status: In Progress
 assignee: []
 created_date: '2026-02-16 18:40'
-updated_date: '2026-02-16 22:07'
+updated_date: '2026-02-16 22:11'
 labels: []
 dependencies: []
 ---
@@ -64,19 +64,26 @@ Requirements are retrieved for Journey when user wants to register a leg. Simple
 ### Overview
 Refactor the registration requirements from generic question types (text/yes_no/multiple_choice/rating) to domain-specific requirement types (risk_level, experience_level, skill, passport, question) with a sequential auto-approval flow.
 
+**Note:** No backward compatibility needed. Existing data in journey_requirements, registration_answers, and related fields is test data and will be dropped/recreated cleanly.
+
 ---
 
 ### Phase 1: Database Schema Changes
 
 #### 1.1 Update `specs/tables.sql` (Source of Truth)
-First, document ALL existing but undocumented tables/columns, then add new schema:
+Document and define the complete schema for all requirement-related tables and columns:
 
-**Add to specs/tables.sql:**
-- `auto_approval_enabled` (boolean) and `auto_approval_threshold` (integer 0-100) columns to `journeys` table
-- `skill_passing_score` (integer 0-10, default 7) column to `journeys` table - threshold for combined AI skill assessment
-- `ai_match_score`, `ai_match_reasoning` (text), `auto_approved` (boolean) columns to `registrations` table
+**Add to `journeys` table:**
+- `auto_approval_enabled` BOOLEAN DEFAULT false
+- `auto_approval_threshold` INTEGER CHECK (0-100) DEFAULT 80
+- `skill_passing_score` INTEGER CHECK (0-10) DEFAULT 7 — threshold for combined AI skill assessment
 
-**Create `journey_requirements` table in specs/tables.sql:**
+**Add to `registrations` table:**
+- `ai_match_score` INTEGER CHECK (0-100)
+- `ai_match_reasoning` TEXT
+- `auto_approved` BOOLEAN DEFAULT false
+
+**Create `journey_requirements` table (fresh):**
 ```sql
 CREATE TABLE journey_requirements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -99,8 +106,10 @@ CREATE TABLE journey_requirements (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
+- Indexes on journey_id, (journey_id, order)
+- RLS: owners can CRUD their own journey's requirements, published journey requirements viewable by all
 
-**Create `registration_answers` table in specs/tables.sql:**
+**Create `registration_answers` table (fresh):**
 ```sql
 CREATE TABLE registration_answers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -123,17 +132,20 @@ CREATE TABLE registration_answers (
   UNIQUE(registration_id, requirement_id)
 );
 ```
+- Indexes on registration_id, requirement_id
+- RLS: crew can view own answers, owners can view answers for their journeys
 
 #### 1.2 Create Migration File
 - File: `migrations/038_refactor_requirements_system.sql`
-- Steps:
-  1. Add `skill_passing_score` to `journeys`
-  2. Add `ai_match_score`, `ai_match_reasoning`, `auto_approved` to `registrations` (if not already)
-  3. Alter `journey_requirements`: rename `question_type` → keep for backward compat, add `requirement_type`, add new columns
-  4. Migrate existing data: map old question_type to requirement_type='question'
-  5. Add new columns to `registration_answers`: `ai_score`, `ai_reasoning`, `passport_document_id`, `photo_verification_passed`, `photo_confidence_score`, `passed`
-  6. Add RLS policies for new columns
-  7. Add indexes
+- **Clean slate approach** (no backward compat):
+  1. DROP `registration_answers` table if exists (cascade)
+  2. DROP `journey_requirements` table if exists (cascade)
+  3. Add `skill_passing_score` to `journeys` (if not exists)
+  4. Add `ai_match_score`, `ai_match_reasoning`, `auto_approved` to `registrations` (if not exists)
+  5. CREATE `journey_requirements` with new schema
+  6. CREATE `registration_answers` with new schema
+  7. Add RLS policies and indexes
+  8. Clean up any orphaned registration data referencing old requirements
 
 #### 1.3 Update GDPR Deletion
 - File: `app/api/user/delete-account/route.ts`
@@ -146,7 +158,7 @@ CREATE TABLE registration_answers (
 ### Phase 2: Backend API Refactoring
 
 #### 2.1 Requirements API (`app/api/journeys/[journeyId]/requirements/route.ts`)
-- Update POST validation to accept new `requirement_type` values
+- Replace old question_type validation with new requirement_type validation
 - Validate type-specific fields:
   - `risk_level`: no extra fields needed (uses journey's risk_level)
   - `experience_level`: no extra fields needed (uses journey's min_experience_level)
@@ -163,12 +175,12 @@ Refactor the registration creation to implement the sequential check flow:
 Step 1: Risk Level Check (instant)
   → Load risk_level requirement if exists
   → Compare crew profile.risk_level array with journey risk_level
-  → If crew doesn't have the required risk level → FAIL, return 400 with message
+  → If crew doesn't have the required risk level → FAIL, return 400
 
-Step 2: Experience Level Check (instant)  
+Step 2: Experience Level Check (instant)
   → Load experience_level requirement if exists
   → Compare crew profile.sailing_experience with journey min_experience_level
-  → If crew level < required level → FAIL, return 400 with message
+  → If crew level < required level → FAIL, return 400
 
 Step 3: Create registration record (status: 'Pending approval')
   → Save crew answers for question types
@@ -208,7 +220,7 @@ Major refactoring to support new assessment types:
 - `assessPassportRequirement()` - Passport validity + optional photo verification
 - `assessQuestionRequirements()` - Free-text Q&A assessment against criteria
 - `calculateCombinedSkillScore()` - Weighted score calculation
-- Update `buildAssessmentPrompt()` for new structured format
+- Rewrite `buildAssessmentPrompt()` for new structured format
 - Each assessment function returns individual scores + reasoning
 
 ---
@@ -220,7 +232,7 @@ Major refactoring to support new assessment types:
 1. Owner clicks "+ Add Requirement"
 2. First field is a dropdown to select requirement type
 3. Based on type, different fields appear:
-   - **Risk Level**: No extra config needed (auto-derived from journey settings). Just shows info text explaining the check.
+   - **Risk Level**: No extra config needed (auto-derived from journey settings). Shows info text explaining the check.
    - **Experience Level**: No extra config needed. Shows info text.
    - **Skill**: Dropdown of skills from journey's skills list → textarea for qualification criteria → weight slider (0-10)
    - **Passport**: Toggle for "Require photo validation" → confidence score slider (0-10)
@@ -267,7 +279,6 @@ Major refactoring to support new assessment types:
 
 ### Phase 5: Testing & Validation
 
-- Verify backward compatibility for existing registrations with old question types
 - Test each requirement type individually
 - Test the full sequential flow
 - Test fail-fast behavior for risk/experience checks
@@ -295,7 +306,6 @@ Major refactoring to support new assessment types:
 2. `app/api/registrations/[registrationId]/answers/route.ts` - New answer fields
 
 ### Risks & Considerations
-- **Backward compatibility**: Existing requirements (old question types) need migration strategy. Propose: migrate all existing requirements to `requirement_type='question'` with `question_text` preserved.
 - **Passport flow complexity**: Document vault access grants, photo upload, and AI verification add significant UX complexity. Consider implementing passport as a later sub-phase.
 - **AI cost**: Each skill is assessed individually. For journeys with many skills, this means multiple AI calls. Consider batching skills into a single prompt.
 - **Photo verification**: Requires new photo upload UI during registration. This is a new capability not currently in the registration flow.
