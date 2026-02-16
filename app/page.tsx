@@ -577,7 +577,7 @@ export default function WelcomePage() {
       <main className="flex-1 flex flex-col md:flex-row min-h-screen">
         {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode, owner combo search mode, or owner session exists */}
         {!isOwnerPostMode && !isOwnerComboSearchMode && !hasOwnerSession && (
-        <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
+        <div className={`relative flex items-start justify-center pt-24 md:pt-28 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
           hasExistingSession && sessionType === 'crew' || isComboSearchMode
             ? 'flex-1 min-h-screen'
             : 'flex-1 order-1 md:order-2 min-h-[50vh] md:min-h-screen'
@@ -761,7 +761,7 @@ export default function WelcomePage() {
 
         {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode, owner combo search mode, or owner session exists */}
         {(isOwnerPostMode || isOwnerComboSearchMode || hasOwnerSession || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
-          <div className={`relative flex items-start justify-center pt-16 md:pt-20 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-w-0 ${
+          <div className={`relative flex items-start justify-center pt-24 md:pt-28 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-w-0 ${
             isOwnerComboSearchMode || hasOwnerSession
               ? 'min-h-screen'
               : 'min-h-[50vh] md:min-h-screen'
