@@ -1,10 +1,10 @@
 ---
 id: TASK-015
 title: 'Secure document vault for sensitive uploaded docs like passports, etc.'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-23 17:14'
-updated_date: '2026-02-16 17:54'
+updated_date: '2026-02-16 18:26'
 labels:
   - security
   - storage
