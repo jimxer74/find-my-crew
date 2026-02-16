@@ -4,7 +4,7 @@ title: Crew profile arrival & departure and availability preferences
 status: To Do
 assignee: []
 created_date: '2026-02-13 14:09'
-updated_date: '2026-02-16 08:52'
+updated_date: '2026-02-16 08:57'
 labels: []
 dependencies: []
 ---
@@ -44,28 +44,33 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 
 **AI Onboarding (`update_user_profile` tool):**
 - Allowed fields: `full_name`, `user_description`, `sailing_experience`, `risk_level`, `skills`, `sailing_preferences`, `certifications`, `phone`, `profile_image_url`
-- **MISSING:** No location or availability parameters — the AI cannot save these during onboarding
+- **MISSING:** No location or availability parameters
 - Tool definition in `app/lib/ai/shared/tools/definitions.ts` (line 305)
 - Tool execution handler in `app/lib/ai/prospect/service.ts` (line 698), allowedFields at line 724
+
+**ComboSearchBox → AI conversation flow (ProspectChatContext.tsx line 1476-1549):**
+- When user submits from front page ComboSearchBox, location data is serialized into the AI conversation as a user message:
+  ```
+  Looking to sail from: Caribbean
+  (Cruising Region: Caribbean, Bounding Box: {"minLng":-89,"minLat":10,"maxLng":-59,"maxLat":23})
+  Available: From 3/1/2026
+  ```
+- The full `Location` object (including `isCruisingRegion` and `bbox`) is JSON-serialized into the `whereFrom`/`whereTo` URL params and parsed at lines 1498/1511
+- **The AI already sees bbox data in the conversation** — it just has no tool parameter to save it
 
 **Profile Edit Page (`/app/profile/page.tsx`):**
 - `SailingPreferencesSection` has: risk level selector + sailing preferences textarea
 - **MISSING:** No location picker, no date range picker, no availability fields
 
-**ComboSearchBox (`app/components/ui/ComboSearchBox.tsx`):**
-- Front page search already captures `whereFrom` / `whereTo` as `Location` objects
-- `Location` type (from `LocationAutocomplete.tsx`) includes: `name`, `lat`, `lng`, `isCruisingRegion?`, `bbox?`, `countryCode?`, `countryName?`
-- When user selects a cruising region (e.g. "Western Mediterranean"), `LocationAutocomplete` returns a `Location` with `isCruisingRegion: true` and a `bbox` object `{minLng, minLat, maxLng, maxLat}`
-- When user selects a Mapbox city/region, it returns `isCruisingRegion: false` with no bbox
+**LocationAutocomplete (`app/components/ui/LocationAutocomplete.tsx`):**
+- `Location` type: `{name, lat, lng, isCruisingRegion?, bbox?, countryCode?, countryName?}`
+- Cruising region selections include `isCruisingRegion: true` + `bbox: {minLng, minLat, maxLng, maxLat}`
+- Mapbox selections include `countryCode`/`countryName`, no bbox
 
-**FilterContext (`app/contexts/FilterContext.tsx`):**
-- `FilterState.location` and `FilterState.arrivalLocation` are typed as `Location | null` — already supports bbox
-- Loaded from / saved to sessionStorage
-
-**CrewBrowseMap (`app/components/crew/CrewBrowseMap.tsx`):**
-- When filtering by location, checks `location.bbox` — if present, uses bbox directly for API params (`departure_min_lng`, etc.)
-- If no bbox, falls back to center point + calculated margin
-- **This means profile preferences MUST preserve bbox** so that cruising region preferences flow correctly into dashboard filters
+**FilterContext → CrewBrowseMap flow:**
+- `FilterState.location` / `FilterState.arrivalLocation` typed as `Location | null` (bbox-aware)
+- `CrewBrowseMap` checks `location.bbox` (line 1086) — uses bbox directly for API params if present, falls back to center point + margin
+- **Profile preferences MUST preserve bbox** for cruising region filtering to work in dashboard
 
 **Profile Completion Calculator:** Tracks 8 fields. Location/availability should NOT affect completion %.
 
@@ -81,25 +86,36 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 2. Update `/specs/tables.sql` with new columns
 3. Update GDPR account deletion logic for new columns
 
-**Why jsonb instead of individual columns:** The `Location` type has variable shape — cruising regions include `bbox` + `isCruisingRegion`, Mapbox locations include `countryCode`/`countryName`. Using jsonb stores the complete `Location` object as-is, matching the exact type used by `LocationAutocomplete`, `FilterContext`, and `CrewBrowseMap`. This avoids needing to decompose/recompose the object at every boundary and ensures bbox data flows intact from profile → filter → API.
+**Why jsonb:** The `Location` type has variable shape — cruising regions include `bbox` + `isCruisingRegion`, Mapbox locations include `countryCode`/`countryName`. Using jsonb stores the complete `Location` object as-is, matching the exact type used by `LocationAutocomplete`, `FilterContext`, and `CrewBrowseMap`. Bbox data flows intact from profile → filter → API.
 
 ### Phase 2: AI Onboarding Tool Update
 1. **Update tool definition** in `app/lib/ai/shared/tools/definitions.ts`:
    - Add parameters to `update_user_profile`:
-     - `preferred_departure_location` (object: `{name, lat, lng}`) — AI provides name + coordinates from geography knowledge
-     - `preferred_arrival_location` (object: `{name, lat, lng}`)
+     - `preferred_departure_location` (object: `{name, lat, lng, isCruisingRegion?, bbox?}`) — AI can provide bbox when it's present in the conversation (from ComboSearchBox data)
+     - `preferred_arrival_location` (object: same shape)
      - `availability_start_date` (string, ISO date YYYY-MM-DD)
      - `availability_end_date` (string, ISO date YYYY-MM-DD)
-   - Note: AI won't produce bbox/isCruisingRegion — those come only from `LocationAutocomplete`. The AI provides center-point locations only, which is fine for distance-based matching.
+   - The bbox sub-object: `{minLng: number, minLat: number, maxLng: number, maxLat: number}`
+   - AI should pass through bbox when it appears in the conversation text (e.g. `Cruising Region: Caribbean, Bounding Box: {...}`)
+   - When user describes a location without bbox (e.g. "I want to sail from Barcelona"), AI provides name + lat/lng from geography knowledge
+
 2. **Update tool execution handler** in `app/lib/ai/prospect/service.ts` (line 698+):
-   - Add new fields to `allowedFields` array (line 724)
-   - Add normalization: wrap AI-provided location `{name, lat, lng}` into full `Location` shape (no bbox, `isCruisingRegion: false`)
+   - Add `preferred_departure_location`, `preferred_arrival_location`, `availability_start_date`, `availability_end_date` to `allowedFields` array (line 724)
+   - Add normalization for location objects:
+     - Validate required fields: `name` (string), `lat` (number), `lng` (number)
+     - Pass through optional fields: `isCruisingRegion` (boolean), `bbox` (object with 4 numeric fields)
+     - Ensure bbox values are valid numbers if present
    - Validate date strings are valid ISO dates
-   - Store as jsonb in the profile
-3. **Update AI system prompt** in `app/lib/ai/prospect/service.ts`:
-   - Tell AI to ask about preferred departure/arrival locations and availability dates during profile gathering
-   - Update the example `update_user_profile` call to include new fields
-   - Instruct AI to provide lat/lng from geography knowledge (same pattern as `search_legs_by_location`)
+   - Store location as jsonb, dates as date columns
+
+3. **Update AI system prompt** in `app/lib/ai/prospect/service.ts` (profile completion mode, around line 1460):
+   - Add to "Profile fields to populate" list:
+     - `preferred_departure_location` — Extract from conversation. If user mentioned a cruising region with bounding box (e.g. `(Cruising Region: Caribbean, Bounding Box: {"minLng":-89,...})`), include the full bbox. Otherwise provide `{name, lat, lng}` from geography knowledge.
+     - `preferred_arrival_location` — Same as above
+     - `availability_start_date` — ISO date (YYYY-MM-DD) if mentioned
+     - `availability_end_date` — ISO date (YYYY-MM-DD) if mentioned
+   - Update the example `update_user_profile` call to include location + availability fields
+   - Add instruction: "When the conversation contains cruising region bounding box data, you MUST include the bbox in the location object. This preserves the user's intended sailing area for accurate filtering."
 
 ### Phase 3: Profile Edit Page
 1. **Update FormData type** in `SailingPreferencesSection.tsx` and `app/profile/page.tsx`:
@@ -119,7 +135,7 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 1. Create `useProfilePreferencesAsFilters()` hook:
    - Fetches user's `preferred_departure_location` and `preferred_arrival_location` from profile
    - Maps to `FilterState` format: `location` (departure), `arrivalLocation`, `dateRange`
-   - Since profile stores full `Location` objects (including bbox for cruising regions), no data loss when populating filters
+   - Full `Location` objects (including bbox for cruising regions) flow directly — no data loss
 2. Update `/app/crew/dashboard/page.tsx`:
    - On mount: if no session filters exist, populate from profile preferences
 3. Logic: session storage > profile preferences > empty defaults
@@ -127,10 +143,10 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 ### Phase 5: /crew Listing Sort Enhancement
 1. Update `CruisingRegionSection.tsx`:
    - Fetch user's location preferences from profile
-   - Calculate distance from preferred departure/arrival to each leg's start/end points
+   - For center-point locations: calculate haversine distance to each leg's start/end
+   - For cruising region locations (with bbox): check if leg start/end falls within bbox
    - Multi-factor score: skillMatch (50%) + departureProximity (25%) + arrivalProximity (25%)
    - Sort carousel by score (best matches first)
-2. For cruising region preferences (with bbox), check if leg start/end point falls within the bbox
 
 ---
 
@@ -139,8 +155,8 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 |------|--------|
 | `specs/tables.sql` | Add jsonb location + date columns to profiles |
 | `migrations/035_*.sql` | New migration |
-| `app/lib/ai/shared/tools/definitions.ts` | Add location/availability params to `update_user_profile` |
-| `app/lib/ai/prospect/service.ts` | Update tool handler (allowedFields, normalization) + system prompt |
+| `app/lib/ai/shared/tools/definitions.ts` | Add location/availability params (with bbox support) to `update_user_profile` |
+| `app/lib/ai/prospect/service.ts` | Update tool handler (allowedFields, location+bbox normalization) + system prompt |
 | `app/components/profile/sections/SailingPreferencesSection.tsx` | Add location/availability UI using `LocationAutocomplete` |
 | `app/profile/page.tsx` | Load/save new jsonb fields |
 | `app/crew/dashboard/page.tsx` | Filter initialization from profile preferences |
@@ -149,8 +165,9 @@ results filtering should work logically the same in /crew and /crew/dashboard. i
 | GDPR deletion logic | Include new columns |
 
 ### Key Decisions
-- **jsonb for location storage** — stores the complete `Location` object (name, lat, lng, bbox, isCruisingRegion, countryCode, countryName) matching the exact type used throughout the frontend. Cruising region bbox data flows intact from profile → FilterContext → CrewBrowseMap → API.
-- **AI provides center-point only** — during onboarding, the AI gives `{name, lat, lng}` from geography knowledge. Only `LocationAutocomplete` (profile edit page) can produce cruising region selections with bbox. This is acceptable because AI-provided locations are approximate anyway.
+- **jsonb for location storage** — stores the complete `Location` object (name, lat, lng, bbox, isCruisingRegion, countryCode, countryName). Bbox flows intact from profile → FilterContext → CrewBrowseMap → API.
+- **AI passes through bbox from conversation** — when ComboSearchBox sends cruising region data into the AI conversation (e.g. `(Cruising Region: Caribbean, Bounding Box: {...})`), the AI extracts and includes the bbox in the `update_user_profile` call. This preserves the precise sailing area the user selected on the front page.
+- **AI provides center-point for free-text locations** — when user just says "I want to sail from Barcelona" without bbox data, AI provides `{name, lat, lng}` from geography knowledge. Users can later refine via the profile edit page `LocationAutocomplete` to get cruising region + bbox.
 - **Location/availability NOT in completion calculator** — optional enhancements, not required profile fields
 - **Session storage > profile preferences** — active session filters override profile defaults
 - **Reuse `LocationAutocomplete`** for profile edit page — supports both Mapbox and cruising region search with bbox
