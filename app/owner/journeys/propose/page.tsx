@@ -217,9 +217,122 @@ export default function ProposeJourneyPage() {
 
       if (startDate) journeyInsertData.start_date = startDate;
       if (endDate) journeyInsertData.end_date = endDate;
-      if (generatedJourney.riskLevel && validRiskLevels.includes(generatedJourney.riskLevel)) {
-        journeyInsertData.risk_level = [generatedJourney.riskLevel];
+      
+      // Handle riskLevel - it might be a string, JSON string, or array
+      // The database expects a SCALAR enum value (not an array): 'Coastal sailing' or 'Offshore sailing' or 'Extreme sailing'
+      // Note: Even though schema shows risk_level[], the actual column is scalar enum (see migration 020)
+      if (generatedJourney.riskLevel) {
+        let riskLevelValue: string | null = null;
+        const rawRiskLevel = generatedJourney.riskLevel;
+        
+        console.log('[ProposeJourney] Raw riskLevel:', rawRiskLevel, 'Type:', typeof rawRiskLevel);
+        
+        // Handle different formats
+        if (typeof rawRiskLevel === 'string') {
+          const trimmed = rawRiskLevel.trim();
+          
+          // Check if it's a JSON string wrapped in quotes (e.g., "["Offshore sailing"]")
+          // Pattern: starts with " and [ or starts with ' and [
+          if ((trimmed.startsWith('"') && trimmed.includes('[')) || 
+              (trimmed.startsWith("'") && trimmed.includes('[')) ||
+              trimmed.startsWith('[')) {
+            try {
+              // Remove outer quotes if present (e.g., "["Extreme sailing"]" -> ["Extreme sailing"])
+              let toParse = trimmed;
+              if ((toParse.startsWith('"') && toParse.endsWith('"')) || 
+                  (toParse.startsWith("'") && toParse.endsWith("'"))) {
+                toParse = toParse.slice(1, -1);
+              }
+              
+              // Now parse the inner JSON array
+              const parsed = JSON.parse(toParse);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                riskLevelValue = typeof parsed[0] === 'string' ? parsed[0] : String(parsed[0]);
+              } else if (typeof parsed === 'string') {
+                riskLevelValue = parsed;
+              }
+            } catch (parseError) {
+              console.warn('[ProposeJourney] Failed to parse riskLevel JSON:', parseError, 'Value:', trimmed);
+              // Try to extract the value directly using regex (handles "["value"]" format)
+              const match = trimmed.match(/\["([^"]+)"\]/);
+              if (match && match[1]) {
+                riskLevelValue = match[1];
+              } else {
+                // Fallback: use the string as-is if it's a valid risk level
+                riskLevelValue = trimmed.replace(/^["'\[\]]+|["'\[\]]+$/g, '');
+              }
+            }
+          } else {
+            // Plain string (not JSON)
+            riskLevelValue = trimmed;
+          }
+        } else if (Array.isArray(rawRiskLevel) && rawRiskLevel.length > 0) {
+          riskLevelValue = typeof rawRiskLevel[0] === 'string' ? rawRiskLevel[0] : String(rawRiskLevel[0]);
+        }
+        
+        // Clean up the value (remove any extra quotes or whitespace)
+        if (riskLevelValue) {
+          riskLevelValue = riskLevelValue.trim().replace(/^["']|["']$/g, '');
+          
+          // Validate and set risk_level as SCALAR enum value (not an array!)
+          if (validRiskLevels.includes(riskLevelValue)) {
+            journeyInsertData.risk_level = riskLevelValue; // Scalar value, not array
+            console.log('[ProposeJourney] Set risk_level (scalar):', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
+          } else {
+            console.warn('[ProposeJourney] Invalid risk level value:', riskLevelValue, 'Valid values:', validRiskLevels);
+          }
+        }
       }
+      
+      // Final safety check: ensure risk_level is a scalar string, not an array or JSON string
+      if (journeyInsertData.risk_level !== undefined && journeyInsertData.risk_level !== null) {
+        // If it's an array, take the first element
+        if (Array.isArray(journeyInsertData.risk_level)) {
+          const firstValue = journeyInsertData.risk_level[0];
+          if (typeof firstValue === 'string' && validRiskLevels.includes(firstValue)) {
+            journeyInsertData.risk_level = firstValue;
+          } else {
+            delete journeyInsertData.risk_level;
+          }
+        }
+        // If it's a JSON string, parse it
+        else if (typeof journeyInsertData.risk_level === 'string') {
+          const strValue = journeyInsertData.risk_level;
+          // Check if it looks like a JSON array string
+          if (strValue.trim().startsWith('[')) {
+            try {
+              const parsed = JSON.parse(strValue);
+              if (Array.isArray(parsed) && parsed.length > 0 && validRiskLevels.includes(parsed[0])) {
+                journeyInsertData.risk_level = parsed[0];
+              } else {
+                delete journeyInsertData.risk_level;
+              }
+            } catch {
+              // Try regex extraction
+              const match = strValue.match(/\["([^"]+)"\]/);
+              if (match && match[1] && validRiskLevels.includes(match[1])) {
+                journeyInsertData.risk_level = match[1];
+              } else {
+                delete journeyInsertData.risk_level;
+              }
+            }
+          }
+          // If it's a plain string, validate it
+          else if (!validRiskLevels.includes(strValue)) {
+            console.warn('[ProposeJourney] Invalid risk level string:', strValue);
+            delete journeyInsertData.risk_level;
+          }
+        }
+        // If it's not a string or array, remove it
+        else {
+          console.warn('[ProposeJourney] risk_level is not a string or array:', journeyInsertData.risk_level);
+          delete journeyInsertData.risk_level;
+        }
+      }
+      
+      // Log final data before insert for debugging
+      console.log('[ProposeJourney] Final journeyInsertData.risk_level:', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
+      console.log('[ProposeJourney] Full journeyInsertData:', JSON.stringify(journeyInsertData, null, 2));
 
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')

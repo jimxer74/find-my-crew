@@ -217,11 +217,24 @@ ${getSkillsStructure()}`;
       stepInstructions = `**In this step you may ONLY use fetch_boat_details_from_sailboatdata and create_boat. Do NOT call create_journey or generate_journey_route.**
 
 **READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
-**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. Required fields: name, type, make_model, capacity (number). Use data from fetch_boat_details_from_sailboatdata and your summary.`;
-      extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Example (replace with actual values from your summary and fetch_boat_details result):
+**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. 
+
+**Required fields:** name, type, make_model, capacity (number)
+
+**IMPORTANT - Include ALL available data:** When calling create_boat, you MUST include ALL fields that are available from fetch_boat_details_from_sailboatdata results, including:
+- home_port, country_flag (if provided by user or known)
+- loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots (if available from fetch_boat_details)
+- link_to_specs (if available)
+- **characteristics, capabilities, accommodations** (CRITICAL - these are important descriptive fields that should be included if available from fetch_boat_details)
+- sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch (if available from fetch_boat_details)
+
+Use data from fetch_boat_details_from_sailboatdata and your summary.`;
+      extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Include ALL available fields from fetch_boat_details_from_sailboatdata. Example (replace with actual values from your summary and fetch_boat_details result):
 \`\`\`tool_call
-{"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6}}
-\`\`\``;
+{"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6, "home_port": "Stockholm", "country_flag": "SE", "loa_m": 14.0, "beam_m": 4.2, "max_draft_m": 2.1, "displcmt_m": 12000, "average_speed_knots": 6.5, "link_to_specs": "https://sailboatdata.com/sailboat/bavaria-46", "characteristics": "Modern hull design with fin keel and spade rudder...", "capabilities": "Equipped for offshore passages with full electronics...", "accommodations": "Spacious saloon with 3 cabins and 2 heads..."}}
+\`\`\`
+
+**CRITICAL:** Always include characteristics, capabilities, and accommodations if they were returned by fetch_boat_details_from_sailboatdata. These fields provide important information about the boat.`;
       break;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
@@ -882,7 +895,13 @@ async function executeOwnerTools(
           const { fetchSailboatDetails } = await import('@/app/lib/sailboatdata_queries');
           const details = await fetchSailboatDetails(make_model.trim(), slug?.trim());
 
-          if (details) {
+          // Check if we need AI fallback for missing text fields (capabilities, accommodations)
+          const needsAIFallback = !details || 
+            !details.capabilities || details.capabilities.trim() === '' ||
+            !details.accommodations || details.accommodations.trim() === '';
+
+          if (details && !needsAIFallback) {
+            // Screenscraping succeeded and has all fields
             results.push({
               name: toolCall.name,
               result: {
@@ -909,7 +928,8 @@ async function executeOwnerTools(
             continue;
           }
 
-          // Screenscraping returned null - try AI fallback
+          // Screenscraping returned null OR missing capabilities/accommodations - use AI fallback
+          // If screenscraping succeeded but missing text fields, merge AI results with screenscraping data
           const { callAI } = await import('@/app/lib/ai/service');
           const { parseJsonObjectFromAIResponse } = await import('@/app/lib/ai/shared');
           const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(make_model.trim())}&sort-select&sailboats_per_page=50`;
@@ -952,28 +972,37 @@ Return ONLY the JSON object, nothing else.`;
 
           const aiResult = await callAI({ useCase: 'boat-details', prompt });
           const boatDetails = parseJsonObjectFromAIResponse(aiResult.text);
+          
+          // Merge screenscraping data (if available) with AI results
+          // Prioritize screenscraping for numeric/spec data, but use AI for text descriptions
+          const mergedResult = {
+            type: details?.type || boatDetails.type || null,
+            capacity: details?.capacity ?? boatDetails.capacity ?? null,
+            loa_m: details?.loa_m ?? boatDetails.loa_m ?? null,
+            beam_m: details?.beam_m ?? boatDetails.beam_m ?? null,
+            max_draft_m: details?.max_draft_m ?? boatDetails.max_draft_m ?? null,
+            displcmt_m: details?.displcmt_m ?? boatDetails.displcmt_m ?? null,
+            average_speed_knots: details?.average_speed_knots ?? boatDetails.average_speed_knots ?? null,
+            // Use screenscraping characteristics if available and non-empty, otherwise AI
+            characteristics: (details?.characteristics && details.characteristics.trim() !== '') 
+              ? details.characteristics 
+              : (boatDetails.characteristics || ''),
+            // Always use AI for capabilities and accommodations (screenscraping doesn't extract these)
+            capabilities: boatDetails.capabilities || '',
+            accommodations: boatDetails.accommodations || '',
+            link_to_specs: details?.link_to_specs || boatDetails.link_to_specs || '',
+            sa_displ_ratio: details?.sa_displ_ratio ?? boatDetails.sa_displ_ratio ?? null,
+            ballast_displ_ratio: details?.ballast_displ_ratio ?? boatDetails.ballast_displ_ratio ?? null,
+            displ_len_ratio: details?.displ_len_ratio ?? boatDetails.displ_len_ratio ?? null,
+            comfort_ratio: details?.comfort_ratio ?? boatDetails.comfort_ratio ?? null,
+            capsize_screening: details?.capsize_screening ?? boatDetails.capsize_screening ?? null,
+            hull_speed_knots: details?.hull_speed_knots ?? boatDetails.hull_speed_knots ?? null,
+            ppi_pounds_per_inch: details?.ppi_pounds_per_inch ?? boatDetails.ppi_pounds_per_inch ?? null,
+          };
+          
           results.push({
             name: toolCall.name,
-            result: {
-              type: boatDetails.type || null,
-              capacity: boatDetails.capacity ?? null,
-              loa_m: boatDetails.loa_m ?? null,
-              beam_m: boatDetails.beam_m ?? null,
-              max_draft_m: boatDetails.max_draft_m ?? null,
-              displcmt_m: boatDetails.displcmt_m ?? null,
-              average_speed_knots: boatDetails.average_speed_knots ?? null,
-              characteristics: boatDetails.characteristics || '',
-              capabilities: boatDetails.capabilities || '',
-              accommodations: boatDetails.accommodations || '',
-              link_to_specs: boatDetails.link_to_specs || '',
-              sa_displ_ratio: boatDetails.sa_displ_ratio ?? null,
-              ballast_displ_ratio: boatDetails.ballast_displ_ratio ?? null,
-              displ_len_ratio: boatDetails.displ_len_ratio ?? null,
-              comfort_ratio: boatDetails.comfort_ratio ?? null,
-              capsize_screening: boatDetails.capsize_screening ?? null,
-              hull_speed_knots: boatDetails.hull_speed_knots ?? null,
-              ppi_pounds_per_inch: boatDetails.ppi_pounds_per_inch ?? null,
-            },
+            result: mergedResult,
           });
         } catch (e: any) {
           results.push({
@@ -1175,13 +1204,56 @@ Return ONLY the JSON object, nothing else.`;
         );
 
         if (duplicateByName) {
-          // Treat "boat already exists" as step success so user can advance to journey (Fix 1)
+          // Update existing boat with any missing details from the new call
+          const updateData: Record<string, unknown> = {};
+          let hasUpdates = false;
+
+          // Only update fields that are provided and not null/undefined
+          const fieldsToUpdate = [
+            'type', 'make_model', 'capacity', 'home_port', 'country_flag',
+            'loa_m', 'beam_m', 'max_draft_m', 'displcmt_m', 'average_speed_knots',
+            'link_to_specs', 'characteristics', 'capabilities', 'accommodations',
+            'sa_displ_ratio', 'ballast_displ_ratio', 'displ_len_ratio',
+            'comfort_ratio', 'capsize_screening', 'hull_speed_knots', 'ppi_pounds_per_inch'
+          ];
+
+          for (const field of fieldsToUpdate) {
+            const newValue = boatData[field];
+            if (newValue !== undefined && newValue !== null && newValue !== '') {
+              updateData[field] = newValue;
+              hasUpdates = true;
+            }
+          }
+
+          if (hasUpdates) {
+            // Update the existing boat with new details
+            const { data: updatedBoat, error: updateError } = await supabase
+              .from('boats')
+              .update(updateData)
+              .eq('id', duplicateByName.id)
+              .eq('owner_id', authenticatedUserId)
+              .select('id, name')
+              .single();
+
+            if (updateError) {
+              log(`⚠️ Failed to update existing boat: ${updateError.message}`);
+              // Still treat as success so user can proceed
+            } else {
+              log(`✅ Updated existing boat "${updatedBoat.name}" with additional details`);
+            }
+          }
+
+          // Treat "boat already exists" as step success so user can advance to journey
           results.push({
             name: toolCall.name,
             result: {
               boatAlreadyExists: true,
               boatName: duplicateByName.name,
-              message: `This boat is already in your fleet. You can proceed to create your journey.`,
+              boatId: duplicateByName.id,
+              updated: hasUpdates,
+              message: hasUpdates 
+                ? `Boat "${duplicateByName.name}" already exists. Updated with additional details. You can proceed to create your journey.`
+                : `This boat is already in your fleet. You can proceed to create your journey.`,
             },
           });
           continue;
@@ -1196,26 +1268,72 @@ Return ONLY the JSON object, nothing else.`;
           );
 
           if (duplicateByMakeModel) {
-            // Treat "boat already exists" as step success so user can advance (Fix 1)
+            // Update existing boat with any missing details from the new call
+            const updateData: Record<string, unknown> = {};
+            let hasUpdates = false;
+
+            // Only update fields that are provided and not null/undefined
+            const fieldsToUpdate = [
+              'name', 'type', 'capacity', 'home_port', 'country_flag',
+              'loa_m', 'beam_m', 'max_draft_m', 'displcmt_m', 'average_speed_knots',
+              'link_to_specs', 'characteristics', 'capabilities', 'accommodations',
+              'sa_displ_ratio', 'ballast_displ_ratio', 'displ_len_ratio',
+              'comfort_ratio', 'capsize_screening', 'hull_speed_knots', 'ppi_pounds_per_inch'
+            ];
+
+            for (const field of fieldsToUpdate) {
+              const newValue = boatData[field];
+              if (newValue !== undefined && newValue !== null && newValue !== '') {
+                updateData[field] = newValue;
+                hasUpdates = true;
+              }
+            }
+
+            if (hasUpdates) {
+              // Update the existing boat with new details
+              const { data: updatedBoat, error: updateError } = await supabase
+                .from('boats')
+                .update(updateData)
+                .eq('id', duplicateByMakeModel.id)
+                .eq('owner_id', authenticatedUserId)
+                .select('id, name')
+                .single();
+
+              if (updateError) {
+                log(`⚠️ Failed to update existing boat: ${updateError.message}`);
+                // Still treat as success so user can proceed
+              } else {
+                log(`✅ Updated existing boat "${updatedBoat.name}" with additional details`);
+              }
+            }
+
+            // Treat "boat already exists" as step success so user can advance
             results.push({
               name: toolCall.name,
               result: {
                 boatAlreadyExists: true,
                 boatName: duplicateByMakeModel.name,
-                message: `This boat is already in your fleet. You can proceed to create your journey.`,
+                boatId: duplicateByMakeModel.id,
+                updated: hasUpdates,
+                message: hasUpdates
+                  ? `Boat "${duplicateByMakeModel.name}" already exists. Updated with additional details. You can proceed to create your journey.`
+                  : `This boat is already in your fleet. You can proceed to create your journey.`,
               },
             });
             continue;
           }
         }
 
+        log(`📝 Creating boat with data:`, JSON.stringify(boatData, null, 2));
+        
         const { data, error } = await supabase
           .from('boats')
           .insert(boatData)
-          .select('id, name')
+          .select('id, name, loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots, home_port, country_flag, link_to_specs')
           .single();
 
         if (error) {
+          log(`❌ Failed to create boat: ${error.message}`);
           results.push({
             name: toolCall.name,
             result: null,
@@ -1224,6 +1342,8 @@ Return ONLY the JSON object, nothing else.`;
           continue;
         }
 
+        log(`✅ Boat created successfully:`, JSON.stringify(data, null, 2));
+        
         results.push({
           name: toolCall.name,
           result: {
@@ -1280,6 +1400,11 @@ Return ONLY the JSON object, nothing else.`;
 
             const hullSpeed = boat?.hull_speed_knots;
             speed = boat?.average_speed_knots ?? (typeof hullSpeed === 'number' && hullSpeed > 0 ? hullSpeed * 0.8 : undefined);
+            
+            // Ensure speed is at least 5 knots, this is safe assumption for most boats
+            if(speed && speed < 5) {
+              speed = 5;
+            }
           }
 
           // Call shared function directly (avoids HTTP self-call which fails in serverless)
@@ -1913,6 +2038,7 @@ export async function ownerChat(
 
   // Process with tool loop
   let allToolCalls: ToolCall[] = [];
+  let allToolResults: Array<{ name: string; result: unknown; error?: string }> = [];
   let currentMessages = [...messages];
   let iterations = 0;
   let finalContent = '';
@@ -1946,7 +2072,9 @@ export async function ownerChat(
     log(result.text);
     log('─'.repeat(60));
 
-    const { content, toolCalls } = parseToolCalls(result.text);
+    const parsed = parseToolCalls(result.text);
+    const { content } = parsed;
+    let toolCalls = parsed.toolCalls;
 
     log('🔧 PARSED TOOL CALLS:', toolCalls.length);
 
@@ -1969,7 +2097,7 @@ export async function ownerChat(
         addBoatNudgeCount += 1;
         currentMessages.push(
           { role: 'assistant', content: result.text },
-          { role: 'user', content: 'The user confirmed. You MUST call the create_boat tool in this response. Use exactly this structure with the boat details from your last message: ```tool_call\n{"name": "create_boat", "arguments": {"name": "...", "type": "...", "make_model": "...", "capacity": ...}}\n``` Replace the ... with the actual name, type, make_model, and capacity you already showed. No other tool is allowed in this step.' }
+          { role: 'user', content: 'The user confirmed. You MUST call the create_boat tool in this response. Include ALL available fields from fetch_boat_details_from_sailboatdata results, especially characteristics, capabilities, and accommodations. Use this structure: ```tool_call\n{"name": "create_boat", "arguments": {"name": "...", "type": "...", "make_model": "...", "capacity": ..., "home_port": "...", "loa_m": ..., "beam_m": ..., "characteristics": "...", "capabilities": "...", "accommodations": "..."}}\n``` Replace the ... with actual values from your summary and fetch_boat_details results. Include all fields that were returned by fetch_boat_details_from_sailboatdata. No other tool is allowed in this step.' }
         );
         continue;
       }
@@ -2000,6 +2128,7 @@ export async function ownerChat(
       // If the tool actually succeeded in a previous iteration (e.g. create_boat), the follow-up message describing that success is not a hallucination.
       const claimedToolCall = /(?:created|called|executed|ran|completed|I've created|I've called).*?(?:generate_journey_route|create_journey|create_boat|update_user_profile|journey|boat|profile)/i;
       const contentClaimsToolSuccess = claimedToolCall.test(finalContent) && toolCalls.length === 0;
+      
       if (contentClaimsToolSuccess) {
         const describesActualSuccess =
           (/\b(boat|create_boat)\b/i.test(finalContent) && boatCreated) ||
@@ -2016,7 +2145,35 @@ export async function ownerChat(
     }
 
     allToolCalls.push(...toolCalls);
+    
+    // Prevent duplicate create_boat calls: if boat was already created successfully in this request, stop the AI from calling it again
+    const previousBoatResults = allToolResults.filter(r => r.name === 'create_boat' && !r.error);
+    const boatAlreadyCreatedInThisRequest = previousBoatResults.length > 0 && 
+      previousBoatResults.some(r => {
+        const result = r.result as { success?: boolean; boatAlreadyExists?: boolean };
+        return result?.success === true || result?.boatAlreadyExists === true;
+      });
+    
+    if (boatAlreadyCreatedInThisRequest && toolCalls.some(tc => tc.name === 'create_boat')) {
+      log('⚠️ Boat already created in this request - preventing duplicate create_boat call');
+      log(`   Previous boat results: ${JSON.stringify(previousBoatResults.map(r => ({ name: r.name, success: (r.result as any)?.success, boatAlreadyExists: (r.result as any)?.boatAlreadyExists })))}`);
+      // Remove create_boat calls from this iteration
+      toolCalls = toolCalls.filter(tc => tc.name !== 'create_boat');
+      if (toolCalls.length === 0) {
+        // Add a message to inform AI that boat was already created
+        const previousResult = previousBoatResults[0]?.result as { boatName?: string; boatId?: string };
+        const boatName = previousResult?.boatName || 'the boat';
+        const toolResultsText = formatToolResultsForAI(previousBoatResults);
+        currentMessages.push(
+          { role: 'assistant', content: result.text },
+          { role: 'user', content: `Tool results from previous step:\n${toolResultsText}\n\nThe boat "${boatName}" was already created successfully. Do not call create_boat again. Instead, acknowledge that the boat is ready and suggest the next step: creating a journey.` }
+        );
+        continue; // Continue loop to get AI response without tool call
+      }
+    }
+    
     const toolResults = await executeOwnerTools(supabase, toolCalls, authenticatedUserId, allowedToolNames, fullPromptText);
+    allToolResults.push(...toolResults);
 
     log('📊 TOOL RESULTS:');
     toolResults.forEach((r, i) => {

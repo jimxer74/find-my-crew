@@ -177,6 +177,37 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
                 capabilities: reasonedData.capabilities || '',
                 accommodations: reasonedData.accommodations || '',
               };
+
+              // Update boat registry with AI-generated descriptive fields
+              // This ensures these fields are available for future lookups
+              if (step1Data.selectedSailboat?.name && (
+                reasonedData.characteristics || 
+                reasonedData.capabilities || 
+                reasonedData.accommodations
+              )) {
+                try {
+                  // Call API route instead of direct service import (client component)
+                  const registryResponse = await fetch('/api/boat-registry/update-descriptive-fields', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      make_model: step1Data.selectedSailboat.name,
+                      characteristics: reasonedData.characteristics,
+                      capabilities: reasonedData.capabilities,
+                      accommodations: reasonedData.accommodations,
+                    }),
+                  });
+                  
+                  if (registryResponse.ok) {
+                    console.log('✅ Updated boat registry with AI-generated descriptive fields');
+                  } else {
+                    console.warn('⚠️ Failed to update registry with AI fields');
+                  }
+                } catch (registryError) {
+                  // Non-fatal - registry update failure shouldn't block the wizard
+                  console.warn('⚠️ Failed to update registry with AI fields (non-fatal):', registryError);
+                }
+              }
             } else {
               console.warn('AI reasoned details failed, continuing with hard data only');
             }

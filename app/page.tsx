@@ -12,7 +12,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@/app/lib/prospect/sessionService';
 import * as ownerSessionService from '@/app/lib/owner/sessionService';
-import { shouldStayOnHomepage, redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
+import { shouldStayOnHomepage, redirectAfterAuth, getRedirectPath } from '@/app/lib/routing/redirectHelpers.client';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@/app/components/ui/ComboSearchBox';
 import { OwnerComboSearchBox, type OwnerComboSearchData } from '@/app/components/ui/OwnerComboSearchBox';
@@ -163,38 +163,62 @@ export default function WelcomePage() {
   const [onboardingState, setOnboardingState] = useState<string>('signup_pending');
   const [ownerOnboardingState, setOwnerOnboardingState] = useState<string>('signup_pending');
 
-  // Check if user is logged in and redirect to role-specific homepage (with one retry on failure)
+  // Client-side redirect check (fallback for cases where middleware didn't catch it)
+  // Middleware handles most redirects server-side, but this ensures consistency
+  // This runs quickly and doesn't block page render unnecessarily
   useEffect(() => {
     let cancelled = false;
-    async function checkUserAndRedirect(attempt = 1) {
-      if (authLoading) return;
+
+    async function checkUserAndRedirect() {
+      // Wait for auth to finish loading
+      if (authLoading) {
+        return;
+      }
+
+      // If no user, allow page to render immediately
       if (!user) {
         setIsCheckingRole(false);
         return;
       }
 
+      // User is authenticated - quick check if they should stay or redirect
       try {
         const shouldStay = await shouldStayOnHomepage(user.id);
         if (cancelled) return;
+
         if (shouldStay) {
+          // User has pending onboarding - allow page to render
           setIsCheckingRole(false);
           return;
         }
-        await redirectAfterAuth(user.id, 'root', router);
+
+        // User should be redirected - get path and redirect immediately
+        const redirectPath = await getRedirectPath(user.id, 'root');
+        if (cancelled) return;
+
+        if (redirectPath && redirectPath !== '/') {
+          // Immediate redirect (no delay) - middleware should have caught this
+          // but if not, redirect now to prevent content flash
+          router.replace(redirectPath);
+          // Don't set isCheckingRole to false - let redirect happen
+        } else {
+          setIsCheckingRole(false);
+        }
       } catch (error) {
         console.error('[RootRoute] Failed to determine redirect:', error);
-        if (cancelled || attempt >= 2) {
-          setIsCheckingRole(false);
-          return;
-        }
-        await new Promise((r) => setTimeout(r, 600));
-        if (cancelled) return;
-        await checkUserAndRedirect(2);
+        // On error, allow page to render (fallback)
+        setIsCheckingRole(false);
       }
-      if (!cancelled) setIsCheckingRole(false);
     }
 
-    checkUserAndRedirect();
+    // Only check if we have a user (middleware handles most cases)
+    if (user && !authLoading) {
+      checkUserAndRedirect();
+    } else if (!authLoading) {
+      // No user and auth is loaded - allow page to render
+      setIsCheckingRole(false);
+    }
+
     return () => {
       cancelled = true;
     };
@@ -493,7 +517,9 @@ export default function WelcomePage() {
   };
 
   // Show loading state while checking authentication and roles
-  if (authLoading || isCheckingRole) {
+  // Show loading state while checking auth or redirect
+  // This prevents flash of content before redirect
+  if (authLoading || (user && isCheckingRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">

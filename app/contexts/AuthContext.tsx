@@ -39,9 +39,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
 
       // Redirect to home page on logout
+      // Use window.location for a hard redirect to ensure we go to landing page
       if (event === 'SIGNED_OUT') {
-        router.push('/');
-        router.refresh();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        } else {
+          router.push('/');
+          router.refresh();
+        }
       }
     });
 
@@ -51,8 +56,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
-    router.replace('/');
-    router.refresh();
+    
+    // Use window.location for a hard redirect to ensure we go to landing page
+    // This ensures the redirect happens even if middleware or other logic interferes
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    } else {
+      router.replace('/');
+      router.refresh();
+    }
   };
 
   return (

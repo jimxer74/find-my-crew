@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchSailboatDetails } from '@/app/lib/sailboatdata_queries';
+import { lookupBoatRegistry } from '@/app/lib/boat-registry/service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,20 @@ export async function POST(request: NextRequest) {
     console.log('Slug:', slugTrimmed || '(will be generated from make_model)');
     console.log('==================================');
 
-    // Fetch details from sailboatdata.com (use slug if provided for more reliable URL)
+    // Check registry first (fetchSailboatDetails will also check, but we can log source here)
+    let source = 'external';
+    try {
+      const registryEntry = await lookupBoatRegistry(makeModelTrimmed, slugTrimmed);
+      if (registryEntry) {
+        source = 'registry';
+        console.log('✅ Using cached data from boat registry');
+      }
+    } catch (error) {
+      // Registry check failed, continue with fetchSailboatDetails
+      console.warn('Registry check failed, continuing:', error);
+    }
+
+    // Fetch details (will check registry internally and fallback to external if needed)
     const details = await fetchSailboatDetails(makeModelTrimmed, slugTrimmed);
 
     if (!details) {
@@ -52,7 +66,8 @@ export async function POST(request: NextRequest) {
         capsize_screening: details.capsize_screening ?? null,
         hull_speed_knots: details.hull_speed_knots ?? null,
         ppi_pounds_per_inch: details.ppi_pounds_per_inch ?? null,
-      }
+      },
+      source, // Include source information (registry or external)
     });
 
   } catch (error: any) {

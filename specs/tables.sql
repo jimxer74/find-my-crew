@@ -206,6 +206,61 @@ using(auth.uid() = owner_id);
 
 
 -- ============================================================================
+-- TABLE: boat_registry
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.boat_registry (
+  id uuid primary key default gen_random_uuid(),
+  make_model text not null,
+  slug text, -- Optional slug from sailboatdata.com (e.g., "bavaria-46")
+  type sailboat_category,
+  capacity int,
+  loa_m numeric,
+  beam_m numeric,
+  max_draft_m numeric,
+  displcmt_m numeric,
+  average_speed_knots numeric,
+  link_to_specs text,
+  characteristics text,
+  capabilities text,
+  accommodations text,
+  sa_displ_ratio numeric,
+  ballast_displ_ratio numeric,
+  displ_len_ratio numeric,
+  comfort_ratio numeric,
+  capsize_screening numeric,
+  hull_speed_knots numeric,
+  ppi_pounds_per_inch numeric,
+  fetch_count int default 0, -- Track how many times this registry entry was used
+  last_fetched_at timestamptz, -- When external source was last checked
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint boat_registry_make_model_unique unique (make_model)
+);
+
+-- Indexes
+create index if not exists boat_registry_make_model_idx on public.boat_registry (make_model);
+create index if not exists boat_registry_slug_idx on public.boat_registry (slug) where slug is not null;
+
+-- Enable Row Level Security
+alter table boat_registry enable row level security;
+
+-- Policies
+create policy "Boat registry is viewable by all"
+on boat_registry for select
+using (true);
+
+create policy "Authenticated users can insert boat registry entries"
+on boat_registry for insert
+with check (auth.role() = 'authenticated');
+
+create policy "Authenticated users can update boat registry entries"
+on boat_registry for update
+using (auth.role() = 'authenticated');
+
+
+-- ============================================================================
 -- TABLE: journeys
 -- ============================================================================
 

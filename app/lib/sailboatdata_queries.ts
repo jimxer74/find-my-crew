@@ -271,6 +271,29 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     return null;
   }
 
+  // Check boat registry first (cache layer)
+  try {
+    const { lookupBoatRegistry, registryToSailboatDetails, incrementRegistryFetchCount } = 
+      await import('@/app/lib/boat-registry/service');
+    
+    const registryEntry = await lookupBoatRegistry(sailboatQueryStr.trim(), slug);
+    if (registryEntry) {
+      console.log('✅ Found boat in registry:', registryEntry.make_model);
+      
+      // Increment fetch count asynchronously (don't wait for it)
+      incrementRegistryFetchCount(registryEntry.id).catch(err => 
+        console.warn('Failed to increment registry fetch count:', err)
+      );
+      
+      return registryToSailboatDetails(registryEntry);
+    }
+    
+    console.log('⚠️ Registry miss, fetching from external source:', sailboatQueryStr);
+  } catch (error) {
+    // If registry lookup fails, continue with external fetch (non-fatal)
+    console.warn('Registry lookup failed, continuing with external fetch:', error);
+  }
+
   // Use provided slug if available, otherwise convert make_model string to slug
   let cleanQuery: string;
   if (slug && slug.trim().length > 0) {
@@ -317,6 +340,18 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     console.log('=== PARSED DETAILS DEBUG ===');
     console.log('Parsed details:', JSON.stringify(details, null, 2));
     console.log('============================');
+
+    // Save to registry before returning (non-blocking)
+    if (details && details.make_model) {
+      try {
+        const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+        await saveBoatRegistry(sailboatQueryStr.trim(), details, slug);
+        console.log('✅ Saved to boat registry:', details.make_model);
+      } catch (error) {
+        // Registry save failure is non-fatal - continue with returning details
+        console.warn('⚠️ Failed to save to registry (non-fatal):', error);
+      }
+    }
 
     return details;
   } catch (error) {
