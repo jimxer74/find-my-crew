@@ -87,8 +87,8 @@ export function LegBrowsePane({
             <Link
               href="/crew"
               className="flex items-center gap-1 px-2 py-1 text-sm text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
-              title="Back to Crew"
-              aria-label="Back to Crew"
+              title="List View"
+              aria-label="List View"
             >
               <svg
                 className="w-4 h-4"
@@ -100,10 +100,10 @@ export function LegBrowsePane({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  d="M8 6h13M8 12h13m-13 6h13M3 6h.01M3 12h.01M3 18h.01"
                 />
               </svg>
-              <span className="hidden sm:inline">Back</span>
+              <span className="hidden sm:inline">List View</span>
             </Link>
           </div>
         )}

@@ -200,7 +200,7 @@ export function CruisingRegionSection({
   return (
     <section className="mb-8">
       {/* Region Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-3 mb-3">
         <h2 className="text-lg sm:text-xl font-semibold text-foreground">
           {region.name}
         </h2>

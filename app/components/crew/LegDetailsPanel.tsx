@@ -848,17 +848,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   };
 
 
-  // Prevent body scroll when panel is open
+  // Prevent body scroll when panel is open and hide Header on mobile
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
+      // Add class to hide Header on mobile when panel is open
+      document.body.classList.add('leg-details-panel-open');
     } else {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('leg-details-panel-open');
       // Reset minimized state when panel closes
       setIsMinimized(false);
     }
     return () => {
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('leg-details-panel-open');
     };
   }, [isOpen]);
 
@@ -879,7 +883,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       {/* Backdrop for mobile */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-0 bg-black/50 z-[190] md:hidden"
           onClick={onClose}
         />
       )}
@@ -890,7 +894,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       {/* Panel - Left Side on desktop, Full Screen on mobile - Overlays the map */}
       <div
         ref={panelRef}
-        className={`fixed top-16 md:top-0 left-0 right-0 md:right-auto bottom-0 md:bottom-0 bg-card border-r border-border shadow-2xl z-[120] transition-all duration-300 ease-out ${
+        className={`fixed top-0 left-0 right-0 md:right-auto bottom-0 bg-card border-r border-border shadow-2xl z-[200] transition-all duration-300 ease-out rounded-t-lg md:rounded-t-none ${
           isOpen 
             ? isMinimized 
               ? 'w-0 md:w-0' 

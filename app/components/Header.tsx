@@ -144,7 +144,7 @@ export function Header() {
   // On desktop, start header after the left panel (400px) so it doesn't cover the panel
   // On mobile, start from left offset to leave space for back button (~100px)
   const navClassName = isCrewDashboard
-    ? "fixed top-0 left-[100px] md:left-[400px] right-0 z-[110] bg-transparent"
+    ? "fixed top-0 left-[100px] md:left-[400px] right-0 z-[110] bg-transparent leg-details-panel-open-mobile-hidden"
     : "border-b border-border bg-card fixed top-0 left-0 right-0 z-[110] shadow-sm w-full backdrop-blur-sm bg-card/95";
 
   return (

@@ -180,3 +180,10 @@ body {
   display: none !important;
   background: transparent !important;
 }
+
+/* Hide Header on mobile when LegDetailsPanel is open */
+@media (max-width: 767px) {
+  body.leg-details-panel-open nav.leg-details-panel-open-mobile-hidden {
+    display: none !important;
+  }
+}

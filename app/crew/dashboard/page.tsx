@@ -113,12 +113,14 @@ export default function CrewDashboard() {
         </div>
       )}
 
-      {/* Back button - Mobile view top left (only show if Back to Assistant is not shown) */}
+      {/* List View button - Mobile view top left (only show if Back to Assistant is not shown) */}
       {!showBackButton && (
         <div className="fixed top-0 left-0 z-[120] px-4 py-2 md:hidden">
           <button
             onClick={() => router.push('/crew')}
             className="flex items-center gap-2 px-3 py-2 border border-border bg-background hover:bg-accent rounded-md transition-all min-h-[44px]"
+            title="List View"
+            aria-label="List View"
           >
             <svg
               className="w-5 h-5 text-foreground"
@@ -130,11 +132,11 @@ export default function CrewDashboard() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                d="M8 6h13M8 12h13m-13 6h13M3 6h.01M3 12h.01M3 18h.01"
               />
             </svg>
             <span className="font-medium text-sm text-foreground">
-              Back
+              List View
             </span>
           </button>
         </div>
