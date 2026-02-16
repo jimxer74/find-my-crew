@@ -367,7 +367,10 @@ export function LocationAutocomplete({
     }
   };
 
-  // Update dropdown position when input position changes or suggestions appear
+  // Update dropdown position when input position changes or suggestions appear.
+  // Dropdown uses position:fixed and is portaled to body, so we must use viewport
+  // coordinates (getBoundingClientRect) only — no scroll offset — so it stays
+  // anchored under the input when the page or any scroll container scrolls.
   useEffect(() => {
     const updatePosition = () => {
       if (inputRef.current) {
@@ -375,15 +378,10 @@ export function LocationAutocomplete({
         // Make dropdown wider - at least 400px or 2x input width, whichever is larger
         const minWidth = 400;
         const dropdownWidth = Math.max(minWidth, rect.width * 2);
-        
-        // Use getBoundingClientRect for accurate positioning relative to viewport
-        // Then add scroll offsets for proper positioning in portal
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-        
+        // Viewport coordinates for position:fixed (no scroll offset)
         setDropdownPosition({
-          top: rect.bottom + scrollTop + 4,
-          left: rect.left + scrollLeft,
+          top: rect.bottom + 4,
+          left: rect.left,
           width: dropdownWidth,
         });
       }
@@ -391,9 +389,8 @@ export function LocationAutocomplete({
 
     if (showSuggestions && suggestions.length > 0 && inputRef.current) {
       updatePosition();
-      // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(updatePosition);
-      
+      // Capture scroll in any scroll container so dropdown re-anchors on scroll
       window.addEventListener('scroll', updatePosition, true);
       window.addEventListener('resize', updatePosition);
       return () => {

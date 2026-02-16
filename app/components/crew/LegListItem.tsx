@@ -40,6 +40,7 @@ export type LegListItemDisplayOptions = {
   showDates?: boolean;           // Show dates (default: true)
   showDuration?: boolean;        // Show duration (default: true)
   showBoatInfo?: boolean;        // Show boat name/make/model (default: false)
+  blurSkipperBoat?: boolean;     // Blur boat/skipper details when user not authenticated (default: false)
   carouselHeight?: string;       // Custom carousel height (default: 'h-40')
   compact?: boolean;             // Compact mode for smaller display (default: false)
 };
@@ -91,13 +92,14 @@ export function LegListItem({
   // Merge with defaults
   const options: Required<LegListItemDisplayOptions> = {
     showCarousel: true,
-    showMatchBadge: true,
+    showMatchBadge: false,
     showLegName: true,
     showJourneyName: true,
     showLocations: true,
     showDates: true,
     showDuration: true,
     showBoatInfo: false,
+    blurSkipperBoat: false,
     carouselHeight: 'h-40',
     compact: false,
     ...displayOptions
@@ -188,16 +190,24 @@ export function LegListItem({
           </p>
         )}
 
-        {/* Boat Info */}
+        {/* Boat Info - blur when not authenticated */}
         {options.showBoatInfo && (
-          <p className={`text-muted-foreground truncate ${options.compact ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>
-            {leg.boat_name}
-            {leg.boat_make_model && (
-              <span className="text-muted-foreground/70">
-                {' '}({leg.boat_make_model})
-              </span>
+          <div className="relative">
+            {options.blurSkipperBoat && (
+              <div
+                className="absolute inset-0 z-10 rounded backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[1.5rem]"
+                aria-hidden="true"
+              />
             )}
-          </p>
+            <p className={`text-muted-foreground truncate ${options.compact ? 'text-xs mt-0.5' : 'text-sm mt-1'}`}>
+              {leg.boat_name}
+              {leg.boat_make_model && (
+                <span className="text-muted-foreground/70">
+                  {' '}({leg.boat_make_model})
+                </span>
+              )}
+            </p>
+          </div>
         )}
 
         {/* Locations */}

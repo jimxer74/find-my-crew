@@ -2045,6 +2045,8 @@ export function CrewBrowseMap({
       {selectedLeg && showMobileLegCard && !showFullPanelOnMobile && (
         <LegMobileCard
           leg={selectedLeg}
+          showMatchBadge={!!user}
+          showBlurSkipperBoat={!user}
           onClose={() => {
             setSelectedLeg(null);
             setLegWaypoints([]);

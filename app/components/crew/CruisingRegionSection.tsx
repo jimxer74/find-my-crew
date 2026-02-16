@@ -50,54 +50,47 @@ export function CruisingRegionSection({
       }
 
       const data = await response.json();
+      const rawLegs = data.legs || [];
 
-      // Calculate match scores for each leg using the canonical function
-      const legsWithScores = (data.legs || []).map((leg: any) => {
-        // Debug logging to compare with LegDetailsPanel
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[CruisingRegionSection] Calculating match for leg:', {
-            leg_id: leg.leg_id || leg.id,
-            leg_name: leg.leg_name || leg.name,
-            leg_skills: leg.skills || [],
-            leg_risk_level: leg.leg_risk_level || leg.risk_level,
-            journey_risk_level: leg.journey_risk_level,
-            user_skills: userSkills,
-            user_risk_level: userRiskLevel,
-            user_experience_level: userExperienceLevel,
-            leg_min_experience_level: leg.min_experience_level,
-          });
-        }
-        
-        const matchPercentage = calculateMatchPercentage(
-          userSkills,
-          leg.skills || [],
-          userRiskLevel,
-          leg.leg_risk_level || leg.risk_level || null,
-          leg.journey_risk_level || null,
-          userExperienceLevel,
-          leg.min_experience_level || null
-        );
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[CruisingRegionSection] Calculated match percentage:', matchPercentage, 'for leg:', leg.leg_name || leg.name);
-        }
-        const experienceMatches = userExperienceLevel
-          ? userExperienceLevel >= (leg.min_experience_level || 1)
-          : true;
+      // Only calculate and attach match scores when user is authenticated
+      const legsWithScores = user
+        ? rawLegs.map((leg: any) => {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[CruisingRegionSection] Calculating match for leg:', {
+                leg_id: leg.leg_id || leg.id,
+                leg_name: leg.leg_name || leg.name,
+                leg_skills: leg.skills || [],
+                user_skills: userSkills,
+              });
+            }
+            const matchPercentage = calculateMatchPercentage(
+              userSkills,
+              leg.skills || [],
+              userRiskLevel,
+              leg.leg_risk_level || leg.risk_level || null,
+              leg.journey_risk_level || null,
+              userExperienceLevel,
+              leg.min_experience_level || null
+            );
+            const experienceMatches = userExperienceLevel
+              ? userExperienceLevel >= (leg.min_experience_level || 1)
+              : true;
+            return {
+              ...leg,
+              skill_match_percentage: matchPercentage,
+              experience_level_matches: experienceMatches,
+            };
+          })
+        : rawLegs;
 
-        return {
-          ...leg,
-          skill_match_percentage: matchPercentage,
-          experience_level_matches: experienceMatches,
-        };
-      });
-
-      // Sort by match percentage (best matches first)
-      legsWithScores.sort((a: any, b: any) => {
-        const aScore = a.skill_match_percentage || 0;
-        const bScore = b.skill_match_percentage || 0;
-        return bScore - aScore;
-      });
+      // Sort by match percentage only when user is authenticated
+      if (user) {
+        legsWithScores.sort((a: any, b: any) => {
+          const aScore = a.skill_match_percentage || 0;
+          const bScore = b.skill_match_percentage || 0;
+          return bScore - aScore;
+        });
+      }
 
       setLegs(legsWithScores);
     } catch (err) {
@@ -106,7 +99,7 @@ export function CruisingRegionSection({
     } finally {
       setLoading(false);
     }
-  }, [region, userSkills, userExperienceLevel, userRiskLevel]);
+  }, [region, user, userSkills, userExperienceLevel, userRiskLevel]);
 
   useEffect(() => {
     fetchLegs();
@@ -194,6 +187,7 @@ export function CruisingRegionSection({
         onJoinClick={user ? handleJoinClickInternal : undefined}
         loading={loading}
         showMoreUrl={getMapUrl()}
+        showMatchBadge={!!user}
       />
     </section>
   );

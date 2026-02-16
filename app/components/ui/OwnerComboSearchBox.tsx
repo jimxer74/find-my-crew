@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { LocationAutocomplete, type Location } from './LocationAutocomplete';
+import { DateRangePicker, type DateRange } from './DateRangePicker';
 
 export interface OwnerComboSearchData {
   journeyDetails: {
@@ -60,6 +62,16 @@ function JourneyDetailsDialog({
   const [endDate, setEndDate] = useState<string>(initialData?.endDate || '');
   const [waypoints, setWaypoints] = useState<Location[]>(initialData?.waypoints || []);
   const [waypointDensity, setWaypointDensity] = useState<'minimal' | 'moderate' | 'detailed'>(initialData?.waypointDensity || 'moderate');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const dateRangeFromStrings: DateRange = {
+    start: startDate ? new Date(startDate) : null,
+    end: endDate ? new Date(endDate) : null,
+  };
+  const applyDateRange = (range: DateRange) => {
+    setStartDate(range.start ? range.start.toISOString().slice(0, 10) : '');
+    setEndDate(range.end ? range.end.toISOString().slice(0, 10) : '');
+  };
 
   useEffect(() => {
     if (isOpen && initialData) {
@@ -102,10 +114,11 @@ function JourneyDetailsDialog({
   if (!isOpen) return null;
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && !isDatePickerOpen) {
           onClose();
         }
       }}
@@ -133,8 +146,35 @@ function JourneyDetailsDialog({
           </button>
         </div>
 
-        {/* Content */}
+        {/* Content - Date range first, then locations, then waypoints */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 text-left">
+            If you do not yet know where and when you want to sail, just tap Next to skip this step.
+          </p>
+          {/* Date range - first, same pattern as crew Availability dialog (owner amber theme) */}
+          <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div>
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Estimated journey dates</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                {startDate && endDate
+                  ? `${dateRangeFromStrings.start?.toLocaleDateString()} - ${dateRangeFromStrings.end?.toLocaleDateString()}`
+                  : startDate
+                  ? `Starting from: ${dateRangeFromStrings.start?.toLocaleDateString()}`
+                  : 'Choose start and end dates'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsDatePickerOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {startDate || endDate ? 'Change dates' : 'Select dates'}
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <LocationAutocomplete
               id="journey_start_location"
@@ -166,34 +206,6 @@ function JourneyDetailsDialog({
               excludeCruisingRegions={true}
               className="[&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_label]:text-left"
             />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="journey_start_date" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1 text-left">
-                Estimated start date
-              </label>
-              <input
-                type="date"
-                id="journey_start_date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
-            <div>
-              <label htmlFor="journey_end_date" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1 text-left">
-                Estimated end date
-              </label>
-              <input
-                type="date"
-                id="journey_end_date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={startDate || undefined}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
-            </div>
           </div>
 
           <div>
@@ -257,7 +269,9 @@ function JourneyDetailsDialog({
             )}
           </div>
 
+        
           {/* Waypoint Density Control */}
+          {/*
           <div className="space-y-2">
             <label htmlFor="waypoint-density" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
               Waypoint Density
@@ -276,6 +290,8 @@ function JourneyDetailsDialog({
               Controls how many waypoints are created per leg. Use "Minimal" for crew exchange planning, "Moderate" for most journeys, or "Detailed" for full navigation planning.
             </p>
           </div>
+          */}
+
         </div>
 
         {/* Footer */}
@@ -296,6 +312,36 @@ function JourneyDetailsDialog({
         </div>
       </div>
     </div>
+
+    {/* Date Range Picker - portaled so it stays on top */}
+    {isDatePickerOpen && typeof document !== 'undefined' && createPortal(
+      <div
+        className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setIsDatePickerOpen(false);
+          }
+        }}
+      >
+        <div
+          className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <DateRangePicker
+            value={dateRangeFromStrings}
+            onChange={(range) => {
+              applyDateRange(range);
+            }}
+            onClose={() => setIsDatePickerOpen(false)}
+            isInDialog={true}
+            disableClickOutside={true}
+            allowSingleDate={false}
+          />
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
 
@@ -728,6 +774,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   });
   const [skipperCrewText, setSkipperCrewText] = useState('');
   const [skipperCrewAiConsent, setSkipperCrewAiConsent] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const mobileDateRange: DateRange = {
+    start: journeyDetails.startDate ? new Date(journeyDetails.startDate) : null,
+    end: journeyDetails.endDate ? new Date(journeyDetails.endDate) : null,
+  };
 
   // Notify parent when wizard opens/closes
   useEffect(() => {
@@ -861,6 +913,33 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {/* Page 1: Journey Details */}
               {currentPage === 1 && (
                 <div className="space-y-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 text-left">
+                  If you do not yet know where and when do you want to sail, just tap Next to skip this step
+                  </p>
+                  {/* Date range first - same pattern as desktop (owner amber theme) */}
+                  <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Estimated journey dates</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                        {journeyDetails.startDate && journeyDetails.endDate
+                          ? `${mobileDateRange.start?.toLocaleDateString()} - ${mobileDateRange.end?.toLocaleDateString()}`
+                          : journeyDetails.startDate
+                          ? `Starting from: ${mobileDateRange.start?.toLocaleDateString()}`
+                          : 'Choose start and end dates'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsDatePickerOpen(true)}
+                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {journeyDetails.startDate || journeyDetails.endDate ? 'Change dates' : 'Select dates'}
+                    </button>
+                  </div>
+
                   <div className="grid grid-cols-1 gap-4">
                     <LocationAutocomplete
                       id="mobile_journey_start_location"
@@ -890,34 +969,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                       excludeCruisingRegions={true}
                       className="[&_input]:text-gray-900 dark:[&_input]:text-gray-100 [&_label]:text-left"
                     />
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="mobile_journey_start_date" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1 text-left">
-                        Estimated start date
-                      </label>
-                      <input
-                        type="date"
-                        id="mobile_journey_start_date"
-                        value={journeyDetails.startDate}
-                        onChange={(e) => setJourneyDetails({ ...journeyDetails, startDate: e.target.value })}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="mobile_journey_end_date" className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-1 text-left">
-                        Estimated end date
-                      </label>
-                      <input
-                        type="date"
-                        id="mobile_journey_end_date"
-                        value={journeyDetails.endDate}
-                        onChange={(e) => setJourneyDetails({ ...journeyDetails, endDate: e.target.value })}
-                        min={journeyDetails.startDate || undefined}
-                        className="w-full rounded-md border border-gray-300 dark:border-gray-600 px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      />
-                    </div>
                   </div>
 
                   <div>
@@ -982,6 +1033,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                   </div>
 
                   {/* Waypoint Density Control */}
+                  {/*
                   <div className="space-y-2">
                     <label htmlFor="mobile_waypoint-density" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-left">
                       Waypoint Density
@@ -1000,6 +1052,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                       Controls how many waypoints are created per leg. Use "Minimal" for crew exchange planning, "Moderate" for most journeys, or "Detailed" for full navigation planning.
                     </p>
                   </div>
+                  */}
                 </div>
               )}
 
@@ -1090,6 +1143,39 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               )}
             </div>
           </div>
+
+          {/* Date Range Picker - portaled so it is on top of wizard */}
+          {isDatePickerOpen && typeof document !== 'undefined' && createPortal(
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                  setIsDatePickerOpen(false);
+                }
+              }}
+            >
+              <div
+                className="bg-white dark:bg-gray-900 rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <DateRangePicker
+                  value={mobileDateRange}
+                  onChange={(range) => {
+                    setJourneyDetails({
+                      ...journeyDetails,
+                      startDate: range.start ? range.start.toISOString().slice(0, 10) : '',
+                      endDate: range.end ? range.end.toISOString().slice(0, 10) : '',
+                    });
+                  }}
+                  onClose={() => setIsDatePickerOpen(false)}
+                  isInDialog={true}
+                  disableClickOutside={true}
+                  allowSingleDate={false}
+                />
+              </div>
+            </div>,
+            document.body
+          )}
         </div>
       )}
     </div>

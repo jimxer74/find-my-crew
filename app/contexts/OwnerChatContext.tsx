@@ -889,27 +889,29 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }
   }, [state.sessionId, state.userId]);
 
-  // Process initial crew demand from URL (from front page owner post)
+  // Process initial crew demand and/or journey details from URL (from front page owner ComboSearchBox)
   useEffect(() => {
     if (!isInitialized || initialCrewDemandProcessed.current || state.isLoading) {
       return;
     }
     const crewDemandParam = searchParams?.get('crewDemand');
     const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
-    if (!crewDemandParam?.trim() || isProfileCompletion) {
-      return;
-    }
-    
-    // Parse journey details from URL params
     const startLocationParam = searchParams?.get('startLocation');
     const endLocationParam = searchParams?.get('endLocation');
     const waypointsParam = searchParams?.get('waypoints');
     const startDateParam = searchParams?.get('startDate');
     const endDateParam = searchParams?.get('endDate');
     const waypointDensityParam = searchParams?.get('waypointDensity');
+
+    const hasJourneyParams = !!(startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam || waypointDensityParam);
+    const hasCrewDemand = !!(crewDemandParam?.trim());
+    if (isProfileCompletion || (!hasCrewDemand && !hasJourneyParams)) {
+      return;
+    }
     
+    // Parse journey details from URL params
     let journeyDetailsText = '';
-    if (startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam || waypointDensityParam) {
+    if (hasJourneyParams) {
       const journeyParts: string[] = [];
       
       try {
@@ -966,8 +968,12 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }
     
     initialCrewDemandProcessed.current = true;
-    console.log('[OwnerChatContext] Processing initial crew demand from URL', { hasJourneyDetails: !!journeyDetailsText });
-    sendMessage(crewDemandParam.trim() + journeyDetailsText);
+    const crewDemandText = (crewDemandParam?.trim() || '');
+    const message = journeyDetailsText ? (crewDemandText ? crewDemandText + journeyDetailsText : journeyDetailsText.trim()) : crewDemandText;
+    if (message) {
+      console.log('[OwnerChatContext] Processing initial owner combo data from URL', { hasCrewDemand: !!crewDemandText, hasJourneyDetails: !!journeyDetailsText });
+      sendMessage(message);
+    }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
   return (

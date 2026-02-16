@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/app/contexts/AuthContext';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
@@ -159,6 +160,7 @@ export function RegistrationSummaryModal({
   onClose,
   registrationId,
 }: RegistrationSummaryModalProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<RegistrationDetails | null>(null);
@@ -409,9 +411,20 @@ export function RegistrationSummaryModal({
                   </div>
                 </CollapsibleSection>
 
-                {/* Boat & Skipper Information */}
+                {/* Boat & Skipper Information - blur when not authenticated */}
                 <CollapsibleSection title="Boat & Skipper" defaultOpen={true}>
-                  <div className="space-y-4">
+                  <div className="relative">
+                    {!user && (
+                      <div
+                        className="absolute inset-0 z-10 rounded-md backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[120px]"
+                        aria-hidden="true"
+                      >
+                        <p className="text-sm text-muted-foreground px-4 text-center">
+                          Sign in to view skipper & boat details
+                        </p>
+                      </div>
+                    )}
+                    <div className="space-y-4">
                     {/* Boat */}
                     <div className="flex gap-4">
                       {data.boat.image_url && (
@@ -466,6 +479,7 @@ export function RegistrationSummaryModal({
                         </div>
                       </div>
                     )}
+                  </div>
                   </div>
                 </CollapsibleSection>
 

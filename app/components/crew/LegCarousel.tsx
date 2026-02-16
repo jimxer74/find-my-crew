@@ -12,6 +12,7 @@ type LegCarouselProps = {
   loading?: boolean;
   showMoreUrl?: string;
   maxLegsBeforeShowMore?: number;
+  showMatchBadge?: boolean; // Only show when user is authenticated
 };
 
 // Group legs by journey ID
@@ -28,6 +29,7 @@ export function LegCarousel({
   loading = false,
   showMoreUrl,
   maxLegsBeforeShowMore = 5,
+  showMatchBadge = false,
 }: LegCarouselProps) {
   const t = useTranslations('crewHome');
   const router = useRouter();
@@ -205,7 +207,7 @@ export function LegCarousel({
                   onClick={onLegClick}
                   displayOptions={{
                     showCarousel: true,
-                    showMatchBadge: true,
+                    showMatchBadge,
                     showLegName: true,
                     showJourneyName: false,
                     showLocations: true,

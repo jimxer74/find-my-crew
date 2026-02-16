@@ -1481,8 +1481,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     const profileParam = searchParams?.get('profile');
     const legacyQueryParam = searchParams?.get('q');
 
-    // Process combo search parameters
-    if (whereFromParam || whereToParam || availabilityTextParam || profileParam) {
+    // Process combo search parameters (from crew ComboSearchBox: where/when + profile)
+    const hasComboParams = whereFromParam || whereToParam || availabilityTextParam || availabilityStartParam || availabilityEndParam || profileParam;
+    if (hasComboParams) {
       initialQueryProcessed.current = true;
       console.log('[ProspectChatContext] Processing combo search parameters');
 
@@ -1518,7 +1519,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (availabilityTextParam || availabilityStartParam) {
+      if (availabilityTextParam || availabilityStartParam || availabilityEndParam) {
         let availText = availabilityTextParam || '';
         if (availabilityStartParam && availabilityEndParam) {
           try {
@@ -1528,6 +1529,13 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             availText = availText ? `${availText} (${dateStr})` : dateStr;
           } catch (e) {
             console.error('[ProspectChatContext] Error parsing dates:', e);
+          }
+        } else if (availabilityStartParam) {
+          try {
+            const start = new Date(availabilityStartParam);
+            availText = availText ? `${availText} (from ${start.toLocaleDateString()})` : `From ${start.toLocaleDateString()}`;
+          } catch (e) {
+            console.error('[ProspectChatContext] Error parsing availability start date:', e);
           }
         }
         if (availText) {

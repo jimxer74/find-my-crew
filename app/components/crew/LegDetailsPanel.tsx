@@ -1111,10 +1111,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 </div>
               </div>
             ) : (
-            /* Leg Details Content with Sticky Footer */
             <div className="flex flex-col h-full">
-              {/* Scrollable Content Area */}
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto min-h-0">
                 {/* Boat Image */}
                 {leg.boat_image_url || (journeyImages && journeyImages.length > 0) ? (
                   <div className="space-y-4">
@@ -1393,8 +1391,18 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               skillMatchPercentage={leg.skill_match_percentage}
             />
 
-            {/* Boat Info */}
-            <div className="pt-2 border-t border-border text-left">
+            {/* Boat Info - blur when not authenticated */}
+            <div className="relative pt-2 border-t border-border text-left">
+                {!user && (
+                  <div
+                    className="absolute inset-0 z-10 rounded-md backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[120px]"
+                    aria-hidden="true"
+                  >
+                    <p className="text-sm text-muted-foreground px-4 text-center">
+                      Sign in to view skipper & boat details
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4 mb-2">
                   <h3 className="text-xs font-semibold text-muted-foreground">Skipper / Owner</h3>
                 </div>
@@ -1559,13 +1567,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 )}
 
                 </div>
-                {/* End of Leg Details Content */}
               </div>
-              {/* End of Scrollable Content Area */}
-
-              {/* Sticky Footer - Registration Section */}
               <div className="flex-shrink-0 border-t border-border bg-card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
-              {!user ? (
+                {!user ? (
                 <Link
                   href="/auth/login"
                   className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity flex items-center justify-center"

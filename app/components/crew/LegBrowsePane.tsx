@@ -38,7 +38,7 @@ export function LegBrowsePane({
   className = '',
   isLoading = false,
   isVisible = true,
-  showMatchBadge = true,
+  showMatchBadge = false,
 }: LegBrowsePaneProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 

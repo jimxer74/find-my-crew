@@ -32,9 +32,11 @@ type LegMobileCardProps = {
   leg: Leg;
   onClose: () => void;
   onClick?: () => void; // Optional click handler to open full panel
+  showMatchBadge?: boolean; // Only show when user is authenticated
+  showBlurSkipperBoat?: boolean; // Blur boat/skipper when not authenticated
 };
 
-export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
+export function LegMobileCard({ leg, onClose, onClick, showMatchBadge = false, showBlurSkipperBoat = false }: LegMobileCardProps) {
   // Convert leg to LegListItemData format
   const legData: LegListItemData = {
     leg_id: leg.leg_id,
@@ -86,13 +88,14 @@ export function LegMobileCard({ leg, onClose, onClick }: LegMobileCardProps) {
         onClick={onClick ? () => onClick() : undefined}
         displayOptions={{
           showCarousel: true,
-          showMatchBadge: true,
+          showMatchBadge,
           showLegName: true,
           showJourneyName: true,
           showLocations: true,
           showDates: true,
           showDuration: true,
           showBoatInfo: true,
+          blurSkipperBoat: showBlurSkipperBoat,
           carouselHeight: 'h-48', // Taller carousel for mobile card
           compact: false,
         }}
