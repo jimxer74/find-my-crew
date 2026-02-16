@@ -35,7 +35,7 @@ import {
   ProspectPreferences,
   ProspectLegReference,
 } from './types';
-import { searchLocation, LocationSearchResult } from '@/app/lib/geocoding/locations';
+import { searchLocation, LocationSearchResult, getAllRegions } from '@/app/lib/geocoding/locations';
 import skillsConfig from '@/app/config/skills-config.json';
 
 const MAX_HISTORY_MESSAGES = 15;
@@ -850,6 +850,21 @@ async function executeProspectTools(
                   }
                   if (typeof loc.countryCode === 'string') normalized.countryCode = loc.countryCode;
                   if (typeof loc.countryName === 'string') normalized.countryName = loc.countryName;
+
+                  // Auto-enrich: if AI omitted bbox, try to match against known cruising regions
+                  if (!normalized.bbox && typeof normalized.name === 'string') {
+                    const regionName = (normalized.name as string).toLowerCase().trim();
+                    const matchedRegion = getAllRegions().find(r =>
+                      r.name.toLowerCase() === regionName ||
+                      r.aliases.some(a => a.toLowerCase() === regionName)
+                    );
+                    if (matchedRegion) {
+                      normalized.isCruisingRegion = true;
+                      normalized.bbox = { ...matchedRegion.bbox };
+                      log(`Auto-enriched ${field} with bbox from known region "${matchedRegion.name}"`);
+                    }
+                  }
+
                   log(`Normalized ${field}: ${JSON.stringify(normalized)}`);
                   value = normalized;
                 } else {

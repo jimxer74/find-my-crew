@@ -21,6 +21,7 @@ type FiltersDialogProps = {
 
 type FiltersPageContentProps = {
   onClose: () => void;
+  onRestoreProfile?: () => void;
 };
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
@@ -28,7 +29,7 @@ type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps) {
   const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
-  const { clearFilters } = useFilters();
+  const { clearFilters, updateFilters } = useFilters();
 
   // Close dialog when clicking outside
   useEffect(() => {
@@ -108,13 +109,26 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
           </button>
           <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
         </div>
-        <button
-          onClick={clearFilters}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          aria-label={t('clearAll')}
-        >
-          {t('clearAll')}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              // This will be handled by FiltersPageContent via onRestoreProfile prop
+              const event = new CustomEvent('restoreProfileFilters');
+              window.dispatchEvent(event);
+            }}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Use profile settings"
+          >
+            Use profile settings
+          </button>
+          <button
+            onClick={clearFilters}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            aria-label={t('clearAll')}
+          >
+            {t('clearAll')}
+          </button>
+        </div>
       </div>
 
       {/* Content - FiltersPageContent handles its own scrolling */}
@@ -125,7 +139,7 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
 }
 
 // Content component that can be used in both modal and page modes
-export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
+export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageContentProps) {
   const t = useTranslations('common');
   const tFilters = useTranslations('journeys.browse.filters');
   const router = useRouter();
@@ -150,9 +164,15 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
   const [profileValues, setProfileValues] = useState<{
     riskLevel: RiskLevel[];
     experienceLevel: ExperienceLevel | null;
+    departureLocation: Location | null;
+    arrivalLocation: Location | null;
+    dateRange: DateRange;
   }>({
     riskLevel: [],
     experienceLevel: null,
+    departureLocation: null,
+    arrivalLocation: null,
+    dateRange: { start: null, end: null },
   });
 
   // Load user profile data and initialize temp state from filters
@@ -173,6 +193,88 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
     setTempDateRange(filters.dateRange);
   }, [filters]);
 
+  // Listen for restore profile event
+  useEffect(() => {
+    const handleRestoreProfile = () => {
+      if (!user) return;
+      // Clear the "filters cleared" flag so profile loading can work again
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem('crew-filters-cleared');
+        } catch (err) {
+          // Ignore errors
+        }
+      }
+      // Restore profile values to temp state
+      if (profileValues.departureLocation) {
+        setTempLocation(profileValues.departureLocation);
+        setTempLocationInput(profileValues.departureLocation.name);
+      } else {
+        setTempLocation(null);
+        setTempLocationInput('');
+      }
+      if (profileValues.arrivalLocation) {
+        setTempArrivalLocation(profileValues.arrivalLocation);
+        setTempArrivalLocationInput(profileValues.arrivalLocation.name);
+      } else {
+        setTempArrivalLocation(null);
+        setTempArrivalLocationInput('');
+      }
+      if (profileValues.dateRange.start || profileValues.dateRange.end) {
+        setTempDateRange(profileValues.dateRange);
+      } else {
+        setTempDateRange({ start: null, end: null });
+      }
+      if (profileValues.experienceLevel !== null) {
+        setTempExperienceLevel(profileValues.experienceLevel);
+      } else {
+        setTempExperienceLevel(null);
+      }
+      if (profileValues.riskLevel.length > 0) {
+        setTempRiskLevel(profileValues.riskLevel);
+      } else {
+        setTempRiskLevel([]);
+      }
+      // Also update filters context
+      const updates: any = {};
+      if (profileValues.departureLocation) {
+        updates.location = profileValues.departureLocation;
+        updates.locationInput = profileValues.departureLocation.name;
+      } else {
+        updates.location = null;
+        updates.locationInput = '';
+      }
+      if (profileValues.arrivalLocation) {
+        updates.arrivalLocation = profileValues.arrivalLocation;
+        updates.arrivalLocationInput = profileValues.arrivalLocation.name;
+      } else {
+        updates.arrivalLocation = null;
+        updates.arrivalLocationInput = '';
+      }
+      if (profileValues.dateRange.start || profileValues.dateRange.end) {
+        updates.dateRange = profileValues.dateRange;
+      } else {
+        updates.dateRange = { start: null, end: null };
+      }
+      if (profileValues.experienceLevel !== null) {
+        updates.experienceLevel = profileValues.experienceLevel;
+      } else {
+        updates.experienceLevel = null;
+      }
+      if (profileValues.riskLevel.length > 0) {
+        updates.riskLevel = profileValues.riskLevel;
+      } else {
+        updates.riskLevel = [];
+      }
+      updateFilters(updates);
+    };
+
+    window.addEventListener('restoreProfileFilters', handleRestoreProfile);
+    return () => {
+      window.removeEventListener('restoreProfileFilters', handleRestoreProfile);
+    };
+  }, [user, profileValues, updateFilters, onRestoreProfile]);
+
   const loadData = async () => {
     if (!user) return;
     
@@ -183,17 +285,26 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
       // Load profile values (for indicators)
       const { data, error } = await supabase
         .from('profiles')
-        .select('sailing_experience, risk_level')
+        .select('sailing_experience, risk_level, preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date')
         .eq('id', user.id)
         .single();
 
       if (data && !error) {
         const profileRiskLevel = (data.risk_level || []) as RiskLevel[];
         const profileExperienceLevel = data.sailing_experience as ExperienceLevel | null;
+        const profileDepartureLocation = data.preferred_departure_location as Location | null;
+        const profileArrivalLocation = data.preferred_arrival_location as Location | null;
+        const profileDateRange: DateRange = {
+          start: data.availability_start_date ? new Date(data.availability_start_date + 'T00:00:00') : null,
+          end: data.availability_end_date ? new Date(data.availability_end_date + 'T00:00:00') : null,
+        };
         
         setProfileValues({
           riskLevel: profileRiskLevel,
           experienceLevel: profileExperienceLevel,
+          departureLocation: profileDepartureLocation,
+          arrivalLocation: profileArrivalLocation,
+          dateRange: profileDateRange,
         });
       }
     } catch (err) {
@@ -289,9 +400,18 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
               <div className="bg-card rounded-lg border border-border shadow-sm p-4 space-y-4">
                 {/* Date Range Picker */}
                 <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    {tFilters('availability')}
-                  </label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      {tFilters('availability')}
+                    </label>
+                    {(profileValues.dateRange.start || profileValues.dateRange.end) &&
+                     tempDateRange.start?.getTime() === profileValues.dateRange.start?.getTime() &&
+                     tempDateRange.end?.getTime() === profileValues.dateRange.end?.getTime() ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500 text-white">
+                        Profile
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="relative group">
                     <button
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -377,10 +497,24 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
 
                 {/* Departure Location Autocomplete */}
                 <div className="group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      {tFilters('departureLocation')}
+                    </label>
+                    {profileValues.departureLocation && 
+                     tempLocation && 
+                     tempLocation.name === profileValues.departureLocation.name &&
+                     tempLocation.lat === profileValues.departureLocation.lat &&
+                     tempLocation.lng === profileValues.departureLocation.lng ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500 text-white">
+                        Profile
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="relative">
                     <LocationAutocomplete
                       id="filter-departure-location"
-                      label={tFilters('departureLocation')}
+                      label=""
                       value={tempLocationInput}
                       onChange={(loc) => {
                         setTempLocation(loc);
@@ -402,12 +536,12 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                           setTempLocation(null);
                           setTempLocationInput('');
                         }}
-                        className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] p-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded"
                         aria-label={tFilters('clearLocation')}
                         type="button"
                       >
                         <svg
-                          className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                          className="w-4 h-4"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -424,10 +558,24 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
 
                 {/* Arrival Location Autocomplete */}
                 <div className="group">
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      {tFilters('arrivalLocation')}
+                    </label>
+                    {profileValues.arrivalLocation && 
+                     tempArrivalLocation && 
+                     tempArrivalLocation.name === profileValues.arrivalLocation.name &&
+                     tempArrivalLocation.lat === profileValues.arrivalLocation.lat &&
+                     tempArrivalLocation.lng === profileValues.arrivalLocation.lng ? (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-500 text-white">
+                        Profile
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="relative">
                     <LocationAutocomplete
                       id="filter-arrival-location"
-                      label={tFilters('arrivalLocation')}
+                      label=""
                       value={tempArrivalLocationInput}
                       onChange={(loc) => {
                         setTempArrivalLocation(loc);
@@ -449,12 +597,12 @@ export function FiltersPageContent({ onClose }: FiltersPageContentProps) {
                           setTempArrivalLocation(null);
                           setTempArrivalLocationInput('');
                         }}
-                        className="absolute right-2 top-[2.25rem] p-1 rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm z-10"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] p-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded"
                         aria-label={tFilters('clearArrivalLocation')}
                         type="button"
                       >
                         <svg
-                          className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground"
+                          className="w-4 h-4"
                           fill="none"
                           strokeLinecap="round"
                           strokeLinejoin="round"

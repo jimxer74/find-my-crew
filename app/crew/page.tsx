@@ -32,15 +32,6 @@ export default function CrewHomePage() {
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<LegListItemData | null>(null);
 
-  // Sort regions by distance when user location is available
-  useEffect(() => {
-    if (!userLocation.loading && userLocation.lat && userLocation.lng) {
-      const regions = getAllRegions();
-      const sorted = sortRegionsByDistance(userLocation.lat, userLocation.lng, regions);
-      setSortedRegions(sorted);
-    }
-  }, [userLocation.loading, userLocation.lat, userLocation.lng]);
-
   // Extract user profile data from useProfile hook
   const userSkills = useMemo(() => {
     if (!profile?.skills) return [];
@@ -63,6 +54,55 @@ export default function CrewHomePage() {
   const userArrivalLocation = useMemo(() => {
     return profile?.preferred_arrival_location || null;
   }, [profile?.preferred_arrival_location]);
+
+  // Sort regions by distance based on user's filter settings (departure/arrival location) or browser geolocation
+  useEffect(() => {
+    // Determine which location to use for sorting:
+    // 1. Preferred departure location from profile (highest priority)
+    // 2. Preferred arrival location from profile (fallback)
+    // 3. Browser geolocation (last resort)
+    let sortLat: number | null = null;
+    let sortLng: number | null = null;
+
+    if (userDepartureLocation) {
+      // Use departure location if available
+      if (userDepartureLocation.bbox) {
+        // For bbox regions, use center
+        const centerLat = (userDepartureLocation.bbox.minLat + userDepartureLocation.bbox.maxLat) / 2;
+        const centerLng = (userDepartureLocation.bbox.minLng + userDepartureLocation.bbox.maxLng) / 2;
+        sortLat = centerLat;
+        sortLng = centerLng;
+      } else if (userDepartureLocation.lat && userDepartureLocation.lng) {
+        sortLat = userDepartureLocation.lat;
+        sortLng = userDepartureLocation.lng;
+      }
+    } else if (userArrivalLocation) {
+      // Fallback to arrival location
+      if (userArrivalLocation.bbox) {
+        const centerLat = (userArrivalLocation.bbox.minLat + userArrivalLocation.bbox.maxLat) / 2;
+        const centerLng = (userArrivalLocation.bbox.minLng + userArrivalLocation.bbox.maxLng) / 2;
+        sortLat = centerLat;
+        sortLng = centerLng;
+      } else if (userArrivalLocation.lat && userArrivalLocation.lng) {
+        sortLat = userArrivalLocation.lat;
+        sortLng = userArrivalLocation.lng;
+      }
+    } else if (!userLocation.loading && userLocation.lat && userLocation.lng) {
+      // Last resort: browser geolocation
+      sortLat = userLocation.lat;
+      sortLng = userLocation.lng;
+    }
+
+    if (sortLat !== null && sortLng !== null) {
+      const regions = getAllRegions();
+      const sorted = sortRegionsByDistance(sortLat, sortLng, regions);
+      setSortedRegions(sorted);
+    } else if (!userLocation.loading && !user) {
+      // For non-authenticated users without geolocation, show regions in default order
+      const regions = getAllRegions();
+      setSortedRegions(regions.map(r => ({ ...r, distance: 0 })));
+    }
+  }, [userLocation.loading, userLocation.lat, userLocation.lng, userDepartureLocation, userArrivalLocation, user]);
 
   // Handle Join button click - open registration dialog
   const handleJoinClick = useCallback((leg: LegListItemData) => {

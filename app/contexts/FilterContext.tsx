@@ -103,12 +103,18 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Load profile preferences as filter defaults when no session filters exist
+  // Load profile preferences as filter defaults when user logs in
+  // Only load from profile if filters are empty AND user hasn't explicitly cleared them
   useEffect(() => {
     if (!isInitialized) return;
+    if (typeof window === 'undefined') return;
 
-    // Check if any filters were loaded from session storage
-    const hasSessionFilters =
+    // Check if user explicitly cleared filters (don't reload from profile)
+    const filtersCleared = sessionStorage.getItem('crew-filters-cleared') === 'true';
+    if (filtersCleared) return;
+
+    // Only load from profile if all filters are empty (first time or after session cleared)
+    const hasAnyFilters =
       filters.location !== null ||
       filters.arrivalLocation !== null ||
       filters.dateRange.start !== null ||
@@ -116,7 +122,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       filters.experienceLevel !== null ||
       filters.riskLevel.length > 0;
 
-    if (hasSessionFilters) return;
+    if (hasAnyFilters) return;
 
     const loadProfilePreferences = async () => {
       try {
@@ -126,7 +132,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date')
+          .select('preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date, sailing_experience, risk_level')
           .eq('id', user.id)
           .single();
 
@@ -134,23 +140,36 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
         const updates: Partial<FilterState> = {};
 
+        // Pre-select departure location from profile
         if (profile.preferred_departure_location) {
           const loc = profile.preferred_departure_location as Location;
           updates.location = loc;
           updates.locationInput = loc.name;
         }
 
+        // Pre-select arrival location from profile
         if (profile.preferred_arrival_location) {
           const loc = profile.preferred_arrival_location as Location;
           updates.arrivalLocation = loc;
           updates.arrivalLocationInput = loc.name;
         }
 
+        // Pre-select date range from profile
         if (profile.availability_start_date || profile.availability_end_date) {
           updates.dateRange = {
             start: profile.availability_start_date ? new Date(profile.availability_start_date + 'T00:00:00') : null,
             end: profile.availability_end_date ? new Date(profile.availability_end_date + 'T00:00:00') : null,
           };
+        }
+
+        // Pre-select experience level from profile
+        if (profile.sailing_experience !== null && profile.sailing_experience !== undefined) {
+          updates.experienceLevel = profile.sailing_experience as ExperienceLevel;
+        }
+
+        // Pre-select risk level from profile
+        if (profile.risk_level && Array.isArray(profile.risk_level) && profile.risk_level.length > 0) {
+          updates.riskLevel = profile.risk_level as RiskLevel[];
         }
 
         if (Object.keys(updates).length > 0) {
@@ -220,11 +239,30 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const updateFilters = (updates: Partial<FilterState>) => {
     setFilters(prev => ({ ...prev, ...updates }));
     setLastUpdated(Date.now()); // Update timestamp to trigger reloads
+    // Clear the "filters cleared" flag when user updates filters (allows profile loading again on next empty state)
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('crew-filters-cleared');
+      } catch (err) {
+        // Ignore errors
+      }
+    }
   };
 
   const clearFilters = () => {
     setFilters(defaultFilters);
     setLastUpdated(Date.now()); // Update timestamp to trigger reloads
+    // Mark that filters were explicitly cleared (prevent auto-loading from profile)
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('crew-filters-cleared', 'true');
+        // Also clear session storage for filters
+        sessionStorage.removeItem('crew-date-range');
+        sessionStorage.removeItem('crew-filters');
+      } catch (err) {
+        console.error('Error marking filters as cleared:', err);
+      }
+    }
   };
 
   return (

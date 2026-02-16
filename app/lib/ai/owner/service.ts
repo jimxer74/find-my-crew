@@ -21,6 +21,7 @@ import {
   getToolByName,
   toolsToPromptFormat,
 } from '../shared';
+import { getAllRegions } from '@/app/lib/geocoding/locations';
 import {
   OwnerMessage,
   OwnerChatRequest,
@@ -709,6 +710,20 @@ async function executeOwnerTools(
                   }
                   if (typeof loc.countryCode === 'string') normalized.countryCode = loc.countryCode;
                   if (typeof loc.countryName === 'string') normalized.countryName = loc.countryName;
+
+                  // Auto-enrich: if AI omitted bbox, try to match against known cruising regions
+                  if (!normalized.bbox && typeof normalized.name === 'string') {
+                    const regionName = (normalized.name as string).toLowerCase().trim();
+                    const matchedRegion = getAllRegions().find(r =>
+                      r.name.toLowerCase() === regionName ||
+                      r.aliases.some(a => a.toLowerCase() === regionName)
+                    );
+                    if (matchedRegion) {
+                      normalized.isCruisingRegion = true;
+                      normalized.bbox = { ...matchedRegion.bbox };
+                    }
+                  }
+
                   value = normalized;
                 } else {
                   continue; // Skip invalid location
