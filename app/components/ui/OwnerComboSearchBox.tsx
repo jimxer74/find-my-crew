@@ -147,15 +147,15 @@ function JourneyDetailsDialog({
         </div>
 
         {/* Content - Date range first, then locations, then waypoints */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400 text-left">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
             If you do not yet know where and when you want to sail, just tap Next to skip this step.
           </p>
           {/* Date range - first, same pattern as crew Availability dialog (owner amber theme) */}
           <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div>
               <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Estimated journey dates</p>
-              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+              <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
                 {startDate && endDate
                   ? `${dateRangeFromStrings.start?.toLocaleDateString()} - ${dateRangeFromStrings.end?.toLocaleDateString()}`
                   : startDate
@@ -166,7 +166,7 @@ function JourneyDetailsDialog({
             <button
               type="button"
               onClick={() => setIsDatePickerOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
+              className="px-4 py-2 text-sm font-medium text-amber-800 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -225,7 +225,7 @@ function JourneyDetailsDialog({
               </button>
             </div>
             {waypoints.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">Optional: Add stops along the route.</p>
+              <p className="text-sm text-gray-800 dark:text-gray-400">Optional: Add stops along the route.</p>
             ) : (
               <div className="space-y-3">
                 {waypoints.map((waypoint, index) => (
@@ -445,7 +445,7 @@ function SkipperCrewProfilesDialog({
             onChange={(e) => setCrewDemand(e.target.value)}
             placeholder={placeholder}
             maxLength={2000}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-600 dark:placeholder:text-gray-400 resize-none"
+            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
           />
         </div>
 
@@ -466,7 +466,7 @@ function SkipperCrewProfilesDialog({
                 }`}
               />
             </button>
-            <p className="text-sm text-gray-700 dark:text-gray-400">Allow AI to process the data that you provide</p>
+            <p className="text-sm text-gray-800 dark:text-gray-400">Allow AI to process the data that you provide</p>
           </div>
           
           {/* Action Buttons */}
@@ -913,14 +913,14 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {/* Page 1: Journey Details */}
               {currentPage === 1 && (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 text-left">
+                  <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
                   If you do not yet know where and when do you want to sail, just tap Next to skip this step
                   </p>
                   {/* Date range first - same pattern as desktop (owner amber theme) */}
                   <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                     <div>
                       <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Estimated journey dates</p>
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                      <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
                         {journeyDetails.startDate && journeyDetails.endDate
                           ? `${mobileDateRange.start?.toLocaleDateString()} - ${mobileDateRange.end?.toLocaleDateString()}`
                           : journeyDetails.startDate
@@ -931,7 +931,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                     <button
                       type="button"
                       onClick={() => setIsDatePickerOpen(true)}
-                      className="px-4 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
+                      className="px-4 py-2 text-sm font-medium text-amber-800 dark:text-amber-300 bg-white dark:bg-gray-800 border border-amber-300 dark:border-amber-700 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-2"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -988,7 +988,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                       </button>
                     </div>
                     {journeyDetails.waypoints.length === 0 ? (
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Optional: Add stops along the route.</p>
+                      <p className="text-sm text-gray-800 dark:text-gray-400">Optional: Add stops along the route.</p>
                     ) : (
                       <div className="space-y-3">
                         {journeyDetails.waypoints.map((waypoint, index) => (
@@ -1076,14 +1076,14 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                     value={skipperCrewText}
                     onChange={(e) => setSkipperCrewText(e.target.value)}
                     placeholder={t('skipperCrewDialogPlaceholder')}
-                    className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none"
+                    className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
                   />
 
                   {/* AI Consent */}
                   <div className="flex items-start justify-between gap-4 pt-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-foreground">{tPrivacy('aiProcessing')}</p>
-                      <p className="text-sm text-muted-foreground mt-0.5">{tPrivacy('aiProcessingDesc')}</p>
+                      <p className="font-medium text-gray-900 dark:text-foreground">{tPrivacy('aiProcessing')}</p>
+                      <p className="text-sm text-gray-800 dark:text-muted-foreground mt-0.5">{tPrivacy('aiProcessingDesc')}</p>
                     </div>
                     <button
                       type="button"

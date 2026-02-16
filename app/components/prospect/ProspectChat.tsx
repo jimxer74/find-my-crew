@@ -456,7 +456,7 @@ export function ProspectChat() {
                   isAuthenticated &&
                   !hasExistingProfile &&
                   typeof userMessageCountAfterSignup === 'number' &&
-                  userMessageCountAfterSignup >= 1 &&
+                  userMessageCountAfterSignup >= 3 &&
                   isLastAssistantMessage;
                 
                 // Debug logging
