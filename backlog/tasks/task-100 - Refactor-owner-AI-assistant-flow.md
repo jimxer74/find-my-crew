@@ -1,10 +1,10 @@
 ---
 id: TASK-100
 title: Refactor owner AI assistant flow
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-14 10:39'
-updated_date: '2026-02-14 10:43'
+updated_date: '2026-02-16 05:45'
 labels: []
 dependencies: []
 ---
@@ -21,23 +21,9 @@ AI model is not using the profile, boat or journey status fetching tools at all,
 Simplify if possible the prompting to AI only give instructions to fullfill and complete the currently active step, with main goal in step is to get if completed and move to next as efficiently as possible.
 <!-- SECTION:DESCRIPTION:END -->
 
-## Review Summary
-
-### Current Behaviour
-- **Owner chat service** (`app/lib/ai/owner/service.ts`): Builds a single large system prompt that lists all owner tools and instructs the AI to "check completion status first" by calling `get_profile_completion_status`, `get_boat_completion_status`, `get_journey_completion_status`, `get_owner_boats`, `get_owner_journeys`. Completion state (`hasProfile`, `hasBoat`, `hasJourney`) is already computed **deterministically in code** (lines 1993–2032) before the prompt is built, but the AI is still told to call status tools, which wastes turns and adds complexity.
-- **Tool filtering**: Tools are filtered post-completion (e.g. hide `update_user_profile` if `hasProfile`, hide `create_boat` if `hasBoat`), but the AI still sees many tools (definitions, status fetchers, create tools for later steps) and long instructions for all steps.
-- **Prompt size**: `buildOwnerSystemPrompt` and `buildToolInstructions` together produce a very long prompt covering signup, profile, boat, and journey in one go, with many tool-call examples and rules.
-
-### Desired Behaviour (per task)
-1. **Strict linear flow**: Sign up → Create profile → Add boat → Post journey. Only one "active" step at a time.
-2. **Tool restriction per step**: Expose only the tools needed for the **current** step (e.g. step "Create profile" → only `update_user_profile` plus optional definition helpers; step "Post journey" → only `generate_journey_route`).
-3. **No status tools for AI**: Do not expose or instruct the AI to call `get_profile_completion_status`, `get_boat_completion_status`, `get_journey_completion_status`, `get_owner_boats`, `get_owner_journeys`. Status is computed in code and passed as plain text in the system prompt (e.g. "Current step: Create profile. Profile: not created. Boat: not created. Journey: not created.").
-4. **Simpler prompts**: One short block per step: goal of current step, current state (injected by code), and the one (or few) tools available for that step. Goal: complete current step and move to next as efficiently as possible.
-
----
-
 ## Implementation Plan
 
+<!-- SECTION:PLAN:BEGIN -->
 ### 1. Define Canonical Steps (code-only, no DB change)
 
 Map deterministic state to a single "current step" used for prompt and tool selection:
@@ -144,3 +130,19 @@ Implementation:
 4. For `post_journey`, load boat id (and name) in code and inject into prompt; remove `get_owner_boats` from AI tool set for this step.
 5. Simplify `buildToolInstructions` (or remove and fold into step prompt) so it only describes the current step’s tools.
 6. Add tests and manual checks for each step; then deploy.
+<!-- SECTION:PLAN:END -->
+
+## Review Summary
+
+### Current Behaviour
+- **Owner chat service** (`app/lib/ai/owner/service.ts`): Builds a single large system prompt that lists all owner tools and instructs the AI to "check completion status first" by calling `get_profile_completion_status`, `get_boat_completion_status`, `get_journey_completion_status`, `get_owner_boats`, `get_owner_journeys`. Completion state (`hasProfile`, `hasBoat`, `hasJourney`) is already computed **deterministically in code** (lines 1993–2032) before the prompt is built, but the AI is still told to call status tools, which wastes turns and adds complexity.
+- **Tool filtering**: Tools are filtered post-completion (e.g. hide `update_user_profile` if `hasProfile`, hide `create_boat` if `hasBoat`), but the AI still sees many tools (definitions, status fetchers, create tools for later steps) and long instructions for all steps.
+- **Prompt size**: `buildOwnerSystemPrompt` and `buildToolInstructions` together produce a very long prompt covering signup, profile, boat, and journey in one go, with many tool-call examples and rules.
+
+### Desired Behaviour (per task)
+1. **Strict linear flow**: Sign up → Create profile → Add boat → Post journey. Only one "active" step at a time.
+2. **Tool restriction per step**: Expose only the tools needed for the **current** step (e.g. step "Create profile" → only `update_user_profile` plus optional definition helpers; step "Post journey" → only `generate_journey_route`).
+3. **No status tools for AI**: Do not expose or instruct the AI to call `get_profile_completion_status`, `get_boat_completion_status`, `get_journey_completion_status`, `get_owner_boats`, `get_owner_journeys`. Status is computed in code and passed as plain text in the system prompt (e.g. "Current step: Create profile. Profile: not created. Boat: not created. Journey: not created.").
+4. **Simpler prompts**: One short block per step: goal of current step, current state (injected by code), and the one (or few) tools available for that step. Goal: complete current step and move to next as efficiently as possible.
+
+---
