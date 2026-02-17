@@ -1,10 +1,10 @@
 ---
 id: TASK-053
 title: AI-powered multisearch for crew without profile
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-01-28 20:24'
-updated_date: '2026-01-29 13:58'
+updated_date: '2026-02-17 18:28'
 labels:
   - ai
   - feature
