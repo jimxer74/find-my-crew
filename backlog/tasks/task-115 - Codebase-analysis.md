@@ -1,10 +1,10 @@
 ---
 id: TASK-115
 title: Codebase analysis
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-17 20:22'
-updated_date: '2026-02-17 20:48'
+updated_date: '2026-02-17 20:56'
 labels: []
 dependencies: []
 ---
@@ -246,6 +246,79 @@ dependencies: []
   database constructs, security vulnerabilities, code quality, UI inconsistencies, and unused code.
    No changes have been made to the codebase.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## CRITICAL & HIGH PRIORITY FIXES - Execution Plan
+
+### Phase 1: CRITICAL SECURITY - Credential Rotation (Do First)
+**Issue**: 9 API keys exposed in .env.local
+**Files**: .env.local
+**Action**: 
+1. Identify all exposed keys and create .env.local.example
+2. Remove .env.local from git history using git filter-branch or BFG
+3. Update .gitignore to prevent future commits
+4. Document key rotation process
+
+### Phase 2: HIGH PRIORITY - Immediate Fixes (This Session)
+
+#### 2.1 Hook Rule Violation - LegDetailsPanel.tsx
+**File**: app/components/journey/LegDetailsPanel.tsx:64
+**Issue**: useTheme() called inside helper function
+**Fix**: Move hook call to component level
+**Impact**: High - Can cause React runtime errors
+
+#### 2.2 Event Listener Memory Leaks
+**Files**: 
+- EditJourneyMap.tsx (5 instances)
+- NavigationMenu.tsx (4 instances) 
+- LegCarousel.tsx, FeedbackModal.tsx, NotificationCenter.tsx, AssistantChat.tsx
+**Issue**: Event listeners without cleanup in useEffect
+**Fix**: Add cleanup functions and AbortController patterns
+**Impact**: High - Memory leaks, performance degradation
+
+#### 2.3 Missing Promise Error Handling
+**Files**: 
+- AuthContext.tsx:27
+- Multiple API routes
+**Issue**: Promise chains without .catch() handlers
+**Fix**: Add comprehensive error handling
+**Impact**: High - Silent failures, hard to debug
+
+#### 2.4 FK Mismatch - notifications table
+**File**: Database schema (specs/tables.sql)
+**Issue**: notifications.user_id references profiles(id) instead of auth.users(id)
+**Fix**: Create migration to correct FK constraint
+**Impact**: High - Data integrity risk
+
+#### 2.5 Information Disclosure in Error Responses
+**Pattern**: { error: '...', details: error.message }
+**Issue**: ~125 instances expose internal details
+**Fix**: Sanitize error responses, return generic errors in production
+**Impact**: High - Attack surface expansion
+
+#### 2.6 Debug Logging Cleanup
+**Issue**: 792 console.log/console.error instances
+**Fix**: Remove/replace with proper logging system
+**Impact**: High - May log sensitive data
+
+### Execution Order
+1. **First**: Fix hook violation (quick, high impact) - 15 min
+2. **Second**: Fix event listener leaks (systematic) - 45 min
+3. **Third**: Fix promise error handling - 30 min
+4. **Fourth**: Fix FK constraint - 20 min
+5. **Fifth**: Sanitize error responses - 30 min
+6. **Sixth**: Address debug logging - 60 min
+
+### Progress Tracking
+- [ ] Hook violation fixed
+- [ ] Event listeners cleaned up
+- [ ] Promise error handling added
+- [ ] FK constraint corrected
+- [ ] Error responses sanitized
+- [ ] Debug logging addressed
+<!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
 
