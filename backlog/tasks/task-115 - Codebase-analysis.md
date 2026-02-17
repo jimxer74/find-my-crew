@@ -4,7 +4,7 @@ title: Codebase analysis
 status: To Do
 assignee: []
 created_date: '2026-02-17 20:22'
-updated_date: '2026-02-17 20:22'
+updated_date: '2026-02-17 20:48'
 labels: []
 dependencies: []
 ---
@@ -246,3 +246,57 @@ dependencies: []
   database constructs, security vulnerabilities, code quality, UI inconsistencies, and unused code.
    No changes have been made to the codebase.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Verification Update - 2026-02-17
+
+### Verification Status
+- **Last Analyzed**: 2026-02-17 20:22 (Initial)
+- **Last Verified**: 2026-02-17 (Comprehensive verification completed)
+- **Overall Result**: All critical and high-priority findings verified as STILL RELEVANT
+
+### Critical Issues - VERIFIED
+1. **Exposed Credentials** - 9 API keys confirmed in .env.local (CRITICAL)
+2. **Information Disclosure** - ~125 instances confirmed across API routes (HIGH)
+3. **Excessive Debug Logging** - 792 instances confirmed (HIGH)
+4. **Hook Rule Violation** - useTheme() at LegDetailsPanel.tsx:64 (HIGH)
+5. **Event Listener Leaks** - 8+ instances without cleanup (HIGH)
+6. **FK Mismatch** - notifications.user_id references profiles(id) instead of auth.users(id) (HIGH)
+7. **Missing Error Handling** - Promise chains without .catch() (HIGH)
+
+### Database Issues - VERIFIED
+- Migration numbering chaos: 11 duplicate migration pairs identified
+- RLS policies: Properly implemented on sensitive tables
+- SQL injection prevention: Parameterized queries in use
+- GDPR infrastructure: Consent tracking and audit logs in place
+
+### Code Quality - VERIFIED
+- Weak CSP: 'unsafe-inline' and 'unsafe-eval' confirmed in next.config.ts
+- Excessive any types: 340+ instances across 105 files
+- setTimeout without cleanup: 6+ files affected
+- No error boundaries: Missing error.tsx files
+
+### UI/UX Issues - VERIFIED
+- Hardcoded colors: 5+ instances in Header.tsx, MatchBadge.tsx, etc.
+- Button style variations: Inconsistent padding and hover states
+- Modal z-index chaos: z-[90], z-[110], z-[120], z-[9999] mixed
+- Accessibility gaps: Missing aria-labels and contextual alt text
+
+### Unused Code - VERIFIED
+- Duplicate files: actionUtils.tsx/.ts pair confirmed
+- Compiled JS artifacts: 3 files (index.js, registry.js, types.js)
+- Root test files: 14 ad-hoc test files (~1500 lines)
+- Unused functions: bboxesOverlap, hasBothRoles, getUserRolesFromUser, getLat, getLng
+
+### Not Fully Verified
+- **CSRF Protection**: Could not explicitly verify implementation - requires security audit
+
+### Summary
+✓ 27 findings VERIFIED as still relevant
+✗ 1 finding (CSRF) NOT VERIFIED - requires explicit audit
+✓ All critical/high findings confirmed and actionable
+✓ Database structure analysis complete
+✓ No code changes made - documentation update only
+<!-- SECTION:NOTES:END -->
