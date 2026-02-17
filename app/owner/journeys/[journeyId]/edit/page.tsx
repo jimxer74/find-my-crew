@@ -551,7 +551,7 @@ export default function EditJourneyPage() {
                     />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm font-medium text-foreground block">{model.displayName}</span>
-                      <span className="text-xs text-muted-foreground block">{model.description}</span>
+                      <span className="text-xs text-muted-foreground block">{model.details}</span>
                     </div>
                   </label>
                 ))}
