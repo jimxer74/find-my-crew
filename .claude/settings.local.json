@@ -58,7 +58,8 @@
       "Bash(npx supabase status)",
       "Bash(python3:*)",
       "Bash(\"/c/Users/OWNER/Projects/next-projects/find-my-crew/app/documents/[id]/page.tsx\":*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(tail:*)"
     ]
   }
 }
