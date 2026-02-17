@@ -38,6 +38,7 @@ const securityHeaders = [
       "font-src 'self' data:",
       "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mapbox.com https://*.tiles.mapbox.com https://events.mapbox.com",
       "worker-src 'self' blob:",
+      "frame-src 'self' https://*.supabase.co",
       "frame-ancestors 'none'",
     ].join('; ')
   }
