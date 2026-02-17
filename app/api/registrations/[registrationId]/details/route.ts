@@ -393,13 +393,22 @@ export async function GET(
 
       // Fetch passport document metadata if we have a document ID
       if (passportAnswer.passport_document_id) {
-        console.log('Attempting to fetch document metadata for:', passportAnswer.passport_document_id);
+        console.log('🔍 Attempting to fetch document metadata for:', passportAnswer.passport_document_id);
         try {
+          // First check if document exists
           const { data: docData, error: docError } = await supabase
             .from('document_vault')
-            .select('id, file_name, metadata')
+            .select('id, file_name, metadata, owner_id, created_at')
             .eq('id', passportAnswer.passport_document_id)
             .single();
+
+          console.log('📄 Document query result:', {
+            found: !!docData,
+            error: docError?.message,
+            docId: docData?.id,
+            fileName: docData?.file_name,
+            ownerId: docData?.owner_id,
+          });
 
           if (!docError && docData) {
             passportDoc = {
@@ -407,16 +416,20 @@ export async function GET(
               file_name: docData.file_name,
               metadata: docData.metadata || {},
             };
-            console.log('Passport doc found:', passportDoc);
+            console.log('✅ Passport doc found and loaded:', passportDoc);
           } else {
-            console.log('Error fetching passport doc or doc not found:', docError?.message || 'Unknown error');
-            console.log('Continuing without document metadata - photo data may still be available');
+            console.log('⚠️ Error fetching passport doc:', docError?.message || 'Unknown error');
+            console.log('💡 Possible reasons:');
+            console.log('   - Document does not exist in vault');
+            console.log('   - Document was deleted');
+            console.log('   - RLS policy preventing access');
+            console.log('   - Document ID mismatch');
           }
         } catch (docFetchError) {
-          console.log('Exception fetching passport doc:', docFetchError);
+          console.log('❌ Exception fetching passport doc:', docFetchError);
         }
       } else {
-        console.log('No passport_document_id in answer - photo may still be available');
+        console.log('⚠️ No passport_document_id in answer');
       }
     } else {
       console.log('No passport answer found in registration answers');
