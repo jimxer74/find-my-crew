@@ -40,30 +40,34 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    // Fetch grants with grantee profile info
+    // Fetch all grants for this document
     const { data: grants, error } = await supabase
       .from('document_access_grants')
-      .select(`
-        *,
-        grantee:profiles!document_access_grants_grantee_id_fkey (
-          id,
-          full_name,
-          username,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .eq('document_id', documentId)
       .eq('grantor_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[DocumentGrants] List query failed:', error);
+      console.error('[DocumentGrants] List query failed:', {
+        error: error.message,
+        code: error.code,
+        documentId,
+        userId: user.id,
+      });
       return NextResponse.json(
         { error: 'Failed to fetch grants', details: error.message },
         { status: 500 }
       );
     }
 
+    console.log('[DocumentGrants] GET successful:', {
+      documentId,
+      grantsCount: grants?.length || 0,
+      userId: user.id,
+    });
+
+    return NextResponse.json({ grants: grants || [] });
     return NextResponse.json({ grants: grants || [] });
   } catch (error: unknown) {
     console.error('[DocumentGrants] GET error:', error);

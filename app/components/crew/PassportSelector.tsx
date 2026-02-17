@@ -88,11 +88,12 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error(`[PassportSelector] Grant check failed:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData?.error || 'Unknown error',
-          passportId
+        console.error(`[PassportSelector] Grant check failed - Status: ${response.status} ${response.statusText}`);
+        console.error(`[PassportSelector] Passport ID:`, passportId);
+        console.error(`[PassportSelector] Error response:`, errorData);
+        console.error(`[PassportSelector] Full response headers:`, {
+          'content-type': response.headers.get('content-type'),
+          'content-length': response.headers.get('content-length')
         });
 
         // Gracefully degrade: treat missing grants as no grant exists

@@ -55,7 +55,8 @@
       "Bash(git push:*)",
       "mcp__backlog__task_create",
       "mcp__backlog__get_task_execution_guide",
-      "Bash(npx supabase status)"
+      "Bash(npx supabase status)",
+      "Bash(python3:*)"
     ]
   }
 }
