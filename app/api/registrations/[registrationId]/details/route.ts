@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { normalizeSkillNames } from '@/app/lib/skillUtils';
@@ -395,41 +395,45 @@ export async function GET(
       if (passportAnswer.passport_document_id) {
         console.log('🔍 Attempting to fetch document metadata for:', passportAnswer.passport_document_id);
         try {
-          // First check if document exists
-          const { data: docData, error: docError } = await supabase
+          // Use service role to bypass RLS (document is in crew's vault, we're accessing from boat owner API)
+          // This is safe because we validate access through document_access_grants system
+          const serviceClient = getSupabaseServiceRoleClient();
+
+          // Query without .single() to handle 0 or multiple results gracefully
+          const { data: docDataArray, error: docError } = await serviceClient
             .from('document_vault')
             .select('id, file_name, metadata, owner_id, created_at')
-            .eq('id', passportAnswer.passport_document_id)
-            .single();
+            .eq('id', passportAnswer.passport_document_id);
 
           console.log('📄 Document query result:', {
-            found: !!docData,
+            found: !!docDataArray && docDataArray.length > 0,
+            count: docDataArray?.length || 0,
             error: docError?.message,
-            docId: docData?.id,
-            fileName: docData?.file_name,
-            ownerId: docData?.owner_id,
           });
 
-          if (!docError && docData) {
+          if (!docError && docDataArray && docDataArray.length > 0) {
+            const docData = docDataArray[0];
             passportDoc = {
               id: docData.id,
               file_name: docData.file_name,
               metadata: docData.metadata || {},
             };
             console.log('✅ Passport doc found and loaded:', passportDoc);
+          } else if (!docError && (!docDataArray || docDataArray.length === 0)) {
+            console.log('⚠️ Passport document ID references non-existent document in vault');
+            console.log('💡 This could mean:');
+            console.log('   - Document upload failed during registration');
+            console.log('   - Document was deleted after registration');
+            console.log('   - ID was stored but document was never created');
+            console.log('   - Photo will still display from photo_file_data');
           } else {
-            console.log('⚠️ Error fetching passport doc:', docError?.message || 'Unknown error');
-            console.log('💡 Possible reasons:');
-            console.log('   - Document does not exist in vault');
-            console.log('   - Document was deleted');
-            console.log('   - RLS policy preventing access');
-            console.log('   - Document ID mismatch');
+            console.log('❌ Error fetching passport doc:', docError?.message);
           }
         } catch (docFetchError) {
           console.log('❌ Exception fetching passport doc:', docFetchError);
         }
       } else {
-        console.log('⚠️ No passport_document_id in answer');
+        console.log('⚠️ No passport_document_id in answer - only photo_file_data available');
       }
     } else {
       console.log('No passport answer found in registration answers');

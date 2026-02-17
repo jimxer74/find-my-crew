@@ -31,7 +31,6 @@ async function handlePassportAnswer(
   registrationId: string,
   passportDocumentId: string,
   journeyId: string,
-  crewUserId: string,
   photoFileData?: string // Base64-encoded photo file (optional)
 ): Promise<string | null> {
   // Get passport requirement for this journey
@@ -47,21 +46,9 @@ async function handlePassportAnswer(
     return null;
   }
 
-  // Get boat owner for this journey (needed to create grant)
-  const { data: journey } = await supabase
-    .from('journeys')
-    .select('boat_id, boats!inner(owner_id)')
-    .eq('id', journeyId)
-    .single();
-
-  if (!journey || !journey.boats) {
-    console.error('Journey or boat not found when creating passport grant');
-    return 'Journey or boat not found';
-  }
-
-  const boatOwnerId = (journey.boats as unknown as { owner_id: string }).owner_id;
-
   // Create registration answer for passport
+  // NOTE: Crew member is responsible for creating document_access_grants
+  // when they upload the document (before or during registration)
   const { error: insertError } = await supabase
     .from('registration_answers')
     .insert({
@@ -77,33 +64,13 @@ async function handlePassportAnswer(
     return insertError.message;
   }
 
-  // Create access grant for boat owner to view passport document
-  // Grant is valid for 30 days and purpose is identity_verification
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 30);
-
-  const { error: grantError } = await supabase
-    .from('document_access_grants')
-    .insert({
-      document_id: passportDocumentId,
-      grantor_id: crewUserId, // Crew member grants access to their passport
-      grantee_id: boatOwnerId, // Boat owner can now view the passport
-      purpose: 'identity_verification',
-      purpose_reference_id: registrationId,
-      expires_at: expiresAt.toISOString(),
-      max_views: null, // Unlimited views for passport verification
-    })
-    .select();
-
-  if (grantError) {
-    // Check if grant already exists (unique constraint violation)
-    if (grantError.code === '23505') {
-      console.log('[Registration API] Grant already exists for this passport');
-    } else {
-      console.error('Error creating access grant for passport:', grantError);
-      // Don't fail the registration if grant creation fails - this is non-critical
-    }
-  }
+  console.log('[Registration API] Passport answer stored for registration:', {
+    registrationId,
+    passportDocumentId,
+    hasPhotoData: !!photoFileData,
+  });
+  console.log('[Registration API] ℹ️ Crew member must have created a document_access_grant');
+  console.log('[Registration API]    for boat owner to access this passport document');
 
   return null; // Success
 }
@@ -630,7 +597,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id, user.id, photoFileData);
+      const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id, photoFileData);
       if (passportError) {
         console.error(`[Registration API] Failed to save passport answer:`, passportError);
         return NextResponse.json(
