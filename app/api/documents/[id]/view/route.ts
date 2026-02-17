@@ -16,11 +16,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: documentId } = await params;
     const supabase = await getSupabaseServerClient();
+    const serviceClient = getSupabaseServiceRoleClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('[DocumentView] Access attempt:', { documentId, userId: user.id });
 
     // Try to fetch as owner first (RLS will return null if not owner)
     const { data: ownedDoc } = await supabase
@@ -34,26 +37,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let documentOwnerId: string;
 
     if (isOwner) {
+      console.log('[DocumentView] Access granted - user is owner');
       filePath = ownedDoc.file_path;
       documentOwnerId = ownedDoc.owner_id;
     } else {
-      // Check for active grant — grantee can see grants via RLS
+      // Check for active grant — fetch grant first without joins
       const now = new Date().toISOString();
       const { data: grant, error: grantError } = await supabase
         .from('document_access_grants')
-        .select(`
-          id,
-          document_id,
-          grantor_id,
-          max_views,
-          view_count,
-          expires_at,
-          is_revoked,
-          document_vault!inner (
-            file_path,
-            owner_id
-          )
-        `)
+        .select('id, document_id, grantor_id, max_views, view_count, expires_at, is_revoked')
         .eq('document_id', documentId)
         .eq('grantee_id', user.id)
         .eq('is_revoked', false)
@@ -61,7 +53,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .limit(1)
         .single();
 
+      console.log('[DocumentView] Grant query result:', {
+        hasGrant: !!grant,
+        error: grantError?.message,
+        documentId,
+        userId: user.id,
+      });
+
       if (grantError || !grant) {
+        console.log('[DocumentView] Access denied - no active grant found');
         await logDocumentAccess(supabase, {
           documentId,
           documentOwnerId: user.id, // best effort
@@ -77,6 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Check view count limit
       if (grant.max_views !== null && grant.view_count >= grant.max_views) {
+        console.log('[DocumentView] Access denied - view limit exceeded');
         await logDocumentAccess(supabase, {
           documentId,
           documentOwnerId: grant.grantor_id,
@@ -93,9 +94,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         );
       }
 
-      const vaultData = grant.document_vault as unknown as { file_path: string; owner_id: string };
-      filePath = vaultData.file_path;
-      documentOwnerId = vaultData.owner_id;
+      // Now fetch the document using service role (bypasses RLS)
+      const { data: doc, error: docError } = await serviceClient
+        .from('document_vault')
+        .select('id, file_path, owner_id')
+        .eq('id', documentId)
+        .single();
+
+      if (docError || !doc) {
+        console.error('[DocumentView] Failed to fetch document via service role:', docError);
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      }
+
+      filePath = doc.file_path;
+      documentOwnerId = doc.owner_id;
+      
+      console.log('[DocumentView] Access granted via grant:', {
+        grantId: grant.id,
+        documentOwnerId,
+      });
 
       // Increment view count
       await supabase
@@ -105,7 +122,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Generate signed URL using service role client (bypasses storage RLS)
-    const serviceClient = getSupabaseServiceRoleClient();
     const { data: signedUrlData, error: signedUrlError } = await serviceClient.storage
       .from('secure-documents')
       .createSignedUrl(filePath, SIGNED_URL_EXPIRY_SECONDS);
@@ -129,6 +145,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       userAgent: request.headers.get('user-agent') || undefined,
       details: { is_owner: isOwner },
     });
+
+    console.log('[DocumentView] Signed URL generated successfully');
 
     return NextResponse.json({
       signedUrl: signedUrlData.signedUrl,
