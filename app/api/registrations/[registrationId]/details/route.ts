@@ -350,12 +350,20 @@ export async function GET(
 
     // Find passport answer - check for passport requirement type or passport-related data
     const passportAnswer = answers.find((a: any) => {
-      const isPassportRequirement = a.journey_requirements?.requirement_type === 'passport';
+      const jr = a.journey_requirements as any;
+      const isPassportRequirement = jr?.requirement_type === 'passport';
       const hasDocument = a.passport_document_id !== null && a.passport_document_id !== undefined;
       const hasAIScore = a.ai_score !== null && a.ai_score !== undefined;
       const hasPhotoVerification = a.photo_verification_passed !== null && a.photo_verification_passed !== undefined;
-      console.log(`Checking answer requirement_id=${a.requirement_id}: isPassport=${isPassportRequirement}, hasDocument=${hasDocument}, hasAIScore=${hasAIScore}, hasPhotoVerification=${hasPhotoVerification}`);
-      return isPassportRequirement || hasDocument || hasAIScore || hasPhotoVerification;
+      const hasPhotoData = a.photo_file_data !== null && a.photo_file_data !== undefined;
+      const matchReason = [];
+      if (isPassportRequirement) matchReason.push('isPassport');
+      if (hasDocument) matchReason.push('hasDoc');
+      if (hasAIScore) matchReason.push('hasScore');
+      if (hasPhotoVerification) matchReason.push('hasPhotoVer');
+      if (hasPhotoData) matchReason.push('hasPhotoData');
+      console.log(`Checking answer requirement_id=${a.requirement_id}: ${matchReason.length > 0 ? '✓ MATCH (' + matchReason.join('+') + ')' : '✗ no match'}`);
+      return isPassportRequirement || hasDocument || hasAIScore || hasPhotoVerification || hasPhotoData;
     });
 
     console.log('Passport answer found:', !!passportAnswer);
