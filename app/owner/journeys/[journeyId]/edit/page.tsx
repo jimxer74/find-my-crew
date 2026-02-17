@@ -621,37 +621,8 @@ export default function EditJourneyPage() {
             </div>
           </CollapsibleSection>
 
-          {/* Boat & Images Section */}
-          <CollapsibleSection title="Boat & Images" sectionNumber={4}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Boat Selection */}
-              <div className="md:col-span-1">
-                <label htmlFor="boat_id" className="block text-sm font-medium text-foreground mb-1">
-                  Boat *
-                </label>
-                <select
-                  id="boat_id"
-                  name="boat_id"
-                  required
-                  value={formData.boat_id}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
-                >
-                  <option value="">Select a boat</option>
-                  {boats.map((boat) => (
-                    <option key={boat.id} value={boat.id}>
-                      {boat.name}
-                    </option>
-                  ))}
-                </select>
-                {boats.length === 0 && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    You need to create a boat first before creating a journey.
-                  </p>
-                )}
-              </div>
-            </div>
-
+          {/* Media Section */}
+          <CollapsibleSection title="Media" sectionNumber={4}>
             {/* Journey Images Section */}
             {journeyId && (
               <div className="border-t border-border pt-4 mt-4">
