@@ -186,6 +186,12 @@ export default function RegistrationDetailsPage() {
       }
 
       const result = await response.json();
+      console.log('[Registration Page] Data loaded:', {
+        hasPassportData: !!result.passportData,
+        hasPassportDoc: !!result.passportDoc,
+        passportData: result.passportData,
+        passportDoc: result.passportDoc,
+      });
       setData(result);
     } catch (err: any) {
       setError(err.message || 'An error occurred');

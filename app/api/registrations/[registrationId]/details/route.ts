@@ -359,41 +359,59 @@ export async function GET(
     });
 
     console.log('Passport answer found:', !!passportAnswer);
-    console.log('Passport document ID:', passportAnswer?.passport_document_id);
+    const journeyReq = passportAnswer?.journey_requirements as unknown as { requirement_type?: string } | undefined;
+    console.log('Passport answer details:', {
+      id: passportAnswer?.id,
+      requirement_id: passportAnswer?.requirement_id,
+      passport_document_id: passportAnswer?.passport_document_id,
+      ai_score: passportAnswer?.ai_score,
+      photo_file_data_exists: !!passportAnswer?.photo_file_data,
+      requirement_type: journeyReq?.requirement_type,
+    });
 
-    if (passportAnswer && (passportAnswer.passport_document_id || passportAnswer.ai_score !== null)) {
+    // Extract passport data if we found a passport answer
+    // This includes cases where AI hasn't scored yet but document/photo exists
+    if (passportAnswer) {
       passportData = {
         passport_document_id: passportAnswer.passport_document_id || null,
-        ai_score: passportAnswer.ai_score,
-        ai_reasoning: passportAnswer.ai_reasoning,
-        photo_verification_passed: passportAnswer.photo_verification_passed,
-        photo_confidence_score: passportAnswer.photo_confidence_score,
-        photo_file_data: passportAnswer.photo_file_data,
+        ai_score: passportAnswer.ai_score || null,
+        ai_reasoning: passportAnswer.ai_reasoning || null,
+        photo_verification_passed: passportAnswer.photo_verification_passed || null,
+        photo_confidence_score: passportAnswer.photo_confidence_score || null,
+        photo_file_data: passportAnswer.photo_file_data || null,
       };
 
       console.log('Passport data extracted:', passportData);
 
       // Fetch passport document metadata if we have a document ID
       if (passportAnswer.passport_document_id) {
-        const { data: docData, error: docError } = await supabase
-          .from('document_vault')
-          .select('id, file_name, metadata')
-          .eq('id', passportAnswer.passport_document_id)
-          .single();
+        console.log('Attempting to fetch document metadata for:', passportAnswer.passport_document_id);
+        try {
+          const { data: docData, error: docError } = await supabase
+            .from('document_vault')
+            .select('id, file_name, metadata')
+            .eq('id', passportAnswer.passport_document_id)
+            .single();
 
-        if (!docError && docData) {
-          passportDoc = {
-            id: docData.id,
-            file_name: docData.file_name,
-            metadata: docData.metadata || {},
-          };
-          console.log('Passport doc found:', passportDoc);
-        } else {
-          console.log('Error fetching passport doc:', docError);
+          if (!docError && docData) {
+            passportDoc = {
+              id: docData.id,
+              file_name: docData.file_name,
+              metadata: docData.metadata || {},
+            };
+            console.log('Passport doc found:', passportDoc);
+          } else {
+            console.log('Error fetching passport doc or doc not found:', docError?.message || 'Unknown error');
+            console.log('Continuing without document metadata - photo data may still be available');
+          }
+        } catch (docFetchError) {
+          console.log('Exception fetching passport doc:', docFetchError);
         }
+      } else {
+        console.log('No passport_document_id in answer - photo may still be available');
       }
     } else {
-      console.log('No passport answer or data found');
+      console.log('No passport answer found in registration answers');
     }
 
 
