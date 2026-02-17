@@ -66,6 +66,7 @@ type RegistrationDetails = {
     phone: string | null;
     profile_image_url: string | null;
     sailing_preferences: string | null;
+    user_description: string | null;
   } | null;
   leg: {
     id: string;
@@ -384,36 +385,79 @@ export default function RegistrationDetailsPage() {
               legSkills={data.combined_skills}
               effectiveRiskLevel={data.effective_risk_level}
               riskLevelMatches={riskLevelMatches}
+              onApprove={handleApprove}
+              onDeny={() => setShowDenyDialog(true)}
+              isUpdating={isUpdating}
             />
           );
         })()}
 
-        {/* Action buttons - Not collapsible */}
-        {data.registration.status === 'Pending approval' && (
-          <div className="bg-card rounded-lg shadow p-6 mb-6">
-            <h2 className="text-sm font-semibold text-muted-foreground mb-4">Actions</h2>
-            {updateError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-800">
-                {updateError}
+        {/* AI Assessment - Collapsible */}
+        {data.registration.ai_match_score !== null && (
+          <CollapsibleSection
+            title="AI Assessment"
+            defaultOpen={true}
+            badge={
+              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                data.registration.ai_match_score >= 80 ? 'bg-green-100 text-green-700' :
+                data.registration.ai_match_score >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+              }`}>
+                {data.registration.ai_match_score}%
+              </span>
+            }
+          >
+            <div className="space-y-6">
+              {/* Score bar */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-foreground">Match Score</span>
+                  <span className={`text-lg font-bold ${
+                    data.registration.ai_match_score >= 80 ? 'text-green-600' :
+                    data.registration.ai_match_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {data.registration.ai_match_score}%
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full transition-all duration-300 ${
+                      data.registration.ai_match_score >= 80 ? 'bg-green-500' :
+                      data.registration.ai_match_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${data.registration.ai_match_score}%` }}
+                  />
+                </div>
               </div>
-            )}
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={handleApprove}
-                disabled={isUpdating}
-                className="px-6 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUpdating ? 'Updating...' : 'Approve Registration'}
-              </button>
-              <button
-                onClick={() => setShowDenyDialog(true)}
-                disabled={isUpdating}
-                className="px-6 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Deny Registration
-              </button>
+
+              {/* Reasoning */}
+              {data.registration.ai_match_reasoning && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">AI Reasoning</p>
+                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">
+                    {data.registration.ai_match_reasoning}
+                  </p>
+                </div>
+              )}
+
+              {/* Passport Verification */}
+              {data.passportData && (
+                <>
+                  <div className="border-t border-border pt-6">
+                    <h4 className="text-sm font-semibold text-foreground mb-4">📋 Passport & Photo Verification</h4>
+                    <PassportVerificationSection
+                      passportData={data.passportData}
+                      passportDoc={data.passportDoc}
+                    />
+                  </div>
+                </>
+              )}
+              {!data.passportData && (
+                <div className="border-t border-border pt-6 text-center text-xs text-muted-foreground">
+                  No passport verification required for this journey
+                </div>
+              )}
             </div>
-          </div>
+          </CollapsibleSection>
         )}
 
         {/* Journey and Leg info - Collapsible */}
@@ -480,143 +524,6 @@ export default function RegistrationDetailsPage() {
           </div>
         </CollapsibleSection>
 
-        {/* Requirements - Risk Level, Experience, Skills - Collapsible */}
-        {(data.effective_risk_level || data.effective_min_experience_level || data.combined_skills.length > 0) && (
-          <CollapsibleSection title="Requirements" defaultOpen={true}>
-            <div className="space-y-6">
-              {/* Risk Level */}
-              {data.effective_risk_level && getRiskLevelConfig(data.effective_risk_level) && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Risk Level</p>
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-12 h-12 flex-shrink-0">
-                      <Image
-                        src={getRiskLevelConfig(data.effective_risk_level)!.icon}
-                        alt={getRiskLevelConfig(data.effective_risk_level)!.displayName}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div>
-                      <p className="font-medium text-foreground">
-                        {getRiskLevelConfig(data.effective_risk_level)!.displayName}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Experience Level */}
-              {data.effective_min_experience_level && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">Minimum Experience Level</p>
-                  <div className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    data.experience_level_matches === false
-                      ? 'bg-red-50 border-red-300'
-                      : 'bg-transparent border-transparent'
-                  }`}>
-                    <div className="relative w-12 h-12 flex-shrink-0">
-                      <Image
-                        src={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).icon}
-                        alt={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">
-                        {getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
-                      </p>
-                      {data.experience_level_matches === false && data.crew && data.crew.sailing_experience !== null && (
-                        <p className="text-sm text-red-700 font-medium mt-1">
-                          Crew level ({getExperienceLevelConfig(data.crew.sailing_experience as ExperienceLevel).displayName}) is below requirement
-                        </p>
-                      )}
-                      {data.experience_level_matches === true && data.crew && data.crew.sailing_experience !== null && (
-                        <p className="text-sm text-green-700 font-medium mt-1">
-                          Crew level: {getExperienceLevelConfig(data.crew.sailing_experience as ExperienceLevel).displayName}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Skills */}
-              {data.combined_skills.length > 0 && (
-                <SkillsMatchingDisplay
-                  legSkills={data.combined_skills}
-                  userSkills={data.crew?.skills?.map(s => s.name) || []}
-                  skillMatchPercentage={data.skill_match_percentage ?? undefined}
-                  headerText="Required Skills"
-                />
-              )}
-            </div>
-          </CollapsibleSection>
-        )}
-
-        {/* AI Assessment - Collapsible */}
-        {data.registration.ai_match_score !== null && (
-          <CollapsibleSection
-            title="AI Assessment"
-            defaultOpen={true}
-            badge={
-              <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                data.registration.ai_match_score >= 80 ? 'bg-green-100 text-green-700' :
-                data.registration.ai_match_score >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-              }`}>
-                {data.registration.ai_match_score}%
-              </span>
-            }
-          >
-            <div className="space-y-6">
-              {/* Score bar */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground">Match Score</span>
-                  <span className={`text-lg font-bold ${
-                    data.registration.ai_match_score >= 80 ? 'text-green-600' :
-                    data.registration.ai_match_score >= 60 ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {data.registration.ai_match_score}%
-                  </span>
-                </div>
-                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${
-                      data.registration.ai_match_score >= 80 ? 'bg-green-500' :
-                      data.registration.ai_match_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}
-                    style={{ width: `${data.registration.ai_match_score}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Reasoning */}
-              {data.registration.ai_match_reasoning && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-2">AI Reasoning</p>
-                  <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">
-                    {data.registration.ai_match_reasoning}
-                  </p>
-                </div>
-              )}
-
-              {/* Passport Verification */}
-              {data.passportData && (
-                <>
-                  <div className="border-t border-border pt-6">
-                    <PassportVerificationSection
-                      passportData={data.passportData}
-                      passportDoc={data.passportDoc}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-          </CollapsibleSection>
-        )}
-
         {/* Requirements Q&A - Collapsible */}
         {hasQandA && (
           <CollapsibleSection
@@ -669,12 +576,6 @@ export default function RegistrationDetailsPage() {
           </CollapsibleSection>
         )}
 
-        {/* Sailing Preferences - Collapsible */}
-        {data.crew?.sailing_preferences && (
-          <CollapsibleSection title="Sailing Preferences" defaultOpen={false}>
-            <p className="text-sm text-foreground whitespace-pre-wrap">{data.crew.sailing_preferences}</p>
-          </CollapsibleSection>
-        )}
       </main>
 
       {/* Deny Dialog */}

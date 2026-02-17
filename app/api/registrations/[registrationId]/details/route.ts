@@ -154,7 +154,7 @@ export async function GET(
     // Fetch crew profile (skills stored as JSON array: [{skill: string, description: string}, ...])
     const { data: crewProfile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, full_name, username, email, sailing_experience, skills, risk_level, phone, profile_image_url, sailing_preferences')
+      .select('id, full_name, username, email, sailing_experience, skills, risk_level, phone, profile_image_url, sailing_preferences, user_description')
       .eq('id', registration.user_id)
       .single();
 
@@ -166,20 +166,75 @@ export async function GET(
     let skillsWithDescriptions: Array<{ name: string; description: string }> = [];
     if (crewProfile?.skills) {
       try {
-        const skillsData = Array.isArray(crewProfile.skills) ? crewProfile.skills : JSON.parse(crewProfile.skills);
-        if (Array.isArray(skillsData)) {
-          skillsWithDescriptions = skillsData.map((item: any) => {
-            // Handle both formats: {skill: string, description: string} or just string
-            if (typeof item === 'string') {
-              return { name: item, description: '' };
-            } else if (item.skill && item.description) {
-              return { name: item.skill, description: item.description };
-            }
-            return { name: '', description: '' };
-          }).filter(item => item.name);
+        let skillsData = crewProfile.skills;
+
+        // Convert to array if needed
+        if (typeof skillsData === 'string') {
+          skillsData = JSON.parse(skillsData);
         }
+
+        if (!Array.isArray(skillsData)) {
+          skillsData = [skillsData];
+        }
+
+        // Map to standardized format
+        skillsWithDescriptions = skillsData.map((item: any, idx: number) => {
+          // Handle case where item itself is a JSON string
+          let parsed = item;
+          if (typeof item === 'string') {
+            try {
+              parsed = JSON.parse(item);
+            } catch {
+              return { name: item, description: '' };
+            }
+          }
+
+          if (typeof parsed !== 'object' || !parsed) {
+            return { name: '', description: '' };
+          }
+
+          // Get all keys and find description
+          const keys = Object.keys(parsed);
+          const description = String(parsed.description || parsed.desc || '').trim();
+
+          // Find the skill name - look for common field name patterns
+          let name = '';
+
+          // Try exact matches first
+          if (parsed['skill Name']) {
+            name = parsed['skill Name'];
+          } else if (parsed['skillName']) {
+            name = parsed['skillName'];
+          } else if (parsed['name'] && parsed['name'] !== description) {
+            name = parsed['name'];
+          } else if (parsed['skill']) {
+            name = parsed['skill'];
+          } else {
+            // If no skill name field found, use first non-description field
+            for (const key of keys) {
+              if (key.toLowerCase() !== 'description' && key.toLowerCase() !== 'desc') {
+                const value = parsed[key];
+                if (typeof value === 'string' && value.trim()) {
+                  name = value;
+                  break;
+                }
+              }
+            }
+          }
+
+          // If still no name, extract from description (first 30 chars or first word)
+          if (!name && description) {
+            name = description.split(/[\.\,\!\?]/)[0].substring(0, 50);
+          }
+
+          return {
+            name: String(name || '').trim(),
+            description: description
+          };
+        });
+
       } catch (e) {
-        console.error('Error parsing skills data:', e);
+        console.error('Error parsing skills:', e);
       }
     }
 
@@ -253,20 +308,28 @@ export async function GET(
         photo_verification_passed,
         photo_confidence_score,
         photo_file_data,
-        journey_requirements!inner (
+        journey_requirements (
           id,
           question_text,
-          question_type,
-          options,
+          requirement_type,
           is_required,
-          order,
-          skill_name
+          order
         )
       `)
       .eq('registration_id', registrationId);
 
     if (answersError) {
       console.error('Error fetching answers:', answersError);
+    }
+
+    console.log('=== PASSPORT DEBUG START ===');
+    console.log('Registration ID:', registrationId);
+    console.log('Answers query error:', answersError);
+    console.log('Total answers fetched:', answersData?.length || 0);
+    if (answersData && answersData.length > 0) {
+      console.log('Answers data:', JSON.stringify(answersData, null, 2));
+    } else {
+      console.log('NO ANSWERS FOUND for this registration');
     }
 
     // Sort answers by journey_requirements.order in JavaScript
@@ -276,14 +339,31 @@ export async function GET(
       return orderA - orderB;
     });
 
+    console.log('Sorted answers:', JSON.stringify(answers, null, 2));
+
     // Extract passport verification data if available
     let passportData: any = null;
     let passportDoc: any = null;
-    const passportAnswer = answers.find((a: any) => a.journey_requirements?.question_type === 'passport');
 
-    if (passportAnswer && passportAnswer.passport_document_id) {
+    console.log('All answers:', JSON.stringify(answers, null, 2));
+    console.log('Looking for passport answer...');
+
+    // Find passport answer - check for passport requirement type or passport-related data
+    const passportAnswer = answers.find((a: any) => {
+      const isPassportRequirement = a.journey_requirements?.requirement_type === 'passport';
+      const hasDocument = a.passport_document_id !== null && a.passport_document_id !== undefined;
+      const hasAIScore = a.ai_score !== null && a.ai_score !== undefined;
+      const hasPhotoVerification = a.photo_verification_passed !== null && a.photo_verification_passed !== undefined;
+      console.log(`Checking answer requirement_id=${a.requirement_id}: isPassport=${isPassportRequirement}, hasDocument=${hasDocument}, hasAIScore=${hasAIScore}, hasPhotoVerification=${hasPhotoVerification}`);
+      return isPassportRequirement || hasDocument || hasAIScore || hasPhotoVerification;
+    });
+
+    console.log('Passport answer found:', !!passportAnswer);
+    console.log('Passport document ID:', passportAnswer?.passport_document_id);
+
+    if (passportAnswer && (passportAnswer.passport_document_id || passportAnswer.ai_score !== null)) {
       passportData = {
-        passport_document_id: passportAnswer.passport_document_id,
+        passport_document_id: passportAnswer.passport_document_id || null,
         ai_score: passportAnswer.ai_score,
         ai_reasoning: passportAnswer.ai_reasoning,
         photo_verification_passed: passportAnswer.photo_verification_passed,
@@ -291,20 +371,29 @@ export async function GET(
         photo_file_data: passportAnswer.photo_file_data,
       };
 
-      // Fetch passport document metadata
-      const { data: docData, error: docError } = await supabase
-        .from('document_vault')
-        .select('id, file_name, metadata')
-        .eq('id', passportAnswer.passport_document_id)
-        .single();
+      console.log('Passport data extracted:', passportData);
 
-      if (!docError && docData) {
-        passportDoc = {
-          id: docData.id,
-          file_name: docData.file_name,
-          metadata: docData.metadata || {},
-        };
+      // Fetch passport document metadata if we have a document ID
+      if (passportAnswer.passport_document_id) {
+        const { data: docData, error: docError } = await supabase
+          .from('document_vault')
+          .select('id, file_name, metadata')
+          .eq('id', passportAnswer.passport_document_id)
+          .single();
+
+        if (!docError && docData) {
+          passportDoc = {
+            id: docData.id,
+            file_name: docData.file_name,
+            metadata: docData.metadata || {},
+          };
+          console.log('Passport doc found:', passportDoc);
+        } else {
+          console.log('Error fetching passport doc:', docError);
+        }
       }
+    } else {
+      console.log('No passport answer or data found');
     }
 
 
@@ -365,6 +454,7 @@ export async function GET(
         phone: crewProfile.phone,
         profile_image_url: crewProfile.profile_image_url,
         sailing_preferences: crewProfile.sailing_preferences,
+        user_description: crewProfile.user_description,
       } : null,
       leg: {
         id: legs.id,

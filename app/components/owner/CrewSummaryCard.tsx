@@ -19,6 +19,8 @@ interface CrewSummaryCardProps {
     skills: Array<{ name: string; description: string }>;
     risk_level: string[] | null;
     profile_image_url: string | null;
+    sailing_preferences: string | null;
+    user_description: string | null;
   } | null;
   registration: {
     created_at: string;
@@ -31,6 +33,9 @@ interface CrewSummaryCardProps {
   legSkills: string[];
   effectiveRiskLevel?: RiskLevel | null;
   riskLevelMatches?: boolean | null;
+  onApprove?: () => void;
+  onDeny?: () => void;
+  isUpdating?: boolean;
 }
 
 const getRiskLevelConfig = (riskLevel: RiskLevel | null, theme: any) => {
@@ -79,9 +84,18 @@ export function CrewSummaryCard({
   legSkills,
   effectiveRiskLevel,
   riskLevelMatches,
+  onApprove,
+  onDeny,
+  isUpdating,
 }: CrewSummaryCardProps) {
   const theme = useTheme();
   if (!crew) return null;
+
+  // Debug logging
+  console.log('CrewSummaryCard received crew:', crew);
+  console.log('CrewSummaryCard crew.skills:', crew.skills);
+  console.log('CrewSummaryCard crew.skills is array?', Array.isArray(crew.skills));
+  console.log('CrewSummaryCard crew.skills length:', crew.skills?.length);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, string> = {
@@ -139,11 +153,30 @@ export function CrewSummaryCard({
           </div>
         </div>
 
-        {/* Status Badge and Auto-Approved */}
+        {/* Action Buttons or Status Badge */}
         <div className="flex flex-col items-start sm:items-end gap-2">
-          <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusBadge(registration.status)}`}>
-            {registration.status}
-          </span>
+          {registration.status === 'Pending approval' ? (
+            <div className="flex gap-2">
+              <button
+                onClick={onApprove}
+                disabled={isUpdating}
+                className="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdating ? 'Approving...' : 'Approve'}
+              </button>
+              <button
+                onClick={onDeny}
+                disabled={isUpdating}
+                className="px-4 py-2 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdating ? 'Denying...' : 'Deny'}
+              </button>
+            </div>
+          ) : (
+            <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusBadge(registration.status)}`}>
+              {registration.status}
+            </span>
+          )}
           {registration.auto_approved && (
             <span className="inline-flex items-center gap-1 text-xs text-primary">
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,8 +191,28 @@ export function CrewSummaryCard({
       {/* Divider */}
       <div className="border-t border-border mb-6" />
 
+      {/* User Description Section */}
+      {crew.user_description && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-muted-foreground mb-2">About</p>
+          <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border">
+            {crew.user_description}
+          </p>
+        </div>
+      )}
+
+      {/* Sailing Preferences Section */}
+      {crew.sailing_preferences && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Sailing Preferences</p>
+          <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-lg p-3 border border-border">
+            {crew.sailing_preferences}
+          </p>
+        </div>
+      )}
+
       {/* Risk and Experience Level - LegDetailsPanel Style */}
-      <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+      <div className="flex items-center justify-between mb-3 pb-3">
         <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
       </div>
       <div className="space-y-3 grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-3 mb-6">
@@ -275,33 +328,79 @@ export function CrewSummaryCard({
         </div>
       )}
 
-      {/* All Skills Section - Table Format */}
-      {crew.skills.length > 0 && (
+      {/* All Skills Section - Responsive (Single Column on Mobile) */}
+      {crew.skills && (Array.isArray(crew.skills) ? crew.skills.length > 0 : typeof crew.skills === 'object') && (
         <div>
           <p className="text-xs font-semibold text-muted-foreground mb-3">Skills & Description</p>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
+
+          {/* Desktop Table View (md and up) */}
+          <div className="hidden md:block border border-border rounded-lg overflow-x-auto">
+            <table className="w-full">
               <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Skill</th>
-                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Description</th>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="text-left px-4 py-3 font-semibold text-foreground text-sm min-w-[150px]">skillname:</th>
+                  <th className="text-left px-4 py-3 font-semibold text-foreground text-sm">description:</th>
                 </tr>
               </thead>
               <tbody>
-                {crew.skills.map((skillObj, index) => {
+                {crew.skills.map((skillObj: any, index: number) => {
+                  const skillName = String(skillObj?.name || '').trim();
+                  const skillDescription = String(skillObj?.description || '').trim();
+                  if (!skillName) return null;
+
                   return (
-                    <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-muted/10'} border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors`}>
-                      <td className="px-4 py-2 font-medium text-foreground whitespace-nowrap">
-                        {toDisplaySkillName(skillObj.name)}
+                    <tr
+                      key={index}
+                      className={`${
+                        index % 2 === 0 ? 'bg-white' : 'bg-muted/5'
+                      } border-b border-border last:border-b-0 hover:bg-muted/15 transition-colors`}
+                    >
+                      <td className="px-4 py-3 font-medium text-foreground text-sm align-top">
+                        <span className="inline-block px-2.5 py-1 bg-primary/10 text-primary rounded-md whitespace-nowrap">
+                          {toDisplaySkillName(skillName)}
+                        </span>
                       </td>
-                      <td className="px-4 py-2 text-foreground text-xs leading-relaxed">
-                        {skillObj.description || <span className="text-muted-foreground italic">No description provided</span>}
+                      <td className="px-4 py-3 text-foreground text-sm leading-relaxed align-top">
+                        {skillDescription ? (
+                          <span className="text-gray-700">{skillDescription}</span>
+                        ) : (
+                          <span className="text-muted-foreground italic">No description provided</span>
+                        )}
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile Card View (Single Column) */}
+          <div className="md:hidden space-y-3">
+            {crew.skills.map((skillObj: any, index: number) => {
+              const skillName = String(skillObj?.name || '').trim();
+              const skillDescription = String(skillObj?.description || '').trim();
+              if (!skillName) return null;
+
+              return (
+                <div
+                  key={index}
+                  className="border border-border rounded-lg p-4 bg-muted/5 hover:bg-muted/15 transition-colors"
+                >
+                  <div className="mb-2">
+                    <span className="inline-block px-2.5 py-1 bg-primary/10 text-primary rounded-md whitespace-nowrap text-xs font-medium">
+                      {toDisplaySkillName(skillName)}
+                    </span>
+                  </div>
+                  <div className="text-sm leading-relaxed">
+                    {skillDescription ? (
+                      <p className="text-gray-700">{skillDescription}</p>
+                    ) : (
+                      <p className="text-muted-foreground italic">No description provided</p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

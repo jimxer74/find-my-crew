@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface PassportVerificationSectionProps {
   passportData?: {
@@ -34,7 +35,7 @@ export function PassportVerificationSection({
 }: PassportVerificationSectionProps) {
   const [photoEnlarged, setPhotoEnlarged] = useState(false);
 
-  if (!passportData || !passportDoc) {
+  if (!passportData) {
     return null;
   }
 
@@ -56,6 +57,24 @@ export function PassportVerificationSection({
 
   return (
     <div className="space-y-6">
+      {/* Manual Review Notice */}
+      {passportData.ai_score && passportData.ai_score < 80 && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium text-yellow-800">
+                Manual Review Recommended: Please review the passport document and photo below to verify the applicant's identity.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Passport Document Section */}
       {passportDoc && (
         <div>
@@ -102,6 +121,19 @@ export function PassportVerificationSection({
                 </div>
               </div>
             )}
+            <div className="pt-3 border-t border-border">
+              <Link
+                href={`/documents/${passportDoc.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                View Passport Document
+              </Link>
+            </div>
           </div>
         </div>
       )}
@@ -142,13 +174,18 @@ export function PassportVerificationSection({
           <div className="bg-muted/30 border border-border rounded-lg p-4">
             <div className="space-y-3">
               {/* Photo Display */}
-              <div className="relative w-full h-auto rounded-lg overflow-hidden bg-black/5">
+              <div className="relative w-full h-auto rounded-lg overflow-hidden bg-black/5 group">
                 <img
                   src={passportData.photo_file_data}
                   alt="Crew verification photo"
                   className="w-full h-auto max-h-96 object-cover cursor-pointer"
                   onClick={() => setPhotoEnlarged(true)}
                 />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                  </svg>
+                </div>
               </div>
 
               {/* Photo Verification Status */}
