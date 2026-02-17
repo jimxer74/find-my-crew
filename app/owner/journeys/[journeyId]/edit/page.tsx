@@ -627,13 +627,12 @@ export default function EditJourneyPage() {
                   {getAllExperienceLevels().map((levelConfig) => (
                     <label key={levelConfig.value} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
                       <input
-                        type="checkbox"
+                        type="radio"
+                        name="experience-level"
+                        value={levelConfig.value}
                         checked={formData.min_experience_level === levelConfig.value}
-                        onChange={() => {
-                          const newValue = formData.min_experience_level === levelConfig.value ? null : levelConfig.value;
-                          setFormData(prev => ({ ...prev, min_experience_level: newValue }));
-                        }}
-                        className="w-4 h-4 text-primary border-border focus:ring-primary rounded"
+                        onChange={() => setFormData(prev => ({ ...prev, min_experience_level: levelConfig.value }))}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary"
                       />
                       <span className="text-sm text-foreground">{levelConfig.displayName}</span>
                     </label>
