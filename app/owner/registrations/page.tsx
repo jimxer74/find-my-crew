@@ -93,6 +93,7 @@ export default function AllRegistrationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [legs, setLegs] = useState<Leg[]>([]);
+  const [isPaneOpen, setIsPaneOpen] = useState(true);
   const prevFiltersRef = useRef<string | null>(null);
   const isLoadingRef = useRef<boolean>(false);
   const hasLoadedOnceRef = useRef<boolean>(false);
@@ -297,134 +298,211 @@ export default function AllRegistrationsPage() {
   return (
     <div className="min-h-screen bg-background">
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
-        </div>
-
-        {/* Mobile Filter Badges - Shown only on mobile */}
-        <div className="md:hidden mb-4 flex gap-2 overflow-x-auto pb-2">
-          <button
-            onClick={() => handleStatusFilter('Pending approval')}
-            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
-              filterStatus === 'Pending approval'
-                ? 'bg-yellow-500 text-white'
-                : 'bg-muted text-foreground hover:bg-muted/80'
-            }`}
-          >
-            P
-          </button>
-          <button
-            onClick={() => handleStatusFilter('Approved')}
-            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
-              filterStatus === 'Approved'
-                ? 'bg-green-500 text-white'
-                : 'bg-muted text-foreground hover:bg-muted/80'
-            }`}
-          >
-            A
-          </button>
-          <button
-            onClick={() => handleStatusFilter('Not approved')}
-            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
-              filterStatus === 'Not approved'
-                ? 'bg-red-500 text-white'
-                : 'bg-muted text-foreground hover:bg-muted/80'
-            }`}
-          >
-            N
-          </button>
-          <button
-            onClick={() => handleStatusFilter('Cancelled')}
-            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
-              filterStatus === 'Cancelled'
-                ? 'bg-gray-500 text-white'
-                : 'bg-muted text-foreground hover:bg-muted/80'
-            }`}
-          >
-            C
-          </button>
-        </div>
-
-        {/* Desktop Filters and Sorting - Hidden on mobile */}
-        <div className="hidden md:block mb-6 bg-card rounded-lg shadow p-4 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Status Filter */}
-            <div>
-              <label htmlFor="filter-status" className="block text-sm font-medium text-foreground mb-2">
-                {t('status')}
-              </label>
-              <select
-                id="filter-status"
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="Pending approval">{tStatus('pending')}</option>
-                <option value="Approved">{tStatus('approved')}</option>
-                <option value="Not approved">{tStatus('rejected')}</option>
-                <option value="Cancelled">{tStatus('cancelled')}</option>
-              </select>
-            </div>
-
-            {/* Journey Filter */}
-            <div>
-              <label htmlFor="filter-journey" className="block text-sm font-medium text-foreground mb-2">
-                {t('journey')}
-              </label>
-              <select
-                id="filter-journey"
-                value={filterJourneyId}
-                onChange={(e) => {
-                  setFilterJourneyId(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="all">{t('allJourneys')}</option>
-                {journeys.map((journey) => (
-                  <option key={journey.id} value={journey.id}>
-                    {journey.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Leg Filter */}
-            <div>
-              <label htmlFor="filter-leg" className="block text-sm font-medium text-foreground mb-2">
-                {t('leg')}
-              </label>
-              <select
-                id="filter-leg"
-                value={filterLegId}
-                onChange={(e) => {
-                  setFilterLegId(e.target.value);
-                  setCurrentPage(1);
-                }}
-                disabled={filterJourneyId === 'all' || legs.length === 0}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <option value="all">{t('allLegs')}</option>
-                {legs.map((leg) => (
-                  <option key={leg.id} value={leg.id}>
-                    {leg.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
+      <main className="h-[calc(100vh-100px)] relative flex flex-col md:flex-row overflow-hidden">
+        {/* Mobile Header and Filters */}
+        <div className="md:hidden flex flex-col">
+          <div className="px-4 sm:px-6 py-8 border-b border-border">
+            <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+            <p className="text-muted-foreground">{t('subtitle')}</p>
           </div>
 
-          {/* Results Count */}
-          <div className="text-sm text-muted-foreground">
-            {t('showing', { count: registrations.length, total: totalCount })}
+          {/* Mobile Filter Badges */}
+          <div className="px-4 sm:px-6 py-4 flex gap-2 overflow-x-auto pb-2 border-b border-border">
+            <button
+              onClick={() => handleStatusFilter('Pending approval')}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+                filterStatus === 'Pending approval'
+                  ? 'bg-yellow-500 text-white'
+                  : 'bg-muted text-foreground hover:bg-muted/80'
+              }`}
+            >
+              P
+            </button>
+            <button
+              onClick={() => handleStatusFilter('Approved')}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+                filterStatus === 'Approved'
+                  ? 'bg-green-500 text-white'
+                  : 'bg-muted text-foreground hover:bg-muted/80'
+              }`}
+            >
+              A
+            </button>
+            <button
+              onClick={() => handleStatusFilter('Not approved')}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+                filterStatus === 'Not approved'
+                  ? 'bg-red-500 text-white'
+                  : 'bg-muted text-foreground hover:bg-muted/80'
+              }`}
+            >
+              N
+            </button>
+            <button
+              onClick={() => handleStatusFilter('Cancelled')}
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+                filterStatus === 'Cancelled'
+                  ? 'bg-gray-500 text-white'
+                  : 'bg-muted text-foreground hover:bg-muted/80'
+              }`}
+            >
+              C
+            </button>
           </div>
         </div>
+
+        {/* Desktop Layout - Pane + Table */}
+        <div className="hidden md:flex w-full relative">
+          {/* Open Pane Button - When Closed */}
+          {!isPaneOpen && (
+            <button
+              onClick={() => setIsPaneOpen(true)}
+              className="absolute top-4 left-4 z-50 bg-card border border-border rounded-md p-2 shadow-sm hover:bg-accent transition-all"
+              title="Open filter panel"
+              aria-label="Open filter panel"
+            >
+              <svg
+                className="w-5 h-5 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          )}
+
+          {/* Left Sidebar Pane - Desktop Only */}
+          <div
+            className={`${
+              isPaneOpen
+                ? 'translate-x-0'
+                : '-translate-x-full'
+            } ${
+              isPaneOpen ? 'w-80' : 'w-0'
+            } border-r border-border bg-card flex flex-col transition-all duration-300 overflow-hidden absolute left-0 top-0 bottom-0 z-40 shadow-lg`}
+          >
+            {isPaneOpen && (
+              <>
+                {/* Header */}
+                <div className="px-6 py-6 border-b border-border flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-foreground">Filters</h2>
+                  <button
+                    onClick={() => setIsPaneOpen(false)}
+                    className="p-1 hover:bg-accent rounded-md transition-colors"
+                    title="Close panel"
+                    aria-label="Close panel"
+                  >
+                    <svg
+                      className="w-5 h-5 text-foreground"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth="2"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Filters Content */}
+                <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
+                  {/* Status Filter */}
+                  <div>
+                    <label htmlFor="filter-status" className="block text-sm font-medium text-foreground mb-2">
+                      {t('status')}
+                    </label>
+                    <select
+                      id="filter-status"
+                      value={filterStatus}
+                      onChange={(e) => {
+                        setFilterStatus(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="Pending approval">{tStatus('pending')}</option>
+                      <option value="Approved">{tStatus('approved')}</option>
+                      <option value="Not approved">{tStatus('rejected')}</option>
+                      <option value="Cancelled">{tStatus('cancelled')}</option>
+                    </select>
+                  </div>
+
+                  {/* Journey Filter */}
+                  <div>
+                    <label htmlFor="filter-journey" className="block text-sm font-medium text-foreground mb-2">
+                      {t('journey')}
+                    </label>
+                    <select
+                      id="filter-journey"
+                      value={filterJourneyId}
+                      onChange={(e) => {
+                        setFilterJourneyId(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value="all">{t('allJourneys')}</option>
+                      {journeys.map((journey) => (
+                        <option key={journey.id} value={journey.id}>
+                          {journey.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Leg Filter */}
+                  <div>
+                    <label htmlFor="filter-leg" className="block text-sm font-medium text-foreground mb-2">
+                      {t('leg')}
+                    </label>
+                    <select
+                      id="filter-leg"
+                      value={filterLegId}
+                      onChange={(e) => {
+                        setFilterLegId(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      disabled={filterJourneyId === 'all' || legs.length === 0}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <option value="all">{t('allLegs')}</option>
+                      {legs.map((leg) => (
+                        <option key={leg.id} value={leg.id}>
+                          {leg.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Results Count */}
+                  <div className="text-xs text-muted-foreground border-t border-border pt-4">
+                    {t('showing', { count: registrations.length, total: totalCount })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Main Content - Table Area */}
+          <div className={`flex-1 flex flex-col transition-all duration-300 ${isPaneOpen ? 'ml-80' : 'ml-0'} overflow-hidden`}>
+            {/* Header */}
+            <div className="px-6 py-8 border-b border-border">
+              <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+              <p className="text-muted-foreground">{t('subtitle')}</p>
+            </div>
+
+            {/* Table Content */}
+            <div className="flex-1 overflow-y-auto px-6 py-6">
 
         {/* Desktop Table View */}
         {registrations.length === 0 ? (
@@ -443,16 +521,9 @@ export default function AllRegistrationsPage() {
               />
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden grid grid-cols-1 gap-4 mb-6">
-              {registrations.map((registration) => (
-                <RegistrationCard key={registration.id} registration={registration} />
-              ))}
-            </div>
-
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center justify-center gap-2 mt-6 border-t border-border pt-6">
                 <button
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
@@ -472,8 +543,49 @@ export default function AllRegistrationsPage() {
                 </button>
               </div>
             )}
-          </>
+            </>
+          )}
+            </div>
+          </div>
+        </div>
+
+      {/* Mobile View - Cards */}
+      <div className="flex flex-col md:hidden flex-1 overflow-y-auto">
+        {registrations.length === 0 ? (
+          <div className="bg-card rounded-lg shadow p-8 text-center mx-4">
+            <p className="text-muted-foreground">{t('noMatchingRegistrations')}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 mb-6 px-4 py-6">
+            {registrations.map((registration) => (
+              <RegistrationCard key={registration.id} registration={registration} />
+            ))}
+          </div>
         )}
+
+        {/* Mobile Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 px-4 py-6 border-t border-border mt-auto">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('previous')}
+            </button>
+            <span className="text-sm text-muted-foreground">
+              {t('pageOf', { current: currentPage, total: totalPages })}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 border border-border rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {t('next')}
+            </button>
+          </div>
+        )}
+      </div>
       </main>
       <Footer />
     </div>
