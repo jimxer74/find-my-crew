@@ -2,18 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
+const VALID_REQUIREMENT_TYPES = ['risk_level', 'experience_level', 'skill', 'passport', 'question'] as const;
+
 /**
  * PUT /api/journeys/[journeyId]/requirements/[requirementId]
- * 
+ *
  * Updates an existing requirement.
  * Only journey owners can update requirements.
- * 
- * Body: (all fields optional)
- * - question_text: string
- * - question_type: 'text' | 'multiple_choice' | 'yes_no' | 'rating'
- * - options: JSONB array (for multiple_choice)
+ *
+ * Body: (all fields optional, type-dependent)
+ * - question_text: string (for 'question' type)
+ * - skill_name: string (for 'skill' type)
+ * - qualification_criteria: string (for 'skill' and 'question' types)
+ * - weight: integer 0-10 (for 'skill' and 'question' types)
+ * - require_photo_validation: boolean (for 'passport' type)
+ * - pass_confidence_score: integer 0-10 (for 'passport' type)
  * - is_required: boolean
- * - weight: integer 1-10
  * - order: integer
  */
 export async function PUT(
@@ -23,9 +27,9 @@ export async function PUT(
   try {
     const resolvedParams = params instanceof Promise ? await params : params;
     const { journeyId, requirementId } = resolvedParams;
-    
+
     const supabase = await getSupabaseServerClient();
-    
+
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -55,6 +59,7 @@ export async function PUT(
       .select(`
         id,
         journey_id,
+        requirement_type,
         journeys!inner (
           id,
           boat_id,
@@ -84,74 +89,60 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { question_text, question_type, options, is_required, weight, order } = body;
+    const {
+      question_text,
+      skill_name,
+      qualification_criteria,
+      weight,
+      require_photo_validation,
+      pass_confidence_score,
+      is_required,
+      order,
+    } = body;
 
-    // Build update object
-    const updateData: any = {};
+    // Build update object based on requirement type
+    const updateData: Record<string, any> = {};
+    const reqType = (requirement as any).requirement_type;
 
-    if (question_text !== undefined) {
-      updateData.question_text = question_text.trim();
-    }
-
-    if (question_type !== undefined) {
-      // Validate question_type
-      const validTypes = ['text', 'multiple_choice', 'yes_no', 'rating'];
-      if (!validTypes.includes(question_type)) {
-        return NextResponse.json(
-          { error: `Invalid question_type. Must be one of: ${validTypes.join(', ')}` },
-          { status: 400 }
-        );
-      }
-      updateData.question_type = question_type;
-
-      // If changing to multiple_choice, validate options
-      if (question_type === 'multiple_choice') {
-        if (options === undefined || !Array.isArray(options) || options.length === 0) {
-          return NextResponse.json(
-            { error: 'multiple_choice questions must have options array' },
-            { status: 400 }
-          );
+    // Type-specific field updates
+    if (reqType === 'question') {
+      if (question_text !== undefined) updateData.question_text = question_text.trim();
+      if (qualification_criteria !== undefined) updateData.qualification_criteria = qualification_criteria.trim();
+      if (weight !== undefined) {
+        if (weight < 0 || weight > 10) {
+          return NextResponse.json({ error: 'weight must be between 0 and 10' }, { status: 400 });
         }
-        updateData.options = options;
-      } else {
-        // Clear options for non-multiple_choice types
-        updateData.options = null;
+        updateData.weight = weight;
       }
-    } else if (options !== undefined) {
-      // If updating options without changing type, check current type
-      const { data: currentReq } = await supabase
-        .from('journey_requirements')
-        .select('question_type')
-        .eq('id', requirementId)
-        .single();
-
-      if (currentReq?.question_type === 'multiple_choice') {
-        if (!Array.isArray(options) || options.length === 0) {
-          return NextResponse.json(
-            { error: 'multiple_choice questions must have options array' },
-            { status: 400 }
-          );
+    } else if (reqType === 'skill') {
+      if (skill_name !== undefined) updateData.skill_name = skill_name.trim();
+      if (qualification_criteria !== undefined) updateData.qualification_criteria = qualification_criteria.trim();
+      if (weight !== undefined) {
+        if (weight < 0 || weight > 10) {
+          return NextResponse.json({ error: 'weight must be between 0 and 10' }, { status: 400 });
         }
-        updateData.options = options;
+        updateData.weight = weight;
+      }
+    } else if (reqType === 'passport') {
+      if (require_photo_validation !== undefined) updateData.require_photo_validation = require_photo_validation;
+      if (pass_confidence_score !== undefined) {
+        if (pass_confidence_score < 0 || pass_confidence_score > 10) {
+          return NextResponse.json({ error: 'pass_confidence_score must be between 0 and 10' }, { status: 400 });
+        }
+        updateData.pass_confidence_score = pass_confidence_score;
       }
     }
+    // risk_level and experience_level have no type-specific editable fields
 
-    if (is_required !== undefined) {
-      updateData.is_required = is_required;
-    }
+    // Common fields
+    if (is_required !== undefined) updateData.is_required = is_required;
+    if (order !== undefined) updateData.order = order;
 
-    if (weight !== undefined) {
-      if (weight < 1 || weight > 10) {
-        return NextResponse.json(
-          { error: 'weight must be between 1 and 10' },
-          { status: 400 }
-        );
-      }
-      updateData.weight = weight;
-    }
-
-    if (order !== undefined) {
-      updateData.order = order;
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        { error: 'No valid fields to update' },
+        { status: 400 }
+      );
     }
 
     // Update requirement
@@ -186,10 +177,10 @@ export async function PUT(
 
 /**
  * DELETE /api/journeys/[journeyId]/requirements/[requirementId]
- * 
+ *
  * Deletes a requirement.
  * Only journey owners can delete requirements.
- * 
+ *
  * Note: This will cascade delete all associated answers due to foreign key constraint.
  */
 export async function DELETE(
@@ -199,9 +190,9 @@ export async function DELETE(
   try {
     const resolvedParams = params instanceof Promise ? await params : params;
     const { journeyId, requirementId } = resolvedParams;
-    
+
     const supabase = await getSupabaseServerClient();
-    
+
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -259,12 +250,6 @@ export async function DELETE(
       );
     }
 
-    // Check if there are existing answers (for warning, but we'll still delete)
-    const { count: answerCount } = await supabase
-      .from('registration_answers')
-      .select('*', { count: 'exact', head: true })
-      .eq('requirement_id', requirementId);
-
     // Delete requirement (cascade will delete answers)
     const { error: deleteError } = await supabase
       .from('journey_requirements')
@@ -281,7 +266,6 @@ export async function DELETE(
 
     return NextResponse.json({
       message: 'Requirement deleted successfully',
-      deletedAnswersCount: answerCount || 0,
     });
 
   } catch (error: any) {

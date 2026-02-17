@@ -179,7 +179,25 @@ export async function DELETE(request: NextRequest) {
     const emailPrefsResult = await safeDelete('email_preferences', { user_id: user.id }, supabase, user.id);
     deletionResults.push(emailPrefsResult);
 
-    // 5. Delete registrations (ensure this happens before boats are deleted)
+    // 5a. Delete registration answers (through registrations owned by this user)
+    // registration_answers references registrations.id with CASCADE, but we delete explicitly for completeness
+    console.log(`[${user.id}] Deleting registration answers for user's registrations...`);
+    const { data: userRegistrations } = await supabase
+      .from('registrations')
+      .select('id')
+      .eq('user_id', user.id);
+
+    if (userRegistrations && userRegistrations.length > 0) {
+      for (const reg of userRegistrations) {
+        const regAnswersResult = await safeDelete('registration_answers', { registration_id: reg.id }, supabase, user.id);
+        if (!regAnswersResult.success) {
+          deletionResults.push(regAnswersResult);
+        }
+      }
+      console.log(`[${user.id}] Deleted registration answers for ${userRegistrations.length} registrations`);
+    }
+
+    // 5b. Delete registrations (ensure this happens before boats are deleted)
     const registrationsResult = await safeDelete('registrations', { user_id: user.id }, supabase, user.id);
     deletionResults.push(registrationsResult);
 
@@ -707,6 +725,7 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
       { table: 'feedback_votes', column: 'user_id' },
       { table: 'feedback_prompt_dismissals', column: 'user_id' },
       { table: 'registrations', column: 'user_id' },
+      { table: 'registration_answers', column: 'registration_id' },  // checked via registrations
       { table: 'boats', column: 'owner_id' },
       { table: 'email_preferences', column: 'user_id' },
       { table: 'document_vault', column: 'owner_id' },
@@ -776,7 +795,7 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
 async function verifyUserDeletion(userId: string, supabase: any) {
   const criticalTables = [
     'profiles', 'boats', 'journeys', 'legs', 'waypoints',
-    'registrations', 'notifications', 'email_preferences',
+    'registrations', 'registration_answers', 'notifications', 'email_preferences',
     'user_consents', 'consent_audit_log', 'ai_conversations',
     'ai_pending_actions', 'feedback', 'feedback_votes',
     'feedback_prompt_dismissals',

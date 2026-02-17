@@ -2,9 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 
+const VALID_REQUIREMENT_TYPES = ['risk_level', 'experience_level', 'skill', 'passport', 'question'] as const;
+type RequirementType = typeof VALID_REQUIREMENT_TYPES[number];
+
+// Requirement types that can only appear once per journey
+const SINGLETON_TYPES: RequirementType[] = ['risk_level', 'experience_level', 'passport'];
+
 /**
  * GET /api/journeys/[journeyId]/requirements
- * 
+ *
  * Lists all requirements for a journey.
  * Public access if journey is published, otherwise owner only.
  */
@@ -15,12 +21,12 @@ export async function GET(
   try {
     const resolvedParams = params instanceof Promise ? await params : params;
     const journeyId = resolvedParams.journeyId;
-    
+
     const supabase = await getSupabaseServerClient();
-    
+
     // Get authenticated user (optional for public access)
     const { data: { user } } = await supabase.auth.getUser();
-    
+
     // Verify journey exists and check if it's published
     const { data: journey, error: journeyError } = await supabase
       .from('journeys')
@@ -84,17 +90,20 @@ export async function GET(
 
 /**
  * POST /api/journeys/[journeyId]/requirements
- * 
+ *
  * Creates a new requirement for a journey.
  * Only journey owners can create requirements.
- * 
+ *
  * Body:
- * - question_text: string (required)
- * - question_type: 'text' | 'multiple_choice' | 'yes_no' | 'rating' (required)
- * - options: JSONB array (required for multiple_choice)
+ * - requirement_type: 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question' (required)
+ * - question_text: string (required for 'question' type)
+ * - skill_name: string (required for 'skill' type, canonical name from skills-config)
+ * - qualification_criteria: string (required for 'skill' and 'question' types)
+ * - weight: integer 0-10 (for 'skill' and 'question' types, default 5)
+ * - require_photo_validation: boolean (for 'passport' type, default false)
+ * - pass_confidence_score: integer 0-10 (for 'passport' type, default 7)
  * - is_required: boolean (default true)
- * - weight: integer 1-10 (default 5)
- * - order: integer (default 0)
+ * - order: integer (default auto-increment)
  */
 export async function POST(
   request: NextRequest,
@@ -103,9 +112,9 @@ export async function POST(
   try {
     const resolvedParams = params instanceof Promise ? await params : params;
     const journeyId = resolvedParams.journeyId;
-    
+
     const supabase = await getSupabaseServerClient();
-    
+
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -135,6 +144,7 @@ export async function POST(
       .select(`
         id,
         boat_id,
+        skills,
         boats!inner (
           owner_id
         )
@@ -159,30 +169,76 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { question_text, question_type, options, is_required, weight, order } = body;
+    const {
+      requirement_type,
+      question_text,
+      skill_name,
+      qualification_criteria,
+      weight,
+      require_photo_validation,
+      pass_confidence_score,
+      is_required,
+      order,
+    } = body;
 
-    // Validate required fields
-    if (!question_text || !question_type) {
+    // Validate requirement_type
+    if (!requirement_type || !VALID_REQUIREMENT_TYPES.includes(requirement_type)) {
       return NextResponse.json(
-        { error: 'question_text and question_type are required' },
+        { error: `Invalid requirement_type. Must be one of: ${VALID_REQUIREMENT_TYPES.join(', ')}` },
         { status: 400 }
       );
     }
 
-    // Validate question_type
-    const validTypes = ['text', 'multiple_choice', 'yes_no', 'rating'];
-    if (!validTypes.includes(question_type)) {
-      return NextResponse.json(
-        { error: `Invalid question_type. Must be one of: ${validTypes.join(', ')}` },
-        { status: 400 }
-      );
-    }
+    // Enforce singleton types (only one per journey)
+    if (SINGLETON_TYPES.includes(requirement_type)) {
+      const { count: existingCount } = await supabase
+        .from('journey_requirements')
+        .select('*', { count: 'exact', head: true })
+        .eq('journey_id', journeyId)
+        .eq('requirement_type', requirement_type);
 
-    // Validate multiple_choice has options
-    if (question_type === 'multiple_choice') {
-      if (!options || !Array.isArray(options) || options.length === 0) {
+      if (existingCount && existingCount > 0) {
         return NextResponse.json(
-          { error: 'multiple_choice questions must have options array' },
+          { error: `A ${requirement_type} requirement already exists for this journey. Only one is allowed.` },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Type-specific validation
+    if (requirement_type === 'question') {
+      if (!question_text?.trim()) {
+        return NextResponse.json(
+          { error: 'question_text is required for question type requirements' },
+          { status: 400 }
+        );
+      }
+      if (!qualification_criteria?.trim()) {
+        return NextResponse.json(
+          { error: 'qualification_criteria is required for question type requirements' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (requirement_type === 'skill') {
+      if (!skill_name?.trim()) {
+        return NextResponse.json(
+          { error: 'skill_name is required for skill type requirements' },
+          { status: 400 }
+        );
+      }
+      if (!qualification_criteria?.trim()) {
+        return NextResponse.json(
+          { error: 'qualification_criteria is required for skill type requirements' },
+          { status: 400 }
+        );
+      }
+      // Validate skill_name exists in the journey's skills
+      const journeySkills = (journey as any).skills || [];
+      if (journeySkills.length > 0 && !journeySkills.includes(skill_name)) {
+        return NextResponse.json(
+          { error: `skill_name '${skill_name}' is not in this journey's skills list` },
           { status: 400 }
         );
       }
@@ -190,9 +246,18 @@ export async function POST(
 
     // Validate weight range
     const weightValue = weight !== undefined ? weight : 5;
-    if (weightValue < 1 || weightValue > 10) {
+    if (weightValue < 0 || weightValue > 10) {
       return NextResponse.json(
-        { error: 'weight must be between 1 and 10' },
+        { error: 'weight must be between 0 and 10' },
+        { status: 400 }
+      );
+    }
+
+    // Validate passport-specific fields
+    const confidenceScore = pass_confidence_score !== undefined ? pass_confidence_score : 7;
+    if (requirement_type === 'passport' && (confidenceScore < 0 || confidenceScore > 10)) {
+      return NextResponse.json(
+        { error: 'pass_confidence_score must be between 0 and 10' },
         { status: 400 }
       );
     }
@@ -206,21 +271,36 @@ export async function POST(
       .limit(1);
 
     const maxOrder = existingRequirements && existingRequirements.length > 0
-      ? existingRequirements[0].order + 1
+      ? (existingRequirements[0] as any).order + 1
       : 0;
+
+    // Build insert payload based on requirement_type
+    const insertPayload: Record<string, any> = {
+      journey_id: journeyId,
+      requirement_type,
+      is_required: is_required !== undefined ? is_required : true,
+      order: order !== undefined ? order : maxOrder,
+    };
+
+    // Type-specific fields
+    if (requirement_type === 'question') {
+      insertPayload.question_text = question_text.trim();
+      insertPayload.qualification_criteria = qualification_criteria.trim();
+      insertPayload.weight = weightValue;
+    } else if (requirement_type === 'skill') {
+      insertPayload.skill_name = skill_name.trim();
+      insertPayload.qualification_criteria = qualification_criteria.trim();
+      insertPayload.weight = weightValue;
+    } else if (requirement_type === 'passport') {
+      insertPayload.require_photo_validation = require_photo_validation || false;
+      insertPayload.pass_confidence_score = confidenceScore;
+    }
+    // risk_level and experience_level don't need extra fields
 
     // Create requirement
     const { data: requirement, error: insertError } = await supabase
       .from('journey_requirements')
-      .insert({
-        journey_id: journeyId,
-        question_text: question_text.trim(),
-        question_type,
-        options: question_type === 'multiple_choice' ? options : null,
-        is_required: is_required !== undefined ? is_required : true,
-        weight: weightValue,
-        order: order !== undefined ? order : maxOrder,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

@@ -36,6 +36,18 @@ export const devConfig: EnvironmentConfig = {
   // Use-case-specific overrides for development
   useCaseOverrides: {
     // Premium models for conversational chat (better reasoning, tool calling)
+    'assess-registration': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openrouter/auto'],
+          temperature: 0.3,  // Lower temperature for more deterministic tool calls
+          maxTokens: 5000
+        }
+      ],
+      temperature: 0.3,  // Lower temperature for more deterministic tool calls
+      maxTokens: 5000
+    },
     'owner-chat': {
       providers: [
         {

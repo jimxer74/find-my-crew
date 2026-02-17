@@ -1,7 +1,12 @@
 /**
  * AI Registration Assessment Service
- * 
- * This module handles AI assessment of crew registrations for automated approval.
+ *
+ * Handles structured requirement assessment for crew registrations:
+ * 1. Risk Level - instant check (no AI)
+ * 2. Experience Level - instant check (no AI)
+ * 3. Passport - AI verification with optional photo-ID
+ * 4. Skill - AI assessment with weighted scoring
+ * 5. Question - AI assessment against qualification criteria
  */
 
 import { callAI } from './service';
@@ -14,18 +19,357 @@ import {
   notifyPendingRegistration,
 } from '@/app/lib/notifications';
 
+type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
+
+interface Requirement {
+  id: string;
+  journey_id: string;
+  requirement_type: RequirementType;
+  question_text?: string;
+  skill_name?: string;
+  qualification_criteria?: string;
+  weight: number;
+  require_photo_validation?: boolean;
+  pass_confidence_score?: number;
+  is_required: boolean;
+  order: number;
+}
+
+interface SkillAssessmentResult {
+  requirement_id: string;
+  skill_name: string;
+  score: number; // 0-10
+  reasoning: string;
+  passed: boolean;
+}
+
+interface QuestionAssessmentResult {
+  requirement_id: string;
+  score: number; // 0-10
+  reasoning: string;
+  passed: boolean;
+}
+
 /**
- * Assess a registration using AI and update the registration accordingly
+ * Perform instant (non-AI) pre-checks for risk level and experience level.
+ * Returns null if all checks pass, or an error message if a check fails.
+ */
+export async function performPreChecks(
+  supabase: SupabaseClient<any>,
+  userId: string,
+  journeyId: string,
+  requirements: Requirement[]
+): Promise<{ passed: boolean; failReason?: string; failType?: string }> {
+  console.log(`[Pre-Checks] Starting pre-checks for user ${userId}, journey ${journeyId}`);
+
+  // Load crew profile
+  const { data: crewProfile } = await supabase
+    .from('profiles')
+    .select('sailing_experience, risk_level')
+    .eq('id', userId)
+    .single();
+
+  if (!crewProfile) {
+    return { passed: false, failReason: 'Crew profile not found', failType: 'profile_missing' };
+  }
+
+  // Load journey data for risk_level (array) and min_experience_level
+  const { data: journey } = await supabase
+    .from('journeys')
+    .select('risk_level, min_experience_level')
+    .eq('id', journeyId)
+    .single();
+
+  console.log(`[Pre-Checks] Journey data:`, {
+    risk_level: journey?.risk_level,
+    risk_level_type: typeof journey?.risk_level,
+    risk_level_is_array: Array.isArray(journey?.risk_level),
+    min_experience_level: journey?.min_experience_level
+  });
+
+  if (!journey) {
+    return { passed: false, failReason: 'Journey not found', failType: 'journey_missing' };
+  }
+
+  // Check 1: Risk Level
+  const riskReq = requirements.find(r => r.requirement_type === 'risk_level');
+  if (riskReq) {
+    console.log(`[Pre-Checks] Risk level check for requirement ${riskReq.id}`);
+
+    // Ensure journeyRiskLevels is always an array - handle both array and scalar cases
+    const rawJourneyRiskLevel = (journey as any).risk_level;
+    let journeyRiskLevels: string[];
+
+    if (Array.isArray(rawJourneyRiskLevel)) {
+      // Already an array
+      journeyRiskLevels = rawJourneyRiskLevel;
+    } else if (rawJourneyRiskLevel && typeof rawJourneyRiskLevel === 'string') {
+      // Single string value - convert to array
+      journeyRiskLevels = [rawJourneyRiskLevel];
+    } else if (rawJourneyRiskLevel && typeof rawJourneyRiskLevel === 'string') {
+      // Handle edge case where it might be a JSON array string
+      try {
+        const parsed = JSON.parse(rawJourneyRiskLevel);
+        journeyRiskLevels = Array.isArray(parsed) ? parsed : [rawJourneyRiskLevel];
+      } catch {
+        journeyRiskLevels = [rawJourneyRiskLevel];
+      }
+    } else {
+      // No risk level defined - empty array
+      journeyRiskLevels = [];
+    }
+
+    const crewRiskLevels: string[] = Array.isArray(crewProfile.risk_level)
+      ? crewProfile.risk_level
+      : crewProfile.risk_level ? [crewProfile.risk_level] : [];
+
+    console.log(`[Pre-Checks] Risk levels comparison:`, {
+      rawJourneyRiskLevel,
+      journeyRiskLevels,
+      crewRiskLevels,
+      crewRiskLevels_type: typeof crewRiskLevels,
+      crewRiskLevels_is_array: Array.isArray(crewRiskLevels)
+    });
+
+    // Crew must have ALL risk levels defined for the journey
+    const missingRiskLevels = journeyRiskLevels.filter(
+      (rl: string) => !crewRiskLevels.includes(rl)
+    );
+
+    console.log(`[Pre-Checks] Missing risk levels:`, missingRiskLevels);
+
+    if (missingRiskLevels.length > 0) {
+      return {
+        passed: false,
+        failReason: `Your comfort level doesn't match the journey requirements. Missing: ${missingRiskLevels.join(', ')}. Please update your profile to include these comfort levels.`,
+        failType: 'risk_level',
+      };
+    }
+  }
+
+  // Check 2: Experience Level
+  const expReq = requirements.find(r => r.requirement_type === 'experience_level');
+  if (expReq) {
+    const requiredLevel = (journey as any).min_experience_level || 1;
+    const crewLevel = crewProfile.sailing_experience || 1;
+
+    if (crewLevel < requiredLevel) {
+      const levelNames: Record<number, string> = {
+        1: 'Beginner',
+        2: 'Competent Crew',
+        3: 'Coastal Skipper',
+        4: 'Offshore Skipper',
+      };
+      return {
+        passed: false,
+        failReason: `Your experience level (${levelNames[crewLevel] || crewLevel}) is below the required level (${levelNames[requiredLevel] || requiredLevel}).`,
+        failType: 'experience_level',
+      };
+    }
+  }
+
+  return { passed: true };
+}
+
+/**
+ * Assess skill requirements using AI.
+ * Evaluates each skill requirement individually against the crew's profile skill descriptions.
+ */
+async function assessSkillRequirements(
+  supabase: SupabaseClient<any>,
+  crewProfile: any,
+  requirements: Requirement[]
+): Promise<SkillAssessmentResult[]> {
+  const skillReqs = requirements.filter(r => r.requirement_type === 'skill');
+  if (skillReqs.length === 0) return [];
+
+  // Parse crew skills from JSON strings into a map of skill_name -> description
+  const crewSkillsMap: Record<string, string> = {};
+  const crewSkills = crewProfile.skills || [];
+  for (const skillJson of crewSkills) {
+    try {
+      const parsed = typeof skillJson === 'string' ? JSON.parse(skillJson) : skillJson;
+      if (parsed.skill_name) {
+        crewSkillsMap[parsed.skill_name] = parsed.description || '';
+      }
+    } catch {
+      // Not a JSON skill entry, skip
+    }
+  }
+
+  // Build a single prompt for all skill assessments (batched for cost efficiency)
+  const skillAssessments = skillReqs.map((req, idx) => {
+    const crewDescription = crewSkillsMap[req.skill_name!] || 'No description provided by crew member';
+    return `
+Skill ${idx + 1}: ${req.skill_name}
+Weight: ${req.weight}/10
+Qualification Criteria (set by skipper): ${req.qualification_criteria}
+Crew's Skill Description: ${crewDescription}`;
+  });
+
+  const prompt = `You are assessing a crew member's skills for a sailing journey registration.
+
+For each skill below, evaluate how well the crew member's skill description meets the skipper's qualification criteria. Return a score from 0 to 10 for each skill.
+
+${skillAssessments.join('\n')}
+
+Respond with ONLY a JSON array, one object per skill, in order:
+[
+  {
+    "skill_name": "<skill name>",
+    "score": <integer 0-10>,
+    "reasoning": "<brief explanation>"
+  }
+]
+
+Scoring guide:
+- 0: No evidence at all
+- 1-3: Minimal/weak evidence
+- 4-6: Moderate evidence, partially meets criteria
+- 7-8: Strong evidence, meets most criteria
+- 9-10: Excellent evidence, fully meets or exceeds criteria
+
+Respond with ONLY the JSON array, no additional text.`;
+
+  try {
+    const aiResult = await callAI({ useCase: 'assess-registration', prompt });
+
+    // Parse response
+    const jsonMatch = aiResult.text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('[AI Assessment] No JSON array found in skill assessment response:', aiResult.text);
+      throw new Error('Failed to parse skill assessment response');
+    }
+
+    const assessments = JSON.parse(jsonMatch[0]);
+
+    return skillReqs.map((req, idx) => {
+      const assessment = assessments[idx] || { score: 0, reasoning: 'Assessment failed' };
+      const score = Math.max(0, Math.min(10, Math.round(assessment.score)));
+      return {
+        requirement_id: req.id,
+        skill_name: req.skill_name!,
+        score,
+        reasoning: assessment.reasoning || '',
+        passed: true, // Individual pass/fail is determined by combined score
+      };
+    });
+  } catch (error: any) {
+    console.error('[AI Assessment] Skill assessment failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Assess question requirements using AI.
+ */
+async function assessQuestionRequirements(
+  supabase: SupabaseClient<any>,
+  answers: any[],
+  requirements: Requirement[]
+): Promise<QuestionAssessmentResult[]> {
+  const questionReqs = requirements.filter(r => r.requirement_type === 'question');
+  if (questionReqs.length === 0) return [];
+
+  const qaSection = questionReqs.map((req, idx) => {
+    const answer = answers.find((a: any) => a.requirement_id === req.id);
+    const answerText = answer?.answer_text || answer?.answer_json || 'No answer provided';
+    return `
+Question ${idx + 1} (Weight: ${req.weight}/10):
+Question: ${req.question_text}
+Qualification Criteria: ${req.qualification_criteria}
+Crew's Answer: ${typeof answerText === 'string' ? answerText : JSON.stringify(answerText)}`;
+  });
+
+  const prompt = `You are assessing a crew member's answers to registration questions for a sailing journey.
+
+For each question below, evaluate how well the crew member's answer meets the qualification criteria set by the skipper.
+
+${qaSection.join('\n')}
+
+Respond with ONLY a JSON array, one object per question, in order:
+[
+  {
+    "score": <integer 0-10>,
+    "reasoning": "<brief explanation>"
+  }
+]
+
+Scoring guide:
+- 0: No relevant answer / completely off-topic
+- 1-3: Poor answer, barely addresses criteria
+- 4-6: Adequate answer, partially meets criteria
+- 7-8: Good answer, meets most criteria
+- 9-10: Excellent answer, fully meets criteria
+
+Respond with ONLY the JSON array, no additional text.`;
+
+  try {
+    const aiResult = await callAI({ useCase: 'assess-registration', prompt });
+
+    const jsonMatch = aiResult.text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      console.error('[AI Assessment] No JSON array found in question assessment response:', aiResult.text);
+      throw new Error('Failed to parse question assessment response');
+    }
+
+    const assessments = JSON.parse(jsonMatch[0]);
+
+    return questionReqs.map((req, idx) => {
+      const assessment = assessments[idx] || { score: 0, reasoning: 'Assessment failed' };
+      const score = Math.max(0, Math.min(10, Math.round(assessment.score)));
+      return {
+        requirement_id: req.id,
+        score,
+        reasoning: assessment.reasoning || '',
+        passed: true, // Pass/fail determined by combined logic
+      };
+    });
+  } catch (error: any) {
+    console.error('[AI Assessment] Question assessment failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Calculate the combined weighted score across all AI-assessed results.
+ * Each result has a score (0-10) and an associated weight.
+ * Returns a score scaled to 0-100 for comparison against auto_approval_threshold.
+ *
+ * The overall score is: (sum of score*weight for each requirement) / (sum of weights) * 10
+ * This gives a 0-100 percentage where 100 means every requirement scored 10/10.
+ */
+function calculateOverallScore(
+  results: Array<{ requirement_id: string; score: number }>,
+  requirements: Requirement[]
+): number {
+  if (results.length === 0) return 100; // No AI-assessed requirements = full score
+
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+
+  for (const result of results) {
+    const req = requirements.find(r => r.id === result.requirement_id);
+    const weight = req?.weight || 5;
+    totalWeightedScore += result.score * weight;
+    totalWeight += weight;
+  }
+
+  if (totalWeight === 0) return 100;
+  // Scale from 0-10 to 0-100
+  return Math.round((totalWeightedScore / totalWeight) * 10);
+}
+
+/**
+ * Main assessment function: Assess a registration using AI and update accordingly.
+ * Called after pre-checks have passed and registration is created.
  */
 export async function assessRegistrationWithAI(
   supabase: SupabaseClient<any>,
   registrationId: string
 ): Promise<void> {
-  console.log(`[AI Assessment] ========================================`);
-  console.log(`[AI Assessment] 🚀 STARTING assessment for registration: ${registrationId}`);
-  console.log(`[AI Assessment] Timestamp: ${new Date().toISOString()}`);
-  console.log(`[AI Assessment] ========================================`);
-  
+  console.log(`[AI Assessment] Starting assessment for registration: ${registrationId}`);
+
   // Load registration with all related data
   const { data: registration, error: regError } = await supabase
     .from('registrations')
@@ -65,14 +409,13 @@ export async function assessRegistrationWithAI(
     throw new Error(`Registration not found: ${registrationId}`);
   }
 
-  // Type assertion for nested Supabase joins
   const legs = registration.legs as unknown as {
     id: string;
     journey_id: string;
     name: string;
     skills: string[];
     min_experience_level: number;
-    risk_level: string;
+    risk_level: string; // Single enum value for legs
     start_date: string;
     end_date: string;
     journeys: {
@@ -81,36 +424,21 @@ export async function assessRegistrationWithAI(
       auto_approval_enabled: boolean;
       auto_approval_threshold: number;
       boat_id: string;
-      boats: {
-        id: string;
-        name: string;
-        owner_id: string;
-      };
+      risk_level: string[]; // Array of enum values for journeys
+      boats: { id: string; name: string; owner_id: string };
     };
   } | null;
 
-  console.log(`[AI Assessment] Registration loaded:`, {
-    registrationId: registration.id,
-    legId: registration.leg_id,
-    userId: registration.user_id,
-    status: registration.status,
-    journeyName: legs?.journeys?.name,
-    legName: legs?.name,
-  });
-
-  // Validate that we have the required nested data
   if (!legs?.journeys) {
-    console.error(`[AI Assessment] Missing journey data for registration ${registration.id}`);
     throw new Error(`Missing journey data for registration: ${registration.id}`);
   }
 
-  // Check if auto-approval is enabled
   if (!legs.journeys.auto_approval_enabled) {
-    console.log(`[AI Assessment] Auto-approval not enabled for journey ${legs.journeys.id}, skipping assessment`);
-    return; // No assessment needed
+    console.log(`[AI Assessment] Auto-approval not enabled for journey ${legs.journeys.id}, skipping`);
+    return;
   }
 
-  // Check if user has consented to AI processing (GDPR compliance)
+  // Check GDPR AI consent
   const { data: userConsents } = await supabase
     .from('user_consents')
     .select('ai_processing_consent')
@@ -118,35 +446,28 @@ export async function assessRegistrationWithAI(
     .single();
 
   if (!userConsents?.ai_processing_consent) {
-    console.log(`[AI Assessment] User ${registration.user_id} has not consented to AI processing, skipping assessment`);
-    // Notify owner that manual review is needed due to missing AI consent
-    const ownerId = legs?.journeys?.boats?.owner_id;
-    
-    if (!ownerId) {
-      console.error(`[AI Assessment] Cannot notify owner: ownerId is null. Registration: ${registration.id}, Journey: ${legs?.journeys?.id}`);
-      // Still return - we can't proceed without AI consent anyway
-      return;
+    console.log(`[AI Assessment] User ${registration.user_id} has not consented to AI processing`);
+    const ownerId = legs.journeys.boats?.owner_id;
+    if (ownerId) {
+      await createNotification(supabase, {
+        user_id: ownerId,
+        type: NotificationType.AI_REVIEW_NEEDED,
+        title: 'Manual Review Required',
+        message: `A crew member has applied but has not consented to AI matching. Please review manually.`,
+        link: `/owner/registrations/${registration.id}`,
+        metadata: {
+          registration_id: registration.id,
+          journey_id: legs.journeys.id,
+          reason: 'no_ai_consent',
+        },
+      });
     }
-    
-    await createNotification(supabase, {
-      user_id: ownerId,
-      type: NotificationType.AI_REVIEW_NEEDED,
-      title: 'Manual Review Required',
-      message: `A crew member has applied but has not consented to AI matching. Please review manually.`,
-      link: `/owner/registrations/${registration.id}`,
-      metadata: {
-        registration_id: registration.id,
-        journey_id: legs?.journeys?.id,
-        reason: 'no_ai_consent',
-      },
-    });
-    return; // Cannot proceed without AI consent
+    return;
   }
 
-  console.log(`[AI Assessment] Auto-approval enabled, threshold: ${legs.journeys.auto_approval_threshold}%`);
-
-  // Load requirements first - if no requirements, skip assessment
   const journeyId = legs.journeys.id;
+
+  // Load requirements
   const { data: requirements } = await supabase
     .from('journey_requirements')
     .select('*')
@@ -154,42 +475,18 @@ export async function assessRegistrationWithAI(
     .order('order', { ascending: true });
 
   if (!requirements || requirements.length === 0) {
-    console.log(`[AI Assessment] No requirements found for journey ${journeyId}, skipping assessment`);
-    return; // No requirements means no assessment needed
+    console.log(`[AI Assessment] No requirements for journey ${journeyId}, skipping`);
+    return;
   }
 
-  // Load answers - wait a bit to ensure they're committed to database
-  // Add a small delay to ensure answers are committed (race condition prevention)
+  // Wait for answers to be committed
   await new Promise(resolve => setTimeout(resolve, 500));
-  
+
+  // Load answers
   const { data: answers } = await supabase
     .from('registration_answers')
-    .select(`
-      requirement_id,
-      answer_text,
-      answer_json,
-      journey_requirements!inner (
-        question_text,
-        question_type,
-        weight
-      )
-    `)
+    .select('*')
     .eq('registration_id', registrationId);
-
-  // Validate that we have answers for all required questions
-  const requiredRequirements = requirements.filter((r: any) => r.is_required);
-  const answeredRequirementIds = (answers || []).map((a: any) => a.requirement_id);
-  const missingRequired = requiredRequirements.filter((r: any) => !answeredRequirementIds.includes(r.id));
-
-  if (missingRequired.length > 0) {
-    console.error(`[AI Assessment] Missing answers for required questions:`, missingRequired.map((r: any) => r.id));
-    throw new Error(`Missing answers for required questions: ${missingRequired.map((r: any) => r.question_text).join(', ')}`);
-  }
-
-  if (!answers || answers.length === 0) {
-    console.error(`[AI Assessment] No answers found for registration ${registrationId}, cannot proceed with assessment`);
-    throw new Error(`No answers found for registration ${registrationId}`);
-  }
 
   // Load crew profile
   const { data: crewProfile } = await supabase
@@ -199,144 +496,110 @@ export async function assessRegistrationWithAI(
     .single();
 
   if (!crewProfile) {
-    console.error(`[AI Assessment] Crew profile not found for user: ${registration.user_id}`);
     throw new Error(`Crew profile not found for user: ${registration.user_id}`);
   }
 
-  console.log(`[AI Assessment] Crew profile loaded:`, {
-    userId: registration.user_id,
-    fullName: crewProfile.full_name,
-    experienceLevel: crewProfile.sailing_experience,
-    skillsCount: Array.isArray(crewProfile.skills) ? crewProfile.skills.length : 0,
-    riskLevel: crewProfile.risk_level,
-  });
+  const typedRequirements = requirements as Requirement[];
+  let assessmentFailed = false;
+  let overallReasoning: string[] = [];
 
-  console.log(`[AI Assessment] Requirements and answers loaded:`, {
-    requirementsCount: requirements.length,
-    answersCount: answers.length,
-    requirements: requirements.map((r: any) => ({
-      id: r.id,
-      question: r.question_text,
-      type: r.question_type,
-      weight: r.weight,
-      required: r.is_required,
-    })),
-    answers: answers.map((a: any) => ({
-      requirementId: a.requirement_id,
-      answerText: a.answer_text,
-      answerJson: a.answer_json,
-    })),
-  });
+  // Collect all individual AI-assessed results for unified scoring
+  const allScoredResults: Array<{ requirement_id: string; score: number }> = [];
 
-  // Build prompt
-  console.log(`[AI Assessment] Building assessment prompt...`);
-  const prompt = buildAssessmentPrompt({
-    crewProfile,
-    journey: legs.journeys,
-    leg: legs,
-    requirements: requirements || [],
-    answers: answers || [],
-  });
+  // --- Assess Skill Requirements ---
+  const skillReqs = typedRequirements.filter(r => r.requirement_type === 'skill');
+  if (skillReqs.length > 0) {
+    try {
+      const skillResults = await assessSkillRequirements(supabase, crewProfile, typedRequirements);
 
-  console.log(`[AI Assessment] Prompt built, length: ${prompt.length} characters`);
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[AI Assessment] Prompt preview (first 500 chars):`, prompt.substring(0, 500));
-  }
+      for (const result of skillResults) {
+        allScoredResults.push({ requirement_id: result.requirement_id, score: result.score });
 
-  // Call AI
-  console.log(`[AI Assessment] Calling AI service...`);
-  const aiStartTime = Date.now();
-  let aiResult;
-  try {
-    aiResult = await callAI({
-      useCase: 'assess-registration',
-      prompt,
-    });
-  } catch (aiError: any) {
-    const aiDuration = Date.now() - aiStartTime;
-    console.error(`[AI Assessment] AI call failed after ${aiDuration}ms:`, {
-      error: aiError.message,
-      provider: aiError.provider,
-      model: aiError.model,
-      originalError: aiError.originalError,
-    });
-    // Re-throw with more context
-    throw new Error(`AI assessment failed: ${aiError.message} (Provider: ${aiError.provider || 'unknown'}, Model: ${aiError.model || 'unknown'})`);
-  }
-  
-  const aiDuration = Date.now() - aiStartTime;
-  console.log(`[AI Assessment] AI call completed in ${aiDuration}ms:`, {
-    provider: aiResult.provider,
-    model: aiResult.model,
-    responseLength: aiResult.text.length,
-  });
+        await supabase.from('registration_answers').upsert({
+          registration_id: registrationId,
+          requirement_id: result.requirement_id,
+          ai_score: result.score,
+          ai_reasoning: result.reasoning,
+          passed: null, // Individual pass/fail determined by overall score
+        }, { onConflict: 'registration_id,requirement_id' });
 
-  // Parse response
-  console.log(`[AI Assessment] Parsing AI response...`);
-  let assessment: {
-    match_score: number;
-    reasoning: string;
-    recommendation: 'approve' | 'deny' | 'review';
-  };
-
-  try {
-    const jsonMatch = aiResult.text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      assessment = JSON.parse(jsonMatch[0]);
-      console.log(`[AI Assessment] Successfully parsed assessment:`, {
-        matchScore: assessment.match_score,
-        recommendation: assessment.recommendation,
-        reasoningLength: assessment.reasoning?.length || 0,
-      });
-    } else {
-      console.error(`[AI Assessment] No JSON found in AI response. Full response:`, aiResult.text);
-      throw new Error('No JSON found in AI response');
+        overallReasoning.push(`Skill "${result.skill_name}": ${result.score}/10 - ${result.reasoning}`);
+      }
+    } catch (error) {
+      console.error('[AI Assessment] Skill assessment failed:', error);
+      overallReasoning.push('Skills assessment: Failed due to error');
+      assessmentFailed = true;
     }
-  } catch (parseError) {
-    console.error(`[AI Assessment] Failed to parse AI response:`, {
-      error: parseError,
-      responseText: aiResult.text,
-    });
-    throw new Error(`Failed to parse AI assessment: ${parseError}`);
   }
 
-  // Validate
-  if (typeof assessment.match_score !== 'number' || assessment.match_score < 0 || assessment.match_score > 100) {
-    console.error(`[AI Assessment] Invalid match_score:`, assessment.match_score);
-    throw new Error(`Invalid match_score: ${assessment.match_score}`);
+  // --- Assess Question Requirements ---
+  const questionReqs = typedRequirements.filter(r => r.requirement_type === 'question');
+  if (questionReqs.length > 0 && answers && answers.length > 0) {
+    try {
+      const questionResults = await assessQuestionRequirements(supabase, answers, typedRequirements);
+
+      for (const result of questionResults) {
+        allScoredResults.push({ requirement_id: result.requirement_id, score: result.score });
+
+        const req = typedRequirements.find(r => r.id === result.requirement_id);
+        await supabase.from('registration_answers').upsert({
+          registration_id: registrationId,
+          requirement_id: result.requirement_id,
+          ai_score: result.score,
+          ai_reasoning: result.reasoning,
+          passed: null, // Individual pass/fail determined by overall score
+        }, { onConflict: 'registration_id,requirement_id' });
+
+        overallReasoning.push(`Question "${req?.question_text?.substring(0, 50) || '?'}": ${result.score}/10 - ${result.reasoning}`);
+      }
+    } catch (error) {
+      console.error('[AI Assessment] Question assessment failed:', error);
+      overallReasoning.push('Questions assessment: Failed due to error');
+      assessmentFailed = true;
+    }
   }
+
+  // --- Mark non-AI requirements as passed (risk_level, experience_level already checked in pre-checks) ---
+  for (const req of typedRequirements) {
+    if (req.requirement_type === 'risk_level' || req.requirement_type === 'experience_level') {
+      await supabase.from('registration_answers').upsert({
+        registration_id: registrationId,
+        requirement_id: req.id,
+        passed: true, // Pre-checks already verified these
+      }, { onConflict: 'registration_id,requirement_id' });
+    }
+  }
+
+  // --- Calculate overall score ---
+  // Single weighted average across ALL AI-assessed requirements (skills + questions), scaled to 0-100.
+  // Each requirement's score (0-10) is weighted by its configured weight.
+  // The result is a 0-100 percentage compared against the single auto_approval_threshold.
+  const finalScore = calculateOverallScore(allScoredResults, typedRequirements);
 
   const threshold = legs.journeys.auto_approval_threshold || 80;
-  const shouldAutoApprove = assessment.match_score >= threshold && assessment.recommendation !== 'deny';
-  
-  console.log(`[AI Assessment] Assessment results:`, {
-    matchScore: assessment.match_score,
-    threshold: threshold,
-    recommendation: assessment.recommendation,
-    shouldAutoApprove: shouldAutoApprove,
-    currentStatus: registration.status,
-  });
+  const shouldAutoApprove = !assessmentFailed && finalScore >= threshold;
+
+  // Update individual answer records with the overall pass/fail
+  for (const result of allScoredResults) {
+    await supabase.from('registration_answers')
+      .update({ passed: shouldAutoApprove })
+      .eq('registration_id', registrationId)
+      .eq('requirement_id', result.requirement_id);
+  }
+
+  overallReasoning.push(`Overall: ${finalScore}% (threshold: ${threshold}%). ${shouldAutoApprove ? 'AUTO-APPROVED' : assessmentFailed ? 'FAILED (error)' : 'BELOW THRESHOLD'}`);
+  console.log(`[AI Assessment] Final: score=${finalScore}, threshold=${threshold}, failed=${assessmentFailed}, autoApprove=${shouldAutoApprove}`);
 
   // Update registration
-  const updateData: any = {
-    ai_match_score: Math.round(assessment.match_score),
-    ai_match_reasoning: assessment.reasoning || null,
+  const updateData: Record<string, any> = {
+    ai_match_score: finalScore,
+    ai_match_reasoning: overallReasoning.join('\n'),
   };
 
   if (shouldAutoApprove && registration.status === 'Pending approval') {
     updateData.status = 'Approved';
     updateData.auto_approved = true;
-    console.log(`[AI Assessment] Auto-approving registration: ${registrationId}`);
-  } else {
-    console.log(`[AI Assessment] Not auto-approving (score: ${assessment.match_score}%, threshold: ${threshold}%, status: ${registration.status})`);
   }
-
-  console.log(`[AI Assessment] Updating registration with:`, {
-    ai_match_score: updateData.ai_match_score,
-    ai_match_reasoning_length: updateData.ai_match_reasoning?.length || 0,
-    status: updateData.status || 'unchanged',
-    auto_approved: updateData.auto_approved || false,
-  });
 
   const { error: updateError } = await supabase
     .from('registrations')
@@ -344,253 +607,108 @@ export async function assessRegistrationWithAI(
     .eq('id', registrationId);
 
   if (updateError) {
-    console.error(`[AI Assessment] Failed to update registration:`, {
-      registrationId,
-      error: updateError,
-      updateData,
-    });
     throw new Error(`Failed to update registration: ${updateError.message}`);
   }
 
-  console.log(`[AI Assessment] Successfully completed assessment for registration: ${registrationId}`, {
-    finalStatus: updateData.status || registration.status,
-    matchScore: updateData.ai_match_score,
-    autoApproved: updateData.auto_approved || false,
-  });
-
-  // Get crew and owner info for notifications
-  // journeyId is already defined earlier in the function
-  const journeyName = legs?.journeys?.name;
-  const crewUserId = registration.user_id;
-  const ownerId = legs?.journeys?.boats?.owner_id;
-  
+  // --- Notifications ---
+  const ownerId = legs.journeys.boats?.owner_id;
   if (!ownerId) {
-    console.error(`[AI Assessment] Cannot send notifications: ownerId is null. Registration: ${registration.id}, Journey: ${journeyId}`);
-    // Continue with assessment update but skip notifications
+    console.warn('[AI Assessment] No ownerId, skipping notifications');
+    return;
   }
 
-  // Get crew name for owner notification
   const { data: crewProfileData } = await supabase
     .from('profiles')
-    .select('full_name, username')
-    .eq('id', crewUserId)
+    .select('full_name, username, profile_image_url')
+    .eq('id', registration.user_id)
     .single();
 
   const crewName = crewProfileData?.full_name || crewProfileData?.username || 'A crew member';
+  const journeyName = legs.journeys.name;
 
-  // Get owner name for crew notification
   const { data: ownerProfile } = await supabase
     .from('profiles')
     .select('full_name, username')
     .eq('id', ownerId)
     .single();
-
   const ownerName = ownerProfile?.full_name || ownerProfile?.username || 'The boat owner';
 
-  // Send notifications based on AI assessment result
-  // Only send notifications if we have a valid ownerId
-  if (ownerId) {
-    // If registration stays pending (not auto-approved), notify crew member
-    if (!updateData.auto_approved) {
-      const pendingNotifyResult = await notifyPendingRegistration(
-        supabase,
-        crewUserId,
-        registrationId,
-        journeyId,
-        journeyName,
-        legs?.name || 'Unknown Leg'
-      );
-      if (pendingNotifyResult.error) {
-        console.error('[AI Assessment] Failed to notify crew of pending registration:', pendingNotifyResult.error);
-      } else {
-        console.log('[AI Assessment] Pending registration notification sent to crew:', crewUserId);
-      }
-    }
+  if (updateData.auto_approved) {
+    // Notify crew of approval
+    await notifyRegistrationApproved(supabase, registration.user_id, journeyId, journeyName, ownerName, ownerId);
 
-    // Continue with existing notifications...
-    if (updateData.auto_approved) {
-      // Notify crew member of approval
-      const crewNotifyResult = await notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, ownerId);
-      if (crewNotifyResult.error) {
-        console.error('[AI Assessment] Failed to send approval notification to crew:', crewNotifyResult.error);
-      } else {
-        console.log('[AI Assessment] Approval notification sent to crew:', crewUserId);
-      }
-
-      // Get crew profile info for avatar
-      const { data: crewProfile } = await supabase
-        .from('profiles')
-        .select('profile_image_url')
-        .eq('id', crewUserId)
-        .single();
-
-      // Notify owner that AI auto-approved the registration
-      const ownerNotifyResult = await createNotification(supabase, {
-        user_id: ownerId,
-        type: NotificationType.AI_AUTO_APPROVED,
-        title: 'Registration Auto-Approved',
-        message: `${crewName}'s registration for "${journeyName}" was automatically approved by AI (Score: ${assessment.match_score}%).`,
-        link: `/owner/registrations/${registrationId}`,
-        metadata: {
-          registration_id: registrationId,
-          journey_id: journeyId,
-          journey_name: journeyName,
-          crew_name: crewName,
-          crew_id: crewUserId,
-          match_score: assessment.match_score,
-          recommendation: assessment.recommendation,
-          sender_id: crewUserId,
-          sender_name: crewName,
-          sender_avatar_url: crewProfile?.profile_image_url || null,
-        },
-      });
-      if (ownerNotifyResult.error) {
-        console.error('[AI Assessment] Failed to send auto-approval notification to owner:', ownerNotifyResult.error);
-      } else {
-        console.log('[AI Assessment] Auto-approval notification sent to owner:', ownerId);
-      }
-    } else {
-      // Get crew profile info for avatar
-      const { data: crewProfileForReview } = await supabase
-        .from('profiles')
-        .select('profile_image_url')
-        .eq('id', crewUserId)
-        .single();
-
-      // Notify owner that manual review is needed
-      const reviewNotifyResult = await createNotification(supabase, {
-        user_id: ownerId,
-        type: NotificationType.AI_REVIEW_NEEDED,
-        title: 'Registration Needs Review',
-        message: `${crewName}'s registration for "${journeyName}" needs your review (AI Score: ${assessment.match_score}%).`,
-        link: `/owner/registrations/${registrationId}`,
-        metadata: {
-          registration_id: registrationId,
-          journey_id: journeyId,
-          journey_name: journeyName,
-          crew_name: crewName,
-          crew_id: crewUserId,
-          match_score: assessment.match_score,
-          recommendation: assessment.recommendation,
-          sender_id: crewUserId,
-          sender_name: crewName,
-          sender_avatar_url: crewProfileForReview?.profile_image_url || null,
-        },
-      });
-      if (reviewNotifyResult.error) {
-        console.error('[AI Assessment] Failed to send review notification to owner:', reviewNotifyResult.error);
-      } else {
-        console.log('[AI Assessment] Review needed notification sent to owner:', ownerId);
-      }
-
-      // Send email notification to owner
-      try {
-        const { data: ownerEmailData } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('id', ownerId)
-          .single();
-
-        if (ownerEmailData?.email) {
-          const registrationLink = `https://www.sailms.art/owner/registrations?registration=${registrationId}`;
-          const emailResult = await sendReviewNeededEmail(
-            supabase,
-            ownerEmailData.email,
-            ownerId,
-            crewName,
-            journeyName,
-            assessment.match_score,
-            registrationLink
-          );
-          if (emailResult.error) {
-            console.error('[AI Assessment] Failed to send review needed email:', emailResult.error);
-          } else {
-            console.log('[AI Assessment] Review needed email sent to:', ownerEmailData.email);
-          }
-        } else {
-          console.warn('[AI Assessment] Could not get email for owner:', ownerId);
-        }
-      } catch (emailErr) {
-        console.error('[AI Assessment] Error sending review needed email:', emailErr);
-      }
-    }
+    // Notify owner of auto-approval
+    await createNotification(supabase, {
+      user_id: ownerId,
+      type: NotificationType.AI_AUTO_APPROVED,
+      title: 'Registration Auto-Approved',
+      message: `${crewName}'s registration for "${journeyName}" was automatically approved (Score: ${finalScore}%).`,
+      link: `/owner/registrations/${registrationId}`,
+      metadata: {
+        registration_id: registrationId,
+        journey_id: journeyId,
+        journey_name: journeyName,
+        crew_name: crewName,
+        crew_id: registration.user_id,
+        match_score: finalScore,
+        sender_id: registration.user_id,
+        sender_name: crewName,
+        sender_avatar_url: crewProfileData?.profile_image_url || null,
+      },
+    });
   } else {
-    console.warn('[AI Assessment] Skipping notifications: ownerId is null');
-  }
-}
+    // Notify crew of pending
+    await notifyPendingRegistration(
+      supabase,
+      registration.user_id,
+      registrationId,
+      journeyId,
+      journeyName,
+      legs.name || 'Unknown Leg'
+    );
 
-/**
- * Build the AI assessment prompt
- */
-function buildAssessmentPrompt(data: {
-  crewProfile: any;
-  journey: any;
-  leg: any;
-  requirements: any[];
-  answers: any[];
-}): string {
-  const { crewProfile, journey, leg, requirements, answers } = data;
+    // Notify owner to review
+    await createNotification(supabase, {
+      user_id: ownerId,
+      type: NotificationType.AI_REVIEW_NEEDED,
+      title: 'Registration Needs Review',
+      message: `${crewName}'s registration for "${journeyName}" needs your review (AI Score: ${finalScore}%).`,
+      link: `/owner/registrations/${registrationId}`,
+      metadata: {
+        registration_id: registrationId,
+        journey_id: journeyId,
+        journey_name: journeyName,
+        crew_name: crewName,
+        crew_id: registration.user_id,
+        match_score: finalScore,
+        sender_id: registration.user_id,
+        sender_name: crewName,
+        sender_avatar_url: crewProfileData?.profile_image_url || null,
+      },
+    });
 
-  // Parse crew skills from JSON strings
-  const crewSkills = (crewProfile.skills || []).map((skillJson: string) => {
+    // Send email to owner
     try {
-      const parsed = JSON.parse(skillJson);
-      return parsed.skill_name || skillJson;
-    } catch {
-      return skillJson;
-    }
-  });
+      const { data: ownerEmailData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', ownerId)
+        .single();
 
-  // Build requirements Q&A section
-  const qaSection = requirements.map((req, idx) => {
-    const answer = answers.find((a: any) => a.requirement_id === req.id);
-    let answerText = 'Not answered';
-    
-    if (answer) {
-      if (req.question_type === 'text' || req.question_type === 'yes_no') {
-        answerText = answer.answer_text || 'Not answered';
-      } else {
-        answerText = JSON.stringify(answer.answer_json);
+      if (ownerEmailData?.email) {
+        const registrationLink = `https://www.sailms.art/owner/registrations?registration=${registrationId}`;
+        await sendReviewNeededEmail(
+          supabase,
+          ownerEmailData.email,
+          ownerId,
+          crewName,
+          journeyName,
+          finalScore,
+          registrationLink
+        );
       }
+    } catch (emailErr) {
+      console.error('[AI Assessment] Error sending review needed email:', emailErr);
     }
-
-    return `Q${idx + 1} (Weight: ${req.weight}/10): ${req.question_text}
-A${idx + 1}: ${answerText}`;
-  }).join('\n\n');
-
-  return `You are an expert sailing crew matching assistant. Your role is to assess how well a crew member matches the requirements for a sailing journey leg based on their profile, experience, and answers to custom questions.
-
-Crew Member Profile:
-- Name: ${crewProfile.full_name || 'Not provided'}
-- Experience Level: ${crewProfile.sailing_experience || 'Not specified'} (1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper)
-- Skills: ${crewSkills.length > 0 ? crewSkills.join(', ') : 'None listed'}
-- Risk Tolerance: ${Array.isArray(crewProfile.risk_level) ? crewProfile.risk_level.join(', ') : 'Not specified'}
-- Sailing Preferences: ${crewProfile.sailing_preferences || 'Not specified'}
-
-Journey Requirements:
-- Journey: ${journey.name}
-- Leg: ${leg?.name || 'N/A'}
-- Required Skills: ${Array.isArray(leg?.skills) ? leg.skills.join(', ') : 'None specified'}
-- Required Experience Level: ${leg?.min_experience_level || 'Not specified'} (1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper)
-- Risk Level: ${leg?.risk_level || 'Not specified'}
-- Dates: ${leg?.start_date ? new Date(leg.start_date).toLocaleDateString() : 'N/A'} to ${leg?.end_date ? new Date(leg.end_date).toLocaleDateString() : 'N/A'}
-
-Custom Questions & Answers:
-${qaSection || 'No custom questions'}
-
-Please assess this match and provide a JSON response with exactly this structure:
-{
-  "match_score": <integer 0-100>,
-  "reasoning": "<string explaining your assessment, considering skills, experience, risk tolerance, and custom question answers>",
-  "recommendation": "<'approve', 'deny', or 'review'>"
-}
-
-Be thorough and fair. Consider:
-- Technical skills match
-- Experience level appropriateness
-- Risk tolerance alignment
-- Quality and relevance of answers to custom questions
-- Overall fit for the journey
-
-Respond with ONLY the JSON object, no additional text.`;
+  }
 }

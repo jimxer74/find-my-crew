@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
-import { assessRegistrationWithAI } from '@/app/lib/ai/assessRegistration';
+import { assessRegistrationWithAI, performPreChecks } from '@/app/lib/ai/assessRegistration';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
 import { waitUntil } from '@vercel/functions';
@@ -11,7 +11,9 @@ export const maxDuration = 90; // 90 seconds
 export const runtime = 'nodejs';
 
 /**
- * Helper function to handle registration answers
+ * Helper function to handle registration answers for question-type requirements.
+ * Only question-type requirements accept user-provided answers.
+ * Skill/passport/risk_level/experience_level are handled by pre-checks and AI assessment.
  */
 async function handleRegistrationAnswers(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
@@ -19,19 +21,23 @@ async function handleRegistrationAnswers(
   answers: Array<{ requirement_id: string; answer_text?: string; answer_json?: any }>,
   journeyId: string
 ): Promise<string | null> {
-  // Get journey requirements to validate answers
+  // Get question-type requirements to validate answers against
   const { data: requirements } = await supabase
     .from('journey_requirements')
-    .select('id, question_type, is_required')
-    .eq('journey_id', journeyId);
+    .select('id, requirement_type, is_required, question_text')
+    .eq('journey_id', journeyId)
+    .eq('requirement_type', 'question');
 
   if (!requirements || requirements.length === 0) {
-    return 'No requirements found for this journey';
+    // No question requirements - nothing to save
+    return null;
   }
 
-  const requirementsMap = new Map(requirements.map((r: any) => [r.id, r]));
+  const requirementsMap = new Map<string, { id: string; requirement_type: string; is_required: boolean; question_text: string }>(
+    requirements.map((r: any) => [r.id, r])
+  );
 
-  // Validate all required questions are answered
+  // Validate all required question requirements are answered
   const requiredIds = requirements.filter((r: any) => r.is_required).map((r: any) => r.id);
   const answeredIds = answers.map((a: any) => a.requirement_id);
   const missingRequired = requiredIds.filter((id: string) => !answeredIds.includes(id));
@@ -44,31 +50,29 @@ async function handleRegistrationAnswers(
   for (const answer of answers) {
     const requirement = requirementsMap.get(answer.requirement_id);
     if (!requirement) {
-      return `Invalid requirement_id: ${answer.requirement_id}`;
+      // Skip answers for non-question requirements (they shouldn't be here but don't fail)
+      continue;
     }
 
-    // Validate format based on question type
-    if (requirement.question_type === 'text' || requirement.question_type === 'yes_no') {
-      if (!answer.answer_text || answer.answer_text.trim() === '') {
-        return `answer_text is required for ${requirement.question_type} questions`;
-      }
-      if (requirement.question_type === 'yes_no' && !['Yes', 'No'].includes(answer.answer_text)) {
-        return 'yes_no questions require answer_text to be "Yes" or "No"';
-      }
-    } else if (requirement.question_type === 'multiple_choice' || requirement.question_type === 'rating') {
-      if (!answer.answer_json) {
-        return `answer_json is required for ${requirement.question_type} questions`;
-      }
+    // Question-type requirements need answer_text
+    if (!answer.answer_text || answer.answer_text.trim() === '') {
+      return `answer_text is required for question: "${requirement.question_text}"`;
     }
   }
 
-  // Insert answers
-  const answersToInsert = answers.map((answer: any) => ({
-    registration_id: registrationId,
-    requirement_id: answer.requirement_id,
-    answer_text: answer.answer_text || null,
-    answer_json: answer.answer_json || null,
-  }));
+  // Filter to only question requirement answers and insert
+  const answersToInsert = answers
+    .filter((answer: any) => requirementsMap.has(answer.requirement_id))
+    .map((answer: any) => ({
+      registration_id: registrationId,
+      requirement_id: answer.requirement_id,
+      answer_text: answer.answer_text || null,
+      answer_json: answer.answer_json || null,
+    }));
+
+  if (answersToInsert.length === 0) {
+    return null; // No question answers to save
+  }
 
   const { error: insertError } = await supabase
     .from('registration_answers')
@@ -233,12 +237,50 @@ export async function POST(request: NextRequest) {
     if (existingRegistration) {
       // If cancelled, allow re-registration
       if (existingRegistration.status === 'Cancelled') {
-        // Update the cancelled registration to Pending approval
+        // Run pre-checks before reactivation (same as new registration)
+        const { count: reactivationReqCount } = await supabase
+          .from('journey_requirements')
+          .select('*', { count: 'exact', head: true })
+          .eq('journey_id', journey.id);
+
+        if (reactivationReqCount && reactivationReqCount > 0) {
+          const { data: reactivationRequirements } = await supabase
+            .from('journey_requirements')
+            .select('*')
+            .eq('journey_id', journey.id)
+            .order('order', { ascending: true });
+
+          if (reactivationRequirements && reactivationRequirements.length > 0) {
+            const preCheckResult = await performPreChecks(supabase, user.id, journey.id, reactivationRequirements as any);
+            if (!preCheckResult.passed) {
+              console.log(`[Registration API] Pre-check failed for reactivation:`, preCheckResult);
+              return NextResponse.json(
+                { error: preCheckResult.failReason, failType: preCheckResult.failType },
+                { status: 400 }
+              );
+            }
+          }
+        }
+
+        // Delete old answers before reactivation (clean slate)
+        const { error: deleteAnswersError } = await supabase
+          .from('registration_answers')
+          .delete()
+          .eq('registration_id', existingRegistration.id);
+
+        if (deleteAnswersError) {
+          console.error('[Registration API] Error deleting old answers for reactivation:', deleteAnswersError);
+        }
+
+        // Reset AI assessment fields and reactivate
         const { data: updatedRegistration, error: updateError } = await supabase
           .from('registrations')
           .update({
             status: 'Pending approval',
             notes: notes || null,
+            ai_match_score: null,
+            ai_match_reasoning: null,
+            auto_approved: null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingRegistration.id)
@@ -253,7 +295,7 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Handle answers if provided
+        // Handle answers if provided (question-type only)
         if (answers && Array.isArray(answers) && answers.length > 0) {
           const answersError = await handleRegistrationAnswers(supabase, updatedRegistration.id, answers, journey.id);
           if (answersError) {
@@ -265,10 +307,9 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if journey has auto-approval enabled and trigger AI assessment
-        console.log(`[Registration API] Checking auto-approval for reactivated registration: ${updatedRegistration.id}`);
         const { data: journeySettings, error: journeySettingsError } = await supabase
           .from('journeys')
-          .select('auto_approval_enabled, auto_approval_threshold')
+          .select('auto_approval_enabled')
           .eq('id', journey.id)
           .single();
 
@@ -276,75 +317,29 @@ export async function POST(request: NextRequest) {
           console.error(`[Registration API] Error fetching journey settings for reactivation:`, journeySettingsError);
         }
 
-        const { count: requirementCount, error: requirementCountError } = await supabase
-          .from('journey_requirements')
-          .select('*', { count: 'exact', head: true })
-          .eq('journey_id', journey.id);
-
-        if (requirementCountError) {
-          console.error(`[Registration API] Error counting requirements for reactivation:`, requirementCountError);
-        }
-
-        const hasRequirements = requirementCount && requirementCount > 0;
         const autoApprovalEnabled = journeySettings?.auto_approval_enabled === true;
-        const answersSaved = answers && Array.isArray(answers) && answers.length > 0;
 
-        console.log(`[Registration API] Reactivation AI assessment check:`, {
-          registrationId: updatedRegistration.id,
-          autoApprovalEnabled,
-          hasRequirements,
-          requirementCount,
-          answersSaved,
-          answersLength: answers?.length || 0,
-          allConditionsMet: autoApprovalEnabled && hasRequirements && answersSaved,
-        });
-
-        // Trigger AI assessment if auto-approval is enabled (same logic as new registration)
-        if (autoApprovalEnabled && hasRequirements && answersSaved) {
-          console.log(`[Registration API] ✅ ALL CONDITIONS MET - Triggering AI assessment for reactivated registration: ${updatedRegistration.id}`, {
-            journeyId: journey.id,
-            autoApprovalEnabled,
-            hasRequirements,
-            requirementCount,
-            answersCount: answers.length,
-          });
-          console.log(`[Registration API] Calling assessRegistrationWithAI for reactivated registration: ${updatedRegistration.id}`);
+        // Trigger AI assessment if auto-approval enabled and requirements exist
+        // Skills are assessed from profile (no answers needed), questions from answers
+        if (autoApprovalEnabled && reactivationReqCount && reactivationReqCount > 0) {
+          console.log(`[Registration API] Triggering AI assessment for reactivated registration: ${updatedRegistration.id}`);
           triggerAIAssessment(supabase, updatedRegistration.id);
-        } else {
-          console.log(`[Registration API] ❌ SKIPPING AI assessment for reactivated registration - Conditions not met:`, {
-            registrationId: updatedRegistration.id,
-            autoApprovalEnabled,
-            hasRequirements,
-            requirementCount,
-            answersSaved,
-            reason: !autoApprovalEnabled ? 'auto-approval not enabled' : !hasRequirements ? 'no requirements' : !answersSaved ? 'answers not saved' : 'unknown',
-          });
         }
 
         // Notify owner about reactivated registration
-        const reactivationJourney = Array.isArray(leg.journeys) ? leg.journeys[0] : leg.journeys;
-        if (reactivationJourney) {
-          const reactivationBoat = Array.isArray(reactivationJourney.boats) ? reactivationJourney.boats[0] : reactivationJourney.boats;
-          const reactivationOwnerId = reactivationBoat?.owner_id;
-          const reactivationJourneyId = reactivationJourney.id;
-          const reactivationJourneyName = reactivationJourney.name || 'your journey';
+        const ownerId = journey.boats.owner_id;
+        if (ownerId) {
+          const { data: reactivationCrewProfile } = await supabase
+            .from('profiles')
+            .select('full_name, username')
+            .eq('id', user.id)
+            .single();
 
-          if (reactivationOwnerId) {
-            const { data: reactivationCrewProfile } = await supabase
-              .from('profiles')
-              .select('full_name, username')
-              .eq('id', user.id)
-              .single();
+          const reactivationCrewName = reactivationCrewProfile?.full_name || reactivationCrewProfile?.username || 'A crew member';
 
-            const reactivationCrewName = reactivationCrewProfile?.full_name || reactivationCrewProfile?.username || 'A crew member';
-
-            // Await notification to ensure it's sent before response
-            const reactivationNotifyResult = await notifyNewRegistration(supabase, reactivationOwnerId, updatedRegistration.id, reactivationJourneyId, reactivationJourneyName, reactivationCrewName, user.id);
-            if (reactivationNotifyResult.error) {
-              console.error('[Registration API] Failed to notify owner of reactivated registration:', reactivationNotifyResult.error);
-            } else {
-              console.log('[Registration API] Reactivated registration notification sent to owner:', reactivationOwnerId);
-            }
+          const reactivationNotifyResult = await notifyNewRegistration(supabase, ownerId, updatedRegistration.id, journey.id, journey.name || 'your journey', reactivationCrewName, user.id);
+          if (reactivationNotifyResult.error) {
+            console.error('[Registration API] Failed to notify owner of reactivated registration:', reactivationNotifyResult.error);
           }
         }
 
@@ -398,50 +393,45 @@ export async function POST(request: NextRequest) {
       answersLength: answers?.length || 0,
     });
 
-    // If auto-approval is enabled, require answers
-    if (autoApprovalEnabled && hasRequirements) {
-      console.log(`[Registration API] Checking answers requirement:`, {
-        autoApprovalEnabled,
-        hasRequirements,
-        requirementCount,
-        answersProvided: !!(answers && Array.isArray(answers)),
-        answersLength: answers?.length || 0,
-        answers: answers,
-        answersType: typeof answers,
-        answersIsArray: Array.isArray(answers),
-      });
-      
-      // Check if answers are missing or empty
-      const hasValidAnswers = answers && Array.isArray(answers) && answers.length > 0;
-      
-      if (!hasValidAnswers) {
-        console.error(`[Registration API] ❌ 400 ERROR: Answers required but not provided`, {
-          journeyId: journey.id,
-          autoApprovalEnabled,
-          hasRequirements,
-          requirementCount,
-          answersType: typeof answers,
-          answersIsArray: Array.isArray(answers),
-          answersLength: answers?.length || 0,
-          answersValue: answers,
-        });
-        return NextResponse.json(
-          { 
-            error: 'Answers are required for journeys with automated approval enabled. Please complete all required questions.',
-            details: {
-              journeyId: journey.id,
-              autoApprovalEnabled,
-              hasRequirements,
-              requirementCount,
-              answersProvided: !!(answers && Array.isArray(answers)),
-              answersLength: answers?.length || 0,
-            }
-          },
-          { status: 400 }
+    // --- Pre-checks: Risk Level and Experience Level (instant, no AI) ---
+    if (hasRequirements) {
+      const { data: requirementsList } = await supabase
+        .from('journey_requirements')
+        .select('*')
+        .eq('journey_id', journey.id)
+        .order('order', { ascending: true });
+
+      if (requirementsList && requirementsList.length > 0) {
+        const preCheckResult = await performPreChecks(supabase, user.id, journey.id, requirementsList as any);
+        if (!preCheckResult.passed) {
+          console.log(`[Registration API] Pre-check failed:`, preCheckResult);
+          return NextResponse.json(
+            {
+              error: preCheckResult.failReason,
+              failType: preCheckResult.failType,
+            },
+            { status: 400 }
+          );
+        }
+        console.log(`[Registration API] Pre-checks passed (risk level + experience level)`);
+
+        // Check if question-type requirements need answers
+        const questionReqs = requirementsList.filter((r: any) =>
+          r.requirement_type === 'question'
         );
+        if (questionReqs.length > 0 && autoApprovalEnabled) {
+          const hasValidAnswers = answers && Array.isArray(answers) && answers.length > 0;
+          if (!hasValidAnswers) {
+            return NextResponse.json(
+              {
+                error: 'Answers are required for question-type requirements. Please complete all required questions.',
+                failType: 'missing_answers',
+              },
+              { status: 400 }
+            );
+          }
+        }
       }
-      
-      console.log(`[Registration API] ✅ Answers validation passed: ${answers.length} answers provided`);
     }
 
     // Create new registration
@@ -491,41 +481,22 @@ export async function POST(request: NextRequest) {
       console.log(`[Registration API] No answers to save (answers: ${answers}, isArray: ${Array.isArray(answers)}, length: ${answers?.length || 0})`);
     }
 
-    // Trigger AI assessment if auto-approval is enabled
-    // Only trigger if: auto-approval enabled AND requirements exist AND answers were saved
-    console.log(`[Registration API] Evaluating AI assessment trigger conditions:`, {
+    // Trigger AI assessment if auto-approval enabled and requirements exist.
+    // Skills are assessed from crew profile (no answers needed), questions from submitted answers.
+    console.log(`[Registration API] AI assessment trigger check:`, {
       registrationId: registration.id,
-      journeyId: journey.id,
       autoApprovalEnabled,
       hasRequirements,
       requirementCount,
       answersSaved,
-      answersProvided: !!(answers && Array.isArray(answers) && answers.length > 0),
-      answersLength: answers?.length || 0,
-      allConditionsMet: autoApprovalEnabled && hasRequirements && answersSaved,
     });
 
-    if (autoApprovalEnabled && hasRequirements && answersSaved) {
-      console.log(`[Registration API] ✅ ALL CONDITIONS MET - Triggering AI assessment for registration: ${registration.id}`, {
-        journeyId: journey.id,
-        autoApprovalEnabled,
-        hasRequirements,
-        requirementCount,
-        answersCount: answers.length,
-        answersSaved,
-      });
-      console.log(`[Registration API] Calling assessRegistrationWithAI for registration: ${registration.id}`);
+    if (autoApprovalEnabled && hasRequirements) {
+      console.log(`[Registration API] Triggering AI assessment for registration: ${registration.id}`);
       triggerAIAssessment(supabase, registration.id);
     } else {
-      console.log(`[Registration API] ❌ SKIPPING AI assessment - Conditions not met:`, {
-        registrationId: registration.id,
-        autoApprovalEnabled,
-        hasRequirements,
-        requirementCount,
-        answersSaved,
-        hasAnswers: !!(answers && answers.length > 0),
-        answersLength: answers?.length || 0,
-        reason: !autoApprovalEnabled ? 'auto-approval not enabled' : !hasRequirements ? 'no requirements' : !answersSaved ? 'answers not saved' : 'unknown',
+      console.log(`[Registration API] Skipping AI assessment:`, {
+        reason: !autoApprovalEnabled ? 'auto-approval not enabled' : 'no requirements',
       });
     }
 

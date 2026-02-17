@@ -23,6 +23,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
   const [registrationStatus, setRegistrationStatus] = useState<string | null>(null);
   const [registrationStatusChecked, setRegistrationStatusChecked] = useState(false);
   const [hasRequirements, setHasRequirements] = useState(false);
+  const [hasQuestionRequirements, setHasQuestionRequirements] = useState(false);
   const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
   const [isCheckingRequirements, setIsCheckingRequirements] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -132,15 +133,18 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
       }
 
       const hasReqs = reqs.length > 0;
+      const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
       setHasRequirements(hasReqs);
+      setHasQuestionRequirements(hasQuestionReqs);
       setAutoApprovalEnabled(autoApprovalEnabled);
 
-      return { hasRequirements: hasReqs, autoApprovalEnabled };
+      return { hasRequirements: hasReqs, hasQuestionRequirements: hasQuestionReqs, autoApprovalEnabled };
     } catch (error) {
       console.error('Error checking requirements:', error);
       setHasRequirements(false);
+      setHasQuestionRequirements(false);
       setAutoApprovalEnabled(false);
-      return { hasRequirements: false, autoApprovalEnabled: false };
+      return { hasRequirements: false, hasQuestionRequirements: false, autoApprovalEnabled: false };
     } finally {
       setIsCheckingRequirements(false);
     }
@@ -211,6 +215,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
     registrationStatus,
     registrationStatusChecked,
     hasRequirements,
+    hasQuestionRequirements,
     autoApprovalEnabled,
     isCheckingRequirements,
     isRegistering,

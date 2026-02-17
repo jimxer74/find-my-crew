@@ -9,6 +9,7 @@ import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experienc
 import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
+import { RegistrationSuccessModal } from '@/app/components/crew/RegistrationSuccessModal';
 import { useAuth } from '@/app/contexts/AuthContext';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
@@ -334,24 +335,84 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [hasProfileSharingConsent, setHasProfileSharingConsent] = useState<boolean | null>(null);
   const [checkingProfileConsent, setCheckingProfileConsent] = useState(false);
   const [registrationStatusChecked, setRegistrationStatusChecked] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registrationResult, setRegistrationResult] = useState<{ auto_approved: boolean } | null>(null);
 
-  // Safety effect: If requirements exist but requirements form is not shown, show it
+  // Safety effect: Only trigger in very specific edge cases where the main logic might have failed
+  // This effect should be extremely conservative and not interfere with normal operation
   useEffect(() => {
-    if (hasRequirements && !showRequirementsForm && showRegistrationModal) {
-      console.warn(`[LegDetailsPanel] ⚠️ Requirements exist but regular modal is shown - auto-switching to requirements form`);
-      setShowRegistrationModal(false);
-      setShowRequirementsForm(true);
-    }
-  }, [hasRequirements, showRequirementsForm, showRegistrationModal]);
+    // Only trigger if we're not in the process of checking requirements AND
+    // if we somehow have requirements but neither form is active (edge case)
+    if (hasRequirements && !showRequirementsForm && !showRegistrationModal && !isCheckingRequirements) {
+      // Very conservative check - only switch if we're in a broken state
+      const checkRequirementsType = async () => {
+        try {
+          const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+            signal: AbortSignal.timeout(3000),
+          });
+          if (requirementsResponse.ok) {
+            const data = await requirementsResponse.json();
+            const reqs = data.requirements || [];
+            const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
-  // Prevent regular modal from showing if requirements exist
-  useEffect(() => {
-    if (hasRequirements && showRegistrationModal && !showRequirementsForm) {
-      console.warn(`[LegDetailsPanel] ⚠️ Blocking regular modal - requirements exist, switching to requirements form`);
-      setShowRegistrationModal(false);
-      setShowRequirementsForm(true);
+            console.log(`[LegDetailsPanel] Safety edge-case check - hasRequirements: ${hasRequirements}, hasQuestionReqs: ${hasQuestionReqs}, showRequirementsForm: ${showRequirementsForm}, showRegistrationModal: ${showRegistrationModal}, isCheckingRequirements: ${isCheckingRequirements}`);
+
+            if (hasQuestionReqs) {
+              console.warn(`[LegDetailsPanel] ⚠️ Edge case: Requirements exist but no form is shown - showing requirements form`);
+              setShowRequirementsForm(true);
+            } else {
+              console.log(`[LegDetailsPanel] ✅ Edge case resolved: Server-side requirements exist, showing regular modal`);
+              setShowRegistrationModal(true);
+            }
+          }
+        } catch (error) {
+          console.warn(`[LegDetailsPanel] Could not verify requirement type for edge-case check:`, error);
+        }
+      };
+
+      checkRequirementsType();
     }
-  }, [hasRequirements, showRegistrationModal, showRequirementsForm]);
+  }, [hasRequirements, showRequirementsForm, showRegistrationModal, isCheckingRequirements, leg.journey_id]);
+
+  // Prevent regular modal from showing if question requirements exist
+  // Only blocks if we have question requirements that need the form
+  // This effect should be extremely conservative and only handle edge cases
+  useEffect(() => {
+    // Only trigger if we're not in the process of checking requirements AND
+    // if we're in a state where we have requirements but neither form is active
+    if (hasRequirements && showRegistrationModal && !showRequirementsForm && !isCheckingRequirements) {
+      const checkRequirementsType = async () => {
+        try {
+          const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+            signal: AbortSignal.timeout(3000),
+          });
+          if (requirementsResponse.ok) {
+            const data = await requirementsResponse.json();
+            const reqs = data.requirements || [];
+            const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
+            console.log(`[LegDetailsPanel] Edge-case blocking check - hasRequirements: ${hasRequirements}, hasQuestionReqs: ${hasQuestionReqs}, showRequirementsForm: ${showRequirementsForm}, showRegistrationModal: ${showRegistrationModal}, isCheckingRequirements: ${isCheckingRequirements}`);
+
+            // Only block if we have question requirements AND the user hasn't explicitly chosen the regular form
+            if (hasQuestionReqs && reqs.length > 0) {
+              console.warn(`[LegDetailsPanel] ⚠️ Edge case: Question requirements exist but regular modal is shown - switching to requirements form`);
+              setShowRegistrationModal(false);
+              setShowRequirementsForm(true);
+            } else {
+              console.log(`[LegDetailsPanel] ✅ Edge-case check passed: Server-side requirements only, keeping regular modal`);
+              // For server-side requirements, keep the regular modal active
+              setShowRequirementsForm(false);
+              setShowRegistrationModal(true);
+            }
+          }
+        } catch (error) {
+          console.warn(`[LegDetailsPanel] Could not verify requirement type for edge-case blocking check:`, error);
+        }
+      };
+
+      checkRequirementsType();
+    }
+  }, [hasRequirements, showRegistrationModal, showRequirementsForm, isCheckingRequirements, leg.journey_id]);
 
   // Use shared useProfile hook for profile status
   const { profile } = useProfile();
@@ -484,22 +545,25 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       }
       
       const hasReqs = reqs.length > 0;
-      
+      const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
       console.log(`[LegDetailsPanel] Requirements check result:`, {
         journeyId: leg.journey_id,
         hasReqs,
+        hasQuestionReqs,
         requirementsCount: reqs.length,
         autoApprovalEnabled,
-        willShowRequirementsForm: hasReqs,
+        willShowRequirementsForm: hasQuestionReqs,
       });
-      
+
       // Update state synchronously
       setHasRequirements(hasReqs);
       setAutoApprovalEnabled(autoApprovalEnabled);
-      
-      // If requirements exist (regardless of auto-approval), user MUST complete requirements form
-      if (hasReqs) {
-        console.log(`[LegDetailsPanel] ✅ Showing requirements form (requirements exist)`, {
+
+      // Show requirements form only if there are question-type requirements
+      // Show regular registration modal for server-side requirements (risk_level, experience_level, skill)
+      if (hasQuestionReqs) {
+        console.log(`[LegDetailsPanel] ✅ Showing requirements form (question requirements exist)`, {
           autoApprovalEnabled,
           requirementsCount: reqs.length,
         });
@@ -511,8 +575,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         setTimeout(() => {
           setShowRequirementsForm(true);
         }, 0);
+      } else if (hasReqs) {
+        // Server-side requirements only (risk_level, experience_level, skill)
+        // Show regular registration modal - the server will handle these requirements
+        console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (server-side requirements only)`, {
+          autoApprovalEnabled,
+          requirementsCount: reqs.length,
+        });
+        setShowRequirementsForm(false);
+        setHasRequirements(true);
+        // Only show regular modal if requirements exist (even if server-side)
+        setTimeout(() => {
+          setShowRegistrationModal(true);
+        }, 0);
       } else {
-        // No requirements - show regular registration modal
+        // No requirements at all
         console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (no requirements)`);
         setShowRequirementsForm(false);
         setHasRequirements(false);
@@ -656,30 +733,66 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     const answersToUse = providedAnswers !== undefined ? providedAnswers : requirementsAnswers;
     const notesToUse = providedNotes !== undefined ? providedNotes : registrationNotes;
 
-    // IMMEDIATE check: If state says requirements exist but no answers, block immediately
+    // IMMEDIATE check: If state says question requirements exist but no answers, block immediately
     // But skip this check if answers were provided directly (from requirements form)
     if (providedAnswers === undefined && hasRequirements && requirementsAnswers.length === 0) {
-      console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist but no answers provided (immediate state check)`);
-      setRegistrationError('Please complete all required questions before submitting');
-      setShowRegistrationModal(false);
-      setShowRequirementsForm(true);
-      return;
+      // Check if we have question requirements specifically
+      try {
+        const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (requirementsResponse.ok) {
+          const data = await requirementsResponse.json();
+          const reqs = data.requirements || [];
+          const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
+          if (hasQuestionReqs) {
+            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist but no answers provided (immediate state check)`);
+            setRegistrationError('Please complete all required questions before submitting');
+            setShowRegistrationModal(false);
+            setShowRequirementsForm(true);
+            return;
+          }
+          // If we get here, we only have server-side requirements, which is fine to submit
+        }
+      } catch (error) {
+        console.warn(`[LegDetailsPanel] Could not verify requirements in immediate check:`, error);
+        // Continue with submission if check fails - don't block user
+      }
     }
 
-    // Check if requirements exist but no answers provided (using direct or state values)
+    // Check if question requirements exist but no answers provided (using direct or state values)
     if (hasRequirements && answersToUse.length === 0) {
-      console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist but no answers provided`);
-      setRegistrationError('Please complete all required questions before submitting');
-      setShowRegistrationModal(false);
-      setShowRequirementsForm(true);
-      return;
+      // Check if we have question requirements specifically
+      try {
+        const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+          signal: AbortSignal.timeout(3000),
+        });
+        if (requirementsResponse.ok) {
+          const data = await requirementsResponse.json();
+          const reqs = data.requirements || [];
+          const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
+          if (hasQuestionReqs) {
+            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist but no answers provided`);
+            setRegistrationError('Please complete all required questions before submitting');
+            setShowRegistrationModal(false);
+            setShowRequirementsForm(true);
+            return;
+          }
+          // If we get here, we only have server-side requirements, which is fine to submit
+        }
+      } catch (error) {
+        console.warn(`[LegDetailsPanel] Could not verify requirements in check:`, error);
+        // Continue with submission if check fails - don't block user
+      }
     }
 
-    // Safety check: Verify requirements exist if we don't have answers
+    // Safety check: Verify question requirements exist if we don't have answers
     // This prevents race conditions where state hasn't updated yet
     // Skip this check if answers were provided directly
     if (providedAnswers === undefined && answersToUse.length === 0) {
-      console.log(`[LegDetailsPanel] No answers provided, checking if requirements exist...`);
+      console.log(`[LegDetailsPanel] No answers provided, checking if question requirements exist...`);
       try {
         const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
           signal: AbortSignal.timeout(5000),
@@ -687,8 +800,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         if (requirementsResponse.ok) {
           const data = await requirementsResponse.json();
           const reqs = data.requirements || [];
-          if (reqs.length > 0) {
-            console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${reqs.length}) but no answers provided`);
+          const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
+          if (hasQuestionReqs) {
+            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist (${reqs.length}) but no answers provided`);
             setRegistrationError('Please complete all required questions before submitting');
             // Switch to requirements form
             setShowRegistrationModal(false);
@@ -696,6 +811,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             setHasRequirements(true);
             return;
           }
+          // If we get here, we only have server-side requirements, which is fine to submit
+          console.log(`[LegDetailsPanel] ✅ Safety check passed: Only server-side requirements (${reqs.length}), proceeding with submission`);
         }
       } catch (error) {
         console.warn(`[LegDetailsPanel] Could not verify requirements, proceeding with submission:`, error);
@@ -763,27 +880,30 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
       // Update local state
       setRegistrationStatus(data.registration.status);
+      setRegistrationResult({ auto_approved: data.registration.auto_approved });
+      setShowSuccessModal(true);
+
+      // Notify parent component
+      onRegistrationChange?.();
+
+      // Close forms but keep panel open to show success modal
       setShowRegistrationModal(false);
       setShowRequirementsForm(false);
       setAutoApprovalEnabled(false); // Reset when closing
       setRegistrationNotes('');
       setRequirementsAnswers([]);
-      
-      // Notify parent component
-      onRegistrationChange?.();
-
-      // Show success message
-      if (data.registration.status === 'Approved' && data.registration.auto_approved) {
-        alert('Congratulations! You\'ve been automatically approved for this leg!');
-      } else {
-        console.log('Registration successful:', data.message);
-      }
     } catch (error: any) {
       setRegistrationError(error.message || 'An error occurred while registering');
       console.error('Registration error:', error);
     } finally {
       setIsRegistering(false);
     }
+  };
+
+  // Handle success modal close
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setRegistrationResult(null);
   };
 
   // Cancel registration (set to Cancelled)
@@ -1023,8 +1143,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   autoApprovalEnabled={autoApprovalEnabled}
                 />
               </div>
-            ) : showRegistrationModal && !hasRequirements ? (
-              /* Registration Form - In pane - Only show if NO requirements exist */
+            ) : showRegistrationModal && (!hasRequirements || (hasRequirements && showRequirementsForm === false)) ? (
+              /* Registration Form - In pane - Show if NO requirements OR if requirements exist but requirements form is not shown (server-side requirements) */
               <div className="flex flex-col h-full">
                 {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
@@ -1078,45 +1198,40 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <button
                       type="button"
                       onClick={async () => {
-                        // Double-check requirements before allowing submission
-                        // This prevents race conditions
-                        if (hasRequirements) {
-                          console.error(`[LegDetailsPanel] ❌ Cannot submit from regular modal: Requirements exist (state check)`);
-                          setRegistrationError('Please complete the required questions first');
-                          setShowRegistrationModal(false);
-                          setShowRequirementsForm(true);
-                          return;
-                        }
-
-                        // Additional safety: Verify no requirements exist before submitting
+                        // Check if we have question requirements before allowing submission
+                        // This prevents race conditions where requirements form should be shown
                         try {
-                          const verifyResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+                          const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
                             signal: AbortSignal.timeout(3000),
                           });
-                          if (verifyResponse.ok) {
-                            const verifyData = await verifyResponse.json();
-                            const verifyReqs = verifyData.requirements || [];
-                            if (verifyReqs.length > 0) {
-                              console.error(`[LegDetailsPanel] ❌ Cannot submit: Requirements exist (${verifyReqs.length}) - verification check`);
+                          if (requirementsResponse.ok) {
+                            const data = await requirementsResponse.json();
+                            const reqs = data.requirements || [];
+                            const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+
+                            if (hasQuestionReqs) {
+                              console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist (${reqs.length}), showing requirements form`);
                               setRegistrationError('Please complete the required questions first');
                               setShowRegistrationModal(false);
                               setShowRequirementsForm(true);
                               setHasRequirements(true);
                               return;
                             }
+                            // If we get here, we only have server-side requirements (or no requirements), which is fine to submit
+                            console.log(`[LegDetailsPanel] ✅ Submitting: No question requirements (${reqs.length} total requirements)`);
                           }
-                        } catch (verifyError) {
-                          console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, verifyError);
-                          // Continue if verification fails - don't block user
+                        } catch (error) {
+                          console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, error);
+                          // Continue with submission if check fails - don't block user
                         }
 
-                        // Only call handleSubmitRegistration if we're sure there are no requirements
+                        // Submit registration (server will handle server-side requirements)
                         handleSubmitRegistration();
                       }}
-                      disabled={isRegistering || hasRequirements}
+                      disabled={isRegistering}
                       className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRegistering ? 'Registering...' : hasRequirements ? 'Complete Questions First' : 'Submit Registration'}
+                      {isRegistering ? 'Registering...' : 'Submit Registration'}
                     </button>
                   </div>
                 </div>
@@ -1595,7 +1710,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 >
                   Complete profile to register
                 </Link>
-              ) : registrationStatus ? (
+              ) : registrationStatus && (registrationStatus === 'Pending approval' || registrationStatus === 'Approved') ? (
+                // Hide register button if pending or approved - show status only
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Registration Status:</span>
@@ -1610,6 +1726,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       Cancel Registration
                     </button>
                   )}
+                </div>
+              ) : registrationStatus ? (
+                // Show status and allow re-registration for other statuses (cancelled, not approved)
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Registration Status:</span>
+                    {getStatusBadge(registrationStatus)}
+                  </div>
+                  <button
+                    onClick={handleRegister}
+                    disabled={isRegistering || checkingProfileConsent}
+                    className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isRegistering ? 'Registering...' : checkingProfileConsent ? 'Checking...' : 'Register Again'}
+                  </button>
                 </div>
               ) : hasProfileSharingConsent === false ? (
                 <div className="space-y-3">
@@ -1805,6 +1936,15 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             </div>
           </div>
         </>
+      )}
+      {leg && (
+        <RegistrationSuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleSuccessModalClose}
+          autoApproved={registrationResult?.auto_approved || false}
+          legName={leg.leg_name}
+          journeyName={leg.journey_name}
+        />
       )}
     </>
   );

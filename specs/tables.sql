@@ -281,6 +281,8 @@ create table if not exists public.journeys (
   is_ai_generated boolean default false,
   ai_prompt    text,
   images       text[] default '{}',  -- store image URLs from Supabase Storage
+  auto_approval_enabled boolean default false,  -- Toggle automated approval for this journey
+  auto_approval_threshold integer default 80 check (auto_approval_threshold >= 0 and auto_approval_threshold <= 100),  -- Minimum match score for auto-approval (0-100)
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -631,14 +633,19 @@ create table if not exists public.registrations (
   user_id      uuid not null references auth.users (id) on delete cascade,
   status       registration_status not null default 'Pending approval',
   notes        text,
+  match_percentage numeric,  -- match percentage between user skills and leg required skills, experience level, and risk level
+  ai_match_score integer check (ai_match_score >= 0 and ai_match_score <= 100),  -- AI-calculated match percentage (0-100)
+  ai_match_reasoning text,  -- AI explanation of the score
+  auto_approved boolean default false,  -- True if AI auto-approved this registration
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
-  match_percentage numeric, -- match percentage between user skills and leg required skills, experience level, and risk level
 );
 
 -- Indexes
 create index if not exists registrations_leg_id_idx on public.registrations (leg_id);
 create index if not exists registrations_user_id_idx on public.registrations (user_id);
+create index if not exists registrations_ai_match_score_idx on public.registrations (ai_match_score);
+create index if not exists registrations_auto_approved_idx on public.registrations (auto_approved);
 create unique index if not exists registrations_leg_user_unique
   on public.registrations (leg_id, user_id);
 
@@ -704,6 +711,189 @@ using (
     and boats.owner_id = auth.uid()
   )
 );
+
+
+-- ============================================================================
+-- TABLE: journey_requirements
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.journey_requirements (
+  id                      uuid primary key default gen_random_uuid(),
+  journey_id              uuid not null references public.journeys (id) on delete cascade,
+  requirement_type        varchar(50) not null,  -- 'risk_level', 'experience_level', 'skill', 'passport', 'question'
+  -- For 'question' type:
+  question_text           text,  -- The question to ask crew members
+  -- For 'skill' type:
+  skill_name              text,  -- Canonical skill name from skills-config.json (e.g. 'navigation', 'heavy_weather')
+  -- For 'skill' and 'question' types:
+  qualification_criteria  text,  -- Free-text criteria for AI assessment of answers/skills
+  weight                  integer default 5 check (weight >= 0 and weight <= 10),  -- Importance weight for AI scoring (0=ignored, 10=critical)
+  -- For 'passport' type:
+  require_photo_validation boolean default false,  -- Whether photo-ID verification is required
+  pass_confidence_score   integer default 7 check (pass_confidence_score >= 0 and pass_confidence_score <= 10),  -- Minimum AI confidence for passport validation
+  -- Common fields:
+  is_required             boolean default true,
+  "order"                 integer default 0,  -- Display order
+  created_at              timestamptz not null default now(),
+  updated_at              timestamptz not null default now()
+);
+
+-- Indexes
+create index if not exists journey_requirements_journey_id_idx
+  on public.journey_requirements (journey_id);
+create index if not exists journey_requirements_journey_order_idx
+  on public.journey_requirements (journey_id, "order");
+
+-- Enable Row Level Security
+alter table journey_requirements enable row level security;
+
+-- Policies
+-- Requirements for published journeys are viewable by all authenticated users
+create policy "Requirements for published journeys are viewable by all"
+on journey_requirements for select
+using (
+  exists (
+    select 1 from journeys
+    where journeys.id = journey_requirements.journey_id
+    and (
+      journeys.state = 'Published'::journey_state
+      or exists (
+        select 1 from boats
+        where boats.id = journeys.boat_id
+        and boats.owner_id = auth.uid()
+      )
+    )
+  )
+);
+
+-- Owners can insert requirements for their journeys
+create policy "Owners can insert requirements for their journeys"
+on journey_requirements for insert
+to authenticated
+with check (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = journey_requirements.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+-- Owners can update requirements for their journeys
+create policy "Owners can update requirements for their journeys"
+on journey_requirements for update
+using (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = journey_requirements.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+-- Owners can delete requirements for their journeys
+create policy "Owners can delete requirements for their journeys"
+on journey_requirements for delete
+using (
+  exists (
+    select 1 from journeys
+    join boats on boats.id = journeys.boat_id
+    where journeys.id = journey_requirements.journey_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+
+-- ============================================================================
+-- TABLE: registration_answers
+-- ============================================================================
+
+-- Table definition
+create table if not exists public.registration_answers (
+  id                        uuid primary key default gen_random_uuid(),
+  registration_id           uuid not null references public.registrations (id) on delete cascade,
+  requirement_id            uuid not null references public.journey_requirements (id) on delete cascade,
+  -- For 'question' type:
+  answer_text               text,  -- Crew member's text answer
+  answer_json               jsonb,  -- Structured answer data (e.g. multiple choice selections)
+  -- For AI-assessed types (skill, question, passport):
+  ai_score                  integer check (ai_score >= 0 and ai_score <= 10),  -- Per-requirement AI score (0-10)
+  ai_reasoning              text,  -- AI explanation for this requirement's score
+  -- For passport type:
+  passport_document_id      uuid references public.document_vault (id),  -- Reference to crew's passport in vault
+  photo_verification_passed boolean,  -- Whether photo-ID verification passed
+  photo_confidence_score    numeric(3,2) check (photo_confidence_score >= 0 and photo_confidence_score <= 1),  -- AI confidence (0.00-1.00)
+  -- Common:
+  passed                    boolean,  -- Whether this individual requirement was met
+  created_at                timestamptz not null default now(),
+  updated_at                timestamptz not null default now(),
+  -- Constraints:
+  constraint registration_answers_unique unique (registration_id, requirement_id)
+);
+
+-- Indexes
+create index if not exists registration_answers_registration_id_idx
+  on public.registration_answers (registration_id);
+create index if not exists registration_answers_requirement_id_idx
+  on public.registration_answers (requirement_id);
+
+-- Enable Row Level Security
+alter table registration_answers enable row level security;
+
+-- Policies
+-- Users can view their own answers
+create policy "Users can view their own registration answers"
+on registration_answers for select
+using (
+  exists (
+    select 1 from registrations
+    where registrations.id = registration_answers.registration_id
+    and registrations.user_id = auth.uid()
+  )
+);
+
+-- Journey owners can view answers for registrations to their journeys
+create policy "Owners can view answers for their journey registrations"
+on registration_answers for select
+using (
+  exists (
+    select 1 from registrations
+    join legs on legs.id = registrations.leg_id
+    join journeys on journeys.id = legs.journey_id
+    join boats on boats.id = journeys.boat_id
+    where registrations.id = registration_answers.registration_id
+    and boats.owner_id = auth.uid()
+  )
+);
+
+-- Users can insert answers for their own registrations
+create policy "Users can insert their own registration answers"
+on registration_answers for insert
+to authenticated
+with check (
+  exists (
+    select 1 from registrations
+    where registrations.id = registration_answers.registration_id
+    and registrations.user_id = auth.uid()
+  )
+);
+
+-- Users can update their own answers (only while registration is pending)
+create policy "Users can update their own registration answers"
+on registration_answers for update
+using (
+  exists (
+    select 1 from registrations
+    where registrations.id = registration_answers.registration_id
+    and registrations.user_id = auth.uid()
+    and registrations.status = 'Pending approval'
+  )
+);
+
+-- Service role can update answers (for AI assessment results)
+-- Note: AI assessment runs server-side with service role, so it bypasses RLS.
+-- No explicit policy needed for service role updates.
 
 
 -- ============================================================================

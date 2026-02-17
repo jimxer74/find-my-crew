@@ -110,12 +110,14 @@ export async function PATCH(
     }
 
     // Update journey
+    const updatePayload: Record<string, any> = {
+      auto_approval_enabled,
+      auto_approval_threshold: threshold,
+    };
+
     const { data: updatedJourney, error: updateError } = await supabase
       .from('journeys')
-      .update({
-        auto_approval_enabled,
-        auto_approval_threshold: threshold,
-      })
+      .update(updatePayload)
       .eq('id', journeyId)
       .select()
       .single();

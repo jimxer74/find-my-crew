@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useLegRegistration, LegRegistrationData } from '@/app/hooks/useLegRegistration';
 import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
+import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 
 type LegRegistrationDialogProps = {
@@ -30,6 +31,8 @@ export function LegRegistrationDialog({
   const [leg, setLeg] = useState<LegRegistrationData | null>(providedLeg || null);
   const [loadingLeg, setLoadingLeg] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registrationResult, setRegistrationResult] = useState<{ auto_approved: boolean } | null>(null);
 
   // Fetch leg data if only legId is provided
   useEffect(() => {
@@ -75,6 +78,7 @@ export function LegRegistrationDialog({
     registrationStatus,
     registrationStatusChecked,
     hasRequirements,
+    hasQuestionRequirements,
     autoApprovalEnabled,
     isCheckingRequirements,
     isRegistering,
@@ -93,7 +97,9 @@ export function LegRegistrationDialog({
     if (isOpen && leg && !requirementsChecked) {
       setRequirementsChecked(true);
       checkRequirements().then((result) => {
-        if (result.hasRequirements) {
+        // Show the requirements form only if there are question-type requirements
+        // (risk_level, experience_level, skill, passport are handled server-side)
+        if (result.hasQuestionRequirements) {
           setShowRequirementsForm(true);
           setShowSimpleForm(false);
         } else {
@@ -150,20 +156,27 @@ export function LegRegistrationDialog({
   const handleRequirementsComplete = async (answers: any[], notes: string) => {
     const result = await submitRegistration(answers, notes);
     if (result.success) {
-      if (result.auto_approved) {
-        alert('Congratulations! You\'ve been automatically approved for this leg!');
-      }
-      onSuccess?.();
-      onClose();
+      setRegistrationResult(result);
+      setShowSuccessModal(true);
+      // Don't call onSuccess yet - let user see the success modal first
     }
   };
 
   const handleSimpleSubmit = async () => {
     const result = await submitRegistration([], notes);
     if (result.success) {
-      onSuccess?.();
-      onClose();
+      setRegistrationResult(result);
+      setShowSuccessModal(true);
+      // Don't call onSuccess yet - let user see the success modal first
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setRegistrationResult(null);
+    // Now call onSuccess after modal is closed to allow parent to update
+    onSuccess?.();
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -237,6 +250,12 @@ export function LegRegistrationDialog({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
+          {/* Debug logging - remove in production */}
+          {typeof window !== 'undefined' && console.log('[LegRegistrationDialog] States:', {
+            isOpen, leg: !!leg, requirementsChecked, hasRequirements, hasQuestionRequirements,
+            showRequirementsForm, showSimpleForm, isCheckingRequirements, displayError
+          })}
+
           {displayError && !isCheckingRequirements && !showRequirementsForm && !showSimpleForm ? (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
               {displayError}
@@ -301,6 +320,116 @@ export function LegRegistrationDialog({
                 </button>
               </div>
             </div>
+          ) : hasRequirements && !hasQuestionRequirements ? (
+            // Show simple form when there are requirements but no question requirements
+            // (e.g., only risk_level, experience_level, skill - which are handled server-side)
+            <div className="space-y-4">
+              {displayError && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+                  {displayError}
+                </div>
+              )}
+
+              {hasProfileSharingConsent === false && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-yellow-700 dark:text-yellow-400 text-sm">
+                  Profile sharing consent is required to register for legs. Please update your privacy settings.
+                </div>
+              )}
+
+              <div className="text-sm text-muted-foreground">
+                Your profile will be automatically assessed against the journey requirements. You can provide additional notes below if desired.
+              </div>
+
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Tell the skipper why you'd like to join this leg..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={onClose}
+                  disabled={isRegistering}
+                  className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSimpleSubmit}
+                  disabled={isRegistering || hasProfileSharingConsent === false}
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {isRegistering ? 'Registering...' : 'Register'}
+                </button>
+              </div>
+            </div>
+          ) : !isCheckingRequirements && (hasRequirements || hasQuestionRequirements) ? (
+            // Fallback: Show simple form when requirements check is done but no forms are active
+            // This handles the case where requirements exist but forms aren't being shown
+            <div className="space-y-4">
+              {displayError && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
+                  {displayError}
+                </div>
+              )}
+
+              {hasProfileSharingConsent === false && (
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md text-yellow-700 dark:text-yellow-400 text-sm">
+                  Profile sharing consent is required to register for legs. Please update your privacy settings.
+                </div>
+              )}
+
+              <div className="text-sm text-muted-foreground">
+                Your profile will be automatically assessed against the journey requirements. You can provide additional notes below if desired.
+              </div>
+
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder="Tell the skipper why you'd like to join this leg..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={onClose}
+                  disabled={isRegistering}
+                  className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSimpleSubmit}
+                  disabled={isRegistering || hasProfileSharingConsent === false}
+                  className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {isRegistering ? 'Registering...' : 'Register'}
+                </button>
+              </div>
+            </div>
+          ) : !isCheckingRequirements && leg ? (
+            // Final fallback: If we have a leg but no content, show a message
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading registration form...</p>
+              </div>
+            </div>
           ) : null}
         </div>
       </div>
@@ -308,5 +437,18 @@ export function LegRegistrationDialog({
   );
 
   if (typeof document === 'undefined') return null;
-  return createPortal(dialogContent, document.body);
+  return (
+    <>
+      {createPortal(dialogContent, document.body)}
+      {leg && (
+        <RegistrationSuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleSuccessModalClose}
+          autoApproved={registrationResult?.auto_approved || false}
+          legName={leg.leg_name}
+          journeyName={leg.journey_name}
+        />
+      )}
+    </>
+  );
 }
