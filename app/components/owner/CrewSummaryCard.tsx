@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import skillsConfig from '@/app/config/skills-config.json';
 import { formatDate } from '@/app/lib/dateFormat';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
@@ -54,6 +55,19 @@ const getRiskLevelConfig = (riskLevel: RiskLevel | null, theme: any) => {
     default:
       return null;
   }
+};
+
+const getSkillDescription = (skillName: string) => {
+  // Iterate through all skill categories to find the skill
+  for (const category of Object.values(skillsConfig)) {
+    if (Array.isArray(category)) {
+      const skill = category.find((s: any) => s.name === skillName);
+      if (skill) {
+        return skill.infoText;
+      }
+    }
+  }
+  return null;
 };
 
 export function CrewSummaryCard({
@@ -261,24 +275,34 @@ export function CrewSummaryCard({
         </div>
       )}
 
-      {/* Top Skills Section */}
+      {/* All Skills Section - Table Format */}
       {crew.skills.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-2">Top Skills</p>
-          <div className="flex flex-wrap gap-2">
-            {topSkills.map((skill, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border border-border font-medium"
-              >
-                {toDisplaySkillName(skill)}
-              </span>
-            ))}
-            {moreSkillsCount > 0 && (
-              <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border font-medium">
-                +{moreSkillsCount}
-              </span>
-            )}
+          <p className="text-xs font-semibold text-muted-foreground mb-3">Skills & Description</p>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Skill</th>
+                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                {crew.skills.map((skill, index) => {
+                  const description = getSkillDescription(skill);
+                  return (
+                    <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-muted/10'} border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors`}>
+                      <td className="px-4 py-2 font-medium text-foreground whitespace-nowrap">
+                        {toDisplaySkillName(skill)}
+                      </td>
+                      <td className="px-4 py-2 text-foreground text-xs leading-relaxed">
+                        {description || 'No description available'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
