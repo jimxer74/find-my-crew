@@ -4,7 +4,7 @@ title: Codebase analysis
 status: In Progress
 assignee: []
 created_date: '2026-02-17 20:22'
-updated_date: '2026-02-17 21:06'
+updated_date: '2026-02-17 21:11'
 labels: []
 dependencies: []
 ---
@@ -476,4 +476,75 @@ When user reports: "Profile generation failed"
 - ✅ app/lib/logger.ts (Production-safe logger)
 - ✅ app/lib/debugMiddleware.ts (Request header handler)
 - ✅ docs/LOGGING_GUIDE.md (Implementation guide)
+
+## Error Sanitization Rollout - Progress Update
+
+### Phase 1 Complete: Reference Implementation
+✅ Created errorResponseHelper.ts utility
+✅ Updated journeys/details route as reference
+✅ Created comprehensive LOGGING_GUIDE.md
+
+### Phase 2 In Progress: AI Routes Migration
+✅ Updated 1/4 critical AI routes:
+- assess-registration: error sanitization + AI flow logging
+
+Remaining AI routes (3):
+- fill-boat-details
+- fill-reasoned-details  
+- prospect/legs
+
+### Phase 3 Analysis: Remaining Routes
+Identified 45 total routes with error details exposure:
+- 3 AI routes (in phase 2)
+- 8 Document-related routes
+- 6 Feedback routes
+- 6 Journey-related routes
+- 4 Registration routes
+- 12 Other API routes
+
+### Strategy for Batch Update
+To efficiently update remaining 44 routes, recommend:
+
+1. **Automated Pattern Replacement**
+   - Replace: `{ error: '...', details: error.message }`
+   - Replace: `{ error: '...', details: error instanceof Error ? error.message : ... }`
+   - With: `sanitizeErrorResponse(error, 'User-friendly message')`
+
+2. **Grouped Updates by Category**
+   - Documents (8 routes)
+   - Feedback (6 routes)
+   - Journeys (6 routes)
+   - Registrations (4 routes)
+   - Others (12 routes)
+
+3. **Import Pattern**
+   Add to top of each file:
+   ```typescript
+   import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+   import { logger } from '@/app/lib/logger';
+   ```
+
+### Recommended Next Steps
+
+1. **Finish AI routes** (30 min)
+   - Apply pattern to 3 remaining AI routes
+   - Add logger.aiFlow() calls
+   - Verify build
+
+2. **Critical journey/registration routes** (30 min)
+   - ~10 routes most frequently accessed
+   - Apply sanitization
+   - Test endpoints
+
+3. **Batch update remaining routes** (60 min)
+   - Create sed/script for bulk replacement
+   - Apply to document/feedback routes
+   - Verify build
+
+### Current Commit
+- 602994f: Add error sanitization to assess-registration route
+- Demonstrates pattern for other routes
+
+### Build Status
+✓ All updates compile successfully
 <!-- SECTION:NOTES:END -->
