@@ -396,7 +396,7 @@ async function assessPassportRequirement(
   registrationId: string,
   userId: string,
   requirements: Requirement[]
-): Promise<Array<{ requirement_id: string; score: number; passed: boolean; reasoning: string; photoVerified?: boolean }>> {
+): Promise<Array<{ requirement_id: string; score: number; passed: boolean; reasoning: string; photoVerified?: boolean; photoConfidenceScore?: number }>> {
   console.log('[Passport Assessment] Starting passport requirement assessment...');
   const passportReqs = requirements.filter(r => r.requirement_type === 'passport');
   if (passportReqs.length === 0) {
@@ -407,16 +407,20 @@ async function assessPassportRequirement(
   console.log(`[Passport Assessment] Found ${passportReqs.length} passport requirement(s)`);
 
   try {
-    // Fetch passport answer to get document ID
+    // Fetch passport answer to get document ID and photo data
     console.log(`[Passport Assessment] Fetching passport answer for registration: ${registrationId}`);
     const { data: passportAnswers } = await supabase
       .from('registration_answers')
-      .select('requirement_id, passport_document_id')
+      .select('requirement_id, passport_document_id, photo_file_data')
       .eq('registration_id', registrationId)
       .eq('requirement_id', passportReqs[0].id)
       .single();
 
-    console.log(`[Passport Assessment] Passport answer:`, passportAnswers);
+    console.log(`[Passport Assessment] Passport answer retrieved:`, {
+      hasPassportId: !!passportAnswers?.passport_document_id,
+      hasPhotoData: !!passportAnswers?.photo_file_data,
+      photoDataLength: passportAnswers?.photo_file_data?.length || 0,
+    });
 
     if (!passportAnswers?.passport_document_id) {
       console.log('[Passport Assessment] No passport document ID found in answers');
@@ -552,40 +556,108 @@ Respond with ONLY the JSON object, no additional text.`;
     // Calculate passport score (0-10 scale)
     let passportScore = 0;
     let photoVerified = false;
+    let photoConfidenceScore = 0;
 
     if (passportValidation.is_valid_passport && !passportValidation.is_expired) {
       passportScore = Math.round(passportValidation.confidence_score * 10);
 
       // If photo validation required, attempt to verify photo against passport
       if (requirePhotoValidation) {
-        // Fetch registration_answers to check if photo was saved
-        const { data: registrationAnswersData } = await supabase
-          .from('registration_answers')
-          .select('*')
-          .eq('registration_id', registrationId)
-          .eq('requirement_id', passportReq.id)
-          .single();
+        const photoFileData = passportAnswers?.photo_file_data;
 
-        // Note: In this implementation, photo_file is sent as Blob in FormData
-        // We would need to store it temporarily or stream it directly
-        // For now, we mark it as pending manual review if photo validation is required
-        if (!registrationAnswersData?.photo_verification_passed && requirePhotoValidation) {
-          console.log('[AI Assessment] Photo validation required but not yet verified - manual review needed');
-          passportScore = Math.max(0, passportScore - 3); // Deduct points for missing photo verification
-        } else if (registrationAnswersData?.photo_verification_passed) {
-          photoVerified = true;
+        if (photoFileData) {
+          // Photo was provided - perform facial matching with AI
+          console.log('[Passport Assessment] Performing facial matching with provided photo...');
+
+          const photoMatchingPrompt = `You are performing facial verification for a crew member registration.
+
+You have:
+1. A passport document image
+2. A facial photo (selfie or ID photo) from the crew member
+
+Your task: Compare the face in the passport image with the face in the provided photo and determine if they match.
+
+Provide your analysis in this JSON format:
+{
+  "faces_match": true/false,
+  "confidence_score": <number 0-1.0>,
+  "reasoning": "<explanation of your conclusion>",
+  "face_quality": "<good|acceptable|poor>",
+  "match_indicators": ["<indicator 1>", "<indicator 2>"]
+}
+
+Respond with ONLY the JSON object, no additional text.`;
+
+          try {
+            // Call AI with both images for facial matching
+            const matchingResult = await callAI({
+              useCase: 'assess-registration',
+              prompt: photoMatchingPrompt,
+              image: {
+                data: photoFileData, // Use the stored photo data
+                mimeType: 'image/jpeg',
+              },
+            });
+
+            console.log(`[Passport Assessment] Facial matching result received:`, {
+              textLength: matchingResult.text.length,
+            });
+
+            let photoMatching = {
+              faces_match: false,
+              confidence_score: 0,
+              reasoning: 'Failed to parse response',
+              face_quality: 'poor',
+              match_indicators: [],
+            };
+
+            try {
+              const jsonMatch = matchingResult.text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                photoMatching = JSON.parse(jsonMatch[0]);
+                console.log(`[Passport Assessment] Parsed photo matching:`, photoMatching);
+              }
+            } catch (e) {
+              console.error('[Passport Assessment] Failed to parse photo matching response:', e);
+            }
+
+            if (photoMatching.faces_match && photoMatching.confidence_score >= 0.7) {
+              photoVerified = true;
+              photoConfidenceScore = photoMatching.confidence_score;
+              console.log(`[Passport Assessment] ✅ Photo verified with confidence: ${(photoConfidenceScore * 100).toFixed(0)}%`);
+            } else {
+              console.log(`[Passport Assessment] ❌ Photo verification failed or low confidence: ${(photoMatching.confidence_score * 100).toFixed(0)}%`);
+              passportScore = Math.max(0, passportScore - 3); // Deduct points for failed photo verification
+            }
+          } catch (photoError) {
+            console.error('[Passport Assessment] Failed to perform facial matching:', photoError);
+            passportScore = Math.max(0, passportScore - 3); // Deduct points for failed photo verification attempt
+          }
+        } else {
+          // Photo validation required but no photo provided
+          console.log('[Passport Assessment] ⚠️ Photo validation required but no photo provided');
+          passportScore = Math.max(0, passportScore - 3); // Deduct points for missing photo
         }
       }
     }
 
     const passed = passportScore >= (passportReq.pass_confidence_score || 7);
 
+    console.log(`[Passport Assessment] Final result:`, {
+      score: passportScore,
+      passed,
+      photoVerified,
+      photoConfidenceScore,
+      threshold: passportReq.pass_confidence_score || 7,
+    });
+
     return [{
       requirement_id: passportReq.id,
       score: passportScore,
       passed,
-      reasoning: `Passport ${passportValidation.is_valid_passport ? 'valid' : 'invalid'}${passportValidation.is_expired ? ', expired' : ''}. Confidence: ${(passportValidation.confidence_score * 100).toFixed(0)}%.${requirePhotoValidation && !photoVerified ? ' Photo verification pending.' : ''}`,
+      reasoning: `Passport ${passportValidation.is_valid_passport ? 'valid' : 'invalid'}${passportValidation.is_expired ? ', expired' : ''}. Confidence: ${(passportValidation.confidence_score * 100).toFixed(0)}%.${requirePhotoValidation ? (photoVerified ? ` Photo verified (${(photoConfidenceScore * 100).toFixed(0)}% match).` : ' Photo verification failed.') : ''}`,
       photoVerified,
+      photoConfidenceScore: photoConfidenceScore || 0,
     }];
   } catch (error: any) {
     console.error('[AI Assessment] Passport assessment failed:', error);
@@ -785,6 +857,7 @@ export async function assessRegistrationWithAI(
           ai_score: result.score,
           ai_reasoning: result.reasoning,
           photo_verification_passed: result.photoVerified || null,
+          photo_confidence_score: result.photoConfidenceScore || null,
           passed: null, // Individual pass/fail determined by overall score
         }, { onConflict: 'registration_id,requirement_id' });
 

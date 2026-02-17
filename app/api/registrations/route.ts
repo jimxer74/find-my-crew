@@ -5,6 +5,19 @@ import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
 import { waitUntil } from '@vercel/functions';
 
+/**
+ * Helper function to convert a Blob to base64 string
+ */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const arrayBuffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(arrayBuffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 
 // Extend timeout for registration with AI assessment
 export const maxDuration = 90; // 90 seconds
@@ -17,7 +30,8 @@ async function handlePassportAnswer(
   supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
   registrationId: string,
   passportDocumentId: string,
-  journeyId: string
+  journeyId: string,
+  photoFileData?: string // Base64-encoded photo file (optional)
 ): Promise<string | null> {
   // Get passport requirement for this journey
   const { data: passportRequirement } = await supabase
@@ -39,6 +53,7 @@ async function handlePassportAnswer(
       registration_id: registrationId,
       requirement_id: passportRequirement.id,
       passport_document_id: passportDocumentId,
+      photo_file_data: photoFileData || null, // Store base64 photo if provided
       // AI assessment will fill in: photo_verification_passed, photo_confidence_score, ai_score, passed
     });
 
@@ -559,7 +574,20 @@ export async function POST(request: NextRequest) {
     let passportSaved = false;
     if (passport_document_id) {
       console.log(`[Registration API] Processing passport for registration ${registration.id}`);
-      const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id);
+
+      // Convert photo blob to base64 if provided
+      let photoFileData: string | undefined = undefined;
+      if (photo_file) {
+        try {
+          photoFileData = await blobToBase64(photo_file);
+          console.log(`[Registration API] ✅ Photo converted to base64, size: ${photoFileData.length} chars`);
+        } catch (error) {
+          console.error(`[Registration API] ⚠️ Failed to convert photo to base64:`, error);
+          // Don't fail the whole registration, just skip the photo
+        }
+      }
+
+      const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id, photoFileData);
       if (passportError) {
         console.error(`[Registration API] Failed to save passport answer:`, passportError);
         return NextResponse.json(
@@ -568,7 +596,7 @@ export async function POST(request: NextRequest) {
         );
       }
       passportSaved = true;
-      console.log(`[Registration API] Successfully saved passport answer`);
+      console.log(`[Registration API] Successfully saved passport answer with photo data`);
     }
 
     // Handle answers if provided

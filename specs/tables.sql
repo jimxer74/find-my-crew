@@ -824,6 +824,7 @@ create table if not exists public.registration_answers (
   passport_document_id      uuid references public.document_vault (id),  -- Reference to crew's passport in vault
   photo_verification_passed boolean,  -- Whether photo-ID verification passed
   photo_confidence_score    numeric(3,2) check (photo_confidence_score >= 0 and photo_confidence_score <= 1),  -- AI confidence (0.00-1.00)
+  photo_file_data           text,  -- Base64-encoded photo file for facial verification
   -- Common:
   passed                    boolean,  -- Whether this individual requirement was met
   created_at                timestamptz not null default now(),
