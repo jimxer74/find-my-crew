@@ -904,7 +904,7 @@ using (
 -- Table definition
 create table if not exists public.notifications (
   id          uuid primary key default gen_random_uuid(),
-  user_id     uuid not null references public.profiles(id) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
   type        varchar(50) not null,  -- notification type: registration_approved, registration_denied, new_registration, journey_updated, leg_updated, profile_reminder
   title       varchar(255) not null,
   message     text,
