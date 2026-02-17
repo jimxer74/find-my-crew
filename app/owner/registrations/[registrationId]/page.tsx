@@ -145,6 +145,7 @@ type RegistrationDetails = {
       expiry_date?: string;
     };
   } | null;
+  skillNotes?: Record<string, string> | null;
 };
 
 export default function RegistrationDetailsPage() {
@@ -384,6 +385,7 @@ export default function RegistrationDetailsPage() {
               legSkills={data.combined_skills}
               effectiveRiskLevel={data.effective_risk_level}
               riskLevelMatches={riskLevelMatches}
+              skillNotes={data.skillNotes}
             />
           );
         })()}

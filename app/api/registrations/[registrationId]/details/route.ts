@@ -238,7 +238,8 @@ export async function GET(
           question_type,
           options,
           is_required,
-          order
+          order,
+          skill_name
         )
       `)
       .eq('registration_id', registrationId);
@@ -284,6 +285,14 @@ export async function GET(
         };
       }
     }
+
+    // Extract skill descriptions provided by crew during registration
+    let skillNotes: Record<string, string> = {};
+    answers.forEach((a: any) => {
+      if (a.journey_requirements?.question_type === 'skill' && a.journey_requirements?.skill_name && a.answer_text) {
+        skillNotes[a.journey_requirements.skill_name] = a.answer_text;
+      }
+    });
 
     // Combine journey and leg skills (remove duplicates)
     const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
@@ -385,6 +394,8 @@ export async function GET(
       // Passport verification data
       passportData: passportData,
       passportDoc: passportDoc,
+      // Skill notes provided by crew during registration
+      skillNotes: skillNotes,
     };
 
     return NextResponse.json(response);
