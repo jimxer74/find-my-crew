@@ -142,9 +142,9 @@ export function GrantManagementModal({ isOpen, onClose, documentId, documentName
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-[90] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 top-16 bg-black/50 z-[90] flex items-center justify-center p-4" onClick={onClose}>
       <div
-        className="bg-card rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
+        className="bg-card rounded-lg shadow-xl max-w-lg w-full max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
