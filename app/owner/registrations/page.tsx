@@ -4,10 +4,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { formatDate } from '@/app/lib/dateFormat';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Footer } from '@/app/components/Footer';
+import { RegistrationsTable } from '@/app/components/registrations/RegistrationsTable';
+import { RegistrationCard } from '@/app/components/registrations/RegistrationCard';
+import { StatusBadge } from '@/app/components/registrations/StatusBadge';
 
 type Registration = {
   id: string;
@@ -81,11 +81,11 @@ export default function AllRegistrationsPage() {
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  
+
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('Pending approval');
   const [filterJourneyId, setFilterJourneyId] = useState<string>('all');
   const [filterLegId, setFilterLegId] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('created_at');
@@ -93,8 +93,6 @@ export default function AllRegistrationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [legs, setLegs] = useState<Leg[]>([]);
-  const [updatingRegistrationId, setUpdatingRegistrationId] = useState<string | null>(null);
-  const [updateNotes, setUpdateNotes] = useState<{ [key: string]: string }>({});
   const prevFiltersRef = useRef<string | null>(null);
   const isLoadingRef = useRef<boolean>(false);
   const hasLoadedOnceRef = useRef<boolean>(false);
@@ -224,7 +222,7 @@ export default function AllRegistrationsPage() {
 
   const loadRegistrations = async () => {
     if (!user) return;
-    
+
     // Prevent duplicate simultaneous calls
     if (isLoadingRef.current) {
       console.log('[Registrations] loadRegistrations called but already loading, skipping');
@@ -235,9 +233,8 @@ export default function AllRegistrationsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (filterStatus !== 'all') {
-        params.append('status', filterStatus);
-      }
+      // Always append status (default is 'Pending approval')
+      params.append('status', filterStatus);
       if (filterJourneyId !== 'all') {
         params.append('journey_id', filterJourneyId);
       }
@@ -271,23 +268,23 @@ export default function AllRegistrationsPage() {
   };
 
 
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig = {
-      'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'Approved': 'bg-green-100 text-green-800 border-green-300',
-      'Not approved': 'bg-red-100 text-red-800 border-red-300',
-      'Cancelled': 'bg-gray-100 text-gray-800 border-gray-300',
-    };
-
-    return (
-      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${statusConfig[status as keyof typeof statusConfig] || statusConfig['Pending approval']}`}>
-        {status}
-      </span>
-    );
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      // Toggle sort order if clicking same column
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to desc
+      setSortBy(column);
+      setSortOrder('desc');
+    }
   };
 
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const handleStatusFilter = (status: string) => {
+    setFilterStatus(status);
+    setCurrentPage(1); // Reset to first page when filter changes
+  };
 
   if (authLoading || loading) {
     return (
@@ -306,8 +303,52 @@ export default function AllRegistrationsPage() {
           <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
-        {/* Filters and Sorting */}
-        <div className="mb-6 bg-card rounded-lg shadow p-4 space-y-4">
+        {/* Mobile Filter Badges - Shown only on mobile */}
+        <div className="md:hidden mb-4 flex gap-2 overflow-x-auto pb-2">
+          <button
+            onClick={() => handleStatusFilter('Pending approval')}
+            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+              filterStatus === 'Pending approval'
+                ? 'bg-yellow-500 text-white'
+                : 'bg-muted text-foreground hover:bg-muted/80'
+            }`}
+          >
+            P
+          </button>
+          <button
+            onClick={() => handleStatusFilter('Approved')}
+            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+              filterStatus === 'Approved'
+                ? 'bg-green-500 text-white'
+                : 'bg-muted text-foreground hover:bg-muted/80'
+            }`}
+          >
+            A
+          </button>
+          <button
+            onClick={() => handleStatusFilter('Not approved')}
+            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+              filterStatus === 'Not approved'
+                ? 'bg-red-500 text-white'
+                : 'bg-muted text-foreground hover:bg-muted/80'
+            }`}
+          >
+            N
+          </button>
+          <button
+            onClick={() => handleStatusFilter('Cancelled')}
+            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap font-medium transition-colors ${
+              filterStatus === 'Cancelled'
+                ? 'bg-gray-500 text-white'
+                : 'bg-muted text-foreground hover:bg-muted/80'
+            }`}
+          >
+            C
+          </button>
+        </div>
+
+        {/* Desktop Filters and Sorting - Hidden on mobile */}
+        <div className="hidden md:block mb-6 bg-card rounded-lg shadow p-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Status Filter */}
             <div>
@@ -317,10 +358,12 @@ export default function AllRegistrationsPage() {
               <select
                 id="filter-status"
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
+                onChange={(e) => {
+                  setFilterStatus(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
-                <option value="all">{t('allStatuses')}</option>
                 <option value="Pending approval">{tStatus('pending')}</option>
                 <option value="Approved">{tStatus('approved')}</option>
                 <option value="Not approved">{tStatus('rejected')}</option>
@@ -336,7 +379,10 @@ export default function AllRegistrationsPage() {
               <select
                 id="filter-journey"
                 value={filterJourneyId}
-                onChange={(e) => setFilterJourneyId(e.target.value)}
+                onChange={(e) => {
+                  setFilterJourneyId(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               >
                 <option value="all">{t('allJourneys')}</option>
@@ -356,7 +402,10 @@ export default function AllRegistrationsPage() {
               <select
                 id="filter-leg"
                 value={filterLegId}
-                onChange={(e) => setFilterLegId(e.target.value)}
+                onChange={(e) => {
+                  setFilterLegId(e.target.value);
+                  setCurrentPage(1);
+                }}
                 disabled={filterJourneyId === 'all' || legs.length === 0}
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -369,35 +418,6 @@ export default function AllRegistrationsPage() {
               </select>
             </div>
 
-            {/* Sort By */}
-            <div>
-              <label htmlFor="sort-by" className="block text-sm font-medium text-foreground mb-2">
-                {t('sortBy')}
-              </label>
-              <select
-                id="sort-by"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="created_at">{t('registrationDate')}</option>
-                <option value="updated_at">{t('lastUpdated')}</option>
-                <option value="status">{t('status')}</option>
-                <option value="journey_name">{t('journeyName')}</option>
-                <option value="leg_name">{t('legName')}</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Sort Order */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-foreground">{t('sortOrder')}</label>
-            <button
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="px-3 py-1 border border-border bg-input-background rounded-md text-sm hover:bg-accent transition-colors flex items-center gap-1"
-            >
-              {sortOrder === 'asc' ? '↑' : '↓'} {sortOrder === 'asc' ? t('ascending') : t('descending')}
-            </button>
           </div>
 
           {/* Results Count */}
@@ -406,135 +426,28 @@ export default function AllRegistrationsPage() {
           </div>
         </div>
 
-        {/* Registrations Grid */}
+        {/* Desktop Table View */}
         {registrations.length === 0 ? (
           <div className="bg-card rounded-lg shadow p-8 text-center">
             <p className="text-muted-foreground">{t('noMatchingRegistrations')}</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              {registrations.map((registration) => {
-                const profile = registration.profiles;
-                const leg = registration.legs;
-                const journey = leg?.journeys;
+            {/* Desktop Table */}
+            <div className="hidden md:block mb-6">
+              <RegistrationsTable
+                registrations={registrations}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={handleSort}
+              />
+            </div>
 
-                // Skip rendering if essential data is missing
-                if (!profile || !leg || !journey) {
-                  return null;
-                }
-
-                return (
-                  <div key={registration.id} className="bg-card rounded-lg shadow p-4 flex flex-col h-full relative">
-
-                    {/* Name and Avatar */}
-                    <div className="flex items-center gap-3 mb-3 pr-16">
-                      {/* Crew Avatar - Left Side */}
-                      <div className="relative w-12 h-12 flex-shrink-0">
-                        {profile.profile_image_url ? (
-                          <Image
-                            src={profile.profile_image_url}
-                            alt={profile.full_name || profile.username || 'Crew member'}
-                            fill
-                            className="object-cover rounded-full"
-                            sizes="48px"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-accent rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-6 h-6 text-muted-foreground"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">                              
-                        <h3 className="text-base font-semibold text-foreground line-clamp-1 flex-1">
-                          {profile.full_name || profile.username || 'Unknown User'}
-                        </h3>
-
-                        {/* Registration Date */}
-                        <div className="text-xs text-muted-foreground flex">
-                          <div>{t('registered')} {formatDate(registration.created_at)}</div>
-                          {registration.updated_at !== registration.created_at && (
-                            <div>{t('updated')} {formatDate(registration.updated_at)}</div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Journey, Leg, and Dates */}
-                    <div className="space-y-3 flex-1">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">{t('journey')}</p>
-                        <Link 
-                          href={`/owner/journeys/${journey.id}/legs`} 
-                          className="text-sm font-medium text-primary hover:underline line-clamp-1 block"
-                        >
-                          {journey.name}
-                        </Link>
-                      </div>
-                      
-                      {/* Leg Name */}
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">{t('leg')}</p>
-                        <p className="text-sm font-semibold text-foreground line-clamp-1">
-                          {leg.name}
-                        </p>
-                      </div>
-
-                      {/* Dates with Arrow */}
-                      {leg.start_date && (
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                          {/* Start Date */}
-                          <div className="flex flex-col justify-center">
-                            <div className="text-xs font-medium text-foreground">
-                              {formatDate(leg.start_date)}
-                            </div>
-                          </div>
-
-                          {/* Arrow */}
-                          <div className="text-foreground flex items-center justify-center flex-shrink-0">
-                            <span className="text-lg">→</span>
-                          </div>
-
-                          {/* End Date */}
-                          <div className="flex flex-col justify-center">
-                            {leg.end_date ? (
-                              <div className="text-xs font-medium text-foreground">
-                                {formatDate(leg.end_date)}
-                              </div>
-                            ) : (
-                              <div className="text-xs text-muted-foreground">{t('noEndDate')}</div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Registration Date */}
-
-                    <div className="mt-auto pt-3 border-t border-border">
-                      {/* Status Badge - Top Right - Clickable */}
-                      <Link
-                        href={`/owner/registrations/${registration.id}`}
-                        className="flex justify-center hover:opacity-80 transition-opacity"
-                        title="View registration details">
-                        {getStatusBadge(registration.status)}
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
+            {/* Mobile Card View */}
+            <div className="md:hidden grid grid-cols-1 gap-4 mb-6">
+              {registrations.map((registration) => (
+                <RegistrationCard key={registration.id} registration={registration} />
+              ))}
             </div>
 
             {/* Pagination */}
