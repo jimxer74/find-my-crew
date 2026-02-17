@@ -1,9 +1,10 @@
 ---
 id: TASK-106
 title: 'TASK-103.2: Hide register button when pending or approved registration exists'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-17 11:01'
+updated_date: '2026-02-17 11:04'
 labels:
   - registration
   - ui
@@ -40,3 +41,28 @@ Required Changes:
 - [ ] #4 Status badge displayed when registration exists
 - [ ] #5 Cancel button available for pending registrations
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Register Button Visibility Logic - Implementation Complete
+
+Successfully implemented logic to hide the register button when a crew member already has a pending or approved registration for a leg.
+
+### Changes Made
+
+**Updated File:**
+- `app/components/crew/LegDetailsPanel.tsx`:
+  - Modified registration status display logic
+  - Hide "Register for leg" button when pending/approved
+  - Show status badge for active registrations
+  - Allow "Cancel Registration" for pending
+  - Show "Register Again" for cancelled/denied
+
+### Features Implemented
+- ✅ Register button hidden when pending
+- ✅ Register button hidden when approved
+- ✅ Register button shows for cancelled/denied
+- ✅ Status badge always displayed
+- ✅ Cancel button available for pending
+<!-- SECTION:FINAL_SUMMARY:END -->
