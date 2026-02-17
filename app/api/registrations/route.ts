@@ -11,6 +11,46 @@ export const maxDuration = 90; // 90 seconds
 export const runtime = 'nodejs';
 
 /**
+ * Helper function to handle passport requirement answers
+ */
+async function handlePassportAnswer(
+  supabase: Awaited<ReturnType<typeof getSupabaseServerClient>>,
+  registrationId: string,
+  passportDocumentId: string,
+  journeyId: string
+): Promise<string | null> {
+  // Get passport requirement for this journey
+  const { data: passportRequirement } = await supabase
+    .from('journey_requirements')
+    .select('id, require_photo_validation')
+    .eq('journey_id', journeyId)
+    .eq('requirement_type', 'passport')
+    .single();
+
+  if (!passportRequirement) {
+    // No passport requirement, nothing to do
+    return null;
+  }
+
+  // Create registration answer for passport
+  const { error: insertError } = await supabase
+    .from('registration_answers')
+    .insert({
+      registration_id: registrationId,
+      requirement_id: passportRequirement.id,
+      passport_document_id: passportDocumentId,
+      // AI assessment will fill in: photo_verification_passed, photo_confidence_score, ai_score, passed
+    });
+
+  if (insertError) {
+    console.error('Error creating passport answer:', insertError);
+    return insertError.message;
+  }
+
+  return null; // Success
+}
+
+/**
  * Helper function to handle registration answers for question-type requirements.
  * Only question-type requirements accept user-provided answers.
  * Skill/passport/risk_level/experience_level are handled by pre-checks and AI assessment.
@@ -124,7 +164,7 @@ function triggerAIAssessment(
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabaseServerClient();
-    
+
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -148,8 +188,69 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { leg_id, notes, answers } = body;
+    // Parse request - support both JSON and FormData (FormData for passport with photo)
+    let leg_id: string | null = null;
+    let notes: string | null = null;
+    let answers: any[] = [];
+    let passport_document_id: string | null = null;
+    let photo_file: Blob | null = null;
+
+    const contentType = request.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const body = await request.json();
+      leg_id = body.leg_id;
+      notes = body.notes;
+      answers = body.answers || [];
+    } else if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData();
+      leg_id = formData.get('leg_id') as string;
+      notes = formData.get('notes') as string | null;
+      passport_document_id = formData.get('passport_document_id') as string | null;
+
+      const answersStr = formData.get('answers') as string | null;
+      if (answersStr) {
+        try {
+          answers = JSON.parse(answersStr);
+        } catch {
+          answers = [];
+        }
+      }
+
+      const photoFileData = formData.get('photo_file') as Blob | null;
+      if (photoFileData) {
+        photo_file = photoFileData;
+      }
+    } else {
+      const body = await request.json();
+      leg_id = body.leg_id;
+      notes = body.notes;
+      answers = body.answers || [];
+    }
+
+    // If passport document ID is provided, validate it belongs to the user
+    if (passport_document_id) {
+      const { data: passportDoc, error: passportError } = await supabase
+        .from('document_vault')
+        .select('id, owner_id, metadata')
+        .eq('id', passport_document_id)
+        .single();
+
+      if (passportError || !passportDoc) {
+        return NextResponse.json(
+          { error: 'Passport document not found' },
+          { status: 404 }
+        );
+      }
+
+      if (passportDoc.owner_id !== user.id) {
+        return NextResponse.json(
+          { error: 'You do not have access to this passport document' },
+          { status: 403 }
+        );
+      }
+    }
+
+    const body = { leg_id, notes, answers };
 
     console.log(`[Registration API] RAW Body:`, body);
 
@@ -158,7 +259,6 @@ export async function POST(request: NextRequest) {
       leg_id,
       hasNotes: !!notes,
       notesLength: notes?.length || 0,
-      match_percentage: body.match_percentage,
       hasAnswers: !!(answers && Array.isArray(answers)),
       answersLength: answers?.length || 0,
       bodyKeys: Object.keys(body),
@@ -442,7 +542,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         status: 'Pending approval',
         notes: notes || null,
-        match_percentage: body.match_percentage || 0,
+        match_percentage: 0,
       })
       .select()
       .single();
@@ -453,6 +553,22 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to create registration', details: insertError.message },
         { status: 500 }
       );
+    }
+
+    // Handle passport answer if provided
+    let passportSaved = false;
+    if (passport_document_id) {
+      console.log(`[Registration API] Processing passport for registration ${registration.id}`);
+      const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id);
+      if (passportError) {
+        console.error(`[Registration API] Failed to save passport answer:`, passportError);
+        return NextResponse.json(
+          { error: 'Registration created but failed to save passport data', details: passportError },
+          { status: 500 }
+        );
+      }
+      passportSaved = true;
+      console.log(`[Registration API] Successfully saved passport answer`);
     }
 
     // Handle answers if provided

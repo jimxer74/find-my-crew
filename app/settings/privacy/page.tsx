@@ -68,7 +68,8 @@ export default function PrivacySettingsPage() {
         supabase.from('user_consents').select('*').eq('user_id', user!.id).maybeSingle(),
         supabase.from('email_preferences').select('*').eq('user_id', user!.id).maybeSingle(),
         supabase.from('boats').select('id, name, created_at').eq('owner_id', user!.id),
-        supabase.from('registrations').select('id, status, created_at, legs(name, journeys(name))').eq('user_id', user!.id),
+        // Note: RLS policy already restricts registrations to current user, no need to filter by user_id
+        supabase.from('registrations').select('id, status, created_at, legs(name, journeys(name))'),
         supabase.from('notifications').select('id, type, created_at').eq('user_id', user!.id).limit(10),
       ]);
 

@@ -10,6 +10,7 @@ import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from '@/app/components/crew/RegistrationSuccessModal';
+import { PassportVerificationStep } from '@/app/components/crew/PassportVerificationStep';
 import { useAuth } from '@/app/contexts/AuthContext';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
@@ -337,6 +338,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [registrationStatusChecked, setRegistrationStatusChecked] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [registrationResult, setRegistrationResult] = useState<{ auto_approved: boolean } | null>(null);
+  const [showPassportStep, setShowPassportStep] = useState(false);
+  const [hasPassportRequirement, setHasPassportRequirement] = useState(false);
+  const [hasQuestionRequirements, setHasQuestionRequirements] = useState(false);
+  const [passportRequirement, setPassportRequirement] = useState<any | null>(null);
+  const [passportVerificationComplete, setPassportVerificationComplete] = useState(false);
+  const [passportData, setPassportData] = useState<{ passport_document_id: string; photo_file?: Blob } | null>(null);
 
   // Safety effect: Only trigger in very specific edge cases where the main logic might have failed
   // This effect should be extremely conservative and not interfere with normal operation
@@ -446,8 +453,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         .from('registrations')
         .select('status')
         .eq('leg_id', leg.leg_id)
-        .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
         console.error('Error loading registration status:', error);
@@ -477,8 +483,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         const { data, error } = await supabase
           .from('user_consents')
           .select('profile_sharing_consent')
-          .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
           console.error('Error checking profile sharing consent:', error);
@@ -546,23 +551,48 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       
       const hasReqs = reqs.length > 0;
       const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+      const hasPassportReqs = reqs.some((r: any) => r.requirement_type === 'passport');
+      const passportReq = reqs.find((r: any) => r.requirement_type === 'passport');
 
       console.log(`[LegDetailsPanel] Requirements check result:`, {
         journeyId: leg.journey_id,
         hasReqs,
         hasQuestionReqs,
+        hasPassportReqs,
         requirementsCount: reqs.length,
+        requirementTypes: reqs.map((r: any) => r.requirement_type),
         autoApprovalEnabled,
         willShowRequirementsForm: hasQuestionReqs,
+        actualRequirements: reqs,
       });
 
       // Update state synchronously
       setHasRequirements(hasReqs);
       setAutoApprovalEnabled(autoApprovalEnabled);
+      setHasPassportRequirement(hasPassportReqs);
+      setHasQuestionRequirements(hasQuestionReqs);
+      if (passportReq) {
+        setPassportRequirement({
+          id: passportReq.id,
+          require_photo_validation: passportReq.require_photo_validation || false,
+          pass_confidence_score: passportReq.pass_confidence_score || 7,
+        });
+      } else {
+        setPassportRequirement(null);
+      }
 
-      // Show requirements form only if there are question-type requirements
-      // Show regular registration modal for server-side requirements (risk_level, experience_level, skill)
-      if (hasQuestionReqs) {
+      // Show passport verification first if passport requirements exist and haven't been completed
+      // Then show requirements form if there are question-type requirements
+      // Otherwise show regular registration modal for server-side requirements
+      if (hasPassportReqs && !passportVerificationComplete) {
+        console.log(`[LegDetailsPanel] ✅ Showing passport verification step`, {
+          autoApprovalEnabled,
+          requirementsCount: reqs.length,
+        });
+        setShowPassportStep(true);
+        setShowRegistrationModal(false);
+        setShowRequirementsForm(false);
+      } else if (hasQuestionReqs) {
         console.log(`[LegDetailsPanel] ✅ Showing requirements form (question requirements exist)`, {
           autoApprovalEnabled,
           requirementsCount: reqs.length,
@@ -648,9 +678,38 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setRegistrationError(null);
     setRegistrationNotes('');
     setRequirementsAnswers([]);
+    setPassportData(null);
+    setPassportVerificationComplete(false);
+    setShowPassportStep(false);
     // Check requirements first
     await checkRequirements();
   }, [hasProfileSharingConsent, checkRequirements]);
+
+  // Handle passport verification completion
+  const handlePassportComplete = useCallback((data: { passport_document_id: string; photo_file?: Blob }) => {
+    console.log('[LegDetailsPanel] Passport verification complete:', { passport_document_id: data.passport_document_id, hasPhoto: !!data.photo_file });
+    setPassportData(data);
+    setPassportVerificationComplete(true);
+    setShowPassportStep(false);
+    // Now show the requirements form or registration modal
+    setTimeout(() => {
+      if (hasQuestionRequirements) {
+        setShowRequirementsForm(true);
+      } else {
+        setShowRegistrationModal(true);
+      }
+    }, 0);
+  }, [hasQuestionRequirements]);
+
+  // Handle passport verification cancellation
+  const handlePassportCancel = useCallback(() => {
+    console.log('[LegDetailsPanel] Passport verification cancelled');
+    setShowPassportStep(false);
+    setPassportVerificationComplete(false);
+    setPassportData(null);
+    setRegistrationNotes('');
+    setRequirementsAnswers([]);
+  }, []);
 
   // Auto-open registration form when initialOpenRegistration is true
   const initialRegistrationTriggeredRef = useRef(false);
@@ -823,45 +882,71 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setIsRegistering(true);
     setRegistrationError(null);
 
-    const requestBody: {
-      leg_id: string;
-      notes: string | null;
-      match_percentage?: number | null;
-      answers?: any[];
-    } = {
-      leg_id: leg.leg_id,
-      notes: notesToUse?.trim() || null,
-    };
-
-    // Only include answers if we have them (don't send empty array)
-    // Use provided answers if available, otherwise use state
-    if (answersToUse.length > 0) {
-      requestBody.answers = answersToUse;
-    }
-
     console.log(`[LegDetailsPanel] Submitting registration:`, {
       leg_id: leg.leg_id,
       journey_id: leg.journey_id,
-      hasNotes: !!requestBody.notes,
-      notesLength: requestBody.notes?.length || 0,
-      answersLength: requestBody.answers?.length || 0,
-      answers: requestBody.answers,
+      hasNotes: !!notesToUse,
+      notesLength: notesToUse?.length || 0,
+      answersLength: answersToUse?.length || 0,
+      answers: answersToUse,
       answersToUseLength: answersToUse.length,
+      hasPassportData: !!passportData,
+      passportDocumentId: passportData?.passport_document_id,
+      hasPhoto: !!passportData?.photo_file,
       match_percentage: leg.skill_match_percentage,
       providedAnswers: providedAnswers !== undefined,
       requirementsAnswersLength: requirementsAnswers.length,
       hasRequirements,
-      sendingAnswers: !!requestBody.answers,
+      sendingAnswers: !!answersToUse && answersToUse.length > 0,
     });
 
     try {
-      const response = await fetch('/api/registrations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+      let response;
+
+      // Use FormData if we have passport data (to support multipart)
+      if (passportData) {
+        const formData = new FormData();
+        formData.append('leg_id', leg.leg_id);
+        if (notesToUse?.trim()) {
+          formData.append('notes', notesToUse.trim());
+        }
+        if (answersToUse.length > 0) {
+          formData.append('answers', JSON.stringify(answersToUse));
+        }
+        formData.append('passport_document_id', passportData.passport_document_id);
+        if (passportData.photo_file) {
+          formData.append('photo_file', passportData.photo_file, 'passport-photo.jpg');
+        }
+
+        response = await fetch('/api/registrations', {
+          method: 'POST',
+          body: formData,
+        });
+      } else {
+        // Use JSON if no passport data
+        const requestBody: {
+          leg_id: string;
+          notes: string | null;
+          match_percentage?: number | null;
+          answers?: any[];
+        } = {
+          leg_id: leg.leg_id,
+          notes: notesToUse?.trim() || null,
+        };
+
+        // Only include answers if we have them (don't send empty array)
+        if (answersToUse.length > 0) {
+          requestBody.answers = answersToUse;
+        }
+
+        response = await fetch('/api/registrations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       const data = await response.json();
 
@@ -889,9 +974,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       // Close forms but keep panel open to show success modal
       setShowRegistrationModal(false);
       setShowRequirementsForm(false);
+      setShowPassportStep(false);
       setAutoApprovalEnabled(false); // Reset when closing
       setRegistrationNotes('');
       setRequirementsAnswers([]);
+      setPassportData(null);
+      setPassportVerificationComplete(false);
     } catch (error: any) {
       setRegistrationError(error.message || 'An error occurred while registering');
       console.error('Registration error:', error);
@@ -900,11 +988,34 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
   };
 
-  // Handle success modal close
-  const handleSuccessModalClose = () => {
+  // Handle success modal close - reload registration status to show updated state
+  const handleSuccessModalClose = useCallback(async () => {
     setShowSuccessModal(false);
     setRegistrationResult(null);
-  };
+
+    // Reload registration status to show the new registration
+    if (user && leg?.leg_id) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error } = await supabase
+          .from('registrations')
+          .select('status')
+          .eq('leg_id', leg.leg_id)
+          .maybeSingle();
+
+        if (!error) {
+          setRegistrationStatus(data?.status || null);
+        }
+      } catch (err) {
+        console.warn('Failed to reload registration status:', err);
+      }
+    }
+
+    // Reset registration form state
+    setShowRegistrationModal(false);
+    setShowRequirementsForm(false);
+    setShowPassportStep(false);
+  }, [user, leg?.leg_id]);
 
   // Cancel registration (set to Cancelled)
   const handleCancelRegistration = async () => {
@@ -923,8 +1034,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         .from('registrations')
         .select('id')
         .eq('leg_id', leg.leg_id)
-        .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!registration) {
         throw new Error('Registration not found');
@@ -1125,8 +1235,20 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         {/* Content */}
         {!isMinimized && (
           <>
-            {/* Requirements Form - In pane */}
-            {showRequirementsForm ? (
+            {/* Passport Verification Step - In pane */}
+            {showPassportStep && passportRequirement ? (
+              <div className="h-full relative" style={{ zIndex: 1 }}>
+                <PassportVerificationStep
+                  journeyId={leg.journey_id}
+                  legName={leg.leg_name}
+                  requirement={passportRequirement}
+                  onComplete={handlePassportComplete}
+                  onCancel={handlePassportCancel}
+                  isLoading={isRegistering}
+                  error={registrationError || undefined}
+                />
+              </div>
+            ) : showRequirementsForm ? (
               <div className="h-full relative" style={{ zIndex: 1 }}>
                 <RegistrationRequirementsForm
                   journeyId={leg.journey_id}
@@ -1143,7 +1265,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   autoApprovalEnabled={autoApprovalEnabled}
                 />
               </div>
-            ) : showRegistrationModal && (!hasRequirements || (hasRequirements && showRequirementsForm === false)) ? (
+            ) : showRegistrationModal && isRegistering ? (
+              /* Loading state - Show while registration is being submitted */
+              <div className="flex flex-col h-full items-center justify-center">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-muted-foreground">Submitting registration...</p>
+              </div>
+            ) : showRegistrationModal && !isRegistering && (!hasRequirements || (hasRequirements && showRequirementsForm === false)) ? (
               /* Registration Form - In pane - Show if NO requirements OR if requirements exist but requirements form is not shown (server-side requirements) */
               <div className="flex flex-col h-full">
                 {/* Scrollable content */}

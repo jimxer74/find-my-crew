@@ -27,6 +27,10 @@ export interface AICallOptions {
   maxTokens?: number;
   context?: any;
   version?: string;
+  image?: {
+    data: string; // base64 encoded image data
+    mimeType: string; // e.g., 'image/jpeg', 'image/png'
+  };
 }
 
 export interface AICallResult {
@@ -54,7 +58,8 @@ async function callDeepSeek(
   model: string,
   prompt: string,
   temperature: number = 0.7,
-  maxTokens: number = 1000
+  maxTokens: number = 1000,
+  image?: { data: string; mimeType: string }
 ): Promise<string> {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) {
@@ -131,7 +136,8 @@ async function callGroq(
   model: string,
   prompt: string,
   temperature: number = 0.7,
-  maxTokens: number = 1000
+  maxTokens: number = 1000,
+  image?: { data: string; mimeType: string }
 ): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -208,7 +214,8 @@ async function callGemini(
   model: string,
   prompt: string,
   temperature: number = 0.7,
-  maxTokens: number = 1000
+  maxTokens: number = 1000,
+  image?: { data: string; mimeType: string }
 ): Promise<string> {
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!apiKey) {
@@ -311,7 +318,8 @@ async function callOpenRouter(
   model: string,
   prompt: string,
   temperature: number = 0.7,
-  maxTokens: number = 1000
+  maxTokens: number = 1000,
+  image?: { data: string; mimeType: string }
 ): Promise<string> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -327,6 +335,26 @@ async function callOpenRouter(
     const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
+      // Build message content - include image if provided
+      const messageContent: Array<any> = [];
+
+      // Add text
+      messageContent.push({
+        type: 'text',
+        text: prompt,
+      });
+
+      // Add image if provided
+      if (image) {
+        console.log(`[OpenRouter] Including image in request (${image.mimeType})`);
+        messageContent.push({
+          type: 'image_url',
+          image_url: {
+            url: `data:${image.mimeType};base64,${image.data}`,
+          },
+        });
+      }
+
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -347,7 +375,7 @@ async function callOpenRouter(
           messages: [
             {
               role: 'user',
-              content: prompt,
+              content: messageContent,
             },
           ],
           temperature,
@@ -398,17 +426,18 @@ async function callProvider(
   model: string,
   prompt: string,
   temperature: number,
-  maxTokens: number
+  maxTokens: number,
+  image?: { data: string; mimeType: string }
 ): Promise<string> {
   switch (provider) {
     case 'deepseek':
-      return callDeepSeek(model, prompt, temperature, maxTokens);
+      return callDeepSeek(model, prompt, temperature, maxTokens, image);
     case 'groq':
-      return callGroq(model, prompt, temperature, maxTokens);
+      return callGroq(model, prompt, temperature, maxTokens, image);
     case 'gemini':
-      return callGemini(model, prompt, temperature, maxTokens);
+      return callGemini(model, prompt, temperature, maxTokens, image);
     case 'openrouter':
-      return callOpenRouter(model, prompt, temperature, maxTokens);
+      return callOpenRouter(model, prompt, temperature, maxTokens, image);
     default:
       throw new AIServiceError(`Unknown provider: ${provider}`, provider);
   }
@@ -418,7 +447,7 @@ async function callProvider(
  * Main function to call AI with automatic provider/model selection and fallback
  */
 export async function callAI(options: AICallOptions): Promise<AICallResult> {
-  const { useCase, prompt, temperature, maxTokens, context, version } = options;
+  const { useCase, prompt, temperature, maxTokens, context, version, image } = options;
 
   // If no prompt provided but useCase is specified, try to get from registry
   let finalPrompt = prompt;
@@ -489,7 +518,8 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
           model,
           finalPrompt,
           finalTemperature,
-          finalMaxTokens
+          finalMaxTokens,
+          image
         );
 
         console.log(`Success with ${config.provider}/${model}`);

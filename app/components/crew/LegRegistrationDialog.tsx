@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useLegRegistration, LegRegistrationData } from '@/app/hooks/useLegRegistration';
 import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from './RegistrationSuccessModal';
+import { PassportVerificationStep } from './PassportVerificationStep';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 
 type LegRegistrationDialogProps = {
@@ -24,10 +25,13 @@ export function LegRegistrationDialog({
 }: LegRegistrationDialogProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const dialogRef = useRef<HTMLDivElement>(null);
+  const [showPassportStep, setShowPassportStep] = useState(false);
   const [showRequirementsForm, setShowRequirementsForm] = useState(false);
   const [showSimpleForm, setShowSimpleForm] = useState(false);
   const [notes, setNotes] = useState('');
   const [requirementsChecked, setRequirementsChecked] = useState(false);
+  const [passportVerificationComplete, setPassportVerificationComplete] = useState(false);
+  const [passportData, setPassportData] = useState<{ passport_document_id: string; photo_file?: Blob } | null>(null);
   const [leg, setLeg] = useState<LegRegistrationData | null>(providedLeg || null);
   const [loadingLeg, setLoadingLeg] = useState(false);
   const [registrationError, setRegistrationError] = useState<string | null>(null);
@@ -79,6 +83,8 @@ export function LegRegistrationDialog({
     registrationStatusChecked,
     hasRequirements,
     hasQuestionRequirements,
+    hasPassportRequirement,
+    passportRequirement,
     autoApprovalEnabled,
     isCheckingRequirements,
     isRegistering,
@@ -97,26 +103,47 @@ export function LegRegistrationDialog({
     if (isOpen && leg && !requirementsChecked) {
       setRequirementsChecked(true);
       checkRequirements().then((result) => {
-        // Show the requirements form only if there are question-type requirements
-        // (risk_level, experience_level, skill, passport are handled server-side)
-        if (result.hasQuestionRequirements) {
+        console.log('[LegRegistrationDialog] Requirements check result:', {
+          hasPassportRequirement: result.hasPassportRequirement,
+          passportRequirement: result.passportRequirement,
+          hasQuestionRequirements: result.hasQuestionRequirements,
+          hasRequirements: result.hasRequirements,
+          passportVerificationComplete,
+        });
+
+        // If passport requirement exists and not yet completed, show passport step first
+        if (result.hasPassportRequirement && !passportVerificationComplete) {
+          console.log('[LegRegistrationDialog] Showing passport step');
+          setShowPassportStep(true);
+          setShowRequirementsForm(false);
+          setShowSimpleForm(false);
+        } else if (result.hasQuestionRequirements) {
+          // Otherwise show the requirements form only if there are question-type requirements
+          console.log('[LegRegistrationDialog] Showing requirements form');
           setShowRequirementsForm(true);
           setShowSimpleForm(false);
+          setShowPassportStep(false);
         } else {
+          // No passport or question requirements, show simple form
+          console.log('[LegRegistrationDialog] Showing simple form');
           setShowRequirementsForm(false);
           setShowSimpleForm(true);
+          setShowPassportStep(false);
         }
       });
     }
     if (!isOpen) {
       setRequirementsChecked(false);
+      setShowPassportStep(false);
       setShowRequirementsForm(false);
       setShowSimpleForm(false);
       setNotes('');
+      setPassportData(null);
+      setPassportVerificationComplete(false);
       setRegistrationError(null);
       setHookRegistrationError(null);
     }
-  }, [isOpen, leg, requirementsChecked, checkRequirements, setHookRegistrationError]);
+  }, [isOpen, leg, requirementsChecked, passportVerificationComplete, checkRequirements, setHookRegistrationError]);
 
   // Close on Escape key
   useEffect(() => {
@@ -153,19 +180,38 @@ export function LegRegistrationDialog({
     }
   };
 
+  const handlePassportComplete = (data: { passport_document_id: string; photo_file?: Blob }) => {
+    setPassportData(data);
+    setPassportVerificationComplete(true);
+    setShowPassportStep(false);
+
+    // After passport verification, check if we need to show requirements form
+    if (hasQuestionRequirements) {
+      setShowRequirementsForm(true);
+    } else {
+      // No requirements form, proceed to simple form
+      setShowSimpleForm(true);
+    }
+  };
+
+  const handlePassportCancel = () => {
+    setShowPassportStep(false);
+    onClose();
+  };
+
   const handleRequirementsComplete = async (answers: any[], notes: string) => {
-    const result = await submitRegistration(answers, notes);
+    const result = await submitRegistration(answers, notes, passportData || undefined);
     if (result.success) {
-      setRegistrationResult(result);
+      setRegistrationResult({ auto_approved: result.auto_approved || false });
       setShowSuccessModal(true);
       // Don't call onSuccess yet - let user see the success modal first
     }
   };
 
   const handleSimpleSubmit = async () => {
-    const result = await submitRegistration([], notes);
+    const result = await submitRegistration([], notes, passportData || undefined);
     if (result.success) {
-      setRegistrationResult(result);
+      setRegistrationResult({ auto_approved: result.auto_approved || false });
       setShowSuccessModal(true);
       // Don't call onSuccess yet - let user see the success modal first
     }
@@ -250,13 +296,8 @@ export function LegRegistrationDialog({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {/* Debug logging - remove in production */}
-          {typeof window !== 'undefined' && console.log('[LegRegistrationDialog] States:', {
-            isOpen, leg: !!leg, requirementsChecked, hasRequirements, hasQuestionRequirements,
-            showRequirementsForm, showSimpleForm, isCheckingRequirements, displayError
-          })}
 
-          {displayError && !isCheckingRequirements && !showRequirementsForm && !showSimpleForm ? (
+          {displayError && !isCheckingRequirements && !showPassportStep && !showRequirementsForm && !showSimpleForm ? (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
               {displayError}
             </div>
@@ -265,6 +306,23 @@ export function LegRegistrationDialog({
               <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
               <span className="ml-3 text-muted-foreground">Checking requirements...</span>
             </div>
+          ) : showPassportStep ? (
+            passportRequirement ? (
+              <PassportVerificationStep
+                journeyId={leg.journey_id}
+                legName={leg.leg_name}
+                requirement={passportRequirement}
+                onComplete={handlePassportComplete}
+                onCancel={handlePassportCancel}
+                isLoading={isRegistering}
+                error={displayError || undefined}
+              />
+            ) : (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                <span className="ml-3 text-muted-foreground">Loading passport requirement...</span>
+              </div>
+            )
           ) : showRequirementsForm ? (
             <RegistrationRequirementsForm
               journeyId={leg.journey_id}
