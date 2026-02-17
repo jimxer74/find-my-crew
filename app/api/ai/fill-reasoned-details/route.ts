@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -144,9 +146,9 @@ IMPORTANT: Return ONLY the JSON object, nothing else.`;
     });
 
   } catch (error: any) {
-    console.error('Error filling reasoned details:', error);
+    logger.error('AI reasoned details filling failed', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: error.message || 'Failed to fill reasoned details' },
+      sanitizeErrorResponse(error, 'Failed to fill reasoned details'),
       { status: 500 }
     );
   }

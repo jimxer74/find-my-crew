@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 // Debug logging helper
 const DEBUG = true;
@@ -203,7 +205,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       log('Database error:', error);
       return NextResponse.json(
-        { error: 'Failed to search legs', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to search legs'),
         { status: 500 }
       );
     }
@@ -338,7 +340,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       log('Database error:', error);
       return NextResponse.json(
-        { error: 'Failed to search legs', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to search legs'),
         { status: 500 }
       );
     }
