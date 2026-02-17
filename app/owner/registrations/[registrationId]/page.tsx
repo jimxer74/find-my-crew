@@ -450,6 +450,15 @@ export default function RegistrationDetailsPage() {
                 <>
                   <div className="border-t border-border pt-6">
                     <h4 className="text-sm font-semibold text-foreground mb-4">📋 Passport & Photo Verification</h4>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4 text-xs text-blue-700">
+                      <strong>Passport Data Available:</strong>
+                      <ul className="mt-2 space-y-1">
+                        <li>• Document ID: {data.passportData.passport_document_id || 'None'}</li>
+                        <li>• AI Score: {data.passportData.ai_score ?? 'Not assessed'}</li>
+                        <li>• Photo Verified: {data.passportData.photo_verification_passed ?? 'Not checked'}</li>
+                        <li>• Photo Data: {data.passportData.photo_file_data ? '✓ Present' : '✗ Missing'}</li>
+                      </ul>
+                    </div>
                     <PassportVerificationSection
                       passportData={data.passportData}
                       passportDoc={data.passportDoc}
