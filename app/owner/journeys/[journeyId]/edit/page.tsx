@@ -12,6 +12,7 @@ import { ImageUpload } from '@/app/components/ui/ImageUpload';
 import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
 import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
 import { CostModel } from '@/app/types/cost-models';
+import costModelsConfig from '@/app/config/cost-models-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
@@ -538,23 +539,20 @@ export default function EditJourneyPage() {
                 Cost Model
               </label>
               <div className="space-y-2">
-                {[
-                  { value: 'Shared contribution' as const, label: 'Shared contribution' },
-                  { value: 'Owner covers all costs' as const, label: 'Owner covers all costs' },
-                  { value: 'Crew pays a fee' as const, label: 'Crew pays a fee' },
-                  { value: 'Delivery/paid crew' as const, label: 'Delivery/paid crew' },
-                  { value: 'Not defined' as const, label: 'Not defined' },
-                ].map((option) => (
-                  <label key={option.value} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                {costModelsConfig.costModels.map((model) => (
+                  <label key={model.name} className="flex items-start min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-3">
                     <input
                       type="radio"
                       name="cost_model"
-                      value={option.value}
-                      checked={formData.cost_model === option.value}
+                      value={model.name}
+                      checked={formData.cost_model === model.name}
                       onChange={(e) => setFormData(prev => ({ ...prev, cost_model: e.target.value as CostModel }))}
-                      className="rounded-full border-border"
+                      className="rounded-full border-border mt-1 flex-shrink-0"
                     />
-                    <span className="text-sm text-foreground">{option.label}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground block">{model.displayName}</span>
+                      <span className="text-xs text-muted-foreground block">{model.description}</span>
+                    </div>
                   </label>
                 ))}
               </div>
