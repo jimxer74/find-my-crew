@@ -197,7 +197,7 @@ export function PassportVerificationSection({
               {/* Photo Display */}
               <div className="relative w-full h-auto rounded-lg overflow-hidden bg-black/5 group">
                 <img
-                  src={passportData.photo_file_data}
+                  src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
                   alt="Crew verification photo"
                   className="w-full h-auto max-h-96 object-cover cursor-pointer"
                   onClick={() => setPhotoEnlarged(true)}
@@ -278,7 +278,7 @@ export function PassportVerificationSection({
                 </svg>
               </button>
               <img
-                src={passportData.photo_file_data}
+                src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
                 alt="Crew verification photo enlarged"
                 className="w-full h-auto max-h-[80vh] object-contain"
               />
