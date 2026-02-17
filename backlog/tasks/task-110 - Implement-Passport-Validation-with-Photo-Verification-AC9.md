@@ -1,10 +1,10 @@
 ---
 id: TASK-110
 title: Implement Passport Validation with Photo-Verification (AC#9)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-17 11:45'
-updated_date: '2026-02-17 11:58'
+updated_date: '2026-02-17 18:18'
 labels:
   - registration
   - passport
