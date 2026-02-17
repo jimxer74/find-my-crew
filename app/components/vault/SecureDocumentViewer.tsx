@@ -88,33 +88,88 @@ export function SecureDocumentViewer({
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isImage = fileType.startsWith('image/');
+  const isImage = fileType.startsWith('image/') ||
+    /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(documentName);
   const isExpired = timeRemaining <= 0 && signedUrl === null && !loading;
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-[90] flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        zIndex: 90,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: '64px'
+      }}
+      onClick={onClose}
+    >
       <div
-        className="bg-card rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col"
+        style={{
+          backgroundColor: '#fff',
+          borderRadius: '0.5rem',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '95vw',
+          maxWidth: '1200px',
+          height: '85vh',
+          maxHeight: 'calc(100vh - 150px)'
+        }}
         onClick={(e) => e.stopPropagation()}
         onContextMenu={handleContextMenu}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border flex-shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <h2 className="text-lg font-semibold text-foreground truncate">{documentName}</h2>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '1rem',
+          borderBottom: '1px solid #e5e7eb',
+          flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h2 style={{
+              fontSize: '1.125rem',
+              fontWeight: '600',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {documentName}
+            </h2>
             {timeRemaining > 0 && (
-              <span className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
-                timeRemaining < 60
-                  ? 'bg-destructive/10 text-destructive'
-                  : 'bg-secondary text-secondary-foreground'
-              }`}>
+              <span style={{
+                fontSize: '0.75rem',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '0.25rem',
+                backgroundColor: timeRemaining < 60 ? '#fee2e2' : '#f0f9ff',
+                color: timeRemaining < 60 ? '#dc2626' : '#0284c7',
+                whiteSpace: 'nowrap'
+              }}>
                 {t('expiresIn')}: {formatTime(timeRemaining)}
               </span>
             )}
           </div>
           <button
             onClick={onClose}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-accent rounded-md transition-colors"
+            style={{
+              padding: '0.5rem',
+              minWidth: '44px',
+              minHeight: '44px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'transparent',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: 'pointer'
+            }}
             aria-label="Close"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,71 +179,161 @@ export function SecureDocumentViewer({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-auto relative" style={{ userSelect: 'none', WebkitUserSelect: 'none' }}>
+        <div style={{
+          flex: 1,
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          overflow: 'auto',
+          userSelect: 'none',
+          WebkitUserSelect: 'none'
+        }}>
           {loading && (
-            <div className="flex items-center justify-center h-64">
-              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                border: '2px solid #3b82f6',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite'
+              }} />
             </div>
           )}
 
           {error && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <p className="text-destructive mb-2">{error}</p>
-                <button
-                  onClick={fetchSignedUrl}
-                  className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
-                >
-                  {t('refreshLink')}
-                </button>
-              </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: '#dc2626', marginBottom: '0.5rem' }}>{error}</p>
+              <button
+                onClick={fetchSignedUrl}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#fff',
+                  backgroundColor: '#3b82f6',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {t('refreshLink')}
+              </button>
             </div>
           )}
 
           {isExpired && !error && (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <p className="text-muted-foreground mb-2">{t('expired')}</p>
-                <button
-                  onClick={fetchSignedUrl}
-                  className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:opacity-90"
-                >
-                  {t('refreshLink')}
-                </button>
-              </div>
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ color: '#6b7280', marginBottom: '0.5rem' }}>{t('expired')}</p>
+              <button
+                onClick={fetchSignedUrl}
+                style={{
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  color: '#fff',
+                  backgroundColor: '#3b82f6',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  cursor: 'pointer'
+                }}
+              >
+                {t('refreshLink')}
+              </button>
             </div>
           )}
 
           {signedUrl && !loading && (
-            <div className="relative">
+            <div style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%'
+            }}>
               {/* Watermark overlay */}
               {viewerName && (
-                <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center opacity-10">
-                  <div className="rotate-[-30deg] text-4xl font-bold text-foreground whitespace-nowrap select-none">
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  zIndex: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  opacity: 0.1
+                }}>
+                  <div style={{
+                    transform: 'rotate(-30deg)',
+                    fontSize: '2.25rem',
+                    fontWeight: 'bold',
+                    color: '#000',
+                    whiteSpace: 'nowrap',
+                    userSelect: 'none'
+                  }}>
                     {t('watermark')} - {viewerName}
                   </div>
                 </div>
               )}
 
               {isImage ? (
+                <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#f8fafc', // optional: light background
+                  overflow: 'hidden',    // safety
+                }}
+              >
                 <img
                   src={signedUrl}
                   alt={documentName}
-                  className="max-w-full h-auto mx-auto"
                   draggable={false}
-                  style={{ pointerEvents: 'none' }}
+                  style={{
+                    pointerEvents: 'none',
+                    maxWidth: '100%',
+                    maxHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                  }}
                 />
+                </div>
               ) : (
                 <iframe
-                  src={`${signedUrl}#toolbar=0&navpanes=0&scrollbar=1`}
-                  className="w-full h-[70vh]"
+                  src={signedUrl}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    height: '100%',
+                    border: 'none',
+                    margin: 0,
+                    padding: 0
+                  }}
                   title={documentName}
-                  sandbox="allow-same-origin"
+                  sandbox="allow-same-origin allow-scripts"
+                  scrolling="yes"
                 />
               )}
             </div>
           )}
         </div>
+
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </div>
   );

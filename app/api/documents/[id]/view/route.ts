@@ -28,17 +28,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Try to fetch as owner first (RLS will return null if not owner)
     const { data: ownedDoc } = await supabase
       .from('document_vault')
-      .select('id, file_path, owner_id')
+      .select('id, file_path, file_name, file_type, owner_id')
       .eq('id', documentId)
       .single();
 
     const isOwner = !!ownedDoc;
     let filePath: string;
+    let fileName: string = 'Document';
+    let fileType: string = 'application/pdf';
     let documentOwnerId: string;
 
     if (isOwner) {
       console.log('[DocumentView] Access granted - user is owner');
       filePath = ownedDoc.file_path;
+      fileName = ownedDoc.file_name || 'Document';
+      fileType = ownedDoc.file_type || 'application/pdf';
       documentOwnerId = ownedDoc.owner_id;
     } else {
       // Check for active grant — fetch grant first without joins
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       // Now fetch the document using service role (bypasses RLS)
       const { data: doc, error: docError } = await serviceClient
         .from('document_vault')
-        .select('id, file_path, owner_id')
+        .select('id, file_path, file_name, file_type, owner_id')
         .eq('id', documentId)
         .single();
 
@@ -107,6 +111,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       }
 
       filePath = doc.file_path;
+      fileName = doc.file_name || 'Document';
+      fileType = doc.file_type || 'application/pdf';
       documentOwnerId = doc.owner_id;
       
       console.log('[DocumentView] Access granted via grant:', {
@@ -151,6 +157,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       signedUrl: signedUrlData.signedUrl,
       expiresIn: SIGNED_URL_EXPIRY_SECONDS,
+      fileName,
+      fileType,
     }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',

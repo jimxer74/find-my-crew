@@ -24,36 +24,20 @@ export default function DocumentViewPage() {
         setLoading(true);
         setError(null);
 
-        // First, try to get access via the view endpoint (which checks grants)
+        // Get access via the view endpoint (which checks grants)
         // This returns a signed URL and validates access permissions
         const viewResponse = await fetch(`/api/documents/${documentId}/view`);
-        
+
         if (viewResponse.ok) {
+          const viewData = await viewResponse.json();
           // User has access via grant or ownership
-          // Now fetch the document metadata
-          const metadataResponse = await fetch(`/api/documents/${documentId}`);
-          
-          if (metadataResponse.ok) {
-            const data = await metadataResponse.json();
-            setDocumentInfo({
-              id: data.document.id,
-              file_name: data.document.file_name,
-              file_type: data.document.file_type,
-              canAccess: true,
-            });
-          } else if (metadataResponse.status === 404) {
-            // User has access via grant, so fetch metadata another way
-            // For now, just set minimal info based on ID
-            setDocumentInfo({
-              id: documentId,
-              file_name: 'Document',
-              file_type: 'unknown',
-              canAccess: true,
-            });
-          } else {
-            const data = await metadataResponse.json();
-            throw new Error(data.error || 'Failed to load document');
-          }
+          // The view endpoint now returns fileName and fileType
+          setDocumentInfo({
+            id: documentId,
+            file_name: viewData.fileName || 'Document',
+            file_type: viewData.fileType || 'application/pdf',
+            canAccess: true,
+          });
         } else if (viewResponse.status === 403) {
           throw new Error('You do not have permission to access this document. Ask the document owner to grant you access.');
         } else if (viewResponse.status === 401) {

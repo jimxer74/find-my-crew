@@ -195,16 +195,18 @@ export function PassportVerificationSection({
           <div className="bg-muted/30 border border-border rounded-lg p-4">
             <div className="space-y-3">
               {/* Photo Display */}
-              <div className="relative h-80 w-auto rounded-lg overflow-hidden bg-black/5 group">
+              <div
+                className="relative h-80 w-auto rounded-lg overflow-hidden bg-black/5 group cursor-pointer"
+                onClick={() => setPhotoEnlarged(true)}
+              >
                 <img
                   src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
                   alt="Crew verification photo"
-                  className="w-full h-auto max-h-80 object-contain cursor-pointer"
-                  onClick={() => setPhotoEnlarged(true)}
+                  className="w-full h-auto max-h-80 object-contain"
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none">
+                  <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} stroke="white" />
                   </svg>
                 </div>
               </div>
@@ -268,7 +270,7 @@ export function PassportVerificationSection({
             onClick={() => setPhotoEnlarged(false)}
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="relative bg-black rounded-lg max-w-2xl w-full">
+            <div className="relative flex items-center justify-center">
               <button
                 onClick={() => setPhotoEnlarged(false)}
                 className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
@@ -280,7 +282,7 @@ export function PassportVerificationSection({
               <img
                 src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
                 alt="Crew verification photo enlarged"
-                className="w-full h-auto max-h-[80vh] object-contain"
+                className="w-auto h-[90vh] object-contain rounded-lg"
               />
             </div>
           </div>
