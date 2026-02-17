@@ -4,7 +4,7 @@ title: Implement Passport Validation with Photo-Verification (AC#9)
 status: In Progress
 assignee: []
 created_date: '2026-02-17 11:45'
-updated_date: '2026-02-17 11:45'
+updated_date: '2026-02-17 11:49'
 labels:
   - registration
   - passport
@@ -102,6 +102,59 @@ Implement full passport verification flow in crew registration:
 - [ ] #21 Integration tests verify API FormData parsing and database record creation
 - [ ] #22 E2E test covers full flow: passport selection → photo upload → submission → AI assessment
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Summary
+
+### Phase 1: UI Components ✅ COMPLETE
+- `PhotoUploadStep.tsx` - Drag-drop file upload, camera capture, client-side compression (~400 lines)
+- `PassportSelector.tsx` - Display & select passports from vault, filter expired (~300 lines)
+- `PassportVerificationStep.tsx` - Multi-step orchestration of passport verification (~150 lines)
+
+### Phase 2: Component Integration ✅ COMPLETE
+- `useLegRegistration.ts` - Updated to detect passport requirements, support FormData with passport data
+- `LegRegistrationDialog.tsx` - Conditional rendering of PassportVerificationStep before requirements form
+- `RegistrationRequirementsForm.tsx` - Already filters to show only question-type requirements (no changes needed)
+
+### Phase 3: Server-Side Implementation ✅ COMPLETE
+- `/api/registrations/route.ts` - Modified POST handler to:
+  - Accept FormData (multipart) for passport_document_id and photo_file
+  - Validate passport document belongs to user
+  - Save passport document reference to registration_answers
+- `/lib/ai/assessRegistration.ts` - Added:
+  - `assessPassportRequirement()` function for AI passport validation
+  - Passport assessment integration into main assessment flow
+  - Photo verification support (if require_photo_validation enabled)
+
+### Phase 4: Testing & Refinement (Pending)
+Ready for manual testing and edge case handling
+
+## Key Implementation Details
+
+1. **Photo Handling**:
+   - Client-side compression with Canvas API (target <200KB)
+   - EXIF rotation handling
+   - Camera capture progressive enhancement
+   - Sent as Blob in multipart FormData
+
+2. **Passport Assessment**:
+   - AI vision validates passport document
+   - Checks expiry date and holder name
+   - Calculates confidence score (0-1.0 scale)
+   - Optional photo-to-passport facial matching if enabled
+
+3. **Security**:
+   - Photos temporary (not persisted)
+   - Passport document access validated via RLS
+   - UUID validation for document references
+
+4. **User Experience**:
+   - Progress indicator for multi-step flow
+   - Clear error messages with retry logic
+   - Mobile-friendly design with camera support
+<!-- SECTION:PLAN:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
