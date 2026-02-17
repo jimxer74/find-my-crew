@@ -12,12 +12,21 @@ interface PassportSelectorProps {
   error?: string;
 }
 
+type DocumentGrant = {
+  id: string;
+  purpose: string;
+  expires_at: string;
+  is_revoked: boolean;
+};
+
 export function PassportSelector({ onSelect, onCancel, isLoading = false, error }: PassportSelectorProps) {
   const { user } = useAuth();
   const [passports, setPassports] = useState<DocumentVault[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(error || null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [grantStatus, setGrantStatus] = useState<Record<string, { hasGrant: boolean; loading: boolean }>>({});
+  const [selectedGrant, setSelectedGrant] = useState<DocumentGrant | null>(null);
 
   useEffect(() => {
     loadPassports();
@@ -63,6 +72,55 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
       console.error('Error loading passports:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkPassportGrant = async (passportId: string) => {
+    if (grantStatus[passportId]?.loading) return; // Already checking
+
+    setGrantStatus(prev => ({
+      ...prev,
+      [passportId]: { hasGrant: false, loading: true }
+    }));
+
+    try {
+      const response = await fetch(`/api/documents/${passportId}/grants`);
+      if (!response.ok) {
+        throw new Error('Failed to check grants');
+      }
+
+      const data = await response.json();
+      const grants = data.grants || [];
+
+      // Check for active grant with purpose='identity_verification'
+      const now = new Date();
+      const hasValidGrant = grants.some((grant: DocumentGrant) =>
+        grant.purpose === 'identity_verification' &&
+        !grant.is_revoked &&
+        new Date(grant.expires_at) > now
+      );
+
+      // Find the valid grant if it exists
+      const validGrant = grants.find((grant: DocumentGrant) =>
+        grant.purpose === 'identity_verification' &&
+        !grant.is_revoked &&
+        new Date(grant.expires_at) > now
+      );
+
+      setGrantStatus(prev => ({
+        ...prev,
+        [passportId]: { hasGrant: hasValidGrant, loading: false }
+      }));
+
+      if (selectedId === passportId && hasValidGrant) {
+        setSelectedGrant(validGrant);
+      }
+    } catch (err) {
+      console.error('Error checking grants:', err);
+      setGrantStatus(prev => ({
+        ...prev,
+        [passportId]: { hasGrant: false, loading: false }
+      }));
     }
   };
 
@@ -146,11 +204,15 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
           {passports.map((passport) => {
             const expiryDate = passport.metadata?.expiry_date;
             const isSoon = isExpiringSoon(expiryDate);
+            const grantCheck = grantStatus[passport.id];
 
             return (
               <div
                 key={passport.id}
-                onClick={() => setSelectedId(passport.id)}
+                onClick={() => {
+                  setSelectedId(passport.id);
+                  checkPassportGrant(passport.id);
+                }}
                 className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
                   selectedId === passport.id
                     ? 'border-primary bg-primary/5'
@@ -217,10 +279,61 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
                       </p>
                     )}
                   </div>
+
+                  {/* Grant Status Indicator */}
+                  {selectedId === passport.id && (
+                    <div className="ml-4 flex-shrink-0">
+                      {grantCheck?.loading ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          <span className="text-xs text-muted-foreground">Checking...</span>
+                        </div>
+                      ) : grantCheck?.hasGrant ? (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400 rounded text-xs font-medium">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          Access Granted
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400 rounded text-xs font-medium">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M13.477 14.89A6 6 0 015.11 2.697m8.368 12.192a6 6 0 01-8.368-8.368m1.414-1.414a8 8 0 1111.314 11.314" clipRule="evenodd" />
+                          </svg>
+                          No Access
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Grant Warning */}
+      {selectedId && grantStatus[selectedId] && !grantStatus[selectedId].loading && !grantStatus[selectedId].hasGrant && (
+        <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-md">
+          <div className="flex gap-3">
+            <svg className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4v2m0-12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div className="flex-1 text-sm">
+              <p className="font-medium text-amber-900 dark:text-amber-400 mb-1">
+                Access Not Granted
+              </p>
+              <p className="text-xs text-amber-800 dark:text-amber-300 mb-2">
+                To proceed with registration, you must grant access to this passport in your Document Vault. This allows the skipper to verify your identity.
+              </p>
+              <Link
+                href="/crew/vault"
+                className="inline-block px-2 py-1 text-xs font-medium text-amber-900 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded transition-colors"
+              >
+                Go to Document Vault →
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 
@@ -237,8 +350,9 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
         <button
           type="button"
           onClick={handleSelect}
-          disabled={!selectedId || isLoading}
-          className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+          disabled={!selectedId || isLoading || (selectedId && grantStatus[selectedId] ? !grantStatus[selectedId].hasGrant : false)}
+          className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          title={selectedId && grantStatus[selectedId] && !grantStatus[selectedId].hasGrant ? 'Must grant access in Document Vault first' : undefined}
         >
           {isLoading ? 'Verifying...' : 'Select Passport'}
         </button>
