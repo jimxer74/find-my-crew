@@ -4,7 +4,7 @@ title: Implement Passport Validation with Photo-Verification (AC#9)
 status: In Progress
 assignee: []
 created_date: '2026-02-17 11:45'
-updated_date: '2026-02-17 11:49'
+updated_date: '2026-02-17 11:58'
 labels:
   - registration
   - passport
@@ -155,6 +155,34 @@ Ready for manual testing and edge case handling
    - Clear error messages with retry logic
    - Mobile-friendly design with camera support
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Critical Bug Fixed: 406 (Not Acceptable) RLS Error
+
+Found and fixed a critical RLS (Row Level Security) issue that was blocking the registration flow:
+
+**Problem**: The registrations table has an RLS policy that restricts access to the current user:
+```sql
+using (auth.uid() = user_id);
+```
+
+But the query was redundantly filtering by user_id:
+```typescript
+.eq('user_id', user.id)
+```
+
+This mismatch caused Supabase to reject the query with a 406 (Not Acceptable) error.
+
+**Solution**: Removed the redundant `.eq('user_id', user.id)` filter from:
+1. `app/hooks/useLegRegistration.ts` - Registration status check
+2. `app/settings/privacy/page.tsx` - Privacy page data load
+
+The RLS policy already restricts results to the authenticated user, so the explicit filter was unnecessary and conflicting.
+
+**Result**: Registration dialog should now load properly and detect passport requirements correctly.
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
