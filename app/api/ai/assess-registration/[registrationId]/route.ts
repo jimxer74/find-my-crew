@@ -3,6 +3,8 @@ import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { callAI } from '@/app/lib/ai/service';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 // Extend timeout for AI assessment (can take up to 60+ seconds)
 export const maxDuration = 90; // 90 seconds
@@ -28,7 +30,7 @@ export async function POST(
     const resolvedParams = params instanceof Promise ? await params : params;
     const registrationId = resolvedParams.registrationId;
     
-    console.log(`[AI Assessment API] Manual assessment triggered for registration: ${registrationId}`);
+    logger.aiFlow('start', 'AI assessment triggered', { registrationId });
     
     const supabase = await getSupabaseServerClient();
     
@@ -187,7 +189,7 @@ export async function POST(
     }
 
     // Call AI service
-    console.log(`[AI Assessment API] Calling AI service...`);
+    logger.aiFlow('api_call', 'Calling Claude AI for assessment', { promptLength: prompt.length, registrationId });
     let aiResponse: string;
     const aiStartTime = Date.now();
     try {
@@ -335,9 +337,9 @@ export async function POST(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in AI assessment API:', error);
+    logger.error('AI assessment failed', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'AI assessment failed'),
       { status: 500 }
     );
   }
