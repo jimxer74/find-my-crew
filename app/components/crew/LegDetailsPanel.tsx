@@ -1106,7 +1106,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     return leg.leg_risk_level?.includes(userRiskLevel) ?? false;
   }
 
-  const theme = useTheme();
   return (
     <>
       {/* Backdrop for mobile */}
