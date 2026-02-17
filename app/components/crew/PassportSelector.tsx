@@ -85,12 +85,36 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
 
     try {
       const response = await fetch(`/api/documents/${passportId}/grants`);
+
       if (!response.ok) {
-        throw new Error('Failed to check grants');
+        const errorData = await response.json().catch(() => null);
+        console.error(`[PassportSelector] Grant check failed:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData?.error || 'Unknown error',
+          passportId
+        });
+
+        // Gracefully degrade: treat missing grants as no grant exists
+        // but don't block the user - they might not have created a grant yet
+        setGrantStatus(prev => ({
+          ...prev,
+          [passportId]: { hasGrant: false, loading: false }
+        }));
+        return;
       }
 
       const data = await response.json();
       const grants = data.grants || [];
+
+      console.log(`[PassportSelector] Grants fetched for passport ${passportId}:`, {
+        count: grants.length,
+        grants: grants.map((g: DocumentGrant) => ({
+          purpose: g.purpose,
+          expired: new Date(g.expires_at) <= new Date(),
+          revoked: g.is_revoked
+        }))
+      });
 
       // Check for active grant with purpose='identity_verification'
       const now = new Date();
@@ -116,7 +140,10 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
         setSelectedGrant(validGrant);
       }
     } catch (err) {
-      console.error('Error checking grants:', err);
+      console.error('[PassportSelector] Error checking grants:', {
+        error: err instanceof Error ? err.message : String(err),
+        passportId
+      });
       setGrantStatus(prev => ({
         ...prev,
         [passportId]: { hasGrant: false, loading: false }
