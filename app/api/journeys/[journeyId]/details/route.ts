@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 
 /**
  * GET /api/journeys/[journeyId]/details
@@ -34,7 +35,7 @@ export async function GET(
 
     if (basicError || !journeyBasic) {
       return NextResponse.json(
-        { error: 'Journey not found', details: basicError?.message },
+        sanitizeErrorResponse(basicError, 'Journey not found'),
         { status: 404 }
       );
     }
@@ -50,7 +51,7 @@ export async function GET(
 
     if (boatError || !boatInfo) {
       return NextResponse.json(
-        { error: 'Boat not found', details: boatError?.message },
+        sanitizeErrorResponse(boatError, 'Boat not found'),
         { status: 404 }
       );
     }
@@ -82,7 +83,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in journey details GET API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
