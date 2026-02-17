@@ -9,6 +9,8 @@ import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { CrewSummaryCard } from '@/app/components/owner/CrewSummaryCard';
+import { PassportVerificationSection } from '@/app/components/owner/PassportVerificationSection';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
 
@@ -125,6 +127,24 @@ type RegistrationDetails = {
   experience_level_matches: boolean | null;
   effective_risk_level: RiskLevel | null;
   effective_min_experience_level: number | null;
+  passportData?: {
+    passport_document_id: string | null;
+    ai_score: number | null;
+    ai_reasoning: string | null;
+    photo_verification_passed: boolean | null;
+    photo_confidence_score: number | null;
+    photo_file_data: string | null;
+  } | null;
+  passportDoc?: {
+    id: string;
+    file_name: string;
+    metadata: {
+      holder_name?: string;
+      document_number?: string;
+      issuing_country?: string;
+      expiry_date?: string;
+    };
+  } | null;
 };
 
 export default function RegistrationDetailsPage() {
@@ -270,21 +290,6 @@ export default function RegistrationDetailsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, string> = {
-      'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-      'Approved': 'bg-green-100 text-green-800 border-green-300',
-      'Not approved': 'bg-red-100 text-red-800 border-red-300',
-      'Cancelled': 'bg-gray-100 text-gray-800 border-gray-300',
-    };
-
-    return (
-      <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-medium border ${statusConfig[status] || statusConfig['Pending approval']}`}>
-        {status}
-      </span>
-    );
-  };
-
   // Helper to get answer display text
   const getAnswerDisplay = (answer: RegistrationDetails['answers'][0]): string => {
     const questionType = answer.journey_requirements.question_type;
@@ -362,50 +367,17 @@ export default function RegistrationDetailsPage() {
           Back to registrations
         </Link>
 
-        {/* Header with status - Not collapsible */}
-        <div className="bg-card rounded-lg shadow p-6 mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {/* Crew Avatar */}
-              <div className="relative w-16 h-16 flex-shrink-0">
-                {data.crew?.profile_image_url ? (
-                  <Image
-                    src={data.crew.profile_image_url}
-                    alt={data.crew.full_name || data.crew.username || 'Crew member'}
-                    fill
-                    className="object-cover rounded-full"
-                    sizes="64px"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-accent rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">
-                  {data.crew?.full_name || data.crew?.username || 'Unknown Crew'}
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Registered {formatDate(data.registration.created_at)}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col items-start sm:items-end gap-2">
-              {getStatusBadge(data.registration.status)}
-              {data.registration.auto_approved && (
-                <span className="inline-flex items-center gap-1 text-xs text-primary">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Auto-approved by AI
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Crew Summary Card - Replaces old header */}
+        {data.crew && (
+          <CrewSummaryCard
+            crew={data.crew}
+            registration={data.registration}
+            skillMatchPercentage={data.skill_match_percentage}
+            experienceLevelMatches={data.experience_level_matches}
+            effectiveMinExperienceLevel={data.effective_min_experience_level}
+            legSkills={data.combined_skills}
+          />
+        )}
 
         {/* Action buttons - Not collapsible */}
         {data.registration.status === 'Pending approval' && (
@@ -588,7 +560,7 @@ export default function RegistrationDetailsPage() {
               </span>
             }
           >
-            <div className="space-y-4">
+            <div className="space-y-6">
               {/* Score bar */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -619,6 +591,18 @@ export default function RegistrationDetailsPage() {
                     {data.registration.ai_match_reasoning}
                   </p>
                 </div>
+              )}
+
+              {/* Passport Verification */}
+              {data.passportData && (
+                <>
+                  <div className="border-t border-border pt-6">
+                    <PassportVerificationSection
+                      passportData={data.passportData}
+                      passportDoc={data.passportDoc}
+                    />
+                  </div>
+                </>
               )}
             </div>
           </CollapsibleSection>
@@ -676,60 +660,10 @@ export default function RegistrationDetailsPage() {
           </CollapsibleSection>
         )}
 
-        {/* Crew Profile Details - Collapsible */}
-        {data.crew && (
-          <CollapsibleSection title="Crew Profile" defaultOpen={false}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {data.crew.sailing_experience !== null && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Experience Level</p>
-                  <p className="text-sm font-medium text-foreground">
-                    {getExperienceLevelConfig(data.crew.sailing_experience as ExperienceLevel).displayName}
-                  </p>
-                </div>
-              )}
-              {data.crew.phone && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="text-sm font-medium text-foreground">{data.crew.phone}</p>
-                </div>
-              )}
-              {data.crew.email && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm font-medium text-foreground">{data.crew.email}</p>
-                </div>
-              )}
-              {data.crew.risk_level && data.crew.risk_level.length > 0 && (
-                <div>
-                  <p className="text-xs text-muted-foreground">Preferred Risk Levels</p>
-                  <p className="text-sm font-medium text-foreground">{data.crew.risk_level.join(', ')}</p>
-                </div>
-              )}
-            </div>
-
-            {data.crew.sailing_preferences && (
-              <div className="mt-4">
-                <p className="text-xs text-muted-foreground">Sailing Preferences</p>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{data.crew.sailing_preferences}</p>
-              </div>
-            )}
-
-            {data.crew.skills && data.crew.skills.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs text-muted-foreground mb-2">Skills</p>
-                <div className="flex flex-wrap gap-2">
-                  {data.crew.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border"
-                    >
-                      {toDisplaySkillName(skill)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* Sailing Preferences - Collapsible */}
+        {data.crew?.sailing_preferences && (
+          <CollapsibleSection title="Sailing Preferences" defaultOpen={false}>
+            <p className="text-sm text-foreground whitespace-pre-wrap">{data.crew.sailing_preferences}</p>
           </CollapsibleSection>
         )}
       </main>

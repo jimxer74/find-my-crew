@@ -218,7 +218,7 @@ export async function GET(
       console.error('Error fetching requirements:', reqError);
     }
 
-    // Fetch registration answers
+    // Fetch registration answers (including passport verification data)
     const { data: answersData, error: answersError } = await supabase
       .from('registration_answers')
       .select(`
@@ -226,6 +226,12 @@ export async function GET(
         requirement_id,
         answer_text,
         answer_json,
+        passport_document_id,
+        ai_score,
+        ai_reasoning,
+        photo_verification_passed,
+        photo_confidence_score,
+        photo_file_data,
         journey_requirements!inner (
           id,
           question_text,
@@ -247,6 +253,37 @@ export async function GET(
       const orderB = b.journey_requirements?.order ?? 0;
       return orderA - orderB;
     });
+
+    // Extract passport verification data if available
+    let passportData: any = null;
+    let passportDoc: any = null;
+    const passportAnswer = answers.find((a: any) => a.journey_requirements?.question_type === 'passport');
+
+    if (passportAnswer && passportAnswer.passport_document_id) {
+      passportData = {
+        passport_document_id: passportAnswer.passport_document_id,
+        ai_score: passportAnswer.ai_score,
+        ai_reasoning: passportAnswer.ai_reasoning,
+        photo_verification_passed: passportAnswer.photo_verification_passed,
+        photo_confidence_score: passportAnswer.photo_confidence_score,
+        photo_file_data: passportAnswer.photo_file_data,
+      };
+
+      // Fetch passport document metadata
+      const { data: docData, error: docError } = await supabase
+        .from('document_vault')
+        .select('id, file_name, metadata')
+        .eq('id', passportAnswer.passport_document_id)
+        .single();
+
+      if (!docError && docData) {
+        passportDoc = {
+          id: docData.id,
+          file_name: docData.file_name,
+          metadata: docData.metadata || {},
+        };
+      }
+    }
 
     // Combine journey and leg skills (remove duplicates)
     const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
@@ -345,6 +382,9 @@ export async function GET(
       experience_level_matches: experienceLevelMatches,
       effective_risk_level: effectiveRiskLevel,
       effective_min_experience_level: effectiveMinExperienceLevel,
+      // Passport verification data
+      passportData: passportData,
+      passportDoc: passportDoc,
     };
 
     return NextResponse.json(response);
