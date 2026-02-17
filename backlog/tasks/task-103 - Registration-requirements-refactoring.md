@@ -1,10 +1,10 @@
 ---
 id: TASK-103
 title: Registration requirements refactoring
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-02-16 18:40'
-updated_date: '2026-02-17 06:08'
+updated_date: '2026-02-17 10:59'
 labels: []
 dependencies: []
 ---
@@ -310,6 +310,20 @@ Major refactoring to support new assessment types:
 - **AI cost**: Each skill is assessed individually. For journeys with many skills, this means multiple AI calls. Consider batching skills into a single prompt.
 - **Photo verification**: Requires new photo upload UI during registration. This is a new capability not currently in the registration flow.
 <!-- SECTION:PLAN:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Remaining Work (as of 2026-02-17):
+
+1. Display acknowledgement/Thank you message after successful registration
+2. Hide Registration/Join button when user already has pending or approved registration for the leg
+3. Verify /crew/dashboard map displays pending and approved registration status correctly
+4. Send notification to crew when auto-approval fails (registration remains pending)
+5. Send notification to crew when registration is approved (either manual or AI assessment)
+
+These items should be implemented as part of the registration flow completion.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
