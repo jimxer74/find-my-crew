@@ -4,7 +4,7 @@ title: Refactor /owner/registrations page
 status: Done
 assignee: []
 created_date: '2026-02-17 19:21'
-updated_date: '2026-02-17 19:47'
+updated_date: '2026-02-17 19:55'
 labels: []
 dependencies: []
 ---
@@ -111,6 +111,16 @@ Mobile status badges (P/A/N/C) are clickable to filter by that status
 Default view shows only 'Pending approval' registrations sorted by newest first
 
 All links preserve their functionality and navigate to correct pages
+
+Added left sidebar pane for filters on desktop (v2)
+
+Pane slides open/closed with smooth animation
+
+Filters (Status, Journey, Leg) now located in left sidebar
+
+Table expands to full width when pane is closed
+
+Mobile view unaffected - badge filters remain at top
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
@@ -158,6 +168,36 @@ All links preserve their functionality and navigate to correct pages
 - Sort column detection and toggle logic implemented
 - Filter state management with pagination reset
 - Removed redundant sort order button (now handled by clicking table headers)
+
+## Update: Left Sidebar Pane Added
+
+Enhanced the desktop view with a minimizable left sidebar panel:
+
+### Desktop Enhancements
+- **Left Sidebar Pane**: Slide-in/out panel containing all filters
+- **Smooth Animation**: Pane uses `translate-x-0` / `-translate-x-full` for smooth transitions
+- **Dynamic Layout**: Table adjusts `margin-left` based on pane state
+- **Toggle Controls**: Open button visible when pane is closed (top-left)
+- **Close Button**: Inside pane header for easy closing
+- **Design Pattern**: Matches the `/owner/journeys/legs` map page pattern
+
+### Filters Location
+- Status filter (moved from top-left to sidebar)
+- Journey filter (moved from top-center to sidebar)
+- Leg filter (moved from top-right to sidebar)
+- Results counter displayed in sidebar footer
+
+### Layout Behavior
+- Pane width: 320px (w-80) when open, 0 when closed
+- Table width: Full width when pane closed, adjusts when open
+- Desktop only: Hidden on mobile (md: breakpoint)
+- Mobile retains badge filter buttons at top
+
+### Visual Feedback
+- Pane has shadow and border
+- Hover effects on toggle buttons
+- Smooth 300ms transition on all state changes
+- Overflow handling for long filter lists
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
