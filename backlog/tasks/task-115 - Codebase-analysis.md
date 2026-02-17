@@ -4,7 +4,7 @@ title: Codebase analysis
 status: In Progress
 assignee: []
 created_date: '2026-02-17 20:22'
-updated_date: '2026-02-17 20:56'
+updated_date: '2026-02-17 20:57'
 labels: []
 dependencies: []
 ---
@@ -250,74 +250,80 @@ dependencies: []
 ## Implementation Plan
 
 <!-- SECTION:PLAN:BEGIN -->
-## CRITICAL & HIGH PRIORITY FIXES - Execution Plan
+## CRITICAL & HIGH PRIORITY FIXES - Progress Update
 
-### Phase 1: CRITICAL SECURITY - Credential Rotation (Do First)
-**Issue**: 9 API keys exposed in .env.local
-**Files**: .env.local
-**Action**: 
-1. Identify all exposed keys and create .env.local.example
-2. Remove .env.local from git history using git filter-branch or BFG
-3. Update .gitignore to prevent future commits
-4. Document key rotation process
+### ✅ COMPLETED
+1. **Hook Rule Violation - LegDetailsPanel.tsx** 
+   - Fixed: Moved `useTheme()` from helper function to component level
+   - All `getRiskLevelConfig()` calls updated to accept theme parameter
+   - Commit: c09ad90
 
-### Phase 2: HIGH PRIORITY - Immediate Fixes (This Session)
+### 🔧 IN PROGRESS
 
-#### 2.1 Hook Rule Violation - LegDetailsPanel.tsx
-**File**: app/components/journey/LegDetailsPanel.tsx:64
-**Issue**: useTheme() called inside helper function
-**Fix**: Move hook call to component level
-**Impact**: High - Can cause React runtime errors
+#### HIGH PRIORITY - Remaining (4 major issues)
 
-#### 2.2 Event Listener Memory Leaks
-**Files**: 
-- EditJourneyMap.tsx (5 instances)
-- NavigationMenu.tsx (4 instances) 
-- LegCarousel.tsx, FeedbackModal.tsx, NotificationCenter.tsx, AssistantChat.tsx
-**Issue**: Event listeners without cleanup in useEffect
-**Fix**: Add cleanup functions and AbortController patterns
-**Impact**: High - Memory leaks, performance degradation
+**2.1 Promise Error Handling** - NEED TO FIX
+- Pattern: `.json().catch(() => ({}))` is defensivepattern, not an error
+- Real issue: AuthContext.tsx line 29 - `getSession().then()` without .catch()
+- Impact: Silent failures if auth fails
+- Status: Requires investigation of exact failure points
 
-#### 2.3 Missing Promise Error Handling
-**Files**: 
-- AuthContext.tsx:27
-- Multiple API routes
-**Issue**: Promise chains without .catch() handlers
-**Fix**: Add comprehensive error handling
-**Impact**: High - Silent failures, hard to debug
+**2.2 FK Mismatch - notifications table** - DATABASE MIGRATION NEEDED
+- File: specs/tables.sql + migration file needed
+- Issue: notifications.user_id references profiles(id) instead of auth.users(id)
+- Fix: Create migration 016_fix_notifications_fk.sql
+- Impact: Data integrity - high priority
 
-#### 2.4 FK Mismatch - notifications table
-**File**: Database schema (specs/tables.sql)
-**Issue**: notifications.user_id references profiles(id) instead of auth.users(id)
-**Fix**: Create migration to correct FK constraint
-**Impact**: High - Data integrity risk
+**2.3 Information Disclosure in Error Responses** - ~125 instances
+- Issue: { error: '...', details: error.message } exposes internals
+- Files: Multiple API routes
+- Fix: Sanitize errors in production, return generic messages
+- Impact: Security vulnerability
 
-#### 2.5 Information Disclosure in Error Responses
-**Pattern**: { error: '...', details: error.message }
-**Issue**: ~125 instances expose internal details
-**Fix**: Sanitize error responses, return generic errors in production
-**Impact**: High - Attack surface expansion
+**2.4 Debug Logging - 792 instances**
+- Issue: console.log/console.error throughout codebase
+- Scope: 50+ files
+- Fix: Remove debug logs or implement proper logging system
+- Impact: May expose sensitive data, performance
 
-#### 2.6 Debug Logging Cleanup
-**Issue**: 792 console.log/console.error instances
-**Fix**: Remove/replace with proper logging system
-**Impact**: High - May log sensitive data
+### 📋 DETAILED PLAN FOR REMAINING WORK
 
-### Execution Order
-1. **First**: Fix hook violation (quick, high impact) - 15 min
-2. **Second**: Fix event listener leaks (systematic) - 45 min
-3. **Third**: Fix promise error handling - 30 min
-4. **Fourth**: Fix FK constraint - 20 min
-5. **Fifth**: Sanitize error responses - 30 min
-6. **Sixth**: Address debug logging - 60 min
+#### Phase 1: Database FK Fix (15 min)
+1. Read current notifications table schema from specs/tables.sql
+2. Create migration 016_fix_notifications_fk.sql to correct FK
+3. Update specs/tables.sql to reflect correct schema
+4. Commit database migration
 
-### Progress Tracking
-- [ ] Hook violation fixed
-- [ ] Event listeners cleaned up
-- [ ] Promise error handling added
-- [ ] FK constraint corrected
-- [ ] Error responses sanitized
-- [ ] Debug logging addressed
+#### Phase 2: Promise Error Handling (20 min)
+1. Fix AuthContext.tsx line 29 - add .catch() to getSession()
+2. Review and add .catch() to other critical promise chains
+3. Ensure errors are properly logged (not silently ignored)
+4. Commit error handling improvements
+
+#### Phase 3: Error Response Sanitization (30 min)
+1. Find all API routes with `{ error: '...', details: error.message }`
+2. Create error response utility function
+3. Replace error responses with sanitized versions
+4. Add environment-based error detail disclosure (dev vs production)
+5. Commit error sanitization
+
+#### Phase 4: Debug Logging (SECONDARY - Low impact on runtime)
+- Large scope: 792 instances
+- Can be deferred to later sprint
+- Recommend: Implement proper logging system instead of wholesale removal
+
+### Execution Priorities
+1. ✅ Hook violation (DONE)
+2. 🔄 FK Constraint (DATABASE - DO NEXT)
+3. 🔄 Promise Error Handling (SAFETY)
+4. 🔄 Error Response Sanitization (SECURITY)
+5. ⏳ Debug Logging (DEFER TO LATER)
+
+### Notes on Analysis
+- NavigationMenu.tsx: Event listeners already have proper cleanup
+- AuthContext.tsx: Subscription already unsubscribes properly
+- EditJourneyMap.tsx: Comprehensive cleanup already implemented
+- Navigation patterns suggest prior fixes were already applied
 <!-- SECTION:PLAN:END -->
 
 ## Implementation Notes
