@@ -4,6 +4,7 @@ title: Fix UI issues
 status: To Do
 assignee: []
 created_date: '2026-01-29 08:57'
+updated_date: '2026-02-17 20:10'
 labels: []
 dependencies: []
 ---
@@ -11,8 +12,11 @@ dependencies: []
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-- Dark mode compliant logo, icons etc.
-- Refactor selectable icon button into own component
-- Fix Boat page edit link to icon
-- Change Profile user role selection to common selectable button
+- Light mode texts does not work in Chrome mobile browser
+- Implement  "Waiting" indicator for long running actions. registration. fetch boat data, etc.
+- Register for Leg button is not usable, it does not react to click may cause double clickings --> needs to provide beter feedback to user that is already clicked
+- After Register leg the REgister form is still visible
+- Prospect ai assistant, show badge buttons to verify profile
+- Add "Exit assistant" functionality to owner chat as well
+-
 <!-- SECTION:DESCRIPTION:END -->
