@@ -155,41 +155,49 @@ export function CrewSummaryCard({
       <div className="border-t border-border mb-6" />
 
       {/* Crew Attributes Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Experience Level */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Experience Level - Match Card */}
         {crew.sailing_experience !== null && (
-          <div>
+          <div className="bg-muted/30 border border-border rounded-lg p-3">
             <p className="text-xs font-semibold text-muted-foreground mb-2">Experience Level</p>
-            <div className="flex items-center gap-2">
-              <div className="relative w-8 h-8 flex-shrink-0">
-                <Image
-                  src={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon}
-                  alt={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
-                  fill
-                  className="object-contain"
-                />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="relative w-6 h-6 flex-shrink-0">
+                  <Image
+                    src={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon}
+                    alt={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <p className="font-medium text-foreground text-sm">
+                  {getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
+                </p>
               </div>
-              <p className="font-medium text-foreground">
-                {getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
-              </p>
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium bg-green-300/80 border-2 border-green-500 text-green-800">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </span>
             </div>
           </div>
         )}
 
-        {/* Risk Level Preferences */}
+        {/* Risk Level Preferences - Match Cards */}
         {crew.risk_level && crew.risk_level.length > 0 && (
-          <div>
+          <div className="bg-muted/30 border border-border rounded-lg p-3">
             <p className="text-xs font-semibold text-muted-foreground mb-2">Preferred Risk Levels</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {crew.risk_level.map((level) => {
                 const config = getRiskLevelBadgeConfig(level as RiskLevel);
                 if (!config) return null;
                 return (
                   <span
                     key={level}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${config.bgColor} ${config.textColor} ${config.borderColor}`}
+                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border-2 ${config.bgColor} ${config.textColor} border-opacity-70`}
+                    title={level}
                   >
-                    {level}
+                    {level.split(' ')[0]}
                   </span>
                 );
               })}
@@ -197,47 +205,52 @@ export function CrewSummaryCard({
           </div>
         )}
 
-        {/* Skill Match */}
+        {/* Skill Match - Match Card */}
         {skillMatchPercentage !== null && (
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Skill Match</p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-300 ${getSkillMatchColor(skillMatchPercentage)}`}
-                    style={{ width: `${skillMatchPercentage}%` }}
-                  />
-                </div>
-              </div>
-              <span className={`text-sm font-bold whitespace-nowrap ${getSkillMatchTextColor(skillMatchPercentage)}`}>
+          <div className="bg-muted/30 border border-border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground">Skill Match</p>
+              <span
+                className={`inline-flex items-center font-semibold text-xs px-2 py-0.5 rounded-full border-2 ${
+                  skillMatchPercentage >= 80 ? 'bg-green-300/80 border-green-500 text-green-800' :
+                  skillMatchPercentage >= 50 ? 'bg-yellow-300/80 border-yellow-600 text-yellow-800' :
+                  skillMatchPercentage >= 25 ? 'bg-orange-300/80 border-orange-600 text-orange-800' :
+                  'bg-red-500/80 border-red-600 text-red-800'
+                }`}
+              >
                 {skillMatchPercentage}%
               </span>
             </div>
+            <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-300 ${getSkillMatchColor(skillMatchPercentage)}`}
+                style={{ width: `${skillMatchPercentage}%` }}
+              />
+            </div>
             {legSkills.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1.5">
                 {crew.skills.filter(s => legSkills.includes(s)).length}/{legSkills.length} skills match
               </p>
             )}
           </div>
         )}
 
-        {/* Top Skills */}
+        {/* Top Skills - Match Card */}
         {crew.skills.length > 0 && (
-          <div>
+          <div className="bg-muted/30 border border-border rounded-lg p-3">
             <p className="text-xs font-semibold text-muted-foreground mb-2">Top Skills</p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {topSkills.map((skill, index) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border border-border"
+                  className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border border-border font-medium"
                 >
                   {toDisplaySkillName(skill)}
                 </span>
               ))}
               {moreSkillsCount > 0 && (
-                <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border font-medium">
-                  +{moreSkillsCount} more
+                <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border font-medium text-[10px]">
+                  +{moreSkillsCount}
                 </span>
               )}
             </div>
