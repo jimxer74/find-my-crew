@@ -55,32 +55,30 @@ const normalizeRiskLevel = (riskLevel: string | string[] | null | undefined): Ri
 };
 
 
-// Helper function to get risk level config
-const getRiskLevelConfig = (riskLevel: RiskLevel | null) => {
+// Helper function to get risk level config (theme is passed as parameter, not via hook)
+const getRiskLevelConfig = (riskLevel: RiskLevel | null, isDark: boolean) => {
   if (!riskLevel) {
     return null;
   }
 
-  const theme = useTheme();
-
   switch (riskLevel) {
     case 'Coastal sailing':
       return {
-        icon: theme.resolvedTheme === 'dark' ? "/coastal_sailing_dark.png" : "/coastal_sailing.png",
+        icon: isDark ? "/coastal_sailing_dark.png" : "/coastal_sailing.png",
         displayName: riskLevelsConfig.coastal_sailing.title,
         shortDescription: riskLevelsConfig.coastal_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.coastal_sailing.infoText,
       };
     case 'Offshore sailing':
       return {
-        icon: theme.resolvedTheme === 'dark' ? "/offshore_sailing_dark.png" : "/offshore_sailing.png",
+        icon: isDark ? "/offshore_sailing_dark.png" : "/offshore_sailing.png",
         displayName: riskLevelsConfig.offshore_sailing.title,
         shortDescription: riskLevelsConfig.offshore_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.offshore_sailing.infoText,
       };
     case 'Extreme sailing':
       return {
-        icon: theme.resolvedTheme === 'dark' ? "/extreme_sailing_dark.png" : "/extreme_sailing.png",
+        icon: isDark ? "/extreme_sailing_dark.png" : "/extreme_sailing.png",
         displayName: riskLevelsConfig.extreme_sailing.title,
         shortDescription: riskLevelsConfig.extreme_sailing.infoText.split('\n\n')[0].substring(0, 150) + '...',
         fullInfoText: riskLevelsConfig.extreme_sailing.infoText,
@@ -142,6 +140,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const router = useRouter();
   const { user } = useAuth();
   const { handleRedirect } = useProfileRedirect();
+  const theme = useTheme();
   const [isMinimized, setIsMinimized] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const [isRiskLevelDialogOpen, setIsRiskLevelDialogOpen] = useState(false);
@@ -1547,7 +1546,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Risk Level and Experience level*/}
             {(() => {
-              const riskConfig = effectiveRiskLevel ? getRiskLevelConfig(effectiveRiskLevel) : null;
+              const riskConfig = effectiveRiskLevel ? getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') : null;
               return riskConfig ? (
                 <div>
 
@@ -1946,7 +1945,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       </div>
       </div>
       {/* Risk Level Info Dialog */}
-      {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel) && (
+      {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') && (
         <>
           {/* Backdrop */}
           <div
@@ -1960,7 +1959,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
                 <div className="flex items-center gap-2 sm:gap-3">
                   <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                    {getRiskLevelConfig(effectiveRiskLevel)!.displayName}
+                    {getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.displayName}
                   </h2>
                 </div>
                 <button
@@ -1986,7 +1985,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               {/* Content */}
               <div className="p-3 sm:p-4 overflow-y-auto flex-1">
                 <div className="prose prose-sm max-w-none text-foreground">
-                  {getRiskLevelConfig(effectiveRiskLevel)!.fullInfoText.split('\n\n').map((paragraph, index) => (
+                  {getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.fullInfoText.split('\n\n').map((paragraph, index) => (
                     <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
                       {paragraph}
                     </p>
