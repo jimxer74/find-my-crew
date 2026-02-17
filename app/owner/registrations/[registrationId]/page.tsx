@@ -368,16 +368,25 @@ export default function RegistrationDetailsPage() {
         </Link>
 
         {/* Crew Summary Card - Replaces old header */}
-        {data.crew && (
-          <CrewSummaryCard
-            crew={data.crew}
-            registration={data.registration}
-            skillMatchPercentage={data.skill_match_percentage}
-            experienceLevelMatches={data.experience_level_matches}
-            effectiveMinExperienceLevel={data.effective_min_experience_level}
-            legSkills={data.combined_skills}
-          />
-        )}
+        {data.crew && (() => {
+          // Determine if crew's risk level matches the job requirement
+          const riskLevelMatches = data.effective_risk_level
+            ? (data.crew?.risk_level?.includes(data.effective_risk_level) ?? false)
+            : null;
+
+          return (
+            <CrewSummaryCard
+              crew={data.crew}
+              registration={data.registration}
+              skillMatchPercentage={data.skill_match_percentage}
+              experienceLevelMatches={data.experience_level_matches}
+              effectiveMinExperienceLevel={data.effective_min_experience_level}
+              legSkills={data.combined_skills}
+              effectiveRiskLevel={data.effective_risk_level}
+              riskLevelMatches={riskLevelMatches}
+            />
+          );
+        })()}
 
         {/* Action buttons - Not collapsible */}
         {data.registration.status === 'Pending approval' && (

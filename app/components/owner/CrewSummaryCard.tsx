@@ -5,6 +5,7 @@ import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experienc
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { formatDate } from '@/app/lib/dateFormat';
+import { useTheme } from '@/app/contexts/ThemeContext';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -27,35 +28,28 @@ interface CrewSummaryCardProps {
   experienceLevelMatches: boolean | null;
   effectiveMinExperienceLevel: number | null;
   legSkills: string[];
+  effectiveRiskLevel?: RiskLevel | null;
+  riskLevelMatches?: boolean | null;
 }
 
-const getRiskLevelBadgeConfig = (riskLevel: RiskLevel | null) => {
+const getRiskLevelConfig = (riskLevel: RiskLevel | null, theme: any) => {
   if (!riskLevel) return null;
 
   switch (riskLevel) {
     case 'Coastal sailing':
       return {
-        icon: '/coastal_sailing2.png',
+        icon: theme?.resolvedTheme === 'dark' ? '/coastal_sailing_dark.png' : '/coastal_sailing.png',
         displayName: riskLevelsConfig.coastal_sailing.title,
-        bgColor: 'bg-blue-100',
-        textColor: 'text-blue-800',
-        borderColor: 'border-blue-300',
       };
     case 'Offshore sailing':
       return {
-        icon: '/offshore_sailing2.png',
+        icon: theme?.resolvedTheme === 'dark' ? '/offshore_sailing_dark.png' : '/offshore_sailing.png',
         displayName: riskLevelsConfig.offshore_sailing.title,
-        bgColor: 'bg-purple-100',
-        textColor: 'text-purple-800',
-        borderColor: 'border-purple-300',
       };
     case 'Extreme sailing':
       return {
-        icon: '/extreme_sailing2.png',
+        icon: theme?.resolvedTheme === 'dark' ? '/extreme_sailing_dark.png' : '/extreme_sailing.png',
         displayName: riskLevelsConfig.extreme_sailing.title,
-        bgColor: 'bg-red-100',
-        textColor: 'text-red-800',
-        borderColor: 'border-red-300',
       };
     default:
       return null;
@@ -69,7 +63,10 @@ export function CrewSummaryCard({
   experienceLevelMatches,
   effectiveMinExperienceLevel,
   legSkills,
+  effectiveRiskLevel,
+  riskLevelMatches,
 }: CrewSummaryCardProps) {
+  const theme = useTheme();
   if (!crew) return null;
 
   const getStatusBadge = (status: string) => {
@@ -91,13 +88,6 @@ export function CrewSummaryCard({
     if (percentage >= 80) return 'bg-green-500';
     if (percentage >= 60) return 'bg-yellow-500';
     return 'bg-red-500';
-  };
-
-  const getSkillMatchTextColor = (percentage: number | null) => {
-    if (percentage === null) return 'text-gray-700';
-    if (percentage >= 80) return 'text-green-700';
-    if (percentage >= 60) return 'text-yellow-700';
-    return 'text-red-700';
   };
 
   return (
@@ -154,108 +144,144 @@ export function CrewSummaryCard({
       {/* Divider */}
       <div className="border-t border-border mb-6" />
 
-      {/* Crew Attributes Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Experience Level - Match Card */}
+      {/* Risk and Experience Level - LegDetailsPanel Style */}
+      <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+        <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
+      </div>
+      <div className="space-y-3 grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-3 mb-6">
+        {/* Risk Level */}
+        {effectiveRiskLevel && (() => {
+          const riskConfig = getRiskLevelConfig(effectiveRiskLevel, theme);
+          return riskConfig ? (
+            <div>
+              <div className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left ${
+                riskLevelMatches === false
+                  ? 'border-orange-300'
+                  : 'border-green-500'
+              }`}>
+                <div className="relative w-12 h-12 flex-shrink-0">
+                  <Image
+                    src={riskConfig.icon}
+                    alt={riskConfig.displayName}
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="text-foreground font-medium font-semibold">
+                    {riskConfig.displayName}
+                  </p>
+                </div>
+              </div>
+              {riskLevelMatches === false && (
+                <p className="text-xs text-orange-500 mt-1 text-left">
+                  ⚠ Crew risk level preferences do not match requirement
+                </p>
+              )}
+              {riskLevelMatches === true && (
+                <p className="text-xs text-green-700 mt-1 text-left">
+                  ✓ Crew risk level preferences match requirement
+                </p>
+              )}
+            </div>
+          ) : null;
+        })()}
+
+        {/* Experience Level */}
         {crew.sailing_experience !== null && (
-          <div className="bg-muted/30 border border-border rounded-lg p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Experience Level</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+          <div>
+            <div className={`flex items-center gap-3 p-2 rounded-lg border-2 text-left ${
+              experienceLevelMatches === false
+                ? 'border-orange-300'
+                : 'border-green-500'
+            }`}>
+              <div className="relative w-12 h-12 flex-shrink-0">
                 <Image
-                  src={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon}
+                  src={
+                    getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon +
+                    (theme?.resolvedTheme === 'dark' ? '_dark.png' : '.png')
+                  }
                   alt={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
-                  width={24}
-                  height={24}
-                  className="object-contain flex-shrink-0"
+                  fill
+                  className="object-contain"
                 />
-                <p className="font-medium text-foreground text-sm">
+              </div>
+              <div className="flex-1">
+                <p className="text-foreground font-medium font-semibold">
                   {getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
                 </p>
               </div>
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full font-medium bg-green-300/80 border-2 border-green-500 text-green-800">
-                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </span>
             </div>
-          </div>
-        )}
-
-        {/* Risk Level Preferences - Match Cards */}
-        {crew.risk_level && crew.risk_level.length > 0 && (
-          <div className="bg-muted/30 border border-border rounded-lg p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Preferred Risk Levels</p>
-            <div className="flex flex-wrap gap-1.5">
-              {crew.risk_level.map((level) => {
-                const config = getRiskLevelBadgeConfig(level as RiskLevel);
-                if (!config) return null;
-                return (
-                  <span
-                    key={level}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border-2 ${config.bgColor} ${config.textColor} border-opacity-70`}
-                    title={level}
-                  >
-                    {level.split(' ')[0]}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Skill Match - Match Card */}
-        {skillMatchPercentage !== null && (
-          <div className="bg-muted/30 border border-border rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-muted-foreground">Skill Match</p>
-              <span
-                className={`inline-flex items-center font-semibold text-xs px-2 py-0.5 rounded-full border-2 ${
-                  skillMatchPercentage >= 80 ? 'bg-green-300/80 border-green-500 text-green-800' :
-                  skillMatchPercentage >= 50 ? 'bg-yellow-300/80 border-yellow-600 text-yellow-800' :
-                  skillMatchPercentage >= 25 ? 'bg-orange-300/80 border-orange-600 text-orange-800' :
-                  'bg-red-500/80 border-red-600 text-red-800'
-                }`}
-              >
-                {skillMatchPercentage}%
-              </span>
-            </div>
-            <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-300 ${getSkillMatchColor(skillMatchPercentage)}`}
-                style={{ width: `${skillMatchPercentage}%` }}
-              />
-            </div>
-            {legSkills.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-1.5">
-                {crew.skills.filter(s => legSkills.includes(s)).length}/{legSkills.length} skills match
+            {experienceLevelMatches === false && (
+              <p className="text-xs text-orange-500 mt-1 text-left">
+                ⚠ Crew experience level is below requirement
+              </p>
+            )}
+            {experienceLevelMatches === true && (
+              <p className="text-xs text-green-700 mt-1 text-left">
+                ✓ Crew experience level matches requirement
               </p>
             )}
           </div>
         )}
+      </div>
 
-        {/* Top Skills - Match Card */}
-        {crew.skills.length > 0 && (
-          <div className="bg-muted/30 border border-border rounded-lg p-3">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">Top Skills</p>
-            <div className="flex flex-wrap gap-1.5">
-              {topSkills.map((skill, index) => (
+      {/* Skill Match Section */}
+      {skillMatchPercentage !== null && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Skill Match</p>
+          <div className="flex items-center gap-3 p-2 rounded-lg border-2 border-border bg-muted/30">
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">Match Score</span>
                 <span
-                  key={index}
-                  className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border border-border font-medium"
+                  className={`inline-flex items-center font-semibold text-xs px-2 py-0.5 rounded-full border-2 ${
+                    skillMatchPercentage >= 80 ? 'bg-green-300/80 border-green-500 text-green-800' :
+                    skillMatchPercentage >= 50 ? 'bg-yellow-300/80 border-yellow-600 text-yellow-800' :
+                    skillMatchPercentage >= 25 ? 'bg-orange-300/80 border-orange-600 text-orange-800' :
+                    'bg-red-500/80 border-red-600 text-red-800'
+                  }`}
                 >
-                  {toDisplaySkillName(skill)}
+                  {skillMatchPercentage}%
                 </span>
-              ))}
-              {moreSkillsCount > 0 && (
-                <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border font-medium text-[10px]">
-                  +{moreSkillsCount}
-                </span>
+              </div>
+              <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${getSkillMatchColor(skillMatchPercentage)}`}
+                  style={{ width: `${skillMatchPercentage}%` }}
+                />
+              </div>
+              {legSkills.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {crew.skills.filter(s => legSkills.includes(s)).length}/{legSkills.length} skills match
+                </p>
               )}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Top Skills Section */}
+      {crew.skills.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground mb-2">Top Skills</p>
+          <div className="flex flex-wrap gap-2">
+            {topSkills.map((skill, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-accent text-accent-foreground rounded-full text-xs border border-border font-medium"
+              >
+                {toDisplaySkillName(skill)}
+              </span>
+            ))}
+            {moreSkillsCount > 0 && (
+              <span className="px-2 py-1 bg-muted text-muted-foreground rounded-full text-xs border border-border font-medium">
+                +{moreSkillsCount}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
