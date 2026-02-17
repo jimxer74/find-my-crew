@@ -16,7 +16,7 @@ interface CrewSummaryCardProps {
     full_name: string | null;
     username: string | null;
     sailing_experience: number | null;
-    skills: string[];
+    skills: Array<{ name: string; description: string }>;
     risk_level: string[] | null;
     profile_image_url: string | null;
   } | null;
@@ -31,7 +31,6 @@ interface CrewSummaryCardProps {
   legSkills: string[];
   effectiveRiskLevel?: RiskLevel | null;
   riskLevelMatches?: boolean | null;
-  skillNotes?: Record<string, string> | null;
 }
 
 const getRiskLevelConfig = (riskLevel: RiskLevel | null, theme: any) => {
@@ -80,7 +79,6 @@ export function CrewSummaryCard({
   legSkills,
   effectiveRiskLevel,
   riskLevelMatches,
-  skillNotes,
 }: CrewSummaryCardProps) {
   const theme = useTheme();
   if (!crew) return null;
@@ -269,7 +267,7 @@ export function CrewSummaryCard({
               </div>
               {legSkills.length > 0 && (
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  {crew.skills.filter(s => legSkills.includes(s)).length}/{legSkills.length} skills match
+                  {crew.skills.filter(s => legSkills.includes(s.name)).length}/{legSkills.length} skills match
                 </p>
               )}
             </div>
@@ -280,25 +278,24 @@ export function CrewSummaryCard({
       {/* All Skills Section - Table Format */}
       {crew.skills.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-3">Skills & Notes</p>
+          <p className="text-xs font-semibold text-muted-foreground mb-3">Skills & Description</p>
           <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Skill</th>
-                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Crew Notes</th>
+                  <th className="text-left px-4 py-2 font-semibold text-muted-foreground">Description</th>
                 </tr>
               </thead>
               <tbody>
-                {crew.skills.map((skill, index) => {
-                  const userNote = skillNotes?.[skill];
+                {crew.skills.map((skillObj, index) => {
                   return (
                     <tr key={index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-muted/10'} border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors`}>
                       <td className="px-4 py-2 font-medium text-foreground whitespace-nowrap">
-                        {toDisplaySkillName(skill)}
+                        {toDisplaySkillName(skillObj.name)}
                       </td>
                       <td className="px-4 py-2 text-foreground text-xs leading-relaxed">
-                        {userNote || <span className="text-muted-foreground italic">No notes provided</span>}
+                        {skillObj.description || <span className="text-muted-foreground italic">No description provided</span>}
                       </td>
                     </tr>
                   );

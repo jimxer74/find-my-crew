@@ -151,7 +151,7 @@ export async function GET(
       );
     }
 
-    // Fetch crew profile
+    // Fetch crew profile (skills stored as JSON array: [{skill: string, description: string}, ...])
     const { data: crewProfile, error: profileError } = await supabase
       .from('profiles')
       .select('id, full_name, username, email, sailing_experience, skills, risk_level, phone, profile_image_url, sailing_preferences')
@@ -160,6 +160,27 @@ export async function GET(
 
     if (profileError) {
       console.error('Error fetching crew profile:', profileError);
+    }
+
+    // Parse skills JSON data - extract skill names and descriptions
+    let skillsWithDescriptions: Array<{ name: string; description: string }> = [];
+    if (crewProfile?.skills) {
+      try {
+        const skillsData = Array.isArray(crewProfile.skills) ? crewProfile.skills : JSON.parse(crewProfile.skills);
+        if (Array.isArray(skillsData)) {
+          skillsWithDescriptions = skillsData.map((item: any) => {
+            // Handle both formats: {skill: string, description: string} or just string
+            if (typeof item === 'string') {
+              return { name: item, description: '' };
+            } else if (item.skill && item.description) {
+              return { name: item.skill, description: item.description };
+            }
+            return { name: '', description: '' };
+          }).filter(item => item.name);
+        }
+      } catch (e) {
+        console.error('Error parsing skills data:', e);
+      }
     }
 
     // Fetch waypoints for the leg
@@ -286,13 +307,6 @@ export async function GET(
       }
     }
 
-    // Extract skill descriptions provided by crew during registration
-    let skillNotes: Record<string, string> = {};
-    answers.forEach((a: any) => {
-      if (a.journey_requirements?.question_type === 'skill' && a.journey_requirements?.skill_name && a.answer_text) {
-        skillNotes[a.journey_requirements.skill_name] = a.answer_text;
-      }
-    });
 
     // Combine journey and leg skills (remove duplicates)
     const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
@@ -346,7 +360,7 @@ export async function GET(
         username: crewProfile.username,
         email: crewProfile.email,
         sailing_experience: crewProfile.sailing_experience,
-        skills: normalizeSkillNames(crewProfile.skills || []),
+        skills: skillsWithDescriptions,
         risk_level: crewProfile.risk_level,
         phone: crewProfile.phone,
         profile_image_url: crewProfile.profile_image_url,
@@ -394,8 +408,6 @@ export async function GET(
       // Passport verification data
       passportData: passportData,
       passportDoc: passportDoc,
-      // Skill notes provided by crew during registration
-      skillNotes: skillNotes,
     };
 
     return NextResponse.json(response);

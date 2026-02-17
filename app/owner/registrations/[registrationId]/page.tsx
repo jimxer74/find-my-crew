@@ -61,7 +61,7 @@ type RegistrationDetails = {
     username: string | null;
     email: string | null;
     sailing_experience: number | null;
-    skills: string[];
+    skills: Array<{ name: string; description: string }>;
     risk_level: string[] | null;
     phone: string | null;
     profile_image_url: string | null;
@@ -145,7 +145,6 @@ type RegistrationDetails = {
       expiry_date?: string;
     };
   } | null;
-  skillNotes?: Record<string, string> | null;
 };
 
 export default function RegistrationDetailsPage() {
@@ -385,7 +384,6 @@ export default function RegistrationDetailsPage() {
               legSkills={data.combined_skills}
               effectiveRiskLevel={data.effective_risk_level}
               riskLevelMatches={riskLevelMatches}
-              skillNotes={data.skillNotes}
             />
           );
         })()}
@@ -548,7 +546,7 @@ export default function RegistrationDetailsPage() {
               {data.combined_skills.length > 0 && (
                 <SkillsMatchingDisplay
                   legSkills={data.combined_skills}
-                  userSkills={data.crew?.skills || []}
+                  userSkills={data.crew?.skills?.map(s => s.name) || []}
                   skillMatchPercentage={data.skill_match_percentage ?? undefined}
                   headerText="Required Skills"
                 />
