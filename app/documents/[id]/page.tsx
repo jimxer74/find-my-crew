@@ -11,6 +11,7 @@ export default function DocumentViewPage() {
     id: string;
     file_name: string;
     file_type: string;
+    canAccess: boolean;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,19 +24,44 @@ export default function DocumentViewPage() {
         setLoading(true);
         setError(null);
 
-        // Fetch document metadata
-        const response = await fetch(`/api/documents/${documentId}`);
-        if (!response.ok) {
-          const data = await response.json();
+        // First, try to get access via the view endpoint (which checks grants)
+        // This returns a signed URL and validates access permissions
+        const viewResponse = await fetch(`/api/documents/${documentId}/view`);
+        
+        if (viewResponse.ok) {
+          // User has access via grant or ownership
+          // Now fetch the document metadata
+          const metadataResponse = await fetch(`/api/documents/${documentId}`);
+          
+          if (metadataResponse.ok) {
+            const data = await metadataResponse.json();
+            setDocumentInfo({
+              id: data.document.id,
+              file_name: data.document.file_name,
+              file_type: data.document.file_type,
+              canAccess: true,
+            });
+          } else if (metadataResponse.status === 404) {
+            // User has access via grant, so fetch metadata another way
+            // For now, just set minimal info based on ID
+            setDocumentInfo({
+              id: documentId,
+              file_name: 'Document',
+              file_type: 'unknown',
+              canAccess: true,
+            });
+          } else {
+            const data = await metadataResponse.json();
+            throw new Error(data.error || 'Failed to load document');
+          }
+        } else if (viewResponse.status === 403) {
+          throw new Error('You do not have permission to access this document. Ask the document owner to grant you access.');
+        } else if (viewResponse.status === 401) {
+          throw new Error('Please log in to view this document');
+        } else {
+          const data = await viewResponse.json();
           throw new Error(data.error || 'Failed to load document');
         }
-
-        const data = await response.json();
-        setDocumentInfo({
-          id: data.document.id,
-          file_name: data.document.file_name,
-          file_type: data.document.file_type,
-        });
       } catch (err: any) {
         setError(err.message || 'Failed to load document');
       } finally {
