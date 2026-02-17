@@ -162,14 +162,13 @@ export function CrewSummaryCard({
             <p className="text-xs font-semibold text-muted-foreground mb-2">Experience Level</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="relative w-6 h-6 flex-shrink-0">
-                  <Image
-                    src={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon}
-                    alt={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
+                <Image
+                  src={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).icon}
+                  alt={getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
+                  width={24}
+                  height={24}
+                  className="object-contain flex-shrink-0"
+                />
                 <p className="font-medium text-foreground text-sm">
                   {getExperienceLevelConfig(crew.sailing_experience as ExperienceLevel).displayName}
                 </p>
