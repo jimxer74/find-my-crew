@@ -3,9 +3,10 @@ id: TASK-108
 title: >-
   TASK-103.4: Send notification when registration fails auto-approval (remains
   pending)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-17 11:01'
+updated_date: '2026-02-17 11:04'
 labels:
   - notifications
   - registration
@@ -40,3 +41,26 @@ Required Changes:
 - [ ] #3 Crew receives notification when registration status remains pending
 - [ ] #4 Notification includes link to view registration status
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Notification on Failed Auto-Approval - Verification Complete
+
+The system already sends notifications to crew members when their registration fails AI auto-approval assessment and remains pending.
+
+### Existing Implementation
+- Located in: `app/lib/ai/assessRegistration.ts`
+- When auto_approved = false:
+  - `notifyPendingRegistration()` called for crew
+  - Includes journey_id, journey_name, leg_name
+  - Link provided to view status
+- Also in: `app/api/registrations/[registrationId]/route.ts`
+  - Manual pending status sends same notification
+
+### Features Already Implemented
+- ✅ Notification sent on failed auto-approval
+- ✅ Indicates registration is pending review
+- ✅ Crew receives notification
+- ✅ Includes link to view status
+<!-- SECTION:FINAL_SUMMARY:END -->
