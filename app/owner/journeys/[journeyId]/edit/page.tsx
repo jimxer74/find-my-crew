@@ -5,8 +5,6 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
-import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RequirementsManager } from '@/app/components/manage/RequirementsManager';
 import { ImageUpload } from '@/app/components/ui/ImageUpload';
 import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
@@ -14,7 +12,8 @@ import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
 import { CostModel } from '@/app/types/cost-models';
 import costModelsConfig from '@/app/config/cost-models-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
-import { ExperienceLevel } from '@/app/types/experience-levels';
+import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import { Footer } from '@/app/components/Footer';
 import Image from 'next/image';
@@ -576,31 +575,74 @@ export default function EditJourneyPage() {
 
           {/* Skills & Experience Section */}
           <CollapsibleSection title="Skills & Experience" sectionNumber={3}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-6">
               {/* Risk Level Selection */}
-              <div className="md:col-span-2">
-                <RiskLevelSelector
-                  value={formData.risk_level}
-                  onChange={(risk_level) => {
-                    const singleValue = Array.isArray(risk_level)
-                      ? (risk_level.length > 0 ? risk_level[0] : null)
-                      : risk_level;
-                    setFormData(prev => ({ ...prev, risk_level: singleValue as 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null }));
-                  }}
-                  singleSelect={true}
-                />
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Risk Level
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="risk-level"
+                      value="Coastal sailing"
+                      checked={formData.risk_level === 'Coastal sailing'}
+                      onChange={() => setFormData(prev => ({ ...prev, risk_level: 'Coastal sailing' }))}
+                      className="w-4 h-4 text-primary border-border focus:ring-primary"
+                    />
+                    <span className="text-sm text-foreground">{riskLevelsConfig.coastal_sailing.title}</span>
+                  </label>
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="risk-level"
+                      value="Offshore sailing"
+                      checked={formData.risk_level === 'Offshore sailing'}
+                      onChange={() => setFormData(prev => ({ ...prev, risk_level: 'Offshore sailing' }))}
+                      className="w-4 h-4 text-primary border-border focus:ring-primary"
+                    />
+                    <span className="text-sm text-foreground">{riskLevelsConfig.offshore_sailing.title}</span>
+                  </label>
+                  <label className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                    <input
+                      type="radio"
+                      name="risk-level"
+                      value="Extreme sailing"
+                      checked={formData.risk_level === 'Extreme sailing'}
+                      onChange={() => setFormData(prev => ({ ...prev, risk_level: 'Extreme sailing' }))}
+                      className="w-4 h-4 text-primary border-border focus:ring-primary"
+                    />
+                    <span className="text-sm text-foreground">{riskLevelsConfig.extreme_sailing.title}</span>
+                  </label>
+                </div>
               </div>
 
-              {/* Minimum Required Experience Level */}
-              <div className="md:col-span-2">
-                <SkillLevelSelector
-                  value={formData.min_experience_level}
-                  onChange={(min_experience_level) => setFormData(prev => ({ ...prev, min_experience_level }))}
-                />
+              {/* Required Experience Level */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Required Sailing Experience Level
+                </label>
+                <div className="flex flex-wrap gap-3">
+                  {getAllExperienceLevels().map((levelConfig) => (
+                    <label key={levelConfig.value} className="flex items-center min-h-[44px] cursor-pointer p-3 border border-border rounded-md hover:bg-accent transition-colors gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.min_experience_level === levelConfig.value}
+                        onChange={() => {
+                          const newValue = formData.min_experience_level === levelConfig.value ? null : levelConfig.value;
+                          setFormData(prev => ({ ...prev, min_experience_level: newValue }));
+                        }}
+                        className="w-4 h-4 text-primary border-border focus:ring-primary rounded"
+                      />
+                      <span className="text-sm text-foreground">{levelConfig.displayName}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {/* Skills */}
-              <div className="md:col-span-2">
+              <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
                   Required Skills
                 </label>
