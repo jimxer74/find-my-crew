@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
@@ -56,7 +58,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         userId: user.id,
       });
       return NextResponse.json(
-        { error: 'Failed to fetch grants', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }

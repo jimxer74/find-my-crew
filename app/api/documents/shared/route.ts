@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('[SharedDocuments] Query failed:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch shared documents', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }

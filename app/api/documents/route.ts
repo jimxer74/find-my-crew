@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('[Documents] List query failed:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch documents', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }

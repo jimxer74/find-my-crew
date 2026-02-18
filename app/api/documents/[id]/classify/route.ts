@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 import { classifyDocument } from '@/app/lib/ai/documents/classification-service';
