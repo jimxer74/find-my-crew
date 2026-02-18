@@ -5,6 +5,7 @@
  * Replaces localStorage-based session storage with server-side database storage.
  */
 
+import { logger } from '@/app/lib/logger';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 
 /**
@@ -28,7 +29,7 @@ export async function loadSession(sessionId: string): Promise<ProspectSession | 
     const data = await response.json();
     return data.session || null;
   } catch (error: any) {
-    console.error('[SessionService] Error loading session:', error);
+    logger.error('[SessionService] Error loading session', { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -42,7 +43,7 @@ export async function loadSession(sessionId: string): Promise<ProspectSession | 
  */
 export async function saveSession(sessionId: string, session: ProspectSession): Promise<void> {
   try {
-    console.log('[SessionService] 💾 Saving session:', {
+    logger.debug('[SessionService] Saving session', {
       sessionId,
       messagesCount: session.conversation?.length || 0,
       preferencesKeys: Object.keys(session.gatheredPreferences || {}),
@@ -85,15 +86,15 @@ export async function saveSession(sessionId: string, session: ProspectSession): 
         }
       }
 
-      console.error('[SessionService] ❌ Save failed:', errorDetails);
+      logger.error('[SessionService] Save failed', errorDetails);
       throw new Error(errorMessage);
     }
 
-    console.log('[SessionService] ✅ Session saved successfully');
+    logger.info('[SessionService] Session saved successfully');
   } catch (error: any) {
-    console.error('[SessionService] Error saving session:', {
-      message: error.message,
-      stack: error.stack,
+    logger.error('[SessionService] Error saving session', {
+      message: error?.message,
+      stack: error?.stack,
       sessionId,
     });
     throw error;
@@ -105,7 +106,7 @@ export async function saveSession(sessionId: string, session: ProspectSession): 
  */
 export async function deleteSession(sessionId: string): Promise<void> {
   try {
-    console.log('[SessionService] 🗑️ Deleting session:', sessionId);
+    logger.debug('[SessionService] Deleting session', { sessionId });
     
     const response = await fetch('/api/prospect/session/data', {
       method: 'DELETE',
@@ -130,15 +131,15 @@ export async function deleteSession(sessionId: string): Promise<void> {
         }
       }
 
-      console.error('[SessionService] ❌ Delete failed:', errorDetails);
+      logger.error('[SessionService] Delete failed', errorDetails);
       throw new Error(errorMessage);
     }
 
-    console.log('[SessionService] ✅ Session deleted successfully');
+    logger.info('[SessionService] Session deleted successfully');
   } catch (error: any) {
-    console.error('[SessionService] Error deleting session:', {
-      message: error.message,
-      stack: error.stack,
+    logger.error('[SessionService] Error deleting session', {
+      message: error?.message,
+      stack: error?.stack,
       sessionId,
     });
     throw error;
@@ -172,7 +173,7 @@ export async function linkSessionToUser(
       throw new Error(errorData.error || `Failed to link session: ${response.statusText}`);
     }
   } catch (error: any) {
-    console.error('[SessionService] Error linking session:', error);
+    logger.error('[SessionService] Error linking session', { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -199,7 +200,7 @@ export async function updateOnboardingState(
       throw new Error(errorData.error || `Failed to update onboarding state: ${response.statusText}`);
     }
   } catch (error: any) {
-    console.error('[ProspectSessionService] Error updating onboarding state:', error);
+    logger.error('[ProspectSessionService] Error updating onboarding state', { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -237,7 +238,7 @@ export async function recoverSessionByEmail(
       session: data.session,
     };
   } catch (error: any) {
-    console.error('[SessionService] Error recovering session:', error);
+    logger.error('[SessionService] Error recovering session', { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
