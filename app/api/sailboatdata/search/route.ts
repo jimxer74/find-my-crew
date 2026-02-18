@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { searchSailboatData } from '@/app/lib/sailboatdata_queries';
 import { lookupBoatRegistry } from '@/app/lib/boat-registry/service';
+import { logger } from '@/app/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,9 +16,7 @@ export async function POST(request: NextRequest) {
 
     const queryTrimmed = query.trim();
 
-    console.log('=== SAILBOATDATA SEARCH API ===');
-    console.log('Query:', queryTrimmed);
-    console.log('================================');
+    logger.debug('SAILBOATDATA SEARCH API', { query: queryTrimmed });
 
     // First, check boat_registry for exact match (case-insensitive)
     try {
@@ -44,7 +43,7 @@ export async function POST(request: NextRequest) {
       
       if (registryEntry) {
         // Exact match found in registry - return it without calling external API
-        console.log('✅ Exact match found in boat_registry:', registryEntry.make_model);
+        logger.info('Exact match found in boat_registry', { boat: registryEntry.make_model });
         
         // Generate URL from slug if available, otherwise construct from make_model
         let url = '';
@@ -75,9 +74,7 @@ export async function POST(request: NextRequest) {
           slug: slug || '',
         };
         
-        console.log('=== REGISTRY MATCH RESULT ===');
-        console.log('Returning:', suggestion);
-        console.log('=============================');
+        logger.debug('Registry match result', { suggestion });
         
         return NextResponse.json({
           suggestions: [suggestion],
@@ -86,11 +83,11 @@ export async function POST(request: NextRequest) {
       }
     } catch (registryError) {
       // Registry lookup failed - continue with external search (non-fatal)
-      console.warn('Registry lookup failed, continuing with external search:', registryError);
+      logger.warn('Registry lookup failed, continuing with external search', { error: registryError instanceof Error ? registryError.message : String(registryError) });
     }
 
     // No exact match in registry - search external API
-    console.log('⚠️ No exact match in registry, searching external API...');
+    logger.debug('No exact match in registry, searching external API');
     const results = await searchSailboatData(queryTrimmed);
 
     // Transform to format expected by frontend
@@ -100,10 +97,7 @@ export async function POST(request: NextRequest) {
       slug: result.slug,
     }));
 
-    console.log('=== EXTERNAL SEARCH RESULTS ===');
-    console.log('Found:', suggestions.length, 'suggestions');
-    console.log('Suggestions:', suggestions);
-    console.log('================================');
+    logger.debug('External search results', { count: suggestions.length, suggestions });
 
     return NextResponse.json({
       suggestions: suggestions,
@@ -111,7 +105,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error searching sailboats:', error);
+    logger.error('Error searching sailboats', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to search sailboats' },
       { status: 500 }

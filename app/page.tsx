@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { logger } from '@/app/lib/logger';
 import { Footer } from '@/app/components/Footer';
 import { LoginModal } from '@/app/components/LoginModal';
 import { SignupModal } from '@/app/components/SignupModal';
@@ -205,7 +206,7 @@ export default function WelcomePage() {
           setIsCheckingRole(false);
         }
       } catch (error) {
-        console.error('[RootRoute] Failed to determine redirect:', error);
+        logger.error('[RootRoute] Failed to determine redirect', { error: error instanceof Error ? error.message : String(error) });
         // On error, allow page to render (fallback)
         setIsCheckingRole(false);
       }
@@ -280,7 +281,7 @@ export default function WelcomePage() {
           setSessionLegs(legArray.slice(0, 4));
         }
       } catch (e) {
-        console.error('Failed to check session:', e);
+        logger.error('Failed to check session', { error: e instanceof Error ? e.message : String(e) });
       }
     }
     
@@ -315,7 +316,7 @@ export default function WelcomePage() {
           setOwnerOnboardingState(session.onboardingState || 'signup_pending');
         }
       } catch (e) {
-        console.error('Failed to check owner session:', e);
+        logger.error('Failed to check owner session', { error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -346,7 +347,7 @@ export default function WelcomePage() {
           .maybeSingle();
         setCrewHasProfile(!!data);
       } catch (error) {
-        console.error('Error fetching crew profile:', error);
+        logger.error('Error fetching crew profile', { error: error instanceof Error ? error.message : String(error) });
         setCrewHasProfile(false);
       }
     };
@@ -380,14 +381,14 @@ export default function WelcomePage() {
               .limit(1);
             setOwnerHasJourney((data?.length ?? 0) > 0);
           } catch (error) {
-            console.error('Error fetching owner journeys:', error);
+            logger.error('Error fetching owner journeys', { error: error instanceof Error ? error.message : String(error) });
             setOwnerHasJourney(false);
           }
         } else {
           setOwnerHasJourney(false);
         }
       } catch (error) {
-        console.error('Error fetching owner profile and boats:', error);
+        logger.error('Error fetching owner profile and boats', { error: error instanceof Error ? error.message : String(error) });
         setOwnerHasProfile(false);
         setOwnerHasBoat(false);
         setOwnerHasJourney(false);
@@ -418,16 +419,16 @@ export default function WelcomePage() {
         if (sessionId) {
           try {
             await ownerSessionService.deleteSession(sessionId);
-            console.log('[Frontpage] ✅ Deleted owner session from database');
+            logger.info('[Frontpage] Deleted owner session from database');
           } catch (error) {
-            console.error('[Frontpage] Error deleting owner session:', error);
+            logger.error('[Frontpage] Error deleting owner session', { error: error instanceof Error ? error.message : String(error) });
           }
         }
       }
 
       await fetch('/api/owner/session', { method: 'DELETE' });
     } catch (e) {
-      console.error('Failed to clear owner session:', e);
+      logger.error('Failed to clear owner session', { error: e instanceof Error ? e.message : String(e) });
     }
 
     setHasOwnerSession(false);
@@ -452,9 +453,9 @@ export default function WelcomePage() {
         if (sessionId) {
           try {
             await sessionService.deleteSession(sessionId);
-            console.log('[Frontpage] ✅ Deleted session from database');
+            logger.info('[Frontpage] Deleted session from database');
           } catch (error) {
-            console.error('[Frontpage] Error deleting session:', error);
+            logger.error('[Frontpage] Error deleting session', { error: error instanceof Error ? error.message : String(error) });
           }
         }
       }
@@ -462,7 +463,7 @@ export default function WelcomePage() {
       // Clear server cookie
       await fetch('/api/prospect/session', { method: 'DELETE' });
     } catch (e) {
-      console.error('Failed to clear session:', e);
+      logger.error('Failed to clear session', { error: e instanceof Error ? e.message : String(e) });
     }
     
     // Reset state to show full welcome page

@@ -6,6 +6,7 @@
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { logger } from '@/app/lib/logger';
 import {
   FeedbackType,
   FeedbackStatus,
@@ -35,7 +36,7 @@ export async function createFeedback(
   userId: string,
   payload: CreateFeedbackPayload
 ): Promise<{ feedback: Feedback | null; error: string | null }> {
-  console.log('[FeedbackService] Creating feedback:', {
+  logger.debug('[FeedbackService] Creating feedback', {
     user_id: userId,
     type: payload.type,
     title: payload.title,
@@ -56,15 +57,15 @@ export async function createFeedback(
     .single();
 
   if (error) {
-    console.error('[FeedbackService] Error creating feedback:', {
-      error,
-      code: error.code,
-      message: error.message,
+    logger.error('[FeedbackService] Error creating feedback', {
+      error: error?.message || String(error),
+      code: error?.code,
+      message: error?.message,
     });
     return { feedback: null, error: error.message };
   }
 
-  console.log('[FeedbackService] Feedback created successfully:', data?.id);
+  logger.info('[FeedbackService] Feedback created successfully', { feedbackId: data?.id });
   return { feedback: data as Feedback, error: null };
 }
 
@@ -91,7 +92,7 @@ export async function getFeedbackById(
     .single();
 
   if (error) {
-    console.error('[FeedbackService] Error fetching feedback:', error);
+    logger.error('[FeedbackService] Error fetching feedback', { error: error instanceof Error ? error.message : String(error) });
     return { feedback: null, error: error.message };
   }
 
@@ -196,7 +197,7 @@ export async function getFeedbackList(
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('[FeedbackService] Error fetching feedback list:', error);
+      logger.error('[FeedbackService] Error fetching feedback list', { error: error instanceof Error ? error.message : String(error) });
       return { items: [], total: 0, page, limit, hasMore: false };
     }
 
@@ -239,7 +240,7 @@ export async function getFeedbackList(
 
     return { items, total, page, limit, hasMore };
   } catch (err) {
-    console.error('[FeedbackService] Unexpected error:', err);
+    logger.error('[FeedbackService] Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return { items: [], total: 0, page, limit, hasMore: false };
   }
 }
@@ -286,7 +287,7 @@ export async function getUserFeedback(
     const { data, error, count } = await query;
 
     if (error) {
-      console.error('[FeedbackService] Error fetching user feedback:', error);
+      logger.error('[FeedbackService] Error fetching user feedback', { error: error instanceof Error ? error.message : String(error) });
       return { items: [], total: 0, page, limit, hasMore: false };
     }
 
@@ -302,7 +303,7 @@ export async function getUserFeedback(
 
     return { items, total, page, limit, hasMore };
   } catch (err) {
-    console.error('[FeedbackService] Unexpected error:', err);
+    logger.error('[FeedbackService] Unexpected error', { error: err instanceof Error ? err.message : String(err) });
     return { items: [], total: 0, page, limit, hasMore: false };
   }
 }
@@ -330,7 +331,7 @@ export async function updateFeedback(
     .single();
 
   if (error) {
-    console.error('[FeedbackService] Error updating feedback:', error);
+    logger.error('[FeedbackService] Error updating feedback', { error: error instanceof Error ? error.message : String(error) });
     return { feedback: null, error: error.message };
   }
 
@@ -360,7 +361,7 @@ export async function updateFeedbackStatus(
     .single();
 
   if (error) {
-    console.error('[FeedbackService] Error updating feedback status:', error);
+    logger.error('[FeedbackService] Error updating feedback status', { error: error instanceof Error ? error.message : String(error) });
     return { feedback: null, error: error.message };
   }
 
@@ -382,7 +383,7 @@ export async function deleteFeedback(
     .eq('user_id', userId);
 
   if (error) {
-    console.error('[FeedbackService] Error deleting feedback:', error);
+    logger.error('[FeedbackService] Error deleting feedback', { error: error instanceof Error ? error.message : String(error) });
     return { success: false, error: error.message };
   }
 
@@ -410,7 +411,7 @@ export async function voteFeedback(
     .single();
 
   if (feedbackError) {
-    console.error('[FeedbackService] Error checking feedback ownership:', feedbackError);
+    logger.error('[FeedbackService] Error checking feedback ownership', { error: feedbackError instanceof Error ? feedbackError.message : String(feedbackError) });
     return { success: false, error: feedbackError.message };
   }
 
@@ -435,7 +436,7 @@ export async function voteFeedback(
         .eq('id', existingVote.id);
 
       if (error) {
-        console.error('[FeedbackService] Error removing vote:', error);
+        logger.error('[FeedbackService] Error removing vote', { error: error instanceof Error ? error.message : String(error) });
         return { success: false, error: error.message };
       }
     }
@@ -455,7 +456,7 @@ export async function voteFeedback(
       .eq('id', existingVote.id);
 
     if (error) {
-      console.error('[FeedbackService] Error updating vote:', error);
+      logger.error('[FeedbackService] Error updating vote', { error: error instanceof Error ? error.message : String(error) });
       return { success: false, error: error.message };
     }
   } else {
@@ -469,7 +470,7 @@ export async function voteFeedback(
       });
 
     if (error) {
-      console.error('[FeedbackService] Error creating vote:', error);
+      logger.error('[FeedbackService] Error creating vote', { error: error instanceof Error ? error.message : String(error) });
       return { success: false, error: error.message };
     }
   }
@@ -594,7 +595,7 @@ export async function getPromptStatus(
 
     return response;
   } catch (err) {
-    console.error('[FeedbackService] Error checking prompt status:', err);
+    logger.error('[FeedbackService] Error checking prompt status', { error: err instanceof Error ? err.message : String(err) });
     return response;
   }
 }
@@ -624,7 +625,7 @@ export async function dismissPrompt(
     });
 
   if (error) {
-    console.error('[FeedbackService] Error dismissing prompt:', error);
+    logger.error('[FeedbackService] Error dismissing prompt', { error: error instanceof Error ? error.message : String(error) });
     return { success: false, error: error.message };
   }
 
@@ -696,7 +697,7 @@ export async function getFeedbackStats(
 
     return stats;
   } catch (err) {
-    console.error('[FeedbackService] Error getting stats:', err);
+    logger.error('[FeedbackService] Error getting stats', { error: err instanceof Error ? err.message : String(err) });
     return stats;
   }
 }

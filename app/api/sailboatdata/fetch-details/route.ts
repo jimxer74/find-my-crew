@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchSailboatDetails } from '@/app/lib/sailboatdata_queries';
 import { lookupBoatRegistry } from '@/app/lib/boat-registry/service';
+import { logger } from '@/app/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,10 +18,7 @@ export async function POST(request: NextRequest) {
     const makeModelTrimmed = make_model.trim();
     const slugTrimmed = slug && typeof slug === 'string' ? slug.trim() : undefined;
 
-    console.log('=== FETCH SAILBOAT DETAILS API ===');
-    console.log('Make/Model:', makeModelTrimmed);
-    console.log('Slug:', slugTrimmed || '(will be generated from make_model)');
-    console.log('==================================');
+    logger.debug('FETCH SAILBOAT DETAILS API', { makeModel: makeModelTrimmed, slug: slugTrimmed || '(will be generated from make_model)' });
 
     // Check registry first (fetchSailboatDetails will also check, but we can log source here)
     let source = 'external';
@@ -28,11 +26,11 @@ export async function POST(request: NextRequest) {
       const registryEntry = await lookupBoatRegistry(makeModelTrimmed, slugTrimmed);
       if (registryEntry) {
         source = 'registry';
-        console.log('✅ Using cached data from boat registry');
+        logger.info('Using cached data from boat registry');
       }
     } catch (error) {
       // Registry check failed, continue with fetchSailboatDetails
-      console.warn('Registry check failed, continuing:', error);
+      logger.warn('Registry check failed, continuing', { error: error instanceof Error ? error.message : String(error) });
     }
 
     // Fetch details (will check registry internally and fallback to external if needed)
@@ -71,7 +69,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error fetching sailboat details:', error);
+    logger.error('Error fetching sailboat details', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to fetch sailboat details' },
       { status: 500 }
