@@ -4,7 +4,7 @@ title: Fix UI issues
 status: In Progress
 assignee: []
 created_date: '2026-01-29 08:57'
-updated_date: '2026-02-18 06:44'
+updated_date: '2026-02-18 06:45'
 labels: []
 dependencies: []
 ---
@@ -18,5 +18,7 @@ dependencies: []
 - After Register leg the REgister form is still visible
 - Prospect ai assistant, show badge buttons to verify profile
 - Add "Exit assistant" functionality to owner chat as well
+- /crew page when user signs-in the Filters should be preset based on the user's profile
+- /crew/dashboar when user opens map view after sign-up the filters should be based on user profile setting
 -
 <!-- SECTION:DESCRIPTION:END -->
