@@ -777,9 +777,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setRequirementsAnswers(answers);
     setRegistrationNotes(notes);
 
-    // Close the requirements form before submitting
-    // This prevents the form from showing again while registration is being processed
-    setShowRequirementsForm(false);
+    // Note: Keep form open so user can see loading state on button
+    // Form will be closed when registration completes (success or error)
 
     // Submit registration directly from requirements form, passing answers directly
     // to avoid React state update race condition
