@@ -770,6 +770,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     // Update state for UI consistency
     setRequirementsAnswers(answers);
     setRegistrationNotes(notes);
+
+    // Close the requirements form before submitting
+    // This prevents the form from showing again while registration is being processed
+    setShowRequirementsForm(false);
+
     // Submit registration directly from requirements form, passing answers directly
     // to avoid React state update race condition
     await handleSubmitRegistration(answers, notes);
