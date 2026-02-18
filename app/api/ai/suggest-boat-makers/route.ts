@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/app/lib/logger';
 
 // Curated list of popular sailboat makers
 const POPULAR_BOAT_MAKERS = [
@@ -64,11 +65,7 @@ Return format: ["Maker1", "Maker2", "Maker3", ...]
 Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
 
         // Debug: Log the prompt
-        console.log('=== AI SUGGEST-BOAT-MAKERS DEBUG ===');
-        console.log('Query:', query);
-        console.log('Prompt sent to AI:');
-        console.log(prompt);
-        console.log('====================================');
+        logger.debug('Suggesting boat makers', { query }, true);
 
         const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
         const apiVersions = ['v1beta', 'v1'];
@@ -113,12 +110,7 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
 
               if (text) {
                 // Debug: Log the raw AI response
-                console.log('=== AI RESPONSE DEBUG ===');
-                console.log('API Version:', apiVersion);
-                console.log('Model:', modelName);
-                console.log('Raw AI Response:');
-                console.log(text);
-                console.log('==========================');
+                logger.debug('AI response received', { apiVersion, model: modelName }, true);
                 break;
               }
             } catch (err: any) {
@@ -139,29 +131,23 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
           }
 
           const aiSuggestions = JSON.parse(jsonText);
-          
-          // Debug: Log parsed suggestions
-          console.log('=== PARSED SUGGESTIONS DEBUG ===');
-          console.log('Parsed JSON:', aiSuggestions);
-          console.log('Is Array:', Array.isArray(aiSuggestions));
-          if (Array.isArray(aiSuggestions)) {
-            console.log('Number of suggestions:', aiSuggestions.length);
-            console.log('AI Suggestions:', aiSuggestions);
-            console.log('Curated matches:', filteredCurated);
-          }
-          console.log('================================');
-          
+
+          logger.debug('Parsed boat maker suggestions', {
+            isArray: Array.isArray(aiSuggestions),
+            count: Array.isArray(aiSuggestions) ? aiSuggestions.length : 0,
+          }, true);
+
           if (Array.isArray(aiSuggestions)) {
             // Combine curated and AI suggestions, remove duplicates
             const combined = [...new Set([...filteredCurated, ...aiSuggestions])];
-            console.log('Final combined suggestions:', combined);
+            logger.debug('Combined boat maker suggestions', { count: combined.length }, true);
             return NextResponse.json({
               suggestions: combined.slice(0, 10)
             });
           }
         }
       } catch (aiError: any) {
-        console.error('AI suggestion error:', aiError);
+        logger.error('AI boat maker suggestion error', { error: aiError instanceof Error ? aiError.message : String(aiError) });
         // Fallback to curated list
       }
     }
@@ -174,9 +160,9 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
     });
 
   } catch (error: any) {
-    console.error('Error suggesting boat makers:', error);
+    logger.error('Error suggesting boat makers', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: error.message || 'Failed to suggest boat makers' },
+      { error: error instanceof Error ? error.message : 'Failed to suggest boat makers' },
       { status: 500 }
     );
   }
