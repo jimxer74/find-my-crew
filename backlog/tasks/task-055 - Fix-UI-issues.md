@@ -4,7 +4,7 @@ title: Fix UI issues
 status: In Progress
 assignee: []
 created_date: '2026-01-29 08:57'
-updated_date: '2026-02-18 06:56'
+updated_date: '2026-02-18 13:24'
 labels: []
 dependencies: []
 ---
@@ -21,4 +21,5 @@ dependencies: []
 - /crew page when user signs-in the Filters should be preset based on the user's profile
 - /crew/dashboar when user opens map view after sign-up the filters should be based on user profile setting
 - /crew list page displays only one cruising area with more button to user with predefined location preference Panama
+- Add headers to skills in profile helper pane
 <!-- SECTION:DESCRIPTION:END -->
