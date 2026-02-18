@@ -1,10 +1,11 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
 // GET /api/ai/assistant/actions - List pending actions
 export async function GET(request: NextRequest) {
-  console.log('[API] 🔍 GET /api/ai/assistant/actions called');
+  logger.debug('[API] GET /api/ai/assistant/actions called');
   try {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -23,20 +24,20 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      console.log('[API] ❌ Unauthorized - no user');
+      logger.info('[API] ❌ Unauthorized - no user');
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    console.log('[API] 👤 User authenticated:', user.id);
+    logger.info('[API] User authenticated', { userId: user.id });
 
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status') || 'pending';
     const limit = parseInt(searchParams.get('limit') || '20', 10);
 
-    console.log('[API] 📋 Query params - status:', status, 'limit:', limit);
+    logger.debug('[API] Query params', { status, limit });
 
     let query = supabase
       .from('ai_pending_actions')
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
       .limit(limit);
 
     if (status !== 'all') {
-      console.log('[API] 📊 Applying status filter:', status);
+      logger.debug('[API] Applying status filter', { status });
       query = query.eq('status', status);
     }
 
@@ -54,14 +55,14 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    console.log('[API] 📦 Database query result:', actions);
+    logger.debug('[API] Database query result', { count: actions?.length || 0 });
 
     return NextResponse.json({
       actions: actions || [],
       count: actions?.length || 0,
     });
   } catch (error: any) {
-    console.error('[API] 🚨 Exception in GET /api/ai/assistant/actions:', error);
+    logger.error('[API] Exception in GET /api/ai/assistant/actions', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to list actions' },
       { status: 500 }
