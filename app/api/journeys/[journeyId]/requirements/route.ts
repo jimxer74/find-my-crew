@@ -82,7 +82,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in requirements API:', error);
+    logger.error('Unexpected error in requirements API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -320,7 +320,7 @@ export async function POST(
     }, { status: 201 });
 
   } catch (error: any) {
-    logger.error('Unexpected error in requirements API:', error);
+    logger.error('Unexpected error in requirements API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

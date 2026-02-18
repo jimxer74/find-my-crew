@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -103,7 +104,7 @@ export default function ProposeJourneyPage() {
       .order('name', { ascending: true });
 
     if (boatsError) {
-      logger.error('Failed to load boats:', boatsError);
+      logger.error('Failed to load boats:', { error: boatsError?.message || String(boatsError) });
       setError('Failed to load boats');
     } else {
       setBoats(data || []);
@@ -225,7 +226,7 @@ export default function ProposeJourneyPage() {
         let riskLevelValue: string | null = null;
         const rawRiskLevel = generatedJourney.riskLevel;
         
-        logger.debug('[ProposeJourney] Raw riskLevel:', rawRiskLevel, 'Type:', typeof rawRiskLevel);
+        logger.debug('[ProposeJourney] Raw riskLevel:', { rawRiskLevel, type: typeof rawRiskLevel });
         
         // Handle different formats
         if (typeof rawRiskLevel === 'string') {
@@ -252,7 +253,7 @@ export default function ProposeJourneyPage() {
                 riskLevelValue = parsed;
               }
             } catch (parseError) {
-              logger.warn('[ProposeJourney] Failed to parse riskLevel JSON:', parseError, 'Value:', trimmed);
+              logger.warn('[ProposeJourney] Failed to parse riskLevel JSON:', { error: parseError instanceof Error ? parseError.message : String(parseError), value: trimmed });
               // Try to extract the value directly using regex (handles "["value"]" format)
               const match = trimmed.match(/\["([^"]+)"\]/);
               if (match && match[1]) {
@@ -277,9 +278,9 @@ export default function ProposeJourneyPage() {
           // Validate and set risk_level as SCALAR enum value (not an array!)
           if (validRiskLevels.includes(riskLevelValue)) {
             journeyInsertData.risk_level = riskLevelValue; // Scalar value, not array
-            logger.debug('[ProposeJourney] Set risk_level (scalar):', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
+            logger.debug('[ProposeJourney] Set risk_level (scalar)', { value: journeyInsertData.risk_level, type: typeof journeyInsertData.risk_level });
           } else {
-            logger.warn('[ProposeJourney] Invalid risk level value:', riskLevelValue, 'Valid values:', validRiskLevels);
+            logger.warn('[ProposeJourney] Invalid risk level value:', { value: riskLevelValue, valid: validRiskLevels });
           }
         }
       }
@@ -319,20 +320,20 @@ export default function ProposeJourneyPage() {
           }
           // If it's a plain string, validate it
           else if (!validRiskLevels.includes(strValue)) {
-            logger.warn('[ProposeJourney] Invalid risk level string:', strValue);
+            logger.warn('[ProposeJourney] Invalid risk level string:', { value: strValue });
             delete journeyInsertData.risk_level;
           }
         }
         // If it's not a string or array, remove it
         else {
-          logger.warn('[ProposeJourney] risk_level is not a string or array:', journeyInsertData.risk_level);
+          logger.warn('[ProposeJourney] risk_level is not a string or array:', { riskLevel: journeyInsertData.risk_level });
           delete journeyInsertData.risk_level;
         }
       }
       
       // Log final data before insert for debugging
-      logger.debug('[ProposeJourney] Final journeyInsertData.risk_level:', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
-      logger.debug('[ProposeJourney] Full journeyInsertData:', JSON.stringify(journeyInsertData, null, 2));
+      logger.debug('[ProposeJourney] Final journeyInsertData.risk_level:', { riskLevel: journeyInsertData.risk_level, type: typeof journeyInsertData.risk_level });
+      logger.debug('[ProposeJourney] Full journeyInsertData:', { data: journeyInsertData });
 
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
@@ -393,7 +394,7 @@ export default function ProposeJourneyPage() {
       resetForm();
       router.push(`/owner/journeys/${journeyData.id}/legs`);
     } catch (err: any) {
-      logger.error('Failed to save AI journey:', err);
+      logger.error('Failed to save AI journey:', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message || 'Failed to save journey');
     } finally {
       setLoading(false);

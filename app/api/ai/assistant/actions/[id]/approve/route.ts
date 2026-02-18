@@ -8,7 +8,7 @@ import { executeAction } from '@/app/lib/ai/assistant';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API Approve Action] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Approve Action] ${message}`, data !== undefined && data !== null ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (fetchError || !action) {
-      log('Action not found:', id);
+      log('Action not found:', { id });
       return NextResponse.json(
         { error: 'Action not found' },
         { status: 404 }
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error: any) {
     log('ERROR:', error.message);
-    logger.error('Approve action error:', error);
+    logger.error('Approve action error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to approve action' },
       { status: 500 }

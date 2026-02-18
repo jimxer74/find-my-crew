@@ -145,7 +145,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       try {
         logger.debug('[FALLBACK] loadProfilePreferences called');
         const supabase = getSupabaseBrowserClient();
-        logger.debug('[FALLBACK] User from AuthContext:', user.id);
+        logger.debug('[FALLBACK] User from AuthContext:', { userId: user.id });
         logger.info('[FilterContext] Loading profile preferences', { userId: user.id });
         if (!user) {
           logger.info('[FilterContext] No user found, skipping profile load', {});

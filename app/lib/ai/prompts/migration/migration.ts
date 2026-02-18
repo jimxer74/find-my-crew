@@ -2,6 +2,7 @@
  * Migration utilities for transitioning from inline prompts to the centralized prompt registry
  */
 
+import { logger } from '@/app/lib/logger';
 import { promptRegistry, PromptUtils } from '../index';
 import { MigrationRecord } from '../types';
 import { boatSuggestionsMigration } from '../use-cases/boat-suggestions';
@@ -36,7 +37,7 @@ export class PromptMigrationManager {
         results.push(result);
         this.migrations.push(result);
       } catch (error) {
-        logger.error(`Migration failed for ${migration.prompt.id}:`, error);
+        logger.error(`[PromptMigrationManager] Migration failed for ${migration.prompt.id}:`, error instanceof Error ? { error: error.message } : { error: String(error) });
         const failedResult: MigrationRecord = {
           id: `${migration.prompt.id}_${Date.now()}`,
           fromLocation: migration.fromLocation,

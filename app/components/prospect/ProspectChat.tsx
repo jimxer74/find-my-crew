@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -224,10 +225,12 @@ export function ProspectChat() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    logger.debug('[ProspectChat] Messages changed - total:', messages.length, 
-      'user messages:', messages.filter(m => m.role === 'user').length,
-      'assistant messages:', messages.filter(m => m.role === 'assistant').length,
-      'all message IDs:', messages.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
+    logger.debug('[ProspectChat] Messages changed', {
+      total: messages.length,
+      userMessages: messages.filter(m => m.role === 'user').length,
+      assistantMessages: messages.filter(m => m.role === 'assistant').length,
+      messageIds: messages.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) }))
+    });
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -326,7 +329,7 @@ export function ProspectChat() {
       await clearSession();
       router.push('/crew');
     } catch (e) {
-      logger.error('Failed to clear session:', e);
+      logger.error('Failed to clear session:', e instanceof Error ? { error: e.message } : { error: String(e) });
       setIsNavigatingToCrew(false);
     }
   };

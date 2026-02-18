@@ -169,7 +169,7 @@ export async function PUT(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in requirement update API:', error);
+    logger.error('Unexpected error in requirement update API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -271,7 +271,7 @@ export async function DELETE(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in requirement delete API:', error);
+    logger.error('Unexpected error in requirement delete API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

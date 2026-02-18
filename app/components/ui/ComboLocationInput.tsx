@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { logger } from '@/app/lib/logger';
 import { getAllRegions, type LocationSearchResult } from '@/app/lib/geocoding/locations';
 import type { Location } from './LocationAutocomplete';
 
@@ -206,7 +207,7 @@ export function ComboLocationInput({
         setSuggestions(mergedSuggestions);
         setShowSuggestions(true);
       } catch (err) {
-        logger.error('Error fetching location suggestions:', err);
+        logger.error('Error fetching location suggestions:', err instanceof Error ? { error: err.message } : { error: String(err) });
         // Still show cruising regions on error
         setSuggestions(cruisingSuggestions);
         setShowSuggestions(cruisingSuggestions.length > 0);
@@ -295,7 +296,7 @@ export function ComboLocationInput({
         sessionTokenRef.current = null; // Reset session token
       }
     } catch (err) {
-      logger.error('Error retrieving location details:', err);
+      logger.error('Error retrieving location details:', err instanceof Error ? { error: err.message } : { error: String(err) });
     }
   };
 

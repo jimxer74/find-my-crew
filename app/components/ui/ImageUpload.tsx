@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import { logger } from '@/app/lib/logger';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 interface ImageUploadProps {
@@ -107,7 +108,7 @@ export function ImageUpload({
 
       onUpload(uploadedUrls);
     } catch (err: any) {
-      logger.error('Upload error:', err);
+      logger.error('Upload error:', err instanceof Error ? { error: err.message } : { error: String(err) });
       onError?.(err.message || 'Failed to upload images');
     } finally {
       setUploading(false);

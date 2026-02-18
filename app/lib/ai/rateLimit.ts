@@ -5,6 +5,8 @@
  * and retry logic with exponential backoff.
  */
 
+import { logger } from '../logger';
+
 interface RateLimitConfig {
   maxRequests: number;        // Maximum requests allowed
   windowMs: number;           // Time window in milliseconds

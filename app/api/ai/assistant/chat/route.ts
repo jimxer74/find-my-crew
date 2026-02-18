@@ -9,7 +9,7 @@ import { canSendAIMessage } from '@/app/lib/limits';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Chat Route] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in chat route:', error.message);
-    logger.error('AI Assistant chat error:', error);
+    logger.error('AI Assistant chat error:', error instanceof Error ? { error: error.message } : { error: String(error) });
 
     // Classify and handle specific errors with user-friendly messages
     const errorMessage = error.message || '';

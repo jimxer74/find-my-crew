@@ -354,7 +354,7 @@ function ProfilePageContent() {
           updated_at: new Date().toISOString(),
         });
       } else {
-        logger.error('Error loading profile', fetchError);
+        logger.error('Error loading profile', { error: fetchError?.message || String(fetchError) });
         setError('Failed to load profile');
       }
     } else if (data) {

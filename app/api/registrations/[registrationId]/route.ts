@@ -117,7 +117,7 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      logger.error('Error updating registration:', updateError);
+      logger.error('Error updating registration:', { errorCode: updateError.code, errorMessage: updateError.message });
       return NextResponse.json(
         sanitizeErrorResponse(updateError, 'Failed to update registration'),
         { status: 500 }
@@ -143,25 +143,25 @@ export async function PATCH(
       notifyRegistrationApproved(supabase, crewUserId, journeyId, journeyName, ownerName, user.id)
         .then((result) => {
           if (result.error) {
-            logger.error('[Registration API] Failed to send approval notification:', result.error);
+            logger.error('[Registration API] Failed to send approval notification:', { error: result.error });
           } else {
-            logger.info('[Registration API] Approval notification sent to crew:', crewUserId);
+            logger.info('[Registration API] Approval notification sent to crew:', { crewUserId });
           }
         })
         .catch((err) => {
-          logger.error('[Registration API] Error sending approval notification:', err);
+          logger.error('[Registration API] Error sending approval notification:', { error: err instanceof Error ? err.message : String(err) });
         });
     } else if (status === 'Not approved') {
       notifyRegistrationDenied(supabase, crewUserId, journeyId, journeyName, ownerName, notes, user.id)
         .then((result) => {
           if (result.error) {
-            logger.error('[Registration API] Failed to send denial notification:', result.error);
+            logger.error('[Registration API] Failed to send denial notification:', { error: result.error });
           } else {
-            logger.info('[Registration API] Denial notification sent to crew:', crewUserId);
+            logger.info('[Registration API] Denial notification sent to crew:', { crewUserId });
           }
         })
         .catch((err) => {
-          logger.error('[Registration API] Error sending denial notification:', err);
+          logger.error('[Registration API] Error sending denial notification:', { error: err instanceof Error ? err.message : String(err) });
         });
     } else if (status === 'Pending approval') {
       // Notify crew member that their registration is pending review
@@ -175,13 +175,13 @@ export async function PATCH(
       )
         .then((result) => {
           if (result.error) {
-            logger.error('[Registration API] Failed to send pending notification:', result.error);
+            logger.error('[Registration API] Failed to send pending notification:', { error: result.error });
           } else {
-            logger.info('[Registration API] Pending registration notification sent to crew:', crewUserId);
+            logger.info('[Registration API] Pending registration notification sent to crew:', { crewUserId });
           }
         })
         .catch((err) => {
-          logger.error('[Registration API] Error sending pending notification:', err);
+          logger.error('[Registration API] Error sending pending notification:', { error: err instanceof Error ? err.message : String(err) });
         });
     }
 
@@ -191,7 +191,7 @@ export async function PATCH(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in registration update API:', error);
+    logger.error('Unexpected error in registration update API:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

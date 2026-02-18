@@ -7,7 +7,7 @@ import { logger } from '@/app/lib/logger';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API Prospect Legs Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Prospect Legs Route] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -244,7 +244,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error: any) {
     log('ERROR:', error.message);
-    logger.error('Prospect legs search error:', error);
+    logger.error('Prospect legs search error:', error instanceof Error ? { error: error.message } : { error: String(error) });
 
     return NextResponse.json(
       {
@@ -379,7 +379,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     log('ERROR:', error.message);
-    logger.error('Prospect legs search error:', error);
+    logger.error('Prospect legs search error:', error instanceof Error ? { error: error.message } : { error: String(error) });
 
     return NextResponse.json(
       {

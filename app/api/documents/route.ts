@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     const { data: documents, count, error } = await query;
 
     if (error) {
-      logger.error('[Documents] List query failed:', error);
+      logger.error('[Documents] List query failed:', { error });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
       offset,
     });
   } catch (error: unknown) {
-    logger.error('[Documents] Unexpected error:', error);
+    logger.error('[Documents] Unexpected error:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       messages,
     });
   } catch (error: any) {
-    logger.error('Get conversation error:', error);
+    logger.error('Get conversation error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to get conversation' },
       { status: 500 }
@@ -116,7 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('Delete conversation error:', error);
+    logger.error('Delete conversation error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to delete conversation' },
       { status: 500 }

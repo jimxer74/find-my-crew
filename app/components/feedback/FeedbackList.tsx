@@ -11,6 +11,7 @@ import {
   getFeedbackTypeLabel,
   getFeedbackStatusLabel,
 } from '@/app/lib/feedback/types';
+import { logger } from '@/app/lib/logger';
 
 interface FeedbackListProps {
   currentUserId?: string;
@@ -49,7 +50,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
       setTotal(data.total);
       setHasMore(data.hasMore);
     } catch (error) {
-      logger.error('Error fetching feedback:', error);
+      logger.error('Error fetching feedback:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +81,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
         ));
       }
     } catch (error) {
-      logger.error('Error voting:', error);
+      logger.error('Error voting:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       triggerProfileCompletion: false,
     });
   } catch (error: any) {
-    logger.error('[after-consent] Error:', error);
+    logger.error('[after-consent] Error:', { error });
     return NextResponse.json(
       { error: 'Internal server error', redirect: '/' },
       { status: 500 }

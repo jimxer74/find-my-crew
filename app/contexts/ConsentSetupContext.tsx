@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';
@@ -56,7 +57,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           .maybeSingle();
 
         if (error) {
-          logger.error('Error checking consent setup:', JSON.stringify(error, null, 2));
+          logger.error('Error checking consent setup:', error instanceof Error ? { error: error.message } : { error: String(error) });
           // On error, show the consent setup modal to be safe
           setNeedsConsentSetup(true);
         } else if (!data) {
@@ -68,7 +69,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           setNeedsConsentSetup(!hasRequiredConsents);
         }
       } catch (err) {
-        logger.error('Error checking consent setup:', err);
+        logger.error('Error checking consent setup:', err instanceof Error ? { error: err.message } : { error: String(err) });
         // On error, show the consent setup modal to be safe
         setNeedsConsentSetup(true);
       } finally {

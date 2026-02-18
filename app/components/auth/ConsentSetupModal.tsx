@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 
 type ConsentSetupModalProps = {
   userId: string;
@@ -48,7 +49,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
     setLoading(true);
     setError(null);
 
-    logger.debug('handleSave starting...');
+    logger.debug('[ConsentSetupModal] handleSave starting');
     const supabase = getSupabaseBrowserClient();
     const now = new Date().toISOString();
 
@@ -65,7 +66,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         marketing_consent_at: now,
       };
 
-      logger.debug('consentData: ', consentData);
+      logger.debug('consentData: ', { consentData });
 
       // Try to update existing consent record
       const { error: updateError, count } = await supabase
@@ -73,8 +74,8 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         .update({ ...consentData, updated_at: now, consent_setup_completed_at: now })
         .eq('user_id', userId);
 
-      logger.debug('updateError: ', updateError);
-      logger.debug('count: ', count);
+      logger.debug('updateError: ', { updateError });
+      logger.debug('count: ', { count });
 
       // If no rows were updated (record doesn't exist), insert new record
       if (updateError || count === 0 || count === null) {
@@ -85,7 +86,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
             ...consentData, updated_at: now, consent_setup_completed_at: now,
           });
 
-        logger.debug('insertError:', insertError);
+        logger.debug('insertError:', { insertError });
         if (insertError) throw insertError;
       }
 
@@ -133,7 +134,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
 
       // Check if user is already on an onboarding page
       const isOnOnboardingPage = window.location.pathname.startsWith('/welcome');
-      logger.debug('[ConsentSetupModal] isOnOnboardingPage:', isOnOnboardingPage, 'pathname:', window.location.pathname);
+      logger.debug('[ConsentSetupModal] Check onboarding page', { isOnOnboardingPage, pathname: window.location.pathname });
 
       // Server-driven post-signup flow: API returns redirect path (owner vs crew)
       // Only redirect if user is NOT already on an onboarding page
@@ -159,7 +160,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
       onComplete();
 
     } catch (err: any) {
-      logger.error('Error saving consents:', err);
+      logger.error('Error saving consents:', { error: err });
       setError(err.message || 'Failed to save preferences. Please try again.');
     } finally {
       setLoading(false);

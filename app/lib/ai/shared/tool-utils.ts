@@ -5,11 +5,13 @@
  * AI chat implementations (assistant, prospect, etc.)
  */
 
+import { logger } from '../../logger';
+
 // Debug logging helper
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[AI Tool Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[AI Tool Utils] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     // if "next" is not a relative URL, use the default
     next = '/'
   }
-  logger.info('LOGIN CALLBACK:', request);
+  logger.info('LOGIN CALLBACK:', { url: request.url });
 
   if (code) {
     const cookieStore = await cookies();
@@ -144,7 +144,7 @@ export async function GET(request: Request) {
             .from('profiles')
             .update(updates)
             .eq('id', user.id);
-          logger.info('LOGIN CALLBACK, synced prospect preferences to profile:', updates);
+          logger.info('LOGIN CALLBACK, synced prospect preferences to profile:', { updates });
         }
       }
 
@@ -179,7 +179,7 @@ export async function GET(request: Request) {
     }
   }
   let url = new URL(origin + '/', request.url)
-  logger.info('LOGIN CALLBACK, user not found:', url);
+  logger.info('LOGIN CALLBACK, user not found:', { url: url.toString() });
 
   // Default redirect to home if something goes wrong
   return NextResponse.redirect(url);

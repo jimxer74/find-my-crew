@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -147,7 +148,7 @@ export default function AllRegistrationsPage() {
     hasLoadedOnceRef.current = true;
     
     // Load registrations
-    logger.debug('[Registrations] Loading registrations with filter key:', currentFilterKey);
+    logger.debug('[Registrations] Loading registrations with filter key:', { currentFilterKey });
     loadRegistrations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filterStatus, filterJourneyId, filterLegId, sortBy, sortOrder, currentPage]);
@@ -191,12 +192,12 @@ export default function AllRegistrationsPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        logger.error('Error loading journeys:', error);
+        logger.error('Error loading journeys:', { errorCode: error.code, errorMessage: error.message });
       } else {
         setJourneys(journeysData || []);
       }
     } catch (error) {
-      logger.error('Error loading journeys:', error);
+      logger.error('Error loading journeys:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -212,12 +213,12 @@ export default function AllRegistrationsPage() {
         .order('created_at', { ascending: true });
 
       if (error) {
-        logger.error('Error loading legs:', error);
+        logger.error('Error loading legs:', { errorCode: error.code, errorMessage: error.message });
       } else {
         setLegs(data || []);
       }
     } catch (error) {
-      logger.error('Error loading legs:', error);
+      logger.error('Error loading legs:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -248,7 +249,7 @@ export default function AllRegistrationsPage() {
       params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
 
       const url = `/api/registrations/owner/all?${params.toString()}`;
-      logger.debug('[Registrations] Fetching:', url);
+      logger.debug('[Registrations] Fetching:', { url });
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -259,9 +260,9 @@ export default function AllRegistrationsPage() {
       const data = await response.json();
       setRegistrations(data.registrations || []);
       setTotalCount(data.total || 0);
-      logger.debug('[Registrations] Loaded', data.registrations?.length || 0, 'registrations');
+      logger.debug('[Registrations] Loaded registrations', { count: data.registrations?.length || 0 });
     } catch (error: any) {
-      logger.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error instanceof Error ? { error: error.message } : { error: String(error) });
     } finally {
       setLoading(false);
       isLoadingRef.current = false;

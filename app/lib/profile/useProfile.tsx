@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { logger } from '../logger';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '../supabaseClient';
 
@@ -65,13 +66,13 @@ export function useProfile(): UseProfileReturn {
         .eq('id', userId);
 
       if (error) {
-        logger.warn('Error checking user existence:', error);
+        logger.warn('Error checking user existence:', { error: error?.message || String(error) });
         return false;
       }
 
       return !!(count && count > 0);
     } catch (err) {
-      logger.warn('Error checking user existence:', err);
+      logger.warn('Error checking user existence:', { error: err instanceof Error ? err.message : String(err) });
       return false;
     }
   }, []);
@@ -93,7 +94,7 @@ export function useProfile(): UseProfileReturn {
         }
         if (error.code === 'PGRST302') {
           // Not Acceptable - malformed request
-          logger.warn('Profile fetch malformed request:', error);
+          logger.warn('Profile fetch malformed request:', { error: error?.message || String(error) });
           return null;
         }
         throw error;
@@ -101,7 +102,7 @@ export function useProfile(): UseProfileReturn {
 
       return data as ProfileData;
     } catch (err) {
-      logger.warn('Error fetching profile data:', err);
+      logger.warn('Error fetching profile data:', { error: err instanceof Error ? err.message : String(err) });
       throw err;
     }
   }, []);

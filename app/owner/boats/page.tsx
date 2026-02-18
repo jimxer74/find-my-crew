@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -35,7 +36,7 @@ export default function BoatsPage() {
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
-    if (error) logger.error('Error loading boats:', error);
+    if (error) logger.error('Error loading boats:', { errorCode: error.code, errorMessage: error.message });
     else setBoats(data || []);
     setLoading(false);
   }, [user?.id]);
@@ -62,7 +63,7 @@ export default function BoatsPage() {
             if (!cancelled) setHasOwnerRole(status.exists && status.roles.includes('owner'));
           })
           .catch((error) => {
-            logger.error('Error checking profile:', error);
+            logger.error('Error checking profile:', { error: error instanceof Error ? error.message : String(error) });
             if (!cancelled) setHasOwnerRole(false);
           }),
         loadBoats(),

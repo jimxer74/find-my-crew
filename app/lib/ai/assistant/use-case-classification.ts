@@ -4,6 +4,7 @@
  * Implements hybrid intent classification with pattern recognition and LLM fallback
  * for crew sailing platform use cases.
  */
+import { logger } from '@/app/lib/logger';
 import { UserContext } from './types';
 import { callAI, AIServiceError } from '../service';
 import { parseJsonObjectFromAIResponse } from '../shared';
@@ -258,7 +259,7 @@ User message:
 
       return this.parseIntentResponse(response);
     } catch (error) {
-      logger.error('[AI Assistant] LLM classification failed:', error);
+      logger.error('[AI Assistant] LLM classification failed:', error instanceof Error ? { error: error.message } : { error: String(error) });
       return {
         intent: UseCaseIntent.CLARIFICATION_REQUEST,
         secondaryIntent: null,
@@ -295,7 +296,7 @@ User message:
 
       const intent = json.primary_intent as UseCaseIntent;
       if (!Object.values(UseCaseIntent).includes(intent)) {
-        logger.warn('Invalid intent value:', intent);
+        logger.warn('Invalid intent value:', { intent });
         return {
           intent: UseCaseIntent.CLARIFICATION_REQUEST,
           secondaryIntent: null,
@@ -320,7 +321,7 @@ User message:
       const errorInfo = err instanceof Error ? err.message : String(err);
       const responsePreview = response ? response.substring(0, 200) + (response.length > 200 ? '...' : '') : 'empty';
 
-      logger.error('Failed to parse intent JSON:', {
+      logger.error('[AI Assistant] Failed to parse intent JSON:', {
         error: errorInfo,
         responsePreview,
         responseLength: response ? response.length : 0

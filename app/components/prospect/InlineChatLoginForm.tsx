@@ -44,7 +44,7 @@ export function InlineChatLoginForm({
       router.refresh();
       onSuccess?.();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
     } finally {
       setLoading(false);

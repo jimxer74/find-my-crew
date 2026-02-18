@@ -3,6 +3,7 @@
  * Use in API routes and server components
  */
 
+import { logger } from '../logger';
 import { redirectService } from './redirectService';
 import { buildRedirectContext } from './redirectContext';
 import type { RedirectSource, RedirectContext } from './redirectTypes';

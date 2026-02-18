@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
+import { logger } from '@/app/lib/logger';
 import { LogoWithText } from './LogoWithText';
 import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';

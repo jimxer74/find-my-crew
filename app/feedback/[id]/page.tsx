@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -43,7 +44,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
         const data = await res.json();
         setFeedback(data);
       } catch (err) {
-        logger.error('Error fetching feedback:', err);
+        logger.error('Error fetching feedback:', err instanceof Error ? { error: err.message } : { error: String(err) });
         setError(t('fetchError'));
       } finally {
         setIsLoading(false);
@@ -70,7 +71,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
         setFeedback(updatedFeedback);
       }
     } catch (error) {
-      logger.error('Error voting:', error);
+      logger.error('Error voting:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -86,7 +87,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
 
       router.push('/feedback/my');
     } catch (error) {
-      logger.error('Error deleting feedback:', error);
+      logger.error('Error deleting feedback:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 

@@ -5,6 +5,8 @@
  * Handles suggestion extraction, content cleaning, and reference parsing.
  */
 
+import { logger } from '../../logger';
+
 /**
  * Extract suggested prompts from AI message
  * Format: [SUGGESTIONS]...[/SUGGESTIONS]
@@ -47,7 +49,7 @@ export function extractSuggestedPrompts(content: string): { prompts: string[]; i
   
   // Debug logging (can be removed in production)
   if (process.env.NODE_ENV === 'development') {
-    logger.debug('[extractSuggestedPrompts] Found suggestions text:', suggestionsText.substring(0, 200));
+    logger.debug('[extractSuggestedPrompts] Found suggestions text:', { preview: suggestionsText.substring(0, 200) });
   }
   
   let importantIndex: number | null = null;

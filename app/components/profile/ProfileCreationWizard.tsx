@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/app/lib/logger';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
 import { ExperienceLevel } from '@/app/types/experience-levels';
@@ -113,7 +114,7 @@ export function ProfileCreationWizard() {
         setStep('review');
       }
     } catch (err: any) {
-      logger.error('Error fetching Facebook data:', err);
+      logger.error('[ProfileCreationWizard] Error fetching Facebook data:', err instanceof Error ? { error: err.message } : { error: String(err) });
       // Continue to review with manual entry
       setStep('review');
     }
@@ -171,7 +172,7 @@ export function ProfileCreationWizard() {
 
       setStep('review');
     } catch (err) {
-      logger.error('Error generating profile suggestions:', err);
+      logger.error('[ProfileCreationWizard] Error generating profile suggestions:', err instanceof Error ? { error: err.message } : { error: String(err) });
       // Continue without AI suggestions
       if (fbData.profile) {
         setFormData(prev => ({
@@ -284,7 +285,7 @@ export function ProfileCreationWizard() {
         }
       }, 2000);
     } catch (err: any) {
-      logger.error('Error saving profile:', err);
+      logger.error('[ProfileCreationWizard] Error saving profile:', err instanceof Error ? { error: err.message } : { error: String(err) });
       setError(err.message || 'Failed to save profile');
       setStep('review');
     }

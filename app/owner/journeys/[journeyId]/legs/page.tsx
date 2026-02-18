@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -83,7 +84,7 @@ export default function LegsManagementPage() {
       .single();
 
     if (error) {
-      logger.error('Error loading journey:', error);
+      logger.error('Error loading journey:', error instanceof Error ? { error: error.message } : { error: String(error) });
     } else {
       setJourney(data);
       // Extract boat speed and capacity
@@ -108,7 +109,7 @@ export default function LegsManagementPage() {
       .order('created_at', { ascending: true });
 
     if (legsError) {
-      logger.error('Error loading legs:', legsError);
+      logger.error('Error loading legs:', legsError instanceof Error ? { error: legsError.message } : { error: String(legsError) });
       setLoading(false);
       return;
     }
@@ -141,7 +142,7 @@ export default function LegsManagementPage() {
                 const geoJson = JSON.parse(row.location);
                 coordinates = geoJson.coordinates as [number, number];
               } catch (e) {
-                logger.error('Error parsing location GeoJSON:', e);
+                logger.error('Error parsing location GeoJSON:', e instanceof Error ? { error: e.message } : { error: String(e) });
               }
             } else if (row.location.coordinates) {
               coordinates = row.location.coordinates as [number, number];
@@ -293,7 +294,7 @@ export default function LegsManagementPage() {
         maxZoom: 12, // Don't zoom in too much
       });
     } catch (error) {
-      logger.error('Error fitting bounds:', error);
+      logger.error('Error fitting bounds:', error instanceof Error ? { error: error.message } : { error: String(error) });
       // Fallback to center on first waypoint
       if (coordinates.length > 0) {
         const [lng, lat] = coordinates[0];
@@ -432,7 +433,7 @@ export default function LegsManagementPage() {
         .single();
       
       if (insertError) {
-        logger.error('Error saving leg to database:', insertError);
+        logger.error('Error saving leg to database:', { error: insertError?.message || String(insertError) });
         return;
       }
 
@@ -448,7 +449,7 @@ export default function LegsManagementPage() {
       });
 
       if (waypointsError) {
-        logger.error('Error saving waypoints:', waypointsError);
+        logger.error('Error saving waypoints:', { error: waypointsError?.message || String(waypointsError) });
         // Rollback: delete the leg if waypoints failed
         await supabase.from('legs').delete().eq('id', newLeg.id);
         return;
@@ -480,7 +481,7 @@ export default function LegsManagementPage() {
         .eq('id', activeLeg.id);
       
       if (updateError) {
-        logger.error('Error updating leg in database:', updateError);
+        logger.error('Error updating leg in database:', { error: updateError?.message || String(updateError) });
         return;
       }
 
@@ -496,7 +497,7 @@ export default function LegsManagementPage() {
       });
 
       if (waypointsError) {
-        logger.error('Error updating waypoints:', waypointsError);
+        logger.error('Error updating waypoints:', { error: waypointsError?.message || String(waypointsError) });
         return;
       }
       
@@ -994,7 +995,7 @@ export default function LegsManagementPage() {
                         .eq('id', leg.id);
                       
                       if (error) {
-                        logger.error('Error deleting leg from database:', error);
+                        logger.error('Error deleting leg from database:', { error: error instanceof Error ? error.message : String(error) });
                         return;
                       }
                     }

@@ -4,6 +4,7 @@
  * Fetches user data from Facebook Graph API using the OAuth access token
  */
 
+import { logger } from '../logger';
 import {
   FacebookProfile,
   FacebookPost,
@@ -46,13 +47,13 @@ export async function fetchProfile(accessToken: string): Promise<FacebookProfile
     const data = await response.json();
 
     if (isGraphAPIError(data)) {
-      logger.error('Facebook Graph API error (profile):', data.error.message);
+      logger.error('Facebook Graph API error (profile):', { error: data.error.message });
       return null;
     }
 
     return data as FacebookProfile;
   } catch (error) {
-    logger.error('Error fetching Facebook profile:', error);
+    logger.error('Error fetching Facebook profile:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return null;
   }
 }
@@ -75,14 +76,14 @@ export async function fetchPosts(
 
     if (isGraphAPIError(data)) {
       // Permission errors are expected if user denied or app not reviewed
-      logger.warn('Facebook Graph API error (posts):', data.error.message);
+      logger.warn('Facebook Graph API error (posts):', { error: data.error.message });
       return [];
     }
 
     const paginatedData = data as FacebookPaginatedResponse<FacebookPost>;
     return paginatedData.data || [];
   } catch (error) {
-    logger.error('Error fetching Facebook posts:', error);
+    logger.error('Error fetching Facebook posts:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return [];
   }
 }
@@ -105,14 +106,14 @@ export async function fetchLikes(
 
     if (isGraphAPIError(data)) {
       // Permission errors are expected if user denied or app not reviewed
-      logger.warn('Facebook Graph API error (likes):', data.error.message);
+      logger.warn('Facebook Graph API error (likes):', { error: data.error.message });
       return [];
     }
 
     const paginatedData = data as FacebookPaginatedResponse<FacebookLike>;
     return paginatedData.data || [];
   } catch (error) {
-    logger.error('Error fetching Facebook likes:', error);
+    logger.error('Error fetching Facebook likes:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return [];
   }
 }
@@ -129,7 +130,7 @@ export async function fetchProfilePicture(accessToken: string): Promise<string |
     const data = await response.json();
 
     if (isGraphAPIError(data)) {
-      logger.warn('Facebook Graph API error (picture):', data.error.message);
+      logger.warn('Facebook Graph API error (picture):', { error: data.error.message });
       return null;
     }
 
@@ -139,7 +140,7 @@ export async function fetchProfilePicture(accessToken: string): Promise<string |
 
     return null;
   } catch (error) {
-    logger.error('Error fetching Facebook profile picture:', error);
+    logger.error('Error fetching Facebook profile picture:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return null;
   }
 }

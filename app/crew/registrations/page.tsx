@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -76,7 +77,7 @@ export default function MyRegistrationsPage() {
           loadRegistrations();
         })
         .catch((error) => {
-          logger.error('Error loading user profile:', error);
+          logger.error('Error loading user profile:', { error: error instanceof Error ? error.message : String(error) });
           // Still load registrations even if profile load fails
           loadRegistrations();
         });
@@ -99,8 +100,8 @@ export default function MyRegistrationsPage() {
         const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
         const skills = normalizeSkillNames(profile.skills || []);
         
-        logger.debug('[MyRegistrations] Loaded user skills (canonical):', skills);
-        logger.debug('[MyRegistrations] User experience level:', profile.sailing_experience);
+        logger.debug('[MyRegistrations] Loaded user skills (canonical):', { skills });
+        logger.debug('[MyRegistrations] User experience level:', { level: profile.sailing_experience });
         
         setUserSkills(skills);
         setUserExperienceLevel(profile.sailing_experience);
@@ -108,7 +109,7 @@ export default function MyRegistrationsPage() {
         logger.warn('[MyRegistrations] No profile found for user');
       }
     } catch (error) {
-      logger.error('Error loading user profile:', error);
+      logger.error('Error loading user profile:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -133,7 +134,7 @@ export default function MyRegistrationsPage() {
       const data = await response.json();
       setRegistrations(data.registrations || []);
     } catch (error: any) {
-      logger.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error instanceof Error ? { error: error.message } : { error: String(error) });
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
@@ -34,7 +35,7 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
           setTimeout(() => setIsVisible(true), 2000);
         }
       } catch (error) {
-        logger.error('Error fetching prompt status:', error);
+        logger.error('Error fetching prompt status:', { error: error instanceof Error ? error.message : String(error) });
       }
     };
 
@@ -59,7 +60,7 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
 
       setIsVisible(false);
     } catch (error) {
-      logger.error('Error dismissing prompt:', error);
+      logger.error('Error dismissing prompt:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsDismissing(false);
     }

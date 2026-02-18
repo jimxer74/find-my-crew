@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import Link from 'next/link';
 import type { DocumentVault } from '@/app/lib/documents/types';
+import { logger } from '@/app/lib/logger';
 
 interface PassportSelectorProps {
   onSelect: (passportId: string) => void;
@@ -69,7 +70,7 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load passports';
       setLoadError(message);
-      logger.error('Error loading passports:', err);
+      logger.error('Error loading passports:', { error: err instanceof Error ? err.message : String(err) });
     } finally {
       setLoading(false);
     }
@@ -89,8 +90,8 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
         logger.error(`[PassportSelector] Grant check failed - Status: ${response.status} ${response.statusText}`);
-        logger.error(`[PassportSelector] Passport ID:`, passportId);
-        logger.error(`[PassportSelector] Error response:`, errorData);
+        logger.error(`[PassportSelector] Passport ID:`, { passportId });
+        logger.error(`[PassportSelector] Error response:`, { errorData });
         logger.error(`[PassportSelector] Full response headers:`, {
           'content-type': response.headers.get('content-type'),
           'content-length': response.headers.get('content-length')

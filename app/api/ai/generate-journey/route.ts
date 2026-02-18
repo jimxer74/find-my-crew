@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       data: result.data,
     });
   } catch (error: any) {
-    logger.error('Error generating journey:', error);
+    logger.error('Error generating journey:', { error });
     return NextResponse.json(
       { error: error.message || 'Failed to generate journey' },
       { status: 500 }

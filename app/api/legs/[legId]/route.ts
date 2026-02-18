@@ -72,7 +72,7 @@ export async function GET(
           { status: 404 }
         );
       }
-      logger.error('Error fetching leg:', error);
+      logger.error('Error fetching leg:', error instanceof Error ? { error: error.message } : { error: String(error) });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch leg'),
         { status: 500 }
@@ -131,7 +131,7 @@ export async function GET(
             };
           }
         } catch (e) {
-          logger.error('Error parsing waypoint location:', e);
+          logger.error('Error parsing waypoint location:', e instanceof Error ? { error: e.message } : { error: String(e) });
         }
         return null;
       };
@@ -194,7 +194,7 @@ export async function GET(
 
     return NextResponse.json(response);
   } catch (error: any) {
-    logger.error('Unexpected error in leg API:', error);
+    logger.error('Unexpected error in leg API:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

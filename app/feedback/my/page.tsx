@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -37,7 +38,7 @@ export default function MyFeedbackPage() {
       setTotal(data.total);
       setHasMore(data.hasMore);
     } catch (error) {
-      logger.error('Error fetching feedback:', error);
+      logger.error('Error fetching feedback:', error instanceof Error ? { error: error.message } : { error: String(error) });
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +76,7 @@ export default function MyFeedbackPage() {
       setItems(items.filter(item => item.id !== feedbackId));
       setTotal(total - 1);
     } catch (error) {
-      logger.error('Error deleting feedback:', error);
+      logger.error('Error deleting feedback:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 

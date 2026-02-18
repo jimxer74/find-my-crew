@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -82,7 +83,7 @@ export default function JourneysPage() {
       .order('name', { ascending: true });
 
     if (boatsError) {
-      logger.error('Error loading boats:', boatsError);
+      logger.error('Error loading boats:', { error: boatsError?.message || String(boatsError) });
     } else {
       setBoats(boatsData || []);
     }
@@ -98,7 +99,7 @@ export default function JourneysPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        logger.error('Error loading journeys:', error);
+        logger.error('Error loading journeys:', { error });
       } else {
         // Transform data to flatten boat name
         const transformedData = (data || []).map((journey: any) => ({
@@ -216,7 +217,7 @@ export default function JourneysPage() {
       setShowDeleteConfirm(false);
       setDeletingJourneyId(null);
     } catch (error: any) {
-      logger.error('Error deleting journey:', error);
+      logger.error('Error deleting journey:', { error });
       alert(error.message || 'Failed to delete journey');
     } finally {
       setIsDeleting(false);

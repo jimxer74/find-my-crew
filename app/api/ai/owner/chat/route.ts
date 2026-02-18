@@ -10,7 +10,7 @@ import { getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API Owner Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Owner Chat Route] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
             }
           }
         } catch (e) {
-          logger.error('[API Owner Chat Route] Error managing session state:', e);
+          logger.error('[API Owner Chat Route] Error managing session state:', e instanceof Error ? { error: e.message } : { error: String(e) });
         }
       }
     }
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in owner chat route:', error.message);
-    logger.error('Owner chat error:', error);
+    logger.error('Owner chat error:', error instanceof Error ? { error: error.message } : { error: String(error) });
 
     const errorMessage = error.message || '';
 

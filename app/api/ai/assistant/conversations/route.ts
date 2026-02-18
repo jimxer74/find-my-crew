@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ conversations });
   } catch (error: any) {
-    logger.error('List conversations error:', error);
+    logger.error('List conversations error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to list conversations' },
       { status: 500 }
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ conversation }, { status: 201 });
   } catch (error: any) {
-    logger.error('Create conversation error:', error);
+    logger.error('Create conversation error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: error.message || 'Failed to create conversation' },
       { status: 500 }

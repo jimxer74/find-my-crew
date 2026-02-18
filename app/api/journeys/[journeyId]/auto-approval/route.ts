@@ -138,7 +138,7 @@ export async function PATCH(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in auto-approval API:', error);
+    logger.error('Unexpected error in auto-approval API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -205,7 +205,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in auto-approval GET API:', error);
+    logger.error('Unexpected error in auto-approval GET API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

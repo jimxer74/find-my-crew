@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import Image from 'next/image';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
@@ -92,10 +93,10 @@ export function CrewSummaryCard({
   if (!crew) return null;
 
   // Debug logging
-  logger.debug('CrewSummaryCard received crew:', crew);
-  logger.debug('CrewSummaryCard crew.skills:', crew.skills);
-  logger.debug('CrewSummaryCard crew.skills is array?', Array.isArray(crew.skills));
-  logger.debug('CrewSummaryCard crew.skills length:', crew.skills?.length);
+  logger.debug('CrewSummaryCard received crew:', { crew });
+  logger.debug('CrewSummaryCard crew.skills:', { skills: crew.skills });
+  logger.debug('CrewSummaryCard crew.skills is array?', { isArray: Array.isArray(crew.skills) });
+  logger.debug('CrewSummaryCard crew.skills length:', { length: crew.skills?.length });
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, string> = {

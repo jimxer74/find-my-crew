@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import { toDisplaySkillName, toCanonicalSkillName } from '@/app/lib/skillUtils';
 import skillsConfig from '@/app/config/skills-config.json';
@@ -77,7 +78,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setRequirements(data.requirements || []);
       }
     } catch (error) {
-      logger.error('Error loading requirements:', error);
+      logger.error('Error loading requirements:', error instanceof Error ? { error: error.message } : { error: String(error) });
     } finally {
       setLoading(false);
     }
@@ -94,7 +95,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setAutoApprovalThreshold(data.auto_approval_threshold || 80);
       }
     } catch (error) {
-      logger.error('Error loading auto-approval settings:', error);
+      logger.error('Error loading auto-approval settings:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -109,7 +110,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setJourneySkills(journey.skills || []);
       }
     } catch (error) {
-      logger.error('Error loading journey skills:', error);
+      logger.error('Error loading journey skills:', error instanceof Error ? { error: error.message } : { error: String(error) });
     }
   };
 
@@ -139,7 +140,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to update approval settings');
       }
     } catch (error) {
-      logger.error('Error updating approval settings:', error);
+      logger.error('Error updating approval settings:', error instanceof Error ? { error: error.message } : { error: String(error) });
       alert('Failed to update approval settings');
     }
   };
@@ -163,7 +164,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         loadAutoApprovalSettings();
       }
     } catch (error) {
-      logger.error('Error updating threshold:', error);
+      logger.error('Error updating threshold:', error instanceof Error ? { error: error.message } : { error: String(error) });
       loadAutoApprovalSettings();
     }
   };
@@ -261,7 +262,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to save requirement');
       }
     } catch (error) {
-      logger.error('Error saving requirement:', error);
+      logger.error('Error saving requirement:', error instanceof Error ? { error: error.message } : { error: String(error) });
       alert('Failed to save requirement');
     }
   };
@@ -286,7 +287,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to delete requirement');
       }
     } catch (error) {
-      logger.error('Error deleting requirement:', error);
+      logger.error('Error deleting requirement:', error instanceof Error ? { error: error.message } : { error: String(error) });
       alert('Failed to delete requirement');
     }
   };

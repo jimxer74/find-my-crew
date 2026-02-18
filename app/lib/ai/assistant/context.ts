@@ -4,6 +4,7 @@
  * Builds the system prompt and user context for AI conversations.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { UserContext } from './types';
 
@@ -11,7 +12,7 @@ import { UserContext } from './types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Context Builder] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Context Builder] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

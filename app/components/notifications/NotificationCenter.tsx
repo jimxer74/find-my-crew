@@ -1,5 +1,6 @@
 "use client";
 
+import { logger } from "@/app/lib/logger";
 import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
@@ -9,7 +10,6 @@ import { type Notification } from "@/app/lib/notifications";
 import { useAssistant, parseProfileAction } from "@/app/contexts/AssistantContext";
 import { ActionConfirmation } from "./ActionConfirmation";
 import { convertActionToNotification } from "./helpers/actionUtils";
-import { logger } from "@/app/lib/logger";
 
 interface NotificationCenterProps {
   isOpen: boolean;

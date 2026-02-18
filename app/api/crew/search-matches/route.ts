@@ -1,20 +1,12 @@
 import { logger } from '@/app/lib/logger';
 /**
-import { logger } from '@/app/lib/logger';
  * API Route: POST /api/crew/search-matches
-import { logger } from '@/app/lib/logger';
  * 
-import { logger } from '@/app/lib/logger';
  * Search for crew members matching skipper requirements.
-import { logger } from '@/app/lib/logger';
  * Can be called by authenticated or unauthenticated users.
-import { logger } from '@/app/lib/logger';
  * Unauthenticated users get anonymized results (no names/images).
-import { logger } from '@/app/lib/logger';
  */
-import { logger } from '@/app/lib/logger';
 
-import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { searchMatchingCrew, CrewSearchParams } from '@/app/lib/crew/matching-service';
@@ -74,8 +66,8 @@ export async function POST(request: NextRequest) {
     // Return results
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    logger.error('[API] Crew search error:', error);
-    
+    logger.error('[API] Crew search error:', error instanceof Error ? { error: error.message } : { error: String(error) });
+
     return NextResponse.json(
       {
         error: 'Failed to search for crew',

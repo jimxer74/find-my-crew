@@ -76,7 +76,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in journey images GET API:', error);
+    logger.error('Unexpected error in journey images GET API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -238,7 +238,7 @@ export async function POST(
     }, { status: 201 });
 
   } catch (error: any) {
-    logger.error('Unexpected error in journey images POST API:', error);
+    logger.error('Unexpected error in journey images POST API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -330,7 +330,7 @@ export async function DELETE(
         .remove(currentJourney.images.map(url => url.split('/').pop()!));
 
       if (deleteError) {
-        logger.warn('Failed to delete old images from storage:', deleteError);
+        logger.warn('Failed to delete old images from storage:', { error: deleteError });
       }
     }
     */
@@ -362,7 +362,7 @@ export async function DELETE(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in journey images DELETE API:', error);
+    logger.error('Unexpected error in journey images DELETE API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect } from 'react';
 
 export type UserLocationState = {
@@ -58,7 +59,7 @@ export function useUserLocation(): UserLocationState {
           };
         })
         .catch((error) => {
-          logger.error('Error querying geolocation permission:', error);
+          logger.error('Error querying geolocation permission:', { error: error instanceof Error ? error.message : String(error) });
           // Continue without permission state
         });
     }

@@ -3,6 +3,7 @@
  * Assembles all required data for redirect logic
  */
 
+import { logger } from '../logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RedirectContext, RedirectSource } from './redirectTypes';
 
@@ -20,7 +21,7 @@ async function fetchProfile(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error fetching profile:', error);
+    logger.error('[RedirectContext] Error fetching profile:', { errorCode: error.code, errorMessage: error.message });
     return null;
   }
 
@@ -49,7 +50,7 @@ async function checkPendingOwnerSession(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking pending owner session:', error);
+    logger.error('[RedirectContext] Error checking pending owner session:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 
@@ -72,7 +73,7 @@ async function checkPendingProspectSession(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking pending prospect session:', error);
+    logger.error('[RedirectContext] Error checking pending prospect session:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 
@@ -95,7 +96,7 @@ async function checkOwnerProfileCompletionTriggered(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking owner profile completion:', error);
+    logger.error('[RedirectContext] Error checking owner profile completion:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 
@@ -118,7 +119,7 @@ async function checkProspectProfileCompletionTriggered(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking prospect profile completion:', error);
+    logger.error('[RedirectContext] Error checking prospect profile completion:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 
@@ -140,7 +141,7 @@ async function checkExistingOwnerConversation(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking existing owner conversation:', error);
+    logger.error('[RedirectContext] Error checking existing owner conversation:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 
@@ -162,7 +163,7 @@ async function checkExistingProspectConversation(
     .maybeSingle();
 
   if (error) {
-    logger.error('[RedirectContext] Error checking existing prospect conversation:', error);
+    logger.error('[RedirectContext] Error checking existing prospect conversation:', { errorCode: error.code, errorMessage: error.message });
     return false;
   }
 

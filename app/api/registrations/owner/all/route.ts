@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
       .eq('owner_id', user.id);
 
     if (boatsError) {
-      logger.error('Error fetching owner boats:', boatsError);
+      logger.error('Error fetching owner boats:', { error: boatsError });
       return NextResponse.json(
         { error: 'Failed to fetch boats', details: boatsError.message },
         { status: 500 }
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     const { data: journeys, error: journeysError } = await journeysQuery;
 
     if (journeysError) {
-      logger.error('Error fetching journeys:', journeysError);
+      logger.error('Error fetching journeys:', { error: journeysError });
       return NextResponse.json(
         { error: 'Failed to fetch journeys', details: journeysError.message },
         { status: 500 }
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     const { data: ownerLegs, error: legsError } = await legsQuery;
 
     if (legsError) {
-      logger.error('Error fetching legs:', legsError);
+      logger.error('Error fetching legs:', { error: legsError });
       return NextResponse.json(
         { error: 'Failed to fetch legs', details: legsError.message },
         { status: 500 }
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       logger.error('Error fetching registrations:', error);
-      logger.error('Error details:', JSON.stringify(error, null, 2));
+      logger.error('Error details:', { details: JSON.stringify(error, null, 2) });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch registrations'),
         { status: 500 }

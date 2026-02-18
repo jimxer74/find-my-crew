@@ -9,7 +9,7 @@ import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API trigger-profile-completion] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API trigger-profile-completion] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     log('Error', error?.message);
-    logger.error('[trigger-profile-completion]', error);
+    logger.error('[trigger-profile-completion]', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json(
       {
         error: error?.message ?? 'Failed to start profile completion',

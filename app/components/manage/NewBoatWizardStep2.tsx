@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 
 // Sailboat category information (duplicated from BoatFormModal to keep independence)
 const sailboatCategories = {
@@ -156,7 +157,7 @@ export function NewBoatWizardStep2({
           });
 
         if (uploadErr) {
-          logger.error('Upload error:', uploadErr);
+          logger.error('Upload error:', { error: uploadErr instanceof Error ? uploadErr.message : String(uploadErr) });
           setUploadError(`Failed to upload ${file.name}`);
           continue;
         }

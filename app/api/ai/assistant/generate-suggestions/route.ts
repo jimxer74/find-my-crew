@@ -9,7 +9,7 @@ import { parseJsonArrayFromAIResponse } from '@/app/lib/ai/shared';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API generate-suggestions] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API generate-suggestions] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     log('Error', error?.message);
-    logger.error('[generate-suggestions]', error);
+    logger.error('[generate-suggestions]', error instanceof Error ? { error: error.message } : { error: String(error) });
     
     // Return fallback suggestions on error
     return NextResponse.json({

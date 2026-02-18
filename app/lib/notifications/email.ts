@@ -63,14 +63,14 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     });
 
     if (error) {
-      logger.error('[EmailService] Resend error:', error);
+      logger.error('[EmailService] Resend error:', { error: error?.message || String(error) });
       return { success: false, error: error.message };
     }
 
-    logger.debug('[EmailService] Email sent successfully to:', to);
+    logger.debug('[EmailService] Email sent successfully to:', { to });
     return { success: true, error: null };
   } catch (err: any) {
-    logger.error('[EmailService] Error sending email:', err);
+    logger.error('[EmailService] Error sending email:', { error: err instanceof Error ? err.message : String(err) });
     return { success: false, error: err.message };
   }
 }
@@ -136,7 +136,7 @@ export async function sendRegistrationApprovedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'registration_updates'))) {
-    logger.debug('[EmailService] User opted out of registration updates:', userId);
+    logger.debug('[EmailService] User opted out of registration updates:', { userId });
     return { success: true, error: null };
   }
 
@@ -178,7 +178,7 @@ export async function sendRegistrationDeniedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'registration_updates'))) {
-    logger.debug('[EmailService] User opted out of registration updates:', userId);
+    logger.debug('[EmailService] User opted out of registration updates:', { userId });
     return { success: true, error: null };
   }
 
@@ -225,7 +225,7 @@ export async function sendNewRegistrationEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, ownerId, 'registration_updates'))) {
-    logger.debug('[EmailService] User opted out of registration updates:', ownerId);
+    logger.debug('[EmailService] User opted out of registration updates:', { ownerId });
     return { success: true, error: null };
   }
 
@@ -267,7 +267,7 @@ export async function sendReviewNeededEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, ownerId, 'registration_updates'))) {
-    logger.debug('[EmailService] User opted out of registration updates:', ownerId);
+    logger.debug('[EmailService] User opted out of registration updates:', { ownerId });
     return { success: true, error: null };
   }
 
@@ -308,7 +308,7 @@ export async function sendJourneyUpdatedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'journey_updates'))) {
-    logger.debug('[EmailService] User opted out of journey updates:', userId);
+    logger.debug('[EmailService] User opted out of journey updates:', { userId });
     return { success: true, error: null };
   }
 
@@ -353,7 +353,7 @@ export async function sendProfileReminderEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'profile_reminders'))) {
-    logger.debug('[EmailService] User opted out of profile reminders:', userId);
+    logger.debug('[EmailService] User opted out of profile reminders:', { userId });
     return { success: true, error: null };
   }
 

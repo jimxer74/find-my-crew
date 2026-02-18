@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { defaultLocale } from '@/i18n/config';
+import { logger } from '@/app/lib/logger';
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import { FilterProvider } from "./contexts/FilterContext";
@@ -44,7 +45,7 @@ export default async function RootLayout({
   try {
     messages = await getMessages();
   } catch (error) {
-    logger.error('[RootLayout] Failed to load messages for locale:', locale, error);
+    logger.error('[RootLayout] Failed to load messages for locale:', { locale, error: error instanceof Error ? error.message : String(error) });
     // Last resort: empty object to prevent context error
     messages = {};
   }

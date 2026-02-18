@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/app/lib/logger';
 import { Footer } from '@/app/components/Footer';
 import { ProspectChatProvider, useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { CrewOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';
@@ -35,7 +36,7 @@ function CrewOnboardingContent() {
       await clearSession();
       router.push('/crew');
     } catch (e) {
-      logger.error('Failed to navigate to journeys:', e);
+      logger.error('Failed to navigate to journeys:', e instanceof Error ? { error: e.message } : { error: String(e) });
       setIsNavigatingToJourneys(false);
     }
   };

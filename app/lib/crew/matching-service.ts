@@ -1,10 +1,11 @@
 /**
  * Crew Matching Service
- * 
+ *
  * Provides intelligent crew search and matching functionality for the AI assistant.
  * Matches crew members based on experience level, risk tolerance, location, skills, and availability.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { toCanonicalSkillName } from '@/app/lib/skillUtils';
 import { checkExperienceLevelMatch } from '@/app/lib/skillMatching';
@@ -247,7 +248,7 @@ export async function searchMatchingCrew(
     const { data: profiles, error } = await query;
 
     if (error) {
-      logger.error('[searchMatchingCrew] Database error:', error);
+      logger.error('[searchMatchingCrew] Database error:', { error: error?.message || String(error) });
       throw error;
     }
 
@@ -298,7 +299,7 @@ export async function searchMatchingCrew(
       totalCount: filteredAndSorted.length,
     };
   } catch (error) {
-    logger.error('[searchMatchingCrew] Error:', error);
+    logger.error('[searchMatchingCrew] Error:', error instanceof Error ? { error: error.message } : { error: String(error) });
     throw error;
   }
 }

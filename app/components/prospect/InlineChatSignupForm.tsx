@@ -63,7 +63,7 @@ export function InlineChatSignupForm({
         onSuccess?.(authData.user.id);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during signup';
+      const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
     } finally {
       setLoading(false);

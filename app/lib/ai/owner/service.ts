@@ -10,6 +10,7 @@
  * bounding box handling, and shared infrastructure.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { callAI } from '../service';
 import {
@@ -38,7 +39,7 @@ const MAX_TOOL_ITERATIONS = 10; // Increased to allow creating multiple legs for
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Owner Chat Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Owner Chat Service] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

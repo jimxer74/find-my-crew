@@ -1,6 +1,7 @@
 /**
  * Audit logging helper for document vault access events
  */
+import { logger } from '../logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DocumentAccessType } from './types';
 
@@ -38,10 +39,10 @@ export async function logDocumentAccess(
     });
 
     if (error) {
-      logger.error('[DocumentAudit] Failed to log access event:', error);
+      logger.error('[DocumentAudit] Failed to log access event:', { error: error?.message || String(error) });
     }
   } catch (err) {
-    logger.error('[DocumentAudit] Exception logging access event:', err);
+    logger.error('[DocumentAudit] Exception logging access event:', err instanceof Error ? { error: err.message } : { error: String(err) });
   }
 }
 

@@ -4,13 +4,14 @@
  * Generates suggestions for users when new matching opportunities arise.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 // Debug logging helper
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Matching Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Matching Service] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

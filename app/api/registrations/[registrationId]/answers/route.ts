@@ -99,7 +99,7 @@ export async function GET(
       .eq('registration_id', registrationId);
 
     if (answersError) {
-      logger.error('Error fetching answers:', answersError);
+      logger.error('Error fetching answers:', { error: answersError });
       return NextResponse.json(
         { error: 'Failed to fetch answers', details: answersError.message },
         { status: 500 }
@@ -119,7 +119,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in answers API:', error);
+    logger.error('Unexpected error in answers API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -300,7 +300,7 @@ export async function POST(
       .select();
 
     if (insertError) {
-      logger.error('Error creating answers:', insertError);
+      logger.error('Error creating answers:', { error: insertError });
       return NextResponse.json(
         { error: 'Failed to create answers', details: insertError.message },
         { status: 500 }
@@ -314,7 +314,7 @@ export async function POST(
     }, { status: 201 });
 
   } catch (error: any) {
-    logger.error('Unexpected error in answers API:', error);
+    logger.error('Unexpected error in answers API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { canCreateBoat } from '@/app/lib/limits';
+import { logger } from '@/app/lib/logger';
 
 // Sailboat category information
 const sailboatCategories = {

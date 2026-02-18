@@ -33,8 +33,8 @@ async function fetchSessionFromCookie(): Promise<{ sessionId: string; isNewSessi
     const response = await fetch('/api/prospect/session');
     if (!response.ok) return null;
     return response.json();
-  } catch (e) {
-    logger.error('Failed to fetch session from cookie', { error: e instanceof Error ? e.message : String(e) });
+  } catch (err: unknown) {
+    logger.error('Failed to fetch session from cookie', { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -45,8 +45,8 @@ async function fetchSessionFromCookie(): Promise<{ sessionId: string; isNewSessi
 async function clearSessionCookie(): Promise<void> {
   try {
     await fetch('/api/prospect/session', { method: 'DELETE' });
-  } catch (e) {
-    logger.error('Failed to clear session cookie', { error: e instanceof Error ? e.message : String(e) });
+  } catch (err: unknown) {
+    logger.error('Failed to clear session cookie', { error: err instanceof Error ? err.message : String(err) });
   }
 }
 

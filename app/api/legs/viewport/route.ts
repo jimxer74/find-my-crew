@@ -282,7 +282,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
-      logger.error('Error calling get_legs_in_viewport:', error);
+      logger.error('Error calling get_legs_in_viewport:', { error });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch legs'),
         { status: 500 }
@@ -321,7 +321,7 @@ export async function GET(request: NextRequest) {
       count: transformedData.length,
     });
   } catch (error: any) {
-    logger.error('Unexpected error in viewport API:', error);
+    logger.error('Unexpected error in viewport API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

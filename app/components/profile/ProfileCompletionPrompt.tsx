@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import Link from 'next/link';
 import { MissingFieldsIndicator } from './MissingFieldsIndicator';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -57,7 +58,7 @@ export function ProfileCompletionPrompt({
           .maybeSingle();
 
         if (ownerError || prospectError) {
-          logger.warn('Error checking onboarding sessions:', ownerError || prospectError);
+          logger.warn('Error checking onboarding sessions:', { error: (ownerError || prospectError)?.message });
           setHasOnboardingSession(false);
           return;
         }
@@ -74,7 +75,7 @@ export function ProfileCompletionPrompt({
           }
         }
       } catch (error) {
-        logger.warn('Error checking onboarding sessions:', error);
+        logger.warn('Error checking onboarding sessions:', { error: error instanceof Error ? error.message : String(error) });
         setHasOnboardingSession(false);
       }
     };
@@ -95,9 +96,9 @@ export function ProfileCompletionPrompt({
     return null;
   }
 
-  logger.debug('[ProfileCompletionPrompt] onboardingSessionType', onboardingSessionType);
-  logger.debug('[ProfileCompletionPrompt] hasOnboardingSession', hasOnboardingSession);
-  logger.debug('[ProfileCompletionPrompt] completionPercentage', completionPercentage);
+  logger.debug('[ProfileCompletionPrompt] onboardingSessionType', { onboardingSessionType });
+  logger.debug('[ProfileCompletionPrompt] hasOnboardingSession', { hasOnboardingSession });
+  logger.debug('[ProfileCompletionPrompt] completionPercentage', { completionPercentage });
 
 
   if (variant === 'banner') {

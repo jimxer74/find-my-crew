@@ -324,7 +324,7 @@ export async function GET(
     return NextResponse.json(response);
 
   } catch (error: any) {
-    logger.error('Unexpected error in crew registration details API:', error);
+    logger.error('Unexpected error in crew registration details API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

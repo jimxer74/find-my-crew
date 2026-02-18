@@ -48,7 +48,7 @@ export function useEmailVerificationStatus() {
         }
       }
     } catch (err: unknown) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       if (isMountedRef.current) {
         setError(error.message || 'Failed to check verification status');
         setIsLoading(false);
@@ -92,7 +92,7 @@ export function useEmailVerificationStatus() {
         nextAllowedResend: new Date(now + cooldownPeriod)
       };
     } catch (err: unknown) {
-      const error = err as Error;
+      const error = err instanceof Error ? err : new Error(String(err));
       return {
         success: false,
         message: 'Failed to send verification email. Please try again later.',

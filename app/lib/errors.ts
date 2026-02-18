@@ -5,6 +5,8 @@
  * Full errors are logged server-side; generic messages returned to clients.
  */
 
+import { logger } from '@/app/lib/logger';
+
 export interface SanitizedError {
   message: string;
   code?: string;

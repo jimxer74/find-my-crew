@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { logger } from '@/app/lib/logger';
 import { extractProfileFromConversation, ExtractedProfile } from '@/app/lib/prospect/profileExtraction';
 import { ProspectMessage } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -132,7 +133,7 @@ export function ProfileExtractionModal({
       await onSuccess();
       onClose();
     } catch (err: any) {
-      logger.error('Failed to save profile:', err);
+      logger.error('[ProfileExtractionModal] Failed to save profile:', err instanceof Error ? { error: err.message } : { error: String(err) });
       setError(err.message || 'Failed to save profile. Please try again.');
       setIsSaving(false);
     }

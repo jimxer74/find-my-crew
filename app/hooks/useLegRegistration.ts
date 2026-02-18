@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/app/lib/logger';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
@@ -66,14 +67,14 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
             // No rows found - this is expected
             setRegistrationStatus(null);
           } else {
-            logger.warn('Warning loading registration status:', error.code, error.message);
+            logger.warn('[useLegRegistration] Warning loading registration status:', { code: error.code, message: error.message });
             setRegistrationStatus(null);
           }
         } else {
           setRegistrationStatus(data?.status || null);
         }
       } catch (err) {
-        logger.warn('Exception loading registration status:', err);
+        logger.warn('[useLegRegistration] Exception loading registration status:', err instanceof Error ? { error: err.message } : { error: String(err) });
         setRegistrationStatus(null);
       } finally {
         setRegistrationStatusChecked(true);
@@ -102,13 +103,13 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           .maybeSingle();
 
         if (error) {
-          logger.warn('Error checking profile sharing consent:', error.code, error.message);
+          logger.warn('[useLegRegistration] Error checking profile sharing consent:', { code: error.code, message: error.message });
           setHasProfileSharingConsent(null);
         } else {
           setHasProfileSharingConsent(data?.profile_sharing_consent === true);
         }
       } catch (err) {
-        logger.warn('Exception checking profile sharing consent:', err);
+        logger.warn('[useLegRegistration] Exception checking profile sharing consent:', err instanceof Error ? { error: err.message } : { error: String(err) });
         setHasProfileSharingConsent(null);
       } finally {
         setCheckingProfileConsent(false);
@@ -135,7 +136,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           reqs = data.requirements || [];
         }
       } catch (reqError: any) {
-        logger.error('Error fetching requirements:', reqError);
+        logger.error('[useLegRegistration] Error fetching requirements:', reqError instanceof Error ? { error: reqError.message } : { error: String(reqError) });
         reqs = [];
       }
 
@@ -150,7 +151,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           autoApprovalEnabled = autoApprovalData.auto_approval_enabled === true;
         }
       } catch (autoApprovalError: any) {
-        logger.warn('Could not check auto-approval status:', autoApprovalError);
+        logger.warn('[useLegRegistration] Could not check auto-approval status:', autoApprovalError instanceof Error ? { error: autoApprovalError.message } : { error: String(autoApprovalError) });
       }
 
       const hasReqs = reqs.length > 0;
@@ -189,7 +190,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
         autoApprovalEnabled,
       };
     } catch (error) {
-      logger.error('Error checking requirements:', error);
+      logger.error('[useLegRegistration] Error checking requirements:', error instanceof Error ? { error: error.message } : { error: String(error) });
       setHasRequirements(false);
       setHasQuestionRequirements(false);
       setHasPassportRequirement(false);

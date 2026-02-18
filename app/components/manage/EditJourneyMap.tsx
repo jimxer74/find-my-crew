@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -243,7 +244,7 @@ export function EditJourneyMap({
           setLocationInfo({ lng, lat, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
         }
       } catch (error) {
-        logger.error('Error fetching location name:', error);
+        logger.error('Error fetching location name:', error instanceof Error ? { error: error.message } : { error: String(error) });
         setLocationInfo({ lng, lat, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
       } finally {
         setIsLoadingLocation(false);
@@ -885,7 +886,7 @@ export function EditJourneyMap({
           startMarkerListenersRef.current.set(legId, handleClick);
         }
 
-        logger.debug('Replaced temporary marker with start marker at', currentLngLat);
+        logger.debug('Replaced temporary marker with start marker at', { currentLngLat });
       }
     } else {
       logger.warn('No temporary marker found, creating new gray marker');
@@ -942,7 +943,7 @@ export function EditJourneyMap({
           startMarkerListenersRef.current.set(legId, handleClick);
         }
 
-        logger.debug('Created new gray marker at', lng, lat);
+        logger.debug('Created new gray marker at', { lng, lat });
       }
     }
   };

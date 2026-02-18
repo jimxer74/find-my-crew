@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { Notification } from '@/app/lib/notifications';
 import { isAIPendingAction, hasAIPendingActionMetadata, requiresInput } from '@/app/lib/notifications/types';
 import React, { ReactElement, useState } from 'react';
@@ -125,31 +126,31 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
 
 
   const handleApprove = () => {
-    logger.debug('Approve button clicked for action:', actionId);
+    logger.debug('Approve button clicked for action:', { actionId });
     onApprove(actionId);
   };
 
   const handleReject = () => {
-    logger.debug('Reject button clicked for action:', actionId);
+    logger.debug('Reject button clicked for action:', { actionId });
     onReject(actionId);
   };
 
   const handleRedirectToProfile = () => {
-    logger.debug('[ActionConfirmation] 📊 Redirect to profile clicked for action:', actionId, 'type:', actionType);
-    logger.debug('[ActionConfirmation] 📊 actionId parameter:', actionId);
+    logger.debug('[ActionConfirmation] 📊 Redirect to profile clicked for action:', { actionId, actionType });
+    logger.debug('[ActionConfirmation] 📊 actionId parameter:', { actionId });
     const mapping = ACTION_TO_PROFILE_MAPPING[actionType];
-    logger.debug('[ActionConfirmation] 📊 Mapping lookup for actionType:', actionType);
-    logger.debug('[ActionConfirmation] 📊 Found mapping:', mapping);
+    logger.debug('[ActionConfirmation] 📊 Mapping lookup for actionType:', { actionType });
+    logger.debug('[ActionConfirmation] 📊 Found mapping:', { mapping });
     if (mapping) {
       logger.debug('[ActionConfirmation] 📊 Calling onRedirectToProfile with:', { actionId, section: mapping.section, field: mapping.field });
       onRedirectToProfile(actionId, mapping.section, mapping.field);
     } else {
-      logger.warn('[ActionConfirmation] 📊 No mapping found for actionType:', actionType);
+      logger.warn('[ActionConfirmation] 📊 No mapping found for actionType:', { actionType });
     }
   };
 
   const handleModalSubmit = (value: string | string[]) => {
-    logger.debug('Input submitted for action:', actionId, 'value:', value);
+    logger.debug('Input submitted for action:', { actionId, value });
     onApprove(actionId);
     setShowModal(false);
   };

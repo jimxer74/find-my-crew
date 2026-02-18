@@ -10,7 +10,7 @@ import { ProspectChatRequest } from '@/app/lib/ai/prospect/types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[API Prospect Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Prospect Chat Route] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
           log('✅ Crew onboarding completed - session deleted successfully');
         }
       } catch (e) {
-        logger.error('[API Prospect Chat Route] Error deleting session:', e);
+        logger.error('[API Prospect Chat Route] Error deleting session:', e instanceof Error ? { error: e.message } : { error: String(e) });
       }
     }
 
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in prospect chat route:', error.message);
-    logger.error('Prospect chat error:', error);
+    logger.error('Prospect chat error:', error instanceof Error ? { error: error.message } : { error: String(error) });
 
     const errorMessage = error.message || '';
 

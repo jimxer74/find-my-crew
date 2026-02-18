@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      logger.error('Error fetching user profile:', profileError);
+      logger.error('Error fetching user profile:', { errorCode: profileError.code, errorMessage: profileError.message });
       // Handle specific error codes
       if (profileError.code === 'PGRST116') {
         // Profile not found - user doesn't have a profile yet
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (regError) {
-      logger.error('Error fetching registrations:', regError);
+      logger.error('Error fetching registrations:', { errorCode: regError.code, errorMessage: regError.message });
       return NextResponse.json(
         sanitizeErrorResponse(regError, 'Failed to fetch registrations'),
         { status: 500 }
@@ -140,8 +140,8 @@ export async function GET(request: NextRequest) {
       .in('id', legIds);
 
     if (legsError) {
-      logger.error('Error fetching leg details:', legsError);
-      logger.error('Legs error details:', JSON.stringify(legsError, null, 2));
+      logger.error('Error fetching leg details:', { error: legsError instanceof Error ? legsError.message : String(legsError) });
+      logger.error('Legs error details:', { details: JSON.stringify(legsError, null, 2) });
 
       // Handle specific error codes
       if (legsError.code === 'PGRST302') {
@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
           waypointsByLeg[legId] = legWaypoints;
         }
       } catch (e) {
-        logger.warn('Waypoints fetch failed for leg', legId, e);
+        logger.warn('Waypoints fetch failed for leg', { legId, error: e instanceof Error ? e.message : String(e) });
       }
     }
 
@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
         end_waypoint: transformWaypoint(endWaypoint),
       };
       } catch (err) {
-        logger.warn('Transform failed for registration', reg?.id, err);
+        logger.warn('Transform failed for registration', { registrationId: reg?.id, error: err instanceof Error ? err.message : String(err) });
         return null;
       }
     }).filter(Boolean);
@@ -330,7 +330,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in crew registrations API:', error);
+    logger.error('Unexpected error in crew registrations API:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

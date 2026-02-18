@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import mapboxgl from 'mapbox-gl';
@@ -16,8 +17,6 @@ import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColo
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@/app/types/cost-models';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { logger } from '@/app/lib/logger';
-
 
 type Leg = {
   leg_id: string;

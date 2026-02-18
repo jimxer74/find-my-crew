@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { logger } from '@/app/lib/logger';
 import { Footer } from '@/app/components/Footer';
 import { LoginModal } from '@/app/components/LoginModal';
 import { SignupModal } from '@/app/components/SignupModal';
@@ -62,7 +63,7 @@ export default function WelcomePage() {
         }
       }
     } catch (e) {
-      logger.error('Failed to check session:', e);
+      logger.error('Failed to check session:', e instanceof Error ? { error: e.message } : { error: String(e) });
     }
   }, []);
 
@@ -77,7 +78,7 @@ export default function WelcomePage() {
     try {
       await fetch('/api/prospect/session', { method: 'DELETE' });
     } catch (e) {
-      logger.error('Failed to clear session cookie:', e);
+      logger.error('Failed to clear session cookie:', e instanceof Error ? { error: e.message } : { error: String(e) });
     }
     // Reset state to show full welcome page
     setHasExistingSession(false);

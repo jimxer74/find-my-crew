@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -188,7 +189,7 @@ export default function CreateJourneyPage() {
 
       router.push('/owner/journeys');
     } catch (err: any) {
-      logger.error('Failed to create journey:', err);
+      logger.error('Failed to create journey:', { error: err });
       setError(err.message || 'Failed to create journey');
     } finally {
       setIsSubmitting(false);

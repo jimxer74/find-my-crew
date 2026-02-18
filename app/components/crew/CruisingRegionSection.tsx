@@ -9,6 +9,7 @@ import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { ProfileLocation } from '@/app/lib/profile/useProfile';
+import { logger } from '@/app/lib/logger';
 
 type CruisingRegionSectionProps = {
   region: LocationRegion;
@@ -154,7 +155,7 @@ export function CruisingRegionSection({
 
       setLegs(legsWithScores);
     } catch (err) {
-      logger.error('Error fetching legs for region:', region.name, err);
+      logger.error('Error fetching legs for region', { regionName: region.name, error: err instanceof Error ? err.message : String(err) });
       setError('Failed to load legs');
     } finally {
       setLoading(false);

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LoadingButton } from '@/app/components/ui/LoadingButton';
+import { logger } from '@/app/lib/logger';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 
@@ -91,13 +92,13 @@ export function RegistrationRequirementsForm({
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        logger.error('Error checking AI consent:', error);
+        logger.error('Error checking AI consent:', { error: error?.message || String(error) });
         setHasAIConsent(null);
       } else {
         setHasAIConsent(data?.ai_processing_consent === true);
       }
     } catch (err) {
-      logger.error('Error checking AI consent:', err);
+      logger.error('Error checking AI consent:', { error: err instanceof Error ? err.message : String(err) });
       setHasAIConsent(null);
     } finally {
       setCheckingConsent(false);
@@ -126,7 +127,7 @@ export function RegistrationRequirementsForm({
         setAnswers(initialAnswers);
       }
     } catch (error) {
-      logger.error('Error loading requirements:', error);
+      logger.error('Error loading requirements:', { error });
     } finally {
       setLoading(false);
     }

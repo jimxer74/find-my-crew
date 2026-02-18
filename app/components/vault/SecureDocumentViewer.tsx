@@ -41,7 +41,7 @@ export function SecureDocumentViewer({
       setExpiresIn(data.expiresIn);
       setTimeRemaining(data.expiresIn);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load document');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }

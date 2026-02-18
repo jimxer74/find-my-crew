@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { logger } from '@/app/lib/logger';
 import { useTheme } from '../contexts/ThemeContext';
 
 type LogoWithTextProps = {
@@ -20,7 +21,7 @@ export function LogoWithText({ className = '', userRole = ''
     }
   };
 
-  logger.debug("LogoWithText userRole:", userRole);
+  logger.debug("LogoWithText userRole", { userRole });
   const theme = useTheme();
 
   return (

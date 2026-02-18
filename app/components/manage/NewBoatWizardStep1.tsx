@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState } from 'react';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import { getCountryFlag, COUNTRY_CODES } from '@/app/lib/country-flags';
@@ -87,7 +88,7 @@ export function NewBoatWizardStep1({
         });
       }
     } catch (error) {
-      logger.error('Search error:', error);
+      logger.error('Search error:', error instanceof Error ? { error: error.message } : { error: String(error) });
       setSearchError('Failed to search. You can proceed with manual entry.');
       onDataChange({
         ...data,

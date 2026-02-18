@@ -5,6 +5,7 @@
  * If a limit is not configured (env var not set), the check always passes.
  */
 
+import { logger } from '../logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getLimits } from './config';
 import { LimitCheckResult, UserUsage, JourneyUsage, SystemUsage, AIUsage } from './types';
@@ -37,7 +38,7 @@ export async function canCreateBoat(
     .eq('owner_id', userId);
 
   if (error) {
-    logger.error('Error checking boat count:', error);
+    logger.error('Error checking boat count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,
@@ -90,7 +91,7 @@ export async function canCreateJourney(
     .eq('boats.owner_id', userId);
 
   if (error) {
-    logger.error('Error checking journey count:', error);
+    logger.error('Error checking journey count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,
@@ -142,7 +143,7 @@ export async function canCreateLeg(
     .eq('journey_id', journeyId);
 
   if (error) {
-    logger.error('Error checking leg count:', error);
+    logger.error('Error checking leg count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,
@@ -192,7 +193,7 @@ export async function canRegisterUser(
     .select('*', { count: 'exact', head: true });
 
   if (error) {
-    logger.error('Error checking user count:', error);
+    logger.error('Error checking user count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,
@@ -244,7 +245,7 @@ export async function canCreateWaypoint(
     .eq('leg_id', legId);
 
   if (error) {
-    logger.error('Error checking waypoint count:', error);
+    logger.error('Error checking waypoint count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,
@@ -305,7 +306,7 @@ export async function canSendAIMessage(
     .gte('created_at', todayISO);
 
   if (error) {
-    logger.error('Error checking AI message count:', error);
+    logger.error('Error checking AI message count:', { error: error?.message || String(error) });
     return {
       allowed: false,
       current: 0,

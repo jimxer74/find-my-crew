@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
       hasLikes: facebookData.likes.length > 0,
     });
   } catch (error) {
-    logger.error('Error fetching Facebook data:', error);
+    logger.error('Error fetching Facebook data:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json(
       { error: 'Failed to fetch Facebook data' },
       { status: 500 }

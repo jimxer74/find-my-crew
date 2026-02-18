@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { logger } from '@/app/lib/logger';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Footer } from '@/app/components/Footer';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -59,7 +60,7 @@ export default function PrivacySettingsPage() {
     const supabase = getSupabaseBrowserClient();
 
 
-    logger.debug('[Policy] reading user data:', user);
+    logger.debug('[Policy] reading user data:', { userId: user?.id });
 
     try {
       // Fetch all user data in parallel
@@ -74,12 +75,12 @@ export default function PrivacySettingsPage() {
       ]);
 
 
-      logger.debug('[Policy] profileRes:', profileRes);
-      logger.debug('[Policy] consentsRes:', consentsRes);
-      logger.debug('[Policy] emailPrefsRes:', emailPrefsRes);
-      logger.debug('[Policy] boatsRes:', boatsRes);
-      logger.debug('[Policy] registrationsRes:', registrationsRes);
-      logger.debug('[Policy] notificationsRes:', notificationsRes);
+      logger.debug('[Policy] profileRes:', { hasError: !!profileRes.error });
+      logger.debug('[Policy] consentsRes:', { hasError: !!consentsRes.error });
+      logger.debug('[Policy] emailPrefsRes:', { hasError: !!emailPrefsRes.error });
+      logger.debug('[Policy] boatsRes:', { count: boatsRes.data?.length || 0 });
+      logger.debug('[Policy] registrationsRes:', { count: registrationsRes.data?.length || 0 });
+      logger.debug('[Policy] notificationsRes:', { count: notificationsRes.data?.length || 0 });
 
       setUserData({
         profile: profileRes.data,
@@ -96,7 +97,7 @@ export default function PrivacySettingsPage() {
         profile_reminders: false,
       });
     } catch (err) {
-      logger.error('Error loading user data:', err);
+      logger.error('Error loading user data:', err instanceof Error ? { error: err.message } : { error: String(err) });
       setLoading(false);
     } finally {
       setLoading(false);

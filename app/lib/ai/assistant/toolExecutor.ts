@@ -5,6 +5,7 @@
  * Uses shared utilities from @/app/lib/ai/shared for common operations.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
@@ -21,7 +22,7 @@ import {
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Tool Executor] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Tool Executor] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

@@ -35,7 +35,7 @@ export async function GET(
     });
 
     if (error) {
-      logger.error('Error fetching waypoints:', error);
+      logger.error('Error fetching waypoints:', { error });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch waypoints'),
         { status: 500 }
@@ -75,7 +75,7 @@ export async function GET(
       count: transformedWaypoints.length,
     });
   } catch (error: any) {
-    logger.error('Unexpected error in waypoints API:', error);
+    logger.error('Unexpected error in waypoints API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

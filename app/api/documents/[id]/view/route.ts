@@ -108,7 +108,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .single();
 
       if (docError || !doc) {
-        logger.error('[DocumentView] Failed to fetch document via service role:', docError);
+        logger.error('[DocumentView] Failed to fetch document via service role:', { error: docError });
         return NextResponse.json({ error: 'Document not found' }, { status: 404 });
       }
 
@@ -135,7 +135,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .createSignedUrl(filePath, SIGNED_URL_EXPIRY_SECONDS);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      logger.error('[DocumentView] Failed to create signed URL:', signedUrlError);
+      if (signedUrlError) {
+        logger.error('[DocumentView] Failed to create signed URL:', { error: signedUrlError.message });
+      }
       return NextResponse.json(
         { error: 'Failed to generate viewing URL' },
         { status: 500 }
@@ -168,7 +170,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error: unknown) {
-    logger.error('[DocumentView] Unexpected error:', error);
+    logger.error('[DocumentView] Unexpected error:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

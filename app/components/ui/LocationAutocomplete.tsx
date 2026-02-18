@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { logger } from '@/app/lib/logger';
 import { searchLocation, type LocationSearchResult } from '@/app/lib/geocoding/locations';
 
 export type Location = {
@@ -256,7 +257,7 @@ export function LocationAutocomplete({
         setSuggestions(mergedSuggestions);
         setShowSuggestions(true);
       } catch (err) {
-        logger.error('Error fetching location suggestions:', err);
+        logger.error('Error fetching location suggestions:', err instanceof Error ? { error: err.message } : { error: String(err) });
         // Still show cruising regions on error
         setSuggestions(cruisingSuggestions);
         setShowSuggestions(cruisingSuggestions.length > 0);
@@ -347,7 +348,7 @@ export function LocationAutocomplete({
         sessionTokenRef.current = null; // Reset session token
       }
     } catch (err) {
-      logger.error('Error retrieving location details:', err);
+      logger.error('Error retrieving location details:', err instanceof Error ? { error: err.message } : { error: String(err) });
     }
   };
 

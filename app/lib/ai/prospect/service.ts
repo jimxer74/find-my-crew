@@ -10,6 +10,7 @@
  * bounding box handling, and leg search.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { callAI } from '../service';
 import {
@@ -46,7 +47,7 @@ const MAX_TOOL_ITERATIONS = 5;
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Prospect Chat Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Prospect Chat Service] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

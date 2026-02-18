@@ -2,6 +2,7 @@
  * Utility functions for calculating skill match percentages
  */
 
+import { logger } from './logger';
 import { toCanonicalSkillName } from './skillUtils';
 
 

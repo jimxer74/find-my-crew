@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -31,20 +32,20 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
   
   // Log whenever prospectPreferences change
   useEffect(() => {
-    logger.debug('[SignupModal] prospectPreferences changed:', prospectPreferences);
-    logger.debug('[SignupModal] Extracted prefilledName:', prefilledName);
+    logger.debug('[SignupModal] prospectPreferences changed:', { prospectPreferences });
+    logger.debug('[SignupModal] Extracted prefilledName:', { prefilledName });
   }, [prospectPreferences, prefilledName]);
   
   useEffect(() => {
     // Always set the name when modal opens if we have a prefilled name
     // Also update if prefilledName changes while modal is open
-    logger.debug('[SignupModal] Modal state - isOpen:', isOpen, 'prefilledName:', prefilledName, 'prospectPreferences:', prospectPreferences);
+    logger.debug('[SignupModal] Modal state - isOpen:', { isOpen, prefilledName, prospectPreferences });
     if (isOpen && prefilledName) {
-      logger.debug('[SignupModal] Prefilling full name:', prefilledName, 'current fullName:', fullName);
+      logger.debug('[SignupModal] Prefilling full name:', { prefilledName, fullName });
       setFullName(prefilledName);
     } else if (isOpen && !prefilledName) {
       // Log when modal opens but no name is available
-      logger.debug('[SignupModal] Modal opened but no prefilled name available. prospectPreferences:', prospectPreferences);
+      logger.debug('[SignupModal] Modal opened but no prefilled name available. prospectPreferences:', { prospectPreferences });
     } else if (!isOpen) {
       // Clear the form when modal closes
       setFullName('');

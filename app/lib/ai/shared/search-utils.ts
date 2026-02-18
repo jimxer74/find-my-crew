@@ -5,6 +5,7 @@
  * Used by both assistant and prospect chat services.
  */
 
+import { logger } from '../../logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { BoundingBox, isValidBbox, isPointInBbox, extractCoordinates, describeBbox } from './bbox-utils';
 import { RawLeg, transformLeg, TransformedLeg, formatLegForAI, FormattedLegForAI } from './leg-utils';
@@ -13,7 +14,7 @@ import { RawLeg, transformLeg, TransformedLeg, formatLegForAI, FormattedLegForAI
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Search Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Search Utils] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

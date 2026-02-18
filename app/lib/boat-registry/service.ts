@@ -1,11 +1,12 @@
 /**
  * Boat Registry Service
- * 
+ *
  * Provides caching layer for boat specifications fetched from external sources.
  * Reduces external API calls and improves performance by storing boat model data
  * in a local registry table.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SailboatDetails } from '@/app/lib/sailboatdata_queries';
 import { getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
@@ -167,7 +168,7 @@ export async function saveBoatRegistry(
       .single();
     
     if (error) {
-      logger.error('Failed to update boat registry:', error);
+      logger.error('Failed to update boat registry:', { error: error?.message || String(error) });
       throw error;
     }
     return data as BoatRegistryEntry;
@@ -183,7 +184,7 @@ export async function saveBoatRegistry(
       .single();
     
     if (error) {
-      logger.error('Failed to insert boat registry:', error);
+      logger.error('Failed to insert boat registry:', { error: error?.message || String(error) });
       throw error;
     }
     return data as BoatRegistryEntry;

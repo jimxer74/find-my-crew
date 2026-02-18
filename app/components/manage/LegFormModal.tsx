@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
@@ -10,7 +11,6 @@ import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } fro
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import { canCreateLeg } from '@/app/lib/limits';
 import Image from 'next/image';
-import { logger } from '@/app/lib/logger';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

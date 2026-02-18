@@ -4,6 +4,7 @@
  * Avoids HTTP self-calls that fail in serverless environments.
  */
 
+import { logger } from '@/app/lib/logger';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
 import {
   validateLocation,
@@ -368,7 +369,7 @@ ${allWaypoints.length > 2
 
     return { success: true, data: generatedData as GenerateJourneyResult['data'] };
   } catch (error: any) {
-    logger.error('[generateJourneyRoute] Error:', error);
+    logger.error('[generateJourneyRoute] Error:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return {
       success: false,
       error: error instanceof AIServiceError ? error.message : (error.message || 'Failed to generate journey'),

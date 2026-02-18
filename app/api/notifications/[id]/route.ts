@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('[Notifications API] Unexpected error:', error);
+    logger.error('[Notifications API] Unexpected error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -78,7 +78,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    logger.error('[Notifications API] Unexpected error:', error);
+    logger.error('[Notifications API] Unexpected error:', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    logger.error('Error exporting user data:', error);
+    logger.error('Error exporting user data:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

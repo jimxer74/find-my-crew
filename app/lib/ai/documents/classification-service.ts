@@ -6,6 +6,7 @@
  * Privacy-first: one-shot API call, no document content stored in conversations.
  */
 
+import { logger } from '@/app/lib/logger';
 import type { DocumentClassificationResult, DocumentCategory } from '@/app/lib/documents/types';
 import { getUseCaseConfig, getAIConfig, getAPIKeys } from '@/app/lib/ai/config';
 

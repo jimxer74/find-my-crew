@@ -17,13 +17,13 @@ export async function GET(
     const resolvedParams = params instanceof Promise ? await params : params;
     const journeyId = resolvedParams.journeyId;
 
-    logger.info('[JourneyDetailsAPI] Fetching journey details for:', journeyId);
+    logger.info('[JourneyDetailsAPI] Fetching journey details for:', { journeyId });
 
     const supabase = await getSupabaseServerClient();
 
     // Get authenticated user (optional for public access)
     const { data: { user } } = await supabase.auth.getUser();
-    logger.info('[JourneyDetailsAPI] Authenticated user:', user?.id || 'None');
+    logger.info('[JourneyDetailsAPI] Authenticated user:', { userId: user?.id || 'None' });
 
     // First, try to get the journey without the boat join to see if it exists
     const { data: journeyBasic, error: basicError } = await supabase
@@ -82,7 +82,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in journey details GET API:', error);
+    logger.error('Unexpected error in journey details GET API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

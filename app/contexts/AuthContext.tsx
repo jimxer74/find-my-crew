@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '../lib/logger';
 import { getSupabaseBrowserClient } from '../lib/supabaseClient';
 import type { User } from '@supabase/supabase-js';
 
@@ -32,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       })
       .catch((error) => {
-        logger.error('Failed to get initial session:', error);
+        logger.error('Failed to get initial session:', error instanceof Error ? { error: error.message } : { error: String(error) });
         setUser(null);
         setLoading(false);
       });

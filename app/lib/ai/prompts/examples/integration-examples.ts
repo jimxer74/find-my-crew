@@ -3,6 +3,7 @@
  * Demonstrates how to migrate existing API routes to use the new prompt registry
  */
 
+import { logger } from '@/app/lib/logger';
 import { promptRegistry, PromptUtils, USE_CASES, UseCase } from '../index';
 import { compatibilityAdapter } from '../migration/migration';
 
@@ -284,8 +285,8 @@ export class VersionManagementIntegration {
     const result1 = await promptRegistry.executePrompt(USE_CASES.BOAT_SUGGESTIONS, {}, '1.0.0');
     const result2 = await promptRegistry.executePrompt(USE_CASES.BOAT_SUGGESTIONS, {}, '2.0.0');
 
-    logger.debug('Version 1 result:', result1);
-    logger.debug('Version 2 result:', result2);
+    logger.debug('Version 1 result:', { result1 });
+    logger.debug('Version 2 result:', { result2 });
   }
 }
 

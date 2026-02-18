@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       message: 'Registry updated successfully',
     });
   } catch (error: any) {
-    logger.error('Error updating registry descriptive fields:', error);
+    logger.error('Error updating registry descriptive fields:', { error });
     return NextResponse.json(
       { error: error.message || 'Failed to update registry' },
       { status: 500 }

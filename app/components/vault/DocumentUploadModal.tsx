@@ -99,7 +99,7 @@ export function DocumentUploadModal({ isOpen, onClose, onUploadComplete }: Docum
       onUploadComplete();
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setUploading(false);
       setClassifying(false);

@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    logger.error('Error resending verification email:', error);
+    logger.error('Error resending verification email:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json(
       {
         success: false,

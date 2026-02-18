@@ -94,7 +94,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
       // If a sailboat was selected, fetch details from sailboatdata.com
       if (step1Data.selectedSailboat && !step1Data.isManualEntry) {
         logger.debug('=== Fetching boat details from sailboatdata.com ===');
-        logger.debug('Using slug:', step1Data.selectedSailboat.slug);
+        logger.debug('Using slug:', { slug: step1Data.selectedSailboat.slug });
 
         const hardDataResponse = await fetch('/api/sailboatdata/fetch-details', {
           method: 'POST',
@@ -108,11 +108,11 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         if (hardDataResponse.ok) {
           const hardDataResult = await hardDataResponse.json();
           const hardData = hardDataResult.boatDetails;
-          logger.debug('Hard data fetched:', hardData);
-          
+          logger.debug('Hard data fetched:', { hardData });
+
           // Use the canonical make_model from parsed HTML (more reliable than search query)
           const canonicalMakeModel = hardData.make_model || step1Data.selectedSailboat.name;
-          logger.debug('Canonical make_model for registry:', canonicalMakeModel);
+          logger.debug('Canonical make_model for registry:', { canonicalMakeModel });
 
           // Merge hard data
           newStep2Data = {
@@ -159,7 +159,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             if (aiResponse.ok) {
               const aiResult = await aiResponse.json();
               const reasonedData = aiResult.reasonedDetails || {};
-              logger.debug('AI reasoned data fetched:', reasonedData);
+              logger.debug('AI reasoned data fetched:', { reasonedData });
 
               // Validate category
               const validCategories = [
@@ -211,14 +211,14 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
                   }
                 } catch (registryError) {
                   // Non-fatal - registry update failure shouldn't block the wizard
-                  logger.warn('⚠️ Failed to update registry with AI fields (non-fatal):', registryError);
+                  logger.warn('⚠️ Failed to update registry with AI fields (non-fatal):', registryError instanceof Error ? { error: registryError.message } : { error: String(registryError) });
                 }
               }
             } else {
               logger.warn('AI reasoned details failed, continuing with hard data only');
             }
           } catch (aiError) {
-            logger.warn('AI fill failed, continuing without AI data:', aiError);
+            logger.warn('AI fill failed, continuing without AI data:', aiError instanceof Error ? { error: aiError.message } : { error: String(aiError) });
           }
         } else {
           const errorData = await hardDataResponse.json().catch(() => ({}));
@@ -227,7 +227,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         }
       }
     } catch (err) {
-      logger.error('Error fetching boat details:', err);
+      logger.error('Error fetching boat details:', err instanceof Error ? { error: err.message } : { error: String(err) });
       // Continue to step 2 even if fetch fails - user can enter manually
     } finally {
       setStep2Data(newStep2Data);
@@ -284,7 +284,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
       onSuccess();
       handleClose();
     } catch (err: any) {
-      logger.error('Error saving boat:', err);
+      logger.error('Error saving boat:', err instanceof Error ? { error: err.message } : { error: String(err) });
       setError(err.message || 'Failed to save boat');
     } finally {
       setIsSaving(false);

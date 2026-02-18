@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ document }, { status: 201 });
   } catch (error: unknown) {
-    logger.error('[DocumentUpload] Unexpected error:', error);
+    logger.error('[DocumentUpload] Unexpected error:', error instanceof Error ? { error: error.message } : { error: String(error) });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

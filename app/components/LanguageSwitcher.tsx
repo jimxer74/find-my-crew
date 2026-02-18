@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
+import { logger } from '@/app/lib/logger';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -38,7 +39,7 @@ export function LanguageSwitcher({ variant = 'dropdown', className = '', onClose
           .update({ language: newLocale })
           .eq('id', user.id);
       } catch (error) {
-        logger.error('Failed to save language preference to profile:', error);
+        logger.error('Failed to save language preference to profile:', error instanceof Error ? { error: error.message } : { error: String(error) });
       }
     }
 

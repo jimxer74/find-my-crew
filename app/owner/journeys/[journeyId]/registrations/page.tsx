@@ -147,7 +147,7 @@ export default function JourneyRegistrationsPage() {
       .single();
 
     if (error) {
-      logger.error('Error loading journey:', error);
+      logger.error('Error loading journey:', { errorCode: error.code, errorMessage: error.message });
     } else {
       setJourney(data);
     }
@@ -166,7 +166,7 @@ export default function JourneyRegistrationsPage() {
       .order('created_at', { ascending: true });
 
     if (legsError) {
-      logger.error('Error loading legs:', legsError);
+      logger.error('Error loading legs:', { errorCode: legsError.code, errorMessage: legsError.message });
       setLegs([]);
       return;
     }
@@ -202,7 +202,7 @@ export default function JourneyRegistrationsPage() {
                 const geoJson = JSON.parse(row.location);
                 coordinates = geoJson.coordinates as [number, number];
               } catch (e) {
-                logger.error('Error parsing location GeoJSON:', e);
+                logger.error('Error parsing location GeoJSON:', e instanceof Error ? { error: e.message } : { error: String(e) });
               }
             } else if (row.location.coordinates) {
               coordinates = row.location.coordinates as [number, number];
@@ -276,7 +276,8 @@ export default function JourneyRegistrationsPage() {
     try {
       // Load all registrations without leg filter
       const url = `/api/registrations/by-journey/${journeyId}`;
-      logger.debug('[loadRegistrations] Fetching:', url, {
+      logger.debug('[loadRegistrations] Fetching', {
+        url,
         journeyId,
       });
       const response = await fetch(url);
@@ -316,7 +317,7 @@ export default function JourneyRegistrationsPage() {
             errorMessage = text || `HTTP ${status}: ${statusText}`;
           }
         } catch (parseError) {
-          logger.error('[loadRegistrations] Failed to parse error response:', parseError);
+          logger.error('[loadRegistrations] Failed to parse error response:', { error: parseError instanceof Error ? parseError.message : String(parseError) });
           errorMessage = `HTTP ${status}: ${statusText}`;
         }
         throw new Error(errorMessage);
@@ -325,16 +326,16 @@ export default function JourneyRegistrationsPage() {
       let data;
       try {
         const responseText = await response.text();
-        logger.debug('[loadRegistrations] Response text:', responseText);
+        logger.debug('[loadRegistrations] Response text:', { text: responseText });
         
         if (!responseText || responseText.trim() === '') {
           throw new Error('Empty response from API');
         }
         
         data = JSON.parse(responseText);
-        logger.debug('[loadRegistrations] Parsed data:', data);
+        logger.debug('[loadRegistrations] Parsed data:', { data });
       } catch (parseError: any) {
-        logger.error('[loadRegistrations] Failed to parse response:', parseError);
+        logger.error('[loadRegistrations] Failed to parse response:', parseError instanceof Error ? { error: parseError.message } : { error: String(parseError) });
         throw new Error(`Failed to parse API response: ${parseError.message}`);
       }
       
@@ -343,14 +344,14 @@ export default function JourneyRegistrationsPage() {
       }
       
       if (!Array.isArray(data.registrations)) {
-        logger.warn('[loadRegistrations] registrations is not an array:', data);
+        logger.warn('[loadRegistrations] registrations is not an array:', { data });
         setAllRegistrations([]);
         return;
       }
       
       setAllRegistrations(data.registrations || []);
     } catch (error: any) {
-      logger.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error instanceof Error ? { error: error.message } : { error: String(error) });
       // Show user-friendly error message
       alert(`Failed to load registrations: ${error.message || 'Unknown error'}`);
     } finally {
@@ -445,7 +446,7 @@ export default function JourneyRegistrationsPage() {
         maxZoom: 12,
       });
     } catch (error) {
-      logger.error('Error fitting bounds:', error);
+      logger.error('Error fitting bounds:', { error: error instanceof Error ? error.message : String(error) });
       if (coordinates.length > 0) {
         const [lng, lat] = coordinates[0];
         map.flyTo({

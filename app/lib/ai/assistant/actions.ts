@@ -4,6 +4,7 @@
  * Executes approved pending actions.
  */
 
+import { logger } from '@/app/lib/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { AIPendingAction, ActionType } from './types';
 
@@ -11,7 +12,7 @@ import { AIPendingAction, ActionType } from './types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Action Executor] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Action Executor] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

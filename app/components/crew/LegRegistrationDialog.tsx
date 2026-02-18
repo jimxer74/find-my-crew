@@ -7,6 +7,7 @@ import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { PassportVerificationStep } from './PassportVerificationStep';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { logger } from '@/app/lib/logger';
 
 type LegRegistrationDialogProps = {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export function LegRegistrationDialog({
           }
         })
         .catch((err) => {
-          logger.error('Error fetching leg:', err);
+          logger.error('Error fetching leg:', { error: err });
           setRegistrationError('Failed to load leg information');
         })
         .finally(() => {
@@ -133,7 +134,7 @@ export function LegRegistrationDialog({
           }
         })
         .catch((error) => {
-          logger.error('[LegRegistrationDialog] Error checking requirements:', error);
+          logger.error('[LegRegistrationDialog] Error checking requirements:', { error });
           setRegistrationError('Failed to load registration requirements');
           // Show simple form as fallback
           setShowSimpleForm(true);

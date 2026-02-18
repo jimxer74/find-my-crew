@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { logger } from '@/app/lib/logger';
 import { useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerMessage, PendingAction } from '@/app/lib/ai/owner/types';
 import { SignupModal } from '@/app/components/SignupModal';
@@ -323,7 +324,7 @@ export default function OwnerChat() {
                         toolResult={crewSearchResult.result}
                         onCrewClick={(crewId) => {
                           // Could navigate to crew profile or show details
-                          logger.debug('Crew clicked:', crewId);
+                          logger.debug('Crew clicked:', { crewId });
                         }}
                       />
                     ) : null;

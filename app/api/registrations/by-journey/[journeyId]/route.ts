@@ -260,7 +260,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    logger.error('Unexpected error in journey registrations API:', error);
+    logger.error('Unexpected error in journey registrations API:', { error });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

@@ -5,6 +5,7 @@
  * Used by both assistant and prospect chat services.
  */
 
+import { logger } from '../../logger';
 import { BoundingBox, describeBbox } from '../../geocoding/geocoding';
 
 // Re-export BoundingBox type for convenience
@@ -15,7 +16,7 @@ export { describeBbox };
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    logger.debug(`[Bbox Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Bbox Utils] ${message}`, data !== undefined ? (data as Record<string, any>) : undefined);
   }
 };
 

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { logger } from '@/app/lib/logger';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
@@ -308,7 +309,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
         });
       }
     } catch (err) {
-      logger.error('Error loading data:', err);
+      logger.error('Error loading data:', err instanceof Error ? { error: err.message } : { error: String(err) });
     } finally {
       setLoading(false);
     }
