@@ -4,7 +4,7 @@ title: Codebase analysis
 status: In Progress
 assignee: []
 created_date: '2026-02-17 20:22'
-updated_date: '2026-02-17 21:11'
+updated_date: '2026-02-18 07:28'
 labels: []
 dependencies: []
 ---
@@ -714,4 +714,48 @@ wouldn't prevent unauthorized access.
 - No breaking changes to notification API routes
 
 ### Commit: 72496bb
+
+## Debug Logging Migration - Phase 2026-02-18
+
+### Work Completed Today
+
+**Session 1: Code Cleanup & Fixes**
+- Fixed malformed filename: WorkingIndicator..tsx → WorkingIndicator.tsx (renamed file, updated import, verified build)
+- Build verified successful with all changes
+
+**Session 2: Logger Implementation (Starting)**
+- Migrated app/lib/ai/assessRegistration.ts (1 of ~50 files)
+- Replaced 50+ console.log/console.error calls with production-safe logger API
+  - 30+ debug-level logs → logger.debug() for conditional verbose output
+  - 8+ AI flow logs → logger.aiFlow() for AI flow detection
+  - 12+ error logs → logger.error() with safe error message extraction
+- All logs now respect LOG_LEVEL environment variable
+- Build verified successful (✓ Compiled successfully in 11.3s)
+
+### Benefits of New Logger System
+- Production-safe: Verbose logging disabled by default in production
+- Per-request debug control: X-Debug-Level header without restart
+- Structured logging: Better analysis and debugging capabilities
+- AI flow optimized: Automatic detailed logging when needed
+- Zero performance impact in normal mode
+
+### Remaining Work
+- Continue migrating remaining ~49 files with console logging
+  - Priority: API routes with sensitive data (~15 routes)
+  - Then: Hook files and utility functions (~20 files)
+  - Finally: Component files (~15 files)
+- Total remaining: ~750+ console.log/console.error statements
+
+### Migration Strategy
+1. Phase 1 (Complete): Create logger infrastructure
+2. Phase 2 (In Progress): Migrate critical AI/API routes first
+3. Phase 3 (Next): Migrate remaining files by category
+4. Phase 4 (Final): Remove legacy console.log statements
+
+### Impact Summary
+With logger migration:
+- Security: No sensitive data logged in production by default
+- Observability: Can debug production issues without code changes
+- Performance: Structured logging supports better analytics
+- Maintainability: Consistent logging across codebase
 <!-- SECTION:NOTES:END -->
