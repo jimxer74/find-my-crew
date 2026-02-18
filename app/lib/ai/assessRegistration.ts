@@ -10,6 +10,7 @@
  */
 
 import { callAI } from './service';
+import { logger } from '@/app/lib/logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   notifyRegistrationApproved,
@@ -60,7 +61,7 @@ export async function performPreChecks(
   journeyId: string,
   requirements: Requirement[]
 ): Promise<{ passed: boolean; failReason?: string; failType?: string }> {
-  console.log(`[Pre-Checks] Starting pre-checks for user ${userId}, journey ${journeyId}`);
+  logger.debug(`Starting pre-checks for user ${userId}, journey ${journeyId}`, { userId, journeyId }, true);
 
   // Load crew profile
   const { data: crewProfile } = await supabase
@@ -80,12 +81,12 @@ export async function performPreChecks(
     .eq('id', journeyId)
     .single();
 
-  console.log(`[Pre-Checks] Journey data:`, {
+  logger.debug(`Journey data loaded`, {
     risk_level: journey?.risk_level,
     risk_level_type: typeof journey?.risk_level,
     risk_level_is_array: Array.isArray(journey?.risk_level),
     min_experience_level: journey?.min_experience_level
-  });
+  }, true);
 
   if (!journey) {
     return { passed: false, failReason: 'Journey not found', failType: 'journey_missing' };
@@ -94,7 +95,7 @@ export async function performPreChecks(
   // Check 1: Risk Level
   const riskReq = requirements.find(r => r.requirement_type === 'risk_level');
   if (riskReq) {
-    console.log(`[Pre-Checks] Risk level check for requirement ${riskReq.id}`);
+    logger.debug(`Risk level check for requirement ${riskReq.id}`, { requirementId: riskReq.id }, true);
 
     // Ensure journeyRiskLevels is always an array - handle both array and scalar cases
     const rawJourneyRiskLevel = (journey as any).risk_level;
@@ -123,20 +124,20 @@ export async function performPreChecks(
       ? crewProfile.risk_level
       : crewProfile.risk_level ? [crewProfile.risk_level] : [];
 
-    console.log(`[Pre-Checks] Risk levels comparison:`, {
+    logger.debug(`Risk levels comparison`, {
       rawJourneyRiskLevel,
       journeyRiskLevels,
       crewRiskLevels,
       crewRiskLevels_type: typeof crewRiskLevels,
       crewRiskLevels_is_array: Array.isArray(crewRiskLevels)
-    });
+    }, true);
 
     // Crew must have ALL risk levels defined for the journey
     const missingRiskLevels = journeyRiskLevels.filter(
       (rl: string) => !crewRiskLevels.includes(rl)
     );
 
-    console.log(`[Pre-Checks] Missing risk levels:`, missingRiskLevels);
+    logger.debug(`Missing risk levels`, { missingRiskLevels }, true);
 
     if (missingRiskLevels.length > 0) {
       return {
@@ -237,7 +238,7 @@ Respond with ONLY the JSON array, no additional text.`;
     // Parse response
     const jsonMatch = aiResult.text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      console.error('[AI Assessment] No JSON array found in skill assessment response:', aiResult.text);
+      logger.error(`No JSON array found in skill assessment response`, { response: aiResult.text.substring(0, 200) });
       throw new Error('Failed to parse skill assessment response');
     }
 
@@ -255,7 +256,7 @@ Respond with ONLY the JSON array, no additional text.`;
       };
     });
   } catch (error: any) {
-    console.error('[AI Assessment] Skill assessment failed:', error);
+    logger.error(`Skill assessment failed`, { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -309,7 +310,7 @@ Respond with ONLY the JSON array, no additional text.`;
 
     const jsonMatch = aiResult.text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) {
-      console.error('[AI Assessment] No JSON array found in question assessment response:', aiResult.text);
+      logger.error(`No JSON array found in question assessment response`, { response: aiResult.text.substring(0, 200) });
       throw new Error('Failed to parse question assessment response');
     }
 
@@ -326,7 +327,7 @@ Respond with ONLY the JSON array, no additional text.`;
       };
     });
   } catch (error: any) {
-    console.error('[AI Assessment] Question assessment failed:', error);
+    logger.error(`Question assessment failed`, { error: error instanceof Error ? error.message : String(error) });
     throw error;
   }
 }
@@ -344,7 +345,7 @@ function calculateOverallScore(
   requirements: Requirement[]
 ): number {
   if (results.length === 0) {
-    console.log('[Scoring] No results to score, returning 100');
+    logger.debug(`No results to score, returning 100`, {}, true);
     return 100; // No AI-assessed requirements = full score
   }
 
@@ -369,20 +370,20 @@ function calculateOverallScore(
     totalWeight += weight;
   }
 
-  console.log('[Scoring] Score breakdown:', scoreBreakdown);
-  console.log('[Scoring] Totals:', { totalWeightedScore, totalWeight });
+  logger.debug(`Score breakdown`, { scoreBreakdown }, true);
+  logger.debug(`Totals`, { totalWeightedScore, totalWeight }, true);
 
   if (totalWeight === 0) {
-    console.log('[Scoring] Total weight is 0, returning 100');
+    logger.debug(`Total weight is 0, returning 100`, {}, true);
     return 100;
   }
 
   // Scale from 0-10 to 0-100
   const finalScore = Math.round((totalWeightedScore / totalWeight) * 10);
-  console.log('[Scoring] Final calculation:', {
+  logger.debug(`Final calculation`, {
     formula: `(${totalWeightedScore} / ${totalWeight}) * 10`,
     result: finalScore,
-  });
+  }, true);
 
   return finalScore;
 }
@@ -397,18 +398,18 @@ async function assessPassportRequirement(
   userId: string,
   requirements: Requirement[]
 ): Promise<Array<{ requirement_id: string; score: number; passed: boolean; reasoning: string; photoVerified?: boolean; photoConfidenceScore?: number }>> {
-  console.log('[Passport Assessment] Starting passport requirement assessment...');
+  logger.aiFlow('Passport', 'Starting passport requirement assessment', {});
   const passportReqs = requirements.filter(r => r.requirement_type === 'passport');
   if (passportReqs.length === 0) {
-    console.log('[Passport Assessment] No passport requirements found');
+    logger.debug(`No passport requirements found`, {}, true);
     return [];
   }
 
-  console.log(`[Passport Assessment] Found ${passportReqs.length} passport requirement(s)`);
+  logger.debug(`Found ${passportReqs.length} passport requirement(s)`, { count: passportReqs.length }, true);
 
   try {
     // Fetch passport answer to get document ID and photo data
-    console.log(`[Passport Assessment] Fetching passport answer for registration: ${registrationId}`);
+    logger.debug(`Fetching passport answer for registration`, { registrationId }, true);
     const { data: passportAnswers } = await supabase
       .from('registration_answers')
       .select('requirement_id, passport_document_id, photo_file_data')
@@ -416,14 +417,14 @@ async function assessPassportRequirement(
       .eq('requirement_id', passportReqs[0].id)
       .single();
 
-    console.log(`[Passport Assessment] Passport answer retrieved:`, {
+    logger.debug(`Passport answer retrieved`, {
       hasPassportId: !!passportAnswers?.passport_document_id,
       hasPhotoData: !!passportAnswers?.photo_file_data,
       photoDataLength: passportAnswers?.photo_file_data?.length || 0,
-    });
+    }, true);
 
     if (!passportAnswers?.passport_document_id) {
-      console.log('[Passport Assessment] No passport document ID found in answers');
+      logger.debug(`No passport document ID found in answers`, {}, true);
       return passportReqs.map(req => ({
         requirement_id: req.id,
         score: 0,
@@ -437,15 +438,15 @@ async function assessPassportRequirement(
     const requirePhotoValidation = passportReq.require_photo_validation || false;
     const passConfidenceThreshold = (passportReq.pass_confidence_score || 7) / 10; // Convert 0-10 scale to 0-1
 
-    console.log(`[Passport Assessment] Configuration:`, {
+    logger.debug(`Configuration`, {
       passportDocId,
       requirePhotoValidation,
       passConfidenceThreshold,
       passConfidenceScore: passportReq.pass_confidence_score,
-    });
+    }, true);
 
     // Fetch passport document from storage
-    console.log(`[Passport Assessment] Fetching document from vault: ${passportDocId}`);
+    logger.debug(`Fetching document from vault`, { passportDocId }, true);
     const { data: passportDoc, error: docError } = await supabase
       .from('document_vault')
       .select('id, file_path, metadata')
@@ -453,10 +454,10 @@ async function assessPassportRequirement(
       .eq('owner_id', userId)
       .single();
 
-    console.log(`[Passport Assessment] Document fetch result:`, { docError, hasDoc: !!passportDoc });
+    logger.debug(`Document fetch result`, { hasError: !!docError, hasDoc: !!passportDoc }, true);
 
     if (docError || !passportDoc) {
-      console.error('[Passport Assessment] Passport document not accessible:', docError);
+      logger.error(`Passport document not accessible`, { error: docError instanceof Error ? docError.message : String(docError) });
       return [{
         requirement_id: passportReq.id,
         score: 0,
@@ -465,18 +466,18 @@ async function assessPassportRequirement(
       }];
     }
 
-    console.log(`[Passport Assessment] Document found:`, { id: passportDoc.id, filePath: passportDoc.file_path });
+    logger.debug(`Document found`, { id: passportDoc.id, filePath: passportDoc.file_path }, true);
 
     // Download passport file from storage (using service role)
-    console.log(`[Passport Assessment] Downloading file from storage: ${passportDoc.file_path}`);
+    logger.debug(`Downloading file from storage`, { filePath: passportDoc.file_path }, true);
     const { data: passportFileData, error: downloadError } = await supabase.storage
       .from('secure-documents')
       .download(passportDoc.file_path);
 
-    console.log(`[Passport Assessment] Download result:`, { downloadError, hasData: !!passportFileData });
+    logger.debug(`Download result`, { hasError: !!downloadError, hasData: !!passportFileData }, true);
 
     if (downloadError || !passportFileData) {
-      console.error('[Passport Assessment] Failed to download passport file:', downloadError);
+      logger.error(`Failed to download passport file`, { error: downloadError instanceof Error ? downloadError.message : String(downloadError) });
       return [{
         requirement_id: passportReq.id,
         score: 0,
@@ -485,14 +486,14 @@ async function assessPassportRequirement(
       }];
     }
 
-    console.log(`[Passport Assessment] File downloaded successfully, size: ${passportFileData.size} bytes`);
+    logger.debug(`File downloaded successfully`, { size: passportFileData.size }, true);
 
     // Convert file to base64 for AI processing
     const passportBase64 = await passportFileData.arrayBuffer().then(buffer =>
       Buffer.from(buffer).toString('base64')
     );
 
-    console.log(`[Passport Assessment] Base64 encoding complete, length: ${passportBase64.length} chars`);
+    logger.debug(`Base64 encoding complete`, { length: passportBase64.length }, true);
 
     // Build passport validation prompt
     const passportPrompt = `You are validating a passport document for crew member registration.
@@ -514,7 +515,7 @@ Respond with ONLY a JSON object:
 
 Respond with ONLY the JSON object, no additional text.`;
 
-    console.log(`[Passport Assessment] Sending to AI - Image: ${passportBase64.length} chars, Prompt length: ${passportPrompt.length}`);
+    logger.debug(`Sending to AI for passport validation`, { imageLength: passportBase64.length, promptLength: passportPrompt.length }, true);
 
     // Call AI for passport validation
     const passportResult = await callAI({
@@ -526,10 +527,10 @@ Respond with ONLY the JSON object, no additional text.`;
       },
     });
 
-    console.log(`[Passport Assessment] AI Response received:`, {
-      text: passportResult.text,
+    logger.debug(`AI Response received`, {
+      text: passportResult.text.substring(0, 200),
       textLength: passportResult.text.length,
-    });
+    }, true);
 
     let passportValidation = {
       is_valid_passport: false,
@@ -541,16 +542,16 @@ Respond with ONLY the JSON object, no additional text.`;
 
     try {
       const jsonMatch = passportResult.text.match(/\{[\s\S]*\}/);
-      console.log(`[Passport Assessment] JSON match result:`, jsonMatch ? jsonMatch[0] : 'NO MATCH');
+      logger.debug(`JSON match result`, { matched: !!jsonMatch, result: jsonMatch ? jsonMatch[0].substring(0, 100) : 'NO MATCH' }, true);
 
       if (jsonMatch) {
         passportValidation = JSON.parse(jsonMatch[0]);
-        console.log(`[Passport Assessment] Parsed validation:`, passportValidation);
+        logger.debug(`Parsed validation`, passportValidation, true);
       } else {
-        console.error('[Passport Assessment] No JSON found in response');
+        logger.error(`No JSON found in response`, {});
       }
     } catch (e) {
-      console.error('[Passport Assessment] Failed to parse passport validation response:', e);
+      logger.error(`Failed to parse passport validation response`, { error: e instanceof Error ? e.message : String(e) });
     }
 
     // Calculate passport score (0-10 scale)
@@ -567,7 +568,7 @@ Respond with ONLY the JSON object, no additional text.`;
 
         if (photoFileData) {
           // Photo was provided - perform facial matching with AI
-          console.log('[Passport Assessment] Performing facial matching with provided photo...');
+          logger.aiFlow('Passport', 'Performing facial matching with provided photo', {});
 
           const photoMatchingPrompt = `You are performing facial verification for a crew member registration.
 
@@ -599,9 +600,9 @@ Respond with ONLY the JSON object, no additional text.`;
               },
             });
 
-            console.log(`[Passport Assessment] Facial matching result received:`, {
+            logger.debug(`Facial matching result received`, {
               textLength: matchingResult.text.length,
-            });
+            }, true);
 
             let photoMatching = {
               faces_match: false,
@@ -615,27 +616,27 @@ Respond with ONLY the JSON object, no additional text.`;
               const jsonMatch = matchingResult.text.match(/\{[\s\S]*\}/);
               if (jsonMatch) {
                 photoMatching = JSON.parse(jsonMatch[0]);
-                console.log(`[Passport Assessment] Parsed photo matching:`, photoMatching);
+                logger.debug(`Parsed photo matching`, photoMatching, true);
               }
             } catch (e) {
-              console.error('[Passport Assessment] Failed to parse photo matching response:', e);
+              logger.error(`Failed to parse photo matching response`, { error: e instanceof Error ? e.message : String(e) });
             }
 
             if (photoMatching.faces_match && photoMatching.confidence_score >= 0.7) {
               photoVerified = true;
               photoConfidenceScore = photoMatching.confidence_score;
-              console.log(`[Passport Assessment] ✅ Photo verified with confidence: ${(photoConfidenceScore * 100).toFixed(0)}%`);
+              logger.debug(`Photo verified with confidence: ${(photoConfidenceScore * 100).toFixed(0)}%`, { photoConfidenceScore }, true);
             } else {
-              console.log(`[Passport Assessment] ❌ Photo verification failed or low confidence: ${(photoMatching.confidence_score * 100).toFixed(0)}%`);
+              logger.debug(`Photo verification failed or low confidence: ${(photoMatching.confidence_score * 100).toFixed(0)}%`, { confidence: photoMatching.confidence_score }, true);
               passportScore = Math.max(0, passportScore - 3); // Deduct points for failed photo verification
             }
           } catch (photoError) {
-            console.error('[Passport Assessment] Failed to perform facial matching:', photoError);
+            logger.error(`Failed to perform facial matching`, { error: photoError instanceof Error ? photoError.message : String(photoError) });
             passportScore = Math.max(0, passportScore - 3); // Deduct points for failed photo verification attempt
           }
         } else {
           // Photo validation required but no photo provided
-          console.log('[Passport Assessment] ⚠️ Photo validation required but no photo provided');
+          logger.warn(`Photo validation required but no photo provided`, {});
           passportScore = Math.max(0, passportScore - 3); // Deduct points for missing photo
         }
       }
@@ -643,13 +644,13 @@ Respond with ONLY the JSON object, no additional text.`;
 
     const passed = passportScore >= (passportReq.pass_confidence_score || 7);
 
-    console.log(`[Passport Assessment] Final result:`, {
+    logger.debug(`Final result`, {
       score: passportScore,
       passed,
       photoVerified,
       photoConfidenceScore,
       threshold: passportReq.pass_confidence_score || 7,
-    });
+    }, true);
 
     return [{
       requirement_id: passportReq.id,
@@ -660,7 +661,7 @@ Respond with ONLY the JSON object, no additional text.`;
       photoConfidenceScore: photoConfidenceScore || 0,
     }];
   } catch (error: any) {
-    console.error('[AI Assessment] Passport assessment failed:', error);
+    logger.error(`Passport assessment failed`, { error: error instanceof Error ? error.message : String(error) });
     return passportReqs.map(req => ({
       requirement_id: req.id,
       score: 0,
@@ -678,7 +679,7 @@ export async function assessRegistrationWithAI(
   supabase: SupabaseClient<any>,
   registrationId: string
 ): Promise<void> {
-  console.log(`[AI Assessment] Starting assessment for registration: ${registrationId}`);
+  logger.aiFlow('Assessment', `Starting assessment for registration: ${registrationId}`, { registrationId });
 
   // Load registration with all related data
   const { data: registration, error: regError } = await supabase
@@ -715,7 +716,7 @@ export async function assessRegistrationWithAI(
     .single();
 
   if (regError || !registration) {
-    console.error(`[AI Assessment] Error loading registration ${registrationId}:`, regError);
+    logger.error(`Error loading registration ${registrationId}`, { error: regError instanceof Error ? regError.message : String(regError) });
     throw new Error(`Registration not found: ${registrationId}`);
   }
 
@@ -744,7 +745,7 @@ export async function assessRegistrationWithAI(
   }
 
   if (!legs.journeys.auto_approval_enabled) {
-    console.log(`[AI Assessment] Auto-approval not enabled for journey ${legs.journeys.id}, skipping`);
+    logger.debug(`Auto-approval not enabled for journey, skipping`, { journeyId: legs.journeys.id }, true);
     return;
   }
 
@@ -756,7 +757,7 @@ export async function assessRegistrationWithAI(
     .single();
 
   if (!userConsents?.ai_processing_consent) {
-    console.log(`[AI Assessment] User ${registration.user_id} has not consented to AI processing`);
+    logger.debug(`User has not consented to AI processing`, { userId: registration.user_id }, true);
     const ownerId = legs.journeys.boats?.owner_id;
     if (ownerId) {
       await createNotification(supabase, {
@@ -778,10 +779,7 @@ export async function assessRegistrationWithAI(
   const journeyId = legs.journeys.id;
 
   // Load requirements
-  console.log(`[AI Assessment] === STARTING ASSESSMENT ===`);
-  console.log(`[AI Assessment] Journey ID: ${journeyId}`);
-  console.log(`[AI Assessment] Registration ID: ${registrationId}`);
-  console.log(`[AI Assessment] User ID: ${registration.user_id}`);
+  logger.aiFlow('Assessment', 'STARTING ASSESSMENT', { journeyId, registrationId, userId: registration.user_id });
 
   const { data: requirements } = await supabase
     .from('journey_requirements')
@@ -790,11 +788,11 @@ export async function assessRegistrationWithAI(
     .order('order', { ascending: true });
 
   if (!requirements || requirements.length === 0) {
-    console.log(`[AI Assessment] No requirements for journey ${journeyId}, skipping`);
+    logger.debug(`No requirements for journey, skipping`, { journeyId }, true);
     return;
   }
 
-  console.log(`[AI Assessment] Requirements found:`, {
+  logger.debug(`Requirements found`, {
     count: requirements.length,
     types: requirements.map(r => r.requirement_type).join(', '),
     details: requirements.map(r => ({
@@ -802,7 +800,7 @@ export async function assessRegistrationWithAI(
       type: r.requirement_type,
       required_value: r.required_value,
     })),
-  });
+  }, true);
 
   // Wait for answers to be committed
   await new Promise(resolve => setTimeout(resolve, 500));
@@ -824,13 +822,12 @@ export async function assessRegistrationWithAI(
     throw new Error(`Crew profile not found for user: ${registration.user_id}`);
   }
 
-  console.log(`[AI Assessment] Crew profile loaded:`, {
+  logger.debug(`Crew profile loaded`, {
     name: crewProfile.full_name,
     experience: crewProfile.sailing_experience,
-    skills: crewProfile.skills,
+    skillsCount: crewProfile.skills?.length || 0,
     riskLevel: crewProfile.risk_level,
-    sailingPreferences: crewProfile.sailing_preferences,
-  });
+  }, true);
 
   const typedRequirements = requirements as Requirement[];
   let assessmentFailed = false;
@@ -842,11 +839,11 @@ export async function assessRegistrationWithAI(
   // --- Assess Passport Requirement ---
   const passportReqs = typedRequirements.filter(r => r.requirement_type === 'passport');
   if (passportReqs.length > 0) {
-    console.log(`[AI Assessment] Starting passport assessment (${passportReqs.length} requirements)...`);
+    logger.aiFlow('Assessment', `Starting passport assessment (${passportReqs.length} requirements)`, { count: passportReqs.length });
     try {
       const passportResults = await assessPassportRequirement(supabase, registrationId, registration.user_id, typedRequirements);
 
-      console.log(`[AI Assessment] Passport assessment results:`, passportResults);
+      logger.debug(`Passport assessment results`, { count: passportResults.length, results: passportResults }, true);
 
       for (const result of passportResults) {
         allScoredResults.push({ requirement_id: result.requirement_id, score: result.score });
@@ -864,7 +861,7 @@ export async function assessRegistrationWithAI(
         overallReasoning.push(`Passport: ${result.score}/10 - ${result.reasoning}`);
       }
     } catch (error) {
-      console.error('[AI Assessment] Passport assessment failed:', error);
+      logger.error(`Passport assessment failed`, { error: error instanceof Error ? error.message : String(error) });
       overallReasoning.push('Passport assessment: Failed due to error');
       assessmentFailed = true;
     }
@@ -872,13 +869,13 @@ export async function assessRegistrationWithAI(
 
   // --- Assess Skill Requirements ---
   const skillReqs = typedRequirements.filter(r => r.requirement_type === 'skill');
-  console.log(`[AI Assessment] Skill requirements: ${skillReqs.length} found`);
+  logger.debug(`Skill requirements found`, { count: skillReqs.length }, true);
   if (skillReqs.length > 0) {
     try {
-      console.log(`[AI Assessment] Assessing skills: ${skillReqs.map(r => r.skill_name || 'unknown').join(', ')}`);
+      logger.aiFlow('Assessment', `Assessing skills: ${skillReqs.map(r => r.skill_name || 'unknown').join(', ')}`, { skills: skillReqs.map(r => r.skill_name) });
       const skillResults = await assessSkillRequirements(supabase, crewProfile, typedRequirements);
 
-      console.log(`[AI Assessment] Skill assessment results:`, skillResults);
+      logger.debug(`Skill assessment results`, { count: skillResults.length, results: skillResults }, true);
 
       for (const result of skillResults) {
         allScoredResults.push({ requirement_id: result.requirement_id, score: result.score });
@@ -894,7 +891,7 @@ export async function assessRegistrationWithAI(
         overallReasoning.push(`Skill "${result.skill_name}": ${result.score}/10 - ${result.reasoning}`);
       }
     } catch (error) {
-      console.error('[AI Assessment] Skill assessment failed:', error);
+      logger.error(`Skill assessment failed`, { error: error instanceof Error ? error.message : String(error) });
       overallReasoning.push('Skills assessment: Failed due to error');
       assessmentFailed = true;
     }
@@ -902,13 +899,13 @@ export async function assessRegistrationWithAI(
 
   // --- Assess Question Requirements ---
   const questionReqs = typedRequirements.filter(r => r.requirement_type === 'question');
-  console.log(`[AI Assessment] Question requirements: ${questionReqs.length} found, Answers provided: ${answers?.length || 0}`);
+  logger.debug(`Question requirements found`, { requirementCount: questionReqs.length, answerCount: answers?.length || 0 }, true);
   if (questionReqs.length > 0 && answers && answers.length > 0) {
     try {
-      console.log(`[AI Assessment] Assessing questions with ${answers.length} answers`);
+      logger.aiFlow('Assessment', `Assessing questions with ${answers.length} answers`, { answerCount: answers.length });
       const questionResults = await assessQuestionRequirements(supabase, answers, typedRequirements);
 
-      console.log(`[AI Assessment] Question assessment results:`, questionResults);
+      logger.debug(`Question assessment results`, { count: questionResults.length, results: questionResults }, true);
 
       for (const result of questionResults) {
         allScoredResults.push({ requirement_id: result.requirement_id, score: result.score });
@@ -925,7 +922,7 @@ export async function assessRegistrationWithAI(
         overallReasoning.push(`Question "${req?.question_text?.substring(0, 50) || '?'}": ${result.score}/10 - ${result.reasoning}`);
       }
     } catch (error) {
-      console.error('[AI Assessment] Question assessment failed:', error);
+      logger.error(`Question assessment failed`, { error: error instanceof Error ? error.message : String(error) });
       overallReasoning.push('Questions assessment: Failed due to error');
       assessmentFailed = true;
     }
@@ -933,7 +930,7 @@ export async function assessRegistrationWithAI(
 
   // --- Mark non-AI requirements as passed (risk_level, experience_level already checked in pre-checks) ---
   const preCheckReqs = typedRequirements.filter(r => r.requirement_type === 'risk_level' || r.requirement_type === 'experience_level');
-  console.log(`[AI Assessment] Pre-check requirements (risk_level/experience_level): ${preCheckReqs.length} marked as passed`);
+  logger.debug(`Pre-check requirements marked as passed`, { count: preCheckReqs.length }, true);
   for (const req of preCheckReqs) {
     if (req.requirement_type === 'risk_level' || req.requirement_type === 'experience_level') {
       await supabase.from('registration_answers').upsert({
@@ -948,18 +945,18 @@ export async function assessRegistrationWithAI(
   // Single weighted average across ALL AI-assessed requirements (skills + questions), scaled to 0-100.
   // Each requirement's score (0-10) is weighted by its configured weight.
   // The result is a 0-100 percentage compared against the single auto_approval_threshold.
-  console.log(`[AI Assessment] Calculating overall score from ${allScoredResults.length} results:`, allScoredResults);
+  logger.debug(`Calculating overall score`, { resultCount: allScoredResults.length, results: allScoredResults }, true);
   const finalScore = calculateOverallScore(allScoredResults, typedRequirements);
 
   const threshold = legs.journeys.auto_approval_threshold || 80;
   const shouldAutoApprove = !assessmentFailed && finalScore >= threshold;
 
-  console.log(`[AI Assessment] Score calculation complete:`, {
+  logger.debug(`Score calculation complete`, {
     finalScore,
     threshold,
     shouldAutoApprove,
     assessmentFailed,
-  });
+  }, true);
 
   // Update individual answer records with the overall pass/fail
   for (const result of allScoredResults) {
@@ -970,9 +967,13 @@ export async function assessRegistrationWithAI(
   }
 
   overallReasoning.push(`Overall: ${finalScore}% (threshold: ${threshold}%). ${shouldAutoApprove ? 'AUTO-APPROVED' : assessmentFailed ? 'FAILED (error)' : 'BELOW THRESHOLD'}`);
-  console.log(`[AI Assessment] === ASSESSMENT COMPLETE ===`);
-  console.log(`[AI Assessment] Final Result: score=${finalScore}, threshold=${threshold}, failed=${assessmentFailed}, autoApprove=${shouldAutoApprove}`);
-  console.log(`[AI Assessment] Full Reasoning:\n${overallReasoning.join('\n')}`);
+  logger.aiFlow('Assessment', 'ASSESSMENT COMPLETE', {
+    finalScore,
+    threshold,
+    assessmentFailed,
+    shouldAutoApprove,
+    reasoning: overallReasoning.join(' | ')
+  });
 
   // Update registration
   const updateData: Record<string, any> = {
@@ -997,7 +998,7 @@ export async function assessRegistrationWithAI(
   // --- Notifications ---
   const ownerId = legs.journeys.boats?.owner_id;
   if (!ownerId) {
-    console.warn('[AI Assessment] No ownerId, skipping notifications');
+    logger.warn(`No ownerId, skipping notifications`, {});
     return;
   }
 
