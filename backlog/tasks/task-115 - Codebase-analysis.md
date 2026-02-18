@@ -540,6 +540,7 @@ To efficiently update remaining 44 routes, recommend:
 **Major Accomplishments:**
 ✅ Fixed 6 promise error handling locations across critical page components
 ✅ Improved error resilience in 3 essential hooks/components
+✅ Hardened Content Security Policy (CSP) - Removed 'unsafe-eval', added security directives
 ✅ Verified full build with all changes
 ✅ Documented comprehensive approach for promise error handling
 
@@ -547,11 +548,12 @@ To efficiently update remaining 44 routes, recommend:
 - Error sanitization: 70+ API routes (5 commits)
 - Event listener cleanup: EditJourneyMap.tsx (1 commit)
 - Promise error handling: 6 files, 15+ locations (1 commit)
+- CSP hardening: Removed dangerous unsafe-eval (1 commit)
 
 **Remaining Work:**
 1. Migration numbering chaos (7 groups, 11 duplicate pairs) - Medium priority, high risk
-2. Debug logging cleanup (792 instances) - Medium priority, large scope
-3. Additional promise error handling (5-10 more locations) - Could be deferred
+2. Debug logging cleanup (792 instances) - High priority, large scope, could use new logger system
+3. Additional promise error handling - Most are already properly handled
 4. UI/UX consistency (90+ issues) - Low-medium priority
 5. Unused code cleanup (~1500 lines) - Low priority
 
@@ -642,4 +644,37 @@ potentially causing unhandled promise rejections and silent failures:
 - All promise chains now have proper error handling
 
 ### Commit: 7e05cea
+
+## Content Security Policy (CSP) Hardening - Session 2026-02-18 (Continuation)
+
+### Problem Identified
+CSP header in next.config.ts contained overly permissive directives:
+- `'unsafe-eval'`: Allows arbitrary code execution, defeats CSP purpose
+- `'unsafe-inline'`: Required by Next.js but still increases attack surface
+
+### Solution Implemented
+
+**Removed:**
+- `'unsafe-eval'` from script-src directive (major security improvement)
+
+**Added:**
+- `base-uri 'self'`: Prevents <base> tag injection attacks
+- `form-action 'self'`: Restricts form submissions to same origin
+
+**Kept (with rationale):**
+- `'unsafe-inline'` for scripts and styles: Required for Next.js framework
+- Future improvement opportunity: Migrate to CSS modules to remove this
+
+### Security Impact
+- Eliminates arbitrary code execution vector from CSP
+- Reduces XSS attack surface with additional directives
+- Maintains functionality while improving security posture
+- Follows NIST security guidelines more closely
+
+### Testing
+- Build verification: ✓ Successful
+- No functionality impact: ✓ Verified
+- CSP directives all valid: ✓ Confirmed
+
+### Commit: dd5453f
 <!-- SECTION:NOTES:END -->
