@@ -24,6 +24,7 @@ import { ImageCarousel } from '../ui/ImageCarousel';
 import { useProfile } from '@/app/lib/profile/useProfile';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { logger } from '@/app/lib/logger';
+import { LoadingButton } from '@/app/components/ui/LoadingButton';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -1924,13 +1925,15 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </button>
                 </div>
               ) : (
-                <button
+                <LoadingButton
                   onClick={handleRegister}
-                  disabled={isRegistering || checkingProfileConsent}
-                  className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                  isLoading={isRegistering}
+                  disabled={checkingProfileConsent}
+                  fullWidth
+                  loadingText="Registering..."
                 >
-                  {isRegistering ? 'Registering...' : checkingProfileConsent ? 'Checking...' : 'Register for leg'}
-                </button>
+                  {checkingProfileConsent ? 'Checking...' : 'Register for leg'}
+                </LoadingButton>
               )}
               {registrationError && (
                 <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
