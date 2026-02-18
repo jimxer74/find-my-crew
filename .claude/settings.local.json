@@ -75,7 +75,8 @@
       "Bash(then sed -i \"0,/^import/s/^/import { sanitizeErrorResponse } from ''@\\\\/app\\\\/lib\\\\/errorResponseHelper'';\\\\nimport { logger } from ''@\\\\/app\\\\/lib\\\\/logger'';\\\\n/\" \"$f\")",
       "Bash(xargs -I {} bash -c 'grep -q \"\"import.*sanitizeErrorResponse\"\" {} || echo \"\"{}\"\"')",
       "Bash(for func in \"bboxesOverlap\" \"hasBothRoles\" \"getUserRolesFromUser\" \"getLat\" \"getLng\")",
-      "Bash(do echo \"=== $func ===\")"
+      "Bash(do echo \"=== $func ===\")",
+      "Bash(git revert:*)"
     ]
   }
 }

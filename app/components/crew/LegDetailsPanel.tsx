@@ -505,6 +505,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Check if journey has requirements when register button is clicked
   const checkRequirements = useCallback(async () => {
+    // Set loading state immediately to provide visual feedback to user
+    setIsCheckingRequirements(true);
+
     try {
       // Check requirements first (required)
       let reqs: any[] = [];
@@ -1932,7 +1935,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               ) : (
                 <LoadingButton
                   onClick={handleRegister}
-                  isLoading={isRegistering}
+                  isLoading={isCheckingRequirements || isRegistering}
                   disabled={checkingProfileConsent}
                   fullWidth
                   loadingText="Registering..."
