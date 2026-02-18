@@ -30,10 +30,3 @@ export function hasOwnerRole(roles: string[] | null | undefined): boolean {
 export function hasCrewRole(roles: string[] | null | undefined): boolean {
   return hasRole(roles, 'crew');
 }
-
-/**
- * Check if user has both owner and crew roles
- */
-export function hasBothRoles(roles: string[] | null | undefined): boolean {
-  return hasOwnerRole(roles) && hasCrewRole(roles);
-}

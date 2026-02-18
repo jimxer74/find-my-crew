@@ -21,11 +21,3 @@ export async function getUserRoles(userId: string): Promise<string[] | null> {
 
   return data.roles || [];
 }
-
-/**
- * Get user roles from User object (server-side)
- */
-export async function getUserRolesFromUser(user: User | null): Promise<string[] | null> {
-  if (!user) return null;
-  return getUserRoles(user.id);
-}

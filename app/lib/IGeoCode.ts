@@ -7,16 +7,8 @@ export interface IGeoCode {
 };
 
 export const toGeocode = (lat: number | undefined, lng: number | undefined): IGeoCode => {
-    return {type: 'Point', 
+    return {type: 'Point',
         coordinates: [lng || 0 , lat || 0 ] };
-}
-
-export const getLat = (geocode: IGeoCode): number => {
-    return geocode.coordinates[1];
-}
-
-export const getLng = (geocode: IGeoCode): number => {
-    return geocode.coordinates[0];
 }
 
 /**

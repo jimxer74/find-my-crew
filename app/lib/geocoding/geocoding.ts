@@ -240,18 +240,6 @@ function generateSessionToken(): string {
 }
 
 /**
- * Check if two bounding boxes overlap
- */
-export function bboxesOverlap(bbox1: BoundingBox, bbox2: BoundingBox): boolean {
-  return !(
-    bbox1.maxLng < bbox2.minLng ||
-    bbox1.minLng > bbox2.maxLng ||
-    bbox1.maxLat < bbox2.minLat ||
-    bbox1.minLat > bbox2.maxLat
-  );
-}
-
-/**
  * Get a human-readable description of the search area
  */
 export function describeBbox(bbox: BoundingBox): string {
