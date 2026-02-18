@@ -770,6 +770,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       return;
     }
 
+    // Set loading state immediately to provide visual feedback to user
+    setIsRegistering(true);
+
     // Update state for UI consistency
     setRequirementsAnswers(answers);
     setRegistrationNotes(notes);
