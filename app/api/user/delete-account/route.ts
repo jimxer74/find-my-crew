@@ -22,7 +22,7 @@ async function safeDelete(
   userId: string
 ): Promise<DeletionResult> {
   try {
-    console.log(`[${userId}] Starting deletion of ${table}...`);
+    logger.debug(`Starting deletion of ${table}`, { table, userId }, true);
     // Build the delete query more robustly
     let deleteQuery = supabase.from(table).delete();
 
@@ -37,10 +37,10 @@ async function safeDelete(
       throw error;
     }
 
-    console.log(`[${userId}] Successfully deleted ${table}`);
+    logger.debug(`Successfully deleted ${table}`, { table }, true);
     return { success: true, table, operation: 'delete' };
   } catch (error: any) {
-    console.error(`[${userId}] Failed to delete ${table}:`, error);
+    logger.error(`Failed to delete ${table}`, { table, error: error.message });
 
     // Check if this is an RLS policy violation for consent tables
     const isConsentTable = ['user_consents', 'consent_audit_log'].includes(table);
@@ -68,10 +68,10 @@ async function safeStorageDelete(
   userId: string
 ): Promise<DeletionResult> {
   try {
-    console.log(`[${userId}] Starting deletion of ${filePaths.length} files from ${bucketName}...`);
+    logger.debug(`Starting deletion of files from storage`, { bucketName, fileCount: filePaths.length }, true);
 
     if (filePaths.length === 0) {
-      console.log(`[${userId}] No files found in ${bucketName}, skipping`);
+      logger.debug(`No files found in storage bucket`, { bucketName }, true);
       return { success: true, table: 'storage', operation: 'skip' };
     }
 
@@ -88,13 +88,13 @@ async function safeStorageDelete(
       }
 
       totalDeleted += batch.length;
-      console.log(`[${userId}] Deleted batch of ${batch.length} files from ${bucketName}`);
+      logger.debug(`Deleted batch of files from storage`, { bucketName, count: batch.length }, true);
     }
 
-    console.log(`[${userId}] Successfully deleted ${totalDeleted} files from ${bucketName}`);
+    logger.debug(`Successfully deleted files from storage`, { bucketName, count: totalDeleted }, true);
     return { success: true, table: 'storage', operation: 'delete', details: { deleted: totalDeleted } };
   } catch (error: any) {
-    console.error(`[${userId}] Failed to delete storage files from ${bucketName}:`, error);
+    logger.error(`Failed to delete storage files`, { bucketName, fileCount: filePaths.length, error: error.message });
     return {
       success: false,
       table: 'storage',
@@ -183,7 +183,7 @@ export async function DELETE(request: NextRequest) {
 
     // 5a. Delete registration answers (through registrations owned by this user)
     // registration_answers references registrations.id with CASCADE, but we delete explicitly for completeness
-    console.log(`[${user.id}] Deleting registration answers for user's registrations...`);
+    logger.debug(`Deleting registration answers for user registrations`, {}, true);
     const { data: userRegistrations } = await supabase
       .from('registrations')
       .select('id')
@@ -196,7 +196,7 @@ export async function DELETE(request: NextRequest) {
           deletionResults.push(regAnswersResult);
         }
       }
-      console.log(`[${user.id}] Deleted registration answers for ${userRegistrations.length} registrations`);
+      logger.debug(`Deleted registration answers`, { count: userRegistrations.length }, true);
     }
 
     // 5b. Delete registrations (ensure this happens before boats are deleted)
@@ -211,14 +211,14 @@ export async function DELETE(request: NextRequest) {
     deletionResults.push(aiPendingActionsResult);
 
     // 6. Clear feedback records where user is referenced in status_changed_by
-    console.log(`[${user.id}] Clearing feedback status_changed_by references...`);
+    logger.debug(`Clearing feedback status_changed_by references`, {}, true);
     const { error: feedbackStatusError } = await supabase
       .from('feedback')
       .update({ status_changed_by: null })
       .eq('status_changed_by', user.id);
 
     if (feedbackStatusError) {
-      console.error(`[${user.id}] Failed to clear feedback status_changed_by:`, feedbackStatusError);
+      logger.error(`Failed to clear feedback status_changed_by`, { error: feedbackStatusError?.message || String(feedbackStatusError) });
       deletionResults.push({
         success: false,
         table: 'feedback_status_changed_by',
@@ -227,7 +227,7 @@ export async function DELETE(request: NextRequest) {
         details: { code: feedbackStatusError.code }
       });
     } else {
-      console.log(`[${user.id}] Successfully cleared feedback status_changed_by references`);
+      logger.debug(`Successfully cleared feedback status_changed_by references`, {}, true);
       deletionResults.push({
         success: true,
         table: 'feedback_status_changed_by',
@@ -273,7 +273,7 @@ export async function DELETE(request: NextRequest) {
       .eq('owner_id', user.id);
 
     if (boatsError) {
-      console.error(`[${user.id}] Failed to query owned boats:`, boatsError);
+      logger.error(`Failed to query owned boats`, { error: boatsError?.message });
       deletionResults.push({
         success: false,
         table: 'boats',
@@ -286,19 +286,19 @@ export async function DELETE(request: NextRequest) {
       const boatsResult = await safeDelete('boats', { owner_id: user.id }, supabase, user.id);
       deletionResults.push(boatsResult);
     } else {
-      console.log(`[${user.id}] No owned boats found, skipping boat deletion`);
+      logger.debug(`No owned boats found, skipping boat deletion`, {}, true);
       deletionResults.push({ success: true, table: 'boats', operation: 'skip', details: { owned: 0 } });
     }
 
     // 10. Delete profile (explicit deletion before auth user deletion)
     // Note: profiles.id has foreign key to auth.users.id, but without CASCADE
     // So we need to delete it before the auth user
-    console.log(`[${user.id}] Attempting profile deletion...`);
+    logger.debug(`Attempting profile deletion`, {}, true);
     const profilesResult = await safeDelete('profiles', { id: user.id }, supabase, user.id);
 
     // Verify profile deletion was successful
     if (profilesResult.success) {
-      console.log(`[${user.id}] Verifying profile deletion...`);
+      logger.debug(`Verifying profile deletion`, {}, true);
       const { data: profileVerify, error: profileVerifyError } = await supabase
         .from('profiles')
         .select('id')
@@ -306,17 +306,17 @@ export async function DELETE(request: NextRequest) {
         .single();
 
       if (profileVerifyError && profileVerifyError.code !== 'PGRST116') {
-        console.warn(`[${user.id}] Profile verification query failed:`, profileVerifyError);
+        logger.warn(`Profile verification query failed`, { error: profileVerifyError?.message });
         profilesResult.success = false;
         profilesResult.error = profileVerifyError.message;
       } else if (profileVerify && profileVerify.id) {
-        console.error(`[${user.id}] Profile still exists after deletion attempt!`);
+        logger.error(`Profile still exists after deletion attempt`, {});
         profilesResult.success = false;
         profilesResult.error = 'Profile still exists after deletion';
 
         // Try a force delete using admin client if available
         if (serviceRoleKey && supabaseUrl) {
-          console.log(`[${user.id}] Attempting force delete of profile using admin client...`);
+          logger.debug(`Attempting force delete of profile using admin client`, {}, true);
           const adminClient = createClient(supabaseUrl, serviceRoleKey, {
             auth: { autoRefreshToken: false, persistSession: false }
           });
@@ -328,20 +328,21 @@ export async function DELETE(request: NextRequest) {
               .eq('id', user.id);
 
             if (forceDeleteError) {
-              console.error(`[${user.id}] Force delete of profile failed:`, forceDeleteError);
+              logger.error(`Force delete of profile failed`, { error: forceDeleteError.message });
               profilesResult.error = `Force delete failed: ${forceDeleteError.message}`;
             } else {
-              console.log(`[${user.id}] Profile force deleted successfully`);
+              logger.debug(`Profile force deleted successfully`, { userId: user.id }, true);
               profilesResult.success = true;
               profilesResult.error = undefined;
             }
           } catch (forceError: unknown) {
-            console.error(`[${user.id}] Exception during force delete:`, forceError);
-            profilesResult.error = `Force delete exception: ${forceError instanceof Error ? forceError.message : String(forceError)}`;
+            const errorMsg = forceError instanceof Error ? forceError.message : String(forceError);
+            logger.error(`Exception during force delete`, { error: errorMsg });
+            profilesResult.error = `Force delete exception: ${errorMsg}`;
           }
         }
       } else {
-        console.log(`[${user.id}] Profile successfully deleted`);
+        logger.debug(`Profile successfully deleted`, { userId: user.id }, true);
       }
     }
 
@@ -349,17 +350,17 @@ export async function DELETE(request: NextRequest) {
 
     // 10.5. Delete storage files from boat-images and journey-images buckets
     try {
-      console.log(`[${user.id}] Starting storage cleanup...`);
+      logger.debug(`Starting storage cleanup`, {}, true);
       const storageCleanupResult = await deleteStorageFilesForUser(user.id, supabase);
       deletionResults.push(storageCleanupResult);
 
       if (!storageCleanupResult.success) {
-        console.warn(`[${user.id}] Storage cleanup completed with errors:`, storageCleanupResult.details);
+        logger.warn(`Storage cleanup completed with errors`, { details: storageCleanupResult.details });
       } else {
-        console.log(`[${user.id}] Storage cleanup completed successfully. Deleted ${storageCleanupResult.details?.deleted || 0} files.`);
+        logger.debug(`Storage cleanup completed successfully`, { deletedCount: storageCleanupResult.details?.deleted || 0 }, true);
       }
     } catch (error: any) {
-      console.error(`[${user.id}] Storage cleanup failed:`, error);
+      logger.error(`Storage cleanup failed`, { error: error.message });
       deletionResults.push({
         success: false,
         table: 'storage',
@@ -376,7 +377,7 @@ export async function DELETE(request: NextRequest) {
 
     if (serviceRoleKey && supabaseUrl) {
       try {
-        console.log(`[${user.id}] Deleting auth user...`);
+        logger.debug(`Deleting auth user`, {}, true);
         const adminClient = createClient(supabaseUrl, serviceRoleKey, {
           auth: {
             autoRefreshToken: false,
@@ -385,21 +386,22 @@ export async function DELETE(request: NextRequest) {
         });
 
         // Use Supabase Admin API for auth user deletion (recommended approach)
-        console.log(`[${user.id}] Attempting auth user deletion via admin API...`);
+        logger.debug(`Attempting auth user deletion via admin API`, {}, true);
 
         // First, let's double-check that all cleanup was completed successfully
-        console.log(`[${user.id}] Performing final verification before auth user deletion...`);
+        logger.debug(`Performing final verification before auth user deletion`, {}, true);
         const finalVerification = await verifyUserDeletion(user.id, supabase);
 
         if (finalVerification.hasRemainingData) {
-          console.warn(`[${user.id}] WARNING: Some user data remains before auth deletion:`, finalVerification.verificationResults.filter(v => v.status === 'remaining'));
+          const remainingItems = finalVerification.verificationResults.filter(v => v.status === 'remaining');
+          logger.warn(`Some user data remains before auth deletion`, { remainingCount: remainingItems.length });
           // Log the remaining data but continue - this might be expected for some tables
         }
 
         // Additional constraint check for auth-specific references
         const constraintCheck = await checkForConstraintViolations(user.id, supabase);
         if (constraintCheck.hasViolations) {
-          console.error(`[${user.id}] CRITICAL: Constraint violations detected before auth deletion:`, constraintCheck.violations);
+          logger.error(`Constraint violations detected before auth deletion`, { violationCount: constraintCheck.violations.length });
 
           // For critical violations, we should not proceed with auth deletion
           const criticalViolations = constraintCheck.violations.filter(v =>
@@ -408,7 +410,7 @@ export async function DELETE(request: NextRequest) {
           );
 
           if (criticalViolations.length > 0) {
-            console.error(`[${user.id}] CRITICAL VIOLATIONS: Cannot proceed with auth deletion due to:`, criticalViolations);
+            logger.error(`Critical violations found - cannot proceed with auth deletion`, { criticalCount: criticalViolations.length });
             authDeletionResult = {
               success: false,
               table: 'auth.users',
@@ -419,35 +421,33 @@ export async function DELETE(request: NextRequest) {
           }
         }
 
-        console.log(`[${user.id}] Proceeding with auth user deletion...`);
+        logger.debug(`Proceeding with auth user deletion`, {}, true);
         const { error: adminDeleteError } = await adminClient.auth.admin.deleteUser(user.id);
 
         // Verify the admin API deletion was successful
         if (!adminDeleteError) {
-          console.log(`[${user.id}] Auth user successfully deleted via admin API`);
+          logger.debug(`Auth user successfully deleted via admin API`, { userId: user.id }, true);
           authDeletionResult = { success: true, table: 'auth.users', operation: 'delete' };
 
           // Optional: Verify deletion by checking if user exists (using service role client)
           try {
             const { data: userData } = await adminClient.auth.admin.getUserById(user.id);
             if (userData) {
-              console.warn(`[${user.id}] User still exists after admin API deletion, but API call succeeded`);
+              logger.warn(`User still exists after admin API deletion`, { userId: user.id });
             }
           } catch (verifyError) {
             const errorMessage = verifyError instanceof Error ? verifyError.message : String(verifyError);
-            console.log(`[${user.id}] User verification failed (expected if user was deleted):`, errorMessage);
+            logger.debug(`User verification failed after deletion (expected)`, { message: errorMessage }, true);
           }
         } else {
-          console.error(`[${user.id}] Auth user deletion via admin API failed:`, adminDeleteError);
-          console.error(`[${user.id}] Error details:`, {
-            message: adminDeleteError.message,
-            name: adminDeleteError.name,
+          logger.error(`Auth user deletion via admin API failed`, {
+            error: adminDeleteError.message,
             status: adminDeleteError.status
           });
 
           // Try to get more information about what's preventing deletion
           const detailedCheck = await checkForConstraintViolations(user.id, supabase);
-          console.error(`[${user.id}] Detailed constraint check:`, detailedCheck);
+          logger.error(`Detailed constraint check after deletion failure`, { violationCount: detailedCheck.violations.length });
 
           authDeletionResult = {
             success: false,
@@ -462,7 +462,7 @@ export async function DELETE(request: NextRequest) {
           };
         }
       } catch (error: any) {
-        console.error(`[${user.id}] Exception deleting auth user:`, error);
+        logger.error(`Exception deleting auth user`, { error: error.message });
         authDeletionResult = {
           success: false,
           table: 'auth.users',
@@ -472,7 +472,7 @@ export async function DELETE(request: NextRequest) {
         };
       }
     } else {
-      console.warn(`[${user.id}] Service role key not configured - auth user not deleted`);
+      logger.warn(`Service role key not configured - auth user not deleted`, {});
       authDeletionResult = {
         success: false,
         table: 'auth.users',
@@ -488,15 +488,15 @@ export async function DELETE(request: NextRequest) {
     const failedDeletions = deletionResults.filter(result => !result.success);
     const successfulDeletions = deletionResults.filter(result => result.success);
 
-    console.log(`[${user.id}] Deletion summary: ${successfulDeletions.length} successful, ${failedDeletions.length} failed`);
+    logger.debug(`Deletion summary`, { successful: successfulDeletions.length, failed: failedDeletions.length }, true);
 
     // Final verification step - verify all data has been deleted
-    console.log(`[${user.id}] Starting final verification...`);
+    logger.debug(`Starting final verification`, {}, true);
     const verificationResult = await verifyUserDeletion(user.id, supabase);
-    console.log(`[${user.id}] Verification completed. Has remaining data: ${verificationResult.hasRemainingData}`);
+    logger.debug(`Verification completed`, { hasRemainingData: verificationResult.hasRemainingData }, true);
 
     // Enhanced audit logging
-    console.log(`[${user.id}] Logging enhanced audit trail...`);
+    logger.debug(`Logging enhanced audit trail`, {}, true);
     // await logDeletionAudit(
     //   user.id,
     //   supabase,
@@ -527,7 +527,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error deleting user account:', error);
+    logger.error('Error deleting user account', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -550,7 +550,7 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
 
   for (const bucketName of bucketNames) {
     try {
-      console.log(`[${userId}] Starting cleanup for bucket: ${bucketName}`);
+      logger.debug(`Starting cleanup for bucket`, { bucketName }, true);
 
       // List all files for this user in the bucket
       const { data: fileList, error: listError } = await supabase
@@ -563,21 +563,21 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
         });
 
       if (listError) {
-        console.error(`[${userId}] Failed to list files in ${bucketName}:`, listError);
+        logger.error(`Failed to list files in storage bucket`, { bucketName, error: listError.message });
         result.success = false;
         result.details?.errors?.push(`Failed to list files in ${bucketName}: ${listError.message}`);
         continue;
       }
 
       if (!fileList || fileList.length === 0) {
-        console.log(`[${userId}] No files found in ${bucketName}`);
+        logger.debug(`No files found in storage bucket`, { bucketName }, true);
         result.details?.buckets?.push({ name: bucketName, deleted: 0, found: 0 });
         continue;
       }
 
       // Extract file paths
       const filePaths = fileList.map((file: any) => `${userId}/${file.name}`);
-      console.log(`[${userId}] Found ${filePaths.length} files in ${bucketName}`);
+      logger.debug(`Found files in storage bucket`, { bucketName, count: filePaths.length }, true);
 
       // Delete files in batches of 100 (Supabase limit)
       const batchSize = 100;
@@ -591,11 +591,11 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
           .remove(batch);
 
         if (deleteError) {
-          console.error(`[${userId}] Failed to delete batch from ${bucketName}:`, deleteError);
+          logger.error(`Failed to delete batch from storage bucket`, { bucketName, error: deleteError.message });
           result.success = false;
           result.details?.errors?.push(`Failed to delete batch from ${bucketName}: ${deleteError.message}`);
         } else {
-          console.log(`[${userId}] Successfully deleted ${batch.length} files from ${bucketName}`);
+          logger.debug(`Deleted batch of files from storage bucket`, { bucketName, count: batch.length }, true);
           bucketDeleted += batch.length;
         }
       }
@@ -607,7 +607,7 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
       // We need to list recursively by checking for directories
       for (const file of fileList) {
         if (file.metadata?.isFolder) {
-          console.log(`[${userId}] Found directory: ${file.name}`);
+          logger.debug(`Found directory in storage bucket`, { bucketName, directory: file.name }, true);
           // Recursively delete files in subdirectories
           const dirResult = await deleteStorageDirectory(userId, bucketName, file.name, supabase);
           if (!dirResult.success) {
@@ -618,16 +618,16 @@ async function deleteStorageFilesForUser(userId: string, supabase: any): Promise
       }
 
     } catch (error: any) {
-      console.error(`[${userId}] Error processing bucket ${bucketName}:`, error);
+      logger.error(`Error processing storage bucket`, { bucketName, error: error.message });
       result.success = false;
       result.details?.errors?.push(`Error processing bucket ${bucketName}: ${error.message}`);
     }
   }
 
   if (!result.success) {
-    console.warn(`[${userId}] Storage cleanup completed with errors:`, result.details?.errors);
+    logger.warn(`Storage cleanup completed with errors`, { errorCount: result.details?.errors?.length || 0 });
   } else {
-    console.log(`[${userId}] Storage cleanup completed successfully. Deleted ${result.details?.deleted} files.`);
+    logger.debug(`Storage cleanup completed successfully`, { totalDeleted: result.details?.deleted }, true);
   }
 
   return result;
@@ -658,7 +658,7 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
       });
 
     if (listError) {
-      console.error(`[${userId}] Failed to list files in directory ${fullPath}:`, listError);
+      logger.error(`Failed to list files in storage directory`, { path: fullPath, error: listError.message });
       result.success = false;
       result.error = listError.message;
       return result;
@@ -676,12 +676,12 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
       .remove(filePaths);
 
     if (deleteError) {
-      console.error(`[${userId}] Failed to delete files in directory ${fullPath}:`, deleteError);
+      logger.error(`Failed to delete files in storage directory`, { path: fullPath, error: deleteError.message });
       result.success = false;
       result.error = deleteError.message;
       return result;
     } else {
-      console.log(`[${userId}] Successfully deleted ${filePaths.length} files from directory ${fullPath}`);
+      logger.debug(`Successfully deleted files from storage directory`, { path: fullPath, count: filePaths.length }, true);
       result.details!.deleted! += filePaths.length;
     }
 
@@ -698,7 +698,7 @@ async function deleteStorageDirectory(userId: string, bucketName: string, direct
     }
 
   } catch (error: any) {
-    console.error(`[${userId}] Error deleting directory ${directoryPath}:`, error);
+    logger.error(`Error deleting storage directory`, { directory: directoryPath, error: error.message });
     result.success = false;
     result.error = error.message;
   }
@@ -743,7 +743,7 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
           .eq(column, userId);
 
         if (error) {
-          console.warn(`[${userId}] Error checking ${table}.${column}:`, error);
+          logger.warn(`Error checking constraint on table`, { table, column, error: error.message });
         } else if (count && count > 0) {
           violations.push({
             table,
@@ -753,7 +753,8 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
           });
         }
       } catch (checkError) {
-        console.warn(`[${userId}] Exception checking ${table}.${column}:`, checkError);
+        const errorMsg = checkError instanceof Error ? checkError.message : String(checkError);
+        logger.warn(`Exception checking constraint on table`, { table, column, error: errorMsg });
       }
     }
 
@@ -770,9 +771,9 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
     const hasViolations = violations.length > 0;
 
     if (hasViolations) {
-      console.warn(`[${userId}] Constraint violations detected:`, violations);
+      logger.warn(`Constraint violations detected`, { violationCount: violations.length });
     } else {
-      console.log(`[${userId}] No constraint violations detected`);
+      logger.debug(`No constraint violations detected`, {}, true);
     }
 
     return {
@@ -782,7 +783,7 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
     };
 
   } catch (error: any) {
-    console.error(`[${userId}] Error checking for constraint violations:`, error);
+    logger.error(`Error checking for constraint violations`, { error: error.message });
     return {
       hasViolations: true,
       violations: [{ type: 'check_error', message: error.message }],
