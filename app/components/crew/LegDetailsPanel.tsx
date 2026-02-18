@@ -1340,7 +1340,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     >
                       Cancel
                     </button>
-                    <button
+                    <LoadingButton
                       type="button"
                       onClick={async () => {
                         // Check if we have question requirements before allowing submission
@@ -1373,11 +1373,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         // Submit registration (server will handle server-side requirements)
                         handleSubmitRegistration();
                       }}
-                      disabled={isRegistering}
-                      className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      isLoading={isRegistering}
+                      loadingText="Registering..."
+                      size="md"
                     >
-                      {isRegistering ? 'Registering...' : 'Submit Registration'}
-                    </button>
+                      Submit Registration
+                    </LoadingButton>
                   </div>
                 </div>
               </div>
