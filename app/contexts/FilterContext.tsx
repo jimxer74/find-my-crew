@@ -113,7 +113,11 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       try {
         const supabase = getSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        console.log('[FilterContext] Loading profile preferences - user:', user?.id);
+        if (!user) {
+          console.log('[FilterContext] No user found, skipping profile load');
+          return;
+        }
 
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -121,12 +125,26 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           .eq('id', user.id)
           .single();
 
+        console.log('[FilterContext] Profile fetch result:', { profile, error });
+
         if (error) {
-          console.error('Error fetching profile for filter defaults:', error);
+          console.error('[FilterContext] Error fetching profile for filter defaults:', error);
           return;
         }
 
-        if (!profile) return;
+        if (!profile) {
+          console.log('[FilterContext] No profile data found');
+          return;
+        }
+
+        console.log('[FilterContext] Profile data:', {
+          departure: profile.preferred_departure_location,
+          arrival: profile.preferred_arrival_location,
+          startDate: profile.availability_start_date,
+          endDate: profile.availability_end_date,
+          experience: profile.sailing_experience,
+          riskLevel: profile.risk_level,
+        });
 
         const updates: Partial<FilterState> = {};
 
@@ -135,6 +153,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           const loc = profile.preferred_departure_location as Location;
           updates.location = loc;
           updates.locationInput = loc.name;
+          console.log('[FilterContext] Setting departure location:', loc.name);
         }
 
         // Pre-select arrival location from profile
@@ -142,6 +161,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           const loc = profile.preferred_arrival_location as Location;
           updates.arrivalLocation = loc;
           updates.arrivalLocationInput = loc.name;
+          console.log('[FilterContext] Setting arrival location:', loc.name);
         }
 
         // Pre-select date range from profile
@@ -150,25 +170,31 @@ export function FilterProvider({ children }: { children: ReactNode }) {
             start: profile.availability_start_date ? new Date(profile.availability_start_date + 'T00:00:00') : null,
             end: profile.availability_end_date ? new Date(profile.availability_end_date + 'T00:00:00') : null,
           };
+          console.log('[FilterContext] Setting date range:', updates.dateRange);
         }
 
         // Pre-select experience level from profile
         if (profile.sailing_experience !== null && profile.sailing_experience !== undefined) {
           updates.experienceLevel = profile.sailing_experience as ExperienceLevel;
+          console.log('[FilterContext] Setting experience level:', profile.sailing_experience);
         }
 
         // Pre-select risk level from profile
         if (profile.risk_level && Array.isArray(profile.risk_level) && profile.risk_level.length > 0) {
           updates.riskLevel = profile.risk_level as RiskLevel[];
+          console.log('[FilterContext] Setting risk level:', profile.risk_level);
         }
 
         // Apply updates if there are any profile preferences to load
         if (Object.keys(updates).length > 0) {
+          console.log('[FilterContext] Applying filter updates:', updates);
           setFilters(prev => ({ ...prev, ...updates }));
           setLastUpdated(Date.now());
+        } else {
+          console.log('[FilterContext] No profile preferences found to apply');
         }
       } catch (err) {
-        console.error('Error loading profile preferences as filter defaults:', err);
+        console.error('[FilterContext] Error loading profile preferences as filter defaults:', err);
       }
     };
 
