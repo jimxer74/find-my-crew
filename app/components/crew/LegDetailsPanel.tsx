@@ -1343,35 +1343,44 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <LoadingButton
                       type="button"
                       onClick={async () => {
-                        // Check if we have question requirements before allowing submission
-                        // This prevents race conditions where requirements form should be shown
+                        // Set loading state IMMEDIATELY for instant visual feedback
+                        setIsRegistering(true);
+
                         try {
-                          const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
-                            signal: AbortSignal.timeout(3000),
-                          });
-                          if (requirementsResponse.ok) {
-                            const data = await requirementsResponse.json();
-                            const reqs = data.requirements || [];
-                            const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
+                          // Check if we have question requirements before allowing submission
+                          // This prevents race conditions where requirements form should be shown
+                          try {
+                            const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
+                              signal: AbortSignal.timeout(3000),
+                            });
+                            if (requirementsResponse.ok) {
+                              const data = await requirementsResponse.json();
+                              const reqs = data.requirements || [];
+                              const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
-                            if (hasQuestionReqs) {
-                              logger.error('Cannot submit: Question requirements exist, showing requirements form', { count: reqs.length });
-                              setRegistrationError('Please complete the required questions first');
-                              setShowRegistrationModal(false);
-                              setShowRequirementsForm(true);
-                              setHasRequirements(true);
-                              return;
+                              if (hasQuestionReqs) {
+                                logger.error('Cannot submit: Question requirements exist, showing requirements form', { count: reqs.length });
+                                setRegistrationError('Please complete the required questions first');
+                                setShowRegistrationModal(false);
+                                setShowRequirementsForm(true);
+                                setHasRequirements(true);
+                                setIsRegistering(false);
+                                return;
+                              }
+                              // If we get here, we only have server-side requirements (or no requirements), which is fine to submit
+                              logger.debug('Submitting: No question requirements', { total: reqs.length }, true);
                             }
-                            // If we get here, we only have server-side requirements (or no requirements), which is fine to submit
-                            logger.debug('Submitting: No question requirements', { total: reqs.length }, true);
+                          } catch (error) {
+                            logger.warn('Could not verify requirements before submit', { error: error instanceof Error ? error.message : String(error) });
+                            // Continue with submission if check fails - don't block user
                           }
-                        } catch (error) {
-                          logger.warn('Could not verify requirements before submit', { error: error instanceof Error ? error.message : String(error) });
-                          // Continue with submission if check fails - don't block user
-                        }
 
-                        // Submit registration (server will handle server-side requirements)
-                        handleSubmitRegistration();
+                          // Submit registration (server will handle server-side requirements)
+                          await handleSubmitRegistration();
+                        } catch (error) {
+                          logger.error('Submission error', { error: error instanceof Error ? error.message : String(error) });
+                          setIsRegistering(false);
+                        }
                       }}
                       isLoading={isRegistering}
                       loadingText="Registering..."
