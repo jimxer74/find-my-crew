@@ -995,9 +995,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     } catch (error: any) {
       setRegistrationError(error.message || 'An error occurred while registering');
       logger.error('Registration error', { error: error instanceof Error ? error.message : String(error) });
-    } finally {
+      // Reset loading state on error so user can retry
       setIsRegistering(false);
     }
+    // Note: Only reset loading state on error. On success, it's reset when modal closes
+    // This ensures the loading state stays visible while success modal is displayed
   };
 
   // Handle success modal close - reload registration status to show updated state
@@ -1027,6 +1029,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setShowRegistrationModal(false);
     setShowRequirementsForm(false);
     setShowPassportStep(false);
+    setIsRegistering(false);
   }, [user, leg?.leg_id]);
 
   // Cancel registration (set to Cancelled)
