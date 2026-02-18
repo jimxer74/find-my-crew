@@ -44,14 +44,17 @@ const FilterContext = createContext<FilterContextType>({
 });
 
 export function FilterProvider({ children }: { children: ReactNode }) {
+  console.log('[FilterProvider] COMPONENT_BODY START');
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
+  console.log('[FilterProvider] STATE_DECLARED', { isInitialized });
   logger.info('[FilterProvider] Rendering', { isInitialized });
 
   // Load filters from session storage on mount
   useEffect(() => {
+    console.log('[CRITICAL] FilterProvider mount effect EXECUTED');
     console.log('[FALLBACK] FilterProvider mount effect running');
     logger.info('[FilterProvider] Mount effect running', {});
     if (typeof window === 'undefined') {
