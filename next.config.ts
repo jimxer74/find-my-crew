@@ -32,7 +32,9 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.mapbox.com",
+      // Next.js requires 'unsafe-inline' for styles and inline scripts during build/runtime
+      // Consider migrating to CSS modules and removing 'unsafe-inline' in the future
+      "script-src 'self' 'unsafe-inline' https://api.mapbox.com",
       "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
       "img-src 'self' data: blob: https://*.supabase.co https://api.mapbox.com https://*.mapbox.com https://platform-lookaside.fbsbx.com",
       "font-src 'self' data:",
@@ -40,6 +42,8 @@ const securityHeaders = [
       "worker-src 'self' blob:",
       "frame-src 'self' https://*.supabase.co",
       "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
     ].join('; ')
   }
 ];
