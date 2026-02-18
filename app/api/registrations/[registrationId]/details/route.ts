@@ -104,7 +104,9 @@ export async function GET(
       .single();
 
     if (regError || !registration) {
-      console.error('Error fetching registration:', regError);
+      logger.error('[RegistrationDetails] Error fetching registration', {
+        error: regError instanceof Error ? regError.message : String(regError)
+      });
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }
@@ -161,7 +163,9 @@ export async function GET(
       .single();
 
     if (profileError) {
-      console.error('Error fetching crew profile:', profileError);
+      logger.error('[RegistrationDetails] Error fetching crew profile', {
+        error: profileError instanceof Error ? profileError.message : String(profileError)
+      });
     }
 
     // Parse skills JSON data - extract skill names and descriptions
@@ -236,7 +240,9 @@ export async function GET(
         });
 
       } catch (e) {
-        console.error('Error parsing skills:', e);
+        logger.error('[RegistrationDetails] Error parsing skills', {
+          error: e instanceof Error ? e.message : String(e)
+        });
       }
     }
 
@@ -293,7 +299,9 @@ export async function GET(
       .order('order', { ascending: true });
 
     if (reqError) {
-      console.error('Error fetching requirements:', reqError);
+      logger.error('[RegistrationDetails] Error fetching requirements', {
+        error: reqError instanceof Error ? reqError.message : String(reqError)
+      });
     }
 
     // Fetch registration answers (including passport verification data)
@@ -321,17 +329,22 @@ export async function GET(
       .eq('registration_id', registrationId);
 
     if (answersError) {
-      console.error('Error fetching answers:', answersError);
+      logger.error('[RegistrationDetails] Error fetching answers', {
+        error: answersError instanceof Error ? answersError.message : String(answersError)
+      });
     }
 
-    console.log('=== PASSPORT DEBUG START ===');
-    console.log('Registration ID:', registrationId);
-    console.log('Answers query error:', answersError);
-    console.log('Total answers fetched:', answersData?.length || 0);
+    logger.debug('[RegistrationDetails] Passport debug start', {
+      registrationId,
+      answersError: answersError instanceof Error ? answersError.message : String(answersError),
+      totalAnswers: answersData?.length || 0
+    });
     if (answersData && answersData.length > 0) {
-      console.log('Answers data:', JSON.stringify(answersData, null, 2));
+      logger.debug('[RegistrationDetails] Answers data', {
+        answers: answersData.length
+      });
     } else {
-      console.log('NO ANSWERS FOUND for this registration');
+      logger.debug('[RegistrationDetails] No answers found for registration', {});
     }
 
     // Sort answers by journey_requirements.order in JavaScript
@@ -341,14 +354,13 @@ export async function GET(
       return orderA - orderB;
     });
 
-    console.log('Sorted answers:', JSON.stringify(answers, null, 2));
+    logger.debug('[RegistrationDetails] Sorted answers', { count: answers?.length || 0 });
 
     // Extract passport verification data if available
     let passportData: any = null;
     let passportDoc: any = null;
 
-    console.log('All answers:', JSON.stringify(answers, null, 2));
-    console.log('Looking for passport answer...');
+    logger.debug('[RegistrationDetails] Looking for passport answer', { totalAnswers: answers?.length || 0 });
 
     // Find passport answer - check for passport requirement type or passport-related data
     const passportAnswer = answers.find((a: any) => {
@@ -364,19 +376,18 @@ export async function GET(
       if (hasAIScore) matchReason.push('hasScore');
       if (hasPhotoVerification) matchReason.push('hasPhotoVer');
       if (hasPhotoData) matchReason.push('hasPhotoData');
-      console.log(`Checking answer requirement_id=${a.requirement_id}: ${matchReason.length > 0 ? '✓ MATCH (' + matchReason.join('+') + ')' : '✗ no match'}`);
       return isPassportRequirement || hasDocument || hasAIScore || hasPhotoVerification || hasPhotoData;
     });
 
-    console.log('Passport answer found:', !!passportAnswer);
     const journeyReq = passportAnswer?.journey_requirements as unknown as { requirement_type?: string } | undefined;
-    console.log('Passport answer details:', {
+    logger.debug('[RegistrationDetails] Passport answer search result', {
+      found: !!passportAnswer,
       id: passportAnswer?.id,
-      requirement_id: passportAnswer?.requirement_id,
-      passport_document_id: passportAnswer?.passport_document_id,
-      ai_score: passportAnswer?.ai_score,
-      photo_file_data_exists: !!passportAnswer?.photo_file_data,
-      requirement_type: journeyReq?.requirement_type,
+      requirementId: passportAnswer?.requirement_id,
+      hasDocument: !!passportAnswer?.passport_document_id,
+      hasAiScore: !!passportAnswer?.ai_score,
+      hasPhotoData: !!passportAnswer?.photo_file_data,
+      requirementType: journeyReq?.requirement_type
     });
 
     // Extract passport data if we found a passport answer
@@ -391,11 +402,17 @@ export async function GET(
         photo_file_data: passportAnswer.photo_file_data || null,
       };
 
-      console.log('Passport data extracted:', passportData);
+      logger.debug('[RegistrationDetails] Passport data extracted', {
+        hasDocId: !!passportData.passport_document_id,
+        hasScore: !!passportData.ai_score,
+        hasPhotoVerification: !!passportData.photo_verification_passed
+      });
 
       // Fetch passport document metadata if we have a document ID
       if (passportAnswer.passport_document_id) {
-        console.log('🔍 Attempting to fetch document metadata for:', passportAnswer.passport_document_id);
+        logger.debug('[RegistrationDetails] Fetching document metadata', {
+          documentId: passportAnswer.passport_document_id
+        });
         try {
           // Use service role to bypass RLS (document is in crew's vault, we're accessing from boat owner API)
           // This is safe because we validate access through document_access_grants system
@@ -407,10 +424,10 @@ export async function GET(
             .select('id, file_name, metadata, owner_id, created_at')
             .eq('id', passportAnswer.passport_document_id);
 
-          console.log('📄 Document query result:', {
+          logger.debug('[RegistrationDetails] Document query result', {
             found: !!docDataArray && docDataArray.length > 0,
             count: docDataArray?.length || 0,
-            error: docError?.message,
+            hasError: !!docError
           });
 
           if (!docError && docDataArray && docDataArray.length > 0) {
@@ -420,25 +437,26 @@ export async function GET(
               file_name: docData.file_name,
               metadata: docData.metadata || {},
             };
-            console.log('✅ Passport doc found and loaded:', passportDoc);
+            logger.debug('[RegistrationDetails] Passport document found', {
+              docId: passportDoc.id
+            });
           } else if (!docError && (!docDataArray || docDataArray.length === 0)) {
-            console.log('⚠️ Passport document ID references non-existent document in vault');
-            console.log('💡 This could mean:');
-            console.log('   - Document upload failed during registration');
-            console.log('   - Document was deleted after registration');
-            console.log('   - ID was stored but document was never created');
-            console.log('   - Photo will still display from photo_file_data');
+            logger.debug('[RegistrationDetails] Passport document ID not found in vault', {});
           } else {
-            console.log('❌ Error fetching passport doc:', docError?.message);
+            logger.error('[RegistrationDetails] Error fetching passport document', {
+              error: docError?.message
+            });
           }
         } catch (docFetchError) {
-          console.log('❌ Exception fetching passport doc:', docFetchError);
+          logger.error('[RegistrationDetails] Exception fetching passport document', {
+            error: docFetchError instanceof Error ? docFetchError.message : String(docFetchError)
+          });
         }
       } else {
-        console.log('⚠️ No passport_document_id in answer - only photo_file_data available');
+        logger.debug('[RegistrationDetails] No passport document ID - photo data only', {});
       }
     } else {
-      console.log('No passport answer found in registration answers');
+      logger.debug('[RegistrationDetails] No passport answer found', {});
     }
 
 
@@ -548,7 +566,9 @@ export async function GET(
     return NextResponse.json(response);
 
   } catch (error: any) {
-    console.error('Unexpected error in registration details API:', error);
+    logger.error('[RegistrationDetails] Unexpected error', {
+      error: error instanceof Error ? error.message : String(error)
+    });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
