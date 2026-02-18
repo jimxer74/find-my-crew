@@ -5,6 +5,7 @@ import { ExperienceLevel } from '@/app/types/experience-levels';
 import { DateRange } from '@/app/components/ui/DateRangePicker';
 import { Location } from '@/app/components/ui/LocationAutocomplete';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -47,18 +48,18 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
-  console.log('[FilterProvider] Rendering, isInitialized:', isInitialized);
+  logger.debug('[FilterProvider] Rendering', { isInitialized }, true);
 
   // Load filters from session storage on mount
   useEffect(() => {
-    console.log('[FilterProvider] Mount effect running');
+    logger.debug('[FilterProvider] Mount effect running', {}, true);
     if (typeof window === 'undefined') {
-      console.log('[FilterProvider] SSR environment, skipping');
+      logger.debug('[FilterProvider] SSR environment, skipping', {}, true);
       return;
     }
 
     try {
-      console.log('[FilterProvider] Loading filters from session storage');
+      logger.debug('[FilterProvider] Loading filters from session storage', {}, true);
       // Load date range
       const dateRangeStored = sessionStorage.getItem('crew-date-range');
       let dateRange = defaultFilters.dateRange;
@@ -103,9 +104,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         dateRange,
         ...otherFilters,
       });
-      console.log('[FilterProvider] Loaded from session storage, setting isInitialized=true');
+      logger.debug('[FilterProvider] Loaded from session storage, setting isInitialized=true', {}, true);
     } catch (err) {
-      console.error('[FilterProvider] Error loading filters from session:', err);
+      logger.error('[FilterProvider] Error loading filters from session', { error: err instanceof Error ? err.message : String(err) });
     } finally {
       setIsInitialized(true);
     }
@@ -114,24 +115,24 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   // Load profile preferences as filter defaults when user logs in
   // This effect loads from profile on every initialization to ensure fresh data
   useEffect(() => {
-    console.log('[FilterProvider] Profile load effect running, isInitialized:', isInitialized);
+    logger.debug('[FilterProvider] Profile load effect running', { isInitialized }, true);
     if (!isInitialized) {
-      console.log('[FilterProvider] Not initialized yet, skipping profile load');
+      logger.debug('[FilterProvider] Not initialized yet, skipping profile load', {}, true);
       return;
     }
     if (typeof window === 'undefined') {
-      console.log('[FilterProvider] SSR environment, skipping profile load');
+      logger.debug('[FilterProvider] SSR environment, skipping profile load', {}, true);
       return;
     }
-    console.log('[FilterProvider] About to load profile preferences');
+    logger.debug('[FilterProvider] About to load profile preferences', {}, true);
 
     const loadProfilePreferences = async () => {
       try {
         const supabase = getSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
-        console.log('[FilterContext] Loading profile preferences - user:', user?.id);
+        logger.debug('[FilterContext] Loading profile preferences', { userId: user?.id }, true);
         if (!user) {
-          console.log('[FilterContext] No user found, skipping profile load');
+          logger.debug('[FilterContext] No user found, skipping profile load', {}, true);
           return;
         }
 
@@ -141,19 +142,19 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           .eq('id', user.id)
           .single();
 
-        console.log('[FilterContext] Profile fetch result:', { profile, error });
+        logger.debug('[FilterContext] Profile fetch result', { hasProfile: !!profile, hasError: !!error }, true);
 
         if (error) {
-          console.error('[FilterContext] Error fetching profile for filter defaults:', error);
+          logger.error('[FilterContext] Error fetching profile for filter defaults', { error: error instanceof Error ? error.message : String(error) });
           return;
         }
 
         if (!profile) {
-          console.log('[FilterContext] No profile data found');
+          logger.debug('[FilterContext] No profile data found', {}, true);
           return;
         }
 
-        console.log('[FilterContext] Profile data:', {
+        logger.debug('[FilterContext] Profile data:', {
           departure: profile.preferred_departure_location,
           arrival: profile.preferred_arrival_location,
           startDate: profile.availability_start_date,
@@ -169,7 +170,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           const loc = profile.preferred_departure_location as Location;
           updates.location = loc;
           updates.locationInput = loc.name;
-          console.log('[FilterContext] Setting departure location:', loc.name);
+          logger.debug('[FilterContext] Setting departure location', { name: loc.name }, true);
         }
 
         // Pre-select arrival location from profile
@@ -177,7 +178,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           const loc = profile.preferred_arrival_location as Location;
           updates.arrivalLocation = loc;
           updates.arrivalLocationInput = loc.name;
-          console.log('[FilterContext] Setting arrival location:', loc.name);
+          logger.debug('[FilterContext] Setting arrival location', { name: loc.name }, true);
         }
 
         // Pre-select date range from profile
@@ -186,31 +187,31 @@ export function FilterProvider({ children }: { children: ReactNode }) {
             start: profile.availability_start_date ? new Date(profile.availability_start_date + 'T00:00:00') : null,
             end: profile.availability_end_date ? new Date(profile.availability_end_date + 'T00:00:00') : null,
           };
-          console.log('[FilterContext] Setting date range:', updates.dateRange);
+          logger.debug('[FilterContext] Setting date range', { dateRange: updates.dateRange }, true);
         }
 
         // Pre-select experience level from profile
         if (profile.sailing_experience !== null && profile.sailing_experience !== undefined) {
           updates.experienceLevel = profile.sailing_experience as ExperienceLevel;
-          console.log('[FilterContext] Setting experience level:', profile.sailing_experience);
+          logger.info('[FilterContext] Setting experience level', { experience_level: profile.sailing_experience });
         }
 
         // Pre-select risk level from profile
         if (profile.risk_level && Array.isArray(profile.risk_level) && profile.risk_level.length > 0) {
           updates.riskLevel = profile.risk_level as RiskLevel[];
-          console.log('[FilterContext] Setting risk level:', profile.risk_level);
+          logger.info('[FilterContext] Setting risk level', { risk_level: profile.risk_level });
         }
 
         // Apply updates if there are any profile preferences to load
         if (Object.keys(updates).length > 0) {
-          console.log('[FilterContext] Applying filter updates:', updates);
+          logger.info('[FilterContext] Applying filter updates from profile', { updateKeys: Object.keys(updates), updateCount: Object.keys(updates).length });
           setFilters(prev => ({ ...prev, ...updates }));
           setLastUpdated(Date.now());
         } else {
-          console.log('[FilterContext] No profile preferences found to apply');
+          logger.info('[FilterContext] No profile preferences found to apply', {});
         }
       } catch (err) {
-        console.error('[FilterContext] Error loading profile preferences as filter defaults:', err);
+        logger.error('[FilterContext] Error loading profile preferences as filter defaults', { error: err instanceof Error ? err.message : String(err) });
       }
     };
 
@@ -240,7 +241,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
       };
       sessionStorage.setItem('crew-filters', JSON.stringify(filtersSerialized));
     } catch (err) {
-      console.error('Error saving filters to session:', err);
+      logger.error('Error saving filters to session', { error: err instanceof Error ? err.message : String(err) });
     }
   }, [filters, isInitialized]);
 
@@ -261,7 +262,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem('crew-date-range');
           sessionStorage.removeItem('crew-filters');
         } catch (err) {
-          console.error('Error clearing filters from session on logout:', err);
+          logger.error('Error clearing filters from session on logout', { error: err instanceof Error ? err.message : String(err) });
         }
       }
     });
@@ -293,7 +294,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         sessionStorage.removeItem('crew-date-range');
         sessionStorage.removeItem('crew-filters');
       } catch (err) {
-        console.error('Error marking filters as cleared:', err);
+        logger.error('Error marking filters as cleared', { error: err instanceof Error ? err.message : String(err) });
       }
     }
   };
