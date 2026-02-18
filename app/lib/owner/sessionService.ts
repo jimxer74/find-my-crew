@@ -1,12 +1,11 @@
 /**
  * Owner Session Service
- *
+ * 
  * Client-side service for managing owner chat sessions via API.
  * Similar to prospect session service but owners are always authenticated.
  */
 
 import { OwnerSession } from '@/app/lib/ai/owner/types';
-import { logger } from '@/app/lib/logger';
 
 /**
  * Load session from server using session_id from cookie
@@ -29,7 +28,7 @@ export async function loadSession(sessionId: string): Promise<OwnerSession | nul
     const data = await response.json();
     return data.session || null;
   } catch (error: any) {
-    logger.error('Error loading session', { error: error instanceof Error ? error.message : String(error) });
+    console.error('[OwnerSessionService] Error loading session:', error);
     throw error;
   }
 }
@@ -42,11 +41,11 @@ export async function loadSession(sessionId: string): Promise<OwnerSession | nul
  */
 export async function saveSession(sessionId: string, session: OwnerSession): Promise<void> {
   try {
-    logger.debug('Saving session', {
-      hasSessionId: !!sessionId,
+    console.log('[OwnerSessionService] 💾 Saving session:', {
+      sessionId,
       messagesCount: session.conversation?.length || 0,
-      preferencesCount: Object.keys(session.gatheredPreferences || {}).length,
-    }, true);
+      preferencesKeys: Object.keys(session.gatheredPreferences || {}),
+    });
 
     // Get user's email from Supabase auth if available
     // Note: This is handled in the API route instead to avoid importing server-only code in client components
@@ -68,7 +67,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
       });
 
       // Log response immediately after fetch
-      logger.debug('Fetch completed', {
+      console.log('[OwnerSessionService] 📡 Fetch completed:', {
         ok: response?.ok,
         status: response?.status,
         statusText: response?.statusText,
@@ -80,7 +79,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
       });
     } catch (fetchError: any) {
       // Network error or fetch failed before getting response
-      logger.error('Fetch failed (network error)', {
+      console.error('[OwnerSessionService] ❌ Fetch failed (network error):', {
         message: fetchError?.message,
         name: fetchError?.name,
         stack: fetchError?.stack,
@@ -93,13 +92,13 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
 
     // Validate response object before proceeding
     if (!response) {
-      logger.error('Response is null or undefined', {});
+      console.error('[OwnerSessionService] ❌ Response is null or undefined!');
       throw new Error('Invalid response: response object is null or undefined');
     }
 
     if (!response.ok) {
       // Log raw response immediately for debugging
-      logger.error('Response not OK - raw response', {
+      console.error('[OwnerSessionService] ❌ Response not OK - raw response:', {
         ok: response.ok,
         status: response.status,
         statusText: response.statusText,
@@ -129,7 +128,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
       };
 
       // Log errorDetails immediately after creation to verify it's populated
-      logger.error('Error details after creation', {
+      console.error('[OwnerSessionService] 🔍 errorDetails after creation:', {
         errorDetails,
         errorDetailsKeys: Object.keys(errorDetails),
         errorDetailsString: JSON.stringify(errorDetails),
@@ -171,7 +170,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
           errorDetails.details = errorData.details;
           errorDetails.code = errorData.code;
           errorDetails.hint = errorData.hint;
-          logger.error('Error details after parsing JSON', {
+          console.error('[OwnerSessionService] 🔍 errorDetails after parsing JSON:', {
             errorDetails,
             errorDetailsKeys: Object.keys(errorDetails),
             errorData,
@@ -185,7 +184,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
           if (errorMessage.includes('Unknown error')) {
             errorMessage = responseBody.substring(0, 200) || errorMessage;
           }
-          logger.error('Error details after parse error', {
+          console.error('[OwnerSessionService] 🔍 errorDetails after parse error:', {
             errorDetails,
             errorDetailsKeys: Object.keys(errorDetails),
             parseError: parseError?.message,
@@ -193,13 +192,13 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
         }
       } else if (readError) {
         errorDetails.readErrorOccurred = true;
-        logger.error('Error details after readError', {
+        console.error('[OwnerSessionService] 🔍 errorDetails after readError:', {
           errorDetails,
           errorDetailsKeys: Object.keys(errorDetails),
           readError,
         });
       } else {
-        logger.error('ResponseBody is null and no readError', {
+        console.error('[OwnerSessionService] 🔍 responseBody is null and no readError:', {
           errorDetails,
           errorDetailsKeys: Object.keys(errorDetails),
           responseBody,
@@ -239,7 +238,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
       if (errorDetails.parseError !== undefined) logData.parseError = errorDetails.parseError;
 
       // Log the complete error information - logData has all the actual data
-      logger.error('Save failed - Complete error details', { hasLogData: !!logData });
+      console.error('[OwnerSessionService] ❌ Save failed - Complete error details:', logData);
 
       // Extract the most useful error message from the parsed error data
       const finalErrorMessage = logData.error || logData.details || logData.message || errorMessage;
@@ -255,11 +254,11 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
         comprehensiveError += ` - ${errorHint}`;
       }
 
-      logger.error('Throwing error', { hasError: !!comprehensiveError });
+      console.error('[OwnerSessionService] ❌ Throwing error:', comprehensiveError);
       throw new Error(comprehensiveError);
     }
 
-    logger.debug('Session saved successfully', {}, true);
+    console.log('[OwnerSessionService] ✅ Session saved successfully');
   } catch (error: any) {
     // Enhanced error logging - capture all possible error properties
     const errorInfo: any = {
@@ -284,7 +283,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
       errorInfo.stringifyError = 'Could not stringify error';
     }
 
-    logger.error('Error saving session', { hasErrorInfo: !!errorInfo });
+    console.error('[OwnerSessionService] Error saving session:', errorInfo);
     throw error;
   }
 }
@@ -294,7 +293,7 @@ export async function saveSession(sessionId: string, session: OwnerSession): Pro
  */
 export async function deleteSession(sessionId: string): Promise<void> {
   try {
-    logger.debug('Deleting session', { hasSessionId: !!sessionId }, true);
+    console.log('[OwnerSessionService] 🗑️ Deleting session:', sessionId);
     
     const response = await fetch('/api/owner/session/data', {
       method: 'DELETE',
@@ -319,13 +318,13 @@ export async function deleteSession(sessionId: string): Promise<void> {
         }
       }
 
-      logger.error('Delete failed', { hasErrorDetails: !!errorDetails });
+      console.error('[OwnerSessionService] ❌ Delete failed:', errorDetails);
       throw new Error(errorMessage);
     }
 
-    logger.debug('Session deleted successfully', {}, true);
+    console.log('[OwnerSessionService] ✅ Session deleted successfully');
   } catch (error: any) {
-    logger.error('Error deleting session', {
+    console.error('[OwnerSessionService] Error deleting session:', {
       message: error.message,
       stack: error.stack,
       sessionId,
@@ -361,7 +360,7 @@ export async function linkSessionToUser(
       throw new Error(errorData.error || `Failed to link session: ${response.statusText}`);
     }
   } catch (error: any) {
-    logger.error('Error linking session', { error: error instanceof Error ? error.message : String(error) });
+    console.error('[OwnerSessionService] Error linking session:', error);
     throw error;
   }
 }
@@ -388,7 +387,7 @@ export async function updateOnboardingState(
       throw new Error(errorData.error || `Failed to update onboarding state: ${response.statusText}`);
     }
   } catch (error: any) {
-    logger.error('Error updating onboarding state', { error: error instanceof Error ? error.message : String(error) });
+    console.error('[OwnerSessionService] Error updating onboarding state:', error);
     throw error;
   }
 }
