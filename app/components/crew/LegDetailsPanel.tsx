@@ -891,7 +891,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       }
     }
 
-    setIsRegistering(true);
+    // Note: isRegistering is already set to true by handleRequirementsComplete
+    // Only set it here if called from registration modal button (without providedAnswers)
+    if (providedAnswers === undefined) {
+      setIsRegistering(true);
+    }
     setRegistrationError(null);
 
     logger.debug('Submitting registration', {
