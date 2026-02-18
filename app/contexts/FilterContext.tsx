@@ -104,25 +104,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Load profile preferences as filter defaults when user logs in
-  // Only load from profile if filters are empty AND user hasn't explicitly cleared them
+  // This effect loads from profile on every initialization to ensure fresh data
   useEffect(() => {
     if (!isInitialized) return;
     if (typeof window === 'undefined') return;
-
-    // Check if user explicitly cleared filters (don't reload from profile)
-    const filtersCleared = sessionStorage.getItem('crew-filters-cleared') === 'true';
-    if (filtersCleared) return;
-
-    // Only load from profile if all filters are empty (first time or after session cleared)
-    const hasAnyFilters =
-      filters.location !== null ||
-      filters.arrivalLocation !== null ||
-      filters.dateRange.start !== null ||
-      filters.dateRange.end !== null ||
-      filters.experienceLevel !== null ||
-      filters.riskLevel.length > 0;
-
-    if (hasAnyFilters) return;
 
     const loadProfilePreferences = async () => {
       try {
@@ -130,11 +115,16 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
 
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date, sailing_experience, risk_level')
           .eq('id', user.id)
           .single();
+
+        if (error) {
+          console.error('Error fetching profile for filter defaults:', error);
+          return;
+        }
 
         if (!profile) return;
 
@@ -172,6 +162,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           updates.riskLevel = profile.risk_level as RiskLevel[];
         }
 
+        // Apply updates if there are any profile preferences to load
         if (Object.keys(updates).length > 0) {
           setFilters(prev => ({ ...prev, ...updates }));
           setLastUpdated(Date.now());
