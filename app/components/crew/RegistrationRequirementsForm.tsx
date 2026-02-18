@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { LoadingButton } from '@/app/components/ui/LoadingButton';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 
@@ -334,14 +335,15 @@ export function RegistrationRequirementsForm({
           >
             Cancel
           </button>
-          <button
+          <LoadingButton
             type="button"
             onClick={handleSubmit}
-            disabled={isRegistering}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            isLoading={isRegistering}
+            loadingText="Registering..."
+            size="md"
           >
-            {isRegistering ? 'Registering...' : 'Submit Registration'}
-          </button>
+            Submit Registration
+          </LoadingButton>
         </div>
       </div>
     </div>
