@@ -62,17 +62,11 @@ async function handlePassportAnswer(
     });
 
   if (insertError) {
-    console.error('Error creating passport answer:', insertError);
+    logger.error('Error creating passport answer', { error: insertError.message });
     return insertError.message;
   }
 
-  console.log('[Registration API] Passport answer stored for registration:', {
-    registrationId,
-    passportDocumentId,
-    hasPhotoData: !!photoFileData,
-  });
-  console.log('[Registration API] ℹ️ Crew member must have created a document_access_grant');
-  console.log('[Registration API]    for boat owner to access this passport document');
+  logger.debug('Passport answer stored for registration', { registrationId, passportDocumentId, hasPhotoData: !!photoFileData }, true);
 
   return null; // Success
 }
@@ -146,7 +140,7 @@ async function handleRegistrationAnswers(
     .insert(answersToInsert);
 
   if (insertError) {
-    console.error('Error creating answers:', insertError);
+    logger.error('Error creating answers', { error: insertError.message });
     return insertError.message;
   }
 
@@ -163,14 +157,12 @@ function triggerAIAssessment(
 ): void {
   const assessmentPromise = assessRegistrationWithAI(supabase, registrationId)
     .then(() => {
-      console.log(`[Registration API] ✅ AI assessment completed successfully for registration: ${registrationId}`);
+      logger.debug('AI assessment completed successfully', { registrationId }, true);
     })
     .catch((error) => {
-      console.error(`[Registration API] ❌ AI assessment failed (non-blocking) for registration ${registrationId}:`, {
-        error: error.message,
-        stack: error.stack,
-        errorName: error.name,
-        errorType: typeof error,
+      logger.error('AI assessment failed (non-blocking)', {
+        registrationId,
+        error: error instanceof Error ? error.message : String(error)
       });
       // Don't fail registration creation if AI assessment fails
     });
@@ -279,20 +271,15 @@ export async function POST(request: NextRequest) {
 
     const body = { leg_id, notes, answers };
 
-    console.log(`[Registration API] RAW Body:`, body);
-
-    // Validate required fields
-    console.log(`[Registration API] Received registration request:`, {
-      leg_id,
+    logger.debug('Received registration request', {
+      hasLegId: !!leg_id,
       hasNotes: !!notes,
-      notesLength: notes?.length || 0,
       hasAnswers: !!(answers && Array.isArray(answers)),
       answersLength: answers?.length || 0,
-      bodyKeys: Object.keys(body),
-    });
+    }, true);
 
     if (!leg_id) {
-      console.error(`[Registration API] ❌ 400 ERROR: leg_id is missing`);
+      logger.error('Registration validation failed - leg_id is missing', {});
       return NextResponse.json(
         { error: 'leg_id is required', details: { receivedBody: body } },
         { status: 400 }
@@ -329,18 +316,10 @@ export async function POST(request: NextRequest) {
     const journey = leg.journeys as unknown as { id: string; name: string; state: string; boat_id: string; boats: { owner_id: string } };
 
     // Check if journey is published
-    console.log(`[Registration API] Journey state check:`, {
-      leg_id,
-      journeyId: journey.id,
-      journeyState: journey.state,
-    });
+    logger.debug('Journey state validation', { journeyId: journey.id, state: journey.state }, true);
 
     if (journey.state !== 'Published') {
-      console.error(`[Registration API] ❌ 400 ERROR: Journey not published`, {
-        leg_id,
-        journeyId: journey.id,
-        journeyState: journey.state,
-      });
+      logger.error('Journey not published - registration rejected', { journeyId: journey.id, state: journey.state });
       return NextResponse.json(
         {
           error: 'Cannot register for legs in non-published journeys',
@@ -380,7 +359,7 @@ export async function POST(request: NextRequest) {
           if (reactivationRequirements && reactivationRequirements.length > 0) {
             const preCheckResult = await performPreChecks(supabase, user.id, journey.id, reactivationRequirements as any);
             if (!preCheckResult.passed) {
-              console.log(`[Registration API] Pre-check failed for reactivation:`, preCheckResult);
+              logger.debug('Pre-check failed for reactivation', { failReason: preCheckResult.failReason }, true);
               return NextResponse.json(
                 { error: preCheckResult.failReason, failType: preCheckResult.failType },
                 { status: 400 }
@@ -396,7 +375,7 @@ export async function POST(request: NextRequest) {
           .eq('registration_id', existingRegistration.id);
 
         if (deleteAnswersError) {
-          console.error('[Registration API] Error deleting old answers for reactivation:', deleteAnswersError);
+          logger.error('Error deleting old answers for reactivation', { error: deleteAnswersError.message });
         }
 
         // Reset AI assessment fields and reactivate
@@ -415,7 +394,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (updateError) {
-          console.error('Error updating registration:', updateError);
+          logger.error('Error updating registration', { error: updateError.message });
           return NextResponse.json(
             { error: 'Failed to update registration' },
             { status: 500 }
@@ -441,7 +420,7 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (journeySettingsError) {
-          console.error(`[Registration API] Error fetching journey settings for reactivation:`, journeySettingsError);
+          logger.error('Error fetching journey settings for reactivation', { error: journeySettingsError.message });
         }
 
         const autoApprovalEnabled = journeySettings?.auto_approval_enabled === true;
@@ -449,7 +428,7 @@ export async function POST(request: NextRequest) {
         // Trigger AI assessment if auto-approval enabled and requirements exist
         // Skills are assessed from profile (no answers needed), questions from answers
         if (autoApprovalEnabled && reactivationReqCount && reactivationReqCount > 0) {
-          console.log(`[Registration API] Triggering AI assessment for reactivated registration: ${updatedRegistration.id}`);
+          logger.debug('Triggering AI assessment for reactivated registration', { registrationId: updatedRegistration.id }, true);
           triggerAIAssessment(supabase, updatedRegistration.id);
         }
 
@@ -466,7 +445,7 @@ export async function POST(request: NextRequest) {
 
           const reactivationNotifyResult = await notifyNewRegistration(supabase, ownerId, updatedRegistration.id, journey.id, journey.name || 'your journey', reactivationCrewName, user.id);
           if (reactivationNotifyResult.error) {
-            console.error('[Registration API] Failed to notify owner of reactivated registration:', reactivationNotifyResult.error);
+            logger.error('Failed to notify owner of reactivated registration', { error: reactivationNotifyResult.error });
           }
         }
 
@@ -483,7 +462,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if journey has auto-approval enabled and requirements
-    console.log(`[Registration API] Checking auto-approval settings for journey: ${journey.id}`);
+    logger.debug('Checking auto-approval settings for journey', { journeyId: journey.id }, true);
     const { data: journeySettings, error: journeySettingsError } = await supabase
       .from('journeys')
       .select('auto_approval_enabled, auto_approval_threshold')
@@ -491,14 +470,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (journeySettingsError) {
-      console.error(`[Registration API] Error fetching journey settings:`, journeySettingsError);
+      logger.error('Error fetching journey settings', { error: journeySettingsError.message });
     }
-
-    console.log(`[Registration API] Journey settings:`, {
-      journeyId: journey.id,
-      auto_approval_enabled: journeySettings?.auto_approval_enabled,
-      auto_approval_threshold: journeySettings?.auto_approval_threshold,
-    });
 
     const { count: requirementCount, error: requirementCountError } = await supabase
       .from('journey_requirements')
@@ -506,19 +479,18 @@ export async function POST(request: NextRequest) {
       .eq('journey_id', journey.id);
 
     if (requirementCountError) {
-      console.error(`[Registration API] Error counting requirements:`, requirementCountError);
+      logger.error('Error counting requirements', { error: requirementCountError.message });
     }
 
     const hasRequirements = requirementCount && requirementCount > 0;
     const autoApprovalEnabled = journeySettings?.auto_approval_enabled === true;
 
-    console.log(`[Registration API] Auto-approval check results:`, {
+    logger.debug('Auto-approval check results', {
       autoApprovalEnabled,
       hasRequirements,
       requirementCount,
       answersProvided: !!(answers && Array.isArray(answers) && answers.length > 0),
-      answersLength: answers?.length || 0,
-    });
+    }, true);
 
     // --- Pre-checks: Risk Level and Experience Level (instant, no AI) ---
     if (hasRequirements) {
@@ -531,7 +503,7 @@ export async function POST(request: NextRequest) {
       if (requirementsList && requirementsList.length > 0) {
         const preCheckResult = await performPreChecks(supabase, user.id, journey.id, requirementsList as any);
         if (!preCheckResult.passed) {
-          console.log(`[Registration API] Pre-check failed:`, preCheckResult);
+          logger.debug('Pre-check failed', { failReason: preCheckResult.failReason }, true);
           return NextResponse.json(
             {
               error: preCheckResult.failReason,
@@ -540,7 +512,7 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        console.log(`[Registration API] Pre-checks passed (risk level + experience level)`);
+        logger.debug('Pre-checks passed (risk level + experience level)', {}, true);
 
         // Check if question-type requirements need answers
         const questionReqs = requirementsList.filter((r: any) =>
@@ -575,7 +547,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (insertError) {
-      console.error('Error creating registration:', insertError);
+      logger.error('Error creating registration', { error: insertError.message });
       return NextResponse.json(
         sanitizeErrorResponse(insertError, 'Failed to create registration'),
         { status: 500 }
@@ -585,46 +557,44 @@ export async function POST(request: NextRequest) {
     // Handle passport answer if provided
     let passportSaved = false;
     if (passport_document_id) {
-      console.log(`[Registration API] Processing passport for registration ${registration.id}`);
+      logger.debug('Processing passport for registration', { registrationId: registration.id }, true);
 
       // Convert photo blob to base64 if provided
       let photoFileData: string | undefined = undefined;
       if (photo_file) {
         try {
           photoFileData = await blobToBase64(photo_file);
-          console.log(`[Registration API] ✅ Photo converted to base64, size: ${photoFileData.length} chars`);
+          logger.debug('Photo converted to base64', { size: photoFileData.length }, true);
         } catch (error) {
-          console.error(`[Registration API] ⚠️ Failed to convert photo to base64:`, error);
+          logger.error('Failed to convert photo to base64', { error: error instanceof Error ? error.message : String(error) });
           // Don't fail the whole registration, just skip the photo
         }
       }
 
       const passportError = await handlePassportAnswer(supabase, registration.id, passport_document_id, journey.id, photoFileData);
       if (passportError) {
-        console.error(`[Registration API] Failed to save passport answer:`, passportError);
+        logger.error('Failed to save passport answer', { error: passportError });
         return NextResponse.json(
           { error: 'Registration created but failed to save passport data', details: passportError },
           { status: 500 }
         );
       }
       passportSaved = true;
-      console.log(`[Registration API] Successfully saved passport answer with photo data`);
+      logger.debug('Successfully saved passport answer with photo data', {}, true);
     }
 
     // Handle answers if provided
     let answersSaved = false;
-    console.log(`[Registration API] Processing answers:`, {
+    logger.debug('Processing answers', {
       registrationId: registration.id,
-      hasAnswers: !!(answers && Array.isArray(answers)),
       answersLength: answers?.length || 0,
-      answers: answers,
-    });
+    }, true);
 
     if (answers && Array.isArray(answers) && answers.length > 0) {
-      console.log(`[Registration API] Saving ${answers.length} answers for registration ${registration.id}`);
+      logger.debug('Saving answers for registration', { count: answers.length, registrationId: registration.id }, true);
       const answersError = await handleRegistrationAnswers(supabase, registration.id, answers, journey.id);
       if (answersError) {
-        console.error(`[Registration API] Failed to save answers:`, answersError);
+        logger.error('Failed to save answers', { error: answersError });
         // Registration created but answers failed - return error but registration exists
         return NextResponse.json(
           { error: 'Registration created but failed to save answers', details: answersError },
@@ -632,42 +602,37 @@ export async function POST(request: NextRequest) {
         );
       }
       answersSaved = true;
-      console.log(`[Registration API] Successfully saved ${answers.length} answers`);
+      logger.debug('Successfully saved answers', { count: answers.length }, true);
     } else {
-      console.log(`[Registration API] No answers to save (answers: ${answers}, isArray: ${Array.isArray(answers)}, length: ${answers?.length || 0})`);
+      logger.debug('No answers to save', {}, true);
     }
 
     // Trigger AI assessment if auto-approval enabled and requirements exist.
     // Skills are assessed from crew profile (no answers needed), questions from submitted answers.
-    console.log(`[Registration API] AI assessment trigger check:`, {
-      registrationId: registration.id,
+    logger.debug('AI assessment trigger check', {
       autoApprovalEnabled,
       hasRequirements,
       requirementCount,
       answersSaved,
-    });
+    }, true);
 
     if (autoApprovalEnabled && hasRequirements) {
-      console.log(`[Registration API] Triggering AI assessment for registration: ${registration.id}`);
+      logger.debug('Triggering AI assessment for registration', { registrationId: registration.id }, true);
       triggerAIAssessment(supabase, registration.id);
     } else {
-      console.log(`[Registration API] Skipping AI assessment:`, {
+      logger.debug('Skipping AI assessment', {
         reason: !autoApprovalEnabled ? 'auto-approval not enabled' : 'no requirements',
-      });
+      }, true);
     }
 
     // Notify the journey owner about the new registration (non-blocking)
-    console.log('[Registration API] === NOTIFICATION DEBUG START ===');
-    console.log('[Registration API] leg object keys:', Object.keys(leg));
-    console.log('[Registration API] journey:', JSON.stringify(journey, null, 2));
-
     // Send notification if auto-approval is not enabled for this journey
     if (!autoApprovalEnabled) {
       const ownerId = journey.boats.owner_id;
       const journeyId = journey.id;
       const journeyName = journey.name || 'your journey';
 
-      console.log('[Registration API] Owner notification data:', { ownerId, journeyId, journeyName });
+      logger.debug('Preparing owner notification', { ownerId, journeyId }, true);
 
       if (ownerId) {
         // Get crew member name
@@ -682,16 +647,14 @@ export async function POST(request: NextRequest) {
         // Await notification to ensure it's sent before response (auth context needed)
         const notifyResult = await notifyNewRegistration(supabase, ownerId, registration.id, journeyId, journeyName, crewName, user.id);
         if (notifyResult.error) {
-          console.error('[Registration API] Failed to notify owner of new registration:', notifyResult.error);
+          logger.error('Failed to notify owner of new registration', { error: notifyResult.error });
         } else {
-          console.log('[Registration API] New registration notification sent to owner:', ownerId);
+          logger.debug('New registration notification sent to owner', { ownerId }, true);
         }
       } else {
-        console.error('[Registration API] No owner_id found, skipping notification');
+        logger.error('No owner_id found, skipping notification', {});
       }
     }
-
-    console.log('[Registration API] === NOTIFICATION DEBUG END ===');
 
     return NextResponse.json({
       registration,
@@ -699,7 +662,7 @@ export async function POST(request: NextRequest) {
     }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Unexpected error in registration API:', error);
+    logger.error('Unexpected error in registration POST API', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -773,7 +736,7 @@ export async function GET(request: NextRequest) {
     const { data: registrations, error } = await query;
 
     if (error) {
-      console.error('Error fetching registrations:', error);
+      logger.error('Error fetching registrations', { error: error.message });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch registrations'),
         { status: 500 }
@@ -786,7 +749,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in registration API:', error);
+    logger.error('Unexpected error in registration GET API', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
