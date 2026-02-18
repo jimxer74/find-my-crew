@@ -44,17 +44,23 @@ export function useUserLocation(): UserLocationState {
 
     // Check permission state if available
     if (navigator.permissions) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        setState((prev) => ({ ...prev, permissionState: result.state }));
-
-        // Listen for permission changes
-        result.onchange = () => {
+      navigator.permissions
+        .query({ name: 'geolocation' })
+        .then((result) => {
           setState((prev) => ({ ...prev, permissionState: result.state }));
-          if (result.state === 'granted') {
-            requestLocation();
-          }
-        };
-      });
+
+          // Listen for permission changes
+          result.onchange = () => {
+            setState((prev) => ({ ...prev, permissionState: result.state }));
+            if (result.state === 'granted') {
+              requestLocation();
+            }
+          };
+        })
+        .catch((error) => {
+          console.error('Error querying geolocation permission:', error);
+          // Continue without permission state
+        });
     }
 
     // Request location

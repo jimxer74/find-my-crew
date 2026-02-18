@@ -71,9 +71,15 @@ export default function MyRegistrationsPage() {
 
     if (user) {
       // Load user profile first, then registrations
-      loadUserProfile().then(() => {
-        loadRegistrations();
-      });
+      loadUserProfile()
+        .then(() => {
+          loadRegistrations();
+        })
+        .catch((error) => {
+          console.error('Error loading user profile:', error);
+          // Still load registrations even if profile load fails
+          loadRegistrations();
+        });
     }
   }, [user, authLoading, router]);
 

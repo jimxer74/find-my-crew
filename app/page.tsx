@@ -336,38 +336,65 @@ export default function WelcomePage() {
   useEffect(() => {
     if (!user || !hasExistingSession || sessionType !== 'crew') return;
 
-    const supabase = getSupabaseBrowserClient();
-    supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle()
-      .then(({ data }) => setCrewHasProfile(!!data));
+    const loadCrewProfile = async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', user.id)
+          .maybeSingle();
+        setCrewHasProfile(!!data);
+      } catch (error) {
+        console.error('Error fetching crew profile:', error);
+        setCrewHasProfile(false);
+      }
+    };
+
+    loadCrewProfile();
   }, [user, hasExistingSession, sessionType]);
 
   // Fetch owner profile/boats/journeys when user is logged in and has owner session
   useEffect(() => {
     if (!user || !hasOwnerSession) return;
 
-    const supabase = getSupabaseBrowserClient();
-    Promise.all([
-      supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
-      supabase.from('boats').select('id').eq('owner_id', user.id).limit(1),
-    ]).then(([profileRes, boatsRes]) => {
-      setOwnerHasProfile(!!profileRes.data);
-      const boatIds = boatsRes.data?.map((b) => b.id) ?? [];
-      if (boatIds.length > 0) {
-        supabase
-          .from('journeys')
-          .select('id')
-          .in('boat_id', boatIds)
-          .limit(1)
-          .then(({ data }) => setOwnerHasJourney((data?.length ?? 0) > 0));
-      } else {
+    const loadOwnerData = async () => {
+      try {
+        const supabase = getSupabaseBrowserClient();
+
+        const [profileRes, boatsRes] = await Promise.all([
+          supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
+          supabase.from('boats').select('id').eq('owner_id', user.id).limit(1),
+        ]);
+
+        setOwnerHasProfile(!!profileRes.data);
+        const boatIds = boatsRes.data?.map((b: any) => b.id) ?? [];
+        setOwnerHasBoat(boatIds.length > 0);
+
+        if (boatIds.length > 0) {
+          try {
+            const { data } = await supabase
+              .from('journeys')
+              .select('id')
+              .in('boat_id', boatIds)
+              .limit(1);
+            setOwnerHasJourney((data?.length ?? 0) > 0);
+          } catch (error) {
+            console.error('Error fetching owner journeys:', error);
+            setOwnerHasJourney(false);
+          }
+        } else {
+          setOwnerHasJourney(false);
+        }
+      } catch (error) {
+        console.error('Error fetching owner profile and boats:', error);
+        setOwnerHasProfile(false);
+        setOwnerHasBoat(false);
         setOwnerHasJourney(false);
       }
-      setOwnerHasBoat(boatIds.length > 0);
-    });
+    };
+
+    loadOwnerData();
   }, [user, hasOwnerSession]);
 
   const handleContinueConversation = () => {

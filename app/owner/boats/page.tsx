@@ -57,9 +57,14 @@ export default function BoatsPage() {
       }, 8000);
 
       Promise.all([
-        checkProfile(user.id).then((status) => {
-          if (!cancelled) setHasOwnerRole(status.exists && status.roles.includes('owner'));
-        }),
+        checkProfile(user.id)
+          .then((status) => {
+            if (!cancelled) setHasOwnerRole(status.exists && status.roles.includes('owner'));
+          })
+          .catch((error) => {
+            console.error('Error checking profile:', error);
+            if (!cancelled) setHasOwnerRole(false);
+          }),
         loadBoats(),
       ]).finally(() => {
         if (!cancelled) {

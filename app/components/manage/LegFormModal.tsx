@@ -81,11 +81,17 @@ export function LegFormModal({
       if (legId) {
         // Editing existing leg - load journey data first to get journey skills, then load leg data
         // This ensures journeySkills state is set before leg data potentially overwrites it
-        loadBoatCapacity(legId).then((journeyExpLevel) => {
-          // After journey data is loaded, load leg data
-          // Pass journey experience level directly to ensure it's available
-          loadLeg(journeyExpLevel);
-        });
+        loadBoatCapacity(legId)
+          .then((journeyExpLevel) => {
+            // After journey data is loaded, load leg data
+            // Pass journey experience level directly to ensure it's available
+            loadLeg(journeyExpLevel);
+          })
+          .catch((error) => {
+            console.error('Error loading boat capacity:', error);
+            // Still try to load leg data even if boat capacity load fails
+            loadLeg(null);
+          });
       } else {
         // Creating new leg - reset form first, then load journey defaults
         resetForm();
