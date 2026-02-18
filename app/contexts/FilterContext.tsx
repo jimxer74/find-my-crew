@@ -47,11 +47,18 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
+  console.log('[FilterProvider] Rendering, isInitialized:', isInitialized);
+
   // Load filters from session storage on mount
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    console.log('[FilterProvider] Mount effect running');
+    if (typeof window === 'undefined') {
+      console.log('[FilterProvider] SSR environment, skipping');
+      return;
+    }
 
     try {
+      console.log('[FilterProvider] Loading filters from session storage');
       // Load date range
       const dateRangeStored = sessionStorage.getItem('crew-date-range');
       let dateRange = defaultFilters.dateRange;
@@ -96,8 +103,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         dateRange,
         ...otherFilters,
       });
+      console.log('[FilterProvider] Loaded from session storage, setting isInitialized=true');
     } catch (err) {
-      console.error('Error loading filters from session:', err);
+      console.error('[FilterProvider] Error loading filters from session:', err);
     } finally {
       setIsInitialized(true);
     }
@@ -106,8 +114,16 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   // Load profile preferences as filter defaults when user logs in
   // This effect loads from profile on every initialization to ensure fresh data
   useEffect(() => {
-    if (!isInitialized) return;
-    if (typeof window === 'undefined') return;
+    console.log('[FilterProvider] Profile load effect running, isInitialized:', isInitialized);
+    if (!isInitialized) {
+      console.log('[FilterProvider] Not initialized yet, skipping profile load');
+      return;
+    }
+    if (typeof window === 'undefined') {
+      console.log('[FilterProvider] SSR environment, skipping profile load');
+      return;
+    }
+    console.log('[FilterProvider] About to load profile preferences');
 
     const loadProfilePreferences = async () => {
       try {
