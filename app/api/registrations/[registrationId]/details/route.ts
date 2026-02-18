@@ -314,6 +314,7 @@ export async function GET(
           id,
           question_text,
           requirement_type,
+          question_type: requirement_type,
           is_required,
           order
         )
