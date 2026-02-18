@@ -4,6 +4,7 @@ title: Fix logger type errors - wrap primitives in context objects
 status: In Progress
 assignee: []
 created_date: '2026-02-18 19:43'
+updated_date: '2026-02-18 19:47'
 labels:
   - logging
   - typescript
@@ -40,3 +41,20 @@ Reported in `app/api/journeys/[journeyId]/details/route.ts:20` but the same patt
 - 233 instances found and fixed based on grep search
 - No TypeScript type errors remain for logger calls
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Fixed approximately 30 files so far. Pattern fixes completed in:
+- app/api/journeys/[journeyId]/details/route.ts (2 fixes)
+- app/auth/callback/route.ts (3 fixes)
+- app/api/user/email-preferences/route.ts (4 fixes)
+- app/api/notifications/* routes (4 fixes)
+- app/components/notifications/* files (8 fixes)
+- app/lib/notifications/email.ts (7 fixes)
+- app/hooks files (3 fixes)
+- app/api/registrations files (8 fixes)
+- Additional files with logger fixes (20+)
+
+Remaining: ~60-70 files from the original grep search
+<!-- SECTION:NOTES:END -->
