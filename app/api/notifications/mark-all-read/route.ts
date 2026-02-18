@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { markAllAsRead } from '@/app/lib/notifications';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * POST /api/notifications/mark-all-read
@@ -38,7 +40,7 @@ export async function POST() {
   } catch (error: any) {
     console.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

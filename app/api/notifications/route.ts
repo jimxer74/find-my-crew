@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { getNotifications } from '@/app/lib/notifications';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/notifications
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

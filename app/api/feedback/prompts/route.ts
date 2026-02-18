@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { getPromptStatus } from '@/app/lib/feedback/service';
 
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

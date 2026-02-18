@@ -67,7 +67,8 @@
       "Bash(else)",
       "Bash(fi)",
       "Bash(done)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\"; grep -c \"\"error instanceof Error\"\"')"
     ]
   }
 }

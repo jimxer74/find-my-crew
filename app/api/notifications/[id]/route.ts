@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { markAsRead, deleteNotification } from '@/app/lib/notifications';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -39,7 +41,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } catch (error: any) {
     console.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
@@ -78,7 +80,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error: any) {
     console.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
