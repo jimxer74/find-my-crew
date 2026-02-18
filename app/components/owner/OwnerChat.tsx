@@ -323,7 +323,7 @@ export default function OwnerChat() {
                         toolResult={crewSearchResult.result}
                         onCrewClick={(crewId) => {
                           // Could navigate to crew profile or show details
-                          console.log('Crew clicked:', crewId);
+                          logger.debug('Crew clicked:', crewId);
                         }}
                       />
                     ) : null;

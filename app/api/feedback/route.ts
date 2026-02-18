@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result.feedback, { status: 201 });
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

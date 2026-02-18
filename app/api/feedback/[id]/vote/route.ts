@@ -61,7 +61,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

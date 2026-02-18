@@ -58,7 +58,7 @@ export function useUserLocation(): UserLocationState {
           };
         })
         .catch((error) => {
-          console.error('Error querying geolocation permission:', error);
+          logger.error('Error querying geolocation permission:', error);
           // Continue without permission state
         });
     }

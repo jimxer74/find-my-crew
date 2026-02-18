@@ -92,10 +92,10 @@ export function CrewSummaryCard({
   if (!crew) return null;
 
   // Debug logging
-  console.log('CrewSummaryCard received crew:', crew);
-  console.log('CrewSummaryCard crew.skills:', crew.skills);
-  console.log('CrewSummaryCard crew.skills is array?', Array.isArray(crew.skills));
-  console.log('CrewSummaryCard crew.skills length:', crew.skills?.length);
+  logger.debug('CrewSummaryCard received crew:', crew);
+  logger.debug('CrewSummaryCard crew.skills:', crew.skills);
+  logger.debug('CrewSummaryCard crew.skills is array?', Array.isArray(crew.skills));
+  logger.debug('CrewSummaryCard crew.skills length:', crew.skills?.length);
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, string> = {

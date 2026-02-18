@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .range(offset, offset + limit - 1);
 
     if (error) {
-      console.error('[AccessLog] Query failed:', error);
+      logger.error('[AccessLog] Query failed:', error);
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       offset,
     });
   } catch (error: unknown) {
-    console.error('[AccessLog] Unexpected error:', error);
+    logger.error('[AccessLog] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

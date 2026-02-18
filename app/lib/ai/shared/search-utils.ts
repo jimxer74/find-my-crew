@@ -13,7 +13,7 @@ import { RawLeg, transformLeg, TransformedLeg, formatLegForAI, FormattedLegForAI
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Search Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Search Utils] ${message}`, data !== undefined ? data : '');
   }
 };
 

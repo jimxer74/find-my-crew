@@ -38,10 +38,10 @@ export async function logDocumentAccess(
     });
 
     if (error) {
-      console.error('[DocumentAudit] Failed to log access event:', error);
+      logger.error('[DocumentAudit] Failed to log access event:', error);
     }
   } catch (err) {
-    console.error('[DocumentAudit] Exception logging access event:', err);
+    logger.error('[DocumentAudit] Exception logging access event:', err);
   }
 }
 

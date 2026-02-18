@@ -242,7 +242,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
           });
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          logger.error('Upload error:', uploadError);
           setError(`Failed to upload ${file.name}`);
           continue;
         }

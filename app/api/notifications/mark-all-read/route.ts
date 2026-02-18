@@ -38,7 +38,7 @@ export async function POST() {
       message: `Marked ${result.count} notifications as read`,
     });
   } catch (error: any) {
-    console.error('[Notifications API] Unexpected error:', error);
+    logger.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

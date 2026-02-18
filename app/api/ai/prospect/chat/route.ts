@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
@@ -9,7 +10,7 @@ import { ProspectChatRequest } from '@/app/lib/ai/prospect/types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[API Prospect Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Prospect Chat Route] ${message}`, data !== undefined ? data : '');
   }
 };
 
@@ -144,12 +145,12 @@ export async function POST(request: NextRequest) {
           .eq('session_id', body.sessionId);
         
         if (deleteErr) {
-          console.error('[API Prospect Chat Route] Failed to delete completed session:', deleteErr);
+          logger.error('[API Prospect Chat Route] Failed to delete completed session:', deleteErr);
         } else {
           log('✅ Crew onboarding completed - session deleted successfully');
         }
       } catch (e) {
-        console.error('[API Prospect Chat Route] Error deleting session:', e);
+        logger.error('[API Prospect Chat Route] Error deleting session:', e);
       }
     }
 
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in prospect chat route:', error.message);
-    console.error('Prospect chat error:', error);
+    logger.error('Prospect chat error:', error);
 
     const errorMessage = error.message || '';
 

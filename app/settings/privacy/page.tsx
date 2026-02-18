@@ -59,7 +59,7 @@ export default function PrivacySettingsPage() {
     const supabase = getSupabaseBrowserClient();
 
 
-    console.log('[Policy] reading user data:', user);
+    logger.debug('[Policy] reading user data:', user);
 
     try {
       // Fetch all user data in parallel
@@ -74,12 +74,12 @@ export default function PrivacySettingsPage() {
       ]);
 
 
-      console.log('[Policy] profileRes:', profileRes);
-      console.log('[Policy] consentsRes:', consentsRes);
-      console.log('[Policy] emailPrefsRes:', emailPrefsRes);
-      console.log('[Policy] boatsRes:', boatsRes);
-      console.log('[Policy] registrationsRes:', registrationsRes);
-      console.log('[Policy] notificationsRes:', notificationsRes);
+      logger.debug('[Policy] profileRes:', profileRes);
+      logger.debug('[Policy] consentsRes:', consentsRes);
+      logger.debug('[Policy] emailPrefsRes:', emailPrefsRes);
+      logger.debug('[Policy] boatsRes:', boatsRes);
+      logger.debug('[Policy] registrationsRes:', registrationsRes);
+      logger.debug('[Policy] notificationsRes:', notificationsRes);
 
       setUserData({
         profile: profileRes.data,
@@ -96,7 +96,7 @@ export default function PrivacySettingsPage() {
         profile_reminders: false,
       });
     } catch (err) {
-      console.error('Error loading user data:', err);
+      logger.error('Error loading user data:', err);
       setLoading(false);
     } finally {
       setLoading(false);

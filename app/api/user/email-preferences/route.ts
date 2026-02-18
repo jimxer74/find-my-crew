@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching email preferences:', error);
+      logger.error('Error fetching email preferences:', error);
       return NextResponse.json({ error: 'Failed to fetch preferences' }, { status: 500 });
     }
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error in email preferences API:', error);
+    logger.error('Error in email preferences API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -91,7 +91,7 @@ export async function PATCH(request: NextRequest) {
       .single();
 
     if (error) {
-      console.error('Error updating email preferences:', error);
+      logger.error('Error updating email preferences:', error);
       return NextResponse.json({ error: 'Failed to update preferences' }, { status: 500 });
     }
 
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error in email preferences API:', error);
+    logger.error('Error in email preferences API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

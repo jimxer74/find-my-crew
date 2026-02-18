@@ -36,7 +36,7 @@ const MAX_TOOL_ITERATIONS = 5;
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[AI Assistant Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[AI Assistant Service] ${message}`, data !== undefined ? data : '');
   }
 };
 

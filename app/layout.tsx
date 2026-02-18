@@ -44,14 +44,14 @@ export default async function RootLayout({
   try {
     messages = await getMessages();
   } catch (error) {
-    console.error('[RootLayout] Failed to load messages for locale:', locale, error);
+    logger.error('[RootLayout] Failed to load messages for locale:', locale, error);
     // Last resort: empty object to prevent context error
     messages = {};
   }
 
   // Ensure messages is always an object (never null/undefined)
   if (!messages || typeof messages !== 'object') {
-    console.warn('[RootLayout] Messages is invalid, using empty object');
+    logger.warn('[RootLayout] Messages is invalid, using empty object');
     messages = {};
   }
 

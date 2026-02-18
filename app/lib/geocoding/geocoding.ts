@@ -8,7 +8,7 @@
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Geocoding Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Geocoding Service] ${message}`, data !== undefined ? data : '');
   }
 };
 

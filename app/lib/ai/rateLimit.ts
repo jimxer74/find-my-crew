@@ -78,7 +78,7 @@ export class RateLimiter {
 
           // Calculate retry delay with exponential backoff
           const delay = this.config.baseRetryDelay * Math.pow(2, attempt);
-          console.log(`Rate limit hit for ${this.key}, retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries})`);
+          logger.debug(`Rate limit hit for ${this.key}, retrying in ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries})`);
 
           // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -117,7 +117,7 @@ export class RateLimiter {
       const waitTime = (oldestRequest + this.config.windowMs) - now;
 
       if (waitTime > 0) {
-        console.log(`Rate limit exceeded for ${this.key}, waiting ${waitTime}ms`);
+        logger.debug(`Rate limit exceeded for ${this.key}, waiting ${waitTime}ms`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
 
         // Recalculate after waiting

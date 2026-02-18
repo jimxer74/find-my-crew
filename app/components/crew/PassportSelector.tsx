@@ -69,7 +69,7 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load passports';
       setLoadError(message);
-      console.error('Error loading passports:', err);
+      logger.error('Error loading passports:', err);
     } finally {
       setLoading(false);
     }
@@ -88,10 +88,10 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        console.error(`[PassportSelector] Grant check failed - Status: ${response.status} ${response.statusText}`);
-        console.error(`[PassportSelector] Passport ID:`, passportId);
-        console.error(`[PassportSelector] Error response:`, errorData);
-        console.error(`[PassportSelector] Full response headers:`, {
+        logger.error(`[PassportSelector] Grant check failed - Status: ${response.status} ${response.statusText}`);
+        logger.error(`[PassportSelector] Passport ID:`, passportId);
+        logger.error(`[PassportSelector] Error response:`, errorData);
+        logger.error(`[PassportSelector] Full response headers:`, {
           'content-type': response.headers.get('content-type'),
           'content-length': response.headers.get('content-length')
         });
@@ -108,7 +108,7 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
       const data = await response.json();
       const grants = data.grants || [];
 
-      console.log(`[PassportSelector] Grants fetched for passport ${passportId}:`, {
+      logger.debug(`[PassportSelector] Grants fetched for passport ${passportId}:`, {
         count: grants.length,
         grants: grants.map((g: DocumentGrant) => ({
           purpose: g.purpose,
@@ -141,7 +141,7 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
         setSelectedGrant(validGrant);
       }
     } catch (err) {
-      console.error('[PassportSelector] Error checking grants:', {
+      logger.error('[PassportSelector] Error checking grants:', {
         error: err instanceof Error ? err.message : String(err),
         passportId
       });

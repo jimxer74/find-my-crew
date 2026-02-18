@@ -15,7 +15,7 @@ export { describeBbox };
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Bbox Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Bbox Utils] ${message}`, data !== undefined ? data : '');
   }
 };
 

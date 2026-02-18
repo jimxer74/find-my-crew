@@ -85,7 +85,7 @@ export default function DocumentViewPage() {
       {/* Use SecureDocumentViewer in modal mode */}
       <SecureDocumentViewer
         isOpen={true}
-        onClose={() => { console.log("Close triggered"); window.history.back(); setTimeout(() => window.location.href = "/owner/registrations", 100); }}
+        onClose={() => { logger.debug("Close triggered"); window.history.back(); setTimeout(() => window.location.href = "/owner/registrations", 100); }}
         documentId={documentInfo.id}
         documentName={documentInfo.file_name}
         fileType={documentInfo.file_type}

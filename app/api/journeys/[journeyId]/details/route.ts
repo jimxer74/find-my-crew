@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
@@ -16,13 +17,13 @@ export async function GET(
     const resolvedParams = params instanceof Promise ? await params : params;
     const journeyId = resolvedParams.journeyId;
 
-    console.log('[JourneyDetailsAPI] Fetching journey details for:', journeyId);
+    logger.info('[JourneyDetailsAPI] Fetching journey details for:', journeyId);
 
     const supabase = await getSupabaseServerClient();
 
     // Get authenticated user (optional for public access)
     const { data: { user } } = await supabase.auth.getUser();
-    console.log('[JourneyDetailsAPI] Authenticated user:', user?.id || 'None');
+    logger.info('[JourneyDetailsAPI] Authenticated user:', user?.id || 'None');
 
     // First, try to get the journey without the boat join to see if it exists
     const { data: journeyBasic, error: basicError } = await supabase
@@ -31,7 +32,7 @@ export async function GET(
       .eq('id', journeyId)
       .single();
 
-    console.log('[JourneyDetailsAPI] Basic journey query result:', { journeyBasic, basicError });
+    logger.info('[JourneyDetailsAPI] Basic journey query result:', { journeyBasic, basicError });
 
     if (basicError || !journeyBasic) {
       return NextResponse.json(
@@ -47,7 +48,7 @@ export async function GET(
       .eq('id', journeyBasic.boat_id)
       .single();
 
-    console.log('[JourneyDetailsAPI] Boat info query result:', { boatInfo, boatError });
+    logger.info('[JourneyDetailsAPI] Boat info query result:', { boatInfo, boatError });
 
     if (boatError || !boatInfo) {
       return NextResponse.json(
@@ -59,7 +60,7 @@ export async function GET(
     // Check access: public if published, otherwise owner only
     if (journeyBasic.state !== 'Published') {
       if (!user || boatInfo.owner_id !== user.id) {
-        console.log('[JourneyDetailsAPI] Access denied - not published and not owner:', {
+        logger.info('[JourneyDetailsAPI] Access denied - not published and not owner:', {
           journeyState: journeyBasic.state,
           user: user?.id,
           boatOwner: boatInfo.owner_id
@@ -71,7 +72,7 @@ export async function GET(
       }
     }
 
-    console.log('[JourneyDetailsAPI] Access granted, returning journey data');
+    logger.info('[JourneyDetailsAPI] Access granted, returning journey data');
 
     return NextResponse.json({
       journey_id: journeyBasic.id,
@@ -81,7 +82,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in journey details GET API:', error);
+    logger.error('Unexpected error in journey details GET API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

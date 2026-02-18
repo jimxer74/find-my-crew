@@ -284,8 +284,8 @@ export class VersionManagementIntegration {
     const result1 = await promptRegistry.executePrompt(USE_CASES.BOAT_SUGGESTIONS, {}, '1.0.0');
     const result2 = await promptRegistry.executePrompt(USE_CASES.BOAT_SUGGESTIONS, {}, '2.0.0');
 
-    console.log('Version 1 result:', result1);
-    console.log('Version 2 result:', result2);
+    logger.debug('Version 1 result:', result1);
+    logger.debug('Version 2 result:', result2);
   }
 }
 
@@ -356,7 +356,7 @@ export class MonitoringIntegration {
       const executionTime = endTime - startTime;
 
       // Log performance metrics
-      console.log(`Prompt execution metrics for ${useCase}:`, {
+      logger.debug(`Prompt execution metrics for ${useCase}:`, {
         executionTime: `${executionTime}ms`,
         memoryDelta: `${endMemory.heapUsed - startMemory.heapUsed} bytes`,
         success: true
@@ -367,7 +367,7 @@ export class MonitoringIntegration {
       const endTime = performance.now();
       const executionTime = endTime - startTime;
 
-      console.error(`Prompt execution failed for ${useCase}:`, {
+      logger.error(`Prompt execution failed for ${useCase}:`, {
         executionTime: `${executionTime}ms`,
         error: error instanceof Error ? error.message : String(error)
       });

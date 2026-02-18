@@ -20,7 +20,7 @@ export function LogoWithText({ className = '', userRole = ''
     }
   };
 
-  console.log("LogoWithText userRole:", userRole);
+  logger.debug("LogoWithText userRole:", userRole);
   const theme = useTheme();
 
   return (

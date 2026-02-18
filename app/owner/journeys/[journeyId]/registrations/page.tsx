@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -146,7 +147,7 @@ export default function JourneyRegistrationsPage() {
       .single();
 
     if (error) {
-      console.error('Error loading journey:', error);
+      logger.error('Error loading journey:', error);
     } else {
       setJourney(data);
     }
@@ -165,7 +166,7 @@ export default function JourneyRegistrationsPage() {
       .order('created_at', { ascending: true });
 
     if (legsError) {
-      console.error('Error loading legs:', legsError);
+      logger.error('Error loading legs:', legsError);
       setLegs([]);
       return;
     }
@@ -201,7 +202,7 @@ export default function JourneyRegistrationsPage() {
                 const geoJson = JSON.parse(row.location);
                 coordinates = geoJson.coordinates as [number, number];
               } catch (e) {
-                console.error('Error parsing location GeoJSON:', e);
+                logger.error('Error parsing location GeoJSON:', e);
               }
             } else if (row.location.coordinates) {
               coordinates = row.location.coordinates as [number, number];
@@ -275,12 +276,12 @@ export default function JourneyRegistrationsPage() {
     try {
       // Load all registrations without leg filter
       const url = `/api/registrations/by-journey/${journeyId}`;
-      console.log('[loadRegistrations] Fetching:', url, {
+      logger.debug('[loadRegistrations] Fetching:', url, {
         journeyId,
       });
       const response = await fetch(url);
       
-      console.log('[loadRegistrations] Response:', {
+      logger.debug('[loadRegistrations] Response:', {
         ok: response.ok,
         status: response.status,
         statusText: response.statusText,
@@ -297,7 +298,7 @@ export default function JourneyRegistrationsPage() {
           if (contentType && contentType.includes('application/json')) {
             const errorData = await response.json();
             errorMessage = errorData.error || errorData.details || errorMessage;
-            console.error('[loadRegistrations] API Error:', {
+            logger.error('[loadRegistrations] API Error:', {
               status,
               statusText,
               error: errorData.error,
@@ -307,7 +308,7 @@ export default function JourneyRegistrationsPage() {
           } else {
             // Try to get text response
             const text = await response.text();
-            console.error('[loadRegistrations] API Error (non-JSON):', {
+            logger.error('[loadRegistrations] API Error (non-JSON):', {
               status,
               statusText,
               responseText: text,
@@ -315,7 +316,7 @@ export default function JourneyRegistrationsPage() {
             errorMessage = text || `HTTP ${status}: ${statusText}`;
           }
         } catch (parseError) {
-          console.error('[loadRegistrations] Failed to parse error response:', parseError);
+          logger.error('[loadRegistrations] Failed to parse error response:', parseError);
           errorMessage = `HTTP ${status}: ${statusText}`;
         }
         throw new Error(errorMessage);
@@ -324,16 +325,16 @@ export default function JourneyRegistrationsPage() {
       let data;
       try {
         const responseText = await response.text();
-        console.log('[loadRegistrations] Response text:', responseText);
+        logger.debug('[loadRegistrations] Response text:', responseText);
         
         if (!responseText || responseText.trim() === '') {
           throw new Error('Empty response from API');
         }
         
         data = JSON.parse(responseText);
-        console.log('[loadRegistrations] Parsed data:', data);
+        logger.debug('[loadRegistrations] Parsed data:', data);
       } catch (parseError: any) {
-        console.error('[loadRegistrations] Failed to parse response:', parseError);
+        logger.error('[loadRegistrations] Failed to parse response:', parseError);
         throw new Error(`Failed to parse API response: ${parseError.message}`);
       }
       
@@ -342,14 +343,14 @@ export default function JourneyRegistrationsPage() {
       }
       
       if (!Array.isArray(data.registrations)) {
-        console.warn('[loadRegistrations] registrations is not an array:', data);
+        logger.warn('[loadRegistrations] registrations is not an array:', data);
         setAllRegistrations([]);
         return;
       }
       
       setAllRegistrations(data.registrations || []);
     } catch (error: any) {
-      console.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error);
       // Show user-friendly error message
       alert(`Failed to load registrations: ${error.message || 'Unknown error'}`);
     } finally {
@@ -444,7 +445,7 @@ export default function JourneyRegistrationsPage() {
         maxZoom: 12,
       });
     } catch (error) {
-      console.error('Error fitting bounds:', error);
+      logger.error('Error fitting bounds:', error);
       if (coordinates.length > 0) {
         const [lng, lat] = coordinates[0];
         map.flyTo({

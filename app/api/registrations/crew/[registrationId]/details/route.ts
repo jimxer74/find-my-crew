@@ -102,7 +102,7 @@ export async function GET(
       .single();
 
     if (regError || !registration) {
-      console.error('Error fetching registration:', regError);
+      logger.error('Error fetching registration:', regError);
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }
@@ -160,7 +160,7 @@ export async function GET(
       .single();
 
     if (ownerError) {
-      console.error('Error fetching owner profile:', ownerError);
+      logger.error('Error fetching owner profile:', ownerError);
     }
 
     // Fetch waypoints for the leg
@@ -216,7 +216,7 @@ export async function GET(
       .order('order', { ascending: true });
 
     if (reqError) {
-      console.error('Error fetching requirements:', reqError);
+      logger.error('Error fetching requirements:', reqError);
     }
 
     // Fetch registration answers (optional, for reference)
@@ -239,7 +239,7 @@ export async function GET(
       .eq('registration_id', registrationId);
 
     if (answersError) {
-      console.error('Error fetching answers:', answersError);
+      logger.error('Error fetching answers:', answersError);
     }
 
     // Sort answers by journey_requirements.order in JavaScript
@@ -324,7 +324,7 @@ export async function GET(
     return NextResponse.json(response);
 
   } catch (error: any) {
-    console.error('Unexpected error in crew registration details API:', error);
+    logger.error('Unexpected error in crew registration details API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

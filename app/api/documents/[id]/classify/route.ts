@@ -55,7 +55,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .download(document.file_path);
 
     if (downloadError || !fileData) {
-      console.error('[Classify] File download failed:', downloadError);
+      logger.error('[Classify] File download failed:', downloadError);
       return NextResponse.json(
         { error: 'Failed to access document file' },
         { status: 500 }
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .single();
 
     if (updateError) {
-      console.error('[Classify] Update failed:', updateError);
+      logger.error('[Classify] Update failed:', updateError);
       return NextResponse.json(
         { error: 'Classification succeeded but failed to save results' },
         { status: 500 }
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       document: updatedDoc,
     });
   } catch (error: unknown) {
-    console.error('[Classify] Unexpected error:', error);
+    logger.error('[Classify] Unexpected error:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
       { error: 'Classification failed', details: message },

@@ -9,6 +9,7 @@
  * 3. Update the sendEmail function to use Resend
  */
 
+import { logger } from '@/app/lib/logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { EmailPreferences } from './types';
 
@@ -43,8 +44,8 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
   const { to, subject, html, text } = params;
 
   if (!isEmailEnabled()) {
-    console.log('[EmailService] Email sending disabled (RESEND_API_KEY not set)');
-    console.log('[EmailService] Would send email:', { to, subject });
+    logger.debug('[EmailService] Email sending disabled (RESEND_API_KEY not set)');
+    logger.debug('[EmailService] Would send email:', { to, subject });
     return { success: true, error: null }; // Return success in dev mode
   }
 
@@ -62,14 +63,14 @@ async function sendEmail(params: SendEmailParams): Promise<{ success: boolean; e
     });
 
     if (error) {
-      console.error('[EmailService] Resend error:', error);
+      logger.error('[EmailService] Resend error:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('[EmailService] Email sent successfully to:', to);
+    logger.debug('[EmailService] Email sent successfully to:', to);
     return { success: true, error: null };
   } catch (err: any) {
-    console.error('[EmailService] Error sending email:', err);
+    logger.error('[EmailService] Error sending email:', err);
     return { success: false, error: err.message };
   }
 }
@@ -135,7 +136,7 @@ export async function sendRegistrationApprovedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'registration_updates'))) {
-    console.log('[EmailService] User opted out of registration updates:', userId);
+    logger.debug('[EmailService] User opted out of registration updates:', userId);
     return { success: true, error: null };
   }
 
@@ -177,7 +178,7 @@ export async function sendRegistrationDeniedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'registration_updates'))) {
-    console.log('[EmailService] User opted out of registration updates:', userId);
+    logger.debug('[EmailService] User opted out of registration updates:', userId);
     return { success: true, error: null };
   }
 
@@ -224,7 +225,7 @@ export async function sendNewRegistrationEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, ownerId, 'registration_updates'))) {
-    console.log('[EmailService] User opted out of registration updates:', ownerId);
+    logger.debug('[EmailService] User opted out of registration updates:', ownerId);
     return { success: true, error: null };
   }
 
@@ -266,7 +267,7 @@ export async function sendReviewNeededEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, ownerId, 'registration_updates'))) {
-    console.log('[EmailService] User opted out of registration updates:', ownerId);
+    logger.debug('[EmailService] User opted out of registration updates:', ownerId);
     return { success: true, error: null };
   }
 
@@ -307,7 +308,7 @@ export async function sendJourneyUpdatedEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'journey_updates'))) {
-    console.log('[EmailService] User opted out of journey updates:', userId);
+    logger.debug('[EmailService] User opted out of journey updates:', userId);
     return { success: true, error: null };
   }
 
@@ -352,7 +353,7 @@ export async function sendProfileReminderEmail(
 ): Promise<{ success: boolean; error: string | null }> {
   // Check preferences
   if (!(await shouldSendEmail(supabase, userId, 'profile_reminders'))) {
-    console.log('[EmailService] User opted out of profile reminders:', userId);
+    logger.debug('[EmailService] User opted out of profile reminders:', userId);
     return { success: true, error: null };
   }
 
@@ -401,6 +402,6 @@ export async function getUserEmail(
 
   // For now, we'll need to pass the email directly or store it in profiles
   // This is a placeholder that would need to be implemented based on your auth setup
-  console.log('[EmailService] getUserEmail not fully implemented - need to pass email directly');
+  logger.debug('[EmailService] getUserEmail not fully implemented - need to pass email directly');
   return null;
 }

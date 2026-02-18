@@ -37,7 +37,7 @@ export async function canCreateBoat(
     .eq('owner_id', userId);
 
   if (error) {
-    console.error('Error checking boat count:', error);
+    logger.error('Error checking boat count:', error);
     return {
       allowed: false,
       current: 0,
@@ -90,7 +90,7 @@ export async function canCreateJourney(
     .eq('boats.owner_id', userId);
 
   if (error) {
-    console.error('Error checking journey count:', error);
+    logger.error('Error checking journey count:', error);
     return {
       allowed: false,
       current: 0,
@@ -142,7 +142,7 @@ export async function canCreateLeg(
     .eq('journey_id', journeyId);
 
   if (error) {
-    console.error('Error checking leg count:', error);
+    logger.error('Error checking leg count:', error);
     return {
       allowed: false,
       current: 0,
@@ -192,7 +192,7 @@ export async function canRegisterUser(
     .select('*', { count: 'exact', head: true });
 
   if (error) {
-    console.error('Error checking user count:', error);
+    logger.error('Error checking user count:', error);
     return {
       allowed: false,
       current: 0,
@@ -244,7 +244,7 @@ export async function canCreateWaypoint(
     .eq('leg_id', legId);
 
   if (error) {
-    console.error('Error checking waypoint count:', error);
+    logger.error('Error checking waypoint count:', error);
     return {
       allowed: false,
       current: 0,
@@ -305,7 +305,7 @@ export async function canSendAIMessage(
     .gte('created_at', todayISO);
 
   if (error) {
-    console.error('Error checking AI message count:', error);
+    logger.error('Error checking AI message count:', error);
     return {
       allowed: false,
       current: 0,

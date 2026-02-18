@@ -83,7 +83,7 @@ export default function LegsManagementPage() {
       .single();
 
     if (error) {
-      console.error('Error loading journey:', error);
+      logger.error('Error loading journey:', error);
     } else {
       setJourney(data);
       // Extract boat speed and capacity
@@ -108,7 +108,7 @@ export default function LegsManagementPage() {
       .order('created_at', { ascending: true });
 
     if (legsError) {
-      console.error('Error loading legs:', legsError);
+      logger.error('Error loading legs:', legsError);
       setLoading(false);
       return;
     }
@@ -141,7 +141,7 @@ export default function LegsManagementPage() {
                 const geoJson = JSON.parse(row.location);
                 coordinates = geoJson.coordinates as [number, number];
               } catch (e) {
-                console.error('Error parsing location GeoJSON:', e);
+                logger.error('Error parsing location GeoJSON:', e);
               }
             } else if (row.location.coordinates) {
               coordinates = row.location.coordinates as [number, number];
@@ -293,7 +293,7 @@ export default function LegsManagementPage() {
         maxZoom: 12, // Don't zoom in too much
       });
     } catch (error) {
-      console.error('Error fitting bounds:', error);
+      logger.error('Error fitting bounds:', error);
       // Fallback to center on first waypoint
       if (coordinates.length > 0) {
         const [lng, lat] = coordinates[0];
@@ -343,7 +343,7 @@ export default function LegsManagementPage() {
     const activeLegIndex = legs.findIndex(leg => leg.startWaypoint !== null && leg.endWaypoint === null);
     
     if (activeLegIndex === -1) {
-      console.error('No active leg found to add waypoint to');
+      logger.error('No active leg found to add waypoint to');
       return;
     }
 
@@ -376,7 +376,7 @@ export default function LegsManagementPage() {
     const activeLegIndex = legs.findIndex(leg => leg.startWaypoint !== null && leg.endWaypoint === null);
     
     if (activeLegIndex === -1) {
-      console.error('No active leg found to end');
+      logger.error('No active leg found to end');
       return;
     }
 
@@ -432,7 +432,7 @@ export default function LegsManagementPage() {
         .single();
       
       if (insertError) {
-        console.error('Error saving leg to database:', insertError);
+        logger.error('Error saving leg to database:', insertError);
         return;
       }
 
@@ -448,7 +448,7 @@ export default function LegsManagementPage() {
       });
 
       if (waypointsError) {
-        console.error('Error saving waypoints:', waypointsError);
+        logger.error('Error saving waypoints:', waypointsError);
         // Rollback: delete the leg if waypoints failed
         await supabase.from('legs').delete().eq('id', newLeg.id);
         return;
@@ -480,7 +480,7 @@ export default function LegsManagementPage() {
         .eq('id', activeLeg.id);
       
       if (updateError) {
-        console.error('Error updating leg in database:', updateError);
+        logger.error('Error updating leg in database:', updateError);
         return;
       }
 
@@ -496,7 +496,7 @@ export default function LegsManagementPage() {
       });
 
       if (waypointsError) {
-        console.error('Error updating waypoints:', waypointsError);
+        logger.error('Error updating waypoints:', waypointsError);
         return;
       }
       
@@ -994,7 +994,7 @@ export default function LegsManagementPage() {
                         .eq('id', leg.id);
                       
                       if (error) {
-                        console.error('Error deleting leg from database:', error);
+                        logger.error('Error deleting leg from database:', error);
                         return;
                       }
                     }

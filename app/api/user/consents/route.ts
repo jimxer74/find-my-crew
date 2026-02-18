@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
     if (consentsError && consentsError.code !== 'PGRST116') {
       // PGRST116 is "not found" - that's ok for new users
-      console.error('Error fetching consents:', consentsError);
+      logger.error('Error fetching consents:', consentsError);
       return NextResponse.json(
         { error: 'Failed to fetch consents' },
         { status: 500 }
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error in consents API:', error);
+    logger.error('Error in consents API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -129,7 +129,7 @@ export async function PATCH(request: NextRequest) {
       });
 
     if (updateError) {
-      console.error('Error updating consent:', updateError);
+      logger.error('Error updating consent:', updateError);
       return NextResponse.json(
         { error: 'Failed to update consent' },
         { status: 500 }
@@ -159,7 +159,7 @@ export async function PATCH(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Error updating consent:', error);
+    logger.error('Error updating consent:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

@@ -77,7 +77,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setRequirements(data.requirements || []);
       }
     } catch (error) {
-      console.error('Error loading requirements:', error);
+      logger.error('Error loading requirements:', error);
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setAutoApprovalThreshold(data.auto_approval_threshold || 80);
       }
     } catch (error) {
-      console.error('Error loading auto-approval settings:', error);
+      logger.error('Error loading auto-approval settings:', error);
     }
   };
 
@@ -109,7 +109,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         setJourneySkills(journey.skills || []);
       }
     } catch (error) {
-      console.error('Error loading journey skills:', error);
+      logger.error('Error loading journey skills:', error);
     }
   };
 
@@ -139,7 +139,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to update approval settings');
       }
     } catch (error) {
-      console.error('Error updating approval settings:', error);
+      logger.error('Error updating approval settings:', error);
       alert('Failed to update approval settings');
     }
   };
@@ -163,7 +163,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         loadAutoApprovalSettings();
       }
     } catch (error) {
-      console.error('Error updating threshold:', error);
+      logger.error('Error updating threshold:', error);
       loadAutoApprovalSettings();
     }
   };
@@ -261,7 +261,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to save requirement');
       }
     } catch (error) {
-      console.error('Error saving requirement:', error);
+      logger.error('Error saving requirement:', error);
       alert('Failed to save requirement');
     }
   };
@@ -286,7 +286,7 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
         alert(error.error || 'Failed to delete requirement');
       }
     } catch (error) {
-      console.error('Error deleting requirement:', error);
+      logger.error('Error deleting requirement:', error);
       alert('Failed to delete requirement');
     }
   };

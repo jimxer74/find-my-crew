@@ -82,7 +82,7 @@ export default function JourneysPage() {
       .order('name', { ascending: true });
 
     if (boatsError) {
-      console.error('Error loading boats:', boatsError);
+      logger.error('Error loading boats:', boatsError);
     } else {
       setBoats(boatsData || []);
     }
@@ -98,7 +98,7 @@ export default function JourneysPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading journeys:', error);
+        logger.error('Error loading journeys:', error);
       } else {
         // Transform data to flatten boat name
         const transformedData = (data || []).map((journey: any) => ({
@@ -196,7 +196,7 @@ export default function JourneysPage() {
         .eq('journey_id', deletingJourneyId);
 
       if (legsError) {
-        console.error('Error deleting legs:', legsError);
+        logger.error('Error deleting legs:', legsError);
         throw new Error('Failed to delete journey legs: ' + legsError.message);
       }
 
@@ -207,7 +207,7 @@ export default function JourneysPage() {
         .eq('id', deletingJourneyId);
 
       if (journeyError) {
-        console.error('Error deleting journey:', journeyError);
+        logger.error('Error deleting journey:', journeyError);
         throw new Error('Failed to delete journey: ' + journeyError.message);
       }
 
@@ -216,7 +216,7 @@ export default function JourneysPage() {
       setShowDeleteConfirm(false);
       setDeletingJourneyId(null);
     } catch (error: any) {
-      console.error('Error deleting journey:', error);
+      logger.error('Error deleting journey:', error);
       alert(error.message || 'Failed to delete journey');
     } finally {
       setIsDeleting(false);

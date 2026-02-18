@@ -87,7 +87,7 @@ export function NewBoatWizardStep1({
         });
       }
     } catch (error) {
-      console.error('Search error:', error);
+      logger.error('Search error:', error);
       setSearchError('Failed to search. You can proceed with manual entry.');
       onDataChange({
         ...data,

@@ -338,7 +338,7 @@ export function useNotifications(): UseNotificationsReturn {
         setUnreadCount((prev) => prev - 1);
       }
     } catch (err: any) {
-      console.error('[useNotifications] Error approving action:', err);
+      logger.error('[useNotifications] Error approving action:', err);
       setError(err.message);
     }*/
   }, [unreadCount]);

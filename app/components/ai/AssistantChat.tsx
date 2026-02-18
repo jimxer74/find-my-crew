@@ -1,5 +1,8 @@
+import { logger } from '@/app/lib/logger';
 'use client';
+import { logger } from '@/app/lib/logger';
 
+import { logger } from '@/app/lib/logger';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -193,7 +196,7 @@ function renderMessageWithLegLinks(
  * @returns Context aware suggestions for the assistant
  */
 function getContextAwareSuggestions(userRoles: string[] | null, sendMessage: (message: string) => void, t: any): React.ReactNode[] {
-  console.log("AssistantChat roles:", userRoles);
+  logger.debug("AssistantChat roles:", userRoles);
 
   if(!userRoles) {
     return [];
@@ -292,11 +295,11 @@ export function AssistantChat() {
       if (pendingLegStr) {
         try {
           const { legId, legName } = JSON.parse(pendingLegStr);
-          console.log('[AssistantChat] Found pending leg registration:', { legId, legName });
+          logger.info('[AssistantChat] Found pending leg registration:', { legId, legName });
 
           // If assistant is not open, open it first
           if (!isOpen) {
-            console.log('[AssistantChat] Opening assistant for pending registration');
+            logger.info('[AssistantChat] Opening assistant for pending registration');
             openAssistant();
             // The effect will re-run when isOpen changes to true
             return;
@@ -304,13 +307,13 @@ export function AssistantChat() {
 
           // Assistant is open, clear the flag and send the message
           localStorage.removeItem('pending_leg_registration_ready');
-          console.log('[AssistantChat] Sending registration message');
+          logger.info('[AssistantChat] Sending registration message');
           const registrationMessage = legName
             ? `I want to register for the sailing leg "${legName}". The leg ID is ${legId}.`
             : `I want to register for a sailing leg. The leg ID is ${legId}.`;
           sendMessage(registrationMessage);
         } catch (e) {
-          console.error('[AssistantChat] Failed to process pending leg registration:', e);
+          logger.error('[AssistantChat] Failed to process pending leg registration:', e);
           localStorage.removeItem('pending_leg_registration_ready');
         }
       }
@@ -706,7 +709,7 @@ export function AssistantChat() {
         legId={selectedLegId}
         onSuccess={() => {
           // Registration successful
-          console.log('Registration successful!');
+          logger.info('Registration successful!');
         }}
       />
     </div>

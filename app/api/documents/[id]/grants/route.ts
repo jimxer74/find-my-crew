@@ -51,7 +51,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[DocumentGrants] List query failed:', {
+      logger.error('[DocumentGrants] List query failed:', {
         error: error.message,
         code: error.code,
         documentId,
@@ -63,7 +63,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    console.log('[DocumentGrants] GET successful:', {
+    logger.info('[DocumentGrants] GET successful:', {
       documentId,
       grantsCount: grants?.length || 0,
       userId: user.id,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ grants: grants || [] });
     return NextResponse.json({ grants: grants || [] });
   } catch (error: unknown) {
-    console.error('[DocumentGrants] GET error:', error);
+    logger.error('[DocumentGrants] GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           { status: 409 }
         );
       }
-      console.error('[DocumentGrants] Insert failed:', insertError);
+      logger.error('[DocumentGrants] Insert failed:', insertError);
       return NextResponse.json(
         { error: 'Failed to create grant', details: insertError.message },
         { status: 500 }
@@ -229,7 +229,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ grant }, { status: 201 });
   } catch (error: unknown) {
-    console.error('[DocumentGrants] POST error:', error);
+    logger.error('[DocumentGrants] POST error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

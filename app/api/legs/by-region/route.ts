@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Error calling get_legs_in_viewport:', error);
+      logger.error('Error calling get_legs_in_viewport:', error);
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch legs'),
         { status: 500 }
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
       hasMore: offset + limit < transformedData.length,
     });
   } catch (error: any) {
-    console.error('Unexpected error in by-region API:', error);
+    logger.error('Unexpected error in by-region API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

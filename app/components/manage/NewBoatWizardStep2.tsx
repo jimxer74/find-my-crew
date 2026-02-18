@@ -156,7 +156,7 @@ export function NewBoatWizardStep2({
           });
 
         if (uploadErr) {
-          console.error('Upload error:', uploadErr);
+          logger.error('Upload error:', uploadErr);
           setUploadError(`Failed to upload ${file.name}`);
           continue;
         }

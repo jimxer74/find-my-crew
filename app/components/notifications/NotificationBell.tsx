@@ -15,13 +15,13 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { pendingActions, isOpen: isAssistantOpen, closeAssistant } = useAssistant();
 
-  console.log('[NotificationBell] 📊 Props received - pendingActionsCount:', pendingActionsCount);
-  console.log('[NotificationBell] 📊 pendingActions from context:', pendingActions);
-  console.log('[NotificationBell] 📊 pendingActions length:', pendingActions?.length);
+  logger.debug('[NotificationBell] 📊 Props received - pendingActionsCount:', pendingActionsCount);
+  logger.debug('[NotificationBell] 📊 pendingActions from context:', pendingActions);
+  logger.debug('[NotificationBell] 📊 pendingActions length:', pendingActions?.length);
 
   // Calculate pending actions count from context instead of props
   const pendingActionsCountFromContext = pendingActions?.length || 0;
-  console.log('[NotificationBell] 📊 Calculated pendingActionsCount from context:', pendingActionsCountFromContext);
+  logger.debug('[NotificationBell] 📊 Calculated pendingActionsCount from context:', pendingActionsCountFromContext);
 
   // Close notifications when route changes
   useEffect(() => {
@@ -52,12 +52,12 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
 
   // Calculate total badge count including unread notifications and pending actions
   const totalBadgeCount = unreadCount + pendingActionsCountFromContext;
-  console.log('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCountFromContext:', pendingActionsCountFromContext, '= total:', totalBadgeCount);
+  logger.debug('[NotificationBell] 📊 Badge calculation - unreadCount:', unreadCount, '+ pendingActionsCountFromContext:', pendingActionsCountFromContext, '= total:', totalBadgeCount);
 
   const handleToggle = useCallback(() => {
     // Close assistant dialog before toggling notifications
     if (isAssistantOpen && closeAssistant) {
-      console.log('[NotificationBell] 📊 Closing assistant dialog for notifications toggle');
+      logger.debug('[NotificationBell] 📊 Closing assistant dialog for notifications toggle');
       closeAssistant();
     }
     // Toggle panel on both mobile and desktop

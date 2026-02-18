@@ -126,7 +126,7 @@ export class HybridUseCaseClassifier implements UseCaseClassifier {
     /*
     const fastResult = this.classifyFast(message);
     if (fastResult.confidence >= this.confidenceThreshold) {
-      console.log(
+      logger.debug(
         `[AI Assistant] Fast classification: ${fastResult.intent} (score: ${fastResult.confidence})`
       );
       return {
@@ -139,7 +139,7 @@ export class HybridUseCaseClassifier implements UseCaseClassifier {
     }
 */
     // Phase 2: LLM Fallback
-    console.log(`[AI Assistant] Defaulting to LLM classification`);
+    logger.debug(`[AI Assistant] Defaulting to LLM classification`);
     return await this.classifyWithLLM(message);
   }
 
@@ -258,7 +258,7 @@ User message:
 
       return this.parseIntentResponse(response);
     } catch (error) {
-      console.error('[AI Assistant] LLM classification failed:', error);
+      logger.error('[AI Assistant] LLM classification failed:', error);
       return {
         intent: UseCaseIntent.CLARIFICATION_REQUEST,
         secondaryIntent: null,
@@ -295,7 +295,7 @@ User message:
 
       const intent = json.primary_intent as UseCaseIntent;
       if (!Object.values(UseCaseIntent).includes(intent)) {
-        console.warn('Invalid intent value:', intent);
+        logger.warn('Invalid intent value:', intent);
         return {
           intent: UseCaseIntent.CLARIFICATION_REQUEST,
           secondaryIntent: null,
@@ -320,7 +320,7 @@ User message:
       const errorInfo = err instanceof Error ? err.message : String(err);
       const responsePreview = response ? response.substring(0, 200) + (response.length > 200 ? '...' : '') : 'empty';
 
-      console.error('Failed to parse intent JSON:', {
+      logger.error('Failed to parse intent JSON:', {
         error: errorInfo,
         responsePreview,
         responseLength: response ? response.length : 0

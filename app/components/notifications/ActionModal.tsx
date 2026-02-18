@@ -26,17 +26,17 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
   };
 
   const handleInputSubmit = (value: string | string[]) => {
-    console.log('Input submitted for action:', notification.metadata?.action_id, 'value:', value);
+    logger.debug('Input submitted for action:', notification.metadata?.action_id, 'value:', value);
     // For now, we'll just approve the action with the input value
     // The actual input submission will be handled by the parent component
     if (notification.metadata?.action_id && typeof onApprove === 'function') {
       try {
         onApprove(notification.metadata.action_id);
       } catch (error) {
-        console.error('Error calling onApprove in ActionModal:', error);
+        logger.error('Error calling onApprove in ActionModal:', error);
       }
     } else {
-      console.warn('onApprove is not available or action_id is missing');
+      logger.warn('onApprove is not available or action_id is missing');
     }
     setShowInputModal(false);
   };
@@ -46,10 +46,10 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
       try {
         onApprove(notification.metadata.action_id);
       } catch (error) {
-        console.error('Error calling onApprove in ActionModal confirmation:', error);
+        logger.error('Error calling onApprove in ActionModal confirmation:', error);
       }
     } else {
-      console.warn('onApprove is not available or action_id is missing in confirmation');
+      logger.warn('onApprove is not available or action_id is missing in confirmation');
     }
     setShowConfirmationModal(false);
   };
@@ -125,10 +125,10 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
               try {
                 onApprove(actionId);
               } catch (error) {
-                console.error('Error calling onApprove in ActionModal inline:', error);
+                logger.error('Error calling onApprove in ActionModal inline:', error);
               }
             } else {
-              console.warn('onApprove is not available in ActionModal inline');
+              logger.warn('onApprove is not available in ActionModal inline');
             }
           }
         }}
@@ -137,10 +137,10 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
             try {
               onReject(actionId);
             } catch (error) {
-              console.error('Error calling onReject in ActionModal:', error);
+              logger.error('Error calling onReject in ActionModal:', error);
             }
           } else {
-            console.warn('onReject is not available in ActionModal');
+            logger.warn('onReject is not available in ActionModal');
           }
         }}
         onRedirectToProfile={(actionId, section, field) => {
@@ -148,10 +148,10 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
             try {
               onRedirectToProfile(actionId, section, field);
             } catch (error) {
-              console.error('Error calling onRedirectToProfile in ActionModal:', error);
+              logger.error('Error calling onRedirectToProfile in ActionModal:', error);
             }
           } else {
-            console.warn('onRedirectToProfile is not available in ActionModal');
+            logger.warn('onRedirectToProfile is not available in ActionModal');
           }
         }}
       />

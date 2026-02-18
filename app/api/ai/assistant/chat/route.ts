@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -8,7 +9,7 @@ import { canSendAIMessage } from '@/app/lib/limits';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[API Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Chat Route] ${message}`, data !== undefined ? data : '');
   }
 };
 
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in chat route:', error.message);
-    console.error('AI Assistant chat error:', error);
+    logger.error('AI Assistant chat error:', error);
 
     // Classify and handle specific errors with user-friendly messages
     const errorMessage = error.message || '';

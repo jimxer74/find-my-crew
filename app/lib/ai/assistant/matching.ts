@@ -10,7 +10,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Matching Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Matching Service] ${message}`, data !== undefined ? data : '');
   }
 };
 

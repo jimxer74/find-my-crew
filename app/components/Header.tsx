@@ -38,7 +38,7 @@ export function Header() {
     setIsFiltersDialogOpen(false);
     // Dispatch event to close other dialogs (filters, notifications, navigation)
     if (typeof window !== 'undefined') {
-      console.log('[Header] 📊 Dispatching closeAllDialogs event for route change');
+      logger.debug('[Header] 📊 Dispatching closeAllDialogs event for route change');
       window.dispatchEvent(new CustomEvent('closeAllDialogs'));
     }
   }, [pathname]);
@@ -94,7 +94,7 @@ export function Header() {
           setIsLoginModalOpen(false);
           setIsSignupModalOpen(false);
           setIsFiltersDialogOpen(false);
-          console.log('[Header] 📊 Dispatching closeAllDialogs event for link click');
+          logger.debug('[Header] 📊 Dispatching closeAllDialogs event for link click');
           window.dispatchEvent(new CustomEvent('closeAllDialogs'));
         }
       }
@@ -172,7 +172,7 @@ export function Header() {
                   onClick={() => {
                     // Close assistant dialog before toggling filters
                     if (isAssistantOpen && closeAssistant) {
-                      console.log('[Header] 📊 Closing assistant dialog for filters toggle');
+                      logger.debug('[Header] 📊 Closing assistant dialog for filters toggle');
                       closeAssistant();
                     }
                     // Toggle panel on both mobile and desktop
@@ -217,7 +217,7 @@ export function Header() {
                 onOpenLogin={() => {
                   // Close assistant dialog before opening login
                   if (isAssistantOpen && closeAssistant) {
-                    console.log('[Header] 📊 Closing assistant dialog for login');
+                    logger.debug('[Header] 📊 Closing assistant dialog for login');
                     closeAssistant();
                   }
                   // On mobile, navigate to login page; on desktop, open modal
@@ -230,7 +230,7 @@ export function Header() {
                 onOpenSignup={() => {
                   // Close assistant dialog before opening signup
                   if (isAssistantOpen && closeAssistant) {
-                    console.log('[Header] 📊 Closing assistant dialog for signup');
+                    logger.debug('[Header] 📊 Closing assistant dialog for signup');
                     closeAssistant();
                   }
                   // On mobile, navigate to signup page; on desktop, open modal

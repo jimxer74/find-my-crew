@@ -247,7 +247,7 @@ export async function searchMatchingCrew(
     const { data: profiles, error } = await query;
 
     if (error) {
-      console.error('[searchMatchingCrew] Database error:', error);
+      logger.error('[searchMatchingCrew] Database error:', error);
       throw error;
     }
 
@@ -298,7 +298,7 @@ export async function searchMatchingCrew(
       totalCount: filteredAndSorted.length,
     };
   } catch (error) {
-    console.error('[searchMatchingCrew] Error:', error);
+    logger.error('[searchMatchingCrew] Error:', error);
     throw error;
   }
 }

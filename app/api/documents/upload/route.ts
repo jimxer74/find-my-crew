@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      console.error('[DocumentUpload] Storage upload failed:', uploadError);
+      logger.error('[DocumentUpload] Storage upload failed:', uploadError);
       return NextResponse.json(
         { error: 'Failed to upload file', details: uploadError.message },
         { status: 500 }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       // Clean up uploaded file on DB insert failure
       await supabase.storage.from('secure-documents').remove([filePath]);
-      console.error('[DocumentUpload] DB insert failed:', insertError);
+      logger.error('[DocumentUpload] DB insert failed:', insertError);
       return NextResponse.json(
         { error: 'Failed to create document record', details: insertError.message },
         { status: 500 }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ document }, { status: 201 });
   } catch (error: unknown) {
-    console.error('[DocumentUpload] Unexpected error:', error);
+    logger.error('[DocumentUpload] Unexpected error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

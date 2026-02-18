@@ -149,7 +149,7 @@ export async function PUT(
       .single();
 
     if (updateError) {
-      console.error('Error updating answer:', updateError);
+      logger.error('Error updating answer:', updateError);
       return NextResponse.json(
         sanitizeErrorResponse(updateError, 'Failed to update answer'),
         { status: 500 }
@@ -162,7 +162,7 @@ export async function PUT(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in answer update API:', error);
+    logger.error('Unexpected error in answer update API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

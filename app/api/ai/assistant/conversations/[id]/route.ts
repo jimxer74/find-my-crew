@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       messages,
     });
   } catch (error: any) {
-    console.error('Get conversation error:', error);
+    logger.error('Get conversation error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to get conversation' },
       { status: 500 }
@@ -115,7 +116,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Delete conversation error:', error);
+    logger.error('Delete conversation error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to delete conversation' },
       { status: 500 }

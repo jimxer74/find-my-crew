@@ -38,7 +38,7 @@ export function LanguageSwitcher({ variant = 'dropdown', className = '', onClose
           .update({ language: newLocale })
           .eq('id', user.id);
       } catch (error) {
-        console.error('Failed to save language preference to profile:', error);
+        logger.error('Failed to save language preference to profile:', error);
       }
     }
 

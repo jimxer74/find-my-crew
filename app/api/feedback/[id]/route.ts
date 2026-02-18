@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(result.feedback);
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -110,7 +110,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(result.feedback);
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -149,7 +149,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
-    console.error('[Feedback API] Unexpected error:', error);
+    logger.error('[Feedback API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

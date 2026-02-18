@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
       hasLikes: facebookData.likes.length > 0,
     });
   } catch (error) {
-    console.error('Error fetching Facebook data:', error);
+    logger.error('Error fetching Facebook data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch Facebook data' },
       { status: 500 }

@@ -20,7 +20,7 @@ async function fetchProfile(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error fetching profile:', error);
+    logger.error('[RedirectContext] Error fetching profile:', error);
     return null;
   }
 
@@ -49,7 +49,7 @@ async function checkPendingOwnerSession(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking pending owner session:', error);
+    logger.error('[RedirectContext] Error checking pending owner session:', error);
     return false;
   }
 
@@ -72,7 +72,7 @@ async function checkPendingProspectSession(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking pending prospect session:', error);
+    logger.error('[RedirectContext] Error checking pending prospect session:', error);
     return false;
   }
 
@@ -95,7 +95,7 @@ async function checkOwnerProfileCompletionTriggered(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking owner profile completion:', error);
+    logger.error('[RedirectContext] Error checking owner profile completion:', error);
     return false;
   }
 
@@ -118,7 +118,7 @@ async function checkProspectProfileCompletionTriggered(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking prospect profile completion:', error);
+    logger.error('[RedirectContext] Error checking prospect profile completion:', error);
     return false;
   }
 
@@ -140,7 +140,7 @@ async function checkExistingOwnerConversation(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking existing owner conversation:', error);
+    logger.error('[RedirectContext] Error checking existing owner conversation:', error);
     return false;
   }
 
@@ -162,7 +162,7 @@ async function checkExistingProspectConversation(
     .maybeSingle();
 
   if (error) {
-    console.error('[RedirectContext] Error checking existing prospect conversation:', error);
+    logger.error('[RedirectContext] Error checking existing prospect conversation:', error);
     return false;
   }
 

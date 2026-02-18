@@ -77,7 +77,7 @@ export default function CreateJourneyPage() {
       .order('name', { ascending: true });
 
     if (boatsError) {
-      console.error('Failed to load boats:', boatsError);
+      logger.error('Failed to load boats:', boatsError);
       setError('Failed to load boats');
     } else {
       setBoats(data || []);
@@ -188,7 +188,7 @@ export default function CreateJourneyPage() {
 
       router.push('/owner/journeys');
     } catch (err: any) {
-      console.error('Failed to create journey:', err);
+      logger.error('Failed to create journey:', err);
       setError(err.message || 'Failed to create journey');
     } finally {
       setIsSubmitting(false);

@@ -48,7 +48,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq('id', grantId);
 
     if (updateError) {
-      console.error('[GrantRevoke] Update failed:', updateError);
+      logger.error('[GrantRevoke] Update failed:', updateError);
       return NextResponse.json(
         { error: 'Failed to revoke grant', details: updateError.message },
         { status: 500 }
@@ -68,7 +68,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: 'Grant revoked successfully' });
   } catch (error: unknown) {
-    console.error('[GrantRevoke] Unexpected error:', error);
+    logger.error('[GrantRevoke] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

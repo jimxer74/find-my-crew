@@ -46,7 +46,7 @@ const MAX_TOOL_ITERATIONS = 5;
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Prospect Chat Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Prospect Chat Service] ${message}`, data !== undefined ? data : '');
   }
 };
 

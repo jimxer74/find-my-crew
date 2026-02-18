@@ -91,13 +91,13 @@ export async function classifyDocument(
   for (const providerConfig of providers) {
     const apiKey = apiKeys[providerConfig.provider];
     if (!apiKey) {
-      console.log(`[document-classification] Skipping ${providerConfig.provider} - no API key`);
+      logger.debug(`[document-classification] Skipping ${providerConfig.provider} - no API key`);
       continue;
     }
 
     for (const model of providerConfig.models) {
       try {
-        console.log(`[document-classification] Trying ${providerConfig.provider}/${model}`);
+        logger.debug(`[document-classification] Trying ${providerConfig.provider}/${model}`);
 
         const finalTemperature = providerConfig.temperature ?? temperature;
         const finalMaxTokens = providerConfig.maxTokens ?? maxTokens;
@@ -112,11 +112,11 @@ export async function classifyDocument(
           finalMaxTokens,
         );
 
-        console.log(`[document-classification] Success with ${providerConfig.provider}/${model}`);
+        logger.debug(`[document-classification] Success with ${providerConfig.provider}/${model}`);
         return result;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        console.log(`[document-classification] Failed ${providerConfig.provider}/${model}: ${message}`);
+        logger.debug(`[document-classification] Failed ${providerConfig.provider}/${model}: ${message}`);
         errors.push({ provider: providerConfig.provider, model, error: message });
       }
     }

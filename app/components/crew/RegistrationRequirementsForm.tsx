@@ -91,13 +91,13 @@ export function RegistrationRequirementsForm({
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error checking AI consent:', error);
+        logger.error('Error checking AI consent:', error);
         setHasAIConsent(null);
       } else {
         setHasAIConsent(data?.ai_processing_consent === true);
       }
     } catch (err) {
-      console.error('Error checking AI consent:', err);
+      logger.error('Error checking AI consent:', err);
       setHasAIConsent(null);
     } finally {
       setCheckingConsent(false);
@@ -126,7 +126,7 @@ export function RegistrationRequirementsForm({
         setAnswers(initialAnswers);
       }
     } catch (error) {
-      console.error('Error loading requirements:', error);
+      logger.error('Error loading requirements:', error);
     } finally {
       setLoading(false);
     }

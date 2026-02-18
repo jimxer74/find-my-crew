@@ -76,7 +76,7 @@ export default function MyRegistrationsPage() {
           loadRegistrations();
         })
         .catch((error) => {
-          console.error('Error loading user profile:', error);
+          logger.error('Error loading user profile:', error);
           // Still load registrations even if profile load fails
           loadRegistrations();
         });
@@ -99,16 +99,16 @@ export default function MyRegistrationsPage() {
         const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
         const skills = normalizeSkillNames(profile.skills || []);
         
-        console.log('[MyRegistrations] Loaded user skills (canonical):', skills);
-        console.log('[MyRegistrations] User experience level:', profile.sailing_experience);
+        logger.debug('[MyRegistrations] Loaded user skills (canonical):', skills);
+        logger.debug('[MyRegistrations] User experience level:', profile.sailing_experience);
         
         setUserSkills(skills);
         setUserExperienceLevel(profile.sailing_experience);
       } else {
-        console.warn('[MyRegistrations] No profile found for user');
+        logger.warn('[MyRegistrations] No profile found for user');
       }
     } catch (error) {
-      console.error('Error loading user profile:', error);
+      logger.error('Error loading user profile:', error);
     }
   };
 
@@ -133,7 +133,7 @@ export default function MyRegistrationsPage() {
       const data = await response.json();
       setRegistrations(data.registrations || []);
     } catch (error: any) {
-      console.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error);
     } finally {
       setLoading(false);
     }
@@ -169,7 +169,7 @@ export default function MyRegistrationsPage() {
   }
 
   // Debug: Log current state
-  console.log('[MyRegistrations] Render state:', {
+  logger.debug('[MyRegistrations] Render state:', {
     userSkillsCount: userSkills.length,
     userSkills,
     registrationsCount: registrations.length,
@@ -219,7 +219,7 @@ export default function MyRegistrationsPage() {
               
               // Debug logging for first registration
               if (registration.registration_id === registrations[0]?.registration_id) {
-                console.log('[MyRegistrations] Calculating match for:', {
+                logger.debug('[MyRegistrations] Calculating match for:', {
                   legName: registration.leg_name,
                   userSkills,
                   legSkills,

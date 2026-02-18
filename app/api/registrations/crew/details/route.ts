@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (profileError) {
-      console.error('Error fetching user profile:', profileError);
+      logger.error('Error fetching user profile:', profileError);
       // Handle specific error codes
       if (profileError.code === 'PGRST116') {
         // Profile not found - user doesn't have a profile yet
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (regError) {
-      console.error('Error fetching registrations:', regError);
+      logger.error('Error fetching registrations:', regError);
       return NextResponse.json(
         sanitizeErrorResponse(regError, 'Failed to fetch registrations'),
         { status: 500 }
@@ -140,8 +140,8 @@ export async function GET(request: NextRequest) {
       .in('id', legIds);
 
     if (legsError) {
-      console.error('Error fetching leg details:', legsError);
-      console.error('Legs error details:', JSON.stringify(legsError, null, 2));
+      logger.error('Error fetching leg details:', legsError);
+      logger.error('Legs error details:', JSON.stringify(legsError, null, 2));
 
       // Handle specific error codes
       if (legsError.code === 'PGRST302') {
@@ -200,7 +200,7 @@ export async function GET(request: NextRequest) {
           waypointsByLeg[legId] = legWaypoints;
         }
       } catch (e) {
-        console.warn('Waypoints fetch failed for leg', legId, e);
+        logger.warn('Waypoints fetch failed for leg', legId, e);
       }
     }
 
@@ -319,7 +319,7 @@ export async function GET(request: NextRequest) {
         end_waypoint: transformWaypoint(endWaypoint),
       };
       } catch (err) {
-        console.warn('Transform failed for registration', reg?.id, err);
+        logger.warn('Transform failed for registration', reg?.id, err);
         return null;
       }
     }).filter(Boolean);
@@ -330,7 +330,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in crew registrations API:', error);
+    logger.error('Unexpected error in crew registrations API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

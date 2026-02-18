@@ -107,7 +107,7 @@ export function ImageUpload({
 
       onUpload(uploadedUrls);
     } catch (err: any) {
-      console.error('Upload error:', err);
+      logger.error('Upload error:', err);
       onError?.(err.message || 'Failed to upload images');
     } finally {
       setUploading(false);

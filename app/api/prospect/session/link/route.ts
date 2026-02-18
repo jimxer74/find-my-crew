@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (linkError) {
-      console.error('[Session Link API] Error linking session:', linkError);
+      logger.error('[Session Link API] Error linking session:', linkError);
       return NextResponse.json(
         { error: 'Failed to link session', details: linkError.message },
         { status: 500 }
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
 
       if (linkByEmailError) {
         // Log but don't fail - linking by email is optional
-        console.warn('[Session Link API] Warning linking sessions by email:', linkByEmailError);
+        logger.warn('[Session Link API] Warning linking sessions by email:', linkByEmailError);
       }
     }
 
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         .is('email', null);
 
       if (ensureEmailError) {
-        console.warn('[Session Link API] Warning ensuring current session email:', ensureEmailError);
+        logger.warn('[Session Link API] Warning ensuring current session email:', ensureEmailError);
       }
     }
 
@@ -88,15 +88,15 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id);
 
       if (stateError) {
-        console.warn('[Prospect Session Link API] Could not set onboarding_state:', stateError);
+        logger.warn('[Prospect Session Link API] Could not set onboarding_state:', stateError);
       } else {
-        console.log('[Prospect Session Link API] ✅ Set onboarding_state to consent_pending');
+        logger.info('[Prospect Session Link API] ✅ Set onboarding_state to consent_pending');
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Session Link API] Unexpected error:', error);
+    logger.error('[Session Link API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

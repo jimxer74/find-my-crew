@@ -63,7 +63,7 @@ export function LegRegistrationDialog({
           }
         })
         .catch((err) => {
-          console.error('Error fetching leg:', err);
+          logger.error('Error fetching leg:', err);
           setRegistrationError('Failed to load leg information');
         })
         .finally(() => {
@@ -104,7 +104,7 @@ export function LegRegistrationDialog({
       setRequirementsChecked(true);
       checkRequirements()
         .then((result) => {
-          console.log('[LegRegistrationDialog] Requirements check result:', {
+          logger.debug('[LegRegistrationDialog] Requirements check result:', {
             hasPassportRequirement: result.hasPassportRequirement,
             passportRequirement: result.passportRequirement,
             hasQuestionRequirements: result.hasQuestionRequirements,
@@ -114,26 +114,26 @@ export function LegRegistrationDialog({
 
           // If passport requirement exists and not yet completed, show passport step first
           if (result.hasPassportRequirement && !passportVerificationComplete) {
-            console.log('[LegRegistrationDialog] Showing passport step');
+            logger.debug('[LegRegistrationDialog] Showing passport step');
             setShowPassportStep(true);
             setShowRequirementsForm(false);
             setShowSimpleForm(false);
           } else if (result.hasQuestionRequirements) {
             // Otherwise show the requirements form only if there are question-type requirements
-            console.log('[LegRegistrationDialog] Showing requirements form');
+            logger.debug('[LegRegistrationDialog] Showing requirements form');
             setShowRequirementsForm(true);
             setShowSimpleForm(false);
             setShowPassportStep(false);
           } else {
             // No passport or question requirements, show simple form
-            console.log('[LegRegistrationDialog] Showing simple form');
+            logger.debug('[LegRegistrationDialog] Showing simple form');
             setShowRequirementsForm(false);
             setShowSimpleForm(true);
             setShowPassportStep(false);
           }
         })
         .catch((error) => {
-          console.error('[LegRegistrationDialog] Error checking requirements:', error);
+          logger.error('[LegRegistrationDialog] Error checking requirements:', error);
           setRegistrationError('Failed to load registration requirements');
           // Show simple form as fallback
           setShowSimpleForm(true);

@@ -36,7 +36,7 @@ export class PromptMigrationManager {
         results.push(result);
         this.migrations.push(result);
       } catch (error) {
-        console.error(`Migration failed for ${migration.prompt.id}:`, error);
+        logger.error(`Migration failed for ${migration.prompt.id}:`, error);
         const failedResult: MigrationRecord = {
           id: `${migration.prompt.id}_${Date.now()}`,
           fromLocation: migration.fromLocation,
@@ -178,7 +178,7 @@ ${validation.isValid ? 'All migrations completed successfully. Ready to use the 
   async rollbackMigration(migrationId: string): Promise<boolean> {
     // This would implement rollback logic for failed migrations
     // For now, it's a placeholder
-    console.log(`Rollback for migration ${migrationId} would be implemented here`);
+    logger.debug(`Rollback for migration ${migrationId} would be implemented here`);
     return true;
   }
 }

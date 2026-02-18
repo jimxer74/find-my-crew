@@ -29,7 +29,7 @@ export async function redirectAfterAuth(
     ? `${result.path}?${new URLSearchParams(result.queryParams).toString()}`
     : result.path;
 
-  console.log(`[RedirectService] ${result.reason} (priority ${result.priority}): ${url}`);
+  logger.debug(`[RedirectService] ${result.reason} (priority ${result.priority}): ${url}`);
   router.push(url);
   router.refresh();
 }

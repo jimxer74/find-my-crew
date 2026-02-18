@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       triggerProfileCompletion: false,
     });
   } catch (error: any) {
-    console.error('[after-consent] Error:', error);
+    logger.error('[after-consent] Error:', error);
     return NextResponse.json(
       { error: 'Internal server error', redirect: '/' },
       { status: 500 }

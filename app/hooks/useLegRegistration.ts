@@ -66,14 +66,14 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
             // No rows found - this is expected
             setRegistrationStatus(null);
           } else {
-            console.warn('Warning loading registration status:', error.code, error.message);
+            logger.warn('Warning loading registration status:', error.code, error.message);
             setRegistrationStatus(null);
           }
         } else {
           setRegistrationStatus(data?.status || null);
         }
       } catch (err) {
-        console.warn('Exception loading registration status:', err);
+        logger.warn('Exception loading registration status:', err);
         setRegistrationStatus(null);
       } finally {
         setRegistrationStatusChecked(true);
@@ -102,13 +102,13 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           .maybeSingle();
 
         if (error) {
-          console.warn('Error checking profile sharing consent:', error.code, error.message);
+          logger.warn('Error checking profile sharing consent:', error.code, error.message);
           setHasProfileSharingConsent(null);
         } else {
           setHasProfileSharingConsent(data?.profile_sharing_consent === true);
         }
       } catch (err) {
-        console.warn('Exception checking profile sharing consent:', err);
+        logger.warn('Exception checking profile sharing consent:', err);
         setHasProfileSharingConsent(null);
       } finally {
         setCheckingProfileConsent(false);
@@ -135,7 +135,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           reqs = data.requirements || [];
         }
       } catch (reqError: any) {
-        console.error('Error fetching requirements:', reqError);
+        logger.error('Error fetching requirements:', reqError);
         reqs = [];
       }
 
@@ -150,7 +150,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
           autoApprovalEnabled = autoApprovalData.auto_approval_enabled === true;
         }
       } catch (autoApprovalError: any) {
-        console.warn('Could not check auto-approval status:', autoApprovalError);
+        logger.warn('Could not check auto-approval status:', autoApprovalError);
       }
 
       const hasReqs = reqs.length > 0;
@@ -158,7 +158,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
       const passportReq = reqs.find((r: any) => r.requirement_type === 'passport');
       const hasPassportReq = !!passportReq;
 
-      console.log('[useLegRegistration] Requirements loaded:', {
+      logger.debug('[useLegRegistration] Requirements loaded:', {
         totalReqs: reqs.length,
         requirementTypes: reqs.map((r: any) => r.requirement_type),
         hasPassportReq,
@@ -189,7 +189,7 @@ export function useLegRegistration(leg: LegRegistrationData | null) {
         autoApprovalEnabled,
       };
     } catch (error) {
-      console.error('Error checking requirements:', error);
+      logger.error('Error checking requirements:', error);
       setHasRequirements(false);
       setHasQuestionRequirements(false);
       setHasPassportRequirement(false);

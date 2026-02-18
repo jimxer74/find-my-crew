@@ -125,7 +125,7 @@ export async function PATCH(
       .single();
 
     if (updateError) {
-      console.error('Error updating auto-approval settings:', updateError);
+      logger.error('Error updating auto-approval settings:', updateError);
       return NextResponse.json(
         { error: 'Failed to update auto-approval settings', details: updateError.message },
         { status: 500 }
@@ -138,7 +138,7 @@ export async function PATCH(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in auto-approval API:', error);
+    logger.error('Unexpected error in auto-approval API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -205,7 +205,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in auto-approval GET API:', error);
+    logger.error('Unexpected error in auto-approval GET API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

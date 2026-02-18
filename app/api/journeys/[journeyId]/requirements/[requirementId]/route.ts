@@ -156,7 +156,7 @@ export async function PUT(
       .single();
 
     if (updateError) {
-      console.error('Error updating requirement:', updateError);
+      logger.error('Error updating requirement:', updateError);
       return NextResponse.json(
         sanitizeErrorResponse(updateError, 'Failed to update requirement'),
         { status: 500 }
@@ -169,7 +169,7 @@ export async function PUT(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in requirement update API:', error);
+    logger.error('Unexpected error in requirement update API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
@@ -259,7 +259,7 @@ export async function DELETE(
       .eq('id', requirementId);
 
     if (deleteError) {
-      console.error('Error deleting requirement:', deleteError);
+      logger.error('Error deleting requirement:', deleteError);
       return NextResponse.json(
         sanitizeErrorResponse(deleteError, 'Failed to delete requirement'),
         { status: 500 }
@@ -271,7 +271,7 @@ export async function DELETE(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in requirement delete API:', error);
+    logger.error('Unexpected error in requirement delete API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

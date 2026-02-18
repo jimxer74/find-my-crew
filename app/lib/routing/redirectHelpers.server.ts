@@ -32,7 +32,7 @@ export async function getRedirectResponse(
     ? `${result.path}?${new URLSearchParams(result.queryParams).toString()}`
     : result.path;
 
-  console.log(`[RedirectService] ${result.reason} (priority ${result.priority}): ${url}`);
+  logger.debug(`[RedirectService] ${result.reason} (priority ${result.priority}): ${url}`);
   return NextResponse.redirect(new URL(url, request.url));
 }
 

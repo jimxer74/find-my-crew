@@ -34,7 +34,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ document });
   } catch (error: unknown) {
-    console.error('[Document] GET error:', error);
+    logger.error('[Document] GET error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -95,7 +95,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ document });
   } catch (error: unknown) {
-    console.error('[Document] PATCH error:', error);
+    logger.error('[Document] PATCH error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -132,7 +132,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .remove([document.file_path]);
 
     if (storageError) {
-      console.error('[Document] Storage delete failed:', storageError);
+      logger.error('[Document] Storage delete failed:', storageError);
       // Continue with DB delete even if storage fails — don't leave orphaned records
     }
 
@@ -143,7 +143,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq('id', id);
 
     if (deleteError) {
-      console.error('[Document] DB delete failed:', deleteError);
+      logger.error('[Document] DB delete failed:', deleteError);
       return NextResponse.json(
         { error: 'Failed to delete document', details: deleteError.message },
         { status: 500 }
@@ -164,7 +164,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: 'Document deleted successfully' });
   } catch (error: unknown) {
-    console.error('[Document] DELETE error:', error);
+    logger.error('[Document] DELETE error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error resending verification email:', error);
+    logger.error('Error resending verification email:', error);
     return NextResponse.json(
       {
         success: false,

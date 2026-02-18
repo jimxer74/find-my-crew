@@ -368,7 +368,7 @@ ${allWaypoints.length > 2
 
     return { success: true, data: generatedData as GenerateJourneyResult['data'] };
   } catch (error: any) {
-    console.error('[generateJourneyRoute] Error:', error);
+    logger.error('[generateJourneyRoute] Error:', error);
     return {
       success: false,
       error: error instanceof AIServiceError ? error.message : (error.message || 'Failed to generate journey'),

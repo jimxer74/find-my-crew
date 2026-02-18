@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('[Session Recover API] Error finding session:', error);
+      logger.error('[Session Recover API] Error finding session:', error);
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ session: prospectSession });
   } catch (error: any) {
-    console.error('[Session Recover API] Unexpected error:', error);
+    logger.error('[Session Recover API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

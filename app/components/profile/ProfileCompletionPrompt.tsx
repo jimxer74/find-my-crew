@@ -57,7 +57,7 @@ export function ProfileCompletionPrompt({
           .maybeSingle();
 
         if (ownerError || prospectError) {
-          console.warn('Error checking onboarding sessions:', ownerError || prospectError);
+          logger.warn('Error checking onboarding sessions:', ownerError || prospectError);
           setHasOnboardingSession(false);
           return;
         }
@@ -74,7 +74,7 @@ export function ProfileCompletionPrompt({
           }
         }
       } catch (error) {
-        console.warn('Error checking onboarding sessions:', error);
+        logger.warn('Error checking onboarding sessions:', error);
         setHasOnboardingSession(false);
       }
     };
@@ -95,9 +95,9 @@ export function ProfileCompletionPrompt({
     return null;
   }
 
-  console.log('[ProfileCompletionPrompt] onboardingSessionType', onboardingSessionType);
-  console.log('[ProfileCompletionPrompt] hasOnboardingSession', hasOnboardingSession);
-  console.log('[ProfileCompletionPrompt] completionPercentage', completionPercentage);
+  logger.debug('[ProfileCompletionPrompt] onboardingSessionType', onboardingSessionType);
+  logger.debug('[ProfileCompletionPrompt] hasOnboardingSession', hasOnboardingSession);
+  logger.debug('[ProfileCompletionPrompt] completionPercentage', completionPercentage);
 
 
   if (variant === 'banner') {

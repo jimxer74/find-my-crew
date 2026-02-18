@@ -113,7 +113,7 @@ export function ProfileCreationWizard() {
         setStep('review');
       }
     } catch (err: any) {
-      console.error('Error fetching Facebook data:', err);
+      logger.error('Error fetching Facebook data:', err);
       // Continue to review with manual entry
       setStep('review');
     }
@@ -171,7 +171,7 @@ export function ProfileCreationWizard() {
 
       setStep('review');
     } catch (err) {
-      console.error('Error generating profile suggestions:', err);
+      logger.error('Error generating profile suggestions:', err);
       // Continue without AI suggestions
       if (fbData.profile) {
         setFormData(prev => ({
@@ -284,7 +284,7 @@ export function ProfileCreationWizard() {
         }
       }, 2000);
     } catch (err: any) {
-      console.error('Error saving profile:', err);
+      logger.error('Error saving profile:', err);
       setError(err.message || 'Failed to save profile');
       setStep('review');
     }

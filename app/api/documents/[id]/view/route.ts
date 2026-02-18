@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('[DocumentView] Access attempt:', { documentId, userId: user.id });
+    logger.info('[DocumentView] Access attempt:', { documentId, userId: user.id });
 
     // Try to fetch as owner first (RLS will return null if not owner)
     const { data: ownedDoc } = await supabase
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     let documentOwnerId: string;
 
     if (isOwner) {
-      console.log('[DocumentView] Access granted - user is owner');
+      logger.info('[DocumentView] Access granted - user is owner');
       filePath = ownedDoc.file_path;
       fileName = ownedDoc.file_name || 'Document';
       fileType = ownedDoc.file_type || 'application/pdf';
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .limit(1)
         .single();
 
-      console.log('[DocumentView] Grant query result:', {
+      logger.info('[DocumentView] Grant query result:', {
         hasGrant: !!grant,
         error: grantError?.message,
         documentId,
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       });
 
       if (grantError || !grant) {
-        console.log('[DocumentView] Access denied - no active grant found');
+        logger.info('[DocumentView] Access denied - no active grant found');
         await logDocumentAccess(supabase, {
           documentId,
           documentOwnerId: user.id, // best effort
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       // Check view count limit
       if (grant.max_views !== null && grant.view_count >= grant.max_views) {
-        console.log('[DocumentView] Access denied - view limit exceeded');
+        logger.info('[DocumentView] Access denied - view limit exceeded');
         await logDocumentAccess(supabase, {
           documentId,
           documentOwnerId: grant.grantor_id,
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         .single();
 
       if (docError || !doc) {
-        console.error('[DocumentView] Failed to fetch document via service role:', docError);
+        logger.error('[DocumentView] Failed to fetch document via service role:', docError);
         return NextResponse.json({ error: 'Document not found' }, { status: 404 });
       }
 
@@ -117,7 +117,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       fileType = doc.file_type || 'application/pdf';
       documentOwnerId = doc.owner_id;
       
-      console.log('[DocumentView] Access granted via grant:', {
+      logger.info('[DocumentView] Access granted via grant:', {
         grantId: grant.id,
         documentOwnerId,
       });
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .createSignedUrl(filePath, SIGNED_URL_EXPIRY_SECONDS);
 
     if (signedUrlError || !signedUrlData?.signedUrl) {
-      console.error('[DocumentView] Failed to create signed URL:', signedUrlError);
+      logger.error('[DocumentView] Failed to create signed URL:', signedUrlError);
       return NextResponse.json(
         { error: 'Failed to generate viewing URL' },
         { status: 500 }
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       details: { is_owner: isOwner },
     });
 
-    console.log('[DocumentView] Signed URL generated successfully');
+    logger.info('[DocumentView] Signed URL generated successfully');
 
     return NextResponse.json({
       signedUrl: signedUrlData.signedUrl,
@@ -168,7 +168,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error: unknown) {
-    console.error('[DocumentView] Unexpected error:', error);
+    logger.error('[DocumentView] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

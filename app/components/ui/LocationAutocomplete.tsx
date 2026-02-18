@@ -208,7 +208,7 @@ export function LocationAutocomplete({
 
       const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
       if (!accessToken) {
-        console.warn('Mapbox access token not configured');
+        logger.warn('Mapbox access token not configured');
         // Still show cruising regions even without Mapbox
         setSuggestions(cruisingSuggestions);
         setShowSuggestions(cruisingSuggestions.length > 0);
@@ -256,7 +256,7 @@ export function LocationAutocomplete({
         setSuggestions(mergedSuggestions);
         setShowSuggestions(true);
       } catch (err) {
-        console.error('Error fetching location suggestions:', err);
+        logger.error('Error fetching location suggestions:', err);
         // Still show cruising regions on error
         setSuggestions(cruisingSuggestions);
         setShowSuggestions(cruisingSuggestions.length > 0);
@@ -293,7 +293,7 @@ export function LocationAutocomplete({
     // Handle Mapbox location selection
     const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     if (!accessToken) {
-      console.warn('Mapbox access token not configured');
+      logger.warn('Mapbox access token not configured');
       return;
     }
 
@@ -347,7 +347,7 @@ export function LocationAutocomplete({
         sessionTokenRef.current = null; // Reset session token
       }
     } catch (err) {
-      console.error('Error retrieving location details:', err);
+      logger.error('Error retrieving location details:', err);
     }
   };
 

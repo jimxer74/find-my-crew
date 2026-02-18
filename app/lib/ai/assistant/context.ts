@@ -11,7 +11,7 @@ import { UserContext } from './types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Context Builder] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Context Builder] ${message}`, data !== undefined ? data : '');
   }
 };
 

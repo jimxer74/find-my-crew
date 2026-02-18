@@ -118,7 +118,7 @@ export default function AllRegistrationsPage() {
     
     // Prevent duplicate simultaneous calls
     if (isLoadingRef.current) {
-      console.log('[Registrations] Skipping duplicate call - already loading');
+      logger.debug('[Registrations] Skipping duplicate call - already loading');
       return;
     }
     
@@ -127,7 +127,7 @@ export default function AllRegistrationsPage() {
     
     // Skip if this exact combination was already loaded (prevents duplicate calls from StrictMode/re-renders)
     if (prevKey === currentFilterKey && hasLoadedOnceRef.current) {
-      console.log('[Registrations] Filter key unchanged, skipping load');
+      logger.debug('[Registrations] Filter key unchanged, skipping load');
       return;
     }
     
@@ -136,7 +136,7 @@ export default function AllRegistrationsPage() {
       prevKey.split('-').slice(0, 5).join('-') !== currentFilterKey.split('-').slice(0, 5).join('-');
     
     if (filtersChanged && currentPage !== 1) {
-      console.log('[Registrations] Filters changed, resetting to page 1');
+      logger.debug('[Registrations] Filters changed, resetting to page 1');
       setCurrentPage(1);
       // Don't update prevFiltersRef yet - let the page change trigger this effect again
       return;
@@ -147,7 +147,7 @@ export default function AllRegistrationsPage() {
     hasLoadedOnceRef.current = true;
     
     // Load registrations
-    console.log('[Registrations] Loading registrations with filter key:', currentFilterKey);
+    logger.debug('[Registrations] Loading registrations with filter key:', currentFilterKey);
     loadRegistrations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, filterStatus, filterJourneyId, filterLegId, sortBy, sortOrder, currentPage]);
@@ -191,12 +191,12 @@ export default function AllRegistrationsPage() {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error loading journeys:', error);
+        logger.error('Error loading journeys:', error);
       } else {
         setJourneys(journeysData || []);
       }
     } catch (error) {
-      console.error('Error loading journeys:', error);
+      logger.error('Error loading journeys:', error);
     }
   };
 
@@ -212,12 +212,12 @@ export default function AllRegistrationsPage() {
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Error loading legs:', error);
+        logger.error('Error loading legs:', error);
       } else {
         setLegs(data || []);
       }
     } catch (error) {
-      console.error('Error loading legs:', error);
+      logger.error('Error loading legs:', error);
     }
   };
 
@@ -226,7 +226,7 @@ export default function AllRegistrationsPage() {
 
     // Prevent duplicate simultaneous calls
     if (isLoadingRef.current) {
-      console.log('[Registrations] loadRegistrations called but already loading, skipping');
+      logger.debug('[Registrations] loadRegistrations called but already loading, skipping');
       return;
     }
 
@@ -248,7 +248,7 @@ export default function AllRegistrationsPage() {
       params.append('offset', ((currentPage - 1) * itemsPerPage).toString());
 
       const url = `/api/registrations/owner/all?${params.toString()}`;
-      console.log('[Registrations] Fetching:', url);
+      logger.debug('[Registrations] Fetching:', url);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -259,9 +259,9 @@ export default function AllRegistrationsPage() {
       const data = await response.json();
       setRegistrations(data.registrations || []);
       setTotalCount(data.total || 0);
-      console.log('[Registrations] Loaded', data.registrations?.length || 0, 'registrations');
+      logger.debug('[Registrations] Loaded', data.registrations?.length || 0, 'registrations');
     } catch (error: any) {
-      console.error('Error loading registrations:', error);
+      logger.error('Error loading registrations:', error);
     } finally {
       setLoading(false);
       isLoadingRef.current = false;

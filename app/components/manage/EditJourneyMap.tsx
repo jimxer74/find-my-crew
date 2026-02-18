@@ -93,7 +93,7 @@ export function EditJourneyMap({
     const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     
     if (!accessToken) {
-      console.error('MAPBOX_ACCESS_TOKEN is not set. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file');
+      logger.error('MAPBOX_ACCESS_TOKEN is not set. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file');
       return;
     }  
   
@@ -243,7 +243,7 @@ export function EditJourneyMap({
           setLocationInfo({ lng, lat, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
         }
       } catch (error) {
-        console.error('Error fetching location name:', error);
+        logger.error('Error fetching location name:', error);
         setLocationInfo({ lng, lat, name: `${lat.toFixed(4)}, ${lng.toFixed(4)}` });
       } finally {
         setIsLoadingLocation(false);
@@ -812,7 +812,7 @@ export function EditJourneyMap({
 
   const handleStartNewLeg = (lng: number, lat: number, legId: string) => {
     if (!map.current) {
-      console.error('Map not available in handleStartNewLeg');
+      logger.error('Map not available in handleStartNewLeg');
       return;
     }
 
@@ -885,10 +885,10 @@ export function EditJourneyMap({
           startMarkerListenersRef.current.set(legId, handleClick);
         }
 
-        console.log('Replaced temporary marker with start marker at', currentLngLat);
+        logger.debug('Replaced temporary marker with start marker at', currentLngLat);
       }
     } else {
-      console.warn('No temporary marker found, creating new gray marker');
+      logger.warn('No temporary marker found, creating new gray marker');
       // If no temporary marker exists, create a new marker with custom label or "S"
       // Determine color and z-index based on selection
       const isSelected = selectedLegId === legId;
@@ -942,7 +942,7 @@ export function EditJourneyMap({
           startMarkerListenersRef.current.set(legId, handleClick);
         }
 
-        console.log('Created new gray marker at', lng, lat);
+        logger.debug('Created new gray marker at', lng, lat);
       }
     }
   };
@@ -996,7 +996,7 @@ export function EditJourneyMap({
                           const activeLegId = activeLeg?.legId;
                           
                           if (!activeLegId) {
-                            console.error('No active leg found to add waypoint to');
+                            logger.error('No active leg found to add waypoint to');
                             return;
                           }
                           
@@ -1031,7 +1031,7 @@ export function EditJourneyMap({
                           const activeLegId = activeLeg?.legId;
                           
                           if (!activeLegId) {
-                            console.error('No active leg found to end');
+                            logger.error('No active leg found to end');
                             return;
                           }
                           

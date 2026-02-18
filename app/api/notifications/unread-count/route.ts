@@ -27,7 +27,7 @@ export async function GET() {
 
     return NextResponse.json({ count });
   } catch (error: any) {
-    console.error('[Notifications API] Unexpected error:', error);
+    logger.error('[Notifications API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
       .eq('owner_id', user.id);
 
     if (boatsError) {
-      console.error('Error fetching owner boats:', boatsError);
+      logger.error('Error fetching owner boats:', boatsError);
       return NextResponse.json(
         { error: 'Failed to fetch boats', details: boatsError.message },
         { status: 500 }
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
     const { data: journeys, error: journeysError } = await journeysQuery;
 
     if (journeysError) {
-      console.error('Error fetching journeys:', journeysError);
+      logger.error('Error fetching journeys:', journeysError);
       return NextResponse.json(
         { error: 'Failed to fetch journeys', details: journeysError.message },
         { status: 500 }
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     const { data: ownerLegs, error: legsError } = await legsQuery;
 
     if (legsError) {
-      console.error('Error fetching legs:', legsError);
+      logger.error('Error fetching legs:', legsError);
       return NextResponse.json(
         { error: 'Failed to fetch legs', details: legsError.message },
         { status: 500 }
@@ -211,8 +211,8 @@ export async function GET(request: NextRequest) {
     const { data: registrations, error } = await query;
 
     if (error) {
-      console.error('Error fetching registrations:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
+      logger.error('Error fetching registrations:', error);
+      logger.error('Error details:', JSON.stringify(error, null, 2));
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch registrations'),
         { status: 500 }
@@ -322,7 +322,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in owner registrations API:', error);
+    logger.error('Unexpected error in owner registrations API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

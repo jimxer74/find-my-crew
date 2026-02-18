@@ -65,13 +65,13 @@ export function useProfile(): UseProfileReturn {
         .eq('id', userId);
 
       if (error) {
-        console.warn('Error checking user existence:', error);
+        logger.warn('Error checking user existence:', error);
         return false;
       }
 
       return !!(count && count > 0);
     } catch (err) {
-      console.warn('Error checking user existence:', err);
+      logger.warn('Error checking user existence:', err);
       return false;
     }
   }, []);
@@ -93,7 +93,7 @@ export function useProfile(): UseProfileReturn {
         }
         if (error.code === 'PGRST302') {
           // Not Acceptable - malformed request
-          console.warn('Profile fetch malformed request:', error);
+          logger.warn('Profile fetch malformed request:', error);
           return null;
         }
         throw error;
@@ -101,7 +101,7 @@ export function useProfile(): UseProfileReturn {
 
       return data as ProfileData;
     } catch (err) {
-      console.warn('Error fetching profile data:', err);
+      logger.warn('Error fetching profile data:', err);
       throw err;
     }
   }, []);

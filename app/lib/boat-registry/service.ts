@@ -167,7 +167,7 @@ export async function saveBoatRegistry(
       .single();
     
     if (error) {
-      console.error('Failed to update boat registry:', error);
+      logger.error('Failed to update boat registry:', error);
       throw error;
     }
     return data as BoatRegistryEntry;
@@ -183,7 +183,7 @@ export async function saveBoatRegistry(
       .single();
     
     if (error) {
-      console.error('Failed to insert boat registry:', error);
+      logger.error('Failed to insert boat registry:', error);
       throw error;
     }
     return data as BoatRegistryEntry;
@@ -237,9 +237,9 @@ export async function updateRegistryDescriptiveFields(
       .update(updateData)
       .eq('id', existing.id);
     
-    console.log(`✅ Updated descriptive fields in registry for: ${makeModel}`);
+    logger.debug(`✅ Updated descriptive fields in registry for: ${makeModel}`);
   } else {
-    console.warn(`⚠️ Cannot update registry - entry not found for: ${makeModel}`);
+    logger.warn(`⚠️ Cannot update registry - entry not found for: ${makeModel}`);
   }
 }
 

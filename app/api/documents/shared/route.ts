@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('[SharedDocuments] Query failed:', error);
+      logger.error('[SharedDocuments] Query failed:', error);
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ shared_documents: activeGrants });
   } catch (error: unknown) {
-    console.error('[SharedDocuments] Unexpected error:', error);
+    logger.error('[SharedDocuments] Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

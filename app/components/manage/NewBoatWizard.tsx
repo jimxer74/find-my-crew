@@ -1,5 +1,6 @@
 'use client';
 
+import { logger } from '@/app/lib/logger';
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { getCountryFlag } from '@/app/lib/country-flags';
@@ -92,8 +93,8 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
     try {
       // If a sailboat was selected, fetch details from sailboatdata.com
       if (step1Data.selectedSailboat && !step1Data.isManualEntry) {
-        console.log('=== Fetching boat details from sailboatdata.com ===');
-        console.log('Using slug:', step1Data.selectedSailboat.slug);
+        logger.debug('=== Fetching boat details from sailboatdata.com ===');
+        logger.debug('Using slug:', step1Data.selectedSailboat.slug);
 
         const hardDataResponse = await fetch('/api/sailboatdata/fetch-details', {
           method: 'POST',
@@ -107,11 +108,11 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         if (hardDataResponse.ok) {
           const hardDataResult = await hardDataResponse.json();
           const hardData = hardDataResult.boatDetails;
-          console.log('Hard data fetched:', hardData);
+          logger.debug('Hard data fetched:', hardData);
           
           // Use the canonical make_model from parsed HTML (more reliable than search query)
           const canonicalMakeModel = hardData.make_model || step1Data.selectedSailboat.name;
-          console.log('Canonical make_model for registry:', canonicalMakeModel);
+          logger.debug('Canonical make_model for registry:', canonicalMakeModel);
 
           // Merge hard data
           newStep2Data = {
@@ -132,7 +133,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
           };
 
           // Now call AI to fill reasoned fields
-          console.log('=== Calling AI to fill reasoned fields ===');
+          logger.debug('=== Calling AI to fill reasoned fields ===');
           try {
             const aiResponse = await fetch('/api/ai/fill-reasoned-details', {
               method: 'POST',
@@ -158,7 +159,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             if (aiResponse.ok) {
               const aiResult = await aiResponse.json();
               const reasonedData = aiResult.reasonedDetails || {};
-              console.log('AI reasoned data fetched:', reasonedData);
+              logger.debug('AI reasoned data fetched:', reasonedData);
 
               // Validate category
               const validCategories = [
@@ -204,29 +205,29 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
                   });
                   
                   if (registryResponse.ok) {
-                    console.log('✅ Updated boat registry with AI-generated descriptive fields');
+                    logger.debug('✅ Updated boat registry with AI-generated descriptive fields');
                   } else {
-                    console.warn('⚠️ Failed to update registry with AI fields');
+                    logger.warn('⚠️ Failed to update registry with AI fields');
                   }
                 } catch (registryError) {
                   // Non-fatal - registry update failure shouldn't block the wizard
-                  console.warn('⚠️ Failed to update registry with AI fields (non-fatal):', registryError);
+                  logger.warn('⚠️ Failed to update registry with AI fields (non-fatal):', registryError);
                 }
               }
             } else {
-              console.warn('AI reasoned details failed, continuing with hard data only');
+              logger.warn('AI reasoned details failed, continuing with hard data only');
             }
           } catch (aiError) {
-            console.warn('AI fill failed, continuing without AI data:', aiError);
+            logger.warn('AI fill failed, continuing without AI data:', aiError);
           }
         } else {
           const errorData = await hardDataResponse.json().catch(() => ({}));
-          console.warn('Failed to fetch sailboat details:', errorData.error);
+          logger.warn('Failed to fetch sailboat details:', errorData.error);
           // Continue without prefilled data - user can enter manually
         }
       }
     } catch (err) {
-      console.error('Error fetching boat details:', err);
+      logger.error('Error fetching boat details:', err);
       // Continue to step 2 even if fetch fails - user can enter manually
     } finally {
       setStep2Data(newStep2Data);
@@ -283,7 +284,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
       onSuccess();
       handleClose();
     } catch (err: any) {
-      console.error('Error saving boat:', err);
+      logger.error('Error saving boat:', err);
       setError(err.message || 'Failed to save boat');
     } finally {
       setIsSaving(false);

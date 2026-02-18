@@ -56,7 +56,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           .maybeSingle();
 
         if (error) {
-          console.error('Error checking consent setup:', JSON.stringify(error, null, 2));
+          logger.error('Error checking consent setup:', JSON.stringify(error, null, 2));
           // On error, show the consent setup modal to be safe
           setNeedsConsentSetup(true);
         } else if (!data) {
@@ -68,7 +68,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           setNeedsConsentSetup(!hasRequiredConsents);
         }
       } catch (err) {
-        console.error('Error checking consent setup:', err);
+        logger.error('Error checking consent setup:', err);
         // On error, show the consent setup modal to be safe
         setNeedsConsentSetup(true);
       } finally {

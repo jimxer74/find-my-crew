@@ -45,19 +45,19 @@ const FilterContext = createContext<FilterContextType>({
 });
 
 export function FilterProvider({ children }: { children: ReactNode }) {
-  console.log('[FilterProvider] COMPONENT_BODY START');
+  logger.debug('[FilterProvider] COMPONENT_BODY START');
   const { user, loading: authLoading } = useAuth();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [isInitialized, setIsInitialized] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
 
-  console.log('[FilterProvider] STATE_DECLARED', { isInitialized, userFromAuth: !!user, authLoading });
+  logger.debug('[FilterProvider] STATE_DECLARED', { isInitialized, userFromAuth: !!user, authLoading });
   logger.info('[FilterProvider] Rendering', { isInitialized });
 
   // Load filters from session storage on mount
   useEffect(() => {
-    console.log('[CRITICAL] FilterProvider mount effect EXECUTED');
-    console.log('[FALLBACK] FilterProvider mount effect running');
+    logger.debug('[CRITICAL] FilterProvider mount effect EXECUTED');
+    logger.debug('[FALLBACK] FilterProvider mount effect running');
     logger.info('[FilterProvider] Mount effect running', {});
     if (typeof window === 'undefined') {
       logger.info('[FilterProvider] SSR environment, skipping', {});
@@ -121,7 +121,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   // Load profile preferences as filter defaults when user logs in
   // This effect loads from profile on every initialization to ensure fresh data
   useEffect(() => {
-    console.log('[FALLBACK] FilterProvider profile load effect running', { isInitialized, userFromAuth: !!user, authLoading });
+    logger.debug('[FALLBACK] FilterProvider profile load effect running', { isInitialized, userFromAuth: !!user, authLoading });
     logger.info('[FilterProvider] Profile load effect running', { isInitialized, hasUser: !!user, authLoading });
     if (!isInitialized) {
       logger.info('[FilterProvider] Not initialized yet, skipping profile load', {});
@@ -143,9 +143,9 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
     const loadProfilePreferences = async () => {
       try {
-        console.log('[FALLBACK] loadProfilePreferences called');
+        logger.debug('[FALLBACK] loadProfilePreferences called');
         const supabase = getSupabaseBrowserClient();
-        console.log('[FALLBACK] User from AuthContext:', user.id);
+        logger.debug('[FALLBACK] User from AuthContext:', user.id);
         logger.info('[FilterContext] Loading profile preferences', { userId: user.id });
         if (!user) {
           logger.info('[FilterContext] No user found, skipping profile load', {});

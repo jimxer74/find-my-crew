@@ -34,7 +34,7 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
           setTimeout(() => setIsVisible(true), 2000);
         }
       } catch (error) {
-        console.error('Error fetching prompt status:', error);
+        logger.error('Error fetching prompt status:', error);
       }
     };
 
@@ -59,7 +59,7 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
 
       setIsVisible(false);
     } catch (error) {
-      console.error('Error dismissing prompt:', error);
+      logger.error('Error dismissing prompt:', error);
     } finally {
       setIsDismissing(false);
     }

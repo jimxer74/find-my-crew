@@ -1093,7 +1093,7 @@ export async function assessRegistrationWithAI(
         );
       }
     } catch (emailErr) {
-      console.error('[AI Assessment] Error sending review needed email:', emailErr);
+      logger.error('[AI Assessment] Error sending review needed email:', emailErr);
     }
   }
 }

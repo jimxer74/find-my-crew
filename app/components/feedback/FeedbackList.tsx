@@ -49,7 +49,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
       setTotal(data.total);
       setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Error fetching feedback:', error);
+      logger.error('Error fetching feedback:', error);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +80,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
         ));
       }
     } catch (error) {
-      console.error('Error voting:', error);
+      logger.error('Error voting:', error);
     }
   };
 

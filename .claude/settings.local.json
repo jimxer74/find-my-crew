@@ -76,7 +76,12 @@
       "Bash(xargs -I {} bash -c 'grep -q \"\"import.*sanitizeErrorResponse\"\" {} || echo \"\"{}\"\"')",
       "Bash(for func in \"bboxesOverlap\" \"hasBothRoles\" \"getUserRolesFromUser\" \"getLat\" \"getLng\")",
       "Bash(do echo \"=== $func ===\")",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "Bash(sort:*)",
+      "Bash(/tmp/bulk_migrate.sh:*)",
+      "Bash(__NEW_LINE_89da3581553c4ca7__ chmod +x /tmp/bulk_migrate.sh)",
+      "Bash(/tmp/comprehensive_migrate.py:*)",
+      "Bash(__NEW_LINE_913544756481a1b9__ python3 /tmp/comprehensive_migrate.py)"
     ]
   }
 }

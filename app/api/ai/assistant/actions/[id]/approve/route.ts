@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -7,7 +8,7 @@ import { executeAction } from '@/app/lib/ai/assistant';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[API Approve Action] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Approve Action] ${message}`, data !== undefined ? data : '');
   }
 };
 
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
   } catch (error: any) {
     log('ERROR:', error.message);
-    console.error('Approve action error:', error);
+    logger.error('Approve action error:', error);
     return NextResponse.json(
       { error: error.message || 'Failed to approve action' },
       { status: 500 }

@@ -21,7 +21,7 @@ import {
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Tool Executor] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Tool Executor] ${message}`, data !== undefined ? data : '');
   }
 };
 

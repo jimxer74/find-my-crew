@@ -100,7 +100,7 @@ export const logger = {
    */
   trace(message: string, context?: LogContext) {
     if (shouldLog('TRACE')) {
-      console.log(formatLog('TRACE', message, context));
+      logger.debug(formatLog('TRACE', message, context));
     }
   },
 
@@ -110,7 +110,7 @@ export const logger = {
    */
   debug(message: string, context?: LogContext, aiFlow: boolean = false) {
     if (shouldLog('DEBUG') || (aiFlow && isAIFlowVerbose())) {
-      console.log(formatLog('DEBUG', message, context));
+      logger.debug(formatLog('DEBUG', message, context));
     }
   },
 
@@ -120,7 +120,7 @@ export const logger = {
    */
   info(message: string, context?: LogContext) {
     if (shouldLog('INFO')) {
-      console.log(formatLog('INFO', message, context));
+      logger.debug(formatLog('INFO', message, context));
     }
   },
 
@@ -130,7 +130,7 @@ export const logger = {
    */
   warn(message: string, context?: LogContext) {
     if (shouldLog('WARN')) {
-      console.warn(formatLog('WARN', message, context));
+      logger.warn(formatLog('WARN', message, context));
     }
   },
 
@@ -140,7 +140,7 @@ export const logger = {
    */
   error(message: string, context?: LogContext) {
     if (shouldLog('ERROR')) {
-      console.error(formatLog('ERROR', message, context));
+      logger.error(formatLog('ERROR', message, context));
     }
   },
 

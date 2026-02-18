@@ -35,7 +35,7 @@ function CrewOnboardingContent() {
       await clearSession();
       router.push('/crew');
     } catch (e) {
-      console.error('Failed to navigate to journeys:', e);
+      logger.error('Failed to navigate to journeys:', e);
       setIsNavigatingToJourneys(false);
     }
   };

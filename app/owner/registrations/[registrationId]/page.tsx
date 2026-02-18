@@ -186,7 +186,7 @@ export default function RegistrationDetailsPage() {
       }
 
       const result = await response.json();
-      console.log('[Registration Page] Data loaded:', {
+      logger.debug('[Registration Page] Data loaded:', {
         hasPassportData: !!result.passportData,
         hasPassportDoc: !!result.passportDoc,
         passportData: result.passportData,

@@ -35,7 +35,7 @@ export default function BoatsPage() {
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false });
-    if (error) console.error('Error loading boats:', error);
+    if (error) logger.error('Error loading boats:', error);
     else setBoats(data || []);
     setLoading(false);
   }, [user?.id]);
@@ -62,7 +62,7 @@ export default function BoatsPage() {
             if (!cancelled) setHasOwnerRole(status.exists && status.roles.includes('owner'));
           })
           .catch((error) => {
-            console.error('Error checking profile:', error);
+            logger.error('Error checking profile:', error);
             if (!cancelled) setHasOwnerRole(false);
           }),
         loadBoats(),

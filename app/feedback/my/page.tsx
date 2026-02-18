@@ -37,7 +37,7 @@ export default function MyFeedbackPage() {
       setTotal(data.total);
       setHasMore(data.hasMore);
     } catch (error) {
-      console.error('Error fetching feedback:', error);
+      logger.error('Error fetching feedback:', error);
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +75,7 @@ export default function MyFeedbackPage() {
       setItems(items.filter(item => item.id !== feedbackId));
       setTotal(total - 1);
     } catch (error) {
-      console.error('Error deleting feedback:', error);
+      logger.error('Error deleting feedback:', error);
     }
   };
 

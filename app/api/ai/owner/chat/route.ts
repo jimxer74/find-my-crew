@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -9,7 +10,7 @@ import { getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[API Owner Chat Route] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API Owner Chat Route] ${message}`, data !== undefined ? data : '');
   }
 };
 
@@ -149,7 +150,7 @@ export async function POST(request: NextRequest) {
               .eq('session_id', body.sessionId);
             
             if (deleteErr) {
-              console.error('[API Owner Chat Route] Failed to delete completed session:', deleteErr);
+              logger.error('[API Owner Chat Route] Failed to delete completed session:', deleteErr);
             } else {
               log('✅ Onboarding completed - session deleted successfully');
             }
@@ -164,13 +165,13 @@ export async function POST(request: NextRequest) {
               .eq('session_id', body.sessionId);
             
             if (updateErr) {
-              console.error('[API Owner Chat Route] Failed to persist onboarding_state:', updateErr);
+              logger.error('[API Owner Chat Route] Failed to persist onboarding_state:', updateErr);
             } else {
               log('Persisted onboarding_state to', newState);
             }
           }
         } catch (e) {
-          console.error('[API Owner Chat Route] Error managing session state:', e);
+          logger.error('[API Owner Chat Route] Error managing session state:', e);
         }
       }
     }
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error: any) {
     log('ERROR in owner chat route:', error.message);
-    console.error('Owner chat error:', error);
+    logger.error('Owner chat error:', error);
 
     const errorMessage = error.message || '';
 

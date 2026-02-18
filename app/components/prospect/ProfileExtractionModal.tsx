@@ -132,7 +132,7 @@ export function ProfileExtractionModal({
       await onSuccess();
       onClose();
     } catch (err: any) {
-      console.error('Failed to save profile:', err);
+      logger.error('Failed to save profile:', err);
       setError(err.message || 'Failed to save profile. Please try again.');
       setIsSaving(false);
     }

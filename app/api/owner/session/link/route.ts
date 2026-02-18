@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
       .is('user_id', null); // Only update if user_id is null
 
     if (linkCurrentError) {
-      console.error('[Owner Session Link API] Error linking current session:', linkCurrentError);
+      logger.error('[Owner Session Link API] Error linking current session:', linkCurrentError);
     } else {
-      console.log('[Owner Session Link API] ✅ Linked current session to user:', user.id);
+      logger.info('[Owner Session Link API] ✅ Linked current session to user:', user.id);
     }
 
     // Ensure current session has email when available (even if already linked)
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         .is('email', null);
 
       if (ensureEmailError) {
-        console.error('[Owner Session Link API] Error ensuring current session email:', ensureEmailError);
+        logger.error('[Owner Session Link API] Error ensuring current session email:', ensureEmailError);
       }
     }
 
@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
         .is('user_id', null); // Only update if user_id is null
 
       if (linkEmailError) {
-        console.error('[Owner Session Link API] Error linking sessions by email:', linkEmailError);
+        logger.error('[Owner Session Link API] Error linking sessions by email:', linkEmailError);
       } else {
-        console.log('[Owner Session Link API] ✅ Linked sessions by email to user:', user.id);
+        logger.info('[Owner Session Link API] ✅ Linked sessions by email to user:', user.id);
       }
     }
 
@@ -94,15 +94,15 @@ export async function POST(request: NextRequest) {
         .eq('user_id', user.id);
 
       if (stateError) {
-        console.warn('[Owner Session Link API] Could not set onboarding_state:', stateError);
+        logger.warn('[Owner Session Link API] Could not set onboarding_state:', stateError);
       } else {
-        console.log('[Owner Session Link API] ✅ Set onboarding_state to consent_pending');
+        logger.info('[Owner Session Link API] ✅ Set onboarding_state to consent_pending');
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Owner Session Link API] Unexpected error:', error);
+    logger.error('[Owner Session Link API] Unexpected error:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }

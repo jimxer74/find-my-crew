@@ -103,7 +103,7 @@ export default function ProposeJourneyPage() {
       .order('name', { ascending: true });
 
     if (boatsError) {
-      console.error('Failed to load boats:', boatsError);
+      logger.error('Failed to load boats:', boatsError);
       setError('Failed to load boats');
     } else {
       setBoats(data || []);
@@ -225,7 +225,7 @@ export default function ProposeJourneyPage() {
         let riskLevelValue: string | null = null;
         const rawRiskLevel = generatedJourney.riskLevel;
         
-        console.log('[ProposeJourney] Raw riskLevel:', rawRiskLevel, 'Type:', typeof rawRiskLevel);
+        logger.debug('[ProposeJourney] Raw riskLevel:', rawRiskLevel, 'Type:', typeof rawRiskLevel);
         
         // Handle different formats
         if (typeof rawRiskLevel === 'string') {
@@ -252,7 +252,7 @@ export default function ProposeJourneyPage() {
                 riskLevelValue = parsed;
               }
             } catch (parseError) {
-              console.warn('[ProposeJourney] Failed to parse riskLevel JSON:', parseError, 'Value:', trimmed);
+              logger.warn('[ProposeJourney] Failed to parse riskLevel JSON:', parseError, 'Value:', trimmed);
               // Try to extract the value directly using regex (handles "["value"]" format)
               const match = trimmed.match(/\["([^"]+)"\]/);
               if (match && match[1]) {
@@ -277,9 +277,9 @@ export default function ProposeJourneyPage() {
           // Validate and set risk_level as SCALAR enum value (not an array!)
           if (validRiskLevels.includes(riskLevelValue)) {
             journeyInsertData.risk_level = riskLevelValue; // Scalar value, not array
-            console.log('[ProposeJourney] Set risk_level (scalar):', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
+            logger.debug('[ProposeJourney] Set risk_level (scalar):', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
           } else {
-            console.warn('[ProposeJourney] Invalid risk level value:', riskLevelValue, 'Valid values:', validRiskLevels);
+            logger.warn('[ProposeJourney] Invalid risk level value:', riskLevelValue, 'Valid values:', validRiskLevels);
           }
         }
       }
@@ -319,20 +319,20 @@ export default function ProposeJourneyPage() {
           }
           // If it's a plain string, validate it
           else if (!validRiskLevels.includes(strValue)) {
-            console.warn('[ProposeJourney] Invalid risk level string:', strValue);
+            logger.warn('[ProposeJourney] Invalid risk level string:', strValue);
             delete journeyInsertData.risk_level;
           }
         }
         // If it's not a string or array, remove it
         else {
-          console.warn('[ProposeJourney] risk_level is not a string or array:', journeyInsertData.risk_level);
+          logger.warn('[ProposeJourney] risk_level is not a string or array:', journeyInsertData.risk_level);
           delete journeyInsertData.risk_level;
         }
       }
       
       // Log final data before insert for debugging
-      console.log('[ProposeJourney] Final journeyInsertData.risk_level:', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
-      console.log('[ProposeJourney] Full journeyInsertData:', JSON.stringify(journeyInsertData, null, 2));
+      logger.debug('[ProposeJourney] Final journeyInsertData.risk_level:', journeyInsertData.risk_level, 'Type:', typeof journeyInsertData.risk_level);
+      logger.debug('[ProposeJourney] Full journeyInsertData:', JSON.stringify(journeyInsertData, null, 2));
 
       const { data: journeyData, error: journeyError } = await supabase
         .from('journeys')
@@ -393,7 +393,7 @@ export default function ProposeJourneyPage() {
       resetForm();
       router.push(`/owner/journeys/${journeyData.id}/legs`);
     } catch (err: any) {
-      console.error('Failed to save AI journey:', err);
+      logger.error('Failed to save AI journey:', err);
       setError(err.message || 'Failed to save journey');
     } finally {
       setLoading(false);

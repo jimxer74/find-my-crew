@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -8,7 +9,7 @@ import { parseJsonArrayFromAIResponse } from '@/app/lib/ai/shared';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[API generate-suggestions] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[API generate-suggestions] ${message}`, data !== undefined ? data : '');
   }
 };
 
@@ -222,7 +223,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     log('Error', error?.message);
-    console.error('[generate-suggestions]', error);
+    logger.error('[generate-suggestions]', error);
     
     // Return fallback suggestions on error
     return NextResponse.json({

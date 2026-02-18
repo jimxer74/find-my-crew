@@ -92,7 +92,7 @@ export async function GET(
     const { data: legs, error: legsError } = await legsQuery;
 
     if (legsError) {
-      console.error('Error fetching legs:', legsError);
+      logger.error('Error fetching legs:', legsError);
       return NextResponse.json(
         { error: 'Failed to fetch legs', details: legsError.message },
         { status: 500 }
@@ -141,7 +141,7 @@ export async function GET(
     const { data: registrations, error: regError } = await registrationsQuery;
 
     if (regError) {
-      console.error('Error fetching registrations:', regError);
+      logger.error('Error fetching registrations:', regError);
       return NextResponse.json(
         { error: 'Failed to fetch registrations', details: regError.message },
         { status: 500 }
@@ -260,7 +260,7 @@ export async function GET(
     });
 
   } catch (error: any) {
-    console.error('Unexpected error in journey registrations API:', error);
+    logger.error('Unexpected error in journey registrations API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

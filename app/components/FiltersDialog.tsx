@@ -308,7 +308,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
         });
       }
     } catch (err) {
-      console.error('Error loading data:', err);
+      logger.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }

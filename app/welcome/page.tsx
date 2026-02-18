@@ -62,7 +62,7 @@ export default function WelcomePage() {
         }
       }
     } catch (e) {
-      console.error('Failed to check session:', e);
+      logger.error('Failed to check session:', e);
     }
   }, []);
 
@@ -77,7 +77,7 @@ export default function WelcomePage() {
     try {
       await fetch('/api/prospect/session', { method: 'DELETE' });
     } catch (e) {
-      console.error('Failed to clear session cookie:', e);
+      logger.error('Failed to clear session cookie:', e);
     }
     // Reset state to show full welcome page
     setHasExistingSession(false);

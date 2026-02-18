@@ -92,7 +92,7 @@ export function sanitizeError(
       : new Error(typeof error === 'string' ? error : 'Unknown error');
 
   // Log full error server-side
-  console.error(`[Error${context ? ` in ${context}` : ''}]:`, {
+  logger.error(`[Error${context ? ` in ${context}` : ''}]:`, {
     message: errorObj.message,
     stack: errorObj.stack,
     name: errorObj.name,

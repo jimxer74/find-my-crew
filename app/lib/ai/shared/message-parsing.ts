@@ -47,7 +47,7 @@ export function extractSuggestedPrompts(content: string): { prompts: string[]; i
   
   // Debug logging (can be removed in production)
   if (process.env.NODE_ENV === 'development') {
-    console.log('[extractSuggestedPrompts] Found suggestions text:', suggestionsText.substring(0, 200));
+    logger.debug('[extractSuggestedPrompts] Found suggestions text:', suggestionsText.substring(0, 200));
   }
   
   let importantIndex: number | null = null;

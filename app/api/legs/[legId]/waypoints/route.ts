@@ -17,10 +17,10 @@ export async function GET(
     const resolvedParams = params instanceof Promise ? await params : params;
     const legId = resolvedParams.legId;
 
-    console.log('[Waypoints API] Received params:', { params, resolvedParams, legId });
+    logger.info('[Waypoints API] Received params:', { params, resolvedParams, legId });
 
     if (!legId) {
-      console.error('[Waypoints API] Leg ID is missing');
+      logger.error('[Waypoints API] Leg ID is missing');
       return NextResponse.json(
         { error: 'Leg ID is required' },
         { status: 400 }
@@ -35,7 +35,7 @@ export async function GET(
     });
 
     if (error) {
-      console.error('Error fetching waypoints:', error);
+      logger.error('Error fetching waypoints:', error);
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Failed to fetch waypoints'),
         { status: 500 }
@@ -57,7 +57,7 @@ export async function GET(
               coordinates = parsed.coordinates as [number, number];
             }
           } catch {
-            console.warn('Could not parse location:', waypoint.location);
+            logger.warn('Could not parse location:', waypoint.location);
           }
         }
       }
@@ -75,7 +75,7 @@ export async function GET(
       count: transformedWaypoints.length,
     });
   } catch (error: any) {
-    console.error('Unexpected error in waypoints API:', error);
+    logger.error('Unexpected error in waypoints API:', error);
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

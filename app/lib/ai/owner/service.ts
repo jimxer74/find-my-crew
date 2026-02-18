@@ -38,7 +38,7 @@ const MAX_TOOL_ITERATIONS = 10; // Increased to allow creating multiple legs for
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Owner Chat Service] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Owner Chat Service] ${message}`, data !== undefined ? data : '');
   }
 };
 

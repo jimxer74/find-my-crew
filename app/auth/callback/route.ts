@@ -1,3 +1,4 @@
+import { logger } from '@/app/lib/logger';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
     // if "next" is not a relative URL, use the default
     next = '/'
   }
-  console.log('LOGIN CALLBACK:', request);
+  logger.info('LOGIN CALLBACK:', request);
 
   if (code) {
     const cookieStore = await cookies();
@@ -40,7 +41,7 @@ export async function GET(request: Request) {
     const exchangeResult = await supabase.auth.exchangeCodeForSession(code);
 
     if (exchangeResult.error) {
-      console.error('LOGIN CALLBACK, error exchanging code for session:', exchangeResult.error);
+      logger.error('LOGIN CALLBACK, error exchanging code for session:', exchangeResult.error);
       return NextResponse.redirect(new URL('/', request.url));
     }
 
@@ -143,7 +144,7 @@ export async function GET(request: Request) {
             .from('profiles')
             .update(updates)
             .eq('id', user.id);
-          console.log('LOGIN CALLBACK, synced prospect preferences to profile:', updates);
+          logger.info('LOGIN CALLBACK, synced prospect preferences to profile:', updates);
         }
       }
 
@@ -161,7 +162,7 @@ export async function GET(request: Request) {
           maxAge: 300, // 5 minutes - short-lived for security
           path: '/',
         });
-        console.log('LOGIN CALLBACK, new Facebook user - redirecting to profile setup');
+        logger.info('LOGIN CALLBACK, new Facebook user - redirecting to profile setup');
         return response;
       }
 
@@ -178,7 +179,7 @@ export async function GET(request: Request) {
     }
   }
   let url = new URL(origin + '/', request.url)
-  console.log('LOGIN CALLBACK, user not found:', url);
+  logger.info('LOGIN CALLBACK, user not found:', url);
 
   // Default redirect to home if something goes wrong
   return NextResponse.redirect(url);

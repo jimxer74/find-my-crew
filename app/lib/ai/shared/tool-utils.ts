@@ -9,7 +9,7 @@
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[AI Tool Utils] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[AI Tool Utils] ${message}`, data !== undefined ? data : '');
   }
 };
 

@@ -11,7 +11,7 @@ import { AIPendingAction, ActionType } from './types';
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Action Executor] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Action Executor] ${message}`, data !== undefined ? data : '');
   }
 };
 

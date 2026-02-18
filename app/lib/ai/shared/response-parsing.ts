@@ -9,7 +9,7 @@
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
-    console.log(`[Response Parsing] ${message}`, data !== undefined ? data : '');
+    logger.debug(`[Response Parsing] ${message}`, data !== undefined ? data : '');
   }
 };
 

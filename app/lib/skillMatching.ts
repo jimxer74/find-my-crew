@@ -56,7 +56,7 @@ export function calculateMatchPercentage(
   
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
-    console.log('[calculateMatchPercentage]', {
+    logger.debug('[calculateMatchPercentage]', {
       userSkills: userSkills,
       legSkills: legSkills,
       normalizedUserSkills,
@@ -79,7 +79,7 @@ export function calculateMatchPercentage(
   
   // Debug logging
   if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
-    console.log('[calculateMatchPercentage] Result:', {
+    logger.debug('[calculateMatchPercentage] Result:', {
       matchingSkills,
       matchPercentage,
       userCount: normalizedUserSkills.length,
@@ -247,7 +247,7 @@ export function getMatchingAndMissingSkills(
   
   // Debug logging (only in development)
   if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
-    console.log('[getMatchingAndMissingSkills]', {
+    logger.debug('[getMatchingAndMissingSkills]', {
       userSkills,
       legSkills,
       normalizedUserSkills,
@@ -260,7 +260,7 @@ export function getMatchingAndMissingSkills(
   
   // Debug logging
   if (process.env.NODE_ENV === 'development' && normalizedUserSkills.length > 0 && normalizedLegSkills.length > 0) {
-    console.log('[getMatchingAndMissingSkills] Result:', {
+    logger.debug('[getMatchingAndMissingSkills] Result:', {
       matching,
       missing,
     });

@@ -46,13 +46,13 @@ export async function fetchProfile(accessToken: string): Promise<FacebookProfile
     const data = await response.json();
 
     if (isGraphAPIError(data)) {
-      console.error('Facebook Graph API error (profile):', data.error.message);
+      logger.error('Facebook Graph API error (profile):', data.error.message);
       return null;
     }
 
     return data as FacebookProfile;
   } catch (error) {
-    console.error('Error fetching Facebook profile:', error);
+    logger.error('Error fetching Facebook profile:', error);
     return null;
   }
 }
@@ -75,14 +75,14 @@ export async function fetchPosts(
 
     if (isGraphAPIError(data)) {
       // Permission errors are expected if user denied or app not reviewed
-      console.warn('Facebook Graph API error (posts):', data.error.message);
+      logger.warn('Facebook Graph API error (posts):', data.error.message);
       return [];
     }
 
     const paginatedData = data as FacebookPaginatedResponse<FacebookPost>;
     return paginatedData.data || [];
   } catch (error) {
-    console.error('Error fetching Facebook posts:', error);
+    logger.error('Error fetching Facebook posts:', error);
     return [];
   }
 }
@@ -105,14 +105,14 @@ export async function fetchLikes(
 
     if (isGraphAPIError(data)) {
       // Permission errors are expected if user denied or app not reviewed
-      console.warn('Facebook Graph API error (likes):', data.error.message);
+      logger.warn('Facebook Graph API error (likes):', data.error.message);
       return [];
     }
 
     const paginatedData = data as FacebookPaginatedResponse<FacebookLike>;
     return paginatedData.data || [];
   } catch (error) {
-    console.error('Error fetching Facebook likes:', error);
+    logger.error('Error fetching Facebook likes:', error);
     return [];
   }
 }
@@ -129,7 +129,7 @@ export async function fetchProfilePicture(accessToken: string): Promise<string |
     const data = await response.json();
 
     if (isGraphAPIError(data)) {
-      console.warn('Facebook Graph API error (picture):', data.error.message);
+      logger.warn('Facebook Graph API error (picture):', data.error.message);
       return null;
     }
 
@@ -139,7 +139,7 @@ export async function fetchProfilePicture(accessToken: string): Promise<string |
 
     return null;
   } catch (error) {
-    console.error('Error fetching Facebook profile picture:', error);
+    logger.error('Error fetching Facebook profile picture:', error);
     return null;
   }
 }

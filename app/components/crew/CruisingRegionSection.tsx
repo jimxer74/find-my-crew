@@ -102,7 +102,7 @@ export function CruisingRegionSection({
       const legsWithScores = user
         ? rawLegs.map((leg: any) => {
             if (process.env.NODE_ENV === 'development') {
-              console.log('[CruisingRegionSection] Calculating match for leg:', {
+              logger.debug('[CruisingRegionSection] Calculating match for leg:', {
                 leg_id: leg.leg_id || leg.id,
                 leg_name: leg.leg_name || leg.name,
                 leg_skills: leg.skills || [],
@@ -154,7 +154,7 @@ export function CruisingRegionSection({
 
       setLegs(legsWithScores);
     } catch (err) {
-      console.error('Error fetching legs for region:', region.name, err);
+      logger.error('Error fetching legs for region:', region.name, err);
       setError('Failed to load legs');
     } finally {
       setLoading(false);

@@ -239,7 +239,7 @@ export default function CrewHomePage() {
         } : null}
         onSuccess={() => {
           // Registration successful - could refresh data or show success message
-          console.log('Registration successful!');
+          logger.debug('Registration successful!');
         }}
       />
     </div>

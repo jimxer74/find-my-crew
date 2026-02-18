@@ -224,7 +224,7 @@ export function ProspectChat() {
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    console.log('[ProspectChat] Messages changed - total:', messages.length, 
+    logger.debug('[ProspectChat] Messages changed - total:', messages.length, 
       'user messages:', messages.filter(m => m.role === 'user').length,
       'assistant messages:', messages.filter(m => m.role === 'assistant').length,
       'all message IDs:', messages.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
@@ -235,7 +235,7 @@ export function ProspectChat() {
   useEffect(() => {
     const handleFallbackTrigger = () => {
       if (isAuthenticated && !hasExistingProfile) {
-        console.log('[ProspectChat] 🔄 Fallback triggered - opening profile extraction modal');
+        logger.debug('[ProspectChat] 🔄 Fallback triggered - opening profile extraction modal');
         setShowProfileExtractionModal(true);
       }
     };
@@ -252,7 +252,7 @@ export function ProspectChat() {
     const shouldShowWelcomeButton = messages.length === 0 && hasExistingProfile && isAuthenticated;
     const shouldShowBottomButton = hasExistingProfile && isAuthenticated;
     
-    console.log('[ProspectChat] 🔍 DEBUG - Button Visibility Check:', {
+    logger.debug('[ProspectChat] 🔍 DEBUG - Button Visibility Check:', {
       isAuthenticated,
       hasExistingProfile,
       messagesLength: messages.length,
@@ -326,7 +326,7 @@ export function ProspectChat() {
       await clearSession();
       router.push('/crew');
     } catch (e) {
-      console.error('Failed to clear session:', e);
+      logger.error('Failed to clear session:', e);
       setIsNavigatingToCrew(false);
     }
   };
@@ -461,7 +461,7 @@ export function ProspectChat() {
                 
                 // Debug logging
                 if (message.role === 'assistant' && isAuthenticated && !hasExistingProfile) {
-                  console.log('[ProspectChat] 🔍 Fallback badge check:', {
+                  logger.debug('[ProspectChat] 🔍 Fallback badge check:', {
                     messageId: message.id,
                     lastAssistantId: lastAssistantMessage?.id,
                     isLastMessage: isLastAssistantMessage,
@@ -751,7 +751,7 @@ export function ProspectChat() {
         legId={selectedLegId}
         onSuccess={() => {
           // Refresh or show success message
-          console.log('Registration successful!');
+          logger.debug('Registration successful!');
         }}
       />
 
@@ -762,7 +762,7 @@ export function ProspectChat() {
         messages={messages}
         onSuccess={async () => {
           // Profile saved successfully - clean up prospect session and redirect to profile
-          console.log('[ProspectChat] Profile saved via fallback - cleaning up session and redirecting');
+          logger.debug('[ProspectChat] Profile saved via fallback - cleaning up session and redirecting');
           await clearSession();
           setShowProfileExtractionModal(false);
           router.push('/profile');

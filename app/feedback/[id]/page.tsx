@@ -43,7 +43,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
         const data = await res.json();
         setFeedback(data);
       } catch (err) {
-        console.error('Error fetching feedback:', err);
+        logger.error('Error fetching feedback:', err);
         setError(t('fetchError'));
       } finally {
         setIsLoading(false);
@@ -70,7 +70,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
         setFeedback(updatedFeedback);
       }
     } catch (error) {
-      console.error('Error voting:', error);
+      logger.error('Error voting:', error);
     }
   };
 
@@ -86,7 +86,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
 
       router.push('/feedback/my');
     } catch (error) {
-      console.error('Error deleting feedback:', error);
+      logger.error('Error deleting feedback:', error);
     }
   };
 
