@@ -920,9 +920,30 @@ create index if not exists idx_notifications_user_unread on public.notifications
 create index if not exists idx_notifications_created_at on public.notifications(created_at desc);
 create index if not exists idx_notifications_user_created on public.notifications(user_id, created_at desc);
 
--- NOTE: RLS is DISABLED on notifications table.
--- Notifications are only created/accessed through authenticated API routes
--- which have their own authorization checks.
+-- Enable Row Level Security (migration 041)
+alter table public.notifications enable row level security;
+
+-- RLS Policies
+create policy "Users can read their own notifications"
+  on public.notifications
+  for select
+  using (auth.uid() = user_id);
+
+create policy "Users can update their own notifications"
+  on public.notifications
+  for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Service role can create notifications"
+  on public.notifications
+  for insert
+  with check (true);
+
+create policy "Service role can delete notifications"
+  on public.notifications
+  for delete
+  using (true);
 
 
 -- ============================================================================
