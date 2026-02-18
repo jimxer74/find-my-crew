@@ -105,7 +105,7 @@ export async function GET(
 
     if (regError || !registration) {
       logger.error('[RegistrationDetails] Error fetching registration', {
-        error: regError instanceof Error ? regError.message : String(regError)
+        hasError: !!regError
       });
       return NextResponse.json(
         { error: 'Registration not found' },
@@ -164,7 +164,7 @@ export async function GET(
 
     if (profileError) {
       logger.error('[RegistrationDetails] Error fetching crew profile', {
-        error: profileError instanceof Error ? profileError.message : String(profileError)
+        hasError: !!profileError
       });
     }
 
@@ -241,7 +241,7 @@ export async function GET(
 
       } catch (e) {
         logger.error('[RegistrationDetails] Error parsing skills', {
-          error: e instanceof Error ? e.message : String(e)
+          hasError: true
         });
       }
     }
@@ -300,7 +300,7 @@ export async function GET(
 
     if (reqError) {
       logger.error('[RegistrationDetails] Error fetching requirements', {
-        error: reqError instanceof Error ? reqError.message : String(reqError)
+        hasError: !!reqError
       });
     }
 
@@ -330,18 +330,18 @@ export async function GET(
 
     if (answersError) {
       logger.error('[RegistrationDetails] Error fetching answers', {
-        error: answersError instanceof Error ? answersError.message : String(answersError)
+        hasError: !!answersError
       });
     }
 
     logger.debug('[RegistrationDetails] Passport debug start', {
       registrationId,
-      answersError: answersError instanceof Error ? answersError.message : String(answersError),
+      hasError: !!answersError,
       totalAnswers: answersData?.length || 0
     });
     if (answersData && answersData.length > 0) {
-      logger.debug('[RegistrationDetails] Answers data', {
-        answers: answersData.length
+      logger.debug('[RegistrationDetails] Answers data retrieved', {
+        count: answersData.length
       });
     } else {
       logger.debug('[RegistrationDetails] No answers found for registration', {});
@@ -444,12 +444,12 @@ export async function GET(
             logger.debug('[RegistrationDetails] Passport document ID not found in vault', {});
           } else {
             logger.error('[RegistrationDetails] Error fetching passport document', {
-              error: docError?.message
+              hasError: !!docError
             });
           }
         } catch (docFetchError) {
           logger.error('[RegistrationDetails] Exception fetching passport document', {
-            error: docFetchError instanceof Error ? docFetchError.message : String(docFetchError)
+            hasError: true
           });
         }
       } else {
@@ -567,7 +567,7 @@ export async function GET(
 
   } catch (error: any) {
     logger.error('[RegistrationDetails] Unexpected error', {
-      error: error instanceof Error ? error.message : String(error)
+      hasError: true
     });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
