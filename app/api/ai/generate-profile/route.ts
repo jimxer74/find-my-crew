@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { callAI } from '@/app/lib/ai/service';
+import { logger } from '@/app/lib/logger';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 
@@ -90,14 +91,14 @@ function buildPrompt(facebookData: FacebookUserData): string {
 }
 
 function parseAIResponse(text: string): ProfileSuggestion {
-  console.log('API-GENERATE-PROFILE: AI response:', text.substring(0, 200));
+  logger.debug(`AI response received`, { responseLength: text.length }, true);
 
   // Use shared utility for JSON parsing
   let parsed: any;
   try {
     parsed = parseJsonObjectFromAIResponse(text);
   } catch (error: any) {
-    console.error('JSON parsing failed:', error);
+    logger.error(`JSON parsing failed`, { error: error instanceof Error ? error.message : String(error) });
     throw new Error(`JSON parsing failed: ${error.message}`);
   }
 
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    console.log('API-AI: Generating profile for user:', user?.id);
+    logger.aiFlow('ProfileGeneration', 'Generating profile for user', { userId: user?.id });
 
     // Check user's AI processing consent
     const { data: consents } = await supabase
@@ -227,8 +228,7 @@ export async function POST(request: NextRequest) {
       try {
         suggestion = parseAIResponse(aiResult.text);
       } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError);
-        console.error('Raw AI response:', aiResult.text);
+        logger.error(`Failed to parse AI response`, { error: parseError instanceof Error ? parseError.message : String(parseError), responseLength: aiResult.text.length });
 
         // Return a fallback suggestion based on basic Facebook data
         suggestion = createFallbackSuggestion(facebookData);
@@ -239,7 +239,7 @@ export async function POST(request: NextRequest) {
         suggestion.profileImageUrl = facebookData.profilePictureUrl;
       }
 
-      console.log('AI profile generation successful:', suggestion);
+      logger.aiFlow('ProfileGeneration', 'Profile generation successful', { username: suggestion.username, confidence: suggestion.confidence.overall });
       return NextResponse.json({
         success: true,
         suggestion,
@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
         aiModel: aiResult.model,
       });
     } catch (aiError) {
-      console.error('AI profile generation failed:', aiError);
+      logger.error(`AI profile generation failed`, { error: aiError instanceof Error ? aiError.message : String(aiError) });
 
       // Return a fallback suggestion based on basic Facebook data
       const fallbackSuggestion = createFallbackSuggestion(facebookData);
@@ -262,7 +262,7 @@ export async function POST(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('Error generating profile:', error);
+    logger.error(`Error generating profile`, { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
       { error: 'Failed to generate profile suggestions' },
       { status: 500 }

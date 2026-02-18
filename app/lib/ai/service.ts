@@ -19,6 +19,7 @@ import {
 } from './config';
 import { createRateLimiter, createUseCaseRateLimiter, GLOBAL_AI_RATE_LIMITER } from './rateLimit';
 import { promptRegistry } from './prompts';
+import { logger } from '@/app/lib/logger';
 
 export interface AICallOptions {
   useCase: UseCase;
@@ -346,7 +347,7 @@ async function callOpenRouter(
 
       // Add image if provided
       if (image) {
-        console.log(`[OpenRouter] Including image in request (${image.mimeType})`);
+        logger.debug(`Including image in request`, { mimeType: image.mimeType }, true);
         messageContent.push({
           type: 'image_url',
           image_url: {
@@ -456,7 +457,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
       const promptDefinition = promptRegistry.getPrompt(useCase, version);
       finalPrompt = await promptRegistry.executePrompt(useCase, context, version);
     } catch (error) {
-      console.warn(`Failed to get prompt from registry for ${useCase}: ${error}`);
+      logger.warn(`Failed to get prompt from registry for ${useCase}`, { error: String(error) });
       // Fall back to original prompt if provided, otherwise throw error
       if (!prompt) {
         throw new AIServiceError(`No prompt provided and registry lookup failed for use case: ${useCase}`);
@@ -500,7 +501,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
 
       // Skip if provider doesn't have API key
       if (!apiKey) {
-        console.log(`Skipping ${config.provider} - API key not configured`);
+        logger.debug(`Skipping provider - API key not configured`, { provider: config.provider }, true);
         continue;
       }
 
@@ -511,7 +512,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
         const finalTemperature = temperature ?? config.temperature ?? defaultTemp ?? 0.7;
         const finalMaxTokens = maxTokens ?? config.maxTokens ?? defaultMaxTokens ?? 1000;
 
-        console.log(`Trying ${config.provider}/${model} for use case: ${useCase}`);
+        logger.aiFlow('AIProvider', `Trying ${config.provider}/${model} for ${useCase}`, { provider: config.provider, model, useCase });
 
         const text = await callProvider(
           config.provider,
@@ -522,7 +523,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
           image
         );
 
-        console.log(`Success with ${config.provider}/${model}`);
+        logger.aiFlow('AIProvider', `Success with ${config.provider}/${model}`, { provider: config.provider, model });
         
         return {
           text,
@@ -534,7 +535,7 @@ export async function callAI(options: AICallOptions): Promise<AICallResult> {
           ? error.message 
           : error.message || 'Unknown error';
         
-        console.log(`Failed ${config.provider}/${model}: ${errorMessage}`);
+        logger.debug(`AI provider failed`, { provider: config.provider, model, error: errorMessage }, true);
         errors.push({
           provider: config.provider,
           model,
