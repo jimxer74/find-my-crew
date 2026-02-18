@@ -1941,7 +1941,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   isLoading={isCheckingRequirements || isRegistering}
                   disabled={checkingProfileConsent}
                   fullWidth
-                  loadingText="Registering..."
+                  loadingText="Checking requirements..."
                 >
                   {checkingProfileConsent ? 'Checking...' : 'Register for leg'}
                 </LoadingButton>
