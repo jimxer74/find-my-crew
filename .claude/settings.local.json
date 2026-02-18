@@ -95,7 +95,10 @@
       "Bash(__NEW_LINE_a5349ffb4d0b5334__ grep 'import.*logger.*from' /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/notifications/ActionModal.tsx)",
       "Bash(__NEW_LINE_055125793b13ad78__ grep 'import.*logger.*from.*@/app/lib/logger' /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/crew/LegDetailsPanel.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/manage/LegFormModal.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/notifications/NotificationCenter.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/crew/CrewBrowseMap.tsx)",
       "Bash(git reset:*)",
-      "mcp__backlog__get_task_creation_guide"
+      "mcp__backlog__get_task_creation_guide",
+      "Bash(git checkout:*)",
+      "Bash(git show:*)",
+      "Bash(npm --version:*)"
     ]
   }
 }
