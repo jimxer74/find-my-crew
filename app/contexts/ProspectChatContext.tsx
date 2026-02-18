@@ -21,6 +21,7 @@ import {
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import * as sessionService from '@/app/lib/prospect/sessionService';
+import { logger } from '@/app/lib/logger';
 
 const SESSION_EXPIRY_DAYS = 7; // Keep for reference, expiry handled server-side
 
@@ -33,7 +34,7 @@ async function fetchSessionFromCookie(): Promise<{ sessionId: string; isNewSessi
     if (!response.ok) return null;
     return response.json();
   } catch (e) {
-    console.error('Failed to fetch session from cookie:', e);
+    logger.error('Failed to fetch session from cookie', { error: e instanceof Error ? e.message : String(e) });
     return null;
   }
 }
@@ -45,7 +46,7 @@ async function clearSessionCookie(): Promise<void> {
   try {
     await fetch('/api/prospect/session', { method: 'DELETE' });
   } catch (e) {
-    console.error('Failed to clear session cookie:', e);
+    logger.error('Failed to clear session cookie', { error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -161,13 +162,13 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         const cookieSession = await fetchSessionFromCookie();
         
         if (!cookieSession) {
-          console.log('[ProspectChatContext] No session cookie found - starting fresh');
+          logger.debug('No session cookie found - starting fresh', {}, true);
           setIsInitialized(true);
           return;
         }
 
         const sessionId = cookieSession.sessionId;
-        console.log('[ProspectChatContext] Session ID from cookie:', sessionId, 'isNewSession:', cookieSession.isNewSession);
+        logger.debug('Session ID from cookie', { sessionId, isNewSession: cookieSession.isNewSession }, true);
 
         // Load session data from API
         let loadedSession: ProspectSession | null = null;
@@ -178,14 +179,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             if (loadedSession) {
               const userMessages = loadedSession.conversation.filter(m => m.role === 'user');
               const assistantMessages = loadedSession.conversation.filter(m => m.role === 'assistant');
-              console.log('[ProspectChatContext] Loaded session from API - total messages:', loadedSession.conversation.length,
-                'user messages:', userMessages.length,
-                'assistant messages:', assistantMessages.length);
+              logger.debug('Loaded session from API', {
+                totalMessages: loadedSession.conversation.length,
+                userMessages: userMessages.length,
+                assistantMessages: assistantMessages.length,
+              }, true);
               
               // CRITICAL: Clear skills from preferences if they exist - skills should ONLY come from conversation, not stored preferences
               // This prevents stale skills from previous sessions being reused
               if (loadedSession.gatheredPreferences?.skills) {
-                console.log('[ProspectChatContext] 🧹 Removing stale skills from loaded preferences:', loadedSession.gatheredPreferences.skills);
+                logger.debug('Removing stale skills from loaded preferences', { skills: loadedSession.gatheredPreferences.skills }, true);
                 const { skills, ...prefsWithoutSkills } = loadedSession.gatheredPreferences;
                 loadedSession.gatheredPreferences = prefsWithoutSkills;
                 // Save cleaned preferences back to API
@@ -199,7 +202,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                   const nameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
                   if (nameMatch?.[1]?.trim()) {
                     const extractedName = nameMatch[1].trim();
-                    console.log('[ProspectChatContext] Found PROSPECT_NAME in stored message:', extractedName);
+                    logger.debug('Found PROSPECT_NAME in stored message', { name: extractedName }, true);
                     // Update preferences with extracted name
                     loadedSession.gatheredPreferences = {
                       ...loadedSession.gatheredPreferences,
@@ -212,10 +215,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 }
               }
             } else {
-              console.log('[ProspectChatContext] No session found in database for session ID:', sessionId);
+              logger.debug('No session found in database', { sessionId }, true);
             }
           } catch (error) {
-            console.error('[ProspectChatContext] Error loading session from API:', error);
+            logger.error('Error loading session from API', { error: error instanceof Error ? error.message : String(error) });
             // Continue with empty session on error
           }
         }
@@ -248,7 +251,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             // Only set messages if state is empty (initial load)
             const shouldSetMessages = prev.messages.length === 0;
             if (!shouldSetMessages) {
-              console.log('[ProspectChatContext] ⚠️ Skipping message overwrite - messages already exist in state:', prev.messages.length);
+              logger.debug('Skipping message overwrite - messages already exist in state', { count: prev.messages.length }, true);
             }
             // Recalculate user message count after signup from loaded messages
             // Count user messages that were sent after authentication (profile completion mode)
@@ -259,7 +262,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               // The counter will continue incrementing from here
               const userMessagesInSession = sessionToUse.conversation.filter(m => m.role === 'user').length;
               loadedMessageCount = userMessagesInSession;
-              console.log('[ProspectChatContext] 📊 Recalculated user message count from session:', loadedMessageCount);
+              logger.debug('Recalculated user message count from session', { count: loadedMessageCount }, true);
             }
             
             return {
@@ -277,7 +280,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           setIsReturningUser(sessionToUse.conversation.length > 0);
         } else {
           // No session found - start fresh
-          console.log('[ProspectChatContext] Starting fresh session');
+          logger.debug('Starting fresh session', {}, true);
           setState((prev) => ({
             ...prev,
             sessionId,
@@ -304,7 +307,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 user.email || undefined,
                 { postSignupOnboarding: true }
               );
-              console.log('[ProspectChatContext] ✅ Fallback: linked prospect session to user:', user.id);
+              logger.debug('Fallback: linked prospect session to user', { userId: user.id }, true);
 
               // Update onboarding state to consent_pending after signup
               try {
@@ -313,19 +316,19 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                   ...prev,
                   onboardingState: 'consent_pending',
                 }));
-                console.log('[ProspectChatContext] ✅ Fallback: updated onboarding state to consent_pending');
+                logger.debug('Fallback: updated onboarding state to consent_pending', {}, true);
               } catch (stateError) {
-                console.error('[ProspectChatContext] Error updating onboarding state after fallback signup:', stateError);
+                logger.error('Error updating onboarding state after fallback signup', { error: stateError instanceof Error ? stateError.message : String(stateError) });
               }
             } catch (err) {
-              console.error('[ProspectChatContext] Fallback link failed:', err);
+              logger.error('Fallback link failed', { error: err instanceof Error ? err.message : String(err) });
             }
           }
         }
 
         setIsInitialized(true);
       } catch (error) {
-        console.error('[ProspectChatContext] Error initializing session:', error);
+        logger.error('Error initializing session', { error: error instanceof Error ? error.message : String(error) });
         setIsInitialized(true); // Still mark as initialized to prevent infinite loops
       }
     }
@@ -353,7 +356,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
             hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
           }));
-          console.log('Profile completion mode activated for user:', user.id, 'known profile:', knownProfile);
+          logger.debug('Profile completion mode activated', { userId: user.id, knownProfile }, true);
         }
       }
     }
@@ -373,7 +376,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     
     // Check initial auth state on mount - this runs immediately, not waiting for isInitialized
     async function checkAuthAndProfile() {
-      console.log('[ProspectChatContext] 🔍 Checking auth state on mount...');
+      logger.debug('Checking auth state on mount', {}, true);
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       
       if (authError) {
@@ -383,9 +386,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                                       authError.name === 'AuthSessionMissingError';
         
         if (isSessionMissingError) {
-          console.log('[ProspectChatContext] ℹ️ User is not authenticated (expected for prospect flow)');
+          logger.debug('User is not authenticated (expected for prospect flow)', {}, true);
         } else {
-          console.error('[ProspectChatContext] ❌ Auth check error:', authError);
+          logger.error('Auth check error', { error: authError instanceof Error ? authError.message : String(authError) });
         }
         
         setState((prev) => ({
@@ -400,19 +403,19 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
       if (user) {
         const knownProfile = extractKnownProfile(user);
-        console.log('[ProspectChatContext] 🔍 User found, checking profile...', { userId: user.id });
+        logger.debug('User found, checking profile', { userId: user.id }, true);
         
         // Use retry mechanism to wait for session to be fully established
         const queryProfileWithRetry = async (retryCount = 0): Promise<void> => {
           try {
-            console.log('[ProspectChatContext] 🔍 Initial check - Querying profiles table for user:', user.id, '(attempt', retryCount + 1, ')');
-            console.log('[ProspectChatContext] 🔍 Initial check - Supabase client exists:', !!supabase);
+            logger.debug('Initial check - Querying profiles table for user', { userId: user.id, attempt: retryCount + 1 }, true);
+            logger.debug('Initial check - Supabase client exists', { exists: !!supabase }, true);
             
             // First verify session is available
             const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !currentSession) {
               if (retryCount < 3) {
-                console.warn('[ProspectChatContext] ⚠️ Initial check - Session not ready yet, retrying in 500ms...');
+                logger.warn('Initial check - Session not ready yet, retrying in 500ms');
                 setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
                 // Set auth state but don't query profile yet
                 setState((prev) => ({
@@ -426,7 +429,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 }));
                 return;
               }
-              console.warn('[ProspectChatContext] ⚠️ Initial check - Session not ready after retries, setting auth state only');
+              logger.warn('Initial check - Session not ready after retries, setting auth state only');
               setState((prev) => ({
                 ...prev,
                 isAuthenticated: true,
@@ -446,39 +449,39 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               .eq('id', user.id)
               .maybeSingle();
             
-            console.log('[ProspectChatContext] 🔍 Initial check - Query promise created, awaiting...');
+            logger.debug('Initial check - Query promise created, awaiting', {}, true);
             
             const { data: profile, error: profileError } = await profileQuery;
             
             const queryDuration = Date.now() - queryStart;
-            console.log('[ProspectChatContext] 🔍 Initial check - Profile query completed in', queryDuration, 'ms');
-            console.log('[ProspectChatContext] 🔍 Initial check - Profile query result:', {
+            logger.debug('Initial check - Profile query completed', { durationMs: queryDuration }, true);
+            logger.debug('Initial check - Profile query result', {
               hasProfile: !!profile,
               profile,
-              error: profileError,
+              error: profileError?.message,
               queryDuration,
-            });
+            }, true);
 
             if (profileError) {
               // Check if it's a session/auth error
               const errorMsg = profileError.message?.toLowerCase() || '';
               if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
-                console.warn('[ProspectChatContext] ⚠️ Initial check - Auth session error, retrying in 500ms...');
+                logger.warn('Initial check - Auth session error, retrying in 500ms');
                 setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
                 return;
               }
               
-              console.error('[ProspectChatContext] ❌ Initial auth check - Profile query error:', {
+              logger.error('Initial auth check - Profile query error', {
                 userId: user.id,
-                error: profileError,
-                errorCode: profileError.code,
+                error: profileError?.message,
+                errorCode: profileError?.code,
                 errorMessage: profileError.message,
                 errorDetails: profileError,
               });
             }
 
             const hasProfile = !!profile;
-            console.log('[ProspectChatContext] 🔍 Initial check - Setting hasExistingProfile to:', hasProfile);
+            logger.debug('Initial check - Setting hasExistingProfile', { hasProfile }, true);
 
             setState((prev) => ({
               ...prev,
@@ -489,20 +492,20 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
               hasExistingProfile: hasProfile, // Simple check: profile exists or not
             }));
-            console.log('[ProspectChatContext] ✅ Initial auth check - User authenticated:', {
+            logger.debug('Initial auth check - User authenticated', {
               userId: user.id,
               profileExists: hasProfile,
               profileData: profile,
               profileError: profileError ? { code: profileError.code, message: profileError.message } : null,
               hasExistingProfile: hasProfile,
               isAuthenticated: true,
-            });
+            }, true);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const isSessionError = errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('auth');
             
             if (isSessionError && retryCount < 3) {
-              console.warn('[ProspectChatContext] ⚠️ Initial check - Session error caught, retrying in 500ms...');
+              logger.warn('Initial check - Session error caught, retrying in 500ms');
               setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
               // Set auth state but don't set profile - will retry
               setState((prev) => ({
@@ -515,11 +518,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 hasExistingProfile: false,
               }));
             } else {
-              console.error('[ProspectChatContext] ❌ Initial auth check - Exception during profile check:', error);
-              console.error('[ProspectChatContext] ❌ Initial auth check - Exception details:', {
+              logger.error('Initial auth check - Exception during profile check', { error: error instanceof Error ? error.message : String(error) });
+              logger.error('Initial auth check - Exception details', {
                 message: errorMessage,
                 stack: error instanceof Error ? error.stack : undefined,
-                error,
               });
               setState((prev) => ({
                 ...prev,
@@ -544,7 +546,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           userProfile: null,
           hasExistingProfile: false,
         }));
-        console.log('[ProspectChatContext] Initial auth check - no user');
+        logger.debug('Initial auth check - no user', {}, true);
       }
     }
 
@@ -552,10 +554,10 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     checkAuthAndProfile();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[ProspectChatContext] Auth state changed:', event, 'user:', session?.user?.id);
+      logger.debug('Auth state changed', { event, userId: session?.user?.id }, true);
       
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('[ProspectChatContext] 🔍 SIGNED_IN - Checking profile for user:', session.user.id);
+        logger.debug('SIGNED_IN - Checking profile for user', { userId: session.user.id }, true);
         // User just signed in - set authenticated, then check profile
         const knownProfile = extractKnownProfile(session.user);
         
@@ -570,7 +572,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               session.user.email || undefined,
               { postSignupOnboarding: isProfileCompletion }
             );
-            console.log('[ProspectChatContext] ✅ Linked prospect session to user:', session.user.id);
+            logger.debug('Linked prospect session to user', { userId: session.user.id }, true);
 
             // Update onboarding state to consent_pending after signup
             try {
@@ -579,12 +581,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 onboardingState: 'consent_pending',
               }));
-              console.log('[ProspectChatContext] ✅ Updated onboarding state to consent_pending');
+              logger.debug('Updated onboarding state to consent_pending', {}, true);
             } catch (stateError) {
-              console.error('[ProspectChatContext] Error updating onboarding state after signup:', stateError);
+              logger.error('Error updating onboarding state after signup', { error: stateError instanceof Error ? stateError.message : String(stateError) });
             }
           } catch (error) {
-            console.error('[ProspectChatContext] Error linking session to user:', error);
+            logger.error('Error linking session to user', { error: error instanceof Error ? error.message : String(error) });
             // Don't fail signup if linking fails - non-critical
           }
         }
@@ -603,77 +605,75 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         // Use a retry mechanism to wait for session to be fully established
         const queryProfileWithRetry = async (retryCount = 0): Promise<void> => {
           try {
-            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Verifying session before querying profile (attempt', retryCount + 1, ')...');
+            logger.debug('SIGNED_IN - Verifying session before querying profile', { attempt: retryCount + 1 }, true);
             
             // Verify session first
             const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !currentSession) {
               if (retryCount < 3) {
-                console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Session not ready, retrying in 500ms...');
+                logger.warn('SIGNED_IN - Session not ready, retrying in 500ms');
                 setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
                 return;
               }
-              console.error('[ProspectChatContext] ❌ SIGNED_IN - Session not available after retries:', sessionError);
+              logger.error('SIGNED_IN - Session not available after retries', { error: sessionError instanceof Error ? sessionError.message : String(sessionError) });
               return;
             }
             
-            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Session verified, querying profiles table for user:', session.user.id);
+            logger.debug('SIGNED_IN - Session verified, querying profiles table for user', { userId: session.user.id }, true);
             const { data: profile, error: profileError } = await supabase
               .from('profiles')
               .select('id')
               .eq('id', session.user.id)
               .maybeSingle();
             
-            console.log('[ProspectChatContext] ✅ SIGNED_IN - Profile query COMPLETED!');
-            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Profile query result:', {
+            logger.debug('SIGNED_IN - Profile query COMPLETED', {}, true);
+            logger.debug('SIGNED_IN - Profile query result', {
               hasProfile: !!profile,
               profile,
-              error: profileError,
+              error: profileError?.message,
               errorCode: profileError?.code,
-              errorMessage: profileError?.message,
-            });
+            }, true);
             
             if (profileError) {
               // Check if it's a session/auth error
               const errorMsg = profileError.message?.toLowerCase() || '';
               if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
-                console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Auth session error, retrying in 500ms...');
+                logger.warn('SIGNED_IN - Auth session error, retrying in 500ms');
                 setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
                 return;
               }
               
-              console.error('[ProspectChatContext] ❌ SIGNED_IN - Profile query error:', {
+              logger.error('SIGNED_IN - Profile query error', {
                 userId: session.user.id,
-                error: profileError,
-                errorCode: profileError.code,
+                error: profileError?.message,
+                errorCode: profileError?.code,
                 errorMessage: profileError.message,
               });
             }
             
             const hasProfile = !!profile;
-            console.log('[ProspectChatContext] 🔍 SIGNED_IN - Setting hasExistingProfile to:', hasProfile);
+            logger.debug('SIGNED_IN - Setting hasExistingProfile', { hasProfile }, true);
             
             setState((prev) => {
-              console.log('[ProspectChatContext] 🔍 SIGNED_IN - setState callback, prev.hasExistingProfile:', prev.hasExistingProfile);
+              logger.debug('SIGNED_IN - setState callback, prev.hasExistingProfile', { hasExistingProfile: prev.hasExistingProfile }, true);
               return {
                 ...prev,
                 hasExistingProfile: hasProfile,
               };
             });
             
-            console.log('[ProspectChatContext] ✅ SIGNED_IN - State updated, hasExistingProfile:', hasProfile);
+            logger.debug('SIGNED_IN - State updated, hasExistingProfile', { hasProfile }, true);
           } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             const isSessionError = errorMessage.toLowerCase().includes('session') || errorMessage.toLowerCase().includes('auth');
             
             if (isSessionError && retryCount < 3) {
-              console.warn('[ProspectChatContext] ⚠️ SIGNED_IN - Session error caught, retrying in 500ms...');
+              logger.warn('SIGNED_IN - Session error caught, retrying in 500ms');
               setTimeout(() => queryProfileWithRetry(retryCount + 1), 500);
             } else {
-              console.error('[ProspectChatContext] ❌ SIGNED_IN - Exception during profile check:', error);
-              console.error('[ProspectChatContext] ❌ SIGNED_IN - Error details:', {
+              logger.error('SIGNED_IN - Exception during profile check', { error: error instanceof Error ? error.message : String(error) });
+              logger.error('SIGNED_IN - Error details', {
                 message: errorMessage,
-                error,
               });
               setState((prev) => ({
                 ...prev,
@@ -694,7 +694,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           userProfile: null,
           hasExistingProfile: false,
         }));
-        console.log('[ProspectChatContext] User signed out');
+        logger.debug('User signed out', {}, true);
       }
     });
 
@@ -720,7 +720,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         try {
           session = await sessionService.loadSession(currentSessionId);
         } catch (error) {
-          console.error('[ProspectChat] Error loading session for profile completion:', error);
+          logger.error('Error loading session for profile completion', { error: error instanceof Error ? error.message : String(error) });
         }
       }
 
@@ -798,7 +798,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           isLoading: false,
         }));
       } catch (err: any) {
-        console.error('[ProspectChat] Trigger profile completion failed:', err);
+        logger.error('Trigger profile completion failed', { error: err instanceof Error ? err.message : String(err) });
         profileCompletionProcessed.current = false;
         setState((prev) => ({
           ...prev,
@@ -812,12 +812,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   }, [isInitialized, searchParams]);
 
   const sendMessage = useCallback(async (message: string) => {
-    console.log('[ProspectChatContext] sendMessage called with:', message);
+    logger.debug('sendMessage called with', { message: message.substring(0, 100) }, true);
     
     // Extract email from message if user shares it (for session recovery)
     const extractedEmail = sessionService.extractEmailFromMessage(message);
     if (extractedEmail) {
-      console.log('[ProspectChatContext] 📧 Extracted email from message:', extractedEmail);
+      logger.debug('Extracted email from message', { email: extractedEmail }, true);
       // Update session with email (will be saved via auto-save useEffect)
       setState((prev) => {
         if (prev.sessionId) {
@@ -845,7 +845,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       timestamp: new Date().toISOString(),
     };
 
-    console.log('[ProspectChatContext] Created user message:', userMessage);
+    logger.debug('Created user message', { role: userMessage.role }, true);
 
     // Increment user message counter after signup (for fallback strategy)
     // Only count if user is authenticated and in profile completion mode
@@ -856,7 +856,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         ...prev,
         userMessageCountAfterSignup: prev.userMessageCountAfterSignup + 1,
       }));
-      console.log('[ProspectChatContext] 📊 User message count after signup:', newMessageCount);
+      logger.debug('User message count after signup', { count: newMessageCount }, true);
     }
 
     // CRITICAL: Get current messages from state directly (not ref) to ensure we have all previous messages
@@ -865,13 +865,13 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     const currentMessages = state.messages.length > 0 ? state.messages : (stateRef.current?.messages || []);
     const updatedMessages = [...currentMessages, userMessage];
     
-    console.log('[ProspectChatContext] 📝 Preparing to send message - state messages:', state.messages.length,
-      'ref messages:', stateRef.current?.messages?.length || 0,
-      'current messages (used):', currentMessages.length,
-      'updated messages:', updatedMessages.length,
-      'user message ID:', userMessage.id,
-      'all message IDs before:', currentMessages.map(m => ({ id: m.id, role: m.role })),
-      'all message IDs after:', updatedMessages.map(m => ({ id: m.id, role: m.role })));
+    logger.debug('Preparing to send message', {
+      stateMessages: state.messages.length,
+      refMessages: stateRef.current?.messages?.length || 0,
+      currentMessages: currentMessages.length,
+      updatedMessages: updatedMessages.length,
+      userMessageId: userMessage.id,
+    }, true);
     
     // Update state with loading and user message
     setState((prev) => {
@@ -896,13 +896,14 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       // since we built it from the current state
       const finalConversationHistory = updatedMessages;
       
-      console.log('[ProspectChatContext] 📤 Sending to API - conversationHistory length:', finalConversationHistory.length,
-        'user messages:', finalConversationHistory.filter(m => m.role === 'user').length,
-        'assistant messages:', finalConversationHistory.filter(m => m.role === 'assistant').length,
-        'message IDs:', finalConversationHistory.map(m => ({ id: m.id, role: m.role, content: m.content.substring(0, 50) })));
+      logger.debug('Sending to API - conversation history', {
+        totalLength: finalConversationHistory.length,
+        userMessages: finalConversationHistory.filter(m => m.role === 'user').length,
+        assistantMessages: finalConversationHistory.filter(m => m.role === 'assistant').length,
+      }, true);
       
       if (finalConversationHistory.length === 0) {
-        console.error('[ProspectChatContext] ⚠️ WARNING: conversationHistory is empty! This should not happen.');
+        logger.error('WARNING: conversationHistory is empty! This should not happen', {});
         // Don't proceed if we have no messages - this indicates a serious state issue
         throw new Error('Cannot send message: conversation history is empty');
       }
@@ -950,7 +951,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             currentState.isAuthenticated && 
             currentState.consentGrantedForProfileCompletion && 
             !currentState.hasExistingProfile) {
-          console.log('[ProspectChatContext] 🔄 Auto-triggering fallback due to profile update error in message');
+          logger.debug('Auto-triggering fallback due to profile update error in message', {}, true);
           // Small delay to ensure message is displayed first
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('triggerProfileExtractionFallback'));
@@ -960,7 +961,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
 
       // Check if profile was successfully created - if so, clear all prospect data
       if (data.profileCreated === true) {
-        console.log('[ProspectChatContext] 🎉 Profile created successfully! Clearing all prospect data...');
+        logger.debug('Profile created successfully! Clearing all prospect data', {}, true);
         
         // Dispatch profileUpdated event to refresh profile state
         if (typeof window !== 'undefined') {
@@ -990,30 +991,30 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           }
         }
         
-        console.log('[ProspectChatContext] 📋 Collected leg references before clearing:', allPreviousLegRefs.length);
+        logger.debug('Collected leg references before clearing', { count: allPreviousLegRefs.length }, true);
         
         // Clear all prospect data: messages, preferences, viewed legs, session
         // Delete session from database
         if (currentState.sessionId) {
           try {
             await sessionService.deleteSession(currentState.sessionId);
-            console.log('[ProspectChatContext] ✅ Deleted session from database');
+            logger.debug('Deleted session from database', {}, true);
           } catch (error) {
-            console.error('[ProspectChatContext] Error deleting session:', error);
+            logger.error('Error deleting session', { error: error instanceof Error ? error.message : String(error) });
           }
         }
         await clearSessionCookie();
-        console.log('[ProspectChatContext] ✅ Cleared server session cookie');
+        logger.debug('Cleared server session cookie', {}, true);
 
         // Fetch a new session ID from server
         const newSession = await fetchSessionFromCookie();
-        console.log('[ProspectChatContext] ✅ Fetched new session ID:', newSession?.sessionId);
+        logger.debug('Fetched new session ID', { sessionId: newSession?.sessionId }, true);
 
         // Clear all prospect state but preserve authentication
         // Only show the congratulations message (no previous chat history)
         // CRITICAL: Clear preferences completely including skills to prevent stale data
         const clearedPreferences: ProspectPreferences = {};
-        console.log('[ProspectChatContext] 🧹 Cleared preferences (including skills):', clearedPreferences);
+        logger.debug('Cleared preferences (including skills)', { preferences: Object.keys(clearedPreferences || {}) }, true);
         
         // Attach collected leg references to the congratulations message metadata
         const congratulationsMessage = data.message ? {
@@ -1052,7 +1053,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         
         setState({ ...clearedState, userMessageCountAfterSignup: stateRef.current?.userMessageCountAfterSignup || 0 });
         setIsReturningUser(false);
-        console.log('[ProspectChatContext] ✅ All prospect data cleared (messages, preferences, skills, viewedLegs), profile creation complete. Showing congratulations message with', allPreviousLegRefs.length, 'leg references.');
+        logger.debug('All prospect data cleared, profile creation complete', { legReferences: allPreviousLegRefs.length }, true);
         return;
       }
 
@@ -1064,20 +1065,20 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       let extractedName: string | undefined;
       
       // First check the latest assistant message for PROSPECT_NAME tag
-      console.log('[ProspectChatContext] Checking for PROSPECT_NAME in assistant content:', assistantContent.substring(0, 200));
+      logger.debug('Checking for PROSPECT_NAME in assistant content', {}, true);
       const nameMatch = assistantContent.match(PROSPECT_NAME_TAG_REGEX);
       if (nameMatch?.[1]?.trim()) {
         extractedName = nameMatch[1].trim();
-        console.log('[ProspectChatContext] ✅ Extracted PROSPECT_NAME from latest assistant message:', extractedName);
+        logger.debug('Extracted PROSPECT_NAME from latest assistant message', { name: extractedName }, true);
       } else {
-        console.log('[ProspectChatContext] No PROSPECT_NAME tag found in latest message, checking previous messages...');
+        logger.debug('No PROSPECT_NAME tag found in latest message, checking previous messages', {}, true);
         // If not in latest message, check all previous assistant messages
         for (const msg of latestState.messages) {
           if (msg.role === 'assistant') {
             const prevNameMatch = msg.content.match(PROSPECT_NAME_TAG_REGEX);
             if (prevNameMatch?.[1]?.trim()) {
               extractedName = prevNameMatch[1].trim();
-              console.log('[ProspectChatContext] ✅ Found PROSPECT_NAME in previous assistant message:', extractedName, 'from message:', msg.content.substring(0, 100));
+              logger.debug('Found PROSPECT_NAME in previous assistant message', { name: extractedName }, true);
               break;
             }
           }
@@ -1086,7 +1087,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         // Also check user messages for name patterns (fallback if AI didn't tag it)
         // Look for patterns like "Name: ...", "My name is ...", "I'm ...", etc.
         if (!extractedName) {
-          console.log('[ProspectChatContext] Checking user messages for name patterns...');
+          logger.debug('Checking user messages for name patterns', {}, true);
           const namePatterns = [
             /(?:^|\s)(?:name|i'm|i am|call me|it's|it is)[\s:]+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)+)/i,
             /(?:^|\s)(?:name|i'm|i am|call me|it's|it is)[\s:]+([A-Z][a-zA-Z]+)/i,
@@ -1099,7 +1100,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
               const match = msg.content.match(pattern);
               if (match?.[1]?.trim() && match[1].trim().length > 2) {
                 extractedName = match[1].trim();
-                console.log('[ProspectChatContext] ✅ Extracted name from user message pattern:', extractedName, 'from:', msg.content.substring(0, 100));
+                logger.debug('Extracted name from user message pattern', { name: extractedName }, true);
                 break;
               }
             }
@@ -1108,7 +1109,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         }
         
         if (!extractedName) {
-          console.log('[ProspectChatContext] ❌ No name found in any messages');
+          logger.debug('No name found in any messages', {}, true);
         }
       }
       
@@ -1142,7 +1143,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         const hasUserMessage = messagesWithUser.some(m => m.id === userMessage.id);
         
         if (!hasUserMessage) {
-          console.warn('[ProspectChatContext] ⚠️ User message missing from state, adding it:', userMessage.id);
+          logger.warn('User message missing from state, adding it', { messageId: userMessage.id });
           messagesWithUser = [...messagesWithUser, userMessage];
         }
         
@@ -1152,12 +1153,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           ? messagesWithUser 
           : [...messagesWithUser, messageToStore];
         
-        console.log('[ProspectChatContext] ✅ Final messages array length:', finalMessages.length, 
-          'user messages:', finalMessages.filter(m => m.role === 'user').length,
-          'assistant messages:', finalMessages.filter(m => m.role === 'assistant').length,
-          'has user message:', finalMessages.some(m => m.id === userMessage.id),
-          'user message IDs:', finalMessages.filter(m => m.role === 'user').map(m => m.id),
-          'all message IDs:', finalMessages.map(m => ({ id: m.id, role: m.role })));
+        logger.debug('Final messages array', {
+          totalLength: finalMessages.length,
+          userMessages: finalMessages.filter(m => m.role === 'user').length,
+          assistantMessages: finalMessages.filter(m => m.role === 'assistant').length,
+          hasUserMessage: finalMessages.some(m => m.id === userMessage.id),
+        }, true);
         
         // Update the ref to keep it in sync
         if (stateRef.current) {
@@ -1173,8 +1174,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         
         // Log when fullName is set/updated
         if (preferencesUpdate.fullName) {
-          console.log('[ProspectChatContext] Updated preferences with fullName:', preferencesUpdate.fullName);
-          console.log('[ProspectChatContext] Full preferences object:', updatedPreferences);
+          logger.debug('Updated preferences with fullName', { fullName: preferencesUpdate.fullName }, true);
+          logger.debug('Full preferences object', { keys: Object.keys(updatedPreferences || {}) }, true);
         }
         
         return {
@@ -1186,7 +1187,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         };
       });
     } catch (error: any) {
-      console.error('Prospect chat error:', error);
+      logger.error('Prospect chat error', { error: error instanceof Error ? error.message : String(error) });
       const errorMessage = error.message || 'Something went wrong. Please try again.';
       const errorType = (error as any).errorType || 'unknown_error';
       
@@ -1217,7 +1218,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
          errorMessage.toLowerCase().includes('invalid input syntax'));
       
       if (shouldTriggerFallback) {
-        console.log('[ProspectChatContext] 🔄 Auto-triggering fallback profile extraction due to error:', errorType, errorMessage);
+        logger.debug('Auto-triggering fallback profile extraction due to error', { errorType, errorMessage }, true);
         // Small delay to ensure error message is displayed first
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('triggerProfileExtractionFallback'));
@@ -1230,21 +1231,23 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   // Auto-save session to API (debounced)
   useEffect(() => {
     if (!state.sessionId) {
-      console.log('[ProspectChatContext] ⏭️ Skipping save - no sessionId');
+      logger.debug('Skipping save - no sessionId', {}, true);
       return;
     }
 
     const userMessages = state.messages.filter(m => m.role === 'user');
     const assistantMessages = state.messages.filter(m => m.role === 'assistant');
-    console.log('[ProspectChatContext] Auto-saving session - total messages:', state.messages.length,
-      'user messages:', userMessages.length,
-      'assistant messages:', assistantMessages.length,
-      'sessionId:', state.sessionId);
+    logger.debug('Auto-saving session', {
+      totalMessages: state.messages.length,
+      userMessages: userMessages.length,
+      assistantMessages: assistantMessages.length,
+      sessionId: state.sessionId,
+    }, true);
     
     // CRITICAL: Don't save if we just cleared everything (empty messages and empty preferences)
     // This prevents overwriting the cleared state after profile creation
     if (state.messages.length === 0 && Object.keys(state.preferences).length === 0) {
-      console.log('[ProspectChatContext] ⏭️ Skipping save - state is cleared (likely after profile creation)');
+      logger.debug('Skipping save - state is cleared (likely after profile creation)', {}, true);
       return;
     }
     
@@ -1258,7 +1261,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         });
         
         if (!cookieResponse.ok) {
-          console.warn('[ProspectChatContext] ⚠️ Failed to get session ID from cookie, skipping save');
+          logger.warn('Failed to get session ID from cookie, skipping save');
           return;
         }
         
@@ -1266,16 +1269,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         const currentSessionId = cookieData.sessionId;
         
         if (!currentSessionId) {
-          console.warn('[ProspectChatContext] ⚠️ No session ID from cookie, skipping save');
+          logger.warn('No session ID from cookie, skipping save');
           return;
         }
         
         // Sync state.sessionId if it changed (cookie might have been refreshed)
         if (currentSessionId !== state.sessionId) {
-          console.log('[ProspectChatContext] 🔄 Session ID changed, updating state:', {
+          logger.debug('Session ID changed, updating state', {
             old: state.sessionId,
             new: currentSessionId,
-          });
+          }, true);
           setState((prev) => ({ ...prev, sessionId: currentSessionId }));
         }
         
@@ -1289,14 +1292,16 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           viewedLegs: state.viewedLegs,
         };
         
-        console.log('[ProspectChatContext] 💾 Saving session with sessionId:', currentSessionId,
-          'messages:', session.conversation.length,
-          'preferences keys:', Object.keys(session.gatheredPreferences).length);
+        logger.debug('Saving session', {
+          sessionId: currentSessionId,
+          messages: session.conversation.length,
+          preferenceKeys: Object.keys(session.gatheredPreferences).length,
+        }, true);
         
         await sessionService.saveSession(currentSessionId, session);
-        console.log('[ProspectChatContext] ✅ Session saved to API');
+        logger.debug('Session saved to API', {}, true);
       } catch (error: any) {
-        console.error('[ProspectChatContext] Error auto-saving session:', error);
+        logger.error('Error auto-saving session', { error: error instanceof Error ? error.message : String(error) });
         // Don't throw - auto-save failures shouldn't break the UI
       }
     }, 2000); // 2 second debounce
@@ -1309,24 +1314,24 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const clearSession = useCallback(async () => {
-    console.log('[ProspectChatContext] 🧹 Clearing prospect chat session...');
+    logger.debug('Clearing prospect chat session', {}, true);
 
     // Clear session from database and server cookie
     const currentSessionId = stateRef.current?.sessionId;
     if (currentSessionId) {
       try {
         await sessionService.deleteSession(currentSessionId);
-        console.log('[ProspectChatContext] ✅ Deleted session from database');
+        logger.debug('Deleted session from database', {}, true);
       } catch (error) {
-        console.error('[ProspectChatContext] Error deleting session:', error);
+        logger.error('Error deleting session', { error: error instanceof Error ? error.message : String(error) });
       }
     }
     await clearSessionCookie();
-    console.log('[ProspectChatContext] ✅ Cleared server session cookie');
+    logger.debug('Cleared server session cookie', {}, true);
 
     // Fetch a new session ID from server
     const newSession = await fetchSessionFromCookie();
-    console.log('[ProspectChatContext] ✅ Fetched new session ID:', newSession?.sessionId);
+    logger.debug('Fetched new session ID', { sessionId: newSession?.sessionId }, true);
 
     // Preserve authentication state - don't clear user auth info when clearing chat
     setState((prev) => ({
@@ -1349,12 +1354,12 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       onboardingState: 'signup_pending',
     }));
     setIsReturningUser(false);
-    console.log('[ProspectChatContext] ✅ Session cleared - chat data removed, auth state preserved');
+    logger.debug('Session cleared - chat data removed, auth state preserved', {}, true);
   }, []);
 
   const updateOnboardingState = useCallback(async (newState: string) => {
     if (!state.sessionId || !state.userId) {
-      console.warn('[ProspectChatContext] Cannot update onboarding state: no session or user');
+      logger.warn('Cannot update onboarding state: no session or user');
       return;
     }
 
@@ -1365,9 +1370,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         ...prev,
         onboardingState: newState,
       }));
-      console.log('[ProspectChatContext] ✅ Updated onboarding state to:', newState);
+      logger.debug('Updated onboarding state', { newState }, true);
     } catch (error) {
-      console.error('[ProspectChatContext] Error updating onboarding state:', error);
+      logger.error('Error updating onboarding state', { error: error instanceof Error ? error.message : String(error) });
     }
   }, [state.sessionId, state.userId]);
 
@@ -1431,7 +1436,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
         ...(action.toolName === 'update_user_profile' ? { hasExistingProfile: true } : {}),
       }));
     } catch (error: any) {
-      console.error('Approve action error:', error);
+      logger.error('Approve action error', { error: error instanceof Error ? error.message : String(error) });
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -1485,7 +1490,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     const hasComboParams = whereFromParam || whereToParam || availabilityTextParam || availabilityStartParam || availabilityEndParam || profileParam;
     if (hasComboParams) {
       initialQueryProcessed.current = true;
-      console.log('[ProspectChatContext] Processing combo search parameters');
+      logger.debug('Processing combo search parameters', {}, true);
 
       const parts: string[] = [];
 
@@ -1501,7 +1506,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             parts.push(`(Cruising Region: ${location.name}, Bounding Box: ${JSON.stringify(location.bbox)})`);
           }
         } catch (e) {
-          console.error('[ProspectChatContext] Error parsing whereFrom:', e);
+          logger.error('Error parsing whereFrom', { error: e instanceof Error ? e.message : String(e) });
           parts.push(`Looking to sail from: ${whereFromParam}`);
         }
       }
@@ -1514,7 +1519,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             parts.push(`(Cruising Region: ${location.name}, Bounding Box: ${JSON.stringify(location.bbox)})`);
           }
         } catch (e) {
-          console.error('[ProspectChatContext] Error parsing whereTo:', e);
+          logger.error('Error parsing whereTo', { error: e instanceof Error ? e.message : String(e) });
           parts.push(`Looking to sail to: ${whereToParam}`);
         }
       }
@@ -1528,14 +1533,14 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
             const dateStr = `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
             availText = availText ? `${availText} (${dateStr})` : dateStr;
           } catch (e) {
-            console.error('[ProspectChatContext] Error parsing dates:', e);
+            logger.error('Error parsing dates', { error: e instanceof Error ? e.message : String(e) });
           }
         } else if (availabilityStartParam) {
           try {
             const start = new Date(availabilityStartParam);
             availText = availText ? `${availText} (from ${start.toLocaleDateString()})` : `From ${start.toLocaleDateString()}`;
           } catch (e) {
-            console.error('[ProspectChatContext] Error parsing availability start date:', e);
+            logger.error('Error parsing availability start date', { error: e instanceof Error ? e.message : String(e) });
           }
         }
         if (availText) {
@@ -1550,7 +1555,7 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
     } else if (legacyQueryParam && legacyQueryParam.trim()) {
       // Fallback to legacy 'q' parameter
       initialQueryProcessed.current = true;
-      console.log('[ProspectChatContext] Processing legacy initial query:', legacyQueryParam.trim());
+      logger.debug('Processing legacy initial query', { query: legacyQueryParam.trim() }, true);
       sendMessage(legacyQueryParam.trim());
     }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);

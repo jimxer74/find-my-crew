@@ -9,6 +9,7 @@ import { type Notification } from "@/app/lib/notifications";
 import { useAssistant, parseProfileAction } from "@/app/contexts/AssistantContext";
 import { ActionConfirmation } from "./ActionConfirmation";
 import { convertActionToNotification } from "./helpers/actionUtils";
+import { logger } from "@/app/lib/logger";
 
 interface NotificationCenterProps {
   isOpen: boolean;
@@ -63,9 +64,9 @@ export function NotificationCenter({
   // Handler wrappers for ActionConfirmation
   const handleApproveAction = useCallback(
     (actionId: string) => {
-      console.log("[NotificationCenter] 📊 Approve action called:", actionId);
-      console.log("[NotificationCenter] 📊 approveAction function:", assistantContext.approveAction);
-      console.log("[NotificationCenter] 📊 approveAction type:", typeof assistantContext.approveAction);
+      logger.debug("Approve action called", { actionId }, true);
+      logger.debug("approveAction function present", { hasFunction: !!assistantContext.approveAction }, true);
+      logger.debug("approveAction type", { type: typeof assistantContext.approveAction }, true);
 
       // Get the action from pendingActions
       const action = pendingActions.find((a) => a.id === actionId);
@@ -74,12 +75,11 @@ export function NotificationCenter({
         try {
           assistantContext.approveAction(actionId);
         } catch (error) {
-          console.error("[NotificationCenter] 📊 Error calling approveAction:", error);
+          logger.error("Error calling approveAction", { error: error instanceof Error ? error.message : String(error) });
         }
       } else {
-        console.warn("[NotificationCenter] 📊 approveAction is not available or not a function");
-        console.warn("[NotificationCenter] 📊 action:", action);
-        console.warn("[NotificationCenter] 📊 approveAction:", assistantContext.approveAction);
+        logger.warn("approveAction is not available or not a function", { hasAction: !!action });
+        logger.warn("approveAction context", { hasApproveAction: !!assistantContext.approveAction });
       }
     },
     [pendingActions, assistantContext],
@@ -87,9 +87,9 @@ export function NotificationCenter({
 
   const handleRejectAction = useCallback(
     (actionId: string) => {
-      console.log("[NotificationCenter] 📊 Reject action called:", actionId);
-      console.log("[NotificationCenter] 📊 rejectAction function:", assistantContext.rejectAction);
-      console.log("[NotificationCenter] 📊 rejectAction type:", typeof assistantContext.rejectAction);
+      logger.debug("Reject action called", { actionId }, true);
+      logger.debug("rejectAction function present", { hasFunction: !!assistantContext.rejectAction }, true);
+      logger.debug("rejectAction type", { type: typeof assistantContext.rejectAction }, true);
 
       // Get the action from pendingActions
       const action = pendingActions.find((a) => a.id === actionId);
@@ -98,12 +98,11 @@ export function NotificationCenter({
         try {
           assistantContext.rejectAction(actionId);
         } catch (error) {
-          console.error("[NotificationCenter] 📊 Error calling rejectAction:", error);
+          logger.error("Error calling rejectAction", { error: error instanceof Error ? error.message : String(error) });
         }
       } else {
-        console.warn("[NotificationCenter] 📊 rejectAction is not available or not a function");
-        console.warn("[NotificationCenter] 📊 action:", action);
-        console.warn("[NotificationCenter] 📊 rejectAction:", assistantContext.rejectAction);
+        logger.warn("rejectAction is not available or not a function", { hasAction: !!action });
+        logger.warn("rejectAction context", { hasRejectAction: !!assistantContext.rejectAction });
       }
     },
     [pendingActions, assistantContext],
@@ -111,52 +110,34 @@ export function NotificationCenter({
 
   const handleRedirectToProfile = useCallback(
     (actionId: string, section: string, field: string) => {
-      console.log(
-        "[NotificationCenter] 📊 Redirect to profile called:",
-        actionId, section, field,
-      );
-      console.log("[NotificationCenter] 📊 redirectToProfile function:", assistantContext.redirectToProfile);
-      console.log("[NotificationCenter] 📊 redirectToProfile type:", typeof assistantContext.redirectToProfile);
+      logger.debug("Redirect to profile called", { actionId, section, field }, true);
+      logger.debug("redirectToProfile function present", { hasFunction: !!assistantContext.redirectToProfile }, true);
+      logger.debug("redirectToProfile type", { type: typeof assistantContext.redirectToProfile }, true);
 
       if (assistantContext.redirectToProfile && typeof assistantContext.redirectToProfile === 'function') {
         // Use the context's redirectToProfile method with correct parameters
         try {
           assistantContext.redirectToProfile(actionId, section, field);
         } catch (error) {
-          console.error("[NotificationCenter] 📊 Error calling redirectToProfile:", error);
+          logger.error("Error calling redirectToProfile", { error: error instanceof Error ? error.message : String(error) });
         }
       } else {
-        console.warn("[NotificationCenter] 📊 redirectToProfile is not available or not a function");
-        console.warn("[NotificationCenter] 📊 redirectToProfile:", assistantContext.redirectToProfile);
+        logger.warn("redirectToProfile is not available or not a function", { hasRedirectToProfile: !!assistantContext.redirectToProfile });
       }
     },
     [assistantContext],
   );
 
-  console.log("[NotificationCenter] 📊 Received props:");
-  console.log("[NotificationCenter] 📊 notifications:", notifications);
-  console.log(
-    "[NotificationCenter] 📊 pendingActions from context:",
-    pendingActions,
-  );
-  console.log(
-    "[NotificationCenter] 📊 pendingActions from context length:",
-    pendingActions?.length,
-  );
+  logger.debug("Received props", {}, true);
+  logger.debug("Notifications count", { count: notifications?.length || 0 }, true);
+  logger.debug("pendingActions from context", { count: pendingActions?.length || 0 }, true);
+  logger.debug("pendingActions from context length", { length: pendingActions?.length || 0 }, true);
 
   // Debug: Check what will be passed to NotificationPageContent
-  console.log(
-    "[NotificationCenter] 📊 About to pass pendingActions to NotificationPageContent:",
-    pendingActions,
-  );
+  logger.debug("About to pass pendingActions to NotificationPageContent", { count: pendingActions?.length || 0 }, true);
 
   // Debug: Log the value being passed
-  (() => {
-    console.log(
-      "[NotificationCenter] 📊 Passing pendingActions to NotificationPageContent:",
-      pendingActions,
-    );
-  })();
+  logger.debug("Passing pendingActions to NotificationPageContent", { count: pendingActions?.length || 0 }, true);
 
   // Close on click outside
   useEffect(() => {
@@ -277,50 +258,23 @@ export function NotificationPageContent({
   const tCommon = useTranslations("common");
   const router = useRouter();
 
-  console.log("[NotificationPageContent] 📊 NotificationPageContent props:");
-  console.log("[NotificationPageContent] 📊 notifications:", notifications);
-  console.log("[NotificationPageContent] 📊 pendingActions:", pendingActions);
-  console.log(
-    "[NotificationPageContent] 📊 pendingActions length:",
-    pendingActions?.length,
-  );
-  console.log("[NotificationPageContent] 📊 unreadCount:", unreadCount);
+  logger.debug("NotificationPageContent props", {}, true);
+  logger.debug("NotificationPageContent notifications", { count: notifications?.length || 0 }, true);
+  logger.debug("NotificationPageContent pendingActions", { count: pendingActions?.length || 0 }, true);
+  logger.debug("NotificationPageContent pendingActions length", { length: pendingActions?.length || 0 }, true);
+  logger.debug("NotificationPageContent unreadCount", { unreadCount }, true);
 
   // Debug: Check if pending actions should be displayed
-  console.log(
-    "[NotificationPageContent] 📊 Should display pending actions? pendingActions && pendingActions.length > 0:",
-    pendingActions && pendingActions.length > 0,
-  );
+  logger.debug("Should display pending actions", { shouldDisplay: !!(pendingActions && pendingActions.length > 0) }, true);
 
   // Debug: Log the rendering condition
-  (() => {
-    console.log(
-      "[NotificationPageContent] 📊 Rendering condition check - pendingActions:",
-      pendingActions,
-    );
-    console.log(
-      "[NotificationPageContent] 📊 Rendering condition check - pendingActions.length:",
-      pendingActions?.length,
-    );
-    console.log(
-      "[NotificationPageContent] 📊 Rendering condition check - pendingActions && pendingActions.length > 0:",
-      pendingActions && pendingActions.length > 0,
-    );
-
-    // Additional debug: Check if pendingActions is an array
-    console.log(
-      "[NotificationPageContent] 📊 Is pendingActions an array?",
-      Array.isArray(pendingActions),
-    );
-    console.log(
-      "[NotificationPageContent] 📊 pendingActions type:",
-      typeof pendingActions,
-    );
-    console.log(
-      "[NotificationPageContent] 📊 First pending action:",
-      pendingActions?.[0],
-    );
-  })();
+  logger.debug("Rendering condition check", {
+    pendingActionsExists: !!pendingActions,
+    length: pendingActions?.length || 0,
+    shouldDisplay: !!(pendingActions && pendingActions.length > 0),
+    isArray: Array.isArray(pendingActions),
+    type: typeof pendingActions
+  }, true);
 
   const handleNotificationClick = (notification: Notification) => {
     if (notification.link) {
@@ -385,12 +339,9 @@ export function NotificationPageContent({
           {pendingActions && pendingActions.length > 0 && (
             <div className="divide-y divide-border">
               {pendingActions.map((action) => {
-                console.log(
-                  "[NotificationCenter] 📝 Rendering pending action with ActionConfirmation:",
-                  action,
-                );
+                logger.debug("Rendering pending action with ActionConfirmation", { actionId: action?.id }, true);
                 const notification = convertActionToNotification(action);
-                console.log("[NotificationPageContent] 📝 converted notification:", notification);
+                logger.debug("Converted notification", { notificationId: notification?.id }, true);
                 return (
                   <ActionConfirmation
                     key={action.id}

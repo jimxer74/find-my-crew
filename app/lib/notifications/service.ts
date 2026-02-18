@@ -5,6 +5,7 @@
  * Provides CRUD operations for notifications and helper functions.
  */
 
+import { logger } from '../logger';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   NotificationType,
@@ -41,13 +42,13 @@ async function getUserEmailFromProfiles(
       .single();
 
     if (error) {
-      console.error('[NotificationService] Error getting user email from profiles:', error);
+      logger.error('Error getting user email from profiles', { error: error.message });
       return null;
     }
 
     return data?.email || null;
   } catch (err) {
-    console.error('[NotificationService] Failed to get user email:', err);
+    logger.error('Failed to get user email', { error: err instanceof Error ? err.message : String(err) });
     return null;
   }
 }
@@ -67,7 +68,7 @@ async function getUserProfileInfo(
       .single();
 
     if (error) {
-      console.error('[NotificationService] Error getting user profile info:', error);
+      logger.error('Error getting user profile info', { error: error.message });
       return { name: null, avatar_url: null };
     }
 
@@ -76,7 +77,7 @@ async function getUserProfileInfo(
       avatar_url: data?.profile_image_url || null,
     };
   } catch (err) {
-    console.error('[NotificationService] Failed to get user profile info:', err);
+    logger.error('Failed to get user profile info', { error: err instanceof Error ? err.message : String(err) });
     return { name: null, avatar_url: null };
   }
 }
@@ -92,11 +93,11 @@ export async function createNotification(
   supabase: SupabaseClient,
   payload: CreateNotificationPayload
 ): Promise<{ notification: Notification | null; error: string | null }> {
-  console.log('[NotificationService] Creating notification:', {
+  logger.debug('Creating notification', {
     user_id: payload.user_id,
     type: payload.type,
     title: payload.title,
-  });
+  }, true);
 
   const { data, error } = await supabase
     .from('notifications')
@@ -112,18 +113,16 @@ export async function createNotification(
     .single();
 
   if (error) {
-    console.error('[NotificationService] Error creating notification:', {
-      error,
+    logger.error('Error creating notification', {
+      error: error.message,
       code: error.code,
-      message: error.message,
       details: error.details,
       hint: error.hint,
-      payload,
     });
     return { notification: null, error: error.message };
   }
 
-  console.log('[NotificationService] Notification created successfully:', data?.id);
+  logger.debug('Notification created successfully', { notificationId: data?.id }, true);
   return { notification: data as Notification, error: null };
 }
 
@@ -154,10 +153,10 @@ export async function getNotifications(
     if (error) {
       // Check if table doesn't exist
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.warn('[NotificationService] Notifications table does not exist yet. Run the migration.');
+        logger.warn('Notifications table does not exist yet. Run the migration.');
         return { notifications: [], total: 0, unread_count: 0 };
       }
-      console.error('[NotificationService] Error fetching notifications:', error);
+      logger.error('Error fetching notifications', { error: error.message });
       return { notifications: [], total: 0, unread_count: 0 };
     }
 
@@ -169,7 +168,7 @@ export async function getNotifications(
       .eq('read', false);
 
     if (unreadError) {
-      console.error('[NotificationService] Error fetching unread count:', unreadError);
+      logger.error('Error fetching unread count', { error: unreadError.message });
     }
 
     return {
@@ -178,7 +177,7 @@ export async function getNotifications(
       unread_count: unreadCount || 0,
     };
   } catch (err) {
-    console.error('[NotificationService] Unexpected error:', err);
+    logger.error('Unexpected error fetching notifications', { error: err instanceof Error ? err.message : String(err) });
     return { notifications: [], total: 0, unread_count: 0 };
   }
 }
@@ -200,16 +199,16 @@ export async function getUnreadCount(
     if (error) {
       // Check if table doesn't exist
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
-        console.warn('[NotificationService] Notifications table does not exist yet.');
+        logger.warn('Notifications table does not exist yet.');
         return 0;
       }
-      console.error('[NotificationService] Error getting unread count:', error);
+      logger.error('Error getting unread count', { error: error.message });
       return 0;
     }
 
     return count || 0;
   } catch (err) {
-    console.error('[NotificationService] Unexpected error getting unread count:', err);
+    logger.error('Unexpected error getting unread count', { error: err instanceof Error ? err.message : String(err) });
     return 0;
   }
 }
@@ -229,7 +228,7 @@ export async function markAsRead(
     .eq('user_id', userId);
 
   if (error) {
-    console.error('[NotificationService] Error marking notification as read:', error);
+    logger.error('Error marking notification as read', { error: error.message });
     return { success: false, error: error.message };
   }
 
@@ -251,7 +250,7 @@ export async function markAllAsRead(
     .select('id');
 
   if (error) {
-    console.error('[NotificationService] Error marking all notifications as read:', error);
+    logger.error('Error marking all notifications as read', { error: error.message });
     return { success: false, error: error.message, count: 0 };
   }
 
@@ -273,7 +272,7 @@ export async function deleteNotification(
     .eq('user_id', userId);
 
   if (error) {
-    console.error('[NotificationService] Error deleting notification:', error);
+    logger.error('Error deleting notification', { error: error.message });
     return { success: false, error: error.message };
   }
 
@@ -337,15 +336,15 @@ export async function notifyRegistrationApproved(
         journeyLink
       );
       if (emailResult.error) {
-        console.error('[NotificationService] Failed to send approval email:', emailResult.error);
+        logger.error('Failed to send approval email', { error: emailResult.error });
       } else {
-        console.log('[NotificationService] Approval email sent to:', userEmail);
+        logger.debug('Approval email sent successfully', { email: userEmail }, true);
       }
     } else {
-      console.warn('[NotificationService] Could not get email for user:', crewUserId);
+      logger.warn('Could not get email for user for approval notification', { userId: crewUserId });
     }
   } catch (emailErr) {
-    console.error('[NotificationService] Error sending approval email:', emailErr);
+    logger.error('Error sending approval email', { error: emailErr instanceof Error ? emailErr.message : String(emailErr) });
   }
 
   return result;
@@ -409,15 +408,15 @@ export async function notifyRegistrationDenied(
         reason
       );
       if (emailResult.error) {
-        console.error('[NotificationService] Failed to send denial email:', emailResult.error);
+        logger.error('Failed to send denial email', { error: emailResult.error });
       } else {
-        console.log('[NotificationService] Denial email sent to:', userEmail);
+        logger.debug('Denial email sent successfully', { email: userEmail }, true);
       }
     } else {
-      console.warn('[NotificationService] Could not get email for user:', crewUserId);
+      logger.warn('Could not get email for user for denial notification', { userId: crewUserId });
     }
   } catch (emailErr) {
-    console.error('[NotificationService] Error sending denial email:', emailErr);
+    logger.error('Error sending denial email', { error: emailErr instanceof Error ? emailErr.message : String(emailErr) });
   }
 
   return result;
@@ -471,15 +470,15 @@ export async function notifyNewRegistration(
         registrationLink
       );
       if (emailResult.error) {
-        console.error('[NotificationService] Failed to send new registration email:', emailResult.error);
+        logger.error('Failed to send new registration email', { error: emailResult.error });
       } else {
-        console.log('[NotificationService] New registration email sent to:', ownerEmail);
+        logger.debug('New registration email sent successfully', { email: ownerEmail }, true);
       }
     } else {
-      console.warn('[NotificationService] Could not get email for owner:', ownerUserId);
+      logger.warn('Could not get email for owner for registration notification', { userId: ownerUserId });
     }
   } catch (emailErr) {
-    console.error('[NotificationService] Error sending new registration email:', emailErr);
+    logger.error('Error sending new registration email', { error: emailErr instanceof Error ? emailErr.message : String(emailErr) });
   }
 
   return result;
@@ -688,7 +687,7 @@ export async function notifyAllApprovedCrew(
     .eq('legs.journey_id', journeyId);
 
   if (error) {
-    console.error('[NotificationService] Error fetching approved crew:', error);
+    logger.error('Error fetching approved crew for notifications', { error: error.message });
     return { success: false, notifiedCount: 0, errors: [error.message] };
   }
 

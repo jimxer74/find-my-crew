@@ -16,8 +16,9 @@ import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColo
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@/app/types/cost-models';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 
-    
+
 type Leg = {
   leg_id: string;
   leg_name: string;
@@ -83,7 +84,7 @@ function extractCoordinatesFromLocation(location: any): { lng: number; lat: numb
       return { lng: location.x, lat: location.y };
     }
   } catch (e) {
-    console.error('[CrewBrowseMap] Failed to extract coordinates:', e);
+    logger.error('Failed to extract coordinates', { error: e instanceof Error ? e.message : String(e) });
   }
   return null;
 }
@@ -178,18 +179,18 @@ export function CrewBrowseMap({
 
     // Fetch waypoints for route display
     try {
-      console.log('[CrewBrowseMap] Fetching waypoints for leg:', leg.leg_id);
+      logger.debug('Fetching waypoints for leg', { legId: leg.leg_id }, true);
       const response = await fetch(`/api/legs/${leg.leg_id}/waypoints`);
       if (response.ok) {
         const data = await response.json();
-        console.log('[CrewBrowseMap] Waypoints received:', data);
+        logger.debug('Waypoints received', {}, true);
         setLegWaypoints(data.waypoints || []);
       } else {
-        console.error('[CrewBrowseMap] Failed to fetch waypoints:', response.status);
+        logger.error('Failed to fetch waypoints', { status: response.status });
         setLegWaypoints([]);
       }
     } catch (error) {
-      console.error('[CrewBrowseMap] Error fetching waypoints:', error);
+      logger.error('Error fetching waypoints', { error: error instanceof Error ? error.message : String(error) });
       setLegWaypoints([]);
     }
   }, []);
@@ -259,7 +260,7 @@ export function CrewBrowseMap({
         maxLat: Math.max(sw.lat, ne.lat)
       };
     } catch (error) {
-      console.error('[CrewBrowseMap] Error calculating visible bounds:', error);
+      logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
   }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
@@ -357,7 +358,7 @@ export function CrewBrowseMap({
       if (profile.skills && Array.isArray(profile.skills)) {
         const { normalizeSkillNames } = require('@/app/lib/skillUtils');
         const parsedSkills = normalizeSkillNames(profile.skills);
-        console.log('[CrewBrowseMap] User skills loaded (canonical):', parsedSkills);
+        logger.debug('User skills loaded (canonical)', { count: parsedSkills.length }, true);
         setUserSkills(parsedSkills);
         userSkillsRef.current = parsedSkills;
       } else {
@@ -371,7 +372,7 @@ export function CrewBrowseMap({
           ? parseInt(profile.sailing_experience, 10)
           : profile.sailing_experience;
         if (!isNaN(experienceLevel)) {
-          console.log('[CrewBrowseMap] User experience level loaded:', experienceLevel);
+          logger.debug('User experience level loaded', { experienceLevel }, true);
           setUserExperienceLevel(experienceLevel);
           userExperienceLevelRef.current = experienceLevel;
         }
@@ -417,7 +418,7 @@ export function CrewBrowseMap({
           .in('status', ['Approved', 'Pending approval']);
 
         if (error) {
-          console.error('[CrewBrowseMap] Error loading registrations:', error);
+          logger.error('Error loading registrations', { error: error instanceof Error ? error.message : String(error) });
           setUserRegistrations(new Map());
           return;
         }
@@ -430,10 +431,10 @@ export function CrewBrowseMap({
           }
         });
 
-        console.log('[CrewBrowseMap] User registrations loaded:', registrationsMap);
+        logger.debug('User registrations loaded', {}, true);
         setUserRegistrations(registrationsMap);
       } catch (error) {
-        console.error('[CrewBrowseMap] Error loading registrations:', error);
+        logger.error('Error loading registrations', { error: error instanceof Error ? error.message : String(error) });
         setUserRegistrations(new Map());
       }
     };
@@ -457,14 +458,14 @@ export function CrewBrowseMap({
     const attemptReload = () => {
       if (map.current && mapLoadedRef.current) {
         // Trigger a moveend event to reload legs with new filter
-        console.log('[CrewBrowseMap] Triggering reload due to filter change');
+        logger.debug('Triggering reload due to filter change', {}, true);
         map.current.fire('moveend');
       } else if (retryCount < maxRetries) {
         // If map not ready yet, retry after a short delay
         retryCount++;
         setTimeout(attemptReload, 200);
       } else {
-        console.warn('[CrewBrowseMap] Map not ready after max retries, reload may not happen');
+        logger.warn('Map not ready after max retries, reload may not happen');
       }
     };
     
@@ -475,7 +476,7 @@ export function CrewBrowseMap({
   // Listen for custom filter update event
   useEffect(() => {
     const handleFiltersUpdated = () => {
-      console.log('[CrewBrowseMap] Received filtersUpdated event');
+      logger.debug('Received filtersUpdated event', {}, true);
       triggerDataReload();
     };
 
@@ -497,21 +498,15 @@ export function CrewBrowseMap({
       filters.arrivalLocation?.lat !== prevLocationRef.current?.arrival?.lat ||
       filters.arrivalLocation?.lng !== prevLocationRef.current?.arrival?.lng;
 
-    console.log('[CrewBrowseMap] Filters changed', {
-      experienceLevel: filters.experienceLevel,
-      riskLevel: filters.riskLevel,
-      location: filters.location,
-      arrivalLocation: filters.arrivalLocation,
-      dateRange: filters.dateRange,
-      lastUpdated,
+    logger.debug('Filters changed', {
       hasLocationFilter,
       locationFilterChanged,
-    });
+    }, true);
 
     // If location filter is set AND changed, skip reload here
     // The focus effect will handle the map animation and trigger reload after
     if (hasLocationFilter && locationFilterChanged) {
-      console.log('[CrewBrowseMap] Skipping reload - focus effect will handle location change');
+      logger.debug('Skipping reload - focus effect will handle location change', {}, true);
       return;
     }
 
@@ -563,7 +558,7 @@ export function CrewBrowseMap({
     }
 
     const locationName = filters.location ? 'departure' : 'arrival';
-    console.log(`[CrewBrowseMap] Focusing map on ${locationName} location:`, {
+    logger.debug('Focusing map on location', {
       ...focusLocation,
       isCruisingRegion,
       bounds: bounds.toArray(),
@@ -588,7 +583,7 @@ export function CrewBrowseMap({
     // After animation completes, clear flag and trigger data reload for new viewport
     // Wait a bit longer (500ms) after animation to let map settle and avoid debounce conflicts
     setTimeout(() => {
-      console.log('[CrewBrowseMap] Location focus animation complete, triggering reload', {
+      logger.debug('Location focus animation complete, triggering reload', {
         mapExists: !!map.current,
         mapLoaded: mapLoadedRef.current,
         isLoading: isLoadingRef.current,
@@ -626,18 +621,18 @@ export function CrewBrowseMap({
     const fetchAndSelectLeg = async () => {
       // Track which legId we're processing (not just boolean)
       initialLegIdProcessedRef.current = initialLegId;
-      console.log('[CrewBrowseMap] Fetching initial leg:', initialLegId);
+      logger.debug('Fetching initial leg', { legId: initialLegId }, true);
 
       try {
         // Fetch leg details from API - now returns data in Leg format directly
         const response = await fetch(`/api/legs/${initialLegId}`);
         if (!response.ok) {
-          console.error('[CrewBrowseMap] Failed to fetch initial leg:', response.status);
+          logger.error('Failed to fetch initial leg', { status: response.status });
           return;
         }
 
         const legData = await response.json();
-        console.log('[CrewBrowseMap] Initial leg data received:', legData);
+        logger.debug('Initial leg data received', {}, true);
 
         if (!legData) return;
 
@@ -709,7 +704,7 @@ export function CrewBrowseMap({
           });
         }
       } catch (error) {
-        console.error('[CrewBrowseMap] Error fetching initial leg:', error);
+        logger.error('Error fetching initial leg', { error: error instanceof Error ? error.message : String(error) });
       }
     };
 
@@ -817,7 +812,7 @@ export function CrewBrowseMap({
     const accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
     
     if (!accessToken) {
-      console.error('MAPBOX_ACCESS_TOKEN is not set. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file');
+      logger.error('MAPBOX_ACCESS_TOKEN is not set. Please add NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN to your .env.local file', {});
       return;
     }
 
@@ -855,7 +850,7 @@ export function CrewBrowseMap({
       // Note: This function captures state at mount time, but we'll use refs for dynamic values
       const handleViewportChange = async () => {
       if (!map.current || !mapLoadedRef.current || isLoadingRef.current) {
-        console.log('[CrewBrowseMap] handleViewportChange: map not ready or already loading', {
+        logger.debug('handleViewportChange: map not ready or already loading', {
           hasMap: !!map.current,
           mapLoaded: mapLoadedRef.current,
           isLoading: isLoadingRef.current,
@@ -868,12 +863,12 @@ export function CrewBrowseMap({
         map.current.getBounds();
       } catch (e) {
         // Map not ready yet
-        console.log('[CrewBrowseMap] handleViewportChange: map bounds not available yet');
+        logger.debug('handleViewportChange: map bounds not available yet', {}, true);
         return;
       }
 
       const currentZoom = map.current.getZoom();
-      console.log('[CrewBrowseMap] handleViewportChange:', { zoom: currentZoom });
+      logger.debug('handleViewportChange', { zoom: currentZoom }, true);
 
       // Clear any existing timer
       if (viewportDebounceTimerRef.current) {
@@ -881,14 +876,14 @@ export function CrewBrowseMap({
       }
       // Debounce the viewport change
       viewportDebounceTimerRef.current = setTimeout(async () => {
-          console.log('[CrewBrowseMap] Debounced handler starting', {
+          logger.debug('Debounced handler starting', {
             hasMap: !!map.current,
             isLoading: isLoadingRef.current,
             lastLoadedBounds: lastLoadedBoundsRef.current,
           });
 
           if (!map.current || isLoadingRef.current) {
-            console.log('[CrewBrowseMap] Debounced handler: map not ready or already loading');
+            logger.debug('Debounced handler: map not ready or already loading', {}, true);
             return;
           }
           
@@ -900,7 +895,7 @@ export function CrewBrowseMap({
             
             // Ensure map is fully loaded before getting bounds
             if (!map.current.loaded()) {
-              console.log('[CrewBrowseMap] Map not fully loaded yet, skipping bounds request');
+              logger.debug('Map not fully loaded yet, skipping bounds request', {}, true);
               isLoadingRef.current = false;
               setLoading(false);
               return;
@@ -911,14 +906,14 @@ export function CrewBrowseMap({
             try {
               bounds = map.current.getBounds();
             } catch (error) {
-              console.error('[CrewBrowseMap] Error getting bounds:', error);
+              logger.error('Error getting bounds', { error: error instanceof Error ? error.message : String(error) });
               isLoadingRef.current = false;
               setLoading(false);
               return;
             }
             
             if (!bounds) {
-              console.log('[CrewBrowseMap] Debounced handler: bounds not available');
+              logger.debug('Debounced handler: bounds not available', {}, true);
               isLoadingRef.current = false;
               setLoading(false);
               return;
@@ -943,8 +938,8 @@ export function CrewBrowseMap({
               maxLat = bounds.getNorth();
             } catch (error) {
               // If we can't extract bounds values, log error and skip
-              console.error('[CrewBrowseMap] Error extracting bounds values:', error);
-              console.error('[CrewBrowseMap] Bounds object state:', {
+              logger.error('Error extracting bounds values', { error: error instanceof Error ? error.message : String(error) });
+              logger.error('Bounds object state:', {
                 boundsExists: bounds !== null && bounds !== undefined,
                 boundsType: bounds !== null && bounds !== undefined ? typeof bounds : 'null/undefined',
                 mapLoaded: map.current?.loaded(),
@@ -955,7 +950,7 @@ export function CrewBrowseMap({
               return;
             }
 
-            console.log('[CrewBrowseMap] Raw bounds from Mapbox:', {
+            logger.debug('Raw bounds from Mapbox:', {
               minLng: typeof minLng === 'number' ? minLng : 'invalid',
               minLat: typeof minLat === 'number' ? minLat : 'invalid',
               maxLng: typeof maxLng === 'number' ? maxLng : 'invalid',
@@ -970,7 +965,7 @@ export function CrewBrowseMap({
               isNaN(minLng) || isNaN(minLat) || isNaN(maxLng) || isNaN(maxLat) ||
               !isFinite(minLng) || !isFinite(minLat) || !isFinite(maxLng) || !isFinite(maxLat)
             ) {
-              console.error('[CrewBrowseMap] Bounds contain invalid values:', {
+              logger.error('Bounds contain invalid values:', {
                 minLng: typeof minLng === 'number' ? minLng : String(minLng),
                 minLat: typeof minLat === 'number' ? minLat : String(minLat),
                 maxLng: typeof maxLng === 'number' ? maxLng : String(maxLng),
@@ -995,7 +990,7 @@ export function CrewBrowseMap({
             if (minLng > maxLng) {
               // This means we're crossing the date line
               // For PostGIS queries, we need to use the full longitude range to include both sides
-              console.log('[CrewBrowseMap] Viewport crosses international date line, using full longitude range', {
+              logger.debug('Viewport crosses international date line, using full longitude range', {
                 originalMinLng: minLng,
                 originalMaxLng: maxLng,
               });
@@ -1026,8 +1021,8 @@ export function CrewBrowseMap({
                 latDiff: typeof maxLat === 'number' && typeof minLat === 'number' ? maxLat - minLat : 'N/A',
               };
               
-              console.error('[CrewBrowseMap] Invalid bounds after normalization:', errorDetails);
-              console.error('[CrewBrowseMap] Raw values:', {
+              logger.error('Invalid bounds after normalization', { details: errorDetails });
+              logger.error('Raw values:', {
                 minLngRaw: bounds.getWest(),
                 minLatRaw: bounds.getSouth(),
                 maxLngRaw: bounds.getEast(),
@@ -1059,13 +1054,13 @@ export function CrewBrowseMap({
             const viewportChangedSignificantly = lastLoadedBoundsRef.current !== null && hasViewportChangedSignificantly(newBounds, lastLoadedBoundsRef.current);
             
             if (!isFilterChange && !viewportChangedSignificantly) {
-              console.log('[CrewBrowseMap] Viewport has not changed significantly, skipping reload');
+              logger.debug('Viewport has not changed significantly, skipping reload', {}, true);
               isLoadingRef.current = false;
               setLoading(false);
               return;
             }
 
-            console.log('[CrewBrowseMap] Fetching legs for viewport:', {
+            logger.debug('Fetching legs for viewport:', {
               minLng,
               minLat,
               maxLng,
@@ -1139,13 +1134,13 @@ export function CrewBrowseMap({
                 }
               }
             } else if (viewportChangedSignificantly) {
-              console.log('[CrewBrowseMap] Viewport changed significantly - using viewport bounds instead of location filters');
+              logger.debug('Viewport changed significantly - using viewport bounds instead of location filters', {}, true);
             }
 
             // Note: We no longer filter by skills in the API
             // Instead, we fetch all legs and filter by match percentage on the frontend
             // This allows us to show match percentages for all legs
-            console.log('[CrewBrowseMap] Fetching legs with filters:', {
+            logger.debug('Fetching legs with filters:', {
               experienceLevel: currentFilters.experienceLevel,
               riskLevel: currentFilters.riskLevel,
               dateRange: currentFilters.dateRange,
@@ -1154,18 +1149,18 @@ export function CrewBrowseMap({
             });
 
             const url = `/api/legs/viewport?${params.toString()}`;
-            console.log('[CrewBrowseMap] Fetching from URL:', url);
-            console.log('[CrewBrowseMap] All params:', Object.fromEntries(params.entries()));
+            logger.debug('Fetching from URL', { url }, true);
+            logger.debug('All params', { params: Object.fromEntries(params.entries()) }, true);
 
             const response = await fetch(url);
             if (!response.ok) {
               const errorText = await response.text();
-              console.error('[CrewBrowseMap] API error:', response.status, errorText);
+              logger.error('API error', { status: response.status, errorText });
               throw new Error(`Failed to fetch legs: ${response.statusText}`);
             }
 
             const data = await response.json();
-            console.log('[CrewBrowseMap] Received data:', { legCount: data.legs?.length || 0, data });
+            logger.debug('Received legs data', { legCount: data.legs?.length || 0 }, true);
             
             // Calculate match percentage and experience level match for each leg
             let legsWithMatch = (data.legs || []).map((leg: Leg) => {
@@ -1194,20 +1189,14 @@ export function CrewBrowseMap({
             // Note: Experience level and risk level filtering are now done in SQL (backend)
             // The API already returns filtered results based on filters.experienceLevel and filters.riskLevel
             
-            console.log('[CrewBrowseMap] Legs with match percentages:', legsWithMatch.map((l: Leg) => ({
-              leg_name: l.leg_name,
-              match_percentage: l.skill_match_percentage,
-              experience_matches: l.experience_level_matches,
-              min_experience_level: l.min_experience_level,
-              skills: l.skills,
-            })));
-            
+            logger.debug('Legs with match percentages', { count: legsWithMatch.length }, true);
+
             setLegs(legsWithMatch);
             
             // Update last loaded bounds
             lastLoadedBoundsRef.current = newBounds;
           } catch (error) {
-            console.error('[CrewBrowseMap] Error loading legs:', error);
+            logger.error('Error loading legs', { error: error instanceof Error ? error.message : String(error) });
           } finally {
             setLoading(false);
             isLoadingRef.current = false;
@@ -1218,7 +1207,7 @@ export function CrewBrowseMap({
 
     // Handle map load
     map.current.on('load', async () => {
-      console.log('[CrewBrowseMap] Map loaded');
+      logger.debug('Map loaded', {}, true);
       mapLoadedRef.current = true;
       setMapLoaded(true);
 
@@ -1246,26 +1235,26 @@ export function CrewBrowseMap({
 
           map.current.loadImage('/marker_approved_tp.png',(error, image) => {
             if (error) {
-              console.error('[CrewBrowseMap] Error loading marker_approved.png:', error);
+              logger.error('Error loading marker_approved.png', { error: error instanceof Error ? error.message : String(error) });
             } else {
               map.current?.addImage?.('marker-approved', image as any);
-              console.log('[CrewBrowseMap] Approved icon loaded:', image);
+              logger.debug('Approved icon loaded', {}, true);
             }
           });
 
           map.current.loadImage('/marker_pending.png',(error, image) => {
             if (error) {
-              console.error('[CrewBrowseMap] Error loading marker_pending.png:', error);
+              logger.error('Error loading marker_pending.png', { error: error instanceof Error ? error.message : String(error) });
             } else {
               map.current?.addImage?.('marker-pending', image as any);
-              console.log('[CrewBrowseMap] Pending icon loaded:', image);
+              logger.debug('Pending icon loaded', {}, true);
             }
           });
 
           iconsLoadedRef.current = true;
-          console.log('[CrewBrowseMap] Custom pin marker icons loaded');
+          logger.debug('Custom pin marker icons loaded', {}, true);
         } catch (error) {
-          console.error('[CrewBrowseMap] Error loading custom pin marker icons:', error);
+          logger.error('Error loading custom pin marker icons', { error: error instanceof Error ? error.message : String(error) });
         }
       }
 
@@ -1528,7 +1517,7 @@ export function CrewBrowseMap({
 
         if (features.length > 0) {
           const legId = features[0].properties!.leg_id;
-          console.log('[CrewBrowseMap] Marker clicked, legId:', legId);
+          logger.debug('Marker clicked', { legId }, true);
 
           // Clear previous selection first to prevent focusing on old leg
           setSelectedLeg(null);
@@ -1544,7 +1533,7 @@ export function CrewBrowseMap({
 
           // If not found in cache, fetch from API
           if (!leg) {
-            console.log('[CrewBrowseMap] Leg not in cache, fetching from API:', legId);
+            logger.debug('Leg not in cache, fetching from API', { legId }, true);
             try {
               const response = await fetch(`/api/legs/${legId}`);
               if (response.ok) {
@@ -1596,38 +1585,38 @@ export function CrewBrowseMap({
                   experience_level_matches: experienceMatches,
                 };
               } else {
-                console.error('[CrewBrowseMap] Failed to fetch leg from API:', response.status);
+                logger.error('Failed to fetch leg from API', { status: response.status });
                 return;
               }
             } catch (error) {
-              console.error('[CrewBrowseMap] Error fetching leg from API:', error);
+              logger.error('Error fetching leg from API', { error: error instanceof Error ? error.message : String(error) });
               return;
             }
           }
 
           if (leg) {
-            console.log('[CrewBrowseMap] Leg selected:', legId);
+            logger.debug('Leg selected', { legId }, true);
 
             // Set new leg and fetch waypoints
             setSelectedLeg(leg);
 
             // Fetch waypoints for this leg
             try {
-              console.log('[CrewBrowseMap] Fetching waypoints for leg:', legId);
+              logger.debug('Fetching waypoints for leg', { legId }, true);
               const waypointsUrl = `/api/legs/${legId}/waypoints`;
-              console.log('[CrewBrowseMap] Waypoints URL:', waypointsUrl);
+              logger.debug('Waypoints URL', { waypointsUrl }, true);
               const response = await fetch(waypointsUrl);
               if (response.ok) {
                 const data = await response.json();
-                console.log('[CrewBrowseMap] Waypoints received:', data);
+                logger.debug('Waypoints received', {}, true);
                 setLegWaypoints(data.waypoints || []);
               } else {
                 const errorText = await response.text();
-                console.error('[CrewBrowseMap] Failed to fetch waypoints:', response.status, errorText);
+                logger.error('Failed to fetch waypoints', { status: response.status, errorText });
                 setLegWaypoints([]);
               }
             } catch (error) {
-              console.error('[CrewBrowseMap] Error fetching waypoints:', error);
+              logger.error('Error fetching waypoints', { error: error instanceof Error ? error.message : String(error) });
               setLegWaypoints([]);
             }
           }
@@ -1748,12 +1737,12 @@ export function CrewBrowseMap({
       }
       
       const currentZoom = map.current.getZoom();
-      console.log('[CrewBrowseMap] Initial zoom:', currentZoom);
+      logger.debug('Initial zoom', { currentZoom }, true);
       
       // Trigger initial leg load
       setTimeout(() => {
         if (map.current) {
-          console.log('[CrewBrowseMap] Triggering initial leg load');
+          logger.debug('Triggering initial leg load', {}, true);
           handleViewportChange();
         }
       }, 500);
@@ -1812,7 +1801,7 @@ export function CrewBrowseMap({
           // Arrow layer removed - no longer needed
         } catch (error) {
           // Layers/source may not exist if map wasn't fully loaded
-          console.log('[CrewBrowseMap] Error removing layers/source:', error);
+          logger.debug('Error removing layers/source', { error: error instanceof Error ? error.message : String(error) }, true);
         }
         
         
@@ -1832,7 +1821,7 @@ export function CrewBrowseMap({
 
   // Handle leg selection and waypoint display
   useEffect(() => {
-    console.log('[CrewBrowseMap] Route display effect triggered:', {
+    logger.debug('Route display effect triggered', {
       hasMap: !!map.current,
       mapLoaded,
       routeSourceAdded: routeSourceAddedRef.current,
@@ -1841,7 +1830,7 @@ export function CrewBrowseMap({
     });
 
     if (!map.current || !mapLoaded || !routeSourceAddedRef.current) {
-      console.log('[CrewBrowseMap] Route display skipped - map not ready');
+      logger.debug('Route display skipped - map not ready', {}, true);
       return;
     }
 
@@ -1855,22 +1844,22 @@ export function CrewBrowseMap({
     });
 
     if (!selectedLeg || legWaypoints.length === 0) {
-      console.log('[CrewBrowseMap] Route display skipped - no leg or waypoints');
+      logger.debug('Route display skipped - no leg or waypoints', {}, true);
       return;
     }
 
     const validWaypoints = legWaypoints
       .filter(wp => wp.coordinates !== null)
       .sort((a, b) => a.index - b.index);
-    console.log('[CrewBrowseMap] Valid waypoints:', validWaypoints.length, 'out of', legWaypoints.length);
+    logger.debug('Valid waypoints', { valid: validWaypoints.length, total: legWaypoints.length }, true);
     
     if (validWaypoints.length < 2) {
-      console.log('[CrewBrowseMap] Route display skipped - need at least 2 waypoints');
+      logger.debug('Route display skipped - need at least 2 waypoints', {}, true);
       return; // Need at least start and end
     }
 
     const coordinates = validWaypoints.map(wp => wp.coordinates!);
-    console.log('[CrewBrowseMap] Creating route with coordinates:', coordinates);
+    logger.debug('Creating route with coordinates', { count: coordinates.length }, true);
 
     const isApproved = userRegistrations.get(selectedLeg.leg_id) === 'Approved';
 
@@ -1896,7 +1885,7 @@ export function CrewBrowseMap({
     // Calculate bounds to fit entire route (handles antimeridian crossing)
     const calculatedBounds = calculateBoundsWithAntimeridian(coordinates);
     if (!calculatedBounds) {
-      console.log('[CrewBrowseMap] Could not calculate bounds');
+      logger.debug('Could not calculate bounds', {}, true);
       return;
     }
 
@@ -1916,11 +1905,11 @@ export function CrewBrowseMap({
       [maxLng + finalLngDiff * padding, maxLat + finalLatDiff * padding]
     );
 
-    console.log('[CrewBrowseMap] Fitting bounds:', { minLng, maxLng, minLat, maxLat });
+    logger.debug('Fitting bounds', { minLng, maxLng, minLat, maxLat }, true);
 
     // Prevent double focusing
     if (isFittingBoundsRef.current) {
-      console.log('[CrewBrowseMap] Already fitting bounds, skipping');
+      logger.debug('Already fitting bounds, skipping', {}, true);
       return;
     }
 
@@ -2106,7 +2095,7 @@ export function CrewBrowseMap({
             userExperienceLevel={userExperienceLevel}
             onRegistrationChange={() => {
               // Could refresh data or show notification here
-              console.log('Registration status changed');
+              logger.debug('Registration status changed', {}, true);
             }}
             initialOpenRegistration={initialOpenRegistration}
           />
@@ -2141,7 +2130,7 @@ export function CrewBrowseMap({
             userExperienceLevel={userExperienceLevel}
             onRegistrationChange={() => {
               // Could refresh data or show notification here
-              console.log('Registration status changed');
+              logger.debug('Registration status changed', {}, true);
             }}
             initialOpenRegistration={initialOpenRegistration}
           />

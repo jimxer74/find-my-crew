@@ -23,6 +23,7 @@ import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { ImageCarousel } from '../ui/ImageCarousel';
 import { useProfile } from '@/app/lib/profile/useProfile';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -248,34 +249,34 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
     const fetchJourneyDescription = async () => {
       setIsLoadingDescription(true);
-      console.log(`[LegDetailsPanel] Fetching journey description for journey ${leg.journey_id}`);
+      logger.debug('Fetching journey description', { journeyId: leg.journey_id }, true);
       try {
         const response = await fetch(`/api/journeys/${leg.journey_id}/details`, {
           signal: AbortSignal.timeout(10000), // 10 second timeout
         });
 
-        console.log(`[LegDetailsPanel] Journey fetch response status: ${response.status}`);
+        logger.debug('Journey fetch response status', { status: response.status }, true);
 
         if (response.ok) {
           const data = await response.json();
-          console.log(`[LegDetailsPanel] Journey fetch response data:`, data);
+          logger.debug('Journey fetch response data', { hasData: !!data }, true);
           const description = data.journey_description || null;
           setJourneyDescription(description);
-          console.log(`[LegDetailsPanel] Fetched journey description for journey ${leg.journey_id}:`, description);
+          logger.debug('Fetched journey description', { journeyId: leg.journey_id, hasDescription: !!description }, true);
         } else {
-          console.warn(`[LegDetailsPanel] Failed to fetch journey description: ${response.status} ${response.statusText}`);
+          logger.warn('Failed to fetch journey description', { status: response.status, statusText: response.statusText });
           const errorText = await response.text();
-          console.warn(`[LegDetailsPanel] Error response text:`, errorText);
+          logger.warn('Error response text', { errorText });
           try {
             const errorData = JSON.parse(errorText);
-            console.warn(`[LegDetailsPanel] Error response JSON:`, errorData);
+            logger.warn('Error response JSON', { hasErrorData: !!errorData });
           } catch (e) {
-            console.warn(`[LegDetailsPanel] Error response not JSON:`, errorText);
+            logger.warn('Error response not JSON', { errorText });
           }
           setJourneyDescription(null);
         }
       } catch (error) {
-        console.error(`[LegDetailsPanel] Error fetching journey description:`, error);
+        logger.error('Error fetching journey description', { error: error instanceof Error ? error.message : String(error) });
         setJourneyDescription(null);
       } finally {
         setIsLoadingDescription(false);
@@ -287,7 +288,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Process risk level from leg and journey data (now provided by API)
   useEffect(() => {
-    console.log('[LegDetailsPanel] Processing risk level:', {
+    logger.debug('Processing risk level', {
       legRiskLevel: leg.leg_risk_level,
       journeyRiskLevel: leg.journey_risk_level,
       journeyId: leg.journey_id,
@@ -296,14 +297,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     
     // Normalize leg's risk level first
     const normalizedLegRiskLevel = normalizeRiskLevel(leg.leg_risk_level);
-    console.log('[LegDetailsPanel] Normalized leg risk level:', normalizedLegRiskLevel);
+    logger.debug('Normalized leg risk level', { normalizedLegRiskLevel }, true);
     
     // Process journey's risk level array (take first one if multiple)
     let normalizedJourneyRiskLevel: RiskLevel | null = null;
     if (leg.journey_risk_level && leg.journey_risk_level.length > 0) {
       // Journey has risk level array - normalize the first one
       normalizedJourneyRiskLevel = normalizeRiskLevel(leg.journey_risk_level[0]);
-      console.log('[LegDetailsPanel] Normalized journey risk level (from array):', normalizedJourneyRiskLevel);
+      logger.debug('Normalized journey risk level (from array)', { normalizedJourneyRiskLevel }, true);
     }
     
     // Set journey risk level state for display
@@ -318,7 +319,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   
   // Debug logging
   useEffect(() => {
-    console.log('[LegDetailsPanel] Risk level state:', {
+    logger.debug('Risk level state', {
       legRiskLevel: leg.leg_risk_level,
       journeyRiskLevelArray: leg.journey_risk_level,
       normalizedLegRiskLevel,
@@ -361,18 +362,18 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             const reqs = data.requirements || [];
             const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
-            console.log(`[LegDetailsPanel] Safety edge-case check - hasRequirements: ${hasRequirements}, hasQuestionReqs: ${hasQuestionReqs}, showRequirementsForm: ${showRequirementsForm}, showRegistrationModal: ${showRegistrationModal}, isCheckingRequirements: ${isCheckingRequirements}`);
+            logger.debug('Safety edge-case check', { hasRequirements, hasQuestionReqs, showRequirementsForm, showRegistrationModal, isCheckingRequirements }, true);
 
             if (hasQuestionReqs) {
-              console.warn(`[LegDetailsPanel] ⚠️ Edge case: Requirements exist but no form is shown - showing requirements form`);
+              logger.warn('Edge case: Requirements exist but no form shown - showing requirements form', {});
               setShowRequirementsForm(true);
             } else {
-              console.log(`[LegDetailsPanel] ✅ Edge case resolved: Server-side requirements exist, showing regular modal`);
+              logger.debug('Edge case resolved: Server-side requirements exist, showing regular modal', {}, true);
               setShowRegistrationModal(true);
             }
           }
         } catch (error) {
-          console.warn(`[LegDetailsPanel] Could not verify requirement type for edge-case check:`, error);
+          logger.warn('Could not verify requirement type for edge-case check', { error: error instanceof Error ? error.message : String(error) });
         }
       };
 
@@ -397,22 +398,22 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             const reqs = data.requirements || [];
             const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
-            console.log(`[LegDetailsPanel] Edge-case blocking check - hasRequirements: ${hasRequirements}, hasQuestionReqs: ${hasQuestionReqs}, showRequirementsForm: ${showRequirementsForm}, showRegistrationModal: ${showRegistrationModal}, isCheckingRequirements: ${isCheckingRequirements}`);
+            logger.debug('Edge-case blocking check', { hasRequirements, hasQuestionReqs, showRequirementsForm, showRegistrationModal, isCheckingRequirements }, true);
 
             // Only block if we have question requirements AND the user hasn't explicitly chosen the regular form
             if (hasQuestionReqs && reqs.length > 0) {
-              console.warn(`[LegDetailsPanel] ⚠️ Edge case: Question requirements exist but regular modal is shown - switching to requirements form`);
+              logger.warn('Edge case: Question requirements exist but regular modal shown - switching to requirements form', {});
               setShowRegistrationModal(false);
               setShowRequirementsForm(true);
             } else {
-              console.log(`[LegDetailsPanel] ✅ Edge-case check passed: Server-side requirements only, keeping regular modal`);
+              logger.debug('Edge-case check passed: Server-side requirements only, keeping regular modal', {}, true);
               // For server-side requirements, keep the regular modal active
               setShowRequirementsForm(false);
               setShowRegistrationModal(true);
             }
           }
         } catch (error) {
-          console.warn(`[LegDetailsPanel] Could not verify requirement type for edge-case blocking check:`, error);
+          logger.warn('Could not verify requirement type for edge-case blocking check', { error: error instanceof Error ? error.message : String(error) });
         }
       };
 
@@ -455,7 +456,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        console.error('Error loading registration status:', error);
+        logger.error('Error loading registration status', { error: error instanceof Error ? error.message : String(error) });
         setRegistrationStatus(null);
         setRegistrationStatusChecked(true);
         return;
@@ -485,13 +486,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error checking profile sharing consent:', error);
+          logger.error('Error checking profile sharing consent', { error: error instanceof Error ? error.message : String(error) });
           setHasProfileSharingConsent(null);
         } else {
           setHasProfileSharingConsent(data?.profile_sharing_consent === true);
         }
       } catch (err) {
-        console.error('Error checking profile sharing consent:', err);
+        logger.error('Error checking profile sharing consent', { error: err instanceof Error ? err.message : String(err) });
         setHasProfileSharingConsent(null);
       } finally {
         setCheckingProfileConsent(false);
@@ -515,7 +516,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           reqs = data.requirements || [];
         }
       } catch (reqError: any) {
-        console.error('Error fetching requirements:', reqError);
+        logger.error('Error fetching requirements', { error: reqError instanceof Error ? reqError.message : String(reqError) });
         // Continue with empty requirements if fetch fails
         reqs = [];
       }
@@ -523,24 +524,24 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       // Check auto-approval settings (optional - don't block if it fails)
       let autoApprovalEnabled = false;
       try {
-        console.log(`[LegDetailsPanel] Checking auto-approval for journey: ${leg.journey_id}`);
+        logger.debug('Checking auto-approval for journey', { journeyId: leg.journey_id }, true);
         const autoApprovalResponse = await fetch(`/api/journeys/${leg.journey_id}/auto-approval`, {
           signal: AbortSignal.timeout(5000), // 5 second timeout
         });
         if (autoApprovalResponse.ok) {
           const autoApprovalData = await autoApprovalResponse.json();
           autoApprovalEnabled = autoApprovalData.auto_approval_enabled === true;
-          console.log(`[LegDetailsPanel] Auto-approval check result:`, {
+          logger.debug('Auto-approval check result', {
             journeyId: leg.journey_id,
             autoApprovalEnabled,
             threshold: autoApprovalData.auto_approval_threshold,
           });
         } else {
-          console.warn(`[LegDetailsPanel] Auto-approval check failed with status: ${autoApprovalResponse.status}`);
+          logger.warn('Auto-approval check failed', { status: autoApprovalResponse.status });
         }
       } catch (autoApprovalError: any) {
         // Log but don't block - auto-approval check is optional
-        console.warn(`[LegDetailsPanel] Could not check auto-approval status (non-critical):`, {
+        logger.warn('Could not check auto-approval status (non-critical)', {
           error: autoApprovalError.message,
           errorName: autoApprovalError.name,
           journeyId: leg.journey_id,
@@ -553,7 +554,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       const hasPassportReqs = reqs.some((r: any) => r.requirement_type === 'passport');
       const passportReq = reqs.find((r: any) => r.requirement_type === 'passport');
 
-      console.log(`[LegDetailsPanel] Requirements check result:`, {
+      logger.debug('Requirements check result', {
         journeyId: leg.journey_id,
         hasReqs,
         hasQuestionReqs,
@@ -584,7 +585,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       // Then show requirements form if there are question-type requirements
       // Otherwise show regular registration modal for server-side requirements
       if (hasPassportReqs && !passportVerificationComplete) {
-        console.log(`[LegDetailsPanel] ✅ Showing passport verification step`, {
+        logger.debug('Showing passport verification step', {
           autoApprovalEnabled,
           requirementsCount: reqs.length,
         });
@@ -592,7 +593,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         setShowRegistrationModal(false);
         setShowRequirementsForm(false);
       } else if (hasQuestionReqs) {
-        console.log(`[LegDetailsPanel] ✅ Showing requirements form (question requirements exist)`, {
+        logger.debug('Showing requirements form (question requirements exist)', {
           autoApprovalEnabled,
           requirementsCount: reqs.length,
         });
@@ -607,7 +608,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       } else if (hasReqs) {
         // Server-side requirements only (risk_level, experience_level, skill)
         // Show regular registration modal - the server will handle these requirements
-        console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (server-side requirements only)`, {
+        logger.debug('Showing regular registration modal (server-side requirements only)', {
           autoApprovalEnabled,
           requirementsCount: reqs.length,
         });
@@ -619,7 +620,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         }, 0);
       } else {
         // No requirements at all
-        console.log(`[LegDetailsPanel] ✅ Showing regular registration modal (no requirements)`);
+        logger.debug('Showing regular registration modal (no requirements)', {}, true);
         setShowRequirementsForm(false);
         setHasRequirements(false);
         setAutoApprovalEnabled(false); // Reset when no requirements
@@ -629,7 +630,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         }, 0);
       }
     } catch (error) {
-      console.error('Error checking requirements:', error);
+      logger.error('Error checking requirements', { error: error instanceof Error ? error.message : String(error) });
       // On error, try to verify requirements one more time before defaulting
       // This prevents showing regular modal when requirements actually exist
       try {
@@ -640,7 +641,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           const fallbackData = await fallbackResponse.json();
           const fallbackReqs = fallbackData.requirements || [];
           if (fallbackReqs.length > 0) {
-            console.warn(`[LegDetailsPanel] ⚠️ Fallback check found requirements (${fallbackReqs.length}), showing requirements form`);
+            logger.warn('Fallback check found requirements, showing requirements form', { count: fallbackReqs.length });
             setShowRegistrationModal(false);
             setHasRequirements(true);
             requestAnimationFrame(() => {
@@ -651,11 +652,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           }
         }
       } catch (fallbackError) {
-        console.warn(`[LegDetailsPanel] Fallback requirements check also failed:`, fallbackError);
+        logger.warn('Fallback requirements check also failed', { error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError) });
       }
       
       // Only show regular modal if we're sure there are no requirements
-      console.warn(`[LegDetailsPanel] ⚠️ Error checking requirements, defaulting to no requirements:`, error);
+      logger.warn('Error checking requirements, defaulting to no requirements', { error: error instanceof Error ? error.message : String(error) });
       setHasRequirements(false);
       setShowRequirementsForm(false);
       requestAnimationFrame(() => {
@@ -686,7 +687,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Handle passport verification completion
   const handlePassportComplete = useCallback((data: { passport_document_id: string; photo_file?: Blob }) => {
-    console.log('[LegDetailsPanel] Passport verification complete:', { passport_document_id: data.passport_document_id, hasPhoto: !!data.photo_file });
+    logger.debug('Passport verification complete', { passport_document_id: data.passport_document_id, hasPhoto: !!data.photo_file }, true);
     setPassportData(data);
     setPassportVerificationComplete(true);
     setShowPassportStep(false);
@@ -702,7 +703,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Handle passport verification cancellation
   const handlePassportCancel = useCallback(() => {
-    console.log('[LegDetailsPanel] Passport verification cancelled');
+    logger.debug('Passport verification cancelled', {}, true);
     setShowPassportStep(false);
     setPassportVerificationComplete(false);
     setPassportData(null);
@@ -713,7 +714,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   // Auto-open registration form when initialOpenRegistration is true
   const initialRegistrationTriggeredRef = useRef(false);
   useEffect(() => {
-    console.log('[LegDetailsPanel] Auto-open registration check:', {
+    logger.debug('Auto-open registration check', {
       initialOpenRegistration,
       isOpen,
       hasUser: !!user,
@@ -736,11 +737,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       registrationStatusChecked &&
       registrationStatus === null
     ) {
-      console.log('[LegDetailsPanel] ✅ Triggering auto-open registration');
+      logger.debug('Triggering auto-open registration', {}, true);
       initialRegistrationTriggeredRef.current = true;
       // Delay slightly to allow consent checks to complete and leg data to be ready
       const timer = setTimeout(() => {
-        console.log('[LegDetailsPanel] Executing handleRegister() for auto-open');
+        logger.debug('Executing handleRegister() for auto-open', {}, true);
         handleRegister();
       }, 500);
       return () => clearTimeout(timer);
@@ -753,14 +754,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Handle requirements form completion - now includes notes and submits directly
   const handleRequirementsComplete = async (answers: any[], notes: string) => {
-    console.log(`[LegDetailsPanel] Requirements form completed:`, {
+    logger.debug('Requirements form completed', {
       answersCount: answers.length,
       answers: answers,
       notesLength: notes.length,
     });
 
     if (!answers || answers.length === 0) {
-      console.error(`[LegDetailsPanel] ❌ Requirements form completed but no answers provided!`);
+      logger.error('Requirements form completed but no answers provided', {});
       setRegistrationError('Please answer all required questions');
       return;
     }
@@ -805,7 +806,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
           if (hasQuestionReqs) {
-            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist but no answers provided (immediate state check)`);
+            logger.error('Cannot submit: Question requirements exist but no answers provided (immediate state check)', {});
             setRegistrationError('Please complete all required questions before submitting');
             setShowRegistrationModal(false);
             setShowRequirementsForm(true);
@@ -814,7 +815,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           // If we get here, we only have server-side requirements, which is fine to submit
         }
       } catch (error) {
-        console.warn(`[LegDetailsPanel] Could not verify requirements in immediate check:`, error);
+        logger.warn('Could not verify requirements in immediate check', { error: error instanceof Error ? error.message : String(error) });
         // Continue with submission if check fails - don't block user
       }
     }
@@ -832,7 +833,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
           if (hasQuestionReqs) {
-            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist but no answers provided`);
+            logger.error('Cannot submit: Question requirements exist but no answers provided', {});
             setRegistrationError('Please complete all required questions before submitting');
             setShowRegistrationModal(false);
             setShowRequirementsForm(true);
@@ -841,7 +842,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           // If we get here, we only have server-side requirements, which is fine to submit
         }
       } catch (error) {
-        console.warn(`[LegDetailsPanel] Could not verify requirements in check:`, error);
+        logger.warn('Could not verify requirements in check', { error: error instanceof Error ? error.message : String(error) });
         // Continue with submission if check fails - don't block user
       }
     }
@@ -850,7 +851,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     // This prevents race conditions where state hasn't updated yet
     // Skip this check if answers were provided directly
     if (providedAnswers === undefined && answersToUse.length === 0) {
-      console.log(`[LegDetailsPanel] No answers provided, checking if question requirements exist...`);
+      logger.debug('No answers provided, checking if question requirements exist', {}, true);
       try {
         const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
           signal: AbortSignal.timeout(5000),
@@ -861,7 +862,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
           if (hasQuestionReqs) {
-            console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist (${reqs.length}) but no answers provided`);
+            logger.error('Cannot submit: Question requirements exist but no answers provided', { count: reqs.length });
             setRegistrationError('Please complete all required questions before submitting');
             // Switch to requirements form
             setShowRegistrationModal(false);
@@ -870,10 +871,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
             return;
           }
           // If we get here, we only have server-side requirements, which is fine to submit
-          console.log(`[LegDetailsPanel] ✅ Safety check passed: Only server-side requirements (${reqs.length}), proceeding with submission`);
+          logger.debug('Safety check passed: Only server-side requirements, proceeding with submission', { count: reqs.length }, true);
         }
       } catch (error) {
-        console.warn(`[LegDetailsPanel] Could not verify requirements, proceeding with submission:`, error);
+        logger.warn('Could not verify requirements, proceeding with submission', { error: error instanceof Error ? error.message : String(error) });
         // Continue with submission if check fails (don't block user)
       }
     }
@@ -881,7 +882,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     setIsRegistering(true);
     setRegistrationError(null);
 
-    console.log(`[LegDetailsPanel] Submitting registration:`, {
+    logger.debug('Submitting registration', {
       leg_id: leg.leg_id,
       journey_id: leg.journey_id,
       hasNotes: !!notesToUse,
@@ -950,7 +951,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       const data = await response.json();
 
       if (!response.ok) {
-        console.error(`[LegDetailsPanel] Registration failed:`, {
+        logger.error('Registration failed', {
           status: response.status,
           statusText: response.statusText,
           error: data.error,
@@ -981,7 +982,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       setPassportVerificationComplete(false);
     } catch (error: any) {
       setRegistrationError(error.message || 'An error occurred while registering');
-      console.error('Registration error:', error);
+      logger.error('Registration error', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsRegistering(false);
     }
@@ -1006,7 +1007,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
           setRegistrationStatus(data?.status || null);
         }
       } catch (err) {
-        console.warn('Failed to reload registration status:', err);
+        logger.warn('Failed to reload registration status', { error: err instanceof Error ? err.message : String(err) });
       }
     }
 
@@ -1055,7 +1056,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       onRegistrationChange?.();
     } catch (error: any) {
       setRegistrationError(error.message || 'Failed to cancel registration');
-      console.error('Cancel registration error:', error);
+      logger.error('Cancel registration error', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsRegistering(false);
     }
@@ -1097,9 +1098,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
   // Helper function to check if risk level matches
   const riskLevelMatches = (leg:Leg, userRiskLevel:RiskLevel): boolean => {
-    console.log('leg.leg_risk_level', leg.leg_risk_level);
-    console.log('leg.journey_risk_level', leg.journey_risk_level);
-    console.log('userRiskLevel', userRiskLevel);
+    logger.debug('leg.leg_risk_level', { value: leg.leg_risk_level }, true);
+    logger.debug('leg.journey_risk_level', { value: leg.journey_risk_level }, true);
+    logger.debug('userRiskLevel', { value: userRiskLevel }, true);
     if(leg.leg_risk_level === null) {
       return leg.journey_risk_level?.includes(userRiskLevel) ?? false;
     }
@@ -1336,7 +1337,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                             const hasQuestionReqs = reqs.some((r: any) => r.requirement_type === 'question');
 
                             if (hasQuestionReqs) {
-                              console.error(`[LegDetailsPanel] ❌ Cannot submit: Question requirements exist (${reqs.length}), showing requirements form`);
+                              logger.error('Cannot submit: Question requirements exist, showing requirements form', { count: reqs.length });
                               setRegistrationError('Please complete the required questions first');
                               setShowRegistrationModal(false);
                               setShowRequirementsForm(true);
@@ -1344,10 +1345,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                               return;
                             }
                             // If we get here, we only have server-side requirements (or no requirements), which is fine to submit
-                            console.log(`[LegDetailsPanel] ✅ Submitting: No question requirements (${reqs.length} total requirements)`);
+                            logger.debug('Submitting: No question requirements', { total: reqs.length }, true);
                           }
                         } catch (error) {
-                          console.warn(`[LegDetailsPanel] Could not verify requirements before submit:`, error);
+                          logger.warn('Could not verify requirements before submit', { error: error instanceof Error ? error.message : String(error) });
                           // Continue with submission if check fails - don't block user
                         }
 

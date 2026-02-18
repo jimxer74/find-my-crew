@@ -20,6 +20,7 @@ import {
 } from '@/app/lib/ai/owner/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import * as sessionService from '@/app/lib/owner/sessionService';
+import { logger } from '@/app/lib/logger';
 
 /**
  * Fetch session ID from server (stored in HttpOnly cookie)
@@ -30,7 +31,7 @@ async function fetchSessionFromCookie(): Promise<{ sessionId: string; isNewSessi
     if (!response.ok) return null;
     return response.json();
   } catch (e) {
-    console.error('Failed to fetch session from cookie:', e);
+    logger.error('Failed to fetch session from cookie', { error: e instanceof Error ? e.message : String(e) });
     return null;
   }
 }
@@ -42,7 +43,7 @@ async function clearSessionCookie(): Promise<void> {
   try {
     await fetch('/api/owner/session', { method: 'DELETE' });
   } catch (e) {
-    console.error('Failed to clear session cookie:', e);
+    logger.error('Failed to clear session cookie', { error: e instanceof Error ? e.message : String(e) });
   }
 }
 
@@ -142,13 +143,13 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         // Get session ID from HttpOnly cookie
         const sessionData = await fetchSessionFromCookie();
         if (!sessionData) {
-          console.error('[OwnerChatContext] Failed to get session ID from cookie');
+          logger.error('Failed to get session ID from cookie', {});
           setIsInitialized(true);
           return;
         }
 
         const { sessionId, isNewSession } = sessionData;
-        console.log('[OwnerChatContext] Session ID from cookie:', sessionId, 'isNew:', isNewSession);
+        logger.debug('Session ID from cookie', { sessionId: !!sessionId, isNewSession }, true);
 
         // Load session data from API
         let loadedSession: OwnerSession | null = null;
@@ -156,15 +157,15 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           try {
             loadedSession = await sessionService.loadSession(sessionId);
             if (loadedSession) {
-              console.log('[OwnerChatContext] Loaded session from API:', {
+              logger.debug('Loaded session from API', {
                 messagesCount: loadedSession.conversation.length,
                 preferencesKeys: Object.keys(loadedSession.gatheredPreferences),
-              });
+              }, true);
             } else {
-              console.log('[OwnerChatContext] No session found in database for session ID:', sessionId);
+              logger.debug('No session found in database for session ID', { sessionId: !!sessionId }, true);
             }
           } catch (error) {
-            console.error('[OwnerChatContext] Error loading session from API:', error);
+            logger.error('Error loading session from API', { error: error instanceof Error ? error.message : String(error) });
           }
         }
 
@@ -204,16 +205,16 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
                 user.email || undefined,
                 { postSignupOnboarding: true }
               );
-              console.log('[OwnerChatContext] ✅ Fallback: linked owner session to user:', user.id);
+              logger.debug('Fallback: linked owner session to user', { userId: !!user.id }, true);
             } catch (err) {
-              console.error('[OwnerChatContext] Fallback link failed:', err);
+              logger.error('Fallback link failed', { error: err instanceof Error ? err.message : String(err) });
             }
           }
         }
 
         setIsInitialized(true);
       } catch (error) {
-        console.error('[OwnerChatContext] Error initializing session:', error);
+        logger.error('Error initializing session', { error: error instanceof Error ? error.message : String(error) });
         setIsInitialized(true);
       }
     }
@@ -286,7 +287,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[OwnerChatContext] Auth state changed:', event, 'user:', session?.user?.id);
+      logger.debug('Auth state changed', { event, hasUser: !!session?.user?.id }, true);
       
       if (event === 'SIGNED_IN' && session?.user) {
         const knownProfile = extractKnownProfile(session.user);
@@ -302,9 +303,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
               session.user.email || undefined,
               { postSignupOnboarding: isProfileCompletion }
             );
-            console.log('[OwnerChatContext] ✅ Linked owner session to user:', session.user.id);
+            logger.debug('Linked owner session to user', { userId: !!session.user.id }, true);
           } catch (error) {
-            console.error('[OwnerChatContext] Error linking session to user:', error);
+            logger.error('Error linking session to user', { error: error instanceof Error ? error.message : String(error) });
           }
         }
         
@@ -384,7 +385,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         try {
           session = await sessionService.loadSession(currentSessionId);
         } catch (error) {
-          console.error('[OwnerChatContext] Error loading session for profile completion:', error);
+          logger.error('Error loading session for profile completion', { error: error instanceof Error ? error.message : String(error) });
         }
       }
 
@@ -417,12 +418,11 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
 
       const knownProfile = extractKnownProfile(user);
 
-      console.log('[OwnerChatContext] Profile completion triggered', {
+      logger.debug('Profile completion triggered', {
         fromUrl: isProfileCompletionFromUrl,
         returningUser: isReturningUser,
-        userId: user.id,
         hasProfile,
-      });
+      }, true);
 
         setState((prev) => ({
           ...prev,
@@ -438,10 +438,10 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
 
       // Trigger profile completion via backend API (sends SYSTEM message server-side)
       try {
-        console.log('[OwnerChatContext] Calling /api/ai/owner/trigger-profile-completion', {
-          sessionId: session?.sessionId,
+        logger.debug('Calling /api/ai/owner/trigger-profile-completion', {
+          hasSessionId: !!session?.sessionId,
           historyLength: session?.conversation?.length ?? 0,
-        });
+        }, true);
 
         const res = await fetch('/api/ai/owner/trigger-profile-completion', {
           method: 'POST',
@@ -466,10 +466,10 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           throw new Error('Invalid profile completion response. Please try again.');
         }
 
-        console.log('[OwnerChatContext] Profile completion trigger successful', {
-          messageId: assistantMessage.id,
+        logger.debug('Profile completion trigger successful', {
+          hasMessageId: !!assistantMessage.id,
           contentLength: assistantMessage.content.length,
-        });
+        }, true);
 
         const triggerUserMessage: OwnerMessage = {
           id: `user_trigger_${Date.now()}`,
@@ -491,7 +491,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         // Note: Onboarding state will be updated when profile is actually created
         // (handled in handleSendMessage when data.profileCreated === true)
       } catch (error: any) {
-        console.error('[OwnerChatContext] Error triggering profile completion:', error);
+        logger.error('Error triggering profile completion', { error: error instanceof Error ? error.message : String(error) });
         setState((prev) => ({
           ...prev,
           isLoading: false,
@@ -523,14 +523,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         await sessionService.saveSession(sessionId, session);
       } catch (error: any) {
         // Enhanced error logging to capture all details
-        console.error('[OwnerChatContext] ❌ Error auto-saving session:', {
+        logger.error('Error auto-saving session', {
           message: error?.message || 'Unknown error',
-          name: error?.name || 'Error',
-          stack: error?.stack,
-          sessionId: state.sessionId,
           messagesCount: state.messages.length,
-          preferencesKeys: Object.keys(state.preferences || {}),
-          error: error,
           errorString: error?.toString(),
         });
         // Don't throw - auto-save failures shouldn't break the UI
@@ -568,9 +563,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           ...prev,
           sessionId: null,
         }));
-        console.log('[OwnerChatContext] ✅ Deleted completed owner onboarding session');
+        logger.debug('Deleted completed owner onboarding session', {}, true);
       } catch (error) {
-        console.error('[OwnerChatContext] Error deleting completed onboarding session:', error);
+        logger.error('Error deleting completed onboarding session', { error: error instanceof Error ? error.message : String(error) });
         cleanedCompletedSessionIdRef.current = null;
       }
     }
@@ -588,7 +583,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     // Extract email from message if user shares it (for session recovery)
     const extractedEmail = sessionService.extractEmailFromMessage(message);
     if (extractedEmail) {
-      console.log('[OwnerChatContext] 📧 Extracted email from message:', extractedEmail);
+      logger.debug('Extracted email from message', { hasEmail: !!extractedEmail }, true);
       // Update session with email (will be saved via auto-save useEffect)
       setState((prev) => {
         if (prev.sessionId) {
@@ -699,7 +694,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             }));
           }
         } else {
-          console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
+          logger.warn('Profile creation reported but profile not found in database', {});
         }
       } else if (data.boatCreated === true) {
         await updateOnboardingState('journey_pending');
@@ -717,7 +712,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err: any) {
-      console.error('[OwnerChatContext] Error sending message:', err);
+      logger.error('Error sending message', { error: err instanceof Error ? err.message : String(err) });
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -802,7 +797,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             }));
           }
         } else {
-          console.warn('[OwnerChatContext] Profile creation reported but profile not found in database');
+          logger.warn('Profile creation reported but profile not found in database', {});
         }
       } else if (data.boatCreated === true) {
         await updateOnboardingState('journey_pending');
@@ -820,7 +815,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch (err: any) {
-      console.error('[OwnerChatContext] Error approving action:', err);
+      logger.error('Error approving action', { error: err instanceof Error ? err.message : String(err) });
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -850,7 +845,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         await sessionService.deleteSession(state.sessionId);
         await clearSessionCookie();
       } catch (error) {
-        console.error('[OwnerChatContext] Error clearing session:', error);
+        logger.error('Error clearing session', { error: error instanceof Error ? error.message : String(error) });
       }
     }
       setState({
@@ -877,15 +872,15 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
 
   const updateOnboardingState = useCallback(async (newState: string) => {
     if (!state.sessionId || !state.userId) {
-      console.warn('[OwnerChatContext] Cannot update onboarding state: no session or user');
+      logger.warn('Cannot update onboarding state: no session or user', {});
       return;
     }
 
     try {
       await sessionService.updateOnboardingState(state.sessionId, newState);
-      console.log('[OwnerChatContext] ✅ Updated onboarding state to:', newState);
+      logger.debug('Updated onboarding state', { newState }, true);
     } catch (error) {
-      console.error('[OwnerChatContext] Error updating onboarding state:', error);
+      logger.error('Error updating onboarding state', { error: error instanceof Error ? error.message : String(error) });
     }
   }, [state.sessionId, state.userId]);
 
@@ -963,7 +958,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           journeyDetailsText = `\n\nJourney details:\n${journeyParts.join('\n')}`;
         }
       } catch (error) {
-        console.error('[OwnerChatContext] Error parsing journey details from URL:', error);
+        logger.error('Error parsing journey details from URL', { error: error instanceof Error ? error.message : String(error) });
       }
     }
     
@@ -971,7 +966,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     const crewDemandText = (crewDemandParam?.trim() || '');
     const message = journeyDetailsText ? (crewDemandText ? crewDemandText + journeyDetailsText : journeyDetailsText.trim()) : crewDemandText;
     if (message) {
-      console.log('[OwnerChatContext] Processing initial owner combo data from URL', { hasCrewDemand: !!crewDemandText, hasJourneyDetails: !!journeyDetailsText });
+      logger.debug('Processing initial owner combo data from URL', { hasCrewDemand: !!crewDemandText, hasJourneyDetails: !!journeyDetailsText }, true);
       sendMessage(message);
     }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);

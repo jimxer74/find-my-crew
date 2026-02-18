@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, Re
 import { AIConversation, AIMessage, AIPendingAction } from '@/app/lib/ai/assistant/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
+import { logger } from '@/app/lib/logger';
 
 // Type declaration for custom event
 declare global {
@@ -75,12 +76,12 @@ const AssistantContext = createContext<AssistantContextType | null>(null);
 
 // Helper function to parse profile action and determine section/field
 export function parseProfileAction(action: AIPendingAction) {
-  console.log('[parseProfileAction] 📊 Parsing action:', action.action_type);
-  console.log('[parseProfileAction] 📊 Action object:', action);
+  logger.debug('Parsing action', { actionType: action.action_type }, true);
+  logger.debug('Action object', { actionType: action.action_type }, true);
 
   // Use metadata from action if available
   if (action.profile_section && action.profile_field) {
-    console.log('[parseProfileAction] 📊 Using metadata from action:', { section: action.profile_section, field: action.profile_field });
+    logger.debug('Using metadata from action', { section: action.profile_section, field: action.profile_field }, true);
     return {
       section: action.profile_section,
       field: action.profile_field
@@ -98,14 +99,14 @@ export function parseProfileAction(action: AIPendingAction) {
     'refine_skills': { section: 'experience', field: 'skills' },
   };
 
-  console.log('[parseProfileAction] 📊 Looking up action type:', action.action_type);
+  logger.debug('Looking up action type', { actionType: action.action_type }, true);
   const mapping = ACTION_TO_PROFILE_MAPPING[action.action_type];
   if (mapping) {
-    console.log('[parseProfileAction] 📊 Found mapping:', mapping);
+    logger.debug('Found mapping', {}, true);
     return mapping;
   }
 
-  console.log('[parseProfileAction] 📊 No mapping found, using fallback');
+  logger.debug('No mapping found, using fallback', {}, true);
   // Default fallback if action type not in mapping
   return { section: 'personal', field: 'user_description' };
 }
@@ -169,7 +170,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         setState(prev => ({ ...prev, conversations: data.conversations }));
       }
     } catch (error) {
-      console.error('Failed to load conversations:', error);
+      logger.error('Failed to load conversations', { error: error instanceof Error ? error.message : String(error) });
     }
   }, []);
 
@@ -190,7 +191,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         }));
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error);
+      logger.error('Failed to load conversation', { error: error instanceof Error ? error.message : String(error) });
       setState(prev => ({ ...prev, isLoading: false }));
     }
   }, []);
@@ -216,7 +217,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         messages: prev.currentConversationId === id ? [] : prev.messages,
       }));
     } catch (error) {
-      console.error('Failed to delete conversation:', error);
+      logger.error('Failed to delete conversation', { error: error instanceof Error ? error.message : String(error) });
     }
   }, []);
 
@@ -369,14 +370,14 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadPendingActions = useCallback(async () => {
-    console.log('[AssistantContext] 🔍 loadPendingActions called');
+    logger.debug('loadPendingActions called', {}, true);
     try {
       const response = await fetch('/api/ai/assistant/actions');
-      console.log('[AssistantContext] 📡 API response status:', response.status);
+      logger.debug('API response status', { status: response.status }, true);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('[AssistantContext] 📦 Received data:', data);
+        logger.debug('Received data', {}, true);
 
         // Transform database fields to match frontend interface
         const transformedActions = data.actions.map((action: any) => ({
@@ -390,19 +391,19 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           ai_highlight_text: action.ai_highlight_text,
         }));
 
-        console.log('[AssistantContext] ✅ Transformed actions:', transformedActions);
-        console.log('[AssistantContext] 📊 Transformed actions count:', transformedActions.length);
-        console.log('[AssistantContext] 📊 First transformed action:', transformedActions[0]);
-        console.log('[AssistantContext] 📊 Actions array type:', Array.isArray(transformedActions));
+        logger.debug('Transformed actions', { count: transformedActions.length }, true);
+        logger.debug('Transformed actions count', { count: transformedActions.length }, true);
+        logger.debug('First transformed action', {}, true);
+        logger.debug('Actions array type', { isArray: Array.isArray(transformedActions) }, true);
         setState(prev => {
-          console.log('[AssistantContext] 🔄 Setting state with actions:', transformedActions);
+          logger.debug('Setting state with actions', { count: transformedActions.length }, true);
           return { ...prev, pendingActions: transformedActions };
         });
       } else {
-        console.error('[AssistantContext] ❌ Failed to load pending actions:', response.status, response.statusText);
+        logger.error('Failed to load pending actions', { status: response.status, statusText: response.statusText });
       }
     } catch (error) {
-      console.error('[AssistantContext] 🚨 Exception in loadPendingActions:', error);
+      logger.error('Exception in loadPendingActions', { error: error instanceof Error ? error.message : String(error) });
     }
   }, []);
 
@@ -418,7 +419,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Input submitted successfully:', data);
+        logger.debug('Input submitted successfully', {}, true);
 
         setState(prev => ({
           ...prev,
@@ -442,7 +443,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           // If we can't parse the error response, use default message
         }
 
-        console.error('Submit input failed:', errorMessage);
+        logger.error('Submit input failed', { error: errorMessage });
         setState(prev => ({
           ...prev,
           isLoading: false,
@@ -454,7 +455,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         }));
       }
     } catch (error) {
-      console.error('Failed to submit input:', error);
+      logger.error('Failed to submit input', { error: error instanceof Error ? error.message : String(error) });
       setState(prev => ({
         ...prev,
         isLoading: false,
@@ -468,14 +469,14 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   }, [loadPendingActions]);
 
   const redirectToProfile = useCallback(async (actionId: string, section: string, field: string) => {
-    console.log('[redirectToProfile] 📊 Called with parameters:', { actionId, section, field });
-    console.log('redirectToProfile called for action:', actionId, 'section:', section, 'field:', field);
+    logger.debug('redirectToProfile called with parameters', { actionId, section, field }, true);
+    logger.debug('redirectToProfile called for action', { actionId, section, field }, true);
 
     // Find the action to extract targetSkills
     const action = state.pendingActions.find(a => a.id === actionId);
     const targetSkills = action?.action_payload?.targetSkills;
-    console.log('[redirectToProfile] 📊 Found action:', action);
-    console.log('[redirectToProfile] 📊 Extracted targetSkills:', targetSkills);
+    logger.debug('redirectToProfile - Found action', {}, true);
+    logger.debug('redirectToProfile - Extracted targetSkills', { found: !!targetSkills }, true);
     
     // Navigate to profile with query params
     if (typeof window !== 'undefined') {
@@ -486,22 +487,22 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       if (targetSkills && Array.isArray(targetSkills) && targetSkills.length > 0) {
         const encodedTargetSkills = encodeURIComponent(JSON.stringify(targetSkills));
         url += `&targetSkills=${encodedTargetSkills}`;
-        console.log('[redirectToProfile] 📊 Added targetSkills to URL:', encodedTargetSkills);
+        logger.debug('redirectToProfile - Added targetSkills to URL', {}, true);
       }
 
-      console.log(`[redirectToProfile] 📊 Navigating to profile: ${url}`);
+      logger.debug('redirectToProfile - Navigating to profile', {}, true);
       window.location.href = url;
     }
 
     // Optional: Show toast notification (if toast is available)
-    console.log(`Redirecting to profile to update ${field}`);
+    logger.debug('Redirecting to profile to update field', { field }, true);
   }, [state.pendingActions]);
 
   const approveAction = useCallback(async (actionId: string, value?: string) => {
     /*
     const action = state.pendingActions.find(a => a.id === actionId);
     if (!action) {
-      console.error('Action not found:', actionId);
+      logger.error('Action not found', { actionId });
       return;
     }
 
@@ -518,11 +519,11 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
     if (PROFILE_UPDATE_ACTIONS.includes(action.action_type)) {
       // For profile update actions, redirect to profile page instead of direct approval
-      console.log('[approveAction] 📊 Profile action detected:', action.action_type);
-      console.log('[approveAction] 📊 Action object:', action);
-      console.log('[approveAction] 📊 actionId parameter:', actionId);
+      logger.debug('Profile action detected', { actionType: action.action_type }, true);
+      logger.debug('Action object for approval', {}, true);
+      logger.debug('actionId parameter', { actionId }, true);
       const { section, field } = parseProfileAction(action);
-      console.log('[approveAction] 📊 Parsed section/field:', { section, field });
+      logger.debug('Parsed section/field', { section, field }, true);
       redirectToProfile(actionId, section, field);
       return;
     }
@@ -530,7 +531,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     // Special handling for suggest_profile_update_user_description action
     if (action.action_type === 'suggest_profile_update_user_description') {
       if (!value || !value.trim()) {
-        console.error('User description value is required for suggest_profile_update_user_description action');
+        logger.error('User description value is required for suggest_profile_update_user_description action', {});
         return;
       }
 
@@ -544,7 +545,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json();
-          console.log('User description updated successfully:', data);
+          logger.debug('User description updated successfully', {}, true);
 
           setState(prev => ({
             ...prev,
@@ -567,7 +568,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
             // If we can't parse the error response, use default message
           }
 
-          console.error('Update user description failed:', errorMessage);
+          logger.error('Update user description failed', { error: errorMessage });
           setState(prev => ({
             ...prev,
             lastActionResult: {
@@ -578,7 +579,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           }));
         }
       } catch (error) {
-        console.error('Failed to update user description:', error);
+        logger.error('Failed to update user description', { error: error instanceof Error ? error.message : String(error) });
         setState(prev => ({
           ...prev,
           lastActionResult: {
@@ -606,7 +607,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Action approved successfully:', data);
+        logger.debug('Action approved successfully', {}, true);
 
         setState(prev => ({
           ...prev,
@@ -627,7 +628,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           // If we can't parse the error response, use default message
         }
 
-        console.error('Approve action failed:', errorMessage);
+        logger.error('Approve action failed', { error: errorMessage });
         setState(prev => ({
           ...prev,
           lastActionResult: {
@@ -638,7 +639,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         }));
       }
     } catch (error) {
-      console.error('Failed to approve action:', error);
+      logger.error('Failed to approve action', { error: error instanceof Error ? error.message : String(error) });
       setState(prev => ({
         ...prev,
         lastActionResult: {
@@ -661,7 +662,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Action rejected marked as read:', data);
+        logger.debug('Action rejected marked as read', {}, true);
 
         setState(prev => ({
           ...prev,
@@ -682,7 +683,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           // If we can't parse the error response, use default message
         }
 
-        console.error('Reject action failed:', errorMessage);
+        logger.error('Reject action failed', { error: errorMessage });
         setState(prev => ({
           ...prev,
           lastActionResult: {
@@ -693,7 +694,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         }));
       }
     } catch (error) {
-      console.error('Failed to reject action:', error);
+      logger.error('Failed to reject action', { error: error instanceof Error ? error.message : String(error) });
       setState(prev => ({
         ...prev,
         lastActionResult: {
@@ -726,9 +727,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     // Listen for auth state changes
     const supabase = getSupabaseBrowserClient();
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AssistantContext] 📊 Auth state change:', event, 'session:', !!session);
+      logger.debug('Auth state change', { event, hasSession: !!session }, true);
       if (event === 'SIGNED_IN' && session) {
-        console.log('[AssistantContext] 📊 User signed in, loading pending actions');
+        logger.debug('User signed in, loading pending actions', {}, true);
         loadPendingActions();
 
         // Copy pending leg registration for assistant flow (e.g. if user lands on crew page).
@@ -742,16 +743,16 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
               const { legId, legName, timestamp } = JSON.parse(pendingLegStr);
               const isRecent = timestamp && (Date.now() - timestamp) < 30 * 60 * 1000;
               if (isRecent && legId) {
-                console.log('[AssistantContext] 📊 Found pending leg registration (copying to _ready for assistant):', { legId, legName });
+                logger.debug('Found pending leg registration', { legId, legName }, true);
                 localStorage.setItem('pending_leg_registration_ready', JSON.stringify({ legId, legName }));
               }
             } catch (e) {
-              console.error('[AssistantContext] Failed to parse pending leg registration:', e);
+              logger.error('Failed to parse pending leg registration', { error: e instanceof Error ? e.message : String(e) });
             }
           }
         }
       } else if (event === 'SIGNED_OUT') {
-        console.log('[AssistantContext] 📊 User signed out, clearing pending actions');
+        logger.debug('User signed out, clearing pending actions', {}, true);
         setState(prev => ({ ...prev, pendingActions: [], awaitingInputActions: [] }));
       }
     });
@@ -767,7 +768,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           table: 'ai_pending_actions',
         },
         (payload) => {
-          console.log('[AssistantContext] 📊 Real-time pending actions change detected:', payload);
+          logger.debug('Real-time pending actions change detected', {}, true);
           // Reload pending actions to get the latest state
           loadPendingActions();
         }
@@ -804,13 +805,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
           .lt('created_at', sevenDaysAgo.toISOString());
 
         if (error) {
-          console.error('Error cleaning up expired actions:', error);
+          logger.error('Error cleaning up expired actions', { error: error instanceof Error ? error.message : String(error) });
         } else {
           // Reload pending actions to reflect cleanup
           await loadPendingActions();
         }
       } catch (error) {
-        console.error('Error in cleanupExpiredActions:', error);
+        logger.error('Error in cleanupExpiredActions', { error: error instanceof Error ? error.message : String(error) });
       }
     };
 
@@ -832,13 +833,13 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
     const supabase = getSupabaseBrowserClient();
     const { data: { subscription: authListener } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[AssistantContext] 📊 Cleanup auth listener:', event, 'session:', !!session);
+      logger.debug('Cleanup auth listener', { event, hasSession: !!session }, true);
       if (event === 'SIGNED_IN' && session) {
-        console.log('[AssistantContext] 📊 User signed in, starting cleanup interval');
+        logger.debug('User signed in, starting cleanup interval', {}, true);
         cleanupExpiredActions();
         cleanupInterval = setInterval(cleanupExpiredActions, 60 * 60 * 1000);
       } else if (event === 'SIGNED_OUT') {
-        console.log('[AssistantContext] 📊 User signed out, clearing cleanup interval');
+        logger.debug('User signed out, clearing cleanup interval', {}, true);
         if (cleanupInterval) {
           clearInterval(cleanupInterval);
           cleanupInterval = null;
@@ -867,20 +868,20 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       state.suggestionsGeneratedAt &&
       Date.now() - state.suggestionsGeneratedAt < CACHE_DURATION_MS
     ) {
-      console.log('[AssistantContext] Using cached profile suggestions');
+      logger.debug('Using cached profile suggestions', {}, true);
       return;
     }
 
     // Only generate if conversation is empty (new conversation)
     if (state.messages.length > 0) {
-      console.log('[AssistantContext] Skipping suggestion generation - conversation has messages');
+      logger.debug('Skipping suggestion generation - conversation has messages', {}, true);
       return;
     }
 
     setState((prev) => ({ ...prev, suggestionsLoading: true }));
 
     try {
-      console.log('[AssistantContext] Generating profile suggestions...');
+      logger.debug('Generating profile suggestions', {}, true);
       const response = await fetch('/api/ai/assistant/generate-suggestions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -892,10 +893,9 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await response.json();
-      console.log('[AssistantContext] Profile suggestions generated', {
+      logger.debug('Profile suggestions generated', {
         count: data.suggestions?.length,
-        suggestions: data.suggestions,
-      });
+      }, true);
 
       setState((prev) => ({
         ...prev,
@@ -904,7 +904,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         suggestionsLoading: false,
       }));
     } catch (error: any) {
-      console.error('[AssistantContext] Failed to generate profile suggestions:', error);
+      logger.error('Failed to generate profile suggestions', { error: error instanceof Error ? error.message : String(error) });
       setState((prev) => ({
         ...prev,
         suggestionsLoading: false,

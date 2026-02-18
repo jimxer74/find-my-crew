@@ -10,6 +10,7 @@ import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } fro
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import { canCreateLeg } from '@/app/lib/limits';
 import Image from 'next/image';
+import { logger } from '@/app/lib/logger';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -88,7 +89,7 @@ export function LegFormModal({
             loadLeg(journeyExpLevel);
           })
           .catch((error) => {
-            console.error('Error loading boat capacity:', error);
+            logger.error('Error loading boat capacity', { error: error instanceof Error ? error.message : String(error) });
             // Still try to load leg data even if boat capacity load fails
             loadLeg(null);
           });
@@ -108,21 +109,21 @@ export function LegFormModal({
 
   // Debug: Log state changes
   useEffect(() => {
-    console.log('Risk level state changed to:', riskLevel);
+    logger.debug('Risk level state changed', { riskLevel }, true);
   }, [riskLevel]);
 
   useEffect(() => {
-    console.log('Skills state changed to:', skills);
+    logger.debug('Skills state changed', { count: skills?.length || 0 }, true);
   }, [skills]);
 
   useEffect(() => {
-    console.log('Journey skills state changed to:', journeySkills);
+    logger.debug('Journey skills state changed', { count: journeySkills?.length || 0 }, true);
   }, [journeySkills]);
 
   // Set journey defaults for existing legs that don't have values
   useEffect(() => {
     if (isOpen && legId && journeyDefaultsLoaded && !journeyDefaultsApplied && (!riskLevel || (skills.length === 0 && (!journeySkills || journeySkills.length === 0)))) {
-      console.log('Leg loaded but missing values, applying journey defaults');
+      logger.debug('Leg loaded but missing values, applying journey defaults', {}, true);
       setJourneyDefaultsApplied(true);
       // Load journey data and apply defaults
       const applyDefaults = async () => {
@@ -147,7 +148,7 @@ export function LegFormModal({
               defaultRiskLevel = journeyRiskLevelRaw as RiskLevel;
             }
             if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
-              console.log('Applying journey risk level:', defaultRiskLevel);
+              logger.debug('Applying journey risk level', { defaultRiskLevel }, true);
               setRiskLevel(defaultRiskLevel);
             }
           }
@@ -158,7 +159,7 @@ export function LegFormModal({
           const journeySkillsData = (journeyData as any).skills as string[] | null;
           if (skills.length === 0 && (!journeySkillsData || journeySkillsData.length === 0)) {
             // Neither journey nor leg has skills - this is fine, leg can have its own
-            console.log('No skills at journey or leg level');
+            logger.debug('No skills at journey or leg level', {}, true);
           }
         }
       };
@@ -177,14 +178,14 @@ export function LegFormModal({
       .single();
 
     if (journeyError) {
-      console.error('Error loading journey data:', journeyError);
+      logger.error('Error loading journey data', { error: journeyError instanceof Error ? journeyError.message : String(journeyError) });
       return null;
     }
 
-    console.log('Journey data loaded:', journeyData);
-    console.log('Current legId parameter:', currentLegId);
-    console.log('Journey risk_level:', (journeyData as any)?.risk_level);
-    console.log('Journey skills:', (journeyData as any)?.skills);
+    logger.debug('Journey data loaded', { hasJourneyData: !!journeyData }, true);
+    logger.debug('Current legId parameter', { currentLegId }, true);
+    logger.debug('Journey risk_level', { riskLevel: (journeyData as any)?.risk_level }, true);
+    logger.debug('Journey skills', { count: (journeyData as any)?.skills?.length || 0 }, true);
 
     if (journeyData) {
       if ((journeyData as any).boats) {
@@ -199,13 +200,13 @@ export function LegFormModal({
       const displayJourneySkills = hasJourneySkills 
         ? journeySkillsData.map(toDisplaySkillName)
         : null;
-      console.log('Setting journeySkills state to:', displayJourneySkills);
+      logger.debug('Setting journeySkills state', { count: displayJourneySkills?.length || 0 }, true);
       setJourneySkills(displayJourneySkills);
       
       // Store journey min_experience_level (if any) - it will be shown as read-only
       const journeyExpLevel = (journeyData as any).min_experience_level as number | null;
       const hasJourneyExpLevel = journeyExpLevel !== null && journeyExpLevel !== undefined;
-      console.log('Setting journeyMinExperienceLevel state to:', hasJourneyExpLevel ? journeyExpLevel : null);
+      logger.debug('Setting journeyMinExperienceLevel state', { level: hasJourneyExpLevel ? journeyExpLevel : null }, true);
       setJourneyMinExperienceLevel(hasJourneyExpLevel ? (journeyExpLevel as ExperienceLevel) : null);
       
       // Always check current state using functional updates to see if we need to set defaults
@@ -219,13 +220,13 @@ export function LegFormModal({
             const shouldSetDefaults = !currentLegId || shouldSetRiskLevel || shouldSetSkills || shouldSetExpLevel;
             
             if (shouldSetDefaults) {
-              console.log('Setting defaults from journey. New leg:', !currentLegId, 'Missing risk level:', shouldSetRiskLevel, 'Missing skills:', shouldSetSkills, 'Missing exp level:', shouldSetExpLevel);
+              logger.debug('Setting defaults from journey', { isNewLeg: !currentLegId, shouldSetRiskLevel, shouldSetSkills, shouldSetExpLevel }, true);
               
               // Set default risk level from journey (use first one if array) - only if not already set
               if (shouldSetRiskLevel) {
                 // Handle both array (old format) and single value (new format) for backward compatibility
                 const journeyRiskLevelRaw = (journeyData as any).risk_level;
-                console.log('Journey risk level:', journeyRiskLevelRaw);
+                logger.debug('Journey risk level', { journeyRiskLevelRaw }, true);
                 let defaultRiskLevel: RiskLevel | null = null;
                 if (Array.isArray(journeyRiskLevelRaw) && journeyRiskLevelRaw.length > 0) {
                   // Old format: array - take first element
@@ -235,15 +236,15 @@ export function LegFormModal({
                   defaultRiskLevel = journeyRiskLevelRaw as RiskLevel;
                 }
                 if (defaultRiskLevel) {
-                  console.log('Setting risk level to:', defaultRiskLevel);
+                  logger.debug('Setting risk level to', { defaultRiskLevel }, true);
                   if (defaultRiskLevel && ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(defaultRiskLevel)) {
-                    console.log('Calling setRiskLevel with:', defaultRiskLevel);
+                    logger.debug('Calling setRiskLevel with', { defaultRiskLevel }, true);
                     // Set risk level using setTimeout to avoid nested state updates
                     setTimeout(() => {
                       setRiskLevel(defaultRiskLevel);
                     }, 0);
                   } else {
-                    console.log('Risk level validation failed:', defaultRiskLevel);
+                    logger.debug('Risk level validation failed', { defaultRiskLevel }, true);
                   }
                 }
               }
@@ -252,16 +253,16 @@ export function LegFormModal({
               // If journey has skills, they will be shown as read-only, so we don't set leg skills
               if (shouldSetSkills) {
                 const journeySkillsData = (journeyData as any).skills as string[] | null;
-                console.log('Journey skills (canonical):', journeySkillsData);
+                logger.debug('Journey skills (canonical)', { count: journeySkillsData?.length || 0 }, true);
                 // Only set leg skills if journey doesn't have skills defined
                 // If journey has skills, they are read-only and not stored in leg
                 if (!journeySkillsData || journeySkillsData.length === 0) {
                   // Journey has no skills, so leg can have its own skills
-                  console.log('Journey has no skills, leg can have its own');
+                  logger.debug('Journey has no skills, leg can have its own', {}, true);
                   // Keep current (empty) skills
                 } else {
                   // Journey has skills - they will be shown as read-only, don't store in leg
-                  console.log('Journey has skills defined, they will be shown as read-only');
+                  logger.debug('Journey has skills defined, they will be shown as read-only', {}, true);
                   // Don't store skills in leg when journey has them
                 }
               }
@@ -269,7 +270,7 @@ export function LegFormModal({
               // Set default experience level from journey - only if not already set
               if (shouldSetExpLevel) {
                 const journeyExpLevel = (journeyData as any).min_experience_level as number | null;
-                console.log('Journey min_experience_level:', journeyExpLevel);
+                logger.debug('Journey min_experience_level', { journeyExpLevel }, true);
                 if (journeyExpLevel !== null && journeyExpLevel !== undefined) {
                   // Journey has experience level - set as default for leg
                   // Leg can later be set to same or more strict level
@@ -278,13 +279,13 @@ export function LegFormModal({
                   }, 0);
                 } else {
                   // Journey has no experience level - leg can have its own
-                  console.log('Journey has no experience level, leg can have its own');
+                  logger.debug('Journey has no experience level, leg can have its own', {}, true);
                 }
               }
               
               return currentExpLevel;
             } else {
-              console.log('Leg already has risk level, skills, and experience level, not setting defaults');
+              logger.debug('Leg already has risk level, skills, and experience level, not setting defaults', {}, true);
               return currentExpLevel;
             }
           });
@@ -297,7 +298,7 @@ export function LegFormModal({
       
       // Mark that defaults have been loaded
       setJourneyDefaultsLoaded(true);
-      console.log('Journey defaults loaded flag set to true');
+      logger.debug('Journey defaults loaded flag set to true', {}, true);
       
       // Return journey experience level
       const journeyExpLevelReturn = (journeyData as any).min_experience_level as number | null;
@@ -340,7 +341,7 @@ export function LegFormModal({
       .single();
 
     if (legError) {
-      console.error('Error loading leg:', legError);
+      logger.error('Error loading leg', { error: legError instanceof Error ? legError.message : String(legError) });
       setError('Failed to load leg');
       setLoading(false);
       return;
@@ -353,7 +354,7 @@ export function LegFormModal({
     let waypointsResult: Waypoint[] = [];
     
     if (waypointsError) {
-      console.error('Error loading waypoints via RPC:', waypointsError);
+      logger.error('Error loading waypoints via RPC', { error: waypointsError instanceof Error ? waypointsError.message : String(waypointsError) });
       // Fallback: if RPC doesn't exist yet, return empty array
       // The RPC function should be created by migration
       waypointsResult = [];
@@ -369,7 +370,7 @@ export function LegFormModal({
               const geoJson = JSON.parse(row.location);
               coordinates = geoJson.coordinates as [number, number];
             } catch (e) {
-              console.error('Error parsing location GeoJSON:', e);
+              logger.error('Error parsing location GeoJSON', { error: e instanceof Error ? e.message : String(e) });
             }
           } else if (row.location.coordinates) {
             coordinates = row.location.coordinates as [number, number];
@@ -407,7 +408,7 @@ export function LegFormModal({
       setMinExperienceLevel(legExpLevel || effectiveJourneyLevel);
       setWaypoints(waypointsResult);
       
-      console.log('Leg loaded - risk_level:', legData.risk_level, 'skills:', legData.skills, 'min_experience_level:', legData.min_experience_level, 'journeyMinExperienceLevel:', effectiveJourneyLevel, 'waypoints:', waypointsResult.length);
+      logger.debug('Leg loaded', { riskLevel: legData.risk_level, skillsCount: legData.skills?.length || 0, minExperienceLevel: legData.min_experience_level, effectiveJourneyLevel, waypointsCount: waypointsResult.length }, true);
     }
     
     setLoading(false);
@@ -603,7 +604,7 @@ export function LegFormModal({
       if (waypointsInsertError) {
         // If RPC doesn't exist, try direct insert with WKT
         // We'll need to create the RPC function first
-        console.warn('RPC function insert_leg_waypoints not found, using direct insert');
+        logger.warn('RPC function insert_leg_waypoints not found, using direct insert', {});
         
         // Direct insert approach - Supabase may not support PostGIS directly
         // We need to create an RPC function for this
@@ -614,7 +615,7 @@ export function LegFormModal({
       onClose();
       resetForm();
     } catch (err: any) {
-      console.error('Error saving leg:', err);
+      logger.error('Error saving leg', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message || 'Failed to save leg');
     } finally {
       setSaving(false);
@@ -682,7 +683,7 @@ export function LegFormModal({
   const handleSkillChange = (skill: string, checked: boolean) => {
     // Don't allow modifying journey skills
     if (journeySkills && journeySkills.includes(skill)) {
-      console.log('Cannot modify journey skill:', skill);
+      logger.debug('Cannot modify journey skill', { skill }, true);
       return;
     }
     
@@ -976,7 +977,7 @@ export function LegFormModal({
                         : skills; // No journey skills, just show leg skills
                       
                       // Debug log
-                      console.log('Rendering skills UI - journeySkills:', journeySkills, 'leg skills:', skills, 'allDisplayedSkills:', allDisplayedSkills);
+                      logger.debug('Rendering skills UI', { journeySkillsCount: journeySkills?.length || 0, legSkillsCount: skills?.length || 0, allDisplayedSkillsCount: allDisplayedSkills?.length || 0 }, true);
                       
                       return allSkills.map((skill) => {
                         const displayName = formatSkillName(skill.name);
