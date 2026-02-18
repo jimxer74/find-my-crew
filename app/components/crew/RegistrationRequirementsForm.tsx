@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LoadingButton } from '@/app/components/ui/LoadingButton';
+import { logger } from '@/app/lib/logger';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 
@@ -51,7 +52,7 @@ export function RegistrationRequirementsForm({
 
   // Debug: Log when isRegistering prop changes
   useEffect(() => {
-    console.log('[RegistrationRequirementsForm] isRegistering changed:', isRegistering);
+    logger.debug('[RegistrationRequirementsForm] isRegistering prop changed', { isRegistering }, true);
   }, [isRegistering]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -168,19 +169,19 @@ export function RegistrationRequirementsForm({
   };
 
   const handleSubmit = () => {
-    console.log('[RegistrationRequirementsForm] handleSubmit called');
+    logger.debug('[RegistrationRequirementsForm] handleSubmit called', {}, true);
     if (!validateAnswers()) {
-      console.log('[RegistrationRequirementsForm] Validation failed');
+      logger.debug('[RegistrationRequirementsForm] Validation failed', {}, true);
       return;
     }
 
-    console.log('[RegistrationRequirementsForm] Validation passed, calling onComplete');
+    logger.debug('[RegistrationRequirementsForm] Validation passed, calling onComplete', {}, true);
     const answersArray = Object.values(answers).filter(
       (answer) => answer.answer_text && answer.answer_text.trim() !== ''
     );
 
     onComplete(answersArray, notes);
-    console.log('[RegistrationRequirementsForm] onComplete called');
+    logger.debug('[RegistrationRequirementsForm] onComplete called', {}, true);
   };
 
   if (loading) {
