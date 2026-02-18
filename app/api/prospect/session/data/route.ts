@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getSupabaseServerClient, getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
@@ -38,7 +40,7 @@ export async function GET() {
       }
       console.error('[Session Data API] Error fetching session:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch session', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }
@@ -90,7 +92,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('[Session Data API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
@@ -326,7 +328,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Session Data API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
@@ -418,7 +420,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error('[Session Data API] Unexpected error in PATCH:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
@@ -485,7 +487,7 @@ export async function DELETE() {
     if (error) {
       console.error('[Session Data API] Error deleting session:', error);
       return NextResponse.json(
-        { error: 'Failed to delete session', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }
@@ -494,7 +496,7 @@ export async function DELETE() {
   } catch (error: any) {
     console.error('[Session Data API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }

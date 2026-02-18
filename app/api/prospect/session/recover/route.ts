@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUnauthenticatedClient } from '@/app/lib/supabaseServer';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
@@ -28,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[Session Recover API] Error finding session:', error);
       return NextResponse.json(
-        { error: 'Failed to find session', details: error.message },
+        sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
       );
     }
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Session Recover API] Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }

@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 
@@ -41,7 +43,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in email preferences API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
@@ -101,7 +103,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in email preferences API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }

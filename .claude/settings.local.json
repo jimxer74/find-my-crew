@@ -69,7 +69,11 @@
       "Bash(done)",
       "Bash(head:*)",
       "Bash(xargs -I {} sh -c 'echo \"\"=== {} ===\"\"; grep -c \"\"error instanceof Error\"\"')",
-      "Bash(xargs -I {} bash -c 'count=$\\(grep -c \"\"error\\\\.message\\\\|details:\"\" \"\"{}\"\" 2>/dev/null || echo \"\"0\"\"\\); if [ \"\"$count\"\" -gt 0 ]; then echo \"\"$\\(basename $\\(dirname {}\\)\\)/$\\(basename {}\\): $count\"\"; fi')"
+      "Bash(xargs -I {} bash -c 'count=$\\(grep -c \"\"error\\\\.message\\\\|details:\"\" \"\"{}\"\" 2>/dev/null || echo \"\"0\"\"\\); if [ \"\"$count\"\" -gt 0 ]; then echo \"\"$\\(basename $\\(dirname {}\\)\\)/$\\(basename {}\\): $count\"\"; fi')",
+      "Bash(while read f)",
+      "Bash(do if ! grep -q \"sanitizeErrorResponse\" \"$f\")",
+      "Bash(then sed -i \"0,/^import/s/^/import { sanitizeErrorResponse } from ''@\\\\/app\\\\/lib\\\\/errorResponseHelper'';\\\\nimport { logger } from ''@\\\\/app\\\\/lib\\\\/logger'';\\\\n/\" \"$f\")",
+      "Bash(xargs -I {} bash -c 'grep -q \"\"import.*sanitizeErrorResponse\"\" {} || echo \"\"{}\"\"')"
     ]
   }
 }

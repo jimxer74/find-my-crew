@@ -121,7 +121,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in answers API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }

@@ -1,3 +1,5 @@
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { ConsentType, CookiePreferences } from '@/app/types/consents';
@@ -46,7 +48,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Error in consents API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
@@ -159,7 +161,7 @@ export async function PATCH(request: NextRequest) {
   } catch (error: any) {
     console.error('Error updating consent:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
     );
   }
