@@ -37,14 +37,14 @@ export async function POST(
     // Get authenticated user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error(`[AI Assessment API] Unauthorized access attempt for registration: ${registrationId}`);
+      logger.error('Unauthorized access attempt for assessment', { registrationId });
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
-    
-    console.log(`[AI Assessment API] Authenticated user: ${user.id}`);
+
+    logger.debug('Authenticated user accessing assessment', { userId: user.id }, true);
 
     // Verify registration exists
     const { data: registration, error: regError } = await supabase
@@ -75,7 +75,7 @@ export async function POST(
       .single();
 
     if (regError || !registration) {
-      console.error(`[AI Assessment API] Registration not found: ${registrationId}`, regError);
+      logger.error('Registration not found for assessment', { registrationId, error: regError?.message });
       return NextResponse.json(
         { error: 'Registration not found' },
         { status: 404 }
@@ -84,20 +84,16 @@ export async function POST(
 
     const registrationData = registration as any;
 
-    console.log(`[AI Assessment API] Registration loaded:`, {
+    logger.debug('Registration loaded for assessment', {
       registrationId: registrationData.id,
-      legId: registrationData.leg_id,
-      userId: registrationData.user_id,
-      status: registrationData.status,
       journeyId: registrationData.legs?.journeys?.id,
-      journeyName: registrationData.legs?.journeys?.name,
+      status: registrationData.status,
       autoApprovalEnabled: registrationData.legs?.journeys?.auto_approval_enabled,
-      threshold: registrationData.legs?.journeys?.auto_approval_threshold,
-    });
+    }, true);
 
     // Check if auto-approval is enabled for this journey
     if (!registrationData.legs?.journeys?.auto_approval_enabled) {
-      console.log(`[AI Assessment API] Auto-approval not enabled for journey ${registrationData.legs?.journeys?.id}`);
+      logger.debug('Auto-approval not enabled for journey - cannot assess', { journeyId: registrationData.legs?.journeys?.id }, true);
       return NextResponse.json(
         { error: 'Auto-approval is not enabled for this journey' },
         { status: 400 }
@@ -161,20 +157,15 @@ export async function POST(
       .eq('id', registrationData.leg_id)
       .single();
 
-    console.log(`[AI Assessment API] Data loaded:`, {
-      crewProfile: {
-        userId: registrationData.user_id,
-        fullName: crewProfile.full_name,
-        experienceLevel: crewProfile.sailing_experience,
-        skillsCount: Array.isArray(crewProfile.skills) ? crewProfile.skills.length : 0,
-      },
+    logger.debug('Assessment data loaded', {
+      crewExperience: crewProfile.sailing_experience,
+      skillsCount: Array.isArray(crewProfile.skills) ? crewProfile.skills.length : 0,
       requirementsCount: requirements?.length || 0,
       answersCount: answers?.length || 0,
-      legName: leg?.name,
-    });
+    }, true);
 
     // Build AI prompt
-    console.log(`[AI Assessment API] Building assessment prompt...`);
+    logger.debug('Building assessment prompt', {}, true);
     const prompt = buildAssessmentPrompt({
       crewProfile,
       journey: registrationData.legs?.journeys,
@@ -183,10 +174,7 @@ export async function POST(
       answers: answers || [],
     });
 
-    console.log(`[AI Assessment API] Prompt built, length: ${prompt.length} characters`);
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[AI Assessment API] Prompt preview (first 500 chars):`, prompt.substring(0, 500));
-    }
+    logger.debug('Prompt built', { length: prompt.length }, true);
 
     // Call AI service
     logger.aiFlow('api_call', 'Calling Claude AI for assessment', { promptLength: prompt.length, registrationId });
@@ -199,22 +187,23 @@ export async function POST(
       });
       aiResponse = result.text;
       const aiDuration = Date.now() - aiStartTime;
-      console.log(`[AI Assessment API] AI call completed in ${aiDuration}ms:`, {
+      logger.debug('AI call completed', {
         provider: result.provider,
         model: result.model,
+        durationMs: aiDuration,
         responseLength: aiResponse.length,
-      });
+      }, true);
     } catch (aiError: any) {
       const aiDuration = Date.now() - aiStartTime;
-      console.error(`[AI Assessment API] AI assessment failed after ${aiDuration}ms:`, {
-        error: aiError.message,
-        stack: aiError.stack,
+      logger.error('AI assessment failed', {
+        durationMs: aiDuration,
+        error: aiError instanceof Error ? aiError.message : String(aiError),
         registrationId,
       });
       return NextResponse.json(
-        { 
-          error: 'AI assessment failed', 
-          details: aiError.message,
+        {
+          error: 'AI assessment failed',
+          details: aiError instanceof Error ? aiError.message : String(aiError),
           // Don't update registration, keep as pending
         },
         { status: 500 }
@@ -222,7 +211,7 @@ export async function POST(
     }
 
     // Parse AI response (expecting JSON)
-    console.log(`[AI Assessment API] Parsing AI response...`);
+    logger.debug('Parsing AI response', {}, true);
     let assessment: {
       match_score: number;
       reasoning: string;
@@ -236,19 +225,18 @@ export async function POST(
         reasoning: string;
         recommendation: 'approve' | 'deny' | 'review';
       };
-      console.log(`[AI Assessment API] Successfully parsed assessment:`, {
+      logger.debug('Successfully parsed assessment', {
         matchScore: assessment.match_score,
         recommendation: assessment.recommendation,
         reasoningLength: assessment.reasoning?.length || 0,
-      });
+      }, true);
     } catch (parseError) {
-      console.error(`[AI Assessment API] Failed to parse AI response:`, {
-        error: parseError,
-        responseText: aiResponse,
-        registrationId,
+      logger.error('Failed to parse AI response', {
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        responseLength: aiResponse.length,
       });
       return NextResponse.json(
-        { 
+        {
           error: 'Failed to parse AI assessment response',
           rawResponse: aiResponse.substring(0, 500), // Include first 500 chars for debugging
         },
@@ -258,7 +246,7 @@ export async function POST(
 
     // Validate assessment
     if (typeof assessment.match_score !== 'number' || assessment.match_score < 0 || assessment.match_score > 100) {
-      console.error(`[AI Assessment API] Invalid match_score:`, assessment.match_score);
+      logger.error('Invalid match_score from AI', { matchScore: assessment.match_score });
       return NextResponse.json(
         { error: 'Invalid match_score from AI (must be 0-100)' },
         { status: 500 }
@@ -267,14 +255,13 @@ export async function POST(
 
     const threshold = registrationData.legs?.journeys?.auto_approval_threshold || 80;
     const shouldAutoApprove = assessment.match_score >= threshold && assessment.recommendation !== 'deny';
-    
-    console.log(`[AI Assessment API] Assessment results:`, {
+
+    logger.debug('Assessment results calculated', {
       matchScore: assessment.match_score,
-      threshold: threshold,
+      threshold,
       recommendation: assessment.recommendation,
-      shouldAutoApprove: shouldAutoApprove,
-      currentStatus: registrationData.status,
-    });
+      shouldAutoApprove,
+    }, true);
 
     // Update registration with AI assessment
     const updateData: any = {
@@ -285,17 +272,20 @@ export async function POST(
     if (shouldAutoApprove && registrationData.status === 'Pending approval') {
       updateData.status = 'Approved';
       updateData.auto_approved = true;
-      console.log(`[AI Assessment API] Auto-approving registration: ${registrationId}`);
+      logger.debug('Auto-approving registration', { registrationId }, true);
     } else {
-      console.log(`[AI Assessment API] Not auto-approving (score: ${assessment.match_score}%, threshold: ${threshold}%, status: ${registrationData.status})`);
+      logger.debug('Not auto-approving registration', {
+        score: assessment.match_score,
+        threshold,
+        status: registrationData.status,
+      }, true);
     }
 
-    console.log(`[AI Assessment API] Updating registration with:`, {
-      ai_match_score: updateData.ai_match_score,
-      ai_match_reasoning_length: updateData.ai_match_reasoning?.length || 0,
-      status: updateData.status || 'unchanged',
-      auto_approved: updateData.auto_approved || false,
-    });
+    logger.debug('Updating registration with assessment', {
+      matchScore: updateData.ai_match_score,
+      statusChange: updateData.status ? `${registrationData.status} -> ${updateData.status}` : 'no change',
+      autoApproved: updateData.auto_approved || false,
+    }, true);
 
     const { data: updatedRegistration, error: updateError } = await supabase
       .from('registrations')
@@ -305,10 +295,9 @@ export async function POST(
       .single();
 
     if (updateError) {
-      console.error(`[AI Assessment API] Error updating registration:`, {
+      logger.error('Error updating registration with assessment', {
         registrationId,
-        error: updateError,
-        updateData,
+        error: updateError.message,
       });
       return NextResponse.json(
         { error: 'Failed to update registration with assessment', details: updateError.message },
@@ -316,11 +305,12 @@ export async function POST(
       );
     }
 
-    console.log(`[AI Assessment API] Successfully completed assessment for registration: ${registrationId}`, {
-      finalStatus: updateData.status || registrationData.status,
+    logger.debug('Assessment completed successfully', {
+      registrationId,
       matchScore: updateData.ai_match_score,
+      finalStatus: updateData.status || registrationData.status,
       autoApproved: updateData.auto_approved || false,
-    });
+    }, true);
 
     return NextResponse.json({
       assessment: {
