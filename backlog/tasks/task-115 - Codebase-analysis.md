@@ -549,8 +549,9 @@ To efficiently update remaining 44 routes, recommend:
 - Event listener cleanup: EditJourneyMap.tsx (1 commit)
 - Promise error handling: 6 files, 15+ locations (1 commit)
 - CSP hardening: Removed dangerous unsafe-eval (1 commit)
+- RLS enablement: Notifications table security (1 commit)
 
-**Total Improvements This Session:** 4 major fixes across security, performance, reliability, and code quality
+**Total Improvements This Session:** 5 major fixes across security, performance, reliability, and code quality
 
 **Remaining Work:**
 1. Migration numbering chaos (7 groups, 11 duplicate pairs) - Medium priority, high risk
@@ -679,4 +680,38 @@ CSP header in next.config.ts contained overly permissive directives:
 - CSP directives all valid: ✓ Confirmed
 
 ### Commit: dd5453f
+
+## Row Level Security on Notifications Table - Session 2026-02-18 (Continuation 2)
+
+### Problem Identified
+Notifications table had RLS disabled with reliance only on API route authorization checks.
+While the API properly filters by user_id, disabling RLS at database level violates
+defense-in-depth security principle - if API authorization logic has a bug, database
+wouldn't prevent unauthorized access.
+
+### Solution Implemented
+
+**Created migration 041_enable_rls_on_notifications.sql:**
+- Enable RLS on notifications table
+- Add policy: SELECT - users can read their own notifications
+- Add policy: UPDATE - users can update their own notifications (mark as read)
+- Add policy: INSERT - service role can create notifications
+- Add policy: DELETE - service role can delete notifications
+
+**Updated specs/tables.sql:**
+- Changed schema definition to reflect RLS is now enabled
+- Documented RLS policies for future reference
+
+### Security Impact
+- Adds database-level protection against unauthorized notification access
+- Defense-in-depth: Even if API authorization has a bug, database protects data
+- Aligns with security best practices for user data protection
+- No API code changes needed - app already filters by user_id
+
+### Testing
+- Migration created successfully
+- RLS policies designed to work with existing API patterns
+- No breaking changes to notification API routes
+
+### Commit: 72496bb
 <!-- SECTION:NOTES:END -->
