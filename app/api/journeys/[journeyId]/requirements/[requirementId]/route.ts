@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 const VALID_REQUIREMENT_TYPES = ['risk_level', 'experience_level', 'skill', 'passport', 'question'] as const;
 
@@ -156,7 +158,7 @@ export async function PUT(
     if (updateError) {
       console.error('Error updating requirement:', updateError);
       return NextResponse.json(
-        { error: 'Failed to update requirement', details: updateError.message },
+        sanitizeErrorResponse(updateError, 'Failed to update requirement'),
         { status: 500 }
       );
     }
@@ -169,7 +171,7 @@ export async function PUT(
   } catch (error: any) {
     console.error('Unexpected error in requirement update API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
@@ -259,7 +261,7 @@ export async function DELETE(
     if (deleteError) {
       console.error('Error deleting requirement:', deleteError);
       return NextResponse.json(
-        { error: 'Failed to delete requirement', details: deleteError.message },
+        sanitizeErrorResponse(deleteError, 'Failed to delete requirement'),
         { status: 500 }
       );
     }
@@ -271,7 +273,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Unexpected error in requirement delete API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

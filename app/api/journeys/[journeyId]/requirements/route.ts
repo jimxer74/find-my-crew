@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 const VALID_REQUIREMENT_TYPES = ['risk_level', 'experience_level', 'skill', 'passport', 'question'] as const;
 type RequirementType = typeof VALID_REQUIREMENT_TYPES[number];
@@ -69,7 +71,7 @@ export async function GET(
     if (reqError) {
       console.error('Error fetching requirements:', reqError);
       return NextResponse.json(
-        { error: 'Failed to fetch requirements', details: reqError.message },
+        sanitizeErrorResponse(reqError, 'Failed to fetch requirements'),
         { status: 500 }
       );
     }
@@ -82,7 +84,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in requirements API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
@@ -307,7 +309,7 @@ export async function POST(
     if (insertError) {
       console.error('Error creating requirement:', insertError);
       return NextResponse.json(
-        { error: 'Failed to create requirement', details: insertError.message },
+        sanitizeErrorResponse(insertError, 'Failed to create requirement'),
         { status: 500 }
       );
     }
@@ -320,7 +322,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Unexpected error in requirements API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

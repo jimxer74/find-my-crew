@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/journeys/[journeyId]/images
@@ -63,7 +65,7 @@ export async function GET(
     if (fetchError) {
       console.error('Error fetching journey images:', fetchError);
       return NextResponse.json(
-        { error: 'Failed to fetch journey images', details: fetchError.message },
+        sanitizeErrorResponse(fetchError, 'Failed to fetch journey images'),
         { status: 500 }
       );
     }
@@ -76,7 +78,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in journey images GET API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
@@ -196,7 +198,7 @@ export async function POST(
       if (uploadError) {
         console.error('Upload error:', uploadError);
         return NextResponse.json(
-          { error: 'Failed to upload image', details: uploadError.message },
+          sanitizeErrorResponse(uploadError, 'Failed to upload image'),
           { status: 500 }
         );
       }
@@ -223,7 +225,7 @@ export async function POST(
     if (updateError) {
       console.error('Error updating journey with images:', updateError);
       return NextResponse.json(
-        { error: 'Failed to update journey with images', details: updateError.message },
+        sanitizeErrorResponse(updateError, 'Failed to update journey with images'),
         { status: 500 }
       );
     }
@@ -238,7 +240,7 @@ export async function POST(
   } catch (error: any) {
     console.error('Unexpected error in journey images POST API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
@@ -347,7 +349,7 @@ export async function DELETE(
     if (updateError) {
       console.error('Error removing journey images:', updateError);
       return NextResponse.json(
-        { error: 'Failed to remove journey images', details: updateError.message },
+        sanitizeErrorResponse(updateError, 'Failed to remove journey images'),
         { status: 500 }
       );
     }
@@ -362,7 +364,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('Unexpected error in journey images DELETE API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
