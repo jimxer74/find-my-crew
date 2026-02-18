@@ -351,8 +351,11 @@ export function RegistrationRequirementsForm({
             type="button"
             onClick={handleSubmit}
             isLoading={isSubmitting || isRegistering}
+            disabled={isSubmitting || isRegistering}
             loadingText="Registering..."
             size="md"
+            variant="primary"
+            fullWidth={false}
           >
             Submit Registration
           </LoadingButton>
