@@ -39,7 +39,7 @@ export async function GET() {
       if (error.code === 'PGRST116') {
         return NextResponse.json({ session: null });
       }
-      console.error('[Owner Session Data API] Error fetching session:', error);
+      logger.error('Error fetching session', { code: error.code, message: error.message });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -90,7 +90,7 @@ export async function GET() {
 
     return NextResponse.json({ session: ownerSession });
   } catch (error: any) {
-    console.error('[Owner Session Data API] Unexpected error:', error);
+    logger.error('Unexpected error in GET', { message: error?.message || String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -127,13 +127,9 @@ export async function POST(request: NextRequest) {
 
     // CRITICAL: Validate session_id from cookie matches session data
     if (session.sessionId !== sessionId) {
-      console.error('[Owner Session Data API] ❌ Session ID mismatch!', {
+      logger.error('Session ID mismatch', {
         cookieSessionId: sessionId,
         sessionSessionId: session.sessionId,
-        sessionData: {
-          messagesCount: session.conversation?.length || 0,
-          preferencesKeys: Object.keys(session.gatheredPreferences || {}),
-        },
       });
       return NextResponse.json(
         { error: 'Session ID mismatch', details: `Cookie: ${sessionId}, Session: ${session.sessionId}` },
@@ -164,7 +160,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     
     if (selectError && selectError.code !== 'PGRST116') {
-      console.warn('[Owner Session Data API] ⚠️ Error checking existing session:', selectError);
+      logger.warn('Error checking existing session', { code: selectError.code, message: selectError.message });
     }
 
     // If session has user_id, verify user owns it OR use service role when logged out
@@ -180,12 +176,12 @@ export async function POST(request: NextRequest) {
           // Use service role to bypass RLS (anon can't update rows with user_id set)
           supabase = getSupabaseServiceRoleClient();
           userId = existingSession.user_id;
-          console.log('[Owner Session Data API] ⚠️ Session has user_id but user logged out - using service role for cookie-based save');
+          logger.debug('Session has user_id but user logged out - using service role', {}, true);
         }
       } catch (authErr: any) {
         supabase = getSupabaseServiceRoleClient();
         userId = existingSession.user_id;
-        console.log('[Owner Session Data API] ⚠️ Auth check failed, using service role for cookie-based save:', authErr.message);
+        logger.debug('Auth check failed, using service role', { message: authErr.message }, true);
       }
     }
     // If no user_id, continue with unauthenticated client
@@ -209,14 +205,12 @@ export async function POST(request: NextRequest) {
       ...(existingSession ? {} : { created_at: new Date().toISOString() }),
     };
 
-    console.log('[Owner Session Data API] 💾 Upserting session:', {
-      sessionId,
+    logger.debug('Upserting session', {
       hasUserId: !!upsertData.user_id,
       hasEmail: !!upsertData.email,
       messagesCount: upsertData.conversation.length,
-      preferencesKeys: Object.keys(upsertData.gathered_preferences),
       isUpdate: !!existingSession,
-    });
+    }, true);
 
     // Use INSERT or UPDATE instead of UPSERT to avoid RLS policy conflicts
     let saveError;
@@ -237,16 +231,13 @@ export async function POST(request: NextRequest) {
       
       saveError = updateError;
       if (saveError) {
-        console.error('[Owner Session Data API] ❌ Error updating session:', {
-          error: saveError,
+        logger.error('Error updating session', {
           message: saveError.message,
-          details: saveError.details,
-          hint: saveError.hint,
           code: saveError.code,
-          sessionId,
+          details: saveError.details,
         });
       } else {
-        console.log('[Owner Session Data API] ✅ Session updated successfully');
+        logger.debug('Session updated successfully', {}, true);
       }
     } else {
       // Insert new session
@@ -259,7 +250,7 @@ export async function POST(request: NextRequest) {
       // If insert fails with duplicate key error, try update instead
       // This can happen if RLS prevented us from seeing the existing session
       if (saveError && saveError.code === '23505') {
-        console.log('[Owner Session Data API] ⚠️ Insert failed with duplicate key, trying update instead...');
+        logger.debug('Insert failed with duplicate key, trying update', {}, true);
         const { error: updateError } = await supabase
           .from('owner_sessions')
           .update({
@@ -275,33 +266,22 @@ export async function POST(request: NextRequest) {
         
         saveError = updateError;
         if (saveError) {
-          console.error('[Owner Session Data API] ❌ Error updating session (after duplicate key):', {
-            error: saveError,
+          logger.error('Error updating session (after duplicate key)', {
             message: saveError.message,
-            details: saveError.details,
-            hint: saveError.hint,
             code: saveError.code,
-            sessionId,
+            details: saveError.details,
           });
         } else {
-          console.log('[Owner Session Data API] ✅ Session updated successfully (after duplicate key)');
+          logger.debug('Session updated successfully (after duplicate key)', {}, true);
         }
       } else if (saveError) {
-        console.error('[Owner Session Data API] ❌ Error inserting session:', {
-          error: saveError,
+        logger.error('Error inserting session', {
           message: saveError.message,
-          details: saveError.details,
-          hint: saveError.hint,
           code: saveError.code,
-          sessionId,
-          upsertData: {
-            ...upsertData,
-            conversation: `[${upsertData.conversation.length} messages]`,
-            gathered_preferences: `[${Object.keys(upsertData.gathered_preferences).length} keys]`,
-          },
+          details: saveError.details,
         });
       } else {
-        console.log('[Owner Session Data API] ✅ Session inserted successfully');
+        logger.debug('Session inserted successfully', {}, true);
       }
     }
 
@@ -329,7 +309,7 @@ export async function POST(request: NextRequest) {
         migrationRequired: saveError.code === '23502' ? '027_make_owner_sessions_user_id_nullable.sql' : undefined,
       };
       
-      console.error('[Owner Session Data API] ❌ Returning error response:', errorResponse);
+      logger.error('Returning error response', { code: errorResponse.code, error: errorResponse.error });
       
       return NextResponse.json(
         errorResponse,
@@ -339,13 +319,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Owner Session Data API] Unexpected error in POST:', {
-      message: error?.message,
-      stack: error?.stack,
-      name: error?.name,
-      cause: error?.cause,
-      error,
-    });
+    logger.error('Unexpected error in POST', { message: error?.message || String(error) });
     return NextResponse.json(
       { 
         error: 'Internal server error', 
@@ -396,7 +370,7 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle();
 
     if (selectError && selectError.code !== 'PGRST116') {
-      console.warn('[Owner Session Data API] ⚠️ Error checking existing session:', selectError);
+      logger.warn('Error checking existing session', { code: selectError.code, message: selectError.message });
     }
 
     // If session has user_id, verify user owns it OR use service role when logged out
@@ -427,7 +401,7 @@ export async function PATCH(request: NextRequest) {
       .eq('session_id', sessionId);
 
     if (updateError) {
-      console.error('[Owner Session Data API] ❌ Error updating onboarding state:', updateError);
+      logger.error('Error updating onboarding state', { message: updateError.message, code: updateError.code });
       return NextResponse.json(
         {
           error: 'Failed to update onboarding state',
@@ -440,7 +414,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Owner Session Data API] Unexpected error in PATCH:', error);
+    logger.error('Unexpected error in PATCH', { message: error?.message || String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
@@ -478,7 +452,7 @@ export async function DELETE() {
     }
 
     if (selectError) {
-      console.error('[Owner Session Data API] Error checking session for deletion:', selectError);
+      logger.error('Error checking session for deletion', { message: selectError.message, code: selectError.code });
       return NextResponse.json(
         { error: 'Failed to check session', details: selectError.message },
         { status: 500 }
@@ -507,7 +481,7 @@ export async function DELETE() {
       .eq('session_id', sessionId);
 
     if (error) {
-      console.error('[Owner Session Data API] Error deleting session:', error);
+      logger.error('Error deleting session', { message: error.message, code: error.code });
       return NextResponse.json(
         sanitizeErrorResponse(error, 'Request failed'),
         { status: 500 }
@@ -516,7 +490,7 @@ export async function DELETE() {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[Owner Session Data API] Unexpected error:', error);
+    logger.error('Unexpected error in GET', { message: error?.message || String(error) });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Request failed'),
       { status: 500 }
