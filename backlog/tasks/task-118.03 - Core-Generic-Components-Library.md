@@ -1,9 +1,10 @@
 ---
 id: TASK-118.03
 title: Core Generic Components Library
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-18 21:10'
+updated_date: '2026-02-18 22:08'
 labels:
   - Components
   - Core
@@ -62,6 +63,79 @@ Build core, domain-agnostic UI components that enforce design system consistency
 - [ ] #9 All components use design tokens - no hardcoded colors or spacing values
 - [ ] #10 Component accessibility verified (ARIA labels, keyboard navigation, focus states)
 <!-- AC:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Plan: Core Generic Components Library
+
+### Phase 1: Foundation (Current)
+1. Create component directory structure
+2. Set up component exports and types
+3. Create base component utilities/hooks
+
+### Phase 2: Core Components (Week 1)
+1. **Button Component** - All variants (primary, secondary, destructive, ghost, outline)
+   - Features: loading state, disabled, size variants, icon support
+   - Uses: COMPONENT_SIZES.button, ACCESSIBILITY.focusRing from designTokens
+   
+2. **Card Component** - Flexible card with composable sections
+   - Features: header, body, footer sections, padding options
+   - Uses: SPACING constants
+   
+3. **Input Component** - Text input with validation states
+   - Features: label, error message, placeholder, disabled state
+   - Uses: COMPONENT_SIZES.input, ACCESSIBILITY
+
+### Phase 3: Form Components (Week 1-2)
+1. **Checkbox Component**
+2. **Radio Component**
+3. **Select/Dropdown Component**
+4. **Form Wrapper Component** - Context-based form state management
+
+### Phase 4: Complex Components (Week 2)
+1. **Modal/Dialog Component** - Overlay with focus management
+   - Uses: Z_INDEX.modal, Z_INDEX.modalBackdrop
+   
+2. **Badge Component** - Status/label display
+   - Uses: COMPONENT_SIZES.badge, COLOR_TOKENS
+
+3. **Alert/Toast Component** - Notification display
+   - Uses: Z_INDEX.toast
+
+### Phase 5: Documentation & Testing
+1. Create component index/exports
+2. Document usage examples
+3. Add accessibility testing
+4. Set up visual regression tests
+
+### File Structure
+```
+app/components/ui/
+├── Button/
+│   ├── Button.tsx
+│   ├── Button.types.ts
+│   ├── Button.test.tsx
+│   └── index.ts
+├── Card/
+├── Input/
+├── Checkbox/
+├── Radio/
+├── Select/
+├── Modal/
+├── Badge/
+├── Alert/
+└── index.ts (barrel export)
+```
+
+### Key Principles
+- All components use design tokens (ZERO hardcoded colors/spacing)
+- Fully typed with TypeScript
+- Accessibility-first (ARIA labels, keyboard nav, focus management)
+- Consistent with design system
+- Reusable and composable
+- Error states and loading states supported
+<!-- SECTION:PLAN:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
