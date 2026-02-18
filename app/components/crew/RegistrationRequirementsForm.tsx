@@ -53,6 +53,7 @@ export function RegistrationRequirementsForm({
   const [notes, setNotes] = useState('');
   const [hasAIConsent, setHasAIConsent] = useState<boolean | null>(null);
   const [checkingConsent, setCheckingConsent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     loadRequirements();
@@ -66,6 +67,13 @@ export function RegistrationRequirementsForm({
       setHasAIConsent(null);
     }
   }, [autoApprovalEnabled, user]);
+
+  // Reset submitting state when registration completes (error or success)
+  useEffect(() => {
+    if (registrationError || !isRegistering) {
+      setIsSubmitting(false);
+    }
+  }, [registrationError, isRegistering]);
 
   const checkAIConsent = async () => {
     if (!user) {
@@ -169,6 +177,10 @@ export function RegistrationRequirementsForm({
       (answer) => answer.answer_text && answer.answer_text.trim() !== ''
     );
 
+    // Set loading state immediately for visual feedback
+    setIsSubmitting(true);
+
+    // Call parent's onComplete - will handle actual submission
     onComplete(answersArray, notes);
   };
 
@@ -338,7 +350,7 @@ export function RegistrationRequirementsForm({
           <LoadingButton
             type="button"
             onClick={handleSubmit}
-            isLoading={isRegistering}
+            isLoading={isSubmitting || isRegistering}
             loadingText="Registering..."
             size="md"
           >
