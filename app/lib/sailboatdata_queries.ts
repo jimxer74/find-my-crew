@@ -2,6 +2,8 @@
  * Utility functions to query sailboatdata.com and parse results
  */
 
+import { logger } from './logger';
+
 /**
  * Normalize Scandinavian characters to ASCII equivalents for URL query strings
  * @param text - Text that may contain Scandinavian characters
@@ -31,13 +33,9 @@ async function fetchWithScraperAPI(url: string, options: RequestInit = {}, rende
     // Use ScraperAPI
     const renderParam = render ? '&render=true' : '&render=false';
     const scraperApiUrl = `https://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(url)}${renderParam}`;
-    
-    console.log('=== USING SCRAPERAPI ===');
-    console.log('Target URL:', url);
-    console.log('ScraperAPI URL:', scraperApiUrl);
-    console.log('Render JavaScript:', render);
-    console.log('========================');
-    
+
+    logger.debug('Using ScraperAPI for fetch', { targetUrl: url, render }, true);
+
     // ScraperAPI handles headers and browser simulation, so we use minimal headers
     const response = await fetch(scraperApiUrl, {
       method: 'GET',
@@ -46,13 +44,11 @@ async function fetchWithScraperAPI(url: string, options: RequestInit = {}, rende
       },
       redirect: 'follow',
     });
-    
+
     return response;
   } else {
     // Fallback to direct fetch with browser headers
-    console.log('=== USING DIRECT FETCH (ScraperAPI not configured) ===');
-    console.log('URL:', url);
-    console.log('=====================================================');
+    logger.debug('Using direct fetch (ScraperAPI not configured)', { url }, true);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -133,11 +129,8 @@ export async function searchSailboatData(keyword: string): Promise<SailboatSearc
   // Normalize Scandinavian characters before creating URL
   const normalizedKeyword = normalizeScandinavianChars(keyword.trim());
   const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
-  
-  console.log('=== SAILBOATDATA SEARCH DEBUG ===');
-  console.log('Keyword:', keyword);
-  console.log('Search URL:', searchUrl);
-  console.log('================================');
+
+  logger.debug('Searching sailboatdata', { keyword, normalizedKeyword }, true);
 
   try {
     // Fetch the HTML page using ScraperAPI if configured, otherwise direct fetch
@@ -145,36 +138,21 @@ export async function searchSailboatData(keyword: string): Promise<SailboatSearc
     const response = await fetchWithScraperAPI(searchUrl, {}, true);
 
     if (!response.ok) {
-      console.error('=== FETCH ERROR DEBUG ===');
-      console.error('Status:', response.status, response.statusText);
-      console.error('URL:', searchUrl);
-      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      // Try to get error body if available
-      try {
-        const errorText = await response.text();
-        console.error('Error response body (first 500 chars):', errorText.substring(0, 500));
-      } catch (e) {
-        console.error('Could not read error response body');
-      }
-      console.error('==========================');
-      
+      logger.error('Fetch error from sailboatdata', { status: response.status, statusText: response.statusText, url: searchUrl });
+
       return [];
     }
 
     const html = await response.text();
-    
+
     // Parse HTML to extract sailboat names and URLs
     const sailboats = parseSailboatSearchHTML(html, keyword);
-    
-    console.log('=== PARSED SEARCH RESULTS DEBUG ===');
-    console.log('Found sailboats:', sailboats.length);
-    console.log('Results:', sailboats);
-    console.log('==================================');
+
+    logger.debug('Sailboats found in search', { count: sailboats.length }, true);
 
     return sailboats;
   } catch (error) {
-    console.error('Error searching sailboatdata.com:', error);
+    logger.error('Error searching sailboatdata.com', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
@@ -192,11 +170,8 @@ export async function querySailboatData(keyword: string): Promise<string[]> {
   // Normalize Scandinavian characters before creating URL
   const normalizedKeyword = normalizeScandinavianChars(keyword.trim());
   const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
-  
-  console.log('=== SAILBOATDATA QUERY DEBUG ===');
-  console.log('Keyword:', keyword);
-  console.log('Search URL:', searchUrl);
-  console.log('================================');
+
+  logger.debug('Querying sailboatdata', { keyword, normalizedKeyword }, true);
 
   try {
     // Fetch the HTML page with realistic browser headers to avoid 403 errors
@@ -226,36 +201,21 @@ export async function querySailboatData(keyword: string): Promise<string[]> {
     });
 
     if (!response.ok) {
-      console.error('=== FETCH ERROR DEBUG ===');
-      console.error('Status:', response.status, response.statusText);
-      console.error('URL:', searchUrl);
-      console.error('Response headers:', Object.fromEntries(response.headers.entries()));
-      
-      // Try to get error body if available
-      try {
-        const errorText = await response.text();
-        console.error('Error response body (first 500 chars):', errorText.substring(0, 500));
-      } catch (e) {
-        console.error('Could not read error response body');
-      }
-      console.error('==========================');
-      
+      logger.error('Fetch error from sailboatdata', { status: response.status, statusText: response.statusText, url: searchUrl });
+
       return [];
     }
 
     const html = await response.text();
-    
+
     // Parse HTML to extract MODEL column data
     const sailboats = parseSailboatDataHTML(html, keyword);
-    
-    console.log('=== PARSED RESULTS DEBUG ===');
-    console.log('Found sailboats:', sailboats.length);
-    console.log('Results:', sailboats);
-    console.log('============================');
+
+    logger.debug('Sailboats found in query', { count: sailboats.length }, true);
 
     return sailboats;
   } catch (error) {
-    console.error('Error querying sailboatdata.com:', error);
+    logger.error('Error querying sailboatdata.com', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
@@ -273,25 +233,25 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
 
   // Check boat registry first (cache layer)
   try {
-    const { lookupBoatRegistry, registryToSailboatDetails, incrementRegistryFetchCount } = 
+    const { lookupBoatRegistry, registryToSailboatDetails, incrementRegistryFetchCount } =
       await import('@/app/lib/boat-registry/service');
-    
+
     const registryEntry = await lookupBoatRegistry(sailboatQueryStr.trim(), slug);
     if (registryEntry) {
-      console.log('✅ Found boat in registry:', registryEntry.make_model);
-      
+      logger.debug('Found boat in registry', { makeModel: registryEntry.make_model }, true);
+
       // Increment fetch count asynchronously (don't wait for it)
-      incrementRegistryFetchCount(registryEntry.id).catch(err => 
-        console.warn('Failed to increment registry fetch count:', err)
+      incrementRegistryFetchCount(registryEntry.id).catch(err =>
+        logger.warn('Failed to increment registry fetch count', { error: err instanceof Error ? err.message : String(err) })
       );
-      
+
       return registryToSailboatDetails(registryEntry);
     }
-    
-    console.log('⚠️ Registry miss, fetching from external source:', sailboatQueryStr);
+
+    logger.debug('Registry miss - fetching from external source', { query: sailboatQueryStr }, true);
   } catch (error) {
     // If registry lookup fails, continue with external fetch (non-fatal)
-    console.warn('Registry lookup failed, continuing with external fetch:', error);
+    logger.warn('Registry lookup failed - continuing with external fetch', { error: error instanceof Error ? error.message : String(error) });
   }
 
   // Use provided slug if available, otherwise convert make_model string to slug
@@ -308,12 +268,8 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
   }
 
   const sailboatUrl = `https://sailboatdata.com/sailboat/${cleanQuery}`;
-  
-  console.log('=== FETCH SAILBOAT DETAILS DEBUG ===');
-  console.log('Query string:', sailboatQueryStr);
-  console.log('Cleaned query:', cleanQuery);
-  console.log('Sailboat URL:', sailboatUrl);
-  console.log('====================================');
+
+  logger.debug('Fetching sailboat details', { queryString: sailboatQueryStr, cleanedQuery: cleanQuery }, true);
 
   try {
     // Add a small delay to avoid rate limiting (only for direct fetch, ScraperAPI handles this)
@@ -326,20 +282,16 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     const response = await fetchWithScraperAPI(sailboatUrl);
 
     if (!response.ok) {
-      console.error('=== FETCH ERROR DEBUG ===');
-      console.error('Status:', response.status, response.statusText);
-      console.error('URL:', sailboatUrl);
+      logger.error('Fetch error for sailboat details', { status: response.status, statusText: response.statusText, url: sailboatUrl });
       return null;
     }
 
     const html = await response.text();
-    
+
     // Parse HTML to extract boat details
     const details = parseSailboatDetailsHTML(html, sailboatUrl);
-    
-    console.log('=== PARSED DETAILS DEBUG ===');
-    console.log('Parsed details:', JSON.stringify(details, null, 2));
-    console.log('============================');
+
+    logger.debug('Sailboat details parsed', { makeModel: details.make_model }, true);
 
     // Save to registry before returning (non-blocking)
     if (details && details.make_model) {
@@ -347,16 +299,16 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
         const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
         // Use details.make_model (from parsed HTML) as the canonical name for registry
         await saveBoatRegistry(details.make_model, details, slug);
-        console.log('✅ Saved to boat registry:', details.make_model);
+        logger.debug('Saved to boat registry', { makeModel: details.make_model }, true);
       } catch (error) {
         // Registry save failure is non-fatal - continue with returning details
-        console.warn('⚠️ Failed to save to registry (non-fatal):', error);
+        logger.warn('Failed to save to registry (non-fatal)', { error: error instanceof Error ? error.message : String(error) });
       }
     }
 
     return details;
   } catch (error) {
-    console.error('Error fetching sailboat details:', error);
+    logger.error('Error fetching sailboat details', { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }
@@ -409,7 +361,7 @@ function parseSailboatDetailsHTML(html: string, url: string): SailboatDetails {
       const maxDraftMatch = tableContent.match(/<td[^>]*>Max\s+Draft:<\/td>\s*<td[^>]*>[\d.]+[\s\w\/]*\/\s*([\d.]+)\s*m/i);
       if (maxDraftMatch) {
         details.max_draft_m = parseFloat(maxDraftMatch[1]);
-        console.log('Parsed max draft:', details.max_draft_m, 'm from:', maxDraftMatch[1]);
+        logger.debug('Parsed max draft', { draftM: details.max_draft_m }, true);
       }
 
       // Extract Displacement - Pattern: <td>Displacement:</td><td>31,967.00 lb / 14,500 kg</td>
@@ -418,23 +370,21 @@ function parseSailboatDetailsHTML(html: string, url: string): SailboatDetails {
       const displMatch = tableContent.match(/<td[^>]*>Displacement:<\/td>\s*<td[^>]*>[\d,.]+[\s\w\/]*\/\s*([\d,]+)\s*kg/i);
       if (displMatch && displMatch[1]) {
         details.displcmt_m = parseFloat(displMatch[1].replace(/,/g, ''));
-        console.log('Parsed displacement:', details.displcmt_m, 'kg from:', displMatch[1]);
+        logger.debug('Parsed displacement', { displacementKg: details.displcmt_m }, true);
       } else {
         // Fallback: extract the entire cell content and parse kg value manually
         const displCellMatch = tableContent.match(/<td[^>]*>Displacement:<\/td>\s*<td[^>]*>([^<]+)<\/td>/i);
         if (displCellMatch) {
           const cellContent = displCellMatch[1].trim();
-          console.log('=== DISPLACEMENT PARSING DEBUG ===');
-          console.log('Found displacement cell content:', cellContent);
+          logger.debug('Parsing displacement from cell content', {}, true);
           // Try to extract kg value - look for pattern: "X / Y kg" or "X lb / Y kg"
           const kgMatch = cellContent.match(/\/([\s\S]*?)([\d,]+)\s*kg/i);
           if (kgMatch && kgMatch[2]) {
             details.displcmt_m = parseFloat(kgMatch[2].replace(/,/g, ''));
-            console.log('Extracted displacement from fallback pattern:', details.displcmt_m, 'kg');
+            logger.debug('Extracted displacement from fallback pattern', { displacementKg: details.displcmt_m }, true);
           } else {
-            console.log('Could not extract kg value from:', cellContent);
+            logger.debug('Could not extract kg value from displacement cell', {}, true);
           }
-          console.log('==================================');
         }
       }
 
@@ -527,19 +477,11 @@ function parseSailboatDetailsHTML(html: string, url: string): SailboatDetails {
       }
       if (!displLenMatch) {
         // Debug: log a snippet of the calculations table to see what's actually there
-        console.log('=== DISP/LEN PARSING DEBUG ===');
-        console.log('Calculations table snippet:', calcTableContent.substring(0, 2000));
-        console.log('Looking for Disp/Len pattern...');
-        // Try to find any row containing "Disp" and "Len"
-        const dispLenRowMatch = calcTableContent.match(/<tr[^>]*>[\s\S]*?Disp[^<]*Len[^<]*<\/tr>/i);
-        if (dispLenRowMatch) {
-          console.log('Found row with Disp and Len:', dispLenRowMatch[0]);
-        }
-        console.log('================================');
+        logger.debug('Disp/Len pattern not found - debugging', { tableSnippetLength: calcTableContent.substring(0, 2000).length }, true);
       }
       if (displLenMatch) {
         details.displ_len_ratio = parseFloat(displLenMatch[1]);
-        console.log('Successfully parsed Disp/Len ratio:', details.displ_len_ratio);
+        logger.debug('Successfully parsed Disp/Len ratio', { ratio: details.displ_len_ratio }, true);
       }
 
       // Comfort Ratio - Pattern: <td>Comfort Ratio:</td><td>37.36</td>
@@ -616,7 +558,7 @@ function parseSailboatDetailsHTML(html: string, url: string): SailboatDetails {
 
     return details;
   } catch (error) {
-    console.error('Error parsing sailboat details HTML:', error);
+    logger.error('Error parsing sailboat details HTML', { error: error instanceof Error ? error.message : String(error) });
     return details; // Return partial details if parsing fails
   }
 }
@@ -633,10 +575,7 @@ function parseSailboatSearchHTML(html: string, keyword: string): SailboatSearchR
 
   try {
     // Debug: Log HTML snippet for inspection
-    console.log('=== HTML PARSING DEBUG ===');
-    console.log('HTML length:', html.length);
-    console.log('HTML snippet (first 2000 chars):', html.substring(0, 2000));
-    console.log('===========================');
+    logger.debug('Parsing sailboat search HTML', { htmlLength: html.length }, true);
 
     // Strategy 1: Look for links in the results table (sailboats-table)
     // Pattern: <table class="sailboats-table"> ... <tbody> ... <tr> ... <td data-title="MODEL"> ... <a href="/sailboat/[slug]">Name</a>
@@ -815,7 +754,7 @@ function parseSailboatSearchHTML(html: string, keyword: string): SailboatSearchR
 
     return sorted;
   } catch (error) {
-    console.error('Error parsing sailboatdata.com search HTML:', error);
+    logger.error('Error parsing sailboatdata.com search HTML', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
@@ -832,10 +771,7 @@ function parseSailboatDataHTML(html: string, keyword: string): string[] {
 
   try {
     // Debug: Log HTML snippet for inspection
-    console.log('=== HTML PARSING DEBUG ===');
-    console.log('HTML length:', html.length);
-    console.log('HTML snippet (first 2000 chars):', html.substring(0, 2000));
-    console.log('===========================');
+    logger.debug('Parsing sailboatdata HTML for keyword', { keyword, htmlLength: html.length }, true);
 
     // Strategy 1: Look for links to sailboat pages (most reliable)
     // Pattern: <a href="/sailboat/[slug]">Make Model</a>
@@ -963,7 +899,7 @@ function parseSailboatDataHTML(html: string, keyword: string): string[] {
 
     return sorted;
   } catch (error) {
-    console.error('Error parsing sailboatdata.com HTML:', error);
+    logger.error('Error parsing sailboatdata.com HTML', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
