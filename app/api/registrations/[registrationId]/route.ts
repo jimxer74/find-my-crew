@@ -6,6 +6,8 @@ import {
   notifyRegistrationDenied,
   notifyPendingRegistration,
 } from '@/app/lib/notifications';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * PATCH /api/registrations/[registrationId]
@@ -117,7 +119,7 @@ export async function PATCH(
     if (updateError) {
       console.error('Error updating registration:', updateError);
       return NextResponse.json(
-        { error: 'Failed to update registration', details: updateError.message },
+        sanitizeErrorResponse(updateError, 'Failed to update registration'),
         { status: 500 }
       );
     }
@@ -191,7 +193,7 @@ export async function PATCH(
   } catch (error: any) {
     console.error('Unexpected error in registration update API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

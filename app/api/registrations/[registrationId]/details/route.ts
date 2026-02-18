@@ -3,6 +3,8 @@ import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { normalizeSkillNames } from '@/app/lib/skillUtils';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/registrations/[registrationId]/details
@@ -548,7 +550,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in registration details API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

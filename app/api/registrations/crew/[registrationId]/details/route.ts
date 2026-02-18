@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/registrations/crew/[registrationId]/details
@@ -324,7 +326,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in crew registration details API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

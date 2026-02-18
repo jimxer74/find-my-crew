@@ -3,6 +3,8 @@ import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
 import { normalizeSkillNames } from '@/app/lib/skillUtils';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/registrations/crew/details
@@ -55,7 +57,7 @@ export async function GET(request: NextRequest) {
         );
       }
       return NextResponse.json(
-        { error: 'Error fetching user profile', details: profileError.message },
+        sanitizeErrorResponse(profileError, 'Error fetching user profile'),
         { status: 500 }
       );
     }
@@ -87,7 +89,7 @@ export async function GET(request: NextRequest) {
     if (regError) {
       console.error('Error fetching registrations:', regError);
       return NextResponse.json(
-        { error: 'Failed to fetch registrations', details: regError.message },
+        sanitizeErrorResponse(regError, 'Failed to fetch registrations'),
         { status: 500 }
       );
     }
@@ -151,7 +153,7 @@ export async function GET(request: NextRequest) {
       }
 
       return NextResponse.json(
-        { error: 'Failed to fetch leg details', details: legsError.message, code: legsError.code },
+        sanitizeErrorResponse(legsError, 'Failed to fetch leg details'),
         { status: 500 }
       );
     }
@@ -330,7 +332,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Unexpected error in crew registrations API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

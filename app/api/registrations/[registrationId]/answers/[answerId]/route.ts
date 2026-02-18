@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * PUT /api/registrations/[registrationId]/answers/[answerId]
@@ -149,7 +151,7 @@ export async function PUT(
     if (updateError) {
       console.error('Error updating answer:', updateError);
       return NextResponse.json(
-        { error: 'Failed to update answer', details: updateError.message },
+        sanitizeErrorResponse(updateError, 'Failed to update answer'),
         { status: 500 }
       );
     }
@@ -162,7 +164,7 @@ export async function PUT(
   } catch (error: any) {
     console.error('Unexpected error in answer update API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

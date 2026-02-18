@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/legs/[legId]
@@ -72,7 +74,7 @@ export async function GET(
       }
       console.error('Error fetching leg:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch leg', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to fetch leg'),
         { status: 500 }
       );
     }
@@ -194,7 +196,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in leg API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

@@ -4,6 +4,8 @@ import { assessRegistrationWithAI, performPreChecks } from '@/app/lib/ai/assessR
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
 import { waitUntil } from '@vercel/functions';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * Helper function to convert a Blob to base64 string
@@ -575,7 +577,7 @@ export async function POST(request: NextRequest) {
     if (insertError) {
       console.error('Error creating registration:', insertError);
       return NextResponse.json(
-        { error: 'Failed to create registration', details: insertError.message },
+        sanitizeErrorResponse(insertError, 'Failed to create registration'),
         { status: 500 }
       );
     }
@@ -773,7 +775,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error fetching registrations:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch registrations', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to fetch registrations'),
         { status: 500 }
       );
     }
@@ -786,7 +788,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Unexpected error in registration API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

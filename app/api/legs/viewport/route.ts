@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/legs/viewport
@@ -282,7 +284,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Error calling get_legs_in_viewport:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch legs', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to fetch legs'),
         { status: 500 }
       );
     }
@@ -321,7 +323,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Unexpected error in viewport API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }

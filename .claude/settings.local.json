@@ -59,7 +59,15 @@
       "Bash(python3:*)",
       "Bash(\"/c/Users/OWNER/Projects/next-projects/find-my-crew/app/documents/[id]/page.tsx\":*)",
       "Bash(git diff:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(for file in /c/Users/OWNER/Projects/next-projects/find-my-crew/app/api/legs/*/route.ts)",
+      "Bash(do)",
+      "Bash(if grep -q \"sanitizeErrorResponse\" \"$file\")",
+      "Bash(then)",
+      "Bash(else)",
+      "Bash(fi)",
+      "Bash(done)",
+      "Bash(head:*)"
     ]
   }
 }

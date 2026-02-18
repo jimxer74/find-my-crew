@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { logger } from '@/app/lib/logger';
 
 /**
  * GET /api/legs/[legId]/waypoints
@@ -35,7 +37,7 @@ export async function GET(
     if (error) {
       console.error('Error fetching waypoints:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch waypoints', details: error.message },
+        sanitizeErrorResponse(error, 'Failed to fetch waypoints'),
         { status: 500 }
       );
     }
@@ -75,7 +77,7 @@ export async function GET(
   } catch (error: any) {
     console.error('Unexpected error in waypoints API:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }
     );
   }
