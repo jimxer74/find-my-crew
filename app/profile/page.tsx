@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { logger } from '@/app/lib/logger';
 import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
 import { UserConsents } from '@/app/types/consents';
 import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
@@ -212,7 +213,7 @@ function ProfilePageContent() {
       const aiActionIdParam = searchParams.get('aiActionId');
       const targetSkillsParam = searchParams.get('targetSkills');
 
-      console.log('[AI redirect] 📊 Processing parameters:', {
+      logger.debug(' 📊 Processing parameters:', {
         section,
         field,
         aiActionIdParam,
@@ -231,7 +232,7 @@ function ProfilePageContent() {
         if (targetSkillsParam) {
           try {
             const parsedSkills = JSON.parse(decodeURIComponent(targetSkillsParam));
-            console.log('[AI redirect] 📊 Parsed targetSkills:', parsedSkills);
+            logger.debug('Parsed targetSkills', { count: parsedSkills.length }, true);
 
             if (Array.isArray(parsedSkills) && parsedSkills.length > 0) {
               // Validate skills against config
@@ -239,7 +240,7 @@ function ProfilePageContent() {
                 typeof skill === 'string' &&
                 skillsConfig.general.some(configSkill => configSkill.name === skill)
               );
-              console.log('[AI redirect] 📊 Valid skills:', validSkills);
+              logger.debug('Valid skills', { count: validSkills.length }, true);
 
               if (validSkills.length > 0) {                
                 setAiTargetSkills(validSkills);                
@@ -252,7 +253,7 @@ function ProfilePageContent() {
 
                 validSkills.forEach(skill => {
                   setTimeout(() => {
-                    console.log('[AI redirect] 📊 Skill field focus:', skill);
+                    logger.debug('Skill field focus', { skill }, true);
                       focusTargetField(skill);
                     }, 2000);
                   });
@@ -260,7 +261,7 @@ function ProfilePageContent() {
               }
             }
           } catch (error) {
-            console.warn('Invalid targetSkills parameter:', error);
+            logger.warn('Invalid targetSkills parameter', { message: error instanceof Error ? error.message : String(error) });
           }
         }
 
@@ -273,10 +274,10 @@ function ProfilePageContent() {
           }));
 
           // Focus the target field
-          console.log('[AI redirect] 📊 Scheduling field focus for:', field);
+          logger.debug('Scheduling field focus', { field }, true);
 
           setTimeout(() => {
-            console.log('[AI redirect] 📊 Executing field focus for:', field);
+            logger.debug('Executing field focus', { field }, true);
               focusTargetField(field);
             }, 600);
           }
@@ -289,7 +290,7 @@ function ProfilePageContent() {
           url.searchParams.delete('field');
           url.searchParams.delete('aiActionId');
           url.searchParams.delete('targetSkills');
-          console.log('[AI redirect] 📊 Cleaning up URL parameters');
+          logger.debug(' 📊 Cleaning up URL parameters');
           router.replace(url.toString());
         }, 600); // Increased delay to 500ms to ensure highlighting has time to work
         */
@@ -353,7 +354,7 @@ function ProfilePageContent() {
           updated_at: new Date().toISOString(),
         });
       } else {
-        console.error('Error loading profile:', fetchError);
+        logger.error('Error loading profile', fetchError);
         setError('Failed to load profile');
       }
     } else if (data) {
@@ -606,7 +607,7 @@ function ProfilePageContent() {
 
   // Handle AI-focused field highlighting
   const focusTargetField = (fieldId: string) => {
-    console.log('[focusTargetField] 🎯 Called with fieldId:', fieldId);
+    logger.debug('Called with fieldId', { fieldId }, true);
 
     // Map profile field names to actual HTML element IDs
     const fieldIdMap: Record<string, string> = {
@@ -622,15 +623,15 @@ function ProfilePageContent() {
     };
 
     const actualFieldId = fieldIdMap[fieldId] || fieldId;
-    console.log('[focusTargetField] 🎯 Mapped fieldId:', fieldId, '->', actualFieldId);
+    logger.debug('Mapped fieldId', { fieldId, actualFieldId }, true);
 
     let element = document.getElementById(actualFieldId);
-    console.log('[focusTargetField] 🎯 Found element by ID:', element);
+    logger.debug('Found element by ID', { hasElement: !!element }, true);
 
     // For skills, try to find the first skill input or the "Add Skills" button
     if (fieldId === 'skills') {
       element = document.getElementById('skill-add-button') || document.querySelector('[id^="skill-"]') as HTMLElement;
-      console.log('[focusTargetField] 🎯 Skills element:', element);
+      logger.debug('Skills element found', { hasElement: !!element }, true);
     }
 
     // For risk level, find the first risk level button
@@ -648,11 +649,11 @@ function ProfilePageContent() {
           element = label.nextElementSibling as HTMLElement || label.parentElement?.querySelector('button') as HTMLElement;
         }
       }
-      console.log('[focusTargetField] 🎯 Risk level element:', element);
+      logger.debug('Risk level element found', { hasElement: !!element }, true);
     }
 
     if (element) {
-      console.log('[focusTargetField] 🎯 Element found, applying highlight');
+      logger.debug('Element found, applying highlight', {}, true);
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
       if (element.focus) element.focus();
       setAiFocusedField(actualFieldId);
@@ -678,14 +679,14 @@ function ProfilePageContent() {
         setAiFocusedField(null);
       }, 5000);
     } else {
-      console.log('[focusTargetField] 🎯 Element not found, trying alternative selectors');
+      logger.debug('Element not found, trying alternative selectors', {}, true);
       // Try to find the field by name or other selectors
       const elements = document.querySelectorAll(`[name="${fieldId}"], [data-field="${fieldId}"], [id*="${fieldId}"]`);
-      console.log('[focusTargetField] 🎯 Alternative elements found:', elements.length);
+      logger.debug('Alternative elements found', { count: elements.length }, true);
 
       if (elements.length > 0) {
         const firstElement = elements[0] as HTMLElement;
-        console.log('[focusTargetField] 🎯 Using alternative element:', firstElement);
+        logger.debug('Using alternative element', { hasElement: !!firstElement }, true);
         firstElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
         if (firstElement.focus) firstElement.focus();
         setAiFocusedField(fieldId);
@@ -711,7 +712,7 @@ function ProfilePageContent() {
           setAiFocusedField(null);
         }, 5000);
       } else {
-        console.warn('[focusTargetField] 🎯 No element found for field:', fieldId);
+        logger.warn('No element found for field', { fieldId });
       }
     }
 
@@ -769,7 +770,7 @@ function ProfilePageContent() {
               .remove([oldImagePath]);
           }
         } catch (deleteError) {
-          console.warn('Failed to delete old image:', deleteError);
+          logger.warn('Failed to delete old image', { error: String(deleteError) });
         }
       }
 
@@ -784,7 +785,7 @@ function ProfilePageContent() {
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
+        logger.error('Upload error', { message: uploadError?.message || String(uploadError) });
         setError(`Failed to upload image: ${uploadError.message}`);
         setUploadingImage(false);
         return;
@@ -821,7 +822,7 @@ function ProfilePageContent() {
           .remove([imagePath]);
 
         if (deleteError) {
-          console.error('Failed to delete image:', deleteError);
+          logger.error('Failed to delete image', { message: deleteError?.message || String(deleteError) });
           setError('Failed to delete image');
         } else {
           setFormData((prev) => ({
@@ -836,7 +837,7 @@ function ProfilePageContent() {
         }));
       }
     } catch (err: any) {
-      console.error('Error removing image:', err);
+      logger.error('Error removing image', { message: err?.message || String(err) });
       setError('Failed to remove image');
     }
   };
