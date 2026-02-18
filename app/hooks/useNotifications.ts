@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { logger } from '@/app/lib/logger';
 import type { Notification } from '@/app/lib/notifications';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -58,7 +59,7 @@ export function useNotifications(): UseNotificationsReturn {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('[useNotifications] API error:', response.status, errorData);
+        logger.error('[useNotifications] API error', { status: response.status, errorData });
         throw new Error(errorData.error || `Failed to fetch notifications (${response.status})`);
       }
 
@@ -79,7 +80,7 @@ export function useNotifications(): UseNotificationsReturn {
     } catch (err: any) {
       if (isMountedRef.current) {
         setError(err.message);
-        console.error('[useNotifications] Error fetching:', err);
+        logger.error('[useNotifications] Error fetching', { error: err instanceof Error ? err.message : String(err) });
       }
     } finally {
       if (isMountedRef.current) {
@@ -101,7 +102,7 @@ export function useNotifications(): UseNotificationsReturn {
         }
       }
     } catch (err) {
-      console.error('[useNotifications] Error fetching unread count:', err);
+      logger.error('[useNotifications] Error fetching unread count', { error: err instanceof Error ? err.message : String(err) });
     }
   }, [user]);
 
@@ -138,7 +139,7 @@ export function useNotifications(): UseNotificationsReturn {
             }
           }
         } catch (err) {
-          console.error('[useNotifications] Initial fetch error:', err);
+          logger.error('[useNotifications] Initial fetch error', { error: err instanceof Error ? err.message : String(err) });
         } finally {
           if (isMountedRef.current) {
             setIsLoading(false);
@@ -162,7 +163,7 @@ export function useNotifications(): UseNotificationsReturn {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[useNotifications] New notification via realtime:', payload);
+          logger.debug('[useNotifications] New notification via realtime', { payload });
           if (isMountedRef.current) {
             const newNotification = payload.new as Notification;
             setNotifications((prev) => [newNotification, ...prev]);
@@ -179,7 +180,7 @@ export function useNotifications(): UseNotificationsReturn {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[useNotifications] Notification updated via realtime:', payload);
+          logger.debug('[useNotifications] Notification updated via realtime', { payload });
           if (isMountedRef.current) {
             const updatedNotification = payload.new as Notification;
             setNotifications((prev) =>
@@ -199,7 +200,7 @@ export function useNotifications(): UseNotificationsReturn {
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[useNotifications] Notification deleted via realtime:', payload);
+          logger.debug('[useNotifications] Notification deleted via realtime', { payload });
           if (isMountedRef.current) {
             const deletedId = (payload.old as { id: string }).id;
             setNotifications((prev) => prev.filter((n) => n.id !== deletedId));
@@ -207,7 +208,7 @@ export function useNotifications(): UseNotificationsReturn {
         }
       )
       .subscribe((status) => {
-        console.log('[useNotifications] Realtime subscription status:', status);
+        logger.debug('[useNotifications] Realtime subscription status', { status });
       });
 
     channelRef.current = channel;
@@ -257,7 +258,7 @@ export function useNotifications(): UseNotificationsReturn {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err: any) {
-      console.error('[useNotifications] Error marking as read:', err);
+      logger.error('[useNotifications] Error marking as read', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message);
     }
   }, []);
@@ -277,7 +278,7 @@ export function useNotifications(): UseNotificationsReturn {
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err: any) {
-      console.error('[useNotifications] Error marking all as read:', err);
+      logger.error('[useNotifications] Error marking all as read', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message);
     }
   }, []);
@@ -300,7 +301,7 @@ export function useNotifications(): UseNotificationsReturn {
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
     } catch (err: any) {
-      console.error('[useNotifications] Error deleting:', err);
+      logger.error('[useNotifications] Error deleting', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message);
     }
   }, [notifications]);
@@ -358,7 +359,7 @@ export function useNotifications(): UseNotificationsReturn {
         setUnreadCount((prev) => prev - 1);
       }
     } catch (err: any) {
-      console.error('[useNotifications] Error rejecting action:', err);
+      logger.error('[useNotifications] Error rejecting action', { error: err instanceof Error ? err.message : String(err) });
       setError(err.message);
     }
   }, [unreadCount]);
