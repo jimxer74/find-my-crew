@@ -284,10 +284,18 @@ dependencies: []
 
 ### 📋 REMAINING WORK (For Follow-up Sprint)
 
-**5. Event Listener Leaks** - VERIFIED AS ALREADY FIXED
+**5. Event Listener Leaks - EditJourneyMap.tsx** ✅
+- Fixed: Stored listener function references in refs for cleanup
+- Added refs: startMarkerListenersRef, endMarkerListenersRef, waypointMarkerListenersRef
+- Updated all marker creation functions to store listener references
+- Updated removeLegMarkers() to call removeEventListener before marker.remove()
+- Commit: 68ef230
+- Status: RESOLVED (EditJourneyMap.tsx fully fixed)
+
+**Other Components - VERIFIED AS ALREADY PROPER**
 - Navigation Menu: Event listeners have proper cleanup
 - AuthContext: Subscription properly unsubscribes
-- EditJourneyMap: Comprehensive cleanup already implemented
+- CrewBrowseMap: Proper cleanup on unmount
 - Status: NO ACTION NEEDED (Prior fixes already in place)
 
 **6. Debug Logging Cleanup** - DEFERRED
@@ -303,9 +311,9 @@ dependencies: []
 
 ### 🎯 SUMMARY OF ACHIEVEMENTS
 
-**Critical Issues Addressed**: 4 of 7 major HIGH-priority issues fixed
+**Critical Issues Addressed**: 5 of 7 major HIGH-priority issues fixed
 **Security Issues Fixed**: 2 (Exposed credentials handling via error sanitization, FK integrity)
-**Code Quality Improved**: 2 (Hook violation, Promise error handling)
+**Code Quality Improved**: 3 (Hook violation, Promise error handling, Event listener memory leaks)
 **Database Integrity**: 1 (FK constraint corrected)
 
 **Total Commits**: 4 commits, all including complete explanations
@@ -547,4 +555,33 @@ To efficiently update remaining 44 routes, recommend:
 
 ### Build Status
 ✓ All updates compile successfully
+
+## Event Listener Memory Leak Fix - Session 2026-02-18
+
+### Problem Identified
+EditJourneyMap.tsx was adding click handlers to dynamically created marker DOM elements without storing the listener function references. When markers were removed via `marker.remove()`, the event listeners were not being cleaned up, causing memory leaks as markers were repeatedly added/removed during journey editing.
+
+### Solution Implemented
+- Created refs to store listener function references:
+  - `startMarkerListenersRef` - Map<string, Function> for start marker listeners
+  - `endMarkerListenersRef` - Map<string, Function> for end marker listeners
+  - `waypointMarkerListenersRef` - Map<string, Map<number, Function>> for waypoint listeners
+
+- Updated all marker creation functions:
+  - `addPermanentWaypointMarker()` - stores listener in waypointMarkerListenersRef
+  - `addEndMarker()` - stores listener in endMarkerListenersRef
+  - Marker sync effect - stores listener in startMarkerListenersRef
+  - `handleStartNewLeg()` - stores listener in both code paths
+
+- Updated cleanup:
+  - `removeLegMarkers()` - calls removeEventListener for all marker types before removal
+  - Component unmount cleanup - properly removes all stored listeners
+
+### Impact
+- Eliminates memory leaks from repeated marker creation/destruction
+- Proper cleanup prevents event listener accumulation
+- Improves overall map component performance
+- Build verified successful
+
+### Commit: 68ef230
 <!-- SECTION:NOTES:END -->
