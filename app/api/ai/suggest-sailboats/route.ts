@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
+import { logger } from '@/app/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,12 +37,7 @@ CRITICAL REQUIREMENTS:
 Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
 
       // Debug: Log the prompt
-      console.log('=== AI SUGGEST-SAILBOATS DEBUG ===');
-      console.log('Query:', queryTrimmed);
-      console.log('Search URL:', searchUrl);
-      console.log('Prompt sent to AI:');
-      console.log(prompt);
-      console.log('===================================');
+      logger.debug(`Suggest sailboats API request`, { query: queryTrimmed, searchUrl }, true);
 
       // Use centralized AI service
       let result;
@@ -50,15 +46,12 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
           useCase: 'suggest-sailboats',
           prompt,
         });
-        console.log(`Success with ${result.provider}/${result.model}`);
+        logger.aiFlow('SuggestSailboats', 'AI call succeeded', { provider: result.provider, model: result.model });
       } catch (error: any) {
-        console.error('=== AI SERVICE ERROR ===');
-        console.error('Error:', error.message);
-        if (error instanceof AIServiceError) {
-          console.error('Provider:', error.provider);
-          console.error('Model:', error.model);
-        }
-        console.error('========================');
+        const errorMsg = error instanceof AIServiceError
+          ? `${error.provider}/${error.model}: ${error.message}`
+          : error.message;
+        logger.error('AI suggest sailboats call failed', { error: errorMsg });
         return NextResponse.json({
           suggestions: []
         });
@@ -68,52 +61,41 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
 
       // Parse JSON array from response
       let jsonText = text.trim();
-      console.log('=== JSON PARSING DEBUG ===');
-      console.log('Original text length:', jsonText.length);
-      console.log('First 200 chars:', jsonText.substring(0, 200));
-      console.log('Last 200 chars:', jsonText.substring(Math.max(0, jsonText.length - 200)));
-      
+      logger.debug('Parsing AI response', { originalLength: jsonText.length }, true);
+
       if (jsonText.startsWith('```json')) {
         jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-        console.log('Removed json code block markers');
+        logger.debug('Removed json code block markers', {}, true);
       } else if (jsonText.startsWith('```')) {
         jsonText = jsonText.replace(/```\n?/g, '');
-        console.log('Removed code block markers');
+        logger.debug('Removed code block markers', {}, true);
       }
-      
-      console.log('Cleaned text length:', jsonText.length);
-      console.log('Cleaned text:', jsonText);
-      console.log('==========================');
+
+      logger.debug('JSON parsing cleaned', { cleanedLength: jsonText.length }, true);
 
       // Check if JSON appears truncated (ends abruptly without closing bracket/quote)
       if (jsonText.trim().endsWith('"') && !jsonText.trim().endsWith('"]')) {
-        console.warn('=== TRUNCATED JSON DETECTED ===');
-        console.warn('Response appears to be truncated. Attempting to fix...');
+        logger.warn('Truncated JSON detected - attempting to fix', {});
         // Try to close the JSON array properly
         const lastQuoteIndex = jsonText.lastIndexOf('"');
         if (lastQuoteIndex > 0) {
           // Remove the incomplete last item and close the array
           const fixedJson = jsonText.substring(0, lastQuoteIndex) + '"]';
           jsonText = fixedJson;
-          console.warn('Fixed JSON:', jsonText);
+          logger.debug('Fixed truncated JSON', {}, true);
         }
-        console.warn('================================');
       } else if (jsonText.trim().endsWith(',') || jsonText.trim().endsWith('",')) {
-        console.warn('=== TRUNCATED JSON DETECTED ===');
-        console.warn('Response appears to be truncated. Attempting to fix...');
+        logger.warn('Truncated JSON detected - attempting to fix', {});
         // Remove trailing comma and close the array
         jsonText = jsonText.replace(/,\s*$/, '') + ']';
-        console.warn('Fixed JSON:', jsonText);
-        console.warn('================================');
+        logger.debug('Fixed truncated JSON', {}, true);
       }
 
       let aiSuggestions;
       try {
         aiSuggestions = JSON.parse(jsonText);
       } catch (parseError: any) {
-        console.error('=== JSON PARSE ERROR ===');
-        console.error('Parse error:', parseError.message);
-        console.error('Text that failed to parse:', jsonText);
+        logger.warn('JSON parse error - attempting fallback extraction', { error: parseError.message });
         // Try to extract valid items from truncated JSON
         try {
           const arrayMatch = jsonText.match(/\[([\s\S]*)\]/);
@@ -126,15 +108,14 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
               })
               .filter(item => item !== null);
             if (items.length > 0) {
-              console.log('Extracted valid items from truncated JSON:', items);
+              logger.debug('Extracted valid items from truncated JSON', { count: items.length }, true);
               aiSuggestions = items;
             }
           }
         } catch (extractError) {
-          console.error('Failed to extract items from truncated JSON');
+          logger.error('Failed to extract items from truncated JSON', { error: extractError instanceof Error ? extractError.message : String(extractError) });
         }
         if (!aiSuggestions) {
-          console.error('========================');
           return NextResponse.json({
             suggestions: []
           });
@@ -142,25 +123,17 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
       }
       
       // Debug: Log parsed suggestions
-      console.log('=== PARSED SUGGESTIONS DEBUG ===');
-      console.log('Parsed JSON:', aiSuggestions);
-      console.log('Type:', typeof aiSuggestions);
-      console.log('Is Array:', Array.isArray(aiSuggestions));
+      logger.debug('Parsed AI suggestions', { isArray: Array.isArray(aiSuggestions) }, true);
       if (Array.isArray(aiSuggestions)) {
-        console.log('Number of suggestions:', aiSuggestions.length);
-        console.log('Suggestions:', aiSuggestions);
+        logger.debug('Sailboat suggestions generated', { count: aiSuggestions.length }, true);
         return NextResponse.json({
           suggestions: aiSuggestions.slice(0, 10)
         });
       } else {
-        console.error('Parsed result is not an array:', aiSuggestions);
+        logger.error('Parsed result is not an array', { type: typeof aiSuggestions });
       }
-      console.log('================================');
     } catch (aiError: any) {
-      console.error('=== AI SUGGESTION ERROR ===');
-      console.error('Error:', aiError.message);
-      console.error('Stack:', aiError.stack);
-      console.error('===========================');
+      logger.error('AI suggestion error', { error: aiError instanceof Error ? aiError.message : String(aiError) });
       // Fallback to empty suggestions
     }
 
@@ -170,9 +143,9 @@ Return format: ["Make Model1", "Make Model2", "Make Model3", ...]`;
     });
 
   } catch (error: any) {
-    console.error('Error suggesting sailboats:', error);
+    logger.error('Error suggesting sailboats', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: error.message || 'Failed to suggest sailboats' },
+      { error: error instanceof Error ? error.message : 'Failed to suggest sailboats' },
       { status: 500 }
     );
   }
