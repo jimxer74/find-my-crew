@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/app/lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,12 +41,7 @@ Return format: ["Model1", "Model2", "Model3", ...]
 Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
 
       // Debug: Log the prompt
-      console.log('=== AI SUGGEST-BOAT-MODELS DEBUG ===');
-      console.log('Make:', makeTrimmed);
-      console.log('Query:', query);
-      console.log('Prompt sent to AI:');
-      console.log(prompt);
-      console.log('====================================');
+      logger.debug('Suggesting boat models', { make: makeTrimmed, query }, true);
 
       const apiKey = process.env.GOOGLE_GEMINI_API_KEY;
       const apiVersions = ['v1beta', 'v1'];
@@ -90,12 +86,7 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
 
             if (text) {
               // Debug: Log the raw AI response
-              console.log('=== AI RESPONSE DEBUG ===');
-              console.log('API Version:', apiVersion);
-              console.log('Model:', modelName);
-              console.log('Raw AI Response:');
-              console.log(text);
-              console.log('==========================');
+              logger.debug('AI response received', { apiVersion, model: modelName }, true);
               break;
             }
           } catch (err: any) {
@@ -116,16 +107,11 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
         }
 
         const aiSuggestions = JSON.parse(jsonText);
-        
-        // Debug: Log parsed suggestions
-        console.log('=== PARSED SUGGESTIONS DEBUG ===');
-        console.log('Parsed JSON:', aiSuggestions);
-        console.log('Is Array:', Array.isArray(aiSuggestions));
-        if (Array.isArray(aiSuggestions)) {
-          console.log('Number of suggestions:', aiSuggestions.length);
-          console.log('Suggestions:', aiSuggestions);
-        }
-        console.log('================================');
+
+        logger.debug('Parsed boat model suggestions', {
+          isArray: Array.isArray(aiSuggestions),
+          count: Array.isArray(aiSuggestions) ? aiSuggestions.length : 0,
+        }, true);
         
         if (Array.isArray(aiSuggestions)) {
           return NextResponse.json({
@@ -134,7 +120,7 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
         }
       }
     } catch (aiError: any) {
-      console.error('AI suggestion error:', aiError);
+      logger.error('AI boat model suggestion error', { error: aiError instanceof Error ? aiError.message : String(aiError) });
       // Fallback to empty suggestions
     }
 
@@ -144,9 +130,9 @@ Return ONLY the JSON array, no markdown, no code blocks, no explanations.`;
     });
 
   } catch (error: any) {
-    console.error('Error suggesting boat models:', error);
+    logger.error('Error suggesting boat models', { error: error instanceof Error ? error.message : String(error) });
     return NextResponse.json(
-      { error: error.message || 'Failed to suggest boat models' },
+      { error: error instanceof Error ? error.message : 'Failed to suggest boat models' },
       { status: 500 }
     );
   }
