@@ -286,17 +286,26 @@ export async function GET(
     }
 
     // Fetch journey requirements
+    logger.debug('Fetching requirements for journey', { journeyId: legs.journeys.id }, true);
     const { data: requirements, error: reqError } = await supabase
       .from('journey_requirements')
-      .select('id, question_text, question_type, options, is_required, order, weight')
+      .select('id, question_text, requirement_type, options, is_required, order, weight')
       .eq('journey_id', legs.journeys.id)
       .order('order', { ascending: true });
+
+    logger.debug('Requirements fetch result', {
+      hasError: !!reqError,
+      errorMsg: reqError instanceof Error ? reqError.message : String(reqError),
+      count: requirements?.length || 0,
+      firstRequirement: requirements?.[0]
+    }, true);
 
     if (reqError) {
       logger.error('Error fetching requirements', { error: reqError instanceof Error ? reqError.message : String(reqError) });
     }
 
     // Fetch registration answers (including passport verification data)
+    logger.debug('Fetching answers for registration', { registrationId }, true);
     const { data: answersData, error: answersError } = await supabase
       .from('registration_answers')
       .select(`
@@ -314,12 +323,22 @@ export async function GET(
           id,
           question_text,
           requirement_type,
-          question_type: requirement_type,
           is_required,
           order
         )
       `)
       .eq('registration_id', registrationId);
+
+    logger.debug('Answers fetch result', {
+      hasError: !!answersError,
+      errorMsg: answersError instanceof Error ? answersError.message : String(answersError),
+      count: answersData?.length || 0,
+      firstAnswer: answersData?.[0] ? {
+        id: answersData[0].id,
+        hasJourneyReq: !!answersData[0].journey_requirements,
+        journeyReqFields: answersData[0].journey_requirements ? Object.keys(answersData[0].journey_requirements) : []
+      } : null
+    }, true);
 
     if (answersError) {
       logger.error('Error fetching answers', { error: answersError instanceof Error ? answersError.message : String(answersError) });
@@ -468,6 +487,13 @@ export async function GET(
     }
 
     // Build response
+    logger.debug('Building response', {
+      hasRequirements: !!requirements,
+      requirementsCount: requirements?.length || 0,
+      hasAnswers: !!answers,
+      answersCount: answers?.length || 0
+    }, true);
+
     const response = {
       registration: {
         id: registration.id,
@@ -536,10 +562,28 @@ export async function GET(
       passportDoc: passportDoc,
     };
 
+    logger.debug('Response object built successfully', {
+      hasRegistration: !!response.registration,
+      hasCrew: !!response.crew,
+      hasLeg: !!response.leg,
+      hasJourney: !!response.journey,
+      hasAnswers: response.answers?.length || 0
+    }, true);
+
     return NextResponse.json(response);
 
   } catch (error: any) {
-    logger.error('Unexpected error in registration details API', { error: error instanceof Error ? error.message : String(error) });
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : '';
+    logger.error('Unexpected error in registration details API', {
+      error: errorMsg,
+      stack: errorStack,
+      errorType: error?.constructor?.name
+    });
+    logger.error('Full error details', {
+      errorKeys: Object.keys(error || {}),
+      errorStr: String(error)
+    });
     return NextResponse.json(
       sanitizeErrorResponse(error, 'Internal server error'),
       { status: 500 }

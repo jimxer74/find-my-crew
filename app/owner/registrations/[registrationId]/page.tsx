@@ -104,7 +104,7 @@ type RegistrationDetails = {
   requirements: Array<{
     id: string;
     question_text: string;
-    question_type: string;
+    requirement_type: string;
     options: string[] | null;
     is_required: boolean;
     order: number;
@@ -118,7 +118,7 @@ type RegistrationDetails = {
     journey_requirements: {
       id: string;
       question_text: string;
-      question_type: string;
+      requirement_type: string;
       options: string[] | null;
       is_required: boolean;
       order: number;
@@ -300,7 +300,7 @@ export default function RegistrationDetailsPage() {
 
   // Helper to get answer display text
   const getAnswerDisplay = (answer: RegistrationDetails['answers'][0]): string => {
-    const questionType = answer.journey_requirements.question_type;
+    const questionType = answer.journey_requirements.requirement_type;
 
     if (questionType === 'text' || questionType === 'yes_no') {
       return answer.answer_text || 'Not answered';

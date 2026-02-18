@@ -81,7 +81,21 @@
       "Bash(/tmp/bulk_migrate.sh:*)",
       "Bash(__NEW_LINE_89da3581553c4ca7__ chmod +x /tmp/bulk_migrate.sh)",
       "Bash(/tmp/comprehensive_migrate.py:*)",
-      "Bash(__NEW_LINE_913544756481a1b9__ python3 /tmp/comprehensive_migrate.py)"
+      "Bash(__NEW_LINE_913544756481a1b9__ python3 /tmp/comprehensive_migrate.py)",
+      "Bash(while read file)",
+      "Bash(do if ! grep -q \"import.*logger.*from\" \"$file\")",
+      "Bash(then echo \"$file\")",
+      "Bash(comm:*)",
+      "Bash(do if grep -q \"logger\\\\.\" \"$file\")",
+      "Bash(then echo \"$file\" fi done)",
+      "Bash(while IFS= read -r file)",
+      "Bash(then if ! grep -q \"import.*logger.*from.*@/app/lib/logger\" \"$file\")",
+      "Bash(then echo \"MISSING: $file\" else echo \"OK: $file\" fi fi done)",
+      "Bash(xargs -I {} sh -c 'grep -l \"\"logger\\\\.\"\" \"\"{}\"\" 2>/dev/null')",
+      "Bash(__NEW_LINE_a5349ffb4d0b5334__ grep 'import.*logger.*from' /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/notifications/ActionModal.tsx)",
+      "Bash(__NEW_LINE_055125793b13ad78__ grep 'import.*logger.*from.*@/app/lib/logger' /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/crew/LegDetailsPanel.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/manage/LegFormModal.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/notifications/NotificationCenter.tsx /c/Users/OWNER/Projects/next-projects/find-my-crew/app/components/crew/CrewBrowseMap.tsx)",
+      "Bash(git reset:*)",
+      "mcp__backlog__get_task_creation_guide"
     ]
   }
 }
