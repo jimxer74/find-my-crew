@@ -48,6 +48,11 @@ export function RegistrationRequirementsForm({
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [questionRequirements, setQuestionRequirements] = useState<Requirement[]>([]);
   const [answers, setAnswers] = useState<Record<string, Answer>>({});
+
+  // Debug: Log when isRegistering prop changes
+  useEffect(() => {
+    console.log('[RegistrationRequirementsForm] isRegistering changed:', isRegistering);
+  }, [isRegistering]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState('');
@@ -163,13 +168,19 @@ export function RegistrationRequirementsForm({
   };
 
   const handleSubmit = () => {
-    if (!validateAnswers()) return;
+    console.log('[RegistrationRequirementsForm] handleSubmit called');
+    if (!validateAnswers()) {
+      console.log('[RegistrationRequirementsForm] Validation failed');
+      return;
+    }
 
+    console.log('[RegistrationRequirementsForm] Validation passed, calling onComplete');
     const answersArray = Object.values(answers).filter(
       (answer) => answer.answer_text && answer.answer_text.trim() !== ''
     );
 
     onComplete(answersArray, notes);
+    console.log('[RegistrationRequirementsForm] onComplete called');
   };
 
   if (loading) {

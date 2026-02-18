@@ -771,6 +771,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
 
     // Set loading state immediately to provide visual feedback to user
+    logger.debug('[handleRequirementsComplete] Setting isRegistering to true', {}, true);
     setIsRegistering(true);
 
     // Update state for UI consistency
