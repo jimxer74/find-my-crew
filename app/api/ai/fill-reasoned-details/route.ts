@@ -83,12 +83,11 @@ Return a JSON object with this exact structure:
 IMPORTANT: Return ONLY the JSON object, nothing else.`;
 
     // Debug: Log the prompt
-    console.log('=== AI FILL-REASONED-DETAILS DEBUG ===');
-    console.log('Make/Model:', makeModelTrimmed);
-    console.log('Hard Data:', JSON.stringify(hardData, null, 2));
-    console.log('Prompt sent to AI:');
-    console.log(prompt);
-    console.log('=======================================');
+    logger.aiFlow('ReasonedDetails', 'Filling reasoned details', {
+      makeModel: makeModelTrimmed,
+      hardDataKeys: Object.keys(hardData),
+      promptLength: prompt.length
+    });
 
     // Use centralized AI service
     let result;
@@ -97,15 +96,13 @@ IMPORTANT: Return ONLY the JSON object, nothing else.`;
         useCase: 'boat-details',
         prompt,
       });
-      console.log(`Success with ${result.provider}/${result.model}`);
+      logger.debug(`AI call succeeded`, { provider: result.provider, model: result.model }, true);
     } catch (error: any) {
-      console.error('=== AI SERVICE ERROR ===');
-      console.error('Error:', error.message);
-      if (error instanceof AIServiceError) {
-        console.error('Provider:', error.provider);
-        console.error('Model:', error.model);
-      }
-      console.error('========================');
+      logger.error(`AI service error`, {
+        error: error.message,
+        provider: error instanceof AIServiceError ? error.provider : 'unknown',
+        model: error instanceof AIServiceError ? error.model : 'unknown'
+      });
       return NextResponse.json(
         { error: error.message || 'Failed to get AI response' },
         { status: 500 }
@@ -119,9 +116,7 @@ IMPORTANT: Return ONLY the JSON object, nothing else.`;
     try {
       reasonedDetails = parseJsonObjectFromAIResponse(text);
     } catch (parseError: any) {
-      console.error('=== JSON PARSE ERROR ===');
-      console.error('Parse error:', parseError.message);
-      console.error('========================');
+      logger.error(`JSON parse error`, { error: parseError.message });
       return NextResponse.json(
         { error: 'Failed to parse AI response' },
         { status: 500 }
@@ -129,9 +124,11 @@ IMPORTANT: Return ONLY the JSON object, nothing else.`;
     }
     
     // Debug: Log parsed details
-    console.log('=== PARSED REASONED DETAILS DEBUG ===');
-    console.log('Parsed JSON:', JSON.stringify(reasonedDetails, null, 2));
-    console.log('=====================================');
+    logger.debug(`Reasoned details parsed successfully`, {
+      type: reasonedDetails.type,
+      capacity: reasonedDetails.capacity,
+      averageSpeed: reasonedDetails.average_speed_knots
+    }, true);
 
     // Validate and return only the reasoned fields
     return NextResponse.json({
