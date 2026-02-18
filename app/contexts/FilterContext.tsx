@@ -52,6 +52,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
   // Load filters from session storage on mount
   useEffect(() => {
+    console.log('[FALLBACK] FilterProvider mount effect running');
     logger.info('[FilterProvider] Mount effect running', {});
     if (typeof window === 'undefined') {
       logger.info('[FilterProvider] SSR environment, skipping', {});
@@ -115,6 +116,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   // Load profile preferences as filter defaults when user logs in
   // This effect loads from profile on every initialization to ensure fresh data
   useEffect(() => {
+    console.log('[FALLBACK] FilterProvider profile load effect running', { isInitialized });
     logger.info('[FilterProvider] Profile load effect running', { isInitialized });
     if (!isInitialized) {
       logger.info('[FilterProvider] Not initialized yet, skipping profile load', {});
@@ -128,8 +130,10 @@ export function FilterProvider({ children }: { children: ReactNode }) {
 
     const loadProfilePreferences = async () => {
       try {
+        console.log('[FALLBACK] loadProfilePreferences called');
         const supabase = getSupabaseBrowserClient();
         const { data: { user } } = await supabase.auth.getUser();
+        console.log('[FALLBACK] User fetched:', user?.id);
         logger.info('[FilterContext] Loading profile preferences', { userId: user?.id });
         if (!user) {
           logger.info('[FilterContext] No user found, skipping profile load', {});
