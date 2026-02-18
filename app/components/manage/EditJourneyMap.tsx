@@ -67,6 +67,9 @@ export function EditJourneyMap({
   const legStartMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map()); // Map legId to start marker
   const legEndMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map()); // Map legId to end marker
   const legWaypointMarkersRef = useRef<Map<string, mapboxgl.Marker[]>>(new Map()); // Map legId to array of waypoint markers
+  const startMarkerListenersRef = useRef<Map<string, (e: Event) => void>>(new Map()); // Store start marker click listeners
+  const endMarkerListenersRef = useRef<Map<string, (e: Event) => void>>(new Map()); // Store end marker click listeners
+  const waypointMarkerListenersRef = useRef<Map<string, Map<number, (e: Event) => void>>>(new Map()); // Store waypoint marker listeners
   const routeSourcesRef = useRef<Map<string, string>>(new Map()); // Map legId to sourceId
   const routeLayerListenersRef = useRef<Set<string>>(new Set()); // Track which layers have listeners
   const routeLineClickedRef = useRef(false); // Flag to track if route line was clicked
@@ -257,21 +260,48 @@ export function EditJourneyMap({
           markerRef.current.remove();
           markerRef.current = null;
         }
-        // Clean up leg start markers
+        // Clean up leg start markers and their listeners
         legStartMarkersRef.current.forEach((marker, legId) => {
+          const el = marker.getElement();
+          if (el) {
+            const listener = startMarkerListenersRef.current.get(legId);
+            if (listener) {
+              el.removeEventListener('click', listener);
+            }
+          }
           marker.remove();
         });
         legStartMarkersRef.current.clear();
-        // Clean up leg end markers
+        startMarkerListenersRef.current.clear();
+        // Clean up leg end markers and their listeners
         legEndMarkersRef.current.forEach((marker, legId) => {
+          const el = marker.getElement();
+          if (el) {
+            const listener = endMarkerListenersRef.current.get(legId);
+            if (listener) {
+              el.removeEventListener('click', listener);
+            }
+          }
           marker.remove();
         });
         legEndMarkersRef.current.clear();
-        // Clean up waypoint markers
+        endMarkerListenersRef.current.clear();
+        // Clean up waypoint markers and their listeners
         legWaypointMarkersRef.current.forEach((markers, legId) => {
-          markers.forEach(marker => marker.remove());
+          const legListeners = waypointMarkerListenersRef.current.get(legId);
+          markers.forEach((marker, index) => {
+            const el = marker.getElement();
+            if (el && legListeners) {
+              const listener = legListeners.get(index);
+              if (listener) {
+                el.removeEventListener('click', listener);
+              }
+            }
+            marker.remove();
+          });
         });
         legWaypointMarkersRef.current.clear();
+        waypointMarkerListenersRef.current.clear();
         // Remove all route line layers and sources
         routeSourcesRef.current.forEach((sourceId, legId) => {
           const layerId = `route-line-layer-${legId}`;
@@ -321,28 +351,33 @@ export function EditJourneyMap({
     el.style.cursor = 'pointer';
     el.style.zIndex = zIndex;
 
-    // Add click handler to marker
-    if (onLegClick) {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onLegClick(legId);
-      });
-    }
-
     // Create and add marker to map
     const marker = new mapboxgl.Marker({
       element: el,
       anchor: 'center',
     })
       .setLngLat([lng, lat]);
-    
+
     if (map.current) {
       marker.addTo(map.current);
       // Store marker by legId
       if (!legWaypointMarkersRef.current.has(legId)) {
         legWaypointMarkersRef.current.set(legId, []);
+        waypointMarkerListenersRef.current.set(legId, new Map());
       }
-      legWaypointMarkersRef.current.get(legId)!.push(marker);
+      const markers = legWaypointMarkersRef.current.get(legId)!;
+      const markerIndex = markers.length;
+      markers.push(marker);
+
+      // Add and store click handler to marker (for cleanup)
+      if (onLegClick) {
+        const handleClick = (e: Event) => {
+          e.stopPropagation();
+          onLegClick(legId);
+        };
+        el.addEventListener('click', handleClick);
+        waypointMarkerListenersRef.current.get(legId)!.set(markerIndex, handleClick);
+      }
     }
   };
 
@@ -352,8 +387,16 @@ export function EditJourneyMap({
     // Remove existing end marker for this leg if any
     const existingEndMarker = legEndMarkersRef.current.get(legId);
     if (existingEndMarker) {
+      const el = existingEndMarker.getElement();
+      if (el) {
+        const listener = endMarkerListenersRef.current.get(legId);
+        if (listener) {
+          el.removeEventListener('click', listener);
+        }
+      }
       existingEndMarker.remove();
       legEndMarkersRef.current.delete(legId);
+      endMarkerListenersRef.current.delete(legId);
     }
 
     // Determine color and z-index based on selection
@@ -375,7 +418,7 @@ export function EditJourneyMap({
     el.style.alignItems = 'center';
     el.style.justifyContent = 'center';
     el.style.zIndex = zIndex;
-    
+
     // Add "E" text
     const text = document.createElement('span');
     text.textContent = 'E';
@@ -385,24 +428,26 @@ export function EditJourneyMap({
     text.style.lineHeight = '1';
     el.appendChild(text);
 
-    // Add click handler to marker
-    if (onLegClick) {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        onLegClick(legId);
-      });
-    }
-
     // Create and add permanent marker to map
     const marker = new mapboxgl.Marker({
       element: el,
       anchor: 'center',
     })
       .setLngLat([lng, lat]);
-    
+
     if (map.current) {
       marker.addTo(map.current);
       legEndMarkersRef.current.set(legId, marker);
+
+      // Add and store click handler to marker (for cleanup)
+      if (onLegClick) {
+        const handleClick = (e: Event) => {
+          e.stopPropagation();
+          onLegClick(legId);
+        };
+        el.addEventListener('click', handleClick);
+        endMarkerListenersRef.current.set(legId, handleClick);
+      }
     }
   };
 
@@ -539,25 +584,52 @@ export function EditJourneyMap({
 
   // Function to remove all markers for a specific leg
   const removeLegMarkers = (legId: string) => {
-    // Remove start marker
+    // Remove start marker and its listener
     const startMarker = legStartMarkersRef.current.get(legId);
     if (startMarker) {
+      const el = startMarker.getElement();
+      if (el) {
+        const listener = startMarkerListenersRef.current.get(legId);
+        if (listener) {
+          el.removeEventListener('click', listener);
+        }
+      }
       startMarker.remove();
       legStartMarkersRef.current.delete(legId);
+      startMarkerListenersRef.current.delete(legId);
     }
 
-    // Remove end marker
+    // Remove end marker and its listener
     const endMarker = legEndMarkersRef.current.get(legId);
     if (endMarker) {
+      const el = endMarker.getElement();
+      if (el) {
+        const listener = endMarkerListenersRef.current.get(legId);
+        if (listener) {
+          el.removeEventListener('click', listener);
+        }
+      }
       endMarker.remove();
       legEndMarkersRef.current.delete(legId);
+      endMarkerListenersRef.current.delete(legId);
     }
 
-    // Remove waypoint markers
+    // Remove waypoint markers and their listeners
     const waypointMarkers = legWaypointMarkersRef.current.get(legId);
     if (waypointMarkers) {
-      waypointMarkers.forEach(marker => marker.remove());
+      const legListeners = waypointMarkerListenersRef.current.get(legId);
+      waypointMarkers.forEach((marker, index) => {
+        const el = marker.getElement();
+        if (el && legListeners) {
+          const listener = legListeners.get(index);
+          if (listener) {
+            el.removeEventListener('click', listener);
+          }
+        }
+        marker.remove();
+      });
       legWaypointMarkersRef.current.delete(legId);
+      waypointMarkerListenersRef.current.delete(legId);
     }
   };
 
@@ -617,22 +689,24 @@ export function EditJourneyMap({
             text.style.textAlign = 'center';
             el.appendChild(text);
             
-            // Add click handler to marker
-            if (onLegClick) {
-              el.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onLegClick(legId);
-              });
-            }
-            
             const marker = new mapboxgl.Marker({
               element: el,
               anchor: 'center',
             }).setLngLat([lng, lat]);
-            
+
             if (map.current) {
               marker.addTo(map.current);
               legStartMarkersRef.current.set(legId, marker);
+
+              // Add and store click handler to marker (for cleanup)
+              if (onLegClick) {
+                const handleClick = (e: Event) => {
+                  e.stopPropagation();
+                  onLegClick(legId);
+                };
+                el.addEventListener('click', handleClick);
+                startMarkerListenersRef.current.set(legId, handleClick);
+              }
             }
           } else {
             // Update existing marker color, z-index, and label
@@ -789,14 +863,6 @@ export function EditJourneyMap({
       text.style.lineHeight = '1';
       text.style.textAlign = 'center';
       el.appendChild(text);
-      
-      // Add click handler to marker
-      if (onLegClick) {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onLegClick(legId);
-        });
-      }
 
       // Create new marker at the EXACT same position as the temporary one
       const newMarker = new mapboxgl.Marker({
@@ -804,10 +870,21 @@ export function EditJourneyMap({
         anchor: 'center',
       })
         .setLngLat([currentLngLat.lng, currentLngLat.lat]);
-      
+
       if (map.current) {
         newMarker.addTo(map.current);
         legStartMarkersRef.current.set(legId, newMarker);
+
+        // Add and store click handler to marker (for cleanup)
+        if (onLegClick) {
+          const handleClick = (e: Event) => {
+            e.stopPropagation();
+            onLegClick(legId);
+          };
+          el.addEventListener('click', handleClick);
+          startMarkerListenersRef.current.set(legId, handleClick);
+        }
+
         console.log('Replaced temporary marker with start marker at', currentLngLat);
       }
     } else {
@@ -843,14 +920,6 @@ export function EditJourneyMap({
       text.style.lineHeight = '1';
       text.style.textAlign = 'center';
       el.appendChild(text);
-      
-      // Add click handler to marker
-      if (onLegClick) {
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          onLegClick(legId);
-        });
-      }
 
       // Create and add permanent marker to map with exact coordinates
       const marker = new mapboxgl.Marker({
@@ -858,10 +927,21 @@ export function EditJourneyMap({
         anchor: 'center',
       })
         .setLngLat([lng, lat]);
-      
+
       if (map.current) {
         marker.addTo(map.current);
         legStartMarkersRef.current.set(legId, marker);
+
+        // Add and store click handler to marker (for cleanup)
+        if (onLegClick) {
+          const handleClick = (e: Event) => {
+            e.stopPropagation();
+            onLegClick(legId);
+          };
+          el.addEventListener('click', handleClick);
+          startMarkerListenersRef.current.set(legId, handleClick);
+        }
+
         console.log('Created new gray marker at', lng, lat);
       }
     }
