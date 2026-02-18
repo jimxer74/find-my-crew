@@ -29,7 +29,7 @@ export default function CrewHomePage() {
   const [sortedRegions, setSortedRegions] = useState<
     Array<LocationRegion & { distance: number }>
   >([]);
-  const [visibleRegionsCount, setVisibleRegionsCount] = useState(5);
+  const [visibleRegionsCount, setVisibleRegionsCount] = useState(10);
   const [registrationDialogOpen, setRegistrationDialogOpen] = useState(false);
   const [selectedLeg, setSelectedLeg] = useState<LegListItemData | null>(null);
 
@@ -197,7 +197,7 @@ export default function CrewHomePage() {
               {visibleRegionsCount < sortedRegions.length && (
                 <div className="flex justify-center py-4">
                   <button
-                    onClick={() => setVisibleRegionsCount((prev) => prev + 5)}
+                    onClick={() => setVisibleRegionsCount((prev) => prev + 10)}
                     className="flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-foreground bg-card border border-border rounded-lg hover:bg-accent transition-colors"
                   >
                     {t('loadMore')}
