@@ -239,6 +239,10 @@ export default function MyRegistrationsPage() {
                 >
                   {/* Header */}
                   <div className="mb-3">
+                    {/* Registered Date at Top */}
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t('registered')}: {new Date(registration.registration_created_at).toLocaleDateString()}
+                    </p>
                     <div className="flex items-start justify-between mb-2">
                       <h3 className="text-base font-semibold text-foreground line-clamp-2 flex-1">
                         {registration.leg_name}
@@ -346,20 +350,6 @@ export default function MyRegistrationsPage() {
                     </div>
                   </div>
 
-                  {/* Skills Preview */}
-                  {legSkills.length > 0 && (
-                    <div className="mt-auto pt-3 border-t border-border">
-                      <SkillsMatchingDisplay
-                        legSkills={legSkills}
-                        userSkills={userSkills}
-                        skillMatchPercentage={displayMatchPercentage}
-                        showHeader={true}
-                        headerText={t('skills')}
-                        compact={true}
-                      />
-                    </div>
-                  )}
-
                   {/* AI Assessment Info */}
                   {registration.ai_match_reasoning && (
                     <div className="mt-3 pt-3 border-t border-border">
@@ -374,12 +364,6 @@ export default function MyRegistrationsPage() {
                     </div>
                   )}
 
-                  {/* Footer */}
-                  <div className="mt-3 pt-3 border-t border-border">
-                    <div className="text-xs text-muted-foreground">
-                      {t('registered')}: {new Date(registration.registration_created_at).toLocaleDateString()}
-                    </div>
-                  </div>
                 </div>
               );
             })}
