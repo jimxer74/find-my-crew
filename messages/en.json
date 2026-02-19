@@ -675,7 +675,7 @@
       "postDialogTitle": "Post your crew demand",
       "postDialogPlaceholder": "Describe your boat, journey, and crew requirements. The AI will help you create your listing.",
       "skipperCrewDialogTitle": "Skipper Profile & Crew Requirements",
-      "skipperCrewDialogPlaceholder": "Describe your skipper profile, crew requirements, preferences, and any additional important information for potential crew members...",
+      "skipperCrewDialogPlaceholder": "Copy-paste your existing skipper profile and crew demand post in here, or start from scratch...",
       "features": {
         "post": "Post your journeys and routes",
         "match": "AI-powered crew matching",

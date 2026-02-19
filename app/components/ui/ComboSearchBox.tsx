@@ -295,11 +295,12 @@ function ProfileDialog({
             <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
               What to include:
             </h3>
-            <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
-              <li>Your sailing experience and skill level</li>
+            <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside text-left">
+              <li>Your sailing experience and skills: sailing experience, navigation, heavy weather, night sailing, watch keeping, technical skills, first aid, etc.</li>
               <li>Relevant certifications and qualifications</li>
               <li>Preferences for trip types and destinations</li>
               <li>Availability and any special requirements</li>
+              <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook</li>
             </ul>
           </div>
 
@@ -307,7 +308,7 @@ function ProfileDialog({
             ref={textareaRef}
             value={profileText}
             onChange={(e) => setProfileText(e.target.value)}
-            placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
+            placeholder="Copy-paste your existing post for example from Facebook or start from scratch..."
             maxLength={2000}
             className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
           />
@@ -822,11 +823,12 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                     <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
                     </h3>
-                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
-                      <li>Your sailing experience and skill level</li>
+                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside text-left">
+                      <li>Your sailing experience and skills: sailing experience, navigation, heavy weather, night sailing, watch keeping, technical skills, first aid, etc.</li>
                       <li>Relevant certifications and qualifications</li>
                       <li>Preferences for trip types and destinations</li>
                       <li>Availability and any special requirements</li>
+                      <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
                     </ul>
                   </div>
                   
@@ -837,7 +839,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                     <textarea
                       value={profile}
                       onChange={(e) => setProfile(e.target.value)}
-                      placeholder="Describe your sailing experience, skills, and preferences. Our AI will use this to match you with sailing trips and help create your profile."
+                      placeholder="Copy-paste your existing post for example from Facebook or start from scratch..."
                       maxLength={2000}
                       className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
                     />

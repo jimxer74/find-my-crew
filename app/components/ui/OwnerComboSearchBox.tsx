@@ -431,11 +431,13 @@ function SkipperCrewProfilesDialog({
             <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">
               What to include:
             </h3>
-            <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside">
+            <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
               <li>Your skipper profile and sailing experience</li>
               <li>Boat details</li>
               <li>Crew requirements and preferences</li>
               <li>Additional information regarding crew, boat or journey</li>
+              <li>You can also include the Journey details here and SailSmart AI will pick it up</li>
+              <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
             </ul>
           </div>
 
@@ -1060,16 +1062,17 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {currentPage === 2 && (
                 <div className="space-y-4">
                   {/* Instructions */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
                     </h3>
-                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside text-left">
+                    <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
                       <li>Your skipper profile and sailing experience</li>
                       <li>Boat details, make and model, home port etc.</li>
                       <li>Crew requirements and preferences - How experienced crew you are looking for, what skills are needed?</li>
                       <li>Additional information regarding crew, boat or journey</li>
                       <li>You can also include the Journey details here and SailSmart AI will pick it up</li>
+                      <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
                     </ul>
                   </div>
 
