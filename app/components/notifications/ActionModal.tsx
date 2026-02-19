@@ -2,6 +2,7 @@
 
 import { logger } from '@/app/lib/logger';
 import { useState } from 'react';
+import { Modal, Button } from '@/app/components/ui';
 import { Notification } from '@/app/lib/notifications';
 import { ActionInputModal } from './ActionInputModal';
 import { ActionConfirmation } from './ActionConfirmation';
@@ -58,51 +59,48 @@ export function ActionModal({ notification, onApprove, onReject, onRedirectToPro
   return (
     <>
       {/* Action Confirmation Modal */}
-      {showConfirmationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-lg shadow-xl max-w-md w-full border border-border">
-            <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Confirm Action
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Are you sure you want to proceed with this action?
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-muted/50 rounded-lg p-3">
-                  <p className="text-sm text-foreground font-medium">{notification.title}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowConfirmationModal(false)}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleConfirmationSubmit}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                  >
-                    Confirm
-                  </button>
-                </div>
-              </div>
+      <Modal
+        isOpen={showConfirmationModal}
+        onClose={() => setShowConfirmationModal(false)}
+        title="Confirm Action"
+        size="sm"
+        footer={
+          <div className="flex gap-3 w-full">
+            <Button
+              variant="secondary"
+              onClick={() => setShowConfirmationModal(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleConfirmationSubmit}
+              className="flex-1"
+            >
+              Confirm
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to proceed with this action?
+            </p>
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-3">
+            <p className="text-sm text-foreground font-medium">{notification.title}</p>
+            <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Input Modal */}
       {showInputModal && (
