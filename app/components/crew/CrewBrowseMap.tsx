@@ -224,8 +224,8 @@ export function CrewBrowseMap({
       }
     } else {
       // On mobile, account for bottom sheet height based on snap point
-      // Collapsed: 80px, Half: ~50vh, Expanded: ~calc(100vh - 4rem)
-      // Use conservative estimates to avoid missing waypoints
+      // The bottom sheet is fixed and overlays on top of the map
+      // We need to exclude the area it covers to avoid requesting legs we can't see
       let bottomSheetHeight = 0;
       if (bottomSheetSnapPoint === 'collapsed') {
         bottomSheetHeight = 80;
@@ -234,7 +234,13 @@ export function CrewBrowseMap({
       } else if (bottomSheetSnapPoint === 'expanded') {
         bottomSheetHeight = window.innerHeight - 64; // 100vh - 4rem
       }
-      visibleBottom = height - bottomSheetHeight;
+
+      // Subtract bottom sheet height + additional safety margin (20-30px)
+      // This accounts for:
+      // 1. Any padding/margin in the bottom sheet
+      // 2. Rendering precision issues near bounds edges
+      // 3. The fact that unproject can be slightly inaccurate at edges
+      visibleBottom = height - bottomSheetHeight - 30;
     }
 
     // Ensure we have valid bounds
@@ -247,12 +253,50 @@ export function CrewBrowseMap({
       const sw = map.current.unproject([visibleLeft, visibleBottom]);
       const ne = map.current.unproject([visibleRight, visibleTop]);
 
-      return {
-        minLng: Math.min(sw.lng, ne.lng),
-        minLat: Math.min(sw.lat, ne.lat),
-        maxLng: Math.max(sw.lng, ne.lng),
-        maxLat: Math.max(sw.lat, ne.lat)
+      let minLng = Math.min(sw.lng, ne.lng);
+      let minLat = Math.min(sw.lat, ne.lat);
+      let maxLng = Math.max(sw.lng, ne.lng);
+      let maxLat = Math.max(sw.lat, ne.lat);
+
+      // Add a small margin (0.5-1% of the range) to account for:
+      // 1. Rendering precision issues near bounds edges
+      // 2. Unproject accuracy near viewport boundaries
+      // 3. The fact that legs that START just outside visible area might still be visible
+      const latMargin = (maxLat - minLat) * 0.01;
+      const lngMargin = (maxLng - minLng) * 0.01;
+
+      minLat -= latMargin;
+      maxLat += latMargin;
+      minLng -= lngMargin;
+      maxLng += lngMargin;
+
+      const bounds = {
+        minLng,
+        minLat,
+        maxLng,
+        maxLat
       };
+
+      // Debug logging for waypoint disappearing issue
+      if (process.env.NODE_ENV === 'development') {
+        logger.debug('[calculateVisibleBounds] Calculated bounds', {
+          containerWidth: width,
+          containerHeight: height,
+          visibleArea: {
+            left: visibleLeft,
+            top: visibleTop,
+            right: visibleRight,
+            bottom: visibleBottom,
+            bottomSheetHeight: isMobile ? (bottomSheetSnapPoint === 'collapsed' ? 80 : (bottomSheetSnapPoint === 'half' ? window.innerHeight * 0.5 : window.innerHeight - 64)) : 'N/A'
+          },
+          bounds,
+          latRange: maxLat - minLat,
+          lngRange: maxLng - minLng,
+          margin: { lat: latMargin, lng: lngMargin },
+        });
+      }
+
+      return bounds;
     } catch (error) {
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
