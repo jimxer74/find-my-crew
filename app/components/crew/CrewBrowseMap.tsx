@@ -724,8 +724,16 @@ export function CrewBrowseMap({
       if (approvedLegIds.has(leg.leg_id)) continue;
 
       // Use start waypoint for clustering (or end if only arrival filter is set)
-      const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
-      if (!waypoint) continue; // Skip if no waypoint available
+      // Fallback to alternative waypoint if primary is not available
+      let waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+
+      // Fallback: if preferred waypoint is missing, use the other one
+      if (!waypoint) {
+        waypoint = showEndWaypoints ? leg.start_waypoint : leg.end_waypoint;
+      }
+
+      // Skip only if both waypoints are missing (malformed leg)
+      if (!waypoint) continue;
 
       features.push({
         type: 'Feature',
@@ -762,8 +770,16 @@ export function CrewBrowseMap({
       if (!approvedLegIds.has(leg.leg_id)) continue;
 
       // Use start waypoint for clustering (or end if only arrival filter is set)
-      const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
-      if (!waypoint) continue; // Skip if no waypoint available
+      // Fallback to alternative waypoint if primary is not available
+      let waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+
+      // Fallback: if preferred waypoint is missing, use the other one
+      if (!waypoint) {
+        waypoint = showEndWaypoints ? leg.start_waypoint : leg.end_waypoint;
+      }
+
+      // Skip only if both waypoints are missing (malformed leg)
+      if (!waypoint) continue;
 
       approvedFeatures.push({
         type: 'Feature',
