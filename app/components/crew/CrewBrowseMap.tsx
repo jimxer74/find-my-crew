@@ -1976,11 +1976,15 @@ export function CrewBrowseMap({
       essential: true, // This is essential, don't interrupt
     });
 
-    // Reset flag after animation completes
+    // Reset flag after animation completes and recalculate visible bounds
+    // This ensures the bounds are accurate after the map finishes panning/zooming
     setTimeout(() => {
       isFittingBoundsRef.current = false;
+      // Recalculate visible bounds after fitBounds animation completes
+      // This is critical for mobile where the bounds calculation includes MobileLegCard height
+      updateVisibleBounds();
     }, 1100); // Slightly longer than animation duration
-  }, [selectedLeg, legWaypoints, mapLoaded, userRegistrations]);
+  }, [selectedLeg, legWaypoints, mapLoaded, userRegistrations, updateVisibleBounds]);
 
   // Effect to update visible bounds when map moves or UI state changes
   useEffect(() => {
@@ -2020,8 +2024,9 @@ export function CrewBrowseMap({
   useEffect(() => {
     // Update bounds when pane state changes OR bottom sheet height changes (mobile)
     // This ensures viewport is correctly calculated when UI elements appear/disappear
+    // CRITICAL: Must include showMobileLegCard so bounds recalculate when card opens/closes
     updateVisibleBounds();
-  }, [isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint, updateVisibleBounds]);
+  }, [isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint, showMobileLegCard, showFullPanelOnMobile, updateVisibleBounds]);
 
   return (
     <div
