@@ -1414,6 +1414,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         <div className="absolute top-3 left-3">
                           <MatchBadge
                             percentage={leg.skill_match_percentage}
+                            experienceMatches={leg.experience_level_matches}
                             showLabel={true}
                             size="sm"
                             className="shadow-lg"
@@ -1435,6 +1436,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       <div className="absolute top-3 left-3">
                         <MatchBadge
                           percentage={leg.skill_match_percentage}
+                          experienceMatches={leg.experience_level_matches}
                           showLabel={true}
                           size="sm"
                           className="shadow-lg"

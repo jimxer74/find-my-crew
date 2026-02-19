@@ -171,6 +171,7 @@ export function LegListItem({
               <div className="pointer-events-auto">
                 <MatchBadge
                   percentage={leg.skill_match_percentage!}
+                  experienceMatches={leg.experience_level_matches}
                   showLabel={true}
                   size="sm"
                   className="shadow-lg"

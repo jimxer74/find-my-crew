@@ -8,35 +8,49 @@ interface MatchBadgeProps {
   showLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  experienceMatches?: boolean; // Whether user's experience level meets requirement
 }
 
 /**
  * Match percentage badge - Displays skill match percentage with color coding
+ * Considers both skill match percentage and experience level match
  * Refactored to use core Badge component
  */
 export function MatchBadge({
   percentage,
   showLabel = true,
   size = 'md',
-  className = ''
+  className = '',
+  experienceMatches = true, // Default to true (assume experience matches if not specified)
 }: MatchBadgeProps) {
-  // Map percentage to badge variant
+  // Reduce percentage if experience level doesn't match
+  // This ensures the badge reflects the overall match quality
+  const effectivePercentage = experienceMatches ? percentage : Math.min(percentage, 75);
+
+  // Map effective percentage to badge variant
   const variant: BadgeVariant =
-    percentage >= 80 ? 'success' :
-    percentage >= 50 ? 'warning' :
-    percentage >= 25 ? 'warning' :
+    effectivePercentage >= 80 ? 'success' :
+    effectivePercentage >= 50 ? 'warning' :
+    effectivePercentage >= 25 ? 'warning' :
     'error';
 
-  const label = percentage === 100 ? 'Perfect Match' : `${percentage}% Match`;
+  // Show "Perfect Match" only when skill percentage is 100 AND experience matches
+  const label = (percentage === 100 && experienceMatches)
+    ? 'Perfect Match'
+    : `${effectivePercentage}% Match`;
+
+  const title = experienceMatches
+    ? `${percentage}% skill match`
+    : `${percentage}% skills but experience level doesn't match`;
 
   return (
     <Badge
       variant={variant}
       size={size}
-      title={`${percentage}% skill match`}
+      title={title}
       className={className}
     >
-      {showLabel ? label : `${percentage}%`}
+      {showLabel ? label : `${effectivePercentage}%`}
     </Badge>
   );
 }
