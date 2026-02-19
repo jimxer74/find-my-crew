@@ -23,6 +23,7 @@ import { matchRiskLevel } from '@/app/lib/skillMatching';
 import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { ImageCarousel } from '../ui/ImageCarousel';
 import { useProfile } from '@/app/lib/profile/useProfile';
+import { hasProfile } from '@/app/lib/profileUtils';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LoadingButton } from '@/app/components/ui/LoadingButton';
 
@@ -141,6 +142,7 @@ type LegDetailsPanelProps = {
 export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange, initialOpenRegistration = false }: LegDetailsPanelProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { handleRedirect } = useProfileRedirect();
   const theme = useTheme();
   const [isMinimized, setIsMinimized] = useState(false);
@@ -421,9 +423,6 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       checkRequirementsType();
     }
   }, [hasRequirements, showRegistrationModal, showRequirementsForm, isCheckingRequirements, leg.journey_id]);
-
-  // Use shared useProfile hook for profile status
-  const { profile } = useProfile();
 
   useEffect(() => {
     if (!user || !profile) {
@@ -1410,8 +1409,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         autoPlay={false}
                       />
 
-                      {/* Match Percentage Badge Only - only show when user is logged in */}
-                      {user && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                      {/* Match Percentage Badge Only - only show when user has profile */}
+                      {hasProfile(profile) && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
                         <div className="absolute top-3 left-3">
                           <MatchBadge
                             percentage={leg.skill_match_percentage}
@@ -1431,8 +1430,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       <span className="text-sm text-muted-foreground">No images available</span>
                     </div>
 
-                    {/* Match Percentage Badge for fallback image - only show when user is logged in */}
-                    {user && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
+                    {/* Match Percentage Badge for fallback image - only show when user has profile */}
+                    {hasProfile(profile) && leg.skill_match_percentage !== undefined && leg.skill_match_percentage !== null && (
                       <div className="absolute top-3 left-3">
                         <MatchBadge
                           percentage={leg.skill_match_percentage}
@@ -1600,12 +1599,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     </div>
                   </div>
                     {/* Warning message — now on its own row below */}
-                    {user && matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
+                    {hasProfile(profile) && matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === false && (
                       <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your risk level ({userRiskLevel?.join(', ')}) preferences do not match for this leg
                       </p>
                     )}
-                    {matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === true && (
+                    {hasProfile(profile) && matchRiskLevel(userRiskLevel || [], leg.leg_risk_level as string | null, leg.journey_risk_level as string[] | null) === true && (
                       <p className="text-xs text-green-700 mt-1 text-left">
                         ✓ Your risk level ({userRiskLevel?.join(', ')}) matches the requirement
                       </p>
@@ -1649,12 +1648,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                 </div>
                     {/* Warning message — now on its own row below */}
-                    {user && leg.experience_level_matches === false && userExperienceLevel !== null && (
+                    {hasProfile(profile) && leg.experience_level_matches === false && userExperienceLevel !== null && (
                       <p className="text-xs text-orange-500 mt-1 text-left">
                         ⚠ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) is below the requirement for this leg
                       </p>
                     )}
-                    {user && leg.experience_level_matches === true && userExperienceLevel !== null && (
+                    {hasProfile(profile) && leg.experience_level_matches === true && userExperienceLevel !== null && (
                       <p className="text-xs text-green-700 mt-1 text-left">
                         ✓ Your level ({getExperienceLevelConfig(userExperienceLevel as ExperienceLevel).displayName}) matches the requirement
                       </p>
