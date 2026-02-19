@@ -196,23 +196,8 @@ export function CrewBrowseMap({
   }, []);
 
   // Helper function to get bottom sheet height in pixels based on snap point
-  const getBottomSheetPixelHeight = useCallback((snapPoint: SnapPoint): number => {
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const headerHeight = 64; // 4rem
 
-    switch (snapPoint) {
-      case 'collapsed':
-        return 80;
-      case 'half':
-        return viewportHeight * 0.5;
-      case 'expanded':
-        return viewportHeight - headerHeight;
-      default:
-        return 80;
-    }
-  }, []);
-
-  // Helper function to calculate visible map bounds (excluding UI overlays)
+  // Helper function to calculate visible map bounds
   const calculateVisibleBounds = useCallback(() => {
     if (!map.current || !mapLoaded) return null;
 
@@ -227,13 +212,8 @@ export function CrewBrowseMap({
     let visibleRight = width;
     let visibleBottom = height;
 
-    if (isMobile) {
-      // On mobile, exclude bottom sheet from visible bounds
-      // Only include the map area actually visible above the bottom sheet
-      const bottomSheetHeight = getBottomSheetPixelHeight(bottomSheetSnapPoint);
-      visibleBottom = Math.max(0, height - bottomSheetHeight);
-    } else {
-      // Account for left pane (400px when visible)
+    if (!isMobile) {
+      // On desktop, account for left pane (400px when visible)
       // Pane is visible when: no leg selected AND pane not minimized
       // OR when leg is selected (detail pane is shown)
       if (!isLegsPaneMinimized && !selectedLeg) {
@@ -264,7 +244,7 @@ export function CrewBrowseMap({
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
-  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
