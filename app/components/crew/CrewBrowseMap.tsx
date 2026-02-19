@@ -198,6 +198,7 @@ export function CrewBrowseMap({
   // Helper function to get bottom sheet height in pixels based on snap point
 
   // Helper function to calculate visible map bounds
+  // RULE: Always use full screen viewport - no subtractions for dialogs, sheets, or panels
   const calculateVisibleBounds = useCallback(() => {
     if (!map.current || !mapLoaded) return null;
 
@@ -214,38 +215,13 @@ export function CrewBrowseMap({
 
     if (!isMobile) {
       // On desktop, account for left pane (400px when visible)
-      // Pane is visible when: no leg selected AND pane not minimized
-      // OR when leg is selected (detail pane is shown)
       if (!isLegsPaneMinimized && !selectedLeg) {
         visibleLeft = 400;
       } else if (selectedLeg) {
-        // Detail pane is always 400px when a leg is selected
         visibleLeft = 400;
       }
-    } else {
-      // On mobile, account for bottom sheet height based on snap point
-      // ONLY if the bottom sheet is actually visible (not showing mobile leg card or full panel)
-      // When showing MobileLegCard or LegDetailsPanel, the bottom sheet is hidden
-      const showBottomSheet = !showMobileLegCard && !showFullPanelOnMobile;
-
-      let bottomSheetHeight = 0;
-      if (showBottomSheet) {
-        if (bottomSheetSnapPoint === 'collapsed') {
-          bottomSheetHeight = 80;
-        } else if (bottomSheetSnapPoint === 'half') {
-          bottomSheetHeight = window.innerHeight * 0.5;
-        } else if (bottomSheetSnapPoint === 'expanded') {
-          bottomSheetHeight = window.innerHeight - 64; // 100vh - 4rem
-        }
-      }
-
-      // Subtract bottom sheet height + additional safety margin (20-30px) only if sheet is visible
-      // This accounts for:
-      // 1. The fixed bottom sheet overlay
-      // 2. Rendering precision issues near bounds edges
-      // 3. The fact that unproject can be slightly inaccurate at edges
-      visibleBottom = height - bottomSheetHeight - (showBottomSheet ? 30 : 0);
     }
+    // On mobile: use full screen - NO subtractions for overlays, bottom sheet, or panels
 
     // Ensure we have valid bounds
     if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
@@ -262,21 +238,15 @@ export function CrewBrowseMap({
       let maxLng = Math.max(sw.lng, ne.lng);
       let maxLat = Math.max(sw.lat, ne.lat);
 
-      // Add asymmetric margins to account for:
-      // 1. Rendering precision issues near bounds edges
-      // 2. Unproject accuracy near viewport boundaries
-      // 3. Bottom sheet overlay causing the bottom edge to be more problematic
-      // 4. The fact that legs that START just outside visible area might still be visible
+      // Add small margin (1%) for all sides to account for unproject precision issues
+      // This is the only adjustment - no overlay-specific logic
       const latMargin = (maxLat - minLat) * 0.01;
       const lngMargin = (maxLng - minLng) * 0.01;
 
-      // Add EXTRA margin to the bottom (3% instead of 1%) to account for bottom sheet issues
-      const bottomMargin = (maxLat - minLat) * 0.03;
-
-      minLat -= latMargin;     // Top: normal margin
-      maxLat += bottomMargin;  // Bottom: 3x larger margin
-      minLng -= lngMargin;     // Left: normal margin
-      maxLng += lngMargin;     // Right: normal margin
+      minLat -= latMargin;
+      maxLat += latMargin;
+      minLng -= lngMargin;
+      maxLng += lngMargin;
 
       const bounds = {
         minLng,
@@ -285,9 +255,9 @@ export function CrewBrowseMap({
         maxLat
       };
 
-      // Debug logging for waypoint disappearing issue
+      // Debug logging
       if (process.env.NODE_ENV === 'development') {
-        logger.debug('[calculateVisibleBounds] Calculated bounds with asymmetric margins', {
+        logger.debug('[calculateVisibleBounds] Calculated full screen bounds', {
           containerWidth: width,
           containerHeight: height,
           visibleArea: {
@@ -295,18 +265,11 @@ export function CrewBrowseMap({
             top: visibleTop,
             right: visibleRight,
             bottom: visibleBottom,
-            bottomSheetHeight: isMobile ? (bottomSheetSnapPoint === 'collapsed' ? 80 : (bottomSheetSnapPoint === 'half' ? window.innerHeight * 0.5 : window.innerHeight - 64)) : 'N/A'
           },
           bounds,
           latRange: maxLat - minLat,
           lngRange: maxLng - minLng,
-          margins: {
-            top: latMargin,
-            bottom: bottomMargin,
-            left: lngMargin,
-            right: lngMargin,
-            note: 'Bottom margin is 3x larger to account for bottom sheet overlay'
-          },
+          note: 'Using full screen on mobile - no overlay adjustments'
         });
       }
 
@@ -315,7 +278,7 @@ export function CrewBrowseMap({
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
-  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint, showMobileLegCard, showFullPanelOnMobile]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
