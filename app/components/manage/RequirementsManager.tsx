@@ -584,11 +584,6 @@ type RequirementFormProps = {
 function RequirementForm({ requirement, onChange, onSave, onCancel, journeySkills }: RequirementFormProps) {
   const type = requirement.requirement_type;
 
-  // Get available skills from journey or all skills
-  const availableSkills = journeySkills.length > 0
-    ? journeySkills
-    : skillsConfig.general.map(s => s.name);
-
   return (
     <div className="space-y-3">
       {/* Question-specific fields */}
@@ -623,34 +618,45 @@ function RequirementForm({ requirement, onChange, onSave, onCancel, journeySkill
       {/* Skill-specific fields */}
       {type === 'skill' && (
         <>
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Skill *</label>
-            <select
-              value={requirement.skill_name || ''}
-              onChange={(e) => onChange({ ...requirement, skill_name: e.target.value })}
-              className="w-full px-2 py-1 text-sm border border-border bg-input-background rounded"
-            >
-              <option value="">Select a skill...</option>
-              {availableSkills.map((skill) => (
-                <option key={skill} value={toCanonicalSkillName(skill)}>
-                  {toDisplaySkillName(toCanonicalSkillName(skill))}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Qualification Criteria *</label>
-            <textarea
-              value={requirement.qualification_criteria || ''}
-              onChange={(e) => onChange({ ...requirement, qualification_criteria: e.target.value })}
-              className="w-full px-2 py-1 text-sm border border-border bg-input-background rounded"
-              rows={2}
-              placeholder="e.g., Must have experience with celestial navigation or GPS chartplotter"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Describe the expected skill level. AI compares crew descriptions against this.
-            </p>
-          </div>
+          {journeySkills.length === 0 ? (
+            <div className="p-3 bg-warning/10 border border-warning rounded-md">
+              <p className="text-sm text-foreground font-medium">No skills defined yet</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Please add skills in the <strong>Skills & Experience</strong> section before creating skill assessments.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">Skill *</label>
+                <select
+                  value={requirement.skill_name || ''}
+                  onChange={(e) => onChange({ ...requirement, skill_name: e.target.value })}
+                  className="w-full px-2 py-1 text-sm border border-border bg-input-background rounded"
+                >
+                  <option value="">Select a skill...</option>
+                  {journeySkills.map((skill) => (
+                    <option key={skill} value={toCanonicalSkillName(skill)}>
+                      {toDisplaySkillName(toCanonicalSkillName(skill))}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1">Qualification Criteria *</label>
+                <textarea
+                  value={requirement.qualification_criteria || ''}
+                  onChange={(e) => onChange({ ...requirement, qualification_criteria: e.target.value })}
+                  className="w-full px-2 py-1 text-sm border border-border bg-input-background rounded"
+                  rows={2}
+                  placeholder="e.g., Must have experience with celestial navigation or GPS chartplotter"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Describe the expected skill level. AI compares crew descriptions against this.
+                </p>
+              </div>
+            </>
+          )}
         </>
       )}
 
