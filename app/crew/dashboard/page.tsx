@@ -7,7 +7,6 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
-import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { Location } from '@/app/components/ui/LocationAutocomplete';
 
 export default function CrewDashboard() {
@@ -83,8 +82,6 @@ export default function CrewDashboard() {
 
   return (
     <div className="bg-background flex flex-col overflow-hidden fixed inset-0 h-screen w-screen">
-      {/* Show profile completion prompt for signed-in users */}
-      {user && <ProfileCompletionPrompt variant="banner" showCompletionPercentage={true} />}
 
       {/* "Back to Assistant" button - shown at top-left when navigated from prospect chat or assistant */}
       {showBackButton && (
@@ -152,47 +149,6 @@ export default function CrewDashboard() {
 
       </main>
 
-      {/* Show sign-in/sign-up banner at bottom for non-signed-in users - hide when coming from prospect chat */}
-      {!user && !fromProspect && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border px-4 py-3 shadow-lg">
-          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-            <div className="flex items-start gap-3 flex-1">
-              <svg
-                className="w-5 h-5 text-primary flex-shrink-0 mt-0.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm text-foreground font-medium">
-                  {t('signInBanner')}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Link
-                href="/auth/login"
-                className="text-sm text-primary hover:underline font-medium px-3 py-1.5 rounded-md hover:bg-primary/10 transition-colors"
-              >
-                {t('signIn')}
-              </Link>
-              <Link
-                href="/auth/signup"
-                className="text-sm bg-primary text-primary-foreground font-medium px-3 py-1.5 rounded-md hover:opacity-90 transition-opacity"
-              >
-                {t('signUp')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
