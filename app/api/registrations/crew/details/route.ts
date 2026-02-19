@@ -263,15 +263,16 @@ export async function GET(request: NextRequest) {
       let skillMatchPercentage: number | undefined;
       let experienceLevelMatches: boolean | undefined;
 
-      if (profile.skills && profile.skills.length > 0 && combinedSkills.length > 0) {
-        const userSkills = normalizeSkillNames(profile.skills);
+      // Calculate match percentage if profile exists (even if skills are empty)
+      if (combinedSkills.length > 0) {
+        const userSkills = profile.skills ? normalizeSkillNames(profile.skills) : [];
         skillMatchPercentage = calculateMatchPercentage(
           userSkills,
           combinedSkills,
           profile.risk_level || null,
           leg.risk_level || null,
           journey?.risk_level || null,
-          profile.sailing_experience,
+          profile.sailing_experience || null,
           leg.min_experience_level
         );
       }

@@ -475,15 +475,15 @@ export async function GET(
 
     // Calculate skill match percentage using the canonical function
     let skillMatchPercentage: number | null = null;
-    if (crewProfile?.skills && crewProfile.skills.length > 0 && combinedSkills.length > 0) {
-      const crewSkills = normalizeSkillNames(crewProfile.skills);
+    if (crewProfile && combinedSkills.length > 0) {
+      const crewSkills = crewProfile.skills ? normalizeSkillNames(crewProfile.skills) : [];
       skillMatchPercentage = calculateMatchPercentage(
         crewSkills,
         combinedSkills,
         crewProfile.risk_level || null,
         effectiveRiskLevel,
         legs.journeys.risk_level || null,
-        crewProfile.sailing_experience,
+        crewProfile.sailing_experience || null,
         effectiveMinExperienceLevel
       );
     }

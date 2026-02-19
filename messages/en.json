@@ -157,6 +157,7 @@
       "feature1": "Setup your sailing profile",
       "feature2": "Browse, search and SailSmart discover sailing opportunities worldwide based on your preferences",
       "feature3": "Apply to join your dream voyage and get immediate feedback for eligibility"
+  
     },
     "howItWorks": {
       "title": "How It Works",
@@ -653,6 +654,8 @@
   "welcome": {
     "login": "Log in",
     "crew": {
+      "signup_pending": "Great to have you back, I see you have started the journey already - Your next sailing adventure awaits just few clicks away...",
+      "profile_pending": "Great to have you back, You are on the last mile, just confirm your profile and you are ready to go!",
       "title": "For Crew",
       "subtitle": "Discover your dream sailing opportunities",
       "description": "Tell us where you want to sail and post your sailing profile, SailSmart will find the perfect boats and skippers for you!",

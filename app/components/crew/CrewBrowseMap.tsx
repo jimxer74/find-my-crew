@@ -17,6 +17,7 @@ import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColo
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@/app/types/cost-models';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { hasProfile } from '@/app/lib/profileUtils';
 
 type Leg = {
   leg_id: string;
@@ -2045,7 +2046,7 @@ export function CrewBrowseMap({
             sortByMatch={!!user} // Only sort by match when user is logged in
             displayOptions={{
               showCarousel: bottomSheetSnapPoint !== 'collapsed', // Hide carousel when collapsed
-              showMatchBadge: !!user, // Only show match badge when user is logged in
+              showMatchBadge: hasProfile(profile), // Only show match badge when user has a profile
               showLegName: true,
               showJourneyName: true,
               showLocations: true,
@@ -2111,7 +2112,7 @@ export function CrewBrowseMap({
           await selectLegWithWaypoints(leg as Leg);
         }}
         onMinimizeChange={setIsLegsPaneMinimized}
-        showMatchBadge={!!user} // Only show match badges when user is logged in
+        showMatchBadge={hasProfile(profile)} // Only show match badges when user has a profile
       />
 
       {/* Desktop: Side panel for selected leg details */}

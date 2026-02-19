@@ -8,8 +8,9 @@ import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
 import { calculateMatchPercentage } from '@/app/lib/skillMatching';
-import { ProfileLocation } from '@/app/lib/profile/useProfile';
+import { ProfileLocation, useProfile } from '@/app/lib/profile/useProfile';
 import { logger } from '@/app/lib/logger';
+import { hasProfile } from '@/app/lib/profileUtils';
 
 type CruisingRegionSectionProps = {
   region: LocationRegion;
@@ -74,6 +75,7 @@ export function CruisingRegionSection({
   const t = useTranslations('crewHome');
   const router = useRouter();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const [legs, setLegs] = useState<LegListItemData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -248,7 +250,7 @@ export function CruisingRegionSection({
         onJoinClick={user ? handleJoinClickInternal : undefined}
         loading={loading}
         showMoreUrl={getMapUrl()}
-        showMatchBadge={!!user}
+        showMatchBadge={hasProfile(profile)}
       />
     </section>
   );

@@ -149,6 +149,7 @@
       "feature1": "Rekisteröi ja hallinnoi veneitäsi",
       "feature2": "Suunnittele matkoja ja jaa osuuksiin",
       "feature3": "Tarkista ja hyväksy miehistöhakemukset tai anna AI:n tehdä se puolestasi"
+
     },
     "forCrew": {
       "title": "Miehistölle",
@@ -156,7 +157,9 @@
       "cta": "Löydä seuraava seikkailusi",
       "feature1": "Selaa saatavilla olevia matkoja ja osuuksia",
       "feature2": "Suodata sijainnin, päivämäärien ja taitojen mukaan",
-      "feature3": "Hae mukaan unelmamatkaasi"
+      "feature3": "Hae mukaan unelmamatkaasi",
+      "signup_pending": "Olet päässyt jo alkuun, seuraava matkasi on vain muutaman klikin päässä!",
+      "profile_pending": "Hienoa että tulit takaisin, vielä viimeinen askel, vahvista profiilisi ja olet valmis lähtemään merille!"
     },
     "howItWorks": {
       "title": "Näin se toimii",

@@ -63,6 +63,7 @@ export default function MyRegistrationsPage() {
   const [registrations, setRegistrations] = useState<RegistrationLeg[]>([]);
   const [userSkills, setUserSkills] = useState<string[]>([]);
   const [userExperienceLevel, setUserExperienceLevel] = useState<number | null>(null);
+  const [userRiskLevel, setUserRiskLevel] = useState<string[] | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -91,7 +92,7 @@ export default function MyRegistrationsPage() {
       const supabase = getSupabaseBrowserClient();
       const { data: profile } = await supabase
         .from('profiles')
-        .select('skills, sailing_experience')
+        .select('skills, sailing_experience, risk_level')
         .eq('id', user.id)
         .single();
 
@@ -105,6 +106,7 @@ export default function MyRegistrationsPage() {
         
         setUserSkills(skills);
         setUserExperienceLevel(profile.sailing_experience);
+        setUserRiskLevel(profile.risk_level || null);
       } else {
         logger.warn('[MyRegistrations] No profile found for user');
       }
@@ -210,7 +212,7 @@ export default function MyRegistrationsPage() {
                 ? calculateMatchPercentage(
                     userSkills,
                     legSkills,
-                    null,
+                    userRiskLevel,
                     registration.risk_level,
                     null,
                     userExperienceLevel,

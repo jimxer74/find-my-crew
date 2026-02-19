@@ -650,16 +650,31 @@ function WelcomePageContent() {
               {t('crew.title')}
             </h1>
 
-            <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
-              {t('crew.subtitle')}
-            </p>
-      
-            <p className="text-sm md:text-base text-white/80 mb-6">
-              {(hasExistingSession && sessionType === 'crew') || isComboSearchMode
-                ? t('crew.descriptionSingle')
-                : t('crew.description')}
-            </p>
 
+              {hasExistingSession && sessionType === 'crew' ? (
+                <button
+                  onClick={handleContinueConversation}
+                  className="inline-flex items-center gap-1.5 text-lg md:text-xl text-white/90 mb-4 drop-shadow-md mb-6 hover:text-white/80 hover:underline transition-colors mb-2"
+                >
+                  {t('crew.'+onboardingState)}
+
+                </button>
+              ) : (
+                <div>
+                <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
+                {t('crew.subtitle')}
+                </p>
+                  <p className="text-sm md:text-base text-white/80 mb-6">
+                {(hasExistingSession && sessionType === 'crew') || isComboSearchMode
+                  ? t('crew.descriptionSingle')
+                  : t('crew.description')}
+                </p>
+              </div>
+
+              )}
+  
+
+          
             {/* Combo Search Box */}
             {!hasExistingSession && (
               <div className={`w-full mx-auto ${
@@ -703,27 +718,6 @@ function WelcomePageContent() {
 
             {/* Onboarding steps - always shown; header + link only when session exists */}
             <div className="w-full mt-6 md:mt-8">
-              {hasExistingSession && sessionType === 'crew' && (
-                <button
-                  onClick={handleContinueConversation}
-                  className="inline-flex items-center gap-1.5 text-sm text-white font-medium hover:text-white/90 hover:underline transition-colors mb-2"
-                >
-                  You are almost there – continue your journey
-                  <svg
-                    className="w-4 h-4 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-              )}
               <div className="w-full">
                 <CrewOnboardingStepsInline
                   layout="homepage"
@@ -736,7 +730,7 @@ function WelcomePageContent() {
                 />
               </div>
               {hasExistingSession && sessionType === 'crew' && sessionLegs.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5 justify-center">
+                <div className="mt-2 pt-4 flex flex-wrap gap-1.5 justify-center">
                   {sessionLegs.map((leg) => (
                     <button
                       key={leg.id}
