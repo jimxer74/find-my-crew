@@ -63,6 +63,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     }, [isOpen, closeOnEscape, onClose]);
 
     // Handle body scroll lock
+    
     useEffect(() => {
       if (isOpen) {
         document.body.style.overflow = 'hidden';
@@ -74,6 +75,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
         document.body.style.overflow = 'unset';
       };
     }, [isOpen]);
+
 
     if (!isOpen) return null;
 
@@ -145,7 +147,12 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
 
             {/* Body */}
             <div
-              className={`${SPACING.md} ${scrollable ? 'max-h-96 overflow-y-auto' : ''} ${bodyClassName}`}
+              className={`
+                ${SPACING.md}
+                ${bodyClassName}
+                max-h-[80vh]          // ← softer limit or remove completely
+                overflow-y-auto
+              `}
             >
               {children}
             </div>

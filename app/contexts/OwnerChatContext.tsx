@@ -206,6 +206,13 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
                 { postSignupOnboarding: true }
               );
               logger.debug('Fallback: linked owner session to user', { userId: !!user.id }, true);
+
+              // Update onboarding state to consent_pending after signup
+              setState((prev) => ({
+                ...prev,
+                onboardingState: 'consent_pending',
+              }));
+              logger.debug('Fallback: updated onboarding state to consent_pending', {}, true);
             } catch (err) {
               logger.error('Fallback link failed', { error: err instanceof Error ? err.message : String(err) });
             }
@@ -304,6 +311,15 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
               { postSignupOnboarding: isProfileCompletion }
             );
             logger.debug('Linked owner session to user', { userId: !!session.user.id }, true);
+
+            // Update onboarding state to consent_pending if this is post-signup onboarding
+            if (isProfileCompletion) {
+              setState((prev) => ({
+                ...prev,
+                onboardingState: 'consent_pending',
+              }));
+              logger.debug('Updated onboarding state to consent_pending after signup', {}, true);
+            }
           } catch (error) {
             logger.error('Error linking session to user', { error: error instanceof Error ? error.message : String(error) });
           }

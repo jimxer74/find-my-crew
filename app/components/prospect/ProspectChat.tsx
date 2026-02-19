@@ -190,6 +190,7 @@ export function ProspectChat() {
     addViewedLeg,
     approveAction,
     cancelAction,
+    updateOnboardingState,
   } = useProspectChat();
 
   // Note: profile_completion query parameter is deprecated - we determine state from hasExistingProfile and isAuthenticated
@@ -764,8 +765,14 @@ export function ProspectChat() {
         onClose={() => setShowProfileExtractionModal(false)}
         messages={messages}
         onSuccess={async () => {
-          // Profile saved successfully - clean up prospect session and redirect to profile
-          logger.debug('[ProspectChat] Profile saved via fallback - cleaning up session and redirecting');
+          // Profile saved successfully - update onboarding state and clean up prospect session
+          logger.debug('[ProspectChat] Profile saved via fallback - updating onboarding state');
+          try {
+            await updateOnboardingState('completed');
+          } catch (err) {
+            logger.warn('[ProspectChat] Failed to update onboarding state:', { error: err instanceof Error ? err.message : String(err) });
+            // Continue even if state update fails
+          }
           await clearSession();
           setShowProfileExtractionModal(false);
           router.push('/profile');

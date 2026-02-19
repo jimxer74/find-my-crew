@@ -34,6 +34,7 @@ export const devConfig: EnvironmentConfig = {
   defaultTemperature: 0.5,
   defaultMaxTokens: 4000,
   // Use-case-specific overrides for development
+  /*
   useCaseOverrides: {
     // Premium models for conversational chat (better reasoning, tool calling)
     'assess-registration': {
@@ -140,4 +141,5 @@ export const devConfig: EnvironmentConfig = {
       maxTokens: 1024
     }
   }
+  */
 };

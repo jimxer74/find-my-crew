@@ -158,10 +158,15 @@ export function FilterProvider({ children }: { children: ReactNode }) {
           .eq('id', user.id)
           .single();
 
-        logger.info('[FilterContext] Profile fetch result', { hasProfile: !!profile, hasError: !!error });
+        logger.info('[FilterContext] Profile fetch result', { hasProfile: !!profile, hasError: !!error, errorCode: (error as any)?.code });
 
         if (error) {
-          logger.error('[FilterContext] Error fetching profile for filter defaults', { error: error instanceof Error ? error.message : String(error) });
+          // PGRST116 is "no rows found" - this is expected during onboarding when profile doesn't exist yet
+          if ((error as any)?.code === 'PGRST116') {
+            logger.info('[FilterContext] No profile found (expected during onboarding)', {});
+          } else {
+            logger.error('[FilterContext] Error fetching profile for filter defaults', { error: error instanceof Error ? error.message : String(error) });
+          }
           return;
         }
 

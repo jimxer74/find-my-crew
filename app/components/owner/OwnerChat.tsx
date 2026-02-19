@@ -432,7 +432,7 @@ export default function OwnerChat() {
                 Welcome onboard!
               </h3>
               <p className="text-sm text-muted-foreground mb-4">
-                You&apos;re all set. View your boat and journey details in the owner section.
+                You&apos;re all set. Please review your generated Journey, correct and update any details and publish it when you are ready. Please also review your Profile and Boat details and ensure they are correct before publishing.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
                 <button

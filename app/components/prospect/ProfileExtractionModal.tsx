@@ -130,6 +130,8 @@ export function ProfileExtractionModal({
         }
       }
 
+      logger.info('[ProfileExtractionModal] Profile saved successfully');
+
       await onSuccess();
       onClose();
     } catch (err: any) {

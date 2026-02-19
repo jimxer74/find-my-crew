@@ -139,7 +139,8 @@ function OwnerPostDialog({
   );
 }
 
-export default function WelcomePage() {
+// Inner component that uses translations (must be called within NextIntlClientProvider)
+function WelcomePageContent() {
   const t = useTranslations('welcome');
   const tPrivacy = useTranslations('settings.privacy');
   const router = useRouter();
@@ -956,4 +957,28 @@ export default function WelcomePage() {
       />
     </div>
   );
+}
+
+// Export wrapper that ensures the content component is properly wrapped
+export default function WelcomePage() {
+  try {
+    return <WelcomePageContent />;
+  } catch (error) {
+    logger.error('[WelcomePage] Failed to render welcome page:', { error: error instanceof Error ? error.message : String(error) });
+    // Fallback: render minimal welcome page without translations
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-foreground mb-4">Welcome</h1>
+          <p className="text-muted-foreground mb-8">Unable to load page. Please refresh.</p>
+          <button
+            onClick={() => typeof window !== 'undefined' && window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+          >
+            Refresh Page
+          </button>
+        </div>
+      </div>
+    );
+  }
 }

@@ -8,6 +8,7 @@ export const openrouterConfig = {
   // Cheap models for DEV for now
   dev: {
     models: [
+    'openrouter/free',
     'arcee-ai/trinity-mini',
     'openai/gpt-oss-120b:exacto',
     'openai/gpt-4o-mini',
@@ -24,6 +25,7 @@ export const openrouterConfig = {
   prod: {
     models: [
       // Then try some paid models
+      'openrouter/free',
       'arcee-ai/trinity-mini',
       'openai/gpt-oss-120b:exacto',
       'openai/gpt-4o-mini',
