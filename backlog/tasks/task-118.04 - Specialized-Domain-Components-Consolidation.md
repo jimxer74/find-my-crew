@@ -1,9 +1,10 @@
 ---
 id: TASK-118.04
 title: Specialized Domain Components Consolidation
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-18 21:10'
+updated_date: '2026-02-19 06:12'
 labels:
   - Components
   - Consolidation
@@ -60,6 +61,48 @@ Take existing domain-specific components and refactor them to leverage core comp
 - [ ] #6 All refactored components tested and functional
 - [ ] #7 Documentation updated to reflect new component usage patterns
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Refactoring Plan
+
+Identified domain component categories that need refactoring:
+
+### Badge Components (HIGH PRIORITY)
+- MatchBadge - Should use Badge component variant
+- TypeBadge (feedback) - Should use Badge component
+- StatusBadge (feedback) - Should use Badge component
+- StatusBadge (registrations) - Should use Badge component
+- CostModelBadge - Should use Badge component
+
+### Card Components (HIGH PRIORITY)
+- LegListItem - Should use Card component with custom content
+- LegMobileCard - Wraps LegListItem, uses custom styling
+- FeedbackCard - Should use Card component
+- CrewCard - Should use Card component
+- DocumentCard - Should use Card component
+- RegistrationCard - Should use Card component
+- CrewSummaryCard - Should use Card component
+
+### Form/Modal Components (MEDIUM PRIORITY)
+- Various modal components (TextInputModal, MultiSelectInputModal, etc.)
+- Form sections and wizards
+- Registration forms and dialogs
+
+### Approach
+1. Start with Badge components (smallest, isolated)
+2. Move to Card-based components
+3. Refactor modals and forms
+4. Test all refactored components for functionality
+
+## Estimated Component Count
+- Badge components: ~5
+- Card-based: ~10
+- Modal/Form: ~15
+- Other UI: ~20
+Total domain components: 50+
+<!-- SECTION:NOTES:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
