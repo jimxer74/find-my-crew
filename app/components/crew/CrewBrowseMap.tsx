@@ -224,13 +224,14 @@ export function CrewBrowseMap({
 
     let visibleLeft = 0;
     const visibleTop = 0;
-    const visibleRight = width;
-    const visibleBottom = height;
+    let visibleRight = width;
+    let visibleBottom = height;
 
     if (isMobile) {
-      // For mobile, always use full screen height for filtering legs
-      // This shows all legs visible on the full screen, even if waypoints might be under the bottom sheet
-      // No adjustment needed - use full height
+      // On mobile, exclude bottom sheet from visible bounds
+      // Only include the map area actually visible above the bottom sheet
+      const bottomSheetHeight = getBottomSheetPixelHeight(bottomSheetSnapPoint);
+      visibleBottom = Math.max(0, height - bottomSheetHeight);
     } else {
       // Account for left pane (400px when visible)
       // Pane is visible when: no leg selected AND pane not minimized
@@ -263,7 +264,7 @@ export function CrewBrowseMap({
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
-  }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
@@ -1034,18 +1035,8 @@ export function CrewBrowseMap({
               return;
             }
 
-            // On mobile, expand viewport bounds so get_legs_in_viewport returns more legs
-            // and waypoints at the bottom of the screen (list area) are included
-            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-            if (isMobile) {
-              const lngExtent = maxLng - minLng;
-              const latExtent = maxLat - minLat;
-              const margin = 0.15; // 15% expansion on each side
-              minLng = Math.max(-180, minLng - lngExtent * margin);
-              maxLng = Math.min(180, maxLng + lngExtent * margin);
-              minLat = Math.max(-90, minLat - latExtent * margin);
-              maxLat = Math.min(90, maxLat + latExtent * margin);
-            }
+            // Use visible bounds without expansion - calculateVisibleBounds already accounts for UI overlays
+            // This ensures only truly visible waypoints are included in the search results
 
             // Check if viewport has changed significantly
             // If lastLoadedBoundsRef is null, it means filters changed and we should force reload
