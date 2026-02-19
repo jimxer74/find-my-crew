@@ -224,23 +224,27 @@ export function CrewBrowseMap({
       }
     } else {
       // On mobile, account for bottom sheet height based on snap point
-      // The bottom sheet is fixed and overlays on top of the map
-      // We need to exclude the area it covers to avoid requesting legs we can't see
+      // ONLY if the bottom sheet is actually visible (not showing mobile leg card or full panel)
+      // When showing MobileLegCard or LegDetailsPanel, the bottom sheet is hidden
+      const showBottomSheet = !showMobileLegCard && !showFullPanelOnMobile;
+
       let bottomSheetHeight = 0;
-      if (bottomSheetSnapPoint === 'collapsed') {
-        bottomSheetHeight = 80;
-      } else if (bottomSheetSnapPoint === 'half') {
-        bottomSheetHeight = window.innerHeight * 0.5;
-      } else if (bottomSheetSnapPoint === 'expanded') {
-        bottomSheetHeight = window.innerHeight - 64; // 100vh - 4rem
+      if (showBottomSheet) {
+        if (bottomSheetSnapPoint === 'collapsed') {
+          bottomSheetHeight = 80;
+        } else if (bottomSheetSnapPoint === 'half') {
+          bottomSheetHeight = window.innerHeight * 0.5;
+        } else if (bottomSheetSnapPoint === 'expanded') {
+          bottomSheetHeight = window.innerHeight - 64; // 100vh - 4rem
+        }
       }
 
-      // Subtract bottom sheet height + additional safety margin (20-30px)
+      // Subtract bottom sheet height + additional safety margin (20-30px) only if sheet is visible
       // This accounts for:
-      // 1. Any padding/margin in the bottom sheet
+      // 1. The fixed bottom sheet overlay
       // 2. Rendering precision issues near bounds edges
       // 3. The fact that unproject can be slightly inaccurate at edges
-      visibleBottom = height - bottomSheetHeight - 30;
+      visibleBottom = height - bottomSheetHeight - (showBottomSheet ? 30 : 0);
     }
 
     // Ensure we have valid bounds
@@ -311,7 +315,7 @@ export function CrewBrowseMap({
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
-  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint, showMobileLegCard, showFullPanelOnMobile]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
