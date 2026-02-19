@@ -1929,13 +1929,15 @@ export function CrewBrowseMap({
 
     isFittingBoundsRef.current = true;
 
-    // Fit map to bounds with asymmetric padding to account for UI overlays
-    // Mobile: Large bottom padding for MobileLegCard (~350px card height + margin)
+    // Fit map to bounds with padding to account for UI overlays
+    // CRITICAL: Viewport is now ALWAYS full screen - no longer subtracting space for overlays
+    // The 380px bottom padding was causing viewport misalignment when MobileLegCard opened
+    // Mobile: Uniform padding (overlays are handled visually, not in bounds calculation)
     // Desktop: Large left padding for detail pane (400px + buffer)
     const isMobile = window.innerWidth < 768;
     map.current.fitBounds(bounds, {
       padding: isMobile
-        ? { top: 50, bottom: 380, left: 30, right: 30 } // Mobile: large bottom padding for MobileLegCard
+        ? { top: 50, bottom: 50, left: 30, right: 30 } // Mobile: uniform padding (no overlay adjustment)
         : { top: 50, bottom: 50, left: 450, right: 50 }, // Desktop: 400px pane + 50px buffer on left
       duration: 1000,
       maxZoom: 12, // Don't zoom in too much
@@ -1947,7 +1949,7 @@ export function CrewBrowseMap({
     setTimeout(() => {
       isFittingBoundsRef.current = false;
       // Recalculate visible bounds after fitBounds animation completes
-      // This is critical for mobile where the bounds calculation includes MobileLegCard height
+      // Viewport is now based on full screen dimensions, not overlay accounting
       updateVisibleBounds();
     }, 1100); // Slightly longer than animation duration
   }, [selectedLeg, legWaypoints, mapLoaded, userRegistrations, updateVisibleBounds]);
