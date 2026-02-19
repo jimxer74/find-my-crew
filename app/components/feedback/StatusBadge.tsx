@@ -1,18 +1,45 @@
 'use client';
 
-import { FeedbackStatus, getFeedbackStatusLabel, getFeedbackStatusColor } from '@/app/lib/feedback/types';
+import { Badge } from '@/app/components/ui';
+import { FeedbackStatus, getFeedbackStatusLabel } from '@/app/lib/feedback/types';
+import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
 
 interface StatusBadgeProps {
   status: FeedbackStatus;
   size?: 'sm' | 'md';
 }
 
+/**
+ * Map feedback status to badge variant
+ */
+function getFeedbackStatusBadgeVariant(status: FeedbackStatus): BadgeVariant {
+  switch (status) {
+    case FeedbackStatus.NEW:
+      return 'info';
+    case FeedbackStatus.UNDER_REVIEW:
+      return 'warning';
+    case FeedbackStatus.PLANNED:
+    case FeedbackStatus.IN_PROGRESS:
+      return 'info';
+    case FeedbackStatus.COMPLETED:
+      return 'success';
+    case FeedbackStatus.DECLINED:
+    default:
+      return 'secondary';
+  }
+}
+
+/**
+ * Feedback status badge - Shows feedback status
+ * Refactored to use core Badge component
+ */
 export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
-  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5' : 'text-xs px-2 py-1';
+  const variant = getFeedbackStatusBadgeVariant(status);
+  const badgeSize = size === 'sm' ? 'sm' : 'md';
 
   return (
-    <span className={`inline-flex items-center rounded-full font-medium ${sizeClasses} ${getFeedbackStatusColor(status)}`}>
+    <Badge variant={variant} size={badgeSize}>
       {getFeedbackStatusLabel(status)}
-    </span>
+    </Badge>
   );
 }

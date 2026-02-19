@@ -1,6 +1,8 @@
 'use client';
 
-import { FeedbackType, getFeedbackTypeLabel, getFeedbackTypeColor } from '@/app/lib/feedback/types';
+import { Badge } from '@/app/components/ui';
+import { FeedbackType, getFeedbackTypeLabel } from '@/app/lib/feedback/types';
+import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
 
 interface TypeBadgeProps {
   type: FeedbackType;
@@ -8,7 +10,7 @@ interface TypeBadgeProps {
 }
 
 /**
- * Get icon for feedback type
+ * Get icon SVG for feedback type
  */
 function getTypeIcon(type: FeedbackType) {
   switch (type) {
@@ -40,13 +42,38 @@ function getTypeIcon(type: FeedbackType) {
   }
 }
 
+/**
+ * Map feedback type to badge variant
+ */
+function getFeedbackTypeBadgeVariant(type: FeedbackType): BadgeVariant {
+  switch (type) {
+    case FeedbackType.BUG:
+      return 'error';
+    case FeedbackType.FEATURE:
+      return 'info';
+    case FeedbackType.IMPROVEMENT:
+      return 'success';
+    case FeedbackType.OTHER:
+    default:
+      return 'secondary';
+  }
+}
+
+/**
+ * Feedback type badge - Shows feedback type with icon
+ * Refactored to use core Badge component
+ */
 export function TypeBadge({ type, size = 'md' }: TypeBadgeProps) {
-  const sizeClasses = size === 'sm' ? 'text-xs px-1.5 py-0.5' : 'text-xs px-2 py-1';
+  const variant = getFeedbackTypeBadgeVariant(type);
+  const badgeSize = size === 'sm' ? 'sm' : 'md';
 
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full font-medium ${sizeClasses} ${getFeedbackTypeColor(type)}`}>
-      {getTypeIcon(type)}
+    <Badge
+      variant={variant}
+      size={badgeSize}
+      icon={getTypeIcon(type)}
+    >
       {getFeedbackTypeLabel(type)}
-    </span>
+    </Badge>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-//import { getMatchColorClass, getMatchTextColorClass } from '@/app/lib/skillMatching';
-
+import { Badge } from '@/app/components/ui';
+import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
 
 interface MatchBadgeProps {
   percentage: number;
@@ -10,35 +10,33 @@ interface MatchBadgeProps {
   className?: string;
 }
 
-export function MatchBadge({ 
-  percentage, 
-  showLabel = true, 
+/**
+ * Match percentage badge - Displays skill match percentage with color coding
+ * Refactored to use core Badge component
+ */
+export function MatchBadge({
+  percentage,
+  showLabel = true,
   size = 'md',
-  className = '' 
+  className = ''
 }: MatchBadgeProps) {
-  
-  const sizeClasses = {
-    sm: 'text-xs px-2 py-0.5',
-    md: 'text-sm px-3 py-1',
-    lg: 'text-base px-4 py-1.5',
-  };
+  // Map percentage to badge variant
+  const variant: BadgeVariant =
+    percentage >= 80 ? 'success' :
+    percentage >= 50 ? 'warning' :
+    percentage >= 25 ? 'warning' :
+    'error';
+
+  const label = percentage === 100 ? 'Perfect Match' : `${percentage}% Match`;
 
   return (
-    <span
-      className={`inline-flex items-center font-semibold rounded-full border-2 ${
-        percentage >= 80 ? 'bg-green-300/80 border-green-500 text-green-800' :
-        percentage >= 50 ? 'bg-yellow-300/80 border-yellow-600 text-yellow-800' :
-        percentage >= 25 ? 'bg-orange-300/80 border-orange-600 text-orange-800' :
-        'bg-red-500/80 border-red-600 text-red-800'
-      } ${sizeClasses[size]} ${className}`}
+    <Badge
+      variant={variant}
+      size={size}
       title={`${percentage}% skill match`}
+      className={className}
     >
-      {showLabel && (
-        <span className="mr-1">
-          {percentage === 100 ? 'Perfect Match' : `${percentage}% Match`}
-        </span>
-      )}
-      <span></span>
-    </span>
+      {showLabel ? label : `${percentage}%`}
+    </Badge>
   );
 }
