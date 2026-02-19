@@ -149,7 +149,7 @@ function JourneyDetailsDialog({
         {/* Content - Date range first, then locations, then waypoints */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
           <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
-            If you do not yet know where and when you want to sail, just tap Next to skip this step.
+            You can enter exact departure and arrival details if you already know where and when you going to sail. You can also include the Journey information as part of your profile description and SailSmart AI will pick it up from there. Don't know your exact plans yet? No worries, you can skip this step and add details later.
           </p>
           {/* Date range - first, same pattern as crew Availability dialog (owner amber theme) */}
           <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -914,7 +914,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {currentPage === 1 && (
                 <div className="space-y-4">
                   <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
-                  If you do not yet know where and when do you want to sail, just tap Next to skip this step
+                  You can enter exact departure and arrival details if you already know where and when you going to sail. You can also include the Journey information as part of your profile description and SailSmart AI will pick it up from there. Don't know your exact plans yet? No worries, you can skip this step and add details later.
                   </p>
                   {/* Date range first - same pattern as desktop (owner amber theme) */}
                   <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
@@ -1064,11 +1064,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                     <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
                     </h3>
-                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside">
+                    <ul className="text-xs text-blue-900 dark:text-blue-200 space-y-1 list-disc list-inside text-left">
                       <li>Your skipper profile and sailing experience</li>
-                      <li>Boat details</li>
-                      <li>Crew requirements and preferences</li>
+                      <li>Boat details, make and model, home port etc.</li>
+                      <li>Crew requirements and preferences - How experienced crew you are looking for, what skills are needed?</li>
                       <li>Additional information regarding crew, boat or journey</li>
+                      <li>You can also include the Journey details here and SailSmart AI will pick it up</li>
                     </ul>
                   </div>
 
