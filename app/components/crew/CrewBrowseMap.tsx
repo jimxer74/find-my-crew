@@ -1288,6 +1288,8 @@ export function CrewBrowseMap({
         cluster: false, // No clustering for approved legs
       });
 
+      // Clustering temporarily disabled - can be re-enabled later
+      /*
       // Add cluster circles layer
       map.current.addLayer({
         id: 'clusters',
@@ -1295,25 +1297,23 @@ export function CrewBrowseMap({
         source: 'legs-source',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#0E1D34',
-          /*
           'circle-color': [
             'step',
             ['get', 'point_count'],
-            '#264E8C', //'#d1d5db', // Light gray for small clusters
+            '#264E8C',
             5,
-            '#173057', // Medium gray for medium clusters
+            '#173057',
             10,
-            '#0E1D34', // Darker gray for large clusters
-          ],*/
+            '#0E1D34',
+          ],
           'circle-radius': [
             'step',
             ['get', 'point_count'],
-            20, // Small clusters
+            20,
             10,
-            30, // Medium clusters
             30,
-            40, // Large clusters
+            30,
+            40,
           ],
           'circle-stroke-width': 2,
           'circle-stroke-color': '#fff',
@@ -1330,7 +1330,7 @@ export function CrewBrowseMap({
           'text-field': '{point_count_abbreviated}',
           'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
           'text-size': 14,
-          'text-allow-overlap': true, // Always show text even if overlapping
+          'text-allow-overlap': true,
         },
         paint: {
           'text-color': '#fff',
@@ -1339,6 +1339,7 @@ export function CrewBrowseMap({
           'text-halo-blur': 1,
         },
       });
+      */
 
       // Add icon layers for registered legs (approved and pending)
       // These will be added after icons are loaded, but we define them here

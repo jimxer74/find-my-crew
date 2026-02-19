@@ -23,6 +23,8 @@ type FiltersDialogProps = {
 type FiltersPageContentProps = {
   onClose: () => void;
   onRestoreProfile?: () => void;
+  useProfileSettings?: boolean;
+  onUseProfileSettingsChange?: (enabled: boolean) => void;
 };
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
@@ -31,6 +33,7 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
   const t = useTranslations('common');
   const dialogRef = useRef<HTMLDivElement>(null);
   const { clearFilters, updateFilters } = useFilters();
+  const [useProfileSettings, setUseProfileSettings] = useState(false);
 
   // Close dialog when clicking outside
   useEffect(() => {
@@ -111,17 +114,22 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
           <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              // This will be handled by FiltersPageContent via onRestoreProfile prop
-              const event = new CustomEvent('restoreProfileFilters');
-              window.dispatchEvent(event);
-            }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Use profile settings"
+          <div
+            className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-md cursor-pointer hover:bg-muted/80 transition-colors"
+            onClick={() => setUseProfileSettings(!useProfileSettings)}
+            role="switch"
+            aria-label="Use profile settings toggle"
+            aria-checked={useProfileSettings}
           >
-            Use profile settings
-          </button>
+            <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+              useProfileSettings ? 'bg-primary' : 'bg-input'
+            }`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                useProfileSettings ? 'translate-x-4' : 'translate-x-0'
+              }`} />
+            </div>
+            <span className="text-sm font-medium text-foreground">Profile</span>
+          </div>
           <button
             onClick={clearFilters}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -133,14 +141,18 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
       </div>
 
       {/* Content - FiltersPageContent handles its own scrolling */}
-      <FiltersPageContent onClose={handleCancel} />
+      <FiltersPageContent
+        onClose={handleCancel}
+        useProfileSettings={useProfileSettings}
+        onUseProfileSettingsChange={setUseProfileSettings}
+      />
     </div>,
     document.body
   );
 }
 
 // Content component that can be used in both modal and page modes
-export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageContentProps) {
+export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettings = false, onUseProfileSettingsChange }: FiltersPageContentProps) {
   const t = useTranslations('common');
   const tFilters = useTranslations('journeys.browse.filters');
   const router = useRouter();
@@ -151,7 +163,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
   const [loading, setLoading] = useState(true);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  
+
   // Temporary filter state (for editing before save)
   const [tempLocation, setTempLocation] = useState<Location | null>(null);
   const [tempLocationInput, setTempLocationInput] = useState('');
@@ -193,6 +205,31 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
     setTempExperienceLevel(filters.experienceLevel);
     setTempDateRange(filters.dateRange);
   }, [filters]);
+
+  // When useProfileSettings toggle is ON, sync with profile values
+  useEffect(() => {
+    if (useProfileSettings && profileValues) {
+      logger.debug('[FiltersDialog] Syncing with profile settings', { enabled: true });
+      // Update temp state with profile values
+      if (profileValues.departureLocation) {
+        setTempLocation(profileValues.departureLocation);
+        setTempLocationInput(profileValues.departureLocation.name);
+      }
+      if (profileValues.arrivalLocation) {
+        setTempArrivalLocation(profileValues.arrivalLocation);
+        setTempArrivalLocationInput(profileValues.arrivalLocation.name);
+      }
+      if (profileValues.riskLevel && profileValues.riskLevel.length > 0) {
+        setTempRiskLevel(profileValues.riskLevel);
+      }
+      if (profileValues.experienceLevel !== null) {
+        setTempExperienceLevel(profileValues.experienceLevel);
+      }
+      if (profileValues.dateRange.start || profileValues.dateRange.end) {
+        setTempDateRange(profileValues.dateRange);
+      }
+    }
+  }, [useProfileSettings]);
 
   // Listen for restore profile event
   useEffect(() => {
@@ -350,7 +387,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
     return tFilters('availability');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Save to context (which persists to session storage)
     updateFilters({
       location: tempLocation,
@@ -361,15 +398,39 @@ export function FiltersPageContent({ onClose, onRestoreProfile }: FiltersPageCon
       experienceLevel: tempExperienceLevel,
       dateRange: tempDateRange,
     });
-    
+
+    // Only update profile settings if toggle is ON
+    if (useProfileSettings && user) {
+      try {
+        const supabase = getSupabaseBrowserClient();
+        await supabase.from('profiles').update({
+          risk_level: tempRiskLevel,
+          sailing_experience: tempExperienceLevel,
+          preferred_departure_location: tempLocation,
+          preferred_arrival_location: tempArrivalLocation,
+          availability_start_date: tempDateRange.start ? tempDateRange.start.toISOString().split('T')[0] : null,
+          availability_end_date: tempDateRange.end ? tempDateRange.end.toISOString().split('T')[0] : null,
+        }).eq('id', user.id);
+
+        logger.debug('[FiltersDialog] Profile settings updated', { toggleEnabled: true });
+      } catch (error) {
+        logger.error('[FiltersDialog] Failed to update profile settings', {
+          error: error instanceof Error ? error.message : String(error),
+          toggleEnabled: true
+        });
+      }
+    } else {
+      logger.debug('[FiltersDialog] Profile settings NOT updated', { toggleEnabled: useProfileSettings });
+    }
+
     setWarningMessage(null);
     onClose();
-    
+
     // Dispatch custom event to trigger reload in CrewBrowseMap
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('filtersUpdated'));
     }
-    
+
     // Navigate to crew dashboard if not already there
     if (pathname !== '/crew/dashboard') {
       router.push('/crew/dashboard');
