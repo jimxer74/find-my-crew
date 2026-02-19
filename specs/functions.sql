@@ -467,3 +467,58 @@ Returns leg IDs where:
   - Start waypoint (index=0) is within departure bbox (if specified)
   - End waypoint (max index) is within arrival bbox (if specified)
 Limited to 100 results.';
+
+
+-- update_leg_bbox
+DECLARE
+  waypoint_count integer;
+  bbox_geom geometry(Polygon, 4326);
+  single_point geometry(Point, 4326);
+BEGIN
+  -- Count waypoints for this leg
+  SELECT COUNT(*) INTO waypoint_count
+  FROM public.waypoints
+  WHERE leg_id = COALESCE(NEW.leg_id, OLD.leg_id);
+  
+  -- Only update bbox if we have waypoints
+  IF waypoint_count >= 2 THEN
+    -- Create bounding box from all waypoints (envelope of multiple points creates a polygon)
+    SELECT ST_Envelope(ST_Collect(location))::geometry(Polygon, 4326)
+    INTO bbox_geom
+    FROM public.waypoints
+    WHERE leg_id = COALESCE(NEW.leg_id, OLD.leg_id);
+    
+    -- Update the bounding box
+    UPDATE public.legs
+    SET bbox = bbox_geom
+    WHERE id = COALESCE(NEW.leg_id, OLD.leg_id);
+  ELSIF waypoint_count = 1 THEN
+    -- For a single point, create a small square buffer around it to make a valid polygon
+    SELECT location INTO single_point
+    FROM public.waypoints
+    WHERE leg_id = COALESCE(NEW.leg_id, OLD.leg_id)
+    LIMIT 1;
+    
+    -- Create a small bounding box around the point (0.01 degrees ≈ 1km)
+    bbox_geom := ST_MakeEnvelope(
+      ST_X(single_point) - 0.01,
+      ST_Y(single_point) - 0.01,
+      ST_X(single_point) + 0.01,
+      ST_Y(single_point) + 0.01,
+      4326
+    )::geometry(Polygon, 4326);
+    
+    UPDATE public.legs
+    SET bbox = bbox_geom
+    WHERE id = COALESCE(NEW.leg_id, OLD.leg_id);
+  ELSE
+    -- No waypoints, set bbox to NULL
+    UPDATE public.legs
+    SET bbox = NULL
+    WHERE id = COALESCE(NEW.leg_id, OLD.leg_id);
+  END IF;
+  
+  RETURN COALESCE(NEW, OLD);
+END;
+
+

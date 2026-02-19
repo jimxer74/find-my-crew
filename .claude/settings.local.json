@@ -98,7 +98,8 @@
       "mcp__backlog__get_task_creation_guide",
       "Bash(git checkout:*)",
       "Bash(git show:*)",
-      "Bash(npm --version:*)"
+      "Bash(npm --version:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }
