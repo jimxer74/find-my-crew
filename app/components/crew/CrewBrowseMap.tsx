@@ -274,26 +274,12 @@ export function CrewBrowseMap({
     }
   }, [calculateVisibleBounds]);
 
-  // Memoized filtered legs based on visible bounds
-  // When only arrival filter is set, filter by end_waypoint; otherwise by start_waypoint
+  // Use all legs returned by API - RPC function already filters by viewport bbox correctly
+  // No need for additional frontend filtering as it can exclude legs at viewport edges
+  // where the route passes through visible area even if start/end waypoints are outside bounds
   const visibleLegs = useMemo(() => {
-    if (!visibleBounds) return legs;
-
-    // Determine which waypoint to use based on filters
-    const showEndWaypoints = !filters.location && !!filters.arrivalLocation;
-
-    return legs.filter(leg => {
-      const wp = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
-      if (!wp) return false;
-
-      return (
-        wp.lng >= visibleBounds.minLng &&
-        wp.lng <= visibleBounds.maxLng &&
-        wp.lat >= visibleBounds.minLat &&
-        wp.lat <= visibleBounds.maxLat
-      );
-    });
-  }, [legs, visibleBounds, filters.location, filters.arrivalLocation]);
+    return legs;
+  }, [legs]);
 
   // Helper function to check if viewport has changed significantly
   const hasViewportChangedSignificantly = (
