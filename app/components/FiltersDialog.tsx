@@ -206,30 +206,52 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
     setTempDateRange(filters.dateRange);
   }, [filters]);
 
-  // When useProfileSettings toggle is ON, sync with profile values
+  // When useProfileSettings toggle changes, sync with profile values or revert to context filters
   useEffect(() => {
     if (useProfileSettings && profileValues) {
-      logger.debug('[FiltersDialog] Syncing with profile settings', { enabled: true });
-      // Update temp state with profile values
+      logger.debug('[FiltersDialog] Syncing with profile settings (toggle ON)', { enabled: true });
+      // When toggle is ON, force profile values into the filter UI
       if (profileValues.departureLocation) {
         setTempLocation(profileValues.departureLocation);
         setTempLocationInput(profileValues.departureLocation.name);
+      } else {
+        setTempLocation(null);
+        setTempLocationInput('');
       }
       if (profileValues.arrivalLocation) {
         setTempArrivalLocation(profileValues.arrivalLocation);
         setTempArrivalLocationInput(profileValues.arrivalLocation.name);
+      } else {
+        setTempArrivalLocation(null);
+        setTempArrivalLocationInput('');
       }
       if (profileValues.riskLevel && profileValues.riskLevel.length > 0) {
         setTempRiskLevel(profileValues.riskLevel);
+      } else {
+        setTempRiskLevel([]);
       }
       if (profileValues.experienceLevel !== null) {
         setTempExperienceLevel(profileValues.experienceLevel);
+      } else {
+        setTempExperienceLevel(null);
       }
       if (profileValues.dateRange.start || profileValues.dateRange.end) {
         setTempDateRange(profileValues.dateRange);
+      } else {
+        setTempDateRange({ start: null, end: null });
       }
+    } else if (!useProfileSettings) {
+      logger.debug('[FiltersDialog] Reverting to context filters (toggle OFF)', { enabled: false });
+      // When toggle is OFF, use the current filters from context
+      setTempLocation(filters.location);
+      setTempLocationInput(filters.locationInput);
+      setTempArrivalLocation(filters.arrivalLocation);
+      setTempArrivalLocationInput(filters.arrivalLocationInput);
+      setTempRiskLevel(filters.riskLevel);
+      setTempExperienceLevel(filters.experienceLevel);
+      setTempDateRange(filters.dateRange);
     }
-  }, [useProfileSettings]);
+  }, [useProfileSettings, profileValues, filters]);
 
   // Listen for restore profile event
   useEffect(() => {
@@ -387,8 +409,11 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
     return tFilters('availability');
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     // Save to context (which persists to session storage)
+    // NOTE: Profile values are NEVER updated from this dialog.
+    // The "Use Profile Settings" toggle only controls whether to use profile values as filters,
+    // not whether to save filters back to the profile.
     updateFilters({
       location: tempLocation,
       locationInput: tempLocationInput,
@@ -399,29 +424,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
       dateRange: tempDateRange,
     });
 
-    // Only update profile settings if toggle is ON
-    if (useProfileSettings && user) {
-      try {
-        const supabase = getSupabaseBrowserClient();
-        await supabase.from('profiles').update({
-          risk_level: tempRiskLevel,
-          sailing_experience: tempExperienceLevel,
-          preferred_departure_location: tempLocation,
-          preferred_arrival_location: tempArrivalLocation,
-          availability_start_date: tempDateRange.start ? tempDateRange.start.toISOString().split('T')[0] : null,
-          availability_end_date: tempDateRange.end ? tempDateRange.end.toISOString().split('T')[0] : null,
-        }).eq('id', user.id);
-
-        logger.debug('[FiltersDialog] Profile settings updated', { toggleEnabled: true });
-      } catch (error) {
-        logger.error('[FiltersDialog] Failed to update profile settings', {
-          error: error instanceof Error ? error.message : String(error),
-          toggleEnabled: true
-        });
-      }
-    } else {
-      logger.debug('[FiltersDialog] Profile settings NOT updated', { toggleEnabled: useProfileSettings });
-    }
+    logger.debug('[FiltersDialog] Filters saved', { useProfileSettings });
 
     setWarningMessage(null);
     onClose();
