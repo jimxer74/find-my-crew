@@ -222,6 +222,19 @@ export function CrewBrowseMap({
         // Detail pane is always 400px when a leg is selected
         visibleLeft = 400;
       }
+    } else {
+      // On mobile, account for bottom sheet height based on snap point
+      // Collapsed: 80px, Half: ~50vh, Expanded: ~calc(100vh - 4rem)
+      // Use conservative estimates to avoid missing waypoints
+      let bottomSheetHeight = 0;
+      if (bottomSheetSnapPoint === 'collapsed') {
+        bottomSheetHeight = 80;
+      } else if (bottomSheetSnapPoint === 'half') {
+        bottomSheetHeight = window.innerHeight * 0.5;
+      } else if (bottomSheetSnapPoint === 'expanded') {
+        bottomSheetHeight = window.innerHeight - 64; // 100vh - 4rem
+      }
+      visibleBottom = height - bottomSheetHeight;
     }
 
     // Ensure we have valid bounds
@@ -244,7 +257,7 @@ export function CrewBrowseMap({
       logger.error('Error calculating visible bounds', { error: error instanceof Error ? error.message : String(error) });
       return null;
     }
-  }, [mapLoaded, isLegsPaneMinimized, selectedLeg]);
+  }, [mapLoaded, isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint]);
 
   // Update visible bounds (debounced via caller)
   const updateVisibleBounds = useCallback(() => {
@@ -1947,9 +1960,10 @@ export function CrewBrowseMap({
 
   // Effect to update visible bounds when UI state changes
   useEffect(() => {
-    // Update bounds when pane state changes (desktop only, mobile uses full screen)
+    // Update bounds when pane state changes OR bottom sheet height changes (mobile)
+    // This ensures viewport is correctly calculated when UI elements appear/disappear
     updateVisibleBounds();
-  }, [isLegsPaneMinimized, selectedLeg, updateVisibleBounds]);
+  }, [isLegsPaneMinimized, selectedLeg, bottomSheetSnapPoint, updateVisibleBounds]);
 
   return (
     <div
