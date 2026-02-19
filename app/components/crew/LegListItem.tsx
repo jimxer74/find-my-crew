@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Card } from '@/app/components/ui';
 import { formatDate } from '@/app/lib/dateFormat';
 import { MatchBadge } from '@/app/components/ui/MatchBadge';
@@ -51,6 +52,7 @@ type LegListItemProps = {
   onClick?: (leg: LegListItemData) => void;
   displayOptions?: LegListItemDisplayOptions;
   className?: string;
+  rightBadge?: React.ReactNode; // Badge/button to display at top-right of carousel
 };
 
 // Helper to calculate duration in days
@@ -88,7 +90,8 @@ export function LegListItem({
   leg,
   onClick,
   displayOptions = {},
-  className = ''
+  className = '',
+  rightBadge
 }: LegListItemProps) {
   // Merge with defaults
   const options: Required<LegListItemDisplayOptions> = {
@@ -161,17 +164,28 @@ export function LegListItem({
             </div>
           )}
 
-          {/* Match Badge Overlay */}
-          {options.showMatchBadge && hasMatchPercentage && (
-            <div className="absolute top-2 left-2 z-10">
-              <MatchBadge
-                percentage={leg.skill_match_percentage!}
-                showLabel={true}
-                size="sm"
-                className="shadow-lg"
-              />
-            </div>
-          )}
+          {/* Badge overlays - match badge on left, right badge on right */}
+          <div className="absolute inset-0 flex items-start justify-between p-2 pointer-events-none z-10">
+            {/* Match Badge on Left */}
+            {options.showMatchBadge && hasMatchPercentage && (
+              <div className="pointer-events-auto">
+                <MatchBadge
+                  percentage={leg.skill_match_percentage!}
+                  showLabel={true}
+                  size="sm"
+                  className="shadow-lg"
+                />
+              </div>
+            )}
+            {!options.showMatchBadge && <div />}  {/* Spacer */}
+
+            {/* Right Badge (Join button/Status badge) on Right */}
+            {rightBadge && (
+              <div className="pointer-events-auto">
+                {rightBadge}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -2,6 +2,7 @@
 // seed: tests/seed.spec.ts
 
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { setCookieConsentBeforeNavigation } from '../fixtures/cookieHelper';
 
 const MOCK_LEG = {
   leg_id: 'leg-201',
@@ -33,8 +34,33 @@ const MOCK_LEG = {
   end_waypoint: { lng: -151.74, lat: -16.5, name: 'Bora Bora' },
 };
 
+/** Minimal valid Mapbox GL style that allows map initialization without full tile loading. */
+const MINIMAL_MAPBOX_STYLE = JSON.stringify({
+  version: 8,
+  name: 'test-style',
+  metadata: {},
+  center: [0, 20],
+  zoom: 2,
+  bearing: 0,
+  pitch: 0,
+  sources: {},
+  layers: [],
+});
+
 async function setupPanelMocks(page: Page): Promise<void> {
-  await page.route('https://api.mapbox.com/**', async (route: Route) => {
+  // Provide a minimal valid Mapbox style so the map can initialize (fires 'load' event)
+  await page.route('https://api.mapbox.com/styles/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: MINIMAL_MAPBOX_STYLE,
+    });
+  });
+  // Abort tile/event requests which are network-heavy
+  await page.route('https://api.mapbox.com/v4/**', async (route: Route) => {
+    await route.abort();
+  });
+  await page.route('https://events.mapbox.com/**', async (route: Route) => {
     await route.abort();
   });
   await page.route('**/api/legs/viewport**', async (route: Route) => {
@@ -79,16 +105,20 @@ async function setupPanelMocks(page: Page): Promise<void> {
 test.describe('Leg Details Panel', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
+  test.beforeEach(async ({ page }) => {
+    // Set cookie consent before navigation to prevent banner from appearing
+    await setCookieConsentBeforeNavigation(page);
+  });
+
   // TC-40
   test('details panel opens when navigating to dashboard with a valid legId param', async ({ page }) => {
     await setupPanelMocks(page);
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     // LegDetailsPanel renders with the leg name visible
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
   });
 
@@ -98,9 +128,8 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
     await expect(page.getByText('South Pacific Dream').first()).toBeVisible({ timeout: 10000 });
   });
@@ -111,9 +140,8 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
     // LegDetailsPanel renders start_waypoint.name and end_waypoint.name
     await expect(page.getByText(/Papeete/i).first()).toBeVisible({ timeout: 10000 });
@@ -126,9 +154,8 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
     // Dates 2026-06-15 to 2026-06-22 formatted via formatDate()
     await expect(page.getByText(/Jun|2026/i).first()).toBeVisible({ timeout: 10000 });
@@ -140,11 +167,10 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
-    // leg_risk_level: 'Coastal sailing' → displayName from riskLevelsConfig
+    // leg_risk_level: 'Coastal sailing' -> displayName from riskLevelsConfig
     await expect(page.getByText(/Coastal/i).first()).toBeVisible({ timeout: 10000 });
   });
 
@@ -154,9 +180,8 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
     // SkillsMatchingDisplay renders each skill as a badge; check for 'Navigation'
     await expect(page.getByText('Navigation').first()).toBeVisible({ timeout: 10000 });
@@ -168,9 +193,8 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
     // Boat name is rendered in the details panel
     await expect(page.getByText('Pearl of the Pacific').first()).toBeVisible({ timeout: 10000 });
@@ -182,18 +206,17 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
 
     const legTitle = page.getByText('Pacific Island Hop Leg 3').first();
-    await expect(legTitle).toBeVisible({ timeout: 15000 });
+    await expect(legTitle).toBeVisible({ timeout: 25000 });
 
-    // LegDetailsPanel renders a close button with aria-label="Close"
-    const closeBtn = page.getByRole('button', { name: 'Close' }).first();
+    // LegDetailsPanel renders a close button with aria-label="Close panel" on desktop
+    const closeBtn = page.getByRole('button', { name: /close panel/i }).first();
     await expect(closeBtn).toBeVisible({ timeout: 5000 });
     await closeBtn.click();
 
     // After closing, the browse pane should become visible again (isVisible={!selectedLeg})
-    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 10000 });
   });
 
   // TC-48
@@ -202,11 +225,10 @@ test.describe('Leg Details Panel', () => {
     await page.goto(`/crew/dashboard?legId=${MOCK_LEG.leg_id}`, {
       waitUntil: 'domcontentloaded',
     });
-    await page.waitForTimeout(3000);
     await expect(page.getByText('Pacific Island Hop Leg 3').first()).toBeVisible({
-      timeout: 15000,
+      timeout: 25000,
     });
-    // leg_description contains "Society Islands" – rendered in the details panel content
+    // leg_description contains "Society Islands" - rendered in the details panel content
     await expect(page.getByText(/Society Islands/i).first()).toBeVisible({ timeout: 10000 });
   });
 });

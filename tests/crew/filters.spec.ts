@@ -2,19 +2,67 @@
 // seed: tests/seed.spec.ts
 
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { setCookieConsentBeforeNavigation } from '../fixtures/cookieHelper';
 
-async function setupFilterBaseMocks(page: Page): Promise<void> {
-  await page.route('https://api.mapbox.com/**', async (route: Route) => {
-    await route.abort();
+/**
+ * Mock Supabase auth so the user appears as an authenticated crew member.
+ * The filter button in the Header only renders for authenticated crew users.
+ * We inject the session into localStorage before any page scripts run.
+ */
+async function mockCrewUser(page: Page): Promise<void> {
+  const mockUser = {
+    id: 'test-crew-001',
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'crewtest@example.com',
+    email_confirmed_at: '2025-01-01T00:00:00.000Z',
+    confirmed_at: '2025-01-01T00:00:00.000Z',
+    last_sign_in_at: '2025-01-01T00:00:00.000Z',
+    app_metadata: { provider: 'email', providers: ['email'] },
+    // Include roles in user_metadata so UserRoleContext picks it up immediately
+    user_metadata: { full_name: 'Crew Tester', roles: ['crew'] },
+    created_at: '2025-01-01T00:00:00.000Z',
+    updated_at: '2025-01-01T00:00:00.000Z',
+  };
+
+  const mockSession = {
+    access_token: 'mock-crew-access-token',
+    token_type: 'bearer',
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: 'mock-crew-refresh-token',
+    user: mockUser,
+  };
+
+  // Inject the session into localStorage before any scripts run
+  await page.addInitScript((session) => {
+    try {
+      localStorage.setItem(
+        'sb-zyofbhkvkpygruriubjn-auth-token',
+        JSON.stringify(session)
+      );
+    } catch {
+      // Ignore storage errors in the test environment
+    }
+  }, mockSession);
+
+  // Mock Supabase auth endpoints so session refresh calls succeed
+  await page.route('**/auth/v1/**', async (route: Route) => {
+    const url = route.request().url();
+    if (url.includes('/token') || url.includes('/user')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          url.includes('/user') ? mockUser : mockSession
+        ),
+      });
+    } else {
+      await route.continue();
+    }
   });
-  await page.route('**/api/legs/viewport**', async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ legs: [] }),
-    });
-  });
-  // Mock Supabase profile read – returns empty so filters start blank
+
+  // Mock Supabase profiles table (for FiltersDialog to load profile data)
   await page.route('**/rest/v1/profiles**', async (route: Route) => {
     await route.fulfill({
       status: 200,
@@ -24,11 +72,50 @@ async function setupFilterBaseMocks(page: Page): Promise<void> {
   });
 }
 
+/** Minimal valid Mapbox GL style that allows map initialization without full tile loading. */
+const MINIMAL_MAPBOX_STYLE = JSON.stringify({
+  version: 8,
+  name: 'test-style',
+  metadata: {},
+  center: [0, 20],
+  zoom: 2,
+  bearing: 0,
+  pitch: 0,
+  sources: {},
+  layers: [],
+});
+
+async function setupFilterBaseMocks(page: Page): Promise<void> {
+  // Provide a minimal valid Mapbox style so the map can initialize (fires 'load' event)
+  await page.route('https://api.mapbox.com/styles/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: MINIMAL_MAPBOX_STYLE,
+    });
+  });
+  // Abort tile/event requests to reduce network noise
+  await page.route('https://api.mapbox.com/v4/**', async (route: Route) => {
+    await route.abort();
+  });
+  await page.route('https://events.mapbox.com/**', async (route: Route) => {
+    await route.abort();
+  });
+  await page.route('**/api/legs/viewport**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ legs: [] }),
+    });
+  });
+}
+
 /** Open the FiltersDialog by clicking the search/filter button in the header. */
 async function openFilterDialog(page: Page): Promise<void> {
   // Header renders a button with aria-label starting with "Search"
+  // This button is only visible for authenticated users with 'crew' role
   const filterBtn = page.getByRole('button', { name: /^Search/i }).first();
-  await expect(filterBtn).toBeVisible({ timeout: 10000 });
+  await expect(filterBtn).toBeVisible({ timeout: 15000 });
   await filterBtn.click();
 
   // FiltersDialog renders a panel heading "Search" (from t('search'))
@@ -39,6 +126,13 @@ async function openFilterDialog(page: Page): Promise<void> {
 
 test.describe('Filters', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
+
+  test.beforeEach(async ({ page }) => {
+    // Set cookie consent before navigation to prevent banner from appearing
+    await setCookieConsentBeforeNavigation(page);
+    // Mock authenticated crew user so the filter button is visible
+    await mockCrewUser(page);
+  });
 
   // TC-50
   test('filter dialog opens when clicking the search button in the header', async ({ page }) => {
@@ -165,7 +259,7 @@ test.describe('Filters', () => {
     await page.waitForTimeout(1500);
     await openFilterDialog(page);
 
-    // FiltersPageContent renders a sticky footer button from tFilters('saveAndSearch')
+    // FiltersPageContent renders a sticky footer button from tFilters('saveAndSearch') = "Search"
     const saveBtn = page.getByRole('button', { name: /save.*search|search/i }).last();
     await expect(saveBtn).toBeVisible({ timeout: 5000 });
   });

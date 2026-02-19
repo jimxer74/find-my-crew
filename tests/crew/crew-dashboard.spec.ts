@@ -2,6 +2,7 @@
 // seed: tests/seed.spec.ts
 
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { setCookieConsentBeforeNavigation } from '../fixtures/cookieHelper';
 
 const MOCK_VIEWPORT_LEGS = [
   {
@@ -62,9 +63,41 @@ const MOCK_VIEWPORT_LEGS = [
   },
 ];
 
+/** Minimal valid Mapbox GL style that allows map initialization without full tile loading. */
+const MINIMAL_MAPBOX_STYLE = JSON.stringify({
+  version: 8,
+  name: 'test-style',
+  metadata: {},
+  center: [0, 20],
+  zoom: 2,
+  bearing: 0,
+  pitch: 0,
+  sources: {},
+  layers: [],
+});
+
+/**
+ * Set up mocks for the dashboard page.
+ * Provides a minimal Mapbox style response so the map can initialize without real CDN access,
+ * and aborts tile/event requests to reduce network noise.
+ */
 async function setupDashboardMocks(page: Page): Promise<void> {
-  // Abort all Mapbox network requests so the test doesn't depend on external APIs
-  await page.route('https://api.mapbox.com/**', async (route: Route) => {
+  // Provide a minimal valid Mapbox style so the map can initialize (fires 'load' event)
+  // without making real network calls to the CDN. Our minimal style has no sprite/glyphs
+  // so Mapbox GL won't make additional CDN requests for those assets.
+  await page.route('https://api.mapbox.com/styles/**', async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: MINIMAL_MAPBOX_STYLE,
+    });
+  });
+  // Abort tile requests (not needed for map initialization)
+  await page.route('https://api.mapbox.com/v4/**', async (route: Route) => {
+    await route.abort();
+  });
+  // Abort Mapbox telemetry
+  await page.route('https://events.mapbox.com/**', async (route: Route) => {
     await route.abort();
   });
   await page.route('**/api/legs/viewport**', async (route: Route) => {
@@ -78,6 +111,8 @@ async function setupDashboardMocks(page: Page): Promise<void> {
 
 test.describe('Crew Dashboard', () => {
   test.beforeEach(async ({ page }) => {
+    // Set cookie consent before navigation to prevent banner from appearing
+    await setCookieConsentBeforeNavigation(page);
     await setupDashboardMocks(page);
   });
 
@@ -93,26 +128,28 @@ test.describe('Crew Dashboard', () => {
   // TC-21
   test('application header is visible on the dashboard page', async ({ page }) => {
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('header')).toBeVisible({ timeout: 10000 });
+    // The Header component renders as a <nav> element (not <header>)
+    // On the dashboard, the header is positioned with left offset but still present
+    await expect(page.locator('nav').first()).toBeVisible({ timeout: 10000 });
   });
 
   // TC-22
   test('left browse pane is visible on desktop with a leg count header', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2500);
-    // LegBrowsePane renders "X Legs in View" in its header
-    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 15000 });
+    // LegBrowsePane renders "X Legs in View" in its header (even with 0 legs)
+    // The pane itself is always rendered on desktop (md:flex)
+    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 20000 });
   });
 
   // TC-23
   test('browse pane lists the leg names returned by the viewport API', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
+    // Wait for map to load and viewport API to be called
     await expect(
       page.getByText('Caribbean Trade Wind Run').first()
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeVisible({ timeout: 25000 });
   });
 
   // TC-24
@@ -152,13 +189,12 @@ test.describe('Crew Dashboard', () => {
     });
 
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
 
     const legCard = page.getByText('Caribbean Trade Wind Run').first();
-    await expect(legCard).toBeVisible({ timeout: 15000 });
+    await expect(legCard).toBeVisible({ timeout: 25000 });
     await legCard.click();
 
-    // LegDetailsPanel appears inside a "hidden md:block" wrapper
+    // LegDetailsPanel appears on desktop (hidden md:block wrapper)
     await expect(
       page.getByText('Caribbean Trade Wind Run').first()
     ).toBeVisible({ timeout: 10000 });
@@ -168,7 +204,9 @@ test.describe('Crew Dashboard', () => {
   test('browse pane can be minimized via its collapse button', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
+
+    // Wait for the browse pane to appear
+    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 20000 });
 
     // LegBrowsePane has aria-label="Minimize panel" on the collapse chevron button
     const minimizeBtn = page.getByRole('button', { name: 'Minimize panel' });
@@ -185,9 +223,9 @@ test.describe('Crew Dashboard', () => {
   test('minimized browse pane is restored by clicking the expand handle', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 720 });
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2000);
 
-    // Minimize first
+    // Wait for pane to appear then minimize
+    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 20000 });
     await page.getByRole('button', { name: 'Minimize panel' }).click();
     const expandBtn = page.getByRole('button', { name: 'Show legs list' });
     await expect(expandBtn).toBeVisible({ timeout: 5000 });
@@ -216,21 +254,19 @@ test.describe('Crew Dashboard', () => {
     });
 
     await page.goto('/crew/dashboard?legId=leg-101', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3500);
 
     // Pre-selected leg details appear in the panel on the left
     await expect(
       page.getByText('Caribbean Trade Wind Run').first()
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeVisible({ timeout: 25000 });
   });
 
   // TC-29
   test('mobile view shows a bottom sheet with the legs-in-view count', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(3000);
     // BottomSheet header renders "X Legs in View"
-    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/Leg[s]? in View/i)).toBeVisible({ timeout: 25000 });
   });
 
   // TC-30
@@ -243,7 +279,7 @@ test.describe('Crew Dashboard', () => {
     const listViewBtn = page.getByRole('button', { name: 'List View' });
     await expect(listViewBtn).toBeVisible({ timeout: 10000 });
     await listViewBtn.click();
-    await expect(page).toHaveURL(/\/crew$/);
+    await expect(page).toHaveURL(/\/crew$/, { timeout: 10000 });
   });
 
   // TC-31
@@ -285,7 +321,7 @@ test.describe('Crew Dashboard', () => {
 
     await page.goto('/crew/dashboard', { waitUntil: 'domcontentloaded' });
     // Wait for map load event + 500ms debounce + initial viewport trigger
-    await page.waitForTimeout(4000);
+    await page.waitForTimeout(6000);
     expect(apiRequests.length).toBeGreaterThan(0);
   });
 

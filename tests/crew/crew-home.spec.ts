@@ -2,6 +2,7 @@
 // seed: tests/seed.spec.ts
 
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { setCookieConsentBeforeNavigation } from '../fixtures/cookieHelper';
 
 const MOCK_LEGS = [
   {
@@ -49,25 +50,30 @@ async function mockRegionLegsApi(page: Page, legs = MOCK_LEGS): Promise<void> {
 }
 
 test.describe('Crew Home', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set cookie consent before navigation to prevent banner from appearing
+    await setCookieConsentBeforeNavigation(page);
+  });
+
   // TC-01
   test('landing page loads with visible main content area', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.locator('main')).toBeVisible();
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('main')).toBeVisible({ timeout: 15000 });
   });
 
   // TC-02
   test('application header stays visible on the crew home page', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    // Per app UI contract: header must always remain visible
-    await expect(page.locator('header')).toBeVisible();
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    // The Header component renders as a <nav> element (not <header>)
+    await expect(page.locator('nav').first()).toBeVisible({ timeout: 10000 });
   });
 
   // TC-03
   test('region section headings appear after API data loads', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
     // CruisingRegionSection renders an <h2> per region when legs are present
     await expect(page.locator('main section h2').first()).toBeVisible({ timeout: 15000 });
   });
@@ -75,59 +81,62 @@ test.describe('Crew Home', () => {
   // TC-04
   test('each region section contains a snap-scroll leg carousel', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
     const firstSection = page.locator('main section').first();
     await expect(firstSection).toBeVisible({ timeout: 15000 });
     // LegCarousel renders a div with snap-x for horizontal scroll
-    await expect(firstSection.locator('.snap-x').first()).toBeVisible();
+    await expect(firstSection.locator('.snap-x').first()).toBeVisible({ timeout: 10000 });
   });
 
   // TC-05
   test('leg card displays the leg name from the API response', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
     // LegListItem renders leg_name in an <h3> within the Card
-    await expect(page.getByText('Atlantic Crossing Leg 1')).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Atlantic Crossing Leg 1').first()).toBeVisible({ timeout: 15000 });
   });
 
   // TC-06
   test('leg card shows start and end waypoint names', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.getByText('Atlantic Crossing Leg 1')).toBeVisible({ timeout: 15000 });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Atlantic Crossing Leg 1').first()).toBeVisible({ timeout: 15000 });
     // LegListItem renders formatLocationName(start_waypoint.name) and end_waypoint.name
-    await expect(page.getByText('Lisbon')).toBeVisible();
-    await expect(page.getByText('Azores')).toBeVisible();
+    await expect(page.getByText('Lisbon').first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Azores').first()).toBeVisible({ timeout: 10000 });
   });
 
   // TC-07
   test('region "View on Map" button navigates to the dashboard with region params', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
     const firstSection = page.locator('main section').first();
     await expect(firstSection).toBeVisible({ timeout: 15000 });
-    // CruisingRegionSection: first button is the "View on Map" icon button
-    await firstSection.locator('button').first().click();
+    // CruisingRegionSection: the map button has title "View more on map" or similar
+    // Click the first button in the section which is the map navigation button
+    const mapButton = firstSection.getByRole('button').first();
+    await expect(mapButton).toBeVisible({ timeout: 10000 });
+    await mapButton.click();
     // Should navigate to crew dashboard with region bounding box params
-    await expect(page).toHaveURL(/\/crew\/dashboard/);
+    await expect(page).toHaveURL(/\/crew\/dashboard/, { timeout: 10000 });
   });
 
   // TC-08
   test('clicking a leg card navigates to dashboard with the leg ID in the URL', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.getByText('Atlantic Crossing Leg 1')).toBeVisible({ timeout: 15000 });
-    // handleLegClick → router.push(`/crew/dashboard?legId=${leg.leg_id}`)
-    await page.getByText('Atlantic Crossing Leg 1').click();
-    await expect(page).toHaveURL(/\/crew\/dashboard\?legId=leg-001/);
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Atlantic Crossing Leg 1').first()).toBeVisible({ timeout: 15000 });
+    // handleLegClick -> router.push(`/crew/dashboard?legId=${leg.leg_id}`)
+    await page.getByText('Atlantic Crossing Leg 1').first().click();
+    await expect(page).toHaveURL(/\/crew\/dashboard\?legId=leg-001/, { timeout: 10000 });
   });
 
   // TC-09
   test('all mock legs appear in the carousel when API returns multiple entries', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.getByText('Atlantic Crossing Leg 1')).toBeVisible({ timeout: 15000 });
-    await expect(page.getByText('Mediterranean Rally Leg A')).toBeVisible();
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Atlantic Crossing Leg 1').first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Mediterranean Rally Leg A').first()).toBeVisible({ timeout: 10000 });
   });
 
   // TC-10
@@ -155,18 +164,20 @@ test.describe('Crew Home', () => {
         body: JSON.stringify({ legs: [] }),
       });
     });
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    // Allow all parallel API calls to settle
-    await page.waitForTimeout(2000);
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    // Allow all parallel API calls to settle and CruisingRegionSection to return null
+    await page.waitForTimeout(3000);
     // CruisingRegionSection returns null when loading=false and legs.length===0
-    expect(await page.locator('main section').count()).toBe(0);
+    // So all sections should be gone from the DOM
+    const sectionCount = await page.locator('main section').count();
+    expect(sectionCount).toBe(0);
   });
 
   // TC-12
   test('footer component is present on the crew home page', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.locator('footer')).toBeVisible({ timeout: 10000 });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('footer')).toBeVisible({ timeout: 15000 });
   });
 
   // TC-13
@@ -184,7 +195,7 @@ test.describe('Crew Home', () => {
         });
       }
     });
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
     // Page should remain stable regardless of one region erroring
     await expect(page.locator('body')).toBeVisible();
@@ -203,14 +214,17 @@ test.describe('Crew Home', () => {
         body: JSON.stringify({ legs: MOCK_LEGS }),
       });
     });
-    await page.goto('/crew', { waitUntil: 'networkidle' });
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
     // Non-authenticated users see sign-in/sign-up links in the banner
     const signInVisible = await page
       .getByRole('link', { name: /sign.?in/i })
+      .first()
       .isVisible()
       .catch(() => false);
     const signUpVisible = await page
       .getByRole('link', { name: /sign.?up/i })
+      .first()
       .isVisible()
       .catch(() => false);
     expect(signInVisible || signUpVisible).toBe(true);
@@ -219,9 +233,9 @@ test.describe('Crew Home', () => {
   // TC-15
   test('leg card shows a formatted date range using API start and end dates', async ({ page }) => {
     await mockRegionLegsApi(page);
-    await page.goto('/crew', { waitUntil: 'networkidle' });
-    await expect(page.getByText('Atlantic Crossing Leg 1')).toBeVisible({ timeout: 15000 });
-    // Dates 2026-04-01 → 2026-04-15 are formatted via formatDate(); match year or month abbreviation
-    await expect(page.locator('main').locator('text=/Apr|2026/').first()).toBeVisible();
+    await page.goto('/crew', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByText('Atlantic Crossing Leg 1').first()).toBeVisible({ timeout: 15000 });
+    // Dates 2026-04-01 -> 2026-04-15 are formatted via formatDate(); match year or month abbreviation
+    await expect(page.getByText(/Apr.*2026|2026.*Apr/i).first()).toBeVisible({ timeout: 10000 });
   });
 });

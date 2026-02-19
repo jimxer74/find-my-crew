@@ -8,6 +8,7 @@ import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { PassportVerificationStep } from './PassportVerificationStep';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { logger } from '@/app/lib/logger';
+import { Z_INDEX } from '@/app/lib/designTokens';
 
 type LegRegistrationDialogProps = {
   isOpen: boolean;
@@ -239,13 +240,22 @@ export function LegRegistrationDialog({
 
   if (loadingLeg) {
     return createPortal(
-      <div
-        className={`fixed z-50 ${
-          isMobile
-            ? 'top-16 left-0 right-0 bottom-0'
-            : 'inset-0 flex items-center justify-center bg-black/50 p-4'
-        }`}
-      >
+      <>
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 bg-black/50 ${isMobile ? '' : 'flex items-center justify-center p-4'}`}
+          style={{ zIndex: Z_INDEX.modalBackdrop }}
+          aria-hidden="true"
+        />
+        {/* Content */}
+        <div
+          className={`fixed ${
+            isMobile
+              ? 'top-16 left-0 right-0 bottom-0'
+              : 'inset-0 flex items-center justify-center p-4'
+          }`}
+          style={{ zIndex: Z_INDEX.modal }}
+        >
         <div
           className={`bg-card shadow-xl flex flex-col overflow-hidden ${
             isMobile
@@ -258,7 +268,8 @@ export function LegRegistrationDialog({
             <span className="ml-3 text-muted-foreground">Loading leg information...</span>
           </div>
         </div>
-      </div>,
+        </div>
+      </>,
       document.body
     );
   }
@@ -268,14 +279,23 @@ export function LegRegistrationDialog({
   // Mobile: Full width dialog under header
   // Desktop: Centered modal dialog
   const dialogContent = (
-    <div
-      className={`fixed z-50 ${
-        isMobile
-          ? 'top-16 left-0 right-0 bottom-0'
-          : 'top-18 inset-0 flex items-center justify-center bg-black/50 p-4'
-      }`}
-      onClick={handleBackdropClick}
-    >
+    <>
+      {/* Backdrop */}
+      <div
+        className="fixed inset-0 bg-black/50"
+        style={{ zIndex: Z_INDEX.modalBackdrop }}
+        onClick={handleBackdropClick}
+        aria-hidden="true"
+      />
+      {/* Container */}
+      <div
+        className={`fixed ${
+          isMobile
+            ? 'top-16 left-0 right-0 bottom-0'
+            : 'top-18 inset-0 flex items-center justify-center p-4'
+        }`}
+        style={{ zIndex: Z_INDEX.modal }}
+      >
       <div
         ref={dialogRef}
         className={`bg-card shadow-xl flex flex-col overflow-hidden ${
@@ -501,13 +521,16 @@ export function LegRegistrationDialog({
           ) : null}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 
   if (typeof document === 'undefined') return null;
   return (
     <>
-      {createPortal(dialogContent, document.body)}
+      {/* Only show registration dialog if success modal is not showing */}
+      {!showSuccessModal && createPortal(dialogContent, document.body)}
+      {/* Show success modal on top when registration is submitted */}
       {leg && (
         <RegistrationSuccessModal
           isOpen={showSuccessModal}
