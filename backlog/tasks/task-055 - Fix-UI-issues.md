@@ -1,10 +1,10 @@
 ---
 id: TASK-055
 title: Fix UI issues
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-01-29 08:57'
-updated_date: '2026-02-18 19:04'
+updated_date: '2026-02-19 07:35'
 labels: []
 dependencies: []
 ---
