@@ -1265,17 +1265,14 @@ export function CrewBrowseMap({
         }
       }
 
-      // Add GeoJSON source for legs with clustering (excludes approved legs)
+      // Add GeoJSON source for legs (clustering disabled while we refine UI)
       map.current.addSource('legs-source', {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
           features: [],
         },
-        cluster: true,
-        clusterMaxZoom: 14, // Max zoom to cluster points on
-        clusterRadius: 50, // Radius of each cluster when clustering points
-        clusterMinPoints: 2, // Only cluster if there are more than 4 waypoints (5 or more)
+        cluster: false, // Clustering disabled - can be re-enabled later
       });
 
       // Add separate non-clustered source for approved legs (always visible, never clustered)
@@ -1433,7 +1430,7 @@ export function CrewBrowseMap({
         source: 'legs-source',
         filter: [
           'all',
-          ['!', ['has', 'point_count']],
+          // Note: point_count check removed since clustering is disabled
           ['==', ['get', 'registration_status'], null], // Only show circles for non-registered legs
         ],
         paint: {
@@ -1486,36 +1483,8 @@ export function CrewBrowseMap({
         },
       });
 
-      // Handle cluster clicks - zoom in
-      map.current.on('click', 'clusters', (e) => {
-        const features = map.current!.queryRenderedFeatures(e.point, {
-          layers: ['clusters'],
-        });
-        const clusterId = features[0].properties!.cluster_id;
-        const source = map.current!.getSource('legs-source') as mapboxgl.GeoJSONSource;
-        
-        source.getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (err || !zoom) return;
-          
-          map.current!.easeTo({
-            center: (features[0].geometry as GeoJSON.Point).coordinates as [number, number],
-            zoom: zoom,
-          });
-        });
-      });
-
-      // Change cursor on hover for clusters
-      map.current.on('mouseenter', 'clusters', () => {
-        if (map.current && map.current.getCanvasContainer()) {
-          map.current.getCanvasContainer().style.cursor = 'pointer';
-        }
-      });
-
-      map.current.on('mouseleave', 'clusters', () => {
-        if (map.current && map.current.getCanvasContainer()) {
-          map.current.getCanvasContainer().style.cursor = '';
-        }
-      });
+      // Cluster click handlers disabled since clustering is disabled
+      // Can be re-enabled when clustering is re-enabled
 
       // Handle clicks on unclustered points and registered icons - select leg
       const handlePointClick = async (e: mapboxgl.MapLayerMouseEvent) => {
