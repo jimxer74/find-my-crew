@@ -4,6 +4,8 @@ import { useRef, useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { LegListItem, LegListItemData } from './LegListItem';
+import { RegistrationStatusBadge } from './RegistrationStatusBadge';
+import { useUserRegistrations } from '@/app/hooks/useUserRegistrations';
 
 type LegCarouselProps = {
   legs: LegListItemData[];
@@ -39,6 +41,9 @@ export function LegCarousel({
   const [hasScrolled, setHasScrolled] = useState(false);
   // Track selected leg index per journey group (key: journeyId or leg_id for single legs)
   const [selectedLegIndices, setSelectedLegIndices] = useState<Map<string, number>>(new Map());
+
+  // Load user's registrations once on mount
+  const { getRegistrationStatus } = useUserRegistrations();
 
   // Determine if we should show the "show more" card
   const showShowMoreCard = showMoreUrl && legs.length >= maxLegsBeforeShowMore;
@@ -219,30 +224,46 @@ export function LegCarousel({
                   }}
                 />
                 {onJoinClick && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onJoinClick(displayedLeg);
-                    }}
-                    className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
-                    title={t('joinLeg')}
-                  >
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                      />
-                    </svg>
-                    {t('join')}
-                  </button>
+                  <>
+                    {(() => {
+                      const registrationStatus = getRegistrationStatus(displayedLeg.leg_id);
+                      if (registrationStatus) {
+                        // User is registered - show status badge instead of Join button
+                        return (
+                          <div className="absolute top-2 right-2 z-10">
+                            <RegistrationStatusBadge status={registrationStatus} />
+                          </div>
+                        );
+                      }
+                      // User is not registered - show Join button
+                      return (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onJoinClick(displayedLeg);
+                          }}
+                          className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
+                          title={t('joinLeg')}
+                        >
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                            />
+                          </svg>
+                          {t('join')}
+                        </button>
+                      );
+                    })()}
+                  </>
                 )}
               </div>
               {/* Tab buttons for grouped legs */}
