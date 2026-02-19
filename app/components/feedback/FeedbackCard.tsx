@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { Card } from '@/app/components/ui';
 import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
 import { TypeBadge } from './TypeBadge';
 import { StatusBadge } from './StatusBadge';
@@ -43,7 +44,7 @@ export function FeedbackCard({ feedback, isOwn = false, onVote }: FeedbackCardPr
     : feedback.author?.full_name || feedback.author?.username || 'Unknown';
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow">
       <div className="flex gap-4">
         {/* Vote buttons */}
         <VoteButtons
@@ -100,6 +101,6 @@ export function FeedbackCard({ feedback, isOwn = false, onVote }: FeedbackCardPr
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
