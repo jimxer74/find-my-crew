@@ -739,10 +739,11 @@ export default function EditJourneyPage() {
           </CollapsibleSection>
 
           {/* Requirements Manager Section */}
-          <CollapsibleSection title="Requirements" sectionNumber={5}>
+          <CollapsibleSection title="Registration settings" sectionNumber={5}>
             {journeyId && (
               <RequirementsManager
                 journeyId={journeyId}
+                journeySkills={formData.skills}
                 onRequirementsChange={() => {
                   // Optionally reload journey data or refresh UI
                 }}

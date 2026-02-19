@@ -41,10 +41,11 @@ const REQUIREMENT_TYPE_DESCRIPTIONS: Record<RequirementType, string> = {
 
 type RequirementsManagerProps = {
   journeyId: string | null;
+  journeySkills?: string[]; // Skills passed from parent (takes precedence over loaded skills)
   onRequirementsChange?: () => void;
 };
 
-export function RequirementsManager({ journeyId, onRequirementsChange }: RequirementsManagerProps) {
+export function RequirementsManager({ journeyId, journeySkills: passedJourneySkills, onRequirementsChange }: RequirementsManagerProps) {
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(false);
   const [autoApprovalEnabled, setAutoApprovalEnabled] = useState(false);
@@ -59,13 +60,18 @@ export function RequirementsManager({ journeyId, onRequirementsChange }: Require
     if (journeyId) {
       loadRequirements();
       loadAutoApprovalSettings();
-      loadJourneySkills();
+      // Use skills passed from parent, otherwise load from journey
+      if (passedJourneySkills && passedJourneySkills.length > 0) {
+        setJourneySkills(passedJourneySkills);
+      } else {
+        loadJourneySkills();
+      }
     } else {
       setRequirements([]);
       setAutoApprovalEnabled(false);
       setAutoApprovalThreshold(80);
     }
-  }, [journeyId]);
+  }, [journeyId, passedJourneySkills]);
 
   const loadRequirements = async () => {
     if (!journeyId) return;
