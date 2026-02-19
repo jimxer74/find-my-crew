@@ -678,21 +678,35 @@ export function CrewBrowseMap({
     fetchAndSelectLeg();
   }, [initialLegId, mapLoaded]);
 
+  // Memoize filter values to prevent unnecessary effect runs
+  const showEndWaypoints = useMemo(
+    () => !filters.location && !!filters.arrivalLocation,
+    [filters.location, filters.arrivalLocation]
+  );
+
   // Update GeoJSON source when legs change
   useEffect(() => {
     if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
-    // Determine which waypoint to show based on filters:
-    // - If only arrival location is set (no departure), show end waypoints
-    // - Otherwise, show start waypoints
-    const showEndWaypoints = !filters.location && !!filters.arrivalLocation;
-
     // Separate approved legs from others to prevent clustering
+    // Validate that userRegistrations exists and is a valid Map
+    if (!userRegistrations || !(userRegistrations instanceof Map)) {
+      logger.warn('userRegistrations is invalid or missing', {
+        hasUserRegistrations: !!userRegistrations,
+        type: userRegistrations ? typeof userRegistrations : 'null'
+      });
+    }
+
     const approvedLegIds = new Set(
-      Array.from(userRegistrations.entries())
+      Array.from(userRegistrations?.entries() || [])
         .filter(([_, status]) => status === 'Approved')
         .map(([legId]) => legId)
     );
+
+    logger.debug('Separated leg registrations', {
+      approvedCount: approvedLegIds.size,
+      totalLegCount: legs.length
+    });
 
     // Convert legs to GeoJSON format, excluding approved legs from clustering source
     // When no user is logged in, don't include match data (markers will be dark blue)
@@ -726,7 +740,7 @@ export function CrewBrowseMap({
           has_user: hasUser, // Whether a user is logged in
           match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null, // null when no user
           experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null, // null when no user
-          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
+          registration_status: userRegistrations?.get?.(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
         },
       });
     }
@@ -739,7 +753,14 @@ export function CrewBrowseMap({
     // Update the source data (clustered source - excludes approved legs)
     const source = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
     if (source) {
-      source.setData(geoJsonData);
+      try {
+        source.setData(geoJsonData);
+        logger.debug('Updated legs-source with GeoJSON', { featureCount: geoJsonData.features.length });
+      } catch (error) {
+        logger.error('Failed to update legs-source GeoJSON', { error: error instanceof Error ? error.message : String(error) });
+      }
+    } else {
+      logger.warn('legs-source not found when trying to update GeoJSON', { sourceExists: false });
     }
 
     // Update approved legs source (non-clustered, always visible)
@@ -784,9 +805,16 @@ export function CrewBrowseMap({
 
     const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
     if (approvedSource) {
-      approvedSource.setData(approvedGeoJsonData);
+      try {
+        approvedSource.setData(approvedGeoJsonData);
+        logger.debug('Updated approved-legs-source with GeoJSON', { featureCount: approvedGeoJsonData.features.length });
+      } catch (error) {
+        logger.error('Failed to update approved-legs-source GeoJSON', { error: error instanceof Error ? error.message : String(error) });
+      }
+    } else {
+      logger.warn('approved-legs-source not found when trying to update GeoJSON', { sourceExists: false });
     }
-  }, [legs, mapLoaded, userRegistrations, filters.location, filters.arrivalLocation, user]);
+  }, [legs, mapLoaded, userRegistrations, showEndWaypoints, user]);
 
   const theme = useTheme();
   const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
