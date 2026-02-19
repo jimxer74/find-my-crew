@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Card } from '@/app/components/ui';
 import { formatDate } from '@/app/lib/dateFormat';
 import { StatusBadge } from './StatusBadge';
 
@@ -31,7 +32,7 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
 
   return (
     <Link href={`/owner/registrations/${registration.id}`}>
-      <div className="bg-card rounded-lg shadow p-4 cursor-pointer hover:shadow-lg hover:bg-accent/50 transition-all relative">
+      <Card className="cursor-pointer hover:shadow-lg hover:bg-accent/50 transition-all relative">
         {/* Status Badge - Top Right */}
         <div className="absolute top-3 right-3">
           <StatusBadge status={registration.status} variant="circle" />
@@ -90,7 +91,7 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
             </p>
           )}
         </div>
-      </div>
+      </Card>
     </Link>
   );
 }

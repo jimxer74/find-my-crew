@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
+import { Card } from '@/app/components/ui';
 import type { DocumentVault, DocumentCategory } from '@/app/lib/documents/types';
 
 interface DocumentCardProps {
@@ -50,7 +51,7 @@ export function DocumentCard({ document: doc, onView, onDelete, onManageAccess }
   const isExpired = expiryDate && new Date(expiryDate) < new Date();
 
   return (
-    <div className="bg-card rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
+    <Card className="hover:shadow-md transition-shadow">
       {/* Top section with icon and file type badge */}
       <div className="p-4 pb-3">
         <div className="flex items-start justify-between">
@@ -138,6 +139,6 @@ export function DocumentCard({ document: doc, onView, onDelete, onManageAccess }
           </svg>
         </button>
       </div>
-    </div>
+    </Card>
   );
 }
