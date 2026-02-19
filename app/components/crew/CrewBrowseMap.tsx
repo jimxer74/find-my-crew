@@ -717,28 +717,31 @@ export function CrewBrowseMap({
     // Convert legs to GeoJSON format, excluding approved legs from clustering source
     // When no user is logged in, don't include match data (markers will be dark blue)
     const hasUser = !!user;
-    const features = legs
-      .filter(leg => {
-        const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
-        return waypoint !== null && !approvedLegIds.has(leg.leg_id);
-      })
-      .map(leg => {
-        const waypoint = showEndWaypoints ? leg.end_waypoint! : leg.start_waypoint!;
-        return {
-          type: 'Feature' as const,
-          geometry: {
-            type: 'Point' as const,
-            coordinates: [waypoint.lng, waypoint.lat],
-          },
-          properties: {
-            leg_id: leg.leg_id,
-            has_user: hasUser, // Whether a user is logged in
-            match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null, // null when no user
-            experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null, // null when no user
-            registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
-          },
-        };
+    const features: GeoJSON.Feature[] = [];
+
+    for (const leg of legs) {
+      // Skip approved legs from clustering source
+      if (approvedLegIds.has(leg.leg_id)) continue;
+
+      // Use start waypoint for clustering (or end if only arrival filter is set)
+      const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+      if (!waypoint) continue; // Skip if no waypoint available
+
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [waypoint.lng, waypoint.lat],
+        },
+        properties: {
+          leg_id: leg.leg_id,
+          has_user: hasUser, // Whether a user is logged in
+          match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null, // null when no user
+          experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null, // null when no user
+          registration_status: userRegistrations.get(leg.leg_id) || null, // 'Pending approval', or null (Approved excluded)
+        },
       });
+    }
 
     const geoJsonData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
@@ -752,28 +755,31 @@ export function CrewBrowseMap({
     }
 
     // Update approved legs source (non-clustered, always visible)
-    const approvedFeatures = legs
-      .filter(leg => {
-        const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
-        return waypoint !== null && approvedLegIds.has(leg.leg_id);
-      })
-      .map(leg => {
-        const waypoint = showEndWaypoints ? leg.end_waypoint! : leg.start_waypoint!;
-        return {
-          type: 'Feature' as const,
-          geometry: {
-            type: 'Point' as const,
-            coordinates: [waypoint.lng, waypoint.lat],
-          },
-          properties: {
-            leg_id: leg.leg_id,
-            has_user: hasUser, // Whether a user is logged in
-            match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null,
-            experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null,
-            registration_status: 'Approved' as const,
-          },
-        };
+    const approvedFeatures: GeoJSON.Feature[] = [];
+
+    for (const leg of legs) {
+      // Only include approved legs
+      if (!approvedLegIds.has(leg.leg_id)) continue;
+
+      // Use start waypoint for clustering (or end if only arrival filter is set)
+      const waypoint = showEndWaypoints ? leg.end_waypoint : leg.start_waypoint;
+      if (!waypoint) continue; // Skip if no waypoint available
+
+      approvedFeatures.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [waypoint.lng, waypoint.lat],
+        },
+        properties: {
+          leg_id: leg.leg_id,
+          has_user: hasUser, // Whether a user is logged in
+          match_percentage: hasUser ? (leg.skill_match_percentage ?? 100) : null,
+          experience_matches: hasUser ? (leg.experience_level_matches ?? true) : null,
+          registration_status: 'Approved' as const,
+        },
       });
+    }
 
     const approvedGeoJsonData: GeoJSON.FeatureCollection = {
       type: 'FeatureCollection',
