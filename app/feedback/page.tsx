@@ -14,6 +14,13 @@ export default function FeedbackPage() {
   const { user, loading: authLoading } = useAuth();
   const router  = useRouter();
 
+  // Redirect if not authenticated (must be called before early return)
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, authLoading, router]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -21,13 +28,6 @@ export default function FeedbackPage() {
       </div>
     );
   }
-
-  // Redirect if not authenticated
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth/login');
-    }
-  }, [user, authLoading, router]);
 
   return (
     <div className="min-h-screen bg-background">
