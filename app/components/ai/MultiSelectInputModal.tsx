@@ -1,15 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { Modal, Button, Checkbox } from '@/app/components/ui';
 import { AIPendingAction } from '@/app/lib/ai/assistant/types';
 
 interface MultiSelectInputModalProps {
   action: AIPendingAction;
   onSubmit: (value: string[]) => void;
   onCancel: () => void;
+  isOpen?: boolean;
 }
 
-export function MultiSelectInputModal({ action, onSubmit, onCancel }: MultiSelectInputModalProps) {
+export function MultiSelectInputModal({ action, onSubmit, onCancel, isOpen = true }: MultiSelectInputModalProps) {
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
   const [error, setError] = useState('');
 
@@ -86,72 +88,57 @@ export function MultiSelectInputModal({ action, onSubmit, onCancel }: MultiSelec
   const options = getOptions();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-lg shadow-xl max-w-md w-full border border-border">
-        <div className="p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6l4 2" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">
-                Update {getFieldLabel()}
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {action.input_prompt || getFieldDescription()}
-              </p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">
-                {getFieldLabel()}
-              </label>
-
-              {options.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No options available.</p>
-              ) : (
-                <div className="grid gap-2 max-h-48 overflow-y-auto">
-                  {options.map((option) => (
-                    <label key={option} className="flex items-center space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedValues.includes(option)}
-                        onChange={() => handleToggle(option)}
-                        className="w-4 h-4 text-primary bg-input-background border-border rounded focus:ring-primary"
-                      />
-                      <span className="text-sm text-foreground">{option}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-
-              {error && (
-                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-              )}
-            </div>
-
-            <div className="flex gap-3 mt-4">
-              <button
-                type="button"
-                onClick={onCancel}
-                className="flex-1 px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="flex-1 px-4 py-2 text-sm font-medium text-white bg-primary hover:opacity-90 rounded-lg transition-colors"
-              >
-                Update Profile
-              </button>
-            </div>
-          </form>
+    <Modal
+      isOpen={isOpen}
+      onClose={onCancel}
+      title={`Update ${getFieldLabel()}`}
+      size="md"
+      footer={
+        <div className="flex gap-3 w-full">
+          <Button
+            variant="secondary"
+            onClick={onCancel}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              const formEvent = new Event('submit', { bubbles: true }) as any;
+              handleSubmit(formEvent);
+            }}
+            className="flex-1"
+          >
+            Update Profile
+          </Button>
         </div>
+      }
+    >
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground mb-4">
+          {action.input_prompt || getFieldDescription()}
+        </p>
+
+        {options.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No options available.</p>
+        ) : (
+          <div className="grid gap-3 max-h-48 overflow-y-auto">
+            {options.map((option) => (
+              <Checkbox
+                key={option}
+                label={option}
+                checked={selectedValues.includes(option)}
+                onChange={() => handleToggle(option)}
+              />
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        )}
       </div>
-    </div>
+    </Modal>
   );
 }
