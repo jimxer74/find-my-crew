@@ -2,12 +2,14 @@
 
 /**
  * CrewCard Component
- * 
+ *
  * Displays a crew member's profile in a card format.
  * Supports privacy controls - shows anonymized data for unauthenticated users.
+ * Refactored to use core Card component.
  */
 
 import React from 'react';
+import { Card } from '@/app/components/ui';
 import { User, MapPin, Award, Shield } from 'lucide-react';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 
@@ -90,10 +92,9 @@ export default function CrewCard({
   const displaySkills = skills.slice(0, 4);
   
   return (
-    <div
+    <Card
       className={`
-        relative flex flex-col bg-white rounded-lg border border-gray-200 shadow-sm
-        transition-all duration-200 hover:shadow-md hover:border-primary-300
+        relative flex flex-col transition-all duration-200 hover:shadow-md
         ${onClick ? 'cursor-pointer' : ''}
         min-w-[280px] max-w-[320px]
       `}
@@ -208,6 +209,6 @@ export default function CrewCard({
           </p>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

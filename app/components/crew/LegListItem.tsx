@@ -1,5 +1,6 @@
 'use client';
 
+import { Card } from '@/app/components/ui';
 import { formatDate } from '@/app/lib/dateFormat';
 import { MatchBadge } from '@/app/components/ui/MatchBadge';
 import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
@@ -124,8 +125,8 @@ export function LegListItem({
   };
 
   return (
-    <div
-      className={`bg-card rounded-lg shadow-md border border-border overflow-hidden transition-all hover:shadow-lg ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    <Card
+      className={`overflow-hidden transition-all hover:shadow-lg ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={handleClick}
     >
       {/* Image Carousel Section */}
@@ -240,6 +241,6 @@ export function LegListItem({
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
