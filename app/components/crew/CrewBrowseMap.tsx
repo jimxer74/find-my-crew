@@ -199,12 +199,15 @@ export function CrewBrowseMap({
 
   // Helper function to calculate visible map bounds
   // RULE: Always use full screen viewport - no subtractions for dialogs, sheets, or panels
+  // CRITICAL: Use actual window dimensions instead of container.getBoundingClientRect()
+  // because the container's measured bounds can be affected by DOM layout of overlays
   const calculateVisibleBounds = useCallback(() => {
     if (!map.current || !mapLoaded) return null;
 
-    const container = map.current.getContainer();
-    const rect = container.getBoundingClientRect();
-    const { width, height } = rect;
+    // Use actual window dimensions instead of container bounds
+    // This ensures overlays (MobileLegCard, etc.) don't affect viewport calculation
+    const width = window.innerWidth;
+    const height = window.innerHeight;
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
@@ -258,8 +261,8 @@ export function CrewBrowseMap({
       // Debug logging
       if (process.env.NODE_ENV === 'development') {
         logger.debug('[calculateVisibleBounds] Calculated full screen bounds', {
-          containerWidth: width,
-          containerHeight: height,
+          windowWidth: width,
+          windowHeight: height,
           visibleArea: {
             left: visibleLeft,
             top: visibleTop,
@@ -269,7 +272,7 @@ export function CrewBrowseMap({
           bounds,
           latRange: maxLat - minLat,
           lngRange: maxLng - minLng,
-          note: 'Using full screen on mobile - no overlay adjustments'
+          note: 'Using window dimensions (not container bounds) to avoid overlay interference'
         });
       }
 
