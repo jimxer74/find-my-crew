@@ -133,29 +133,42 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
 
       await supabase.from('consent_audit_log').insert(auditLogs);
 
+      // Always call after-consent API to update onboarding state and handle redirect
+      logger.debug('[ConsentSetupModal] Calling after-consent API to update onboarding state');
+      const res = await fetch('/api/onboarding/after-consent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ aiProcessingConsent: aiProcessing }),
+      });
+      const data = await res.json().catch(() => ({}));
+
       // Check if user is already on an onboarding page
       const isOnOnboardingPage = window.location.pathname.startsWith('/welcome');
-      logger.debug('[ConsentSetupModal] Check onboarding page', { isOnOnboardingPage, pathname: window.location.pathname });
+      logger.debug('[ConsentSetupModal] After consent', {
+        isOnOnboardingPage,
+        pathname: window.location.pathname,
+        redirect: data.redirect
+      });
 
-      // Server-driven post-signup flow: API returns redirect path (owner vs crew)
-      // Only redirect if user is NOT already on an onboarding page
-      if (!isOnOnboardingPage) {
-        logger.debug('[ConsentSetupModal] Redirecting user after consent (not on onboarding page)');
-        const res = await fetch('/api/onboarding/after-consent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ aiProcessingConsent: aiProcessing }),
-        });
-        const data = await res.json().catch(() => ({}));
+      // If there's a redirect and user is not on correct onboarding page, redirect
+      if (data.redirect && isOnOnboardingPage) {
+        // Extract the role from redirect path to see if we need to navigate
+        const isCrewPage = window.location.pathname.startsWith('/welcome/crew');
+        const isOwnerPage = window.location.pathname.startsWith('/welcome/owner');
+        const shouldRedirectToOwner = data.redirect.includes('/welcome/owner');
+        const shouldRedirectToCrew = data.redirect.includes('/welcome/crew');
 
-        if (data.redirect) {
-          logger.debug('[ConsentSetupModal] Redirecting to:', data.redirect);
+        // Only redirect if on wrong role page
+        if ((shouldRedirectToOwner && !isOwnerPage) || (shouldRedirectToCrew && !isCrewPage)) {
+          logger.debug('[ConsentSetupModal] Redirecting to correct role page:', data.redirect);
           router.push(data.redirect);
           return;
         }
-      } else {
-        logger.debug('[ConsentSetupModal] User already on onboarding page, not redirecting');
+      } else if (data.redirect && !isOnOnboardingPage) {
+        logger.debug('[ConsentSetupModal] Redirecting after consent:', data.redirect);
+        router.push(data.redirect);
+        return;
       }
 
       onComplete();
