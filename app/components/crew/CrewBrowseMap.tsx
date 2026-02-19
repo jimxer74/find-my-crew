@@ -258,17 +258,21 @@ export function CrewBrowseMap({
       let maxLng = Math.max(sw.lng, ne.lng);
       let maxLat = Math.max(sw.lat, ne.lat);
 
-      // Add a small margin (0.5-1% of the range) to account for:
+      // Add asymmetric margins to account for:
       // 1. Rendering precision issues near bounds edges
       // 2. Unproject accuracy near viewport boundaries
-      // 3. The fact that legs that START just outside visible area might still be visible
+      // 3. Bottom sheet overlay causing the bottom edge to be more problematic
+      // 4. The fact that legs that START just outside visible area might still be visible
       const latMargin = (maxLat - minLat) * 0.01;
       const lngMargin = (maxLng - minLng) * 0.01;
 
-      minLat -= latMargin;
-      maxLat += latMargin;
-      minLng -= lngMargin;
-      maxLng += lngMargin;
+      // Add EXTRA margin to the bottom (3% instead of 1%) to account for bottom sheet issues
+      const bottomMargin = (maxLat - minLat) * 0.03;
+
+      minLat -= latMargin;     // Top: normal margin
+      maxLat += bottomMargin;  // Bottom: 3x larger margin
+      minLng -= lngMargin;     // Left: normal margin
+      maxLng += lngMargin;     // Right: normal margin
 
       const bounds = {
         minLng,
@@ -279,7 +283,7 @@ export function CrewBrowseMap({
 
       // Debug logging for waypoint disappearing issue
       if (process.env.NODE_ENV === 'development') {
-        logger.debug('[calculateVisibleBounds] Calculated bounds', {
+        logger.debug('[calculateVisibleBounds] Calculated bounds with asymmetric margins', {
           containerWidth: width,
           containerHeight: height,
           visibleArea: {
@@ -292,7 +296,13 @@ export function CrewBrowseMap({
           bounds,
           latRange: maxLat - minLat,
           lngRange: maxLng - minLng,
-          margin: { lat: latMargin, lng: lngMargin },
+          margins: {
+            top: latMargin,
+            bottom: bottomMargin,
+            left: lngMargin,
+            right: lngMargin,
+            note: 'Bottom margin is 3x larger to account for bottom sheet overlay'
+          },
         });
       }
 
