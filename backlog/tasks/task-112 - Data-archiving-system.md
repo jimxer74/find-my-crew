@@ -4,6 +4,7 @@ title: Data archiving system
 status: To Do
 assignee: []
 created_date: '2026-02-17 18:27'
+updated_date: '2026-02-20 10:20'
 labels: []
 dependencies: []
 ---
@@ -19,4 +20,5 @@ A solution architecture for data archiving must be defined with approriate level
 - Legs and Journeys become potentially stale quite fast, since assumption is that Journeys are created quite late and close to the actual Journey taking place. So this means that Journey data archiving need to be done frequently. However journey data is important for analysis point of view to understand for exmple where demands are highest, understanding patterns, opportuinites. etc. 
 - Registrations and related data are similar to journeys, they become stale also fast, but are important to retain, for potential auditing purposes or disputes etc. 
 - Profiles and boats are probably more longer lived data and does not need to be archived so often. GDPR needs to be considered in archiving the profile data
+- AI messages, there may be lot of generated AI messages, a clever way of managing the volumes and archival strategy needs to be tought out, how much retain in short conversation history e.g in ai_messages and when to transfer the data into loger term archival storage
 <!-- SECTION:DESCRIPTION:END -->
