@@ -16,39 +16,34 @@ export default async function TermsOfServicePage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-background">
-
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <article className="prose prose-slate dark:prose-invert max-w-none">
           <h1 className="text-3xl font-bold text-foreground mb-2">Terms of Service</h1>
           <p className="text-muted-foreground mb-8">
-            Last updated: [DATE - TO BE FILLED BY LEGAL TEAM]
+            Last updated: February 20, 2026
           </p>
-
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-8">
-            <p className="text-yellow-800 dark:text-yellow-200 text-sm font-medium">
-              This is a placeholder terms of service. Please consult with a legal professional to create terms that are appropriate for your jurisdiction and business model.
-            </p>
-          </div>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">1. Agreement to Terms</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] By accessing or using SailSmart, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, please do not use our service.
+              By accessing or using SailSmart (the &quot;Service&quot;), you agree to be bound by these Terms of Service and our related Privacy Policy. If you do not agree to all of these terms, please do not use our Service.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">2. Description of Service</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] SailSmart is a platform that connects boat owners with crew members for sailing journeys. Our service includes:
+              SailSmart is an online platform that aims to connect boat owners (&quot;Owners&quot;) with crew members (&quot;Crew&quot;) for organized sailing journeys. The features provided include:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Profile creation for crew members and boat owners</li>
-              <li>Journey planning and crew requirement specification</li>
-              <li>Crew-to-journey matching and registration</li>
-              <li>AI-powered compatibility assessment (optional)</li>
-              <li>Communication tools between parties</li>
+              <li>Profile creation for Crew to outline expertise, certifications, and experience.</li>
+              <li>Journey planning, route specification, and crew requirement generation for Owners.</li>
+              <li>Platform tools explicitly facilitating matching, communication, and logistical planning.</li>
+              <li>Optional AI-powered assessment tools for determining journey compatibility.</li>
             </ul>
+            <p className="text-foreground/80 mt-4">
+              SailSmart exclusively acts as a matching facilitator and communication platform. We are not a party to any agreement, contract, or arrangement entered into between Owners and Crew.
+            </p>
           </section>
 
           <section className="mb-8">
@@ -56,148 +51,140 @@ export default async function TermsOfServicePage({ searchParams }: Props) {
 
             <h3 className="text-lg font-medium text-foreground mt-4 mb-2">3.1 Account Creation</h3>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] To use our service, you must create an account. You agree to provide accurate, current, and complete information during registration.
+              To utilize certain Service features, you must create a registered account. By creating an account, you represent and warrant that the information you provide is true, accurate, current, and complete at all times.
             </p>
 
             <h3 className="text-lg font-medium text-foreground mt-4 mb-2">3.2 Account Security</h3>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] You are responsible for maintaining the confidentiality of your account credentials and for all activities under your account.
+              You are entirely responsible for maintaining the confidentiality of your account credentials and for any activity that occurs under your account. You agree to immediately notify SailSmart of any unauthorized use or security breach regarding your account.
             </p>
 
             <h3 className="text-lg font-medium text-foreground mt-4 mb-2">3.3 Age Requirement</h3>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] You must be at least 18 years old to use this service.
+              You must be at least 18 years of age (or the age of legal majority in your jurisdiction) to create an account and use the Service.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">4. User Responsibilities</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">4. User Responsibilities and Platform Conduct</h2>
 
-            <h3 className="text-lg font-medium text-foreground mt-4 mb-2">4.1 For Crew Members</h3>
+            <h3 className="text-lg font-medium text-foreground mt-4 mb-2">4.1 Obligations of Crew Members</h3>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Provide accurate information about your skills and experience</li>
-              <li>Maintain valid certifications as claimed in your profile</li>
-              <li>Honor commitments made to boat owners</li>
-              <li>Follow safety guidelines and instructions from the skipper</li>
+              <li>Accurately represent your maritime skills, certifications, and overall experience level without exaggeration.</li>
+              <li>Maintain valid and current certifications, documentation, and identity verification as claimed in your profile.</li>
+              <li>Respect commitments and schedules established directly with an Owner.</li>
+              <li>Strictly adhere to safety guidelines and the commands of the designated skipper or boat Owner during any journey facilitated through SailSmart.</li>
             </ul>
 
-            <h3 className="text-lg font-medium text-foreground mt-4 mb-2">4.2 For Boat Owners</h3>
+            <h3 className="text-lg font-medium text-foreground mt-4 mb-2">4.2 Obligations of Boat Owners</h3>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Provide accurate information about your boat and journeys</li>
-              <li>Ensure your vessel meets safety requirements</li>
-              <li>Clearly communicate expectations and requirements to crew</li>
-              <li>Maintain appropriate insurance coverage</li>
+              <li>Truthfully represent the vessel&apos;s specifications, condition, capability, and planned journey legs.</li>
+              <li>Take sole responsibility for ensuring the vessel meets all relevant legal, safety, and seaworthiness requirements.</li>
+              <li>Maintain valid and sufficient insurance coverage suitable for the vessel, explicit itinerary, and intended number of Crew aboard.</li>
+              <li>Clearly outline all expectations, safety protocols, duties, and onboard rules for the Crew prior to embarking.</li>
             </ul>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">5. Prohibited Conduct</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] You agree not to:
+              As a condition of using the Service, you agree that you will not:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Provide false or misleading information</li>
-              <li>Impersonate another person or entity</li>
-              <li>Use the service for illegal activities</li>
-              <li>Harass, abuse, or harm other users</li>
-              <li>Circumvent security features</li>
-              <li>Scrape or collect user data without permission</li>
-              <li>Use the service for commercial spam</li>
+              <li>Submit false, misleading, or fraudulent information or upload fraudulent documentation.</li>
+              <li>Impersonate someone else or misrepresent your affiliation with a person or entity.</li>
+              <li>Utilize the platform to orchestrate, promote, or engage in any illegal activity, including unauthorized commercial charters.</li>
+              <li>Harass, threaten, demean, or engage in abusive behavior toward other users.</li>
+              <li>Attempt to bypass, disable, or interfere with security features constructed within the Service.</li>
+              <li>Scrape, extract, or automatically collect user data or platform content for unauthorized purposes.</li>
+              <li>Use the platform for unsolicited advertising, spam, or external solicitation.</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">6. AI-Powered Features</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">6. AI-Powered Features and Assessment</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] Our service may use artificial intelligence to:
+              SailSmart integrates artificial intelligence (AI) to generate match scores, suggest recommendations, and assist in journey planning by assessing profile data.
             </p>
-            <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Assess compatibility between crew and journeys</li>
-              <li>Generate match scores and recommendations</li>
-              <li>Assist with journey planning</li>
-            </ul>
             <p className="text-foreground/80 mt-4">
-              AI features are optional and require your explicit consent. AI assessments are advisory only and should not replace human judgment regarding safety and suitability.
+              <strong>Crucial Advisory Notice:</strong> Output generated by our AI features is strictly advisory. AI evaluations cannot and do not guarantee safety, seaworthiness, personal physical fitness, or human compatibility. AI recommendations must never replace independent verification, due diligence, and sound maritime judgment. You voluntarily accept all risks associated with relying on AI-generated suggestions.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">7. Disclaimer of Liability</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">7. Disclaimer of Warranties and Liability</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER - IMPORTANT: CONSULT LEGAL COUNSEL]
+              SailSmart provides the Service strictly on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis. To the maximum extent permitted by applicable law, we expressly disclaim all warranties, whether express, implied, or statutory.
             </p>
             <p className="text-foreground/80 mb-4">
-              SailSmart is a matching platform only. We do not:
+              Furthermore, SailSmart does not verify, warrant, or guarantee:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Verify the accuracy of user-provided information</li>
-              <li>Guarantee the seaworthiness of any vessel</li>
-              <li>Guarantee the skills or qualifications of any crew member</li>
-              <li>Assume responsibility for any sailing activities</li>
-              <li>Provide insurance coverage for journeys</li>
+              <li>The absolute accuracy or authenticity of user-generated profiles, experience levels, or certifications.</li>
+              <li>The physical seaworthiness, legal compliance, or safety of any vessel listed on the platform.</li>
+              <li>The competence, mental fitness, or capabilities of any Owner or Crew member.</li>
             </ul>
-            <p className="text-foreground/80 mt-4">
-              Users are solely responsible for verifying credentials, conducting safety checks, and ensuring appropriate insurance coverage.
+            <p className="text-foreground/80 mt-4 font-semibold">
+              Sailing involves inherent physical risk. You explicitly acknowledge that joining a journey or accepting crew aboard your vessel is undertaken entirely at your own risk. SailSmart holds no liability whatsoever for property damage, personal injury, distress, or death resulting from interactions, meetings, or journeys originating on this platform.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">8. Limitation of Liability</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER - CONSULT LEGAL COUNSEL] To the maximum extent permitted by law, SailSmart shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the service.
+              To the absolute maximum extent permitted by applicable law, under no circumstances shall SailSmart Inc., its directors, employees, partners, or agents be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, loss of data, loss of use, goodwill, or other intangible losses, resulting from (a) your access to or use of or inability to access or use the Service; (b) any conduct or content of any third party on the Service; or (c) unauthorized access, use, or alteration of your transmissions or content.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">9. Intellectual Property</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] The SailSmart service, including its design, features, and content, is protected by intellectual property laws. You may not copy, modify, or distribute our service without permission.
+              The Service, including original content, platform design, visual interfaces, interactive features, code, and databases, is the exclusive proprietary property of SailSmart Inc. and is protected by copyright, trademark, and other applicable intellectual property laws. Unauthorized reproduction or distribution is strictly prohibited.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">10. User Content</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">10. User Content and License</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] You retain ownership of content you submit (photos, text, etc.). By submitting content, you grant us a license to use it for operating the service.
+              You retain all ownership rights to the content, images, and text you submit or upload. However, by uploading content to SailSmart, you grant us a worldwide, non-exclusive, royalty-free, transferable license to use, display, reproduce, and adapt that content solely for the purpose of operating, improving, and promoting the Service.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">11. Account Termination</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] We may suspend or terminate your account for violations of these terms. You may delete your account at any time through your privacy settings.
+              We reserve the right to suspend or terminate your account and bar access to the Service immediately, without prior notice or liability, under our sole discretion, for any reason whatsoever, including but not limited to your breach of these Terms of Service. You may permanently delete your account at any time through your account settings.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">12. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">12. Changes to these Terms</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] We may modify these terms at any time. Continued use of the service after changes constitutes acceptance of the new terms.
+              We reserve the right, at our sole discretion, to modify or replace these Terms of Service at any time. We will provide reasonable advance notice of any material changes. By continuing to access or use our Service after those revisions become effective, you agree to be bound by the revised terms.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">13. Governing Law</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">13. Governing Law and Jurisdiction</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] These terms are governed by the laws of [JURISDICTION - TO BE FILLED]. Any disputes shall be resolved in the courts of [JURISDICTION - TO BE FILLED].
+              These Terms shall be governed and construed in accordance with the laws of the State of Delaware, United States, without regard to its conflict of law provisions. Any legal action or proceeding arising under these Terms will be brought exclusively in the federal or state courts located in Delaware, and the parties hereby irrevocably consent to the personal jurisdiction and venue therein.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-foreground mb-4">14. Severability</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] If any provision of these terms is found to be unenforceable, the remaining provisions will continue in effect.
+              If any provision of these Terms is held to be invalid, illegal, or unenforceable by a court of competent jurisdiction, the remaining provisions of these Terms will remain in full force and effect.
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-foreground mb-4">15. Contact</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">15. Contact Information</h2>
             <p className="text-foreground/80 mb-4">
-              [PLACEHOLDER] For questions about these terms, please contact us at:
+              If you have any questions or to report violations regarding these Terms of Service, please contact us at:
             </p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li>Email: [TO BE FILLED]</li>
-              <li>Address: [TO BE FILLED]</li>
+              <li><strong>Email:</strong> legal@sailsmart.app</li>
             </ul>
           </section>
         </article>
