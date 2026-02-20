@@ -151,6 +151,44 @@ export async function GET(request: Request) {
       // Check if user is new (no profile or incomplete profile)
       const isNewUser = !profile || !profile.username;
 
+      // Handle popup auth flow (e.g. from InlineChatSignupForm)
+      const isPopup = searchParams.get('popup') === 'true';
+      if (isPopup) {
+        logger.info('LOGIN CALLBACK: Responding to popup window');
+
+        // Ensure provider token is stored similarly for popup flow if applicable
+        if (isFacebookLogin && isNewUser && session?.provider_token) {
+          cookieStore.set('fb_access_token', session.provider_token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 300,
+            path: '/',
+          });
+        }
+
+        const html = `
+          <html>
+            <head><title>Authentication Successful</title></head>
+            <body>
+              <script>
+                if (window.opener) {
+                  window.opener.postMessage(
+                    { type: 'oauth_success', isNewUser: ${isNewUser} },
+                    window.location.origin
+                  );
+                }
+                window.close();
+              </script>
+              <p>Authentication successful! You can close this window.</p>
+            </body>
+          </html>
+        `;
+        return new NextResponse(html, {
+          headers: { 'Content-Type': 'text/html' },
+        });
+      }
+
       // If new Facebook user, redirect to profile setup wizard with provider token
       if (isFacebookLogin && isNewUser && session?.provider_token) {
         // Store the Facebook access token in a secure, short-lived cookie for the profile setup page

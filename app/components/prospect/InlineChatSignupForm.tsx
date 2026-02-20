@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { ProspectPreferences } from '@/app/lib/ai/prospect/types';
+import { openOAuthPopup } from '@/app/lib/auth/oauthPopup';
+import { logger } from '@/app/lib/logger';
 
 type InlineChatSignupFormProps = {
   preferences?: ProspectPreferences;
@@ -27,6 +29,7 @@ export function InlineChatSignupForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [oauthSuccessUserMsg, setOauthSuccessUserMsg] = useState<string | null>(null);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,28 +73,111 @@ export function InlineChatSignupForm({
     }
   };
 
+  const syncPreferencesToProfile = async (userId: string) => {
+    if (!preferences) return;
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const updates: Record<string, unknown> = {};
+
+      // Map prospect preferences to profile fields
+      if (preferences.experienceLevel) {
+        updates.sailing_experience = preferences.experienceLevel;
+      }
+      if (preferences.skills?.length) {
+        updates.skills = preferences.skills;
+      }
+      if (preferences.riskLevels?.length) {
+        const riskLevelMap: Record<string, string> = {
+          'coastal': 'Coastal sailing',
+          'offshore': 'Offshore sailing',
+          'extreme': 'Extreme sailing',
+          'Coastal sailing': 'Coastal sailing',
+          'Offshore sailing': 'Offshore sailing',
+          'Extreme sailing': 'Extreme sailing',
+        };
+        const mappedRiskLevels = preferences.riskLevels
+          .map((r: string) => riskLevelMap[r] || r)
+          .filter((r: string) => ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].includes(r));
+        if (mappedRiskLevels.length > 0) {
+          updates.risk_level = mappedRiskLevels;
+        }
+      }
+      if (preferences.sailingGoals) {
+        updates.sailing_preferences = preferences.sailingGoals;
+      }
+
+      if (Object.keys(updates).length > 0) {
+        updates.updated_at = new Date().toISOString();
+        const { error } = await supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', userId);
+
+        if (error) {
+           logger.error('Failed to sync prospect preferences to profile:', { error });
+        } else {
+           logger.info('Successfully synced prospect preferences via inline OAuth fallback sync.');
+        }
+      }
+      localStorage.removeItem('prospect_signup_preferences');
+    } catch (err) {
+      logger.error('Error in syncPreferencesToProfile', { err });
+    }
+  }
+
   const handleFacebookSignup = async () => {
     setLoading(true);
     setError(null);
 
     const supabase = getSupabaseBrowserClient();
 
-    // Store preferences in localStorage before OAuth redirect
+    // Store preferences in localStorage as a backup
     if (preferences) {
       localStorage.setItem('prospect_signup_preferences', JSON.stringify(preferences));
     }
 
-    const { error } = await supabase.auth.signInWithOAuth({
+    // Request the OAuth URL without automatically redirecting
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?from=prospect`,
+        redirectTo: `${window.location.origin}/auth/callback?from=prospect&popup=true`,
+        skipBrowserRedirect: true,
       },
     });
 
     if (error) {
       setError(error.message);
       setLoading(false);
+      return;
     }
+
+    if (data?.url) {
+      // Execute our popup intercept
+      const result = await openOAuthPopup(data.url, 'facebook');
+
+      if (result.success) {
+        // Now that the popup is finished successfully, refresh the session
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          setError(userError?.message || 'Failed to retrieve active session.');
+          setLoading(false);
+          return;
+        }
+
+        // Push the stored preferences directly to the newly created profile as the server route didn't execute standard NEXT redirect sync logic
+        await syncPreferencesToProfile(userData.user.id);
+
+        const name = userData.user.user_metadata?.full_name || 'there';
+        setOauthSuccessUserMsg(`Welcome ${name}! Your account via Facebook has been successfully created.`);
+        setSuccess(true);
+        onSuccess?.(userData.user.id);
+      } else {
+        setError(result.error || 'Authentication failed or was cancelled');
+      }
+    }
+
+    setLoading(false);
   };
 
   // Success state - show confirmation message
@@ -115,13 +201,19 @@ export function InlineChatSignupForm({
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-foreground">Check your email!</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              We&apos;ve sent a confirmation link to <span className="font-medium">{email}</span>.
-              Click it to activate your account.
-            </p>
+            <p className="text-sm font-medium text-foreground">Success!</p>
+            {oauthSuccessUserMsg ? (
+               <p className="text-sm text-muted-foreground mt-1">
+                 {oauthSuccessUserMsg}
+               </p>
+            ) : (
+                <p className="text-sm text-muted-foreground mt-1">
+                  We&apos;ve sent a confirmation link to <span className="font-medium">{email}</span>.
+                  Click it to activate your account.
+                </p>
+            )}
             <p className="text-xs text-muted-foreground mt-2">
-              Your sailing preferences have been saved and will be added to your profile once you confirm.
+              Your sailing preferences have been saved and will be added to your profile.
             </p>
           </div>
         </div>
