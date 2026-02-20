@@ -1,10 +1,10 @@
 ---
 id: TASK-006.06
 title: 'Phase 3.2: In-Chat Facebook OAuth Sign-up'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-08 17:44'
-updated_date: '2026-02-20 10:24'
+updated_date: '2026-02-20 10:36'
 labels:
   - auth
   - oauth
@@ -44,9 +44,9 @@ Implement Facebook OAuth sign-up within the chat flow for both onwers and crew (
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Facebook OAuth button appears in chat
-- [ ] #2 OAuth flow completes without leaving chat page
-- [ ] #3 User profile created with merged data
-- [ ] #4 Handles popup blockers gracefully
-- [ ] #5 Error states handled in chat context
+- [x] #1 Facebook OAuth button appears in chat
+- [x] #2 OAuth flow completes without leaving chat page
+- [x] #3 User profile created with merged data
+- [x] #4 Handles popup blockers gracefully
+- [x] #5 Error states handled in chat context
 <!-- AC:END -->
