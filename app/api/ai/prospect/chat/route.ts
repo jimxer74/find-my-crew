@@ -139,6 +139,29 @@ export async function POST(request: NextRequest) {
           }
         );
         
+        const { data: session } = await serviceClient
+          .from('prospect_sessions')
+          .select('conversation')
+          .eq('session_id', body.sessionId)
+          .single();
+
+        if (session?.conversation && session.conversation.length > 0 && authenticatedUserId) {
+          const { data: conv } = await serviceClient.from('ai_conversations').insert({
+            user_id: authenticatedUserId,
+            title: 'Crew Onboarding Chat'
+          }).select('id').single();
+
+          if (conv) {
+            const formattedMessages = session.conversation.map((msg: any) => ({
+              conversation_id: conv.id,
+              role: msg.role,
+              content: msg.content,
+            }));
+            await serviceClient.from('ai_messages').insert(formattedMessages);
+            log('Archived completed AI prospect onboarding session for GDPR compliance');
+          }
+        }
+
         const { error: deleteErr } = await serviceClient
           .from('prospect_sessions')
           .delete()

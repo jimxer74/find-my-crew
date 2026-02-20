@@ -26,6 +26,39 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
   const [profileSharing, setProfileSharing] = useState(false);
   const [marketing, setMarketing] = useState(false);
 
+  // Auto-populate AI consent if user engaged in AI onboarding chat before signup
+  useEffect(() => {
+    const checkActiveAiSessions = async () => {
+      try {
+        const [prospectRes, ownerRes] = await Promise.all([
+          fetch('/api/prospect/session/data').catch(() => null),
+          fetch('/api/owner/session/data').catch(() => null)
+        ]);
+
+        let hasActiveAiEngagement = false;
+
+        if (prospectRes?.ok) {
+          const data = await prospectRes.json();
+          if (data.session?.conversation?.length > 0) hasActiveAiEngagement = true;
+        }
+
+        if (!hasActiveAiEngagement && ownerRes?.ok) {
+          const data = await ownerRes.json();
+          if (data.session?.conversation?.length > 0) hasActiveAiEngagement = true;
+        }
+
+        if (hasActiveAiEngagement) {
+          logger.debug('[ConsentSetupModal] Active AI session detected, defaulting AI processing to true');
+          setAiProcessing(true);
+        }
+      } catch (err) {
+        logger.error('[ConsentSetupModal] Error checking AI sessions for auto-population', { error: err });
+      }
+    };
+
+    checkActiveAiSessions();
+  }, []);
+
   const canSave = privacyPolicy && termsOfService;
 
   // Prevent body scroll when modal is open

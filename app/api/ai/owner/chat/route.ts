@@ -143,6 +143,30 @@ export async function POST(request: NextRequest) {
           const serviceClient = getSupabaseServiceRoleClient();
           
           if (shouldDeleteSession) {
+            // Archive the chat before deleting for GDPR compliance
+            const { data: sessionData } = await serviceClient
+              .from('owner_sessions')
+              .select('conversation')
+              .eq('session_id', body.sessionId)
+              .single();
+
+            if (sessionData?.conversation && sessionData.conversation.length > 0 && authenticatedUserId) {
+              const { data: conv } = await serviceClient.from('ai_conversations').insert({
+                user_id: authenticatedUserId,
+                title: 'Owner Onboarding Chat'
+              }).select('id').single();
+
+              if (conv) {
+                const formattedMessages = sessionData.conversation.map((msg: any) => ({
+                  conversation_id: conv.id,
+                  role: msg.role,
+                  content: msg.content,
+                }));
+                await serviceClient.from('ai_messages').insert(formattedMessages);
+                log('Archived completed AI owner onboarding session for GDPR compliance');
+              }
+            }
+
             // Delete the session instead of updating to 'completed'
             const { error: deleteErr } = await serviceClient
               .from('owner_sessions')

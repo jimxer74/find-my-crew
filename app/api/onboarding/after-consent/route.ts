@@ -29,13 +29,38 @@ export async function POST(request: NextRequest) {
     // Check owner_sessions first (owner takes precedence if user visited both)
     const { data: ownerSession } = await supabase
       .from('owner_sessions')
-      .select('session_id')
+      .select('session_id, conversation')
       .eq('user_id', user.id)
       .eq('onboarding_state', 'consent_pending')
       .limit(1)
       .maybeSingle();
 
     if (ownerSession) {
+      if (!aiProcessingConsent && ownerSession.conversation && ownerSession.conversation.length > 0) {
+        // User opted out of AI processing but had a session. Store history for GDPR and terminate session
+        const { data: conv } = await supabase.from('ai_conversations').insert({
+          user_id: user.id,
+          title: 'Owner Onboarding Chat'
+        }).select('id').single();
+
+        if (conv) {
+          const formattedMessages = ownerSession.conversation.map((msg: any) => ({
+            conversation_id: conv.id,
+            role: msg.role,
+            content: msg.content,
+          }));
+          await supabase.from('ai_messages').insert(formattedMessages);
+        }
+
+        await supabase.from('owner_sessions').delete().eq('session_id', ownerSession.session_id);
+
+        return NextResponse.json({
+          redirect: '/profile-setup',
+          role: null,
+          triggerProfileCompletion: false,
+        });
+      }
+
       // Update onboarding state to profile_pending
       await supabase
         .from('owner_sessions')
@@ -53,13 +78,38 @@ export async function POST(request: NextRequest) {
     // Check prospect_sessions
     const { data: prospectSession } = await supabase
       .from('prospect_sessions')
-      .select('session_id')
+      .select('session_id, conversation')
       .eq('user_id', user.id)
       .eq('onboarding_state', 'consent_pending')
       .limit(1)
       .maybeSingle();
 
     if (prospectSession) {
+      if (!aiProcessingConsent && prospectSession.conversation && prospectSession.conversation.length > 0) {
+        // User opted out of AI processing but had a session. Store history for GDPR and terminate session
+        const { data: conv } = await supabase.from('ai_conversations').insert({
+          user_id: user.id,
+          title: 'Crew Onboarding Chat'
+        }).select('id').single();
+
+        if (conv) {
+          const formattedMessages = prospectSession.conversation.map((msg: any) => ({
+            conversation_id: conv.id,
+            role: msg.role,
+            content: msg.content,
+          }));
+          await supabase.from('ai_messages').insert(formattedMessages);
+        }
+
+        await supabase.from('prospect_sessions').delete().eq('session_id', prospectSession.session_id);
+
+        return NextResponse.json({
+          redirect: '/profile-setup',
+          role: null,
+          triggerProfileCompletion: false,
+        });
+      }
+
       // Update onboarding state to profile_pending
       await supabase
         .from('prospect_sessions')
