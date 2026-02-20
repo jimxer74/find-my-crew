@@ -1,10 +1,10 @@
 ---
 id: TASK-124
 title: Fix OAuth login/signup flow to match email auth flow with AI onboarding
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-02-20 15:34'
-updated_date: '2026-02-20 15:37'
+updated_date: '2026-02-20 15:48'
 labels:
   - auth
   - oauth
@@ -51,6 +51,34 @@ The redirect flow after OAuth callback should:
 
 Currently, the code is treating Facebook OAuth specially and redirecting to /profile-setup before the centralized redirect service can handle it.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Investigation Notes - ConsentModal Not Showing After Google OAuth
+
+User reports that after Google OAuth, the consent modal is STILL not showing even with the fix. The email auth flow works correctly (shows consent modal), but OAuth flows don't.
+
+### What We Know
+1. Auth/callback route has been fixed to use centralized redirect service
+2. Email auth shows consent modal correctly
+3. Google OAuth does NOT show consent modal after fix
+4. Need to debug why ConsentSetupProvider isn't detecting need for consent setup
+
+### Hypotheses to Test
+1. **Pending session not being found**: Check if pending sessions are actually being created before user hits OAuth flow
+2. **ConsentSetupContext not detecting need for setup**: Check if user_consents record check is working
+3. **Racing condition**: Maybe ConsentSetupProvider checks before pending session is set up
+4. **Missing dependency**: Check if AuthContext is loading properly for OAuth users
+5. **Query parameter issue**: Check if redirect to /welcome/owner is actually happening
+
+### Debug Points
+- Add logging to ConsentSetupContext to see what's happening
+- Check if pending sessions exist when user hits auth/callback
+- Verify authLoading state in ConsentSetupProvider
+- Check if user object is available when ConsentSetupProvider runs
+- Verify email vs OAuth user setup difference
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
