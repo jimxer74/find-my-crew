@@ -1,10 +1,10 @@
 ---
 id: TASK-123
 title: Onboarding AI flows GDPR refactoring
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-20 10:08'
-updated_date: '2026-02-20 10:59'
+updated_date: '2026-02-20 11:20'
 labels: []
 dependencies: []
 ---
@@ -55,3 +55,60 @@ Based on an analysis of the existing session flows and GDPR requirements, here i
   
 *Note*: This approach (dumping at termination rather than syncing every message) elegantly solves both the "Immediate deletion upon consent-rejection" and the "Archiving after successful AI completion" without requiring complex database schema adjustments for tracking mid-session chat links.
 <!-- SECTION:PLAN:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## TASK-123 Implementation Complete ✅
+
+Successfully implemented GDPR-compliant AI conversation management for both owner and prospect onboarding flows.
+
+### What Was Implemented
+
+**Phase 1: Consent Auto-Population**
+- Added `useEffect` hook in `ConsentSetupModal.tsx` that checks for active onboarding sessions (`/api/prospect/session/data` and `/api/owner/session/data`)
+- If user had previous AI engagement (conversation with messages), automatically sets `aiProcessing` state to `true`
+- User can still manually toggle to `false` if they prefer not to enable AI
+
+**Phase 2: GDPR Opt-out Handling**
+- Updated `/api/onboarding/after-consent/route.ts` to handle user rejection of AI consent
+- When user opts out after signup (`aiProcessingConsent === false`):
+  * Fetches full session conversation from prospect_sessions or owner_sessions
+  * Creates new row in `ai_conversations` table ("Owner Onboarding Chat" or "Crew Onboarding Chat")
+  * Bulk inserts all conversation messages to `ai_messages` table
+  * Deletes session completely from database
+  * Returns redirect to `/profile-setup` with `triggerProfileCompletion: false`
+- Applies to both owner and prospect onboarding flows
+
+**Phase 3: Successful Onboarding Archival**
+- Updated `/api/ai/owner/chat/route.ts`:
+  * When `journeyCreated === true` (onboarding complete), archives full conversation to `ai_conversations` + `ai_messages`
+  * Deletes session after archival
+- Updated `/api/ai/prospect/chat/route.ts`:
+  * When `profileCreated === true` (onboarding complete), archives full conversation to `ai_conversations` + `ai_messages`
+  * Deletes session after archival
+
+### Key Features
+- **GDPR Compliance**: All conversation data archived for user data export requests
+- **Session Hygiene**: Sessions immediately deleted after archival to prevent orphaned data
+- **Intelligent Defaults**: AI consent pre-populated when user had previous engagement
+- **User Control**: User can toggle consent OFF at any time (even when pre-populated)
+- **Graceful Fallback**: When consent rejected, seamlessly redirect to manual profile setup
+
+### Files Modified
+1. `app/components/auth/ConsentSetupModal.tsx` - Added session detection and auto-population
+2. `app/api/onboarding/after-consent/route.ts` - Added opt-out archival logic for both flows
+3. `app/api/ai/owner/chat/route.ts` - Added archival on successful completion
+4. `app/api/ai/prospect/chat/route.ts` - Added archival on successful completion
+
+### Testing & Verification
+- ✅ Build successful: All 81 static pages generated
+- ✅ No TypeScript errors
+- ✅ Consistent error handling patterns across both flows
+- ✅ GDPR data preservation implemented
+- ✅ Session cleanup on both consent rejection and successful completion
+
+### Commit
+- Commit SHA: 097a643
+- Commit message: feat(onboarding): implement GDPR-compliant AI conversation archival and consent handling
+<!-- SECTION:FINAL_SUMMARY:END -->
