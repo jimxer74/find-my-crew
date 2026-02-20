@@ -189,19 +189,17 @@ export async function GET(request: Request) {
         });
       }
 
-      // If new Facebook user, redirect to profile setup wizard with provider token
-      if (isFacebookLogin && isNewUser && session?.provider_token) {
-        // Store the Facebook access token in a secure, short-lived cookie for the profile setup page
-        const response = NextResponse.redirect(new URL('/profile-setup', request.url));
-        response.cookies.set('fb_access_token', session.provider_token, {
+      // If Facebook login with provider token, store it for profile data fetching
+      // This must be done before redirect for the cookie to persist
+      if (isFacebookLogin && session?.provider_token) {
+        cookieStore.set('fb_access_token', session.provider_token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 300, // 5 minutes - short-lived for security
           path: '/',
         });
-        logger.info('LOGIN CALLBACK, new Facebook user - redirecting to profile setup');
-        return response;
+        logger.info('LOGIN CALLBACK: Stored Facebook access token for user', { userId: user.id });
       }
 
       // Use centralized redirect service
