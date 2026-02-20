@@ -151,6 +151,17 @@ export async function GET(request: Request) {
       // Check if user is new (no profile or incomplete profile)
       const isNewUser = !profile || !profile.username;
 
+      logger.info('LOGIN CALLBACK: Session detection results', {
+        userId: user.id,
+        hasPendingOwnerSession: !!pendingOwnerSession,
+        hasPendingProspectSession: !!pendingProspectSession,
+        hasExistingOwnerConversation: !!existingOwnerSession?.conversation?.length,
+        hasExistingProspectConversation: !!existingProspectSession?.conversation?.length,
+        isFromOwner,
+        isFromProspect,
+        isNewUser
+      });
+
       // Handle popup auth flow (e.g. from InlineChatSignupForm)
       const isPopup = searchParams.get('popup') === 'true';
       if (isPopup) {

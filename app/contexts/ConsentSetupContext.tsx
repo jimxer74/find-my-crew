@@ -37,9 +37,21 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
 
   useEffect(() => {
     const checkConsentSetup = async () => {
-      if (authLoading) return;
+      logger.debug('[ConsentSetupContext] Checking consent setup', {
+        authLoading,
+        hasUser: !!user,
+        userId: user?.id,
+        pathname,
+        isExcludedPath
+      });
+
+      if (authLoading) {
+        logger.debug('[ConsentSetupContext] Auth still loading, skipping check');
+        return;
+      }
 
       if (!user) {
+        logger.debug('[ConsentSetupContext] No user found, setting needsConsentSetup to false');
         setNeedsConsentSetup(false);
         setIsLoading(false);
         return;
@@ -56,20 +68,33 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           .eq('user_id', user.id)
           .maybeSingle();
 
+        logger.debug('[ConsentSetupContext] Consent query result', {
+          hasData: !!data,
+          hasError: !!error,
+          privacyPolicyAccepted: data?.privacy_policy_accepted_at ? 'yes' : 'no',
+          termsAccepted: data?.terms_accepted_at ? 'yes' : 'no',
+          errorMessage: error?.message
+        });
+
         if (error) {
-          logger.error('Error checking consent setup:', error instanceof Error ? { error: error.message } : { error: String(error) });
+          logger.error('[ConsentSetupContext] Error checking consent setup:', error instanceof Error ? { error: error.message } : { error: String(error) });
           // On error, show the consent setup modal to be safe
           setNeedsConsentSetup(true);
         } else if (!data) {
           // No consent record exists - user needs to complete setup
+          logger.info('[ConsentSetupContext] No consent record found - showing modal');
           setNeedsConsentSetup(true);
         } else {
           // User needs setup if required consents (privacy policy AND terms) are not accepted
           const hasRequiredConsents = data.privacy_policy_accepted_at && data.terms_accepted_at;
+          logger.info('[ConsentSetupContext] Consent record found', {
+            hasRequiredConsents,
+            needsSetup: !hasRequiredConsents
+          });
           setNeedsConsentSetup(!hasRequiredConsents);
         }
       } catch (err) {
-        logger.error('Error checking consent setup:', err instanceof Error ? { error: err.message } : { error: String(err) });
+        logger.error('[ConsentSetupContext] Error checking consent setup:', err instanceof Error ? { error: err.message } : { error: String(err) });
         // On error, show the consent setup modal to be safe
         setNeedsConsentSetup(true);
       } finally {
@@ -84,13 +109,28 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
     setNeedsConsentSetup(false);
   };
 
+  const shouldShowModal = mounted && !authLoading && !isLoading && user && needsConsentSetup && !isExcludedPath;
+
+  logger.debug('[ConsentSetupContext] Render condition check', {
+    mounted,
+    authLoading,
+    isLoading,
+    hasUser: !!user,
+    needsConsentSetup,
+    isExcludedPath,
+    shouldShowModal
+  });
+
   return (
     <ConsentSetupContext.Provider value={{ needsConsentSetup, isLoading }}>
       {children}
       {/* Show consent setup modal if needed - only after client mount to prevent hydration mismatch */}
       {/* Don't show on privacy-policy or terms-of-service pages so users can read them */}
-      {mounted && !authLoading && !isLoading && user && needsConsentSetup && !isExcludedPath && (
-        <ConsentSetupModal userId={user.id} onComplete={handleConsentComplete} />
+      {shouldShowModal && (
+        <>
+          {logger.debug('[ConsentSetupContext] Rendering ConsentSetupModal', { userId: user.id })}
+          <ConsentSetupModal userId={user.id} onComplete={handleConsentComplete} />
+        </>
       )}
     </ConsentSetupContext.Provider>
   );
