@@ -27,8 +27,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Only check redirects for root path (/)
-  if (pathname !== '/') {
+  // Only check redirects for root path (/) or welcome paths (for OAuth session sync)
+  if (pathname !== '/' && !pathname.startsWith('/welcome/')) {
     return NextResponse.next();
   }
 
