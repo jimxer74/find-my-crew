@@ -46,7 +46,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
       });
 
       if (authLoading) {
-        logger.debug('[ConsentSetupContext] Auth still loading, skipping check');
+        logger.warn('[ConsentSetupContext] ⚠️ Auth still loading, skipping check. This should complete soon.');
         return;
       }
 

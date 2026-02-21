@@ -29,11 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
+        logger.debug('[AuthContext] Initial session loaded', { hasSession: !!session, userId: session?.user?.id });
         setUser(session?.user ?? null);
         setLoading(false);
       })
       .catch((error) => {
-        logger.error('Failed to get initial session:', error instanceof Error ? { error: error.message } : { error: String(error) });
+        logger.error('[AuthContext] Failed to get initial session:', error instanceof Error ? { error: error.message } : { error: String(error) });
         setUser(null);
         setLoading(false);
       });
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      logger.debug('[AuthContext] onAuthStateChange event', { event, hasSession: !!session, userId: session?.user?.id });
       setUser(session?.user ?? null);
       setLoading(false);
 
