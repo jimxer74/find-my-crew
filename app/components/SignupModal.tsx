@@ -79,6 +79,9 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
           ? `${window.location.origin}/auth/callback?from=owner`
           : undefined;
 
+
+
+      logger.debug('[SignupModal-EXTRA] Redirecting to:', { redirectTo });
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
