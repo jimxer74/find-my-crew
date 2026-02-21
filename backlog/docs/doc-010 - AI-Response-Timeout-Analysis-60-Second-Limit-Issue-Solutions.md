@@ -3,6 +3,7 @@ id: doc-010
 title: AI Response Timeout Analysis - 60 Second Limit Issue & Solutions
 type: other
 created_date: '2026-02-21 13:14'
+updated_date: '2026-02-21 13:45'
 ---
 # AI Response Timeout Analysis: 60-Second Limit Issue & Solutions
 
@@ -18,51 +19,99 @@ The AI onboarding chat endpoints (`/api/ai/owner/chat` and `/api/ai/prospect/cha
 
 ---
 
-## Root Cause Analysis
+## Current AI Architecture Analysis
 
-### 1. What Operations Take Long?
+### Centralized Configuration System
 
-AI onboarding chat involves multiple time-consuming operations:
+The codebase uses a **sophisticated centralized AI configuration system** located in `/app/lib/ai/config/`:
 
-**Owner Onboarding**:
-- Initial greeting & needs assessment
-- Profile creation with validation
-- Boat details extraction & storage
-- Journey planning with multiple legs (can involve 5-10 legs)
-- Each leg requires analysis of activities, risks, locations
-- Tool execution (database writes, geocoding, image processing)
+**Config Structure**:
+- `config/index.ts` - Core configuration interface & environment selection
+- `config/prod.ts` - Production environment settings
+- `config/dev.ts` - Development environment settings
+- `config/providers/*.ts` - Provider-specific configs (OpenRouter, Groq, DeepSeek, Gemini)
 
-**Prospect Onboarding**:
-- Experience level assessment
-- Skills evaluation
-- Risk level matching
-- Journey leg analysis & matching
+**Key Configuration Features**:
+1. **Environment-based selection** (development vs production)
+2. **Provider fallback system** - tries multiple providers in order
+3. **Use-case-specific overrides** - different models for different operations:
+   - `owner-chat`: OpenRouter GPT-4o-mini with 8000 max tokens
+   - `prospect-chat`: OpenRouter GPT-4o-mini with 6000 max tokens
+   - `boat-details`: Cheaper model for extraction
+   - `generate-journey`: High-quality model for complex reasoning
 
-**Database Operations Within AI Loop**:
-- Insert profile data (RLS checks)
-- Insert boat data (with image processing)
-- Insert journey/legs (with location validation)
-- Geocoding queries
-- Query existing data for context
+### AI Service Layer Architecture
 
-### 2. Why Claude API Streams Help
+**Main Service**: `app/lib/ai/service.ts` - Unified AI interface
 
-When using streaming responses:
-- Client receives first tokens within milliseconds
-- Full response continues in background
-- No need to wait for complete AI generation before returning
-- Vercel function timeout applies to the entire operation, but streaming allows incremental delivery
+**How It Works**:
+1. `callAI(options)` is the single entry point for all AI calls
+2. Accepts `useCase`, `prompt`, `temperature`, `maxTokens`, `context`
+3. Looks up use-case-specific config overrides
+4. Tries providers in order (OpenRouter → Groq → DeepSeek → Gemini)
+5. Has **built-in 60-second timeout** for each provider call (line 74, 154, 234, 336)
+6. Rate limiting applied at both provider and use-case levels
 
-### 3. Current Architecture
+**Rate Limiting**:
+- `rateLimit.ts` implements provider-level and use-case-level rate limiting
+- Prevents hitting API provider caps
 
-The current synchronous approach:
-1. Client sends message
-2. Server calls `ownerChat()` or `prospectChat()`
-3. AI service calls Claude API (via `callAI()`)
-4. Claude generates complete response (can take 30-60+ seconds)
-5. Service processes tool calls if any
-6. Service returns complete response
-7. **All of this must complete within 60 seconds or timeout occurs**
+### AI Chat Service Loop Architecture
+
+**Owner Chat Service**: `app/lib/ai/owner/service.ts`
+
+**Structure** (lines 1985-2284):
+```
+ownerChat(request) {
+  // Phase 1: Determine completion status
+  - Query database for profile, boats, journeys
+  - Derive current onboarding step
+  - Get allowed tools for step
+  
+  // Phase 2: Build system prompt
+  - Inject step-specific instructions
+  - Include allowed tools definitions
+  
+  // Phase 3: Tool loop (while iterations < MAX_TOOL_ITERATIONS)
+    while (iterations < 10) {  // Line 2190
+      - Call AI via callAI()  // Line 2204
+      - Parse tool calls from response
+      - Execute tools (if any)
+      - Add results to message history
+      - Continue loop if tools were called
+      - Break if no tool calls
+  
+  // Phase 4: Return response
+}
+```
+
+**Key Loop Characteristics**:
+- **MAX_TOOL_ITERATIONS = 10** (line 36) - AI can loop up to 10 times
+- **Each iteration calls AI API** - most time spent here
+- **Each iteration can execute database operations** - tool execution adds latency
+- **Currently SYNCHRONOUS** - must wait for complete response before returning
+
+**What Makes Onboarding Slow**:
+1. **Initial AI call** - Process user message, generate response (10-20 seconds)
+2. **Tool execution loop** - Can execute 2-10 tool calls per request:
+   - Database queries for profile/boat/journey
+   - Boat detail fetching (web scraping)
+   - Journey generation with waypoint geocoding
+   - RPC calls for complex data inserts
+3. **Multiple iterations** - If user message requires multiple turns:
+   - First iteration: Get initial greeting
+   - Second iteration: Call update_user_profile tool
+   - Third iteration: Generate boat suggestions
+   - Fourth iteration: Create boat
+   - Each adds 10-30 seconds
+
+**Total Time for Complex Onboarding**:
+- Initial greeting: 15 seconds
+- Profile creation: 10 seconds (AI + tool + DB)
+- Boat suggestions: 15 seconds (AI response)
+- Boat creation: 15 seconds (tool execution + DB)
+- Journey generation: 30+ seconds (complex AI reasoning + RPC)
+- **Total: 85+ seconds** → **TIMEOUT**
 
 ---
 
@@ -97,107 +146,107 @@ The current synchronous approach:
 
 **Implementation**: Convert API endpoints to stream AI responses in real-time instead of returning complete responses.
 
-**How It Works**:
-1. Client sends message
-2. Server starts streaming Claude's response immediately
-3. Client receives tokens as they arrive (within milliseconds)
-4. Tool calls are streamed progressively
-5. Entire function can still take 60+ seconds, but user sees progress immediately
+**FEASIBILITY ASSESSMENT**: ⚠️ **MODERATE FEASIBILITY - HIGH COMPLEXITY**
+
+#### Architectural Compatibility Analysis
+
+**Current Centralized Service Benefits**:
+✅ Can be modified to support streaming
+✅ `callAI()` function is the single point where AI is called
+✅ Configuration system can easily add streaming mode
+✅ Rate limiting infrastructure can work with streaming
+
+**Critical Issues for Streaming Implementation**:
+
+**Issue #1: Tool Loop Incompatibility**
+- Current architecture: Tool loop waits for complete AI response, parses JSON tool calls, executes, adds results, repeats
+- Streaming would break this: Client receives partial content while tools are still executing server-side
+- **Problem**: How to stream tool execution feedback? Client would see incomplete tool definitions, broken JSON during parsing
+
+**Issue #2: Tool Execution on Server**
+- Current: `executeOwnerTools()` runs server-side within the loop
+- Tools take time:
+  - `fetch_boat_details_from_sailboatdata`: 5-15 seconds (web scraping)
+  - `create_boat`: 1-2 seconds (DB insert)
+  - `update_user_profile`: 1-2 seconds (DB insert)
+  - `generate_journey_route`: 20-30 seconds (complex AI + RPC)
+- **Streaming doesn't help here** - tools must run on server sequentially
+- Cannot stream tool execution results effectively without major client restructuring
+
+**Issue #3: Message History Context**
+- Current approach: Build complete message array, pass to AI
+- Streaming approach: Would need to stream AND handle tool results AND rebuild context
+- **Complexity**: Message ordering becomes critical with streaming
+
+**Issue #4: Error Handling Mid-Stream**
+- What if tool execution fails halfway through?
+- What if AI hallucinates tool calls during stream?
+- Client would have already rendered partial incomplete response
+
+**How It Would Need to Work**:
+
+```
+Option A: Streaming Responses Only (Partial Solution)
+- First token arrives in <100ms
+- Client shows "Loading..." → immediate feedback
+- But tool loop still blocks on server
+- If tools take 30 seconds, client still waits
+- Only saves time on INITIAL AI response generation (10-20 seconds)
+- Max improvement: ~30% latency reduction
+
+Option B: Server-Sent Events for Full Streaming (Complex)
+- Stream AI response tokens as they arrive
+- Stream tool execution status as tools run
+- Stream tool results
+- Stream next iteration's AI generation
+- Requires complete refactor of:
+  - callAI() to support streaming
+  - executeOwnerTools() to emit progress events
+  - Message formatting to handle streaming JSON
+  - Client-side parsing to handle multi-part responses
+  - Error handling for mid-stream failures
+```
+
+**Compatibility with Current Architecture**:
+- ✅ Could modify `callAI()` to return streaming response
+- ✅ Could add streaming flag to use-case config
+- ❌ Tool execution would still block (no async tool execution)
+- ❌ Message loop would need significant refactoring
+- ❌ Error handling becomes exponentially more complex
 
 **Code Changes Required**:
 
-**Option A: Server-Side Streaming (Recommended)**
-```typescript
-// In route.ts
-export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    
-    // Use streaming instead of waiting for complete response
-    const reader = await ownerChatStream(supabase, {
-      // ... request params
-    });
-    
-    // Return streaming response
-    return new NextResponse(reader.getReader(), {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-      },
-    });
-  } catch (error) {
-    // Error handling
-  }
-}
-```
+**Backend**:
+1. Modify `app/lib/ai/service.ts`:
+   - Change `callAI()` to support streaming mode
+   - Return `ReadableStream` instead of `AICallResult`
+   - Handle provider-specific streaming APIs
 
-**Option B: Use Vercel's Response.Body Streaming**
-```typescript
-// Stream chunks to client as AI generates them
-const encoder = new TextEncoder();
-const stream = new ReadableStream({
-  async start(controller) {
-    try {
-      const stream = await Anthropic.messages.stream({
-        model: 'claude-opus-4-6',
-        messages: [...],
-        stream: true,
-      });
-      
-      for await (const chunk of stream) {
-        controller.enqueue(
-          encoder.encode(JSON.stringify(chunk) + '\n')
-        );
-      }
-    } catch (error) {
-      controller.error(error);
-    } finally {
-      controller.close();
-    }
-  },
-});
-```
+2. Modify `app/lib/ai/config/index.ts`:
+   - Add `streamingEnabled` flag to use-case config
+   - Production config already has all necessary fields
 
-**Client-Side Updates Required**:
-```typescript
-// In useOwnerChat hook or similar
-const response = await fetch('/api/ai/owner/chat', {
-  method: 'POST',
-  body: JSON.stringify({ message, ... }),
-});
+3. Modify route handlers:
+   - `app/api/ai/owner/chat/route.ts`
+   - `app/api/ai/prospect/chat/route.ts`
+   - Return `NextResponse` with streaming headers
 
-const reader = response.body?.getReader();
-if (reader) {
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    
-    const chunk = new TextDecoder().decode(value);
-    const lines = chunk.split('\n');
-    for (const line of lines) {
-      if (line.trim()) {
-        const event = JSON.parse(line);
-        // Update UI with streamed content
-        setPartialResponse(prev => prev + event.content);
-      }
-    }
-  }
-}
-```
+4. Modify service layers:
+   - `app/lib/ai/owner/service.ts#ownerChat()`
+   - `app/lib/ai/prospect/service.ts#prospectChat()`
+   - Handle streaming responses from `callAI()`
+   - Still synchronous tool loop (doesn't help much)
 
-**Pros**:
-- ✅ Best user experience (immediate visual feedback)
-- ✅ Vercel function can run full 60 seconds while streaming
-- ✅ User doesn't wait for complete AI response
-- ✅ Works within Pro plan limits
-- ✅ Shows thinking/reasoning as it happens
+**Frontend**:
+- Add streaming response handler in chat components
+- Update UI to show partial responses
+- Handle error mid-stream
 
-**Cons**:
-- ❌ Requires client-side streaming implementation
-- ❌ More complex error handling (error mid-stream)
-- ❌ Tool execution feedback harder to implement
-- ❌ Requires refactoring of AI service layer
+**Realistic Impact**:
+- **Reduces latency from 85 seconds to 65 seconds** (only saves AI generation time, not tool execution)
+- **Still times out** if tools + iterations exceed 60 seconds
+- **Improves perceived UX** (user sees content appear incrementally)
+- **Doesn't solve the root problem** (tool execution time)
 
 **Complexity**: HIGH (2-3 days of work)
 
@@ -341,76 +390,86 @@ export async function processAIChatJob(jobId: string) {
 
 ---
 
-### **Solution 5: Optimize AI Implementation (FUNDAMENTAL APPROACH)**
+### **Solution 5: Optimize AI Implementation (FUNDAMENTAL APPROACH)** ⭐
 
 **Implementation**: Reduce AI operation time through optimization.
 
+**FEASIBILITY ASSESSMENT**: ✅ **HIGH FEASIBILITY - MODERATE COMPLEXITY**
+
+This is the RECOMMENDED approach because it works within current architecture.
+
 **Optimization Strategies**:
 
-1. **Reduce Context Size**:
-   - Limit conversation history to last 5 messages (current: 15)
-   - Cache frequently needed lookups (regions, skills, etc.)
-   - Pre-compute region geocoding data
+#### 1. **Reduce Conversation History** (5-10 seconds saved)
+Current: `MAX_HISTORY_MESSAGES = 15` (line 35 in owner/service.ts)
+- Each message adds ~50-200 tokens to context
+- 15 messages = ~1,500-3,000 tokens of history
+- Suggested: Reduce to 5-7 messages
+- **Rationale**: Full history not needed for onboarding steps; user is in specific phase
+- **Impact**: Faster token processing, fewer tokens to generate through
 
-2. **Make Tool Calls Faster**:
-   - Batch database operations
-   - Use SELECT before INSERT to avoid RLS errors
-   - Implement caching layer for geocoding
+#### 2. **Reduce Tool Iteration Limit** (10-30 seconds saved per iteration)
+Current: `MAX_TOOL_ITERATIONS = 10` (line 36 in owner/service.ts)
+- Complex journeys can trigger 8-10 iterations
+- Suggested: Reduce to 6-7 iterations
+- **Rationale**: Most onboarding completes in 3-5 iterations; cap reduces runaway loops
+- **Impact**: Prevents long chains of tool calls
 
-3. **Reduce AI Iterations**:
-   - Limit MAX_TOOL_ITERATIONS (current: 10)
-   - Provide better constraints to reduce tool calling loops
+#### 3. **Cache Frequent Data Lookups** (5-15 seconds saved)
+Current operations that repeat:
+- Region lookups via `getAllRegions()` - called in boat details fetching
+- Skills definitions - queried multiple times
+- Experience level definitions - regenerated per loop
+- **Solution**: Cache in memory or session storage
+- **Impact**: Eliminates repeated lookups
 
-4. **Use Faster Models for Steps**:
-   - Use Claude Haiku for profile validation
-   - Use Claude Opus only for complex reasoning
-   - Implement multi-model strategy
+#### 4. **Batch Database Operations** (3-5 seconds saved)
+Current: Individual RPC calls for:
+- Insert journey
+- Insert legs (one at a time)
+- Insert waypoints (one per leg)
+- **Suggestion**: Use batch RPCs or transactions
+- **Impact**: Fewer network round-trips
 
-5. **Pre-generate Common Responses**:
-   - Cache common "next step" prompts for each journey stage
-   - Reduce need for AI to generate from scratch
+#### 5. **Use Faster Models for Specific Steps** (10-20 seconds saved)
+Current: All steps use GPT-4o-mini
+- **Suggestion**: Use mixed models:
+  - Profile validation: Use Claude Haiku (faster, cheaper)
+  - Boat extraction: Use GPT-4o-mini (good for structured data)
+  - Journey generation: Use GPT-4o (complex reasoning, but longer)
+- **Impact**: Parallelized thinking - faster validation, keep quality for complex tasks
 
-**Example Optimization**:
-```typescript
-// Before: 15 messages, 10 iterations = slower
-const response = await ownerChat(supabase, {
-  conversationHistory: body.conversationHistory.slice(-15), // Was using all
-  // ... rest of params
-});
+#### 6. **Implement Response Caching** (10-15 seconds saved)
+For common requests:
+- "What's the next step?" → Cache standard response
+- "Explain experience levels" → Cache response
+- **Storage**: Session-level cache
+- **Impact**: Skip AI call for repeated requests
 
-// After: 5 messages, 6 iterations = faster
-const optimizedHistory = body.conversationHistory.slice(-5);
-const response = await ownerChat(supabase, {
-  conversationHistory: optimizedHistory,
-  MaxToolIterations: 6, // Reduced from 10
-  // ... rest of params
-});
-```
+**Configuration Changes Required**:
+- Modify constants in `owner/service.ts` and `prospect/service.ts`
+- Update config overrides in `config/prod.ts` if using mixed models
+- Add caching layer (simple in-memory for session)
 
-**Pros**:
-- ✅ Permanent solution (improves for all users)
-- ✅ Reduces server costs
-- ✅ Reduces latency even when within timeout
-- ✅ No architectural changes required
-
-**Cons**:
-- ❌ Requires profiling to identify bottlenecks
-- ❌ May impact response quality
-- ❌ Requires careful testing
+**Estimated Total Savings**: 45-90 seconds
+- **Before**: 85+ seconds (timeout)
+- **After**: 10-40 seconds (guaranteed success)
 
 **Complexity**: MEDIUM (2-3 days analysis + implementation)
+**Risk Level**: LOW (bounds on iterations and history are safety measures)
+**Testing**: Easy (measure actual response times in production logs)
 
 ---
 
 ## Comparison Matrix
 
-| Solution | Pros | Cons | Effort | Timeline | Cost Impact |
-|----------|------|------|--------|----------|------------|
-| **1. Increase maxDuration** | Simplest | Only Pro: 60s limit | 30 min | Immediate | ↑ None on Pro |
-| **2. Streaming** | Best UX | Client changes needed | HIGH | 2-3 days | ✅ None |
-| **3. Job Queue** | Scalable | Very complex | VERY HIGH | 4-5 days | ↑ Moderate |
-| **4. Streaming + Queue** | Ultimate UX | Most complex | VERY HIGH | 5-7 days | ↑ Moderate |
-| **5. Optimize AI** | Permanent fix | Requires profiling | MEDIUM | 2-3 days | ↓ Lower |
+| Solution | Pros | Cons | Effort | Timeline | Cost Impact | Feasibility |
+|----------|------|------|--------|----------|------------|------------|
+| **1. Increase maxDuration** | Simplest | Only Pro: 60s limit | 30 min | Immediate | ↑ None on Pro | ❌ NOT VIABLE |
+| **2. Streaming** | Best UX | Tool loop incompatible | HIGH | 2-3 days | ✅ None | ⚠️ MODERATE |
+| **3. Job Queue** | Scalable | Very complex | VERY HIGH | 4-5 days | ↑ Moderate | ⚠️ MODERATE |
+| **4. Streaming + Queue** | Ultimate UX | Most complex | VERY HIGH | 5-7 days | ↑ Moderate | ⚠️ MODERATE |
+| **5. Optimize AI** ⭐ | Permanent fix | Requires profiling | MEDIUM | 2-3 days | ↓ Lower | ✅ HIGH |
 
 ---
 
@@ -434,42 +493,108 @@ const response = await ownerChat(supabase, {
 → Skip most solutions. Implement **Solution 5 (Optimize AI)** to ensure reliability and reduce costs.
 
 ### **If Some Responses Take 60-90 Seconds**:
-→ Implement **Solution 2 (Streaming)** for best UX. Or upgrade to **Enterprise plan** if budget allows.
+→ Implement **Solution 5 (Optimize AI)** first. 
+→ If still insufficient, add **Solution 2 (Streaming)** for UX improvement (not a timeout fix, but better perceived experience).
 
 ### **If Responses Regularly Exceed 90 Seconds**:
-→ Implement **Solution 2 (Streaming) + Solution 5 (Optimize)** together for:
+→ Implement **Solution 5 (Optimize AI)** + **Solution 2 (Streaming)** together for:
+- Reduced actual time (optimization)
 - Immediate user feedback (streaming)
-- Reduced timeout risk (optimization)
+→ OR consider **Solution 3 (Job Queue)** if optimization still insufficient (last resort)
 
 ### **For Future Scalability**:
-→ Plan for **Solution 3 or 4 (Job Queue)** when onboarding complexity increases or user volume grows.
+→ Plan for **Solution 3 or 4 (Job Queue)** when:
+- User volume increases (more concurrent requests)
+- Onboarding complexity increases (longer journeys)
+- AI models become heavier (longer reasoning)
 
 ---
 
 ## Recommended Implementation Path
 
-**Phase 1 (Immediate - 1 day)**: 
-- Implement **Solution 5**: Reduce history to 5 messages, limit iterations to 6
-- Add timeout logging to identify which operations actually timeout
-- Profile real-world response times
+### **Phase 1: Quick Win (1 day)** - HIGHLY RECOMMENDED START HERE
+Implement **Solution 5 Optimization - Quick Measures**:
+```
+1. Reduce MAX_HISTORY_MESSAGES: 15 → 5
+2. Reduce MAX_TOOL_ITERATIONS: 10 → 6
+3. Add performance logging to measure actual timings
+4. Deploy and monitor production metrics
+```
+**Expected Result**: 40-60 second responses with high reliability
 
-**Phase 2 (If Phase 1 Insufficient - 3 days)**:
-- Implement **Solution 2**: Streaming responses
-- Keep optimization from Phase 1
-- Test with complex journeys
+**Measurement**:
+- Log response times in `/api/ai/owner/chat` and `/api/ai/prospect/chat`
+- Track which operations are slowest
+- Identify if optimization alone is sufficient
 
-**Phase 3 (Future - Only If Needed)**:
-- Implement **Solution 3**: Job queue for scalability
-- Consider model-switching for optimization
+### **Phase 2: If Phase 1 Insufficient (3 days)**
+Implement **Solution 5 Optimization - Advanced Measures**:
+```
+1. Add data caching layer for regions, skills, experience levels
+2. Implement batch database operations
+3. Consider mixed-model approach (Haiku for validation, 4o-mini for reasoning)
+4. Optimize boat detail fetching (reduce scraping calls)
+```
+**Expected Result**: 20-40 second responses
+
+### **Phase 3: If Still Needed (3 days)**
+Implement **Solution 2 - Streaming Responses**:
+- Provides immediate user feedback even if still ~40 seconds
+- Improves perceived performance
+- Doesn't require architectural changes to tool loop
+
+### **Phase 4: Future Scaling (Only If Needed)**
+Implement **Solution 3 - Job Queue**:
+- Only when optimization + streaming insufficient
+- High operational complexity
+- Better for extreme scale scenarios
+
+---
+
+## Implementation Details by Solution
+
+### Solution 5: Quick Optimization (Phase 1)
+
+**File: `app/lib/ai/owner/service.ts`**
+```typescript
+// Line 35-36
+const MAX_HISTORY_MESSAGES = 5;      // Was 15
+const MAX_TOOL_ITERATIONS = 6;       // Was 10
+```
+
+**File: `app/lib/ai/prospect/service.ts`** (similar changes)
+```typescript
+// Apply same reductions
+```
+
+**File: `app/api/ai/owner/chat/route.ts`** (around line 119)
+```typescript
+// Add performance tracking
+log('📊 Response time metrics:', {
+  duration: Date.now() - startTime,
+  isNearTimeout: (Date.now() - startTime) > 50000,
+  iterations: response.iterationCount,
+  toolCallsCount: response.totalToolCalls,
+});
+```
+
+**Monitoring Strategy**:
+- Track 50th, 90th, 95th, 99th percentile response times
+- Alert if >50 seconds
+- Correlate with tool iteration count and history length
+- A/B test: measure before/after optimization
 
 ---
 
 ## Questions to Answer Before Implementation
 
-1. **What's the actual timeout rate?** (Measure in production logs)
-2. **Which operations are slowest?** (Profile AI service)
+1. **What's the actual timeout rate in production?** (Measure in logs)
+2. **Which operations are slowest?**
+   - AI response generation? (10-20s)
+   - Tool execution? (tools can take 20-30s each)
+   - Database queries? (usually <1s)
 3. **Is plan upgrade possible?** (Vercel Enterprise for extended timeout)
-4. **What's acceptable latency?** (Streaming acceptable, or need instant?)
+4. **What's acceptable latency?** (Streaming OK, or need instant?)
 5. **Is operational complexity acceptable?** (Job queue adds overhead)
 
 ---
@@ -486,12 +611,42 @@ logger.info('[Performance] Owner chat completed', {
   duration,
   isNearTimeout: duration > 50000, // Flag if near 60s limit
   hasToolCalls: response.toolCalls?.length || 0,
+  iterationCount: response.iterations || 0,
 });
 ```
 
 **Track These Metrics**:
 - Total response time per message
-- Time to first token (TFT) from AI
-- Tool execution time
+- Time to first AI token (only if streaming implemented)
+- Time per tool execution
 - Database query time
 - % of requests near timeout (>50s)
+- Timeout failure rate (currently unknown)
+
+**Alert Thresholds**:
+- ⚠️ Warning: Response time > 50s
+- 🔴 Critical: Response time > 55s (timeout imminent)
+
+---
+
+## Final Recommendation
+
+**START WITH SOLUTION 5 (PHASE 1)**
+
+Why this approach:
+1. ✅ **Simplest to implement** - Just change 2 constants
+2. ✅ **Lowest risk** - Bounds on loops are good practice anyway
+3. ✅ **Works within current architecture** - No refactoring needed
+4. ✅ **Immediate measurability** - Will see results in minutes
+5. ✅ **Cost reduction** - Fewer tokens processed = lower costs
+6. ✅ **Foundation for later improvements** - Pairs well with streaming if needed
+
+**Next Steps**:
+1. Implement Phase 1 (1 day)
+2. Deploy to production
+3. Monitor response times for 1 week
+4. If still timing out, implement Phase 2 (2-3 days)
+5. If still insufficient, implement streaming Phase 3 (3 days)
+6. Only pursue Job Queue as last resort
+
+**Expected Outcome**: 95%+ reliability within 60-second budget
