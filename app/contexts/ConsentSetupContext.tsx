@@ -60,6 +60,18 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
       const supabase = getSupabaseBrowserClient();
 
       try {
+        logger.debug('[ConsentSetupContext] About to query user_consents', { userId: user.id });
+
+        // CRITICAL: Refresh session first to ensure Supabase browser client has latest auth state
+        // This is necessary because OAuth callback sets cookies, but browser client might not have synced yet
+        // The RLS policy uses auth.uid() which depends on session being current
+        const { error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          logger.warn('[ConsentSetupContext] Session refresh failed (non-fatal)', { error: refreshError.message });
+        } else {
+          logger.debug('[ConsentSetupContext] Session refreshed before consent check');
+        }
+
         // Check if user has completed consent setup
         // Query columns that indicate consent completion - privacy_policy and terms are required
         const { data, error } = await supabase
