@@ -82,6 +82,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
 
 
       logger.debug('[SignupModal-EXTRA] Redirecting to:', { redirectTo });
+
       // Sign up the user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
@@ -186,6 +187,7 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
 
     const redirectTo = `${window.location.origin}${callbackPath}`;
 
+    logger.debug('[SignupModal-EXTRA] GOOGLE Redirecting to:', { redirectTo });
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
