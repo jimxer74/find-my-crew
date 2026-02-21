@@ -64,10 +64,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     const supabase = getSupabaseBrowserClient();
-    await supabase.auth.signOut();
-    
-    // Use window.location for a hard redirect to ensure we go to landing page
-    // This ensures the redirect happens even if middleware or other logic interferes
+
+    try {
+      logger.debug('[AuthContext] Signing out user', {});
+      // Use Promise.race to add timeout protection (3 seconds)
+      // Prevents hanging if Supabase auth service is slow or offline
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Sign out timeout')), 3000)
+        )
+      ] as [Promise<{ error: Error | null }>, Promise<never>]);
+      logger.debug('[AuthContext] signOut completed, redirecting to /', {});
+    } catch (error: any) {
+      logger.warn('[AuthContext] signOut failed or timed out, forcing redirect anyway', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // Continue with redirect even if signOut fails
+    }
+
+    // Always redirect, even if signOut failed
+    // This ensures user is logged out visually even if Supabase session cleanup fails
     if (typeof window !== 'undefined') {
       window.location.href = '/';
     } else {

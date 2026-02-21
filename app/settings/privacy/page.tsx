@@ -207,23 +207,66 @@ export default function PrivacySettingsPage() {
     setIsDeleting(true);
     setError(null);
 
+    let accountDeletionSucceeded = false;
+    let deletionErrorMessage: string | null = null;
+
     try {
+      logger.info('[PrivacySettings] Starting account deletion', {});
       const response = await fetch('/api/user/delete-account', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ confirmation: deleteConfirmation }),
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete account');
+      let responseData: any;
+      try {
+        responseData = await response.json();
+      } catch (parseErr) {
+        const parseError = parseErr instanceof Error ? parseErr.message : String(parseErr);
+        logger.error('[PrivacySettings] Failed to parse deletion response', { error: parseError });
+        deletionErrorMessage = 'Server response error: ' + parseError;
+        throw new Error(deletionErrorMessage || 'Failed to parse response');
       }
 
-      // Sign out and redirect to root
-      await signOut();
+      if (!response.ok) {
+        deletionErrorMessage = responseData?.error || 'Account deletion failed on server';
+        logger.error('[PrivacySettings] Account deletion API returned error', {
+          status: response.status,
+          error: deletionErrorMessage
+        });
+        throw new Error(deletionErrorMessage || 'Account deletion failed');
+      }
+
+      // Account deletion succeeded on server
+      accountDeletionSucceeded = true;
+      logger.info('[PrivacySettings] Account deletion successful, proceeding with logout', {});
+
     } catch (err: any) {
-      setError(err.message || 'Failed to delete account. Please try again.');
+      // Account deletion failed - don't logout
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      const userFacingError = `❌ Account deletion failed: ${errorMsg}. Your account has NOT been deleted.`;
+      setError(userFacingError);
+      logger.error('[PrivacySettings] Account deletion failed', { error: errorMsg });
       setIsDeleting(false);
+      return; // Don't proceed to logout if deletion failed
+    }
+
+    // Account deletion succeeded - now attempt logout
+    // Even if logout fails, we want to ensure user is redirected away from this page
+    try {
+      logger.info('[PrivacySettings] Account deleted, attempting logout', {});
+      await signOut();
+      // signOut() does window.location.href redirect, this line won't execute
+    } catch (logoutErr: any) {
+      // This catch might not execute because signOut() should handle errors and redirect anyway
+      logger.error('[PrivacySettings] Logout failed after successful deletion', {
+        error: logoutErr instanceof Error ? logoutErr.message : String(logoutErr),
+        accountDeleted: true
+      });
+      // Fallback: Force logout via window.location
+      if (typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     }
   };
 
