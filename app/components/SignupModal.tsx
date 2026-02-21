@@ -97,13 +97,16 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
         // Determine redirect path
         if (redirectPath) {
           // Use custom redirect path if provided (e.g., for owner chat)
+          logger.debug('[SignupModal-EXTRA] Redirecting to custom path:', { redirectPath });
           router.push(redirectPath);
         } else if (prospectPreferences) {
           // For prospect flow, stay on the chat page with profile_completion mode
           // The consent modal will open on this page, and after consent the chat continues
+          logger.debug('[SignupModal-EXTRA] Redirecting to /welcome/crew');
           router.push('/welcome/crew?profile_completion=true');
         } else {
           // Non-prospect signup - redirect to home page
+          logger.debug('[SignupModal-EXTRA] DEFAULT /');
           router.push('/');
         }
         router.refresh();
