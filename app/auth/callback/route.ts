@@ -70,6 +70,72 @@ export async function GET(request: Request) {
       const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner');
       const isFromOwner = from === 'owner';
 
+      // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
+      // These sessions need to be linked to the authenticated user
+      const ownerSessionId = cookieStore.get('owner_session_id')?.value;
+      const prospectSessionId = cookieStore.get('prospect_session_id')?.value;
+
+      logger.info('LOGIN CALLBACK: Checking for NULL user_id sessions to link', {
+        ownerSessionId,
+        prospectSessionId,
+      });
+
+      // Link NULL user_id sessions to authenticated user
+      if (ownerSessionId) {
+        const { data: nullOwnerSession } = await supabase
+          .from('owner_sessions')
+          .select('session_id, onboarding_state')
+          .eq('session_id', ownerSessionId)
+          .is('user_id', null)
+          .maybeSingle();
+
+        if (nullOwnerSession) {
+          logger.info('LOGIN CALLBACK: Linking NULL owner_session to user', {
+            sessionId: ownerSessionId,
+            userId: user.id,
+            previousState: nullOwnerSession.onboarding_state,
+          });
+
+          // Link session to user and update onboarding state
+          await supabase
+            .from('owner_sessions')
+            .update({
+              user_id: user.id,
+              onboarding_state: 'consent_pending',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('session_id', ownerSessionId);
+        }
+      }
+
+      if (prospectSessionId) {
+        const { data: nullProspectSession } = await supabase
+          .from('prospect_sessions')
+          .select('session_id, onboarding_state')
+          .eq('session_id', prospectSessionId)
+          .is('user_id', null)
+          .maybeSingle();
+
+        if (nullProspectSession) {
+          logger.info('LOGIN CALLBACK: Linking NULL prospect_session to user', {
+            sessionId: prospectSessionId,
+            userId: user.id,
+            previousState: nullProspectSession.onboarding_state,
+          });
+
+          // Link session to user and update onboarding state
+          await supabase
+            .from('prospect_sessions')
+            .update({
+              user_id: user.id,
+              onboarding_state: 'consent_pending',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('session_id', prospectSessionId);
+        }
+      }
+
+      // Now query for sessions with user_id (includes the sessions we just linked)
       const [
         pendingOwnerSessionRes,
         pendingProspectSessionRes,
