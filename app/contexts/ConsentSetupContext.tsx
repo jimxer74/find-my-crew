@@ -74,16 +74,17 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           new Promise((_, reject) =>
             setTimeout(() => reject(new Error('RLS query timeout')), 2000)
           ),
-        ]);
+        ]) as Promise<{ data: { privacy_policy_accepted_at?: string | null; terms_accepted_at?: string | null } | null; error: null } | { error: Error; data: null }>;
 
-        const { data, error } = await queryWithTimeout;
+        const result = await queryWithTimeout;
+        const { data, error } = result as any;
 
         logger.debug('[ConsentSetupContext] Consent query result', {
           hasData: !!data,
           hasError: !!error,
-          privacyPolicyAccepted: data?.privacy_policy_accepted_at ? 'yes' : 'no',
-          termsAccepted: data?.terms_accepted_at ? 'yes' : 'no',
-          errorMessage: error?.message
+          privacyPolicyAccepted: (data as any)?.privacy_policy_accepted_at ? 'yes' : 'no',
+          termsAccepted: (data as any)?.terms_accepted_at ? 'yes' : 'no',
+          errorMessage: (error as any)?.message
         });
 
         if (error) {
