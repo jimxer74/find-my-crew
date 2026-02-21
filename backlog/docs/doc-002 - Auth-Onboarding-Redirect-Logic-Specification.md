@@ -3,6 +3,7 @@ id: doc-002
 title: Auth & Onboarding Redirect Logic - Specification
 type: other
 created_date: '2026-02-21 08:16'
+updated_date: '2026-02-21 08:22'
 ---
 # Auth & Onboarding Redirect Logic - Specification
 
@@ -420,10 +421,10 @@ ConsentSetupModal appears (if no consent_setup_completed)
 
 ## Open Questions
 
-1. Should users who opt out of AI consent be able to still use AI features later?
-2. If user has both owner and crew roles, which page should they land on?
-3. Should /profile-setup route be completely deleted or kept as fallback?
-4. What happens if user closes browser mid-onboarding and returns days later?
+1. Should users who opt out of AI consent be able to still use AI features later? --> No if user has OPTED-OUT from AI-consent, no AI capabilities are provided to user
+2. If user has both owner and crew roles, which page should they land on? --> to owner pages
+3. Should /profile-setup route be completely deleted or kept as fallback? --> Keep as backup / for future user now. dont delete
+4. What happens if user closes browser mid-onboarding and returns days later? --> there should be session id stored in cookie that is used to fetch the session state from session tables and user can continue onboarding we he left
 
 ---
 
