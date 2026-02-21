@@ -55,7 +55,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: 
     const supabase = getSupabaseBrowserClient();
     const redirectTo = fromProspect
       ? `${window.location.origin}/auth/callback?from=prospect`
-      : `${window.location.origin}/auth/callback`;
+      : `${window.location.origin}/auth/callback?from=owner`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'facebook',
@@ -77,7 +77,7 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignup, fromProspect }: 
     const supabase = getSupabaseBrowserClient();
     const redirectTo = fromProspect
       ? `${window.location.origin}/auth/callback?from=prospect`
-      : `${window.location.origin}/auth/callback`;
+      : `${window.location.origin}/auth/callback?from=owner`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
