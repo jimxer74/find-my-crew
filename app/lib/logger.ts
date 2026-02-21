@@ -28,7 +28,9 @@ class LoggerState {
 
   constructor() {
     // Read from environment
-    const envLevel = process.env.LOG_LEVEL as LogLevel | undefined;
+    // Client-side: NEXT_PUBLIC_LOG_LEVEL (exposed to browser)
+    // Server-side: LOG_LEVEL (server-only)
+    const envLevel = (process.env.NEXT_PUBLIC_LOG_LEVEL || process.env.LOG_LEVEL) as LogLevel | undefined;
     if (envLevel && LOG_LEVELS[envLevel] !== undefined) {
       this.debugLevel = envLevel;
     }
