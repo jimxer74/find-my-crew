@@ -128,10 +128,10 @@ export const Z_INDEX = {
   popover: 30,
 
   // Standard dialogs and modals
-  modal: 50,
+  modal: 1000,
 
   // Modal backdrop (behind modal)
-  modalBackdrop: 40,
+  modalBackdrop: 999,
 
   // Main navigation header
   header: 100,

@@ -184,26 +184,29 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         redirect: data.redirect
       });
 
-      // If there's a redirect and user is not on correct onboarding page, redirect
-      if (data.redirect && isOnOnboardingPage) {
-        // Extract the role from redirect path to see if we need to navigate
+      // If there's a redirect, ALWAYS navigate to ensure query parameters are set
+      // This is crucial for triggering profile completion mode in OwnerChatContext/ProspectChatContext
+      if (data.redirect) {
         const isCrewPage = window.location.pathname.startsWith('/welcome/crew');
         const isOwnerPage = window.location.pathname.startsWith('/welcome/owner');
         const shouldRedirectToOwner = data.redirect.includes('/welcome/owner');
         const shouldRedirectToCrew = data.redirect.includes('/welcome/crew');
 
-        // Only redirect if on wrong role page
-        if ((shouldRedirectToOwner && !isOwnerPage) || (shouldRedirectToCrew && !isCrewPage)) {
-          logger.debug('[ConsentSetupModal] Redirecting to correct role page:', data.redirect);
+        // Always redirect if on onboarding page - even if path is the same, we need to set query params
+        if (isOnOnboardingPage && ((shouldRedirectToOwner && isOwnerPage) || (shouldRedirectToCrew && isCrewPage))) {
+          logger.debug('[ConsentSetupModal] Navigating with query params to trigger profile completion:', data.redirect);
+          // Use router.push even on same page to ensure query parameter is set
+          router.push(data.redirect);
+          return;
+        } else if ((shouldRedirectToOwner && !isOwnerPage) || (shouldRedirectToCrew && !isCrewPage) || !isOnOnboardingPage) {
+          logger.debug('[ConsentSetupModal] Redirecting after consent:', data.redirect);
           router.push(data.redirect);
           return;
         }
-      } else if (data.redirect && !isOnOnboardingPage) {
-        logger.debug('[ConsentSetupModal] Redirecting after consent:', data.redirect);
-        router.push(data.redirect);
-        return;
       }
 
+      // No redirect needed - just close modal
+      logger.debug('[ConsentSetupModal] Consent completed without redirect');
       onComplete();
 
     } catch (err: any) {
