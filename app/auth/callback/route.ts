@@ -97,14 +97,27 @@ export async function GET(request: Request) {
           });
 
           // Link session to user and update onboarding state
-          await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('owner_sessions')
             .update({
               user_id: user.id,
               onboarding_state: 'consent_pending',
               updated_at: new Date().toISOString(),
             })
-            .eq('session_id', ownerSessionId);
+            .eq('session_id', ownerSessionId)
+            .select();
+
+          if (updateError) {
+            logger.error('LOGIN CALLBACK: Failed to link owner_session', {
+              error: updateError,
+              sessionId: ownerSessionId,
+            });
+          } else {
+            logger.info('LOGIN CALLBACK: Successfully linked owner_session', {
+              sessionId: ownerSessionId,
+              updatedCount: updateData?.length || 0,
+            });
+          }
         }
       }
 
@@ -124,14 +137,27 @@ export async function GET(request: Request) {
           });
 
           // Link session to user and update onboarding state
-          await supabase
+          const { data: updateData, error: updateError } = await supabase
             .from('prospect_sessions')
             .update({
               user_id: user.id,
               onboarding_state: 'consent_pending',
               updated_at: new Date().toISOString(),
             })
-            .eq('session_id', prospectSessionId);
+            .eq('session_id', prospectSessionId)
+            .select();
+
+          if (updateError) {
+            logger.error('LOGIN CALLBACK: Failed to link prospect_session', {
+              error: updateError,
+              sessionId: prospectSessionId,
+            });
+          } else {
+            logger.info('LOGIN CALLBACK: Successfully linked prospect_session', {
+              sessionId: prospectSessionId,
+              updatedCount: updateData?.length || 0,
+            });
+          }
         }
       }
 

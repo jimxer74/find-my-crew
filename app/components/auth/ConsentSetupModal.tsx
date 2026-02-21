@@ -184,7 +184,12 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         redirect: data.redirect
       });
 
-      // If there's a redirect, ALWAYS navigate to ensure query parameters are set
+      // CRITICAL: Always call onComplete() FIRST to close modal immediately
+      // This prevents modal from staying open during navigation
+      logger.debug('[ConsentSetupModal] Consent saved, closing modal');
+      onComplete();
+
+      // If there's a redirect, navigate to ensure query parameters are set
       // This is crucial for triggering profile completion mode in OwnerChatContext/ProspectChatContext
       if (data.redirect) {
         const isCrewPage = window.location.pathname.startsWith('/welcome/crew');
@@ -205,9 +210,7 @@ export function ConsentSetupModal({ userId, onComplete }: ConsentSetupModalProps
         }
       }
 
-      // No redirect needed - just close modal
       logger.debug('[ConsentSetupModal] Consent completed without redirect');
-      onComplete();
 
     } catch (err: any) {
       logger.error('Error saving consents:', { error: err });

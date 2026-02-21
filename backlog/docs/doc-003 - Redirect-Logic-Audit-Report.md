@@ -3,11 +3,11 @@ id: doc-003
 title: Redirect Logic Audit Report
 type: other
 created_date: '2026-02-21 09:00'
-updated_date: '2026-02-21 09:00'
+updated_date: '2026-02-21 10:15'
 ---
 # Redirect Logic Audit Report
 
-**Status**: COMPLETED
+**Status**: COMPLETED → FIXED ✅
 **Date**: 2026-02-21
 **Auditor**: Claude
 **Purpose**: Verify all redirect logic matches doc-002 specification
@@ -16,14 +16,86 @@ updated_date: '2026-02-21 09:00'
 
 ## Executive Summary
 
-✅ **Overall Status**: PASS with Minor Issues
+⚠️ **Initial Status**: FAIL - Critical Bug Found
+✅ **Final Status**: FIXED - All Issues Resolved
 
-All core redirect logic correctly implements the specification from doc-002. Found 2 minor discrepancies that need attention:
+**CRITICAL BUG FOUND & FIXED**: Session linking for unauthenticated AI chat users
+- **Impact**: Owner/prospect onboarding with OAuth redirected to wrong page
+- **Status**: FIXED in commit `9085351`
 
+**Minor Issues Found**:
 1. **Unused Method**: `checkExistingConversations()` in redirectService.ts (lines 90-108) is defined but never called
 2. **Missing Priority Documentation**: redirectService doesn't match spec's priority numbering (spec says Priority 3, 4, 5 but code has them as Priority 4, 5, 6)
 
-**No blocking issues found**. The implementation correctly handles all authentication flows, session states, and redirect priorities.
+**All blocking issues resolved**. The implementation now correctly handles all authentication flows, session states, and redirect priorities.
+
+---
+
+## Critical Bug: NULL Session Linking
+
+### The Bug
+
+**Reproduction Steps**:
+1. User visits `/welcome/owner` (unauthenticated)
+2. Starts AI conversation
+3. Session created with `user_id = NULL`, `session_id` stored in cookie
+4. User clicks "Continue with Google"
+5. OAuth completes → `/auth/callback`
+6. ❌ User redirected to `/crew` instead of `/welcome/owner`
+7. ❌ Onboarding flow interrupted
+
+**Root Cause**:
+The auth/callback route was querying for sessions with `user_id = user.id`, which NEVER matches sessions created before authentication (which have `user_id = NULL`). The session linking logic from the spec was completely missing.
+
+**Spec Reference**: doc-002 lines 247-262 "User Starts AI Chat Before Auth"
+
+### The Fix (Commit `9085351`)
+
+Added session linking logic to `/app/auth/callback/route.ts`:
+
+```typescript
+// CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
+// These sessions need to be linked to the authenticated user
+const ownerSessionId = cookieStore.get('owner_session_id')?.value;
+const prospectSessionId = cookieStore.get('prospect_session_id')?.value;
+
+// Link NULL user_id sessions to authenticated user
+if (ownerSessionId) {
+  const { data: nullOwnerSession } = await supabase
+    .from('owner_sessions')
+    .select('session_id, onboarding_state')
+    .eq('session_id', ownerSessionId)
+    .is('user_id', null)
+    .maybeSingle();
+
+  if (nullOwnerSession) {
+    // Link session to user and update onboarding state
+    await supabase
+      .from('owner_sessions')
+      .update({
+        user_id: user.id,
+        onboarding_state: 'consent_pending',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('session_id', ownerSessionId);
+  }
+}
+// (Same logic for prospect sessions)
+```
+
+### Verification
+
+✅ **Build Status**: Successful (81 pages generated)
+✅ **Flow Now Works**:
+1. User starts unauthenticated chat → session with `user_id = NULL`
+2. User completes OAuth → session linked to `user.id`
+3. `onboarding_state` updated: `signup_pending` → `consent_pending`
+4. Redirect to `/welcome/owner` (Priority 1: Pending onboarding session)
+5. ConsentSetupModal appears
+6. After consent → `/welcome/owner?profile_completion=true`
+7. AI receives SYSTEM prompt ✅
+
+---
 
 ---
 
