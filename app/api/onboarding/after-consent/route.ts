@@ -54,8 +54,10 @@ export async function POST(request: NextRequest) {
 
         await supabase.from('owner_sessions').delete().eq('session_id', ownerSession.session_id);
 
+        // User opted out of AI - return to home page instead of profile setup
+        // This allows them to use non-AI profile setup or other functionality if they choose
         return NextResponse.json({
-          redirect: '/profile-setup',
+          redirect: '/',
           role: null,
           triggerProfileCompletion: false,
         });
@@ -103,8 +105,10 @@ export async function POST(request: NextRequest) {
 
         await supabase.from('prospect_sessions').delete().eq('session_id', prospectSession.session_id);
 
+        // User opted out of AI - return to home page instead of profile setup
+        // This allows them to use non-AI profile setup or other functionality if they choose
         return NextResponse.json({
-          redirect: '/profile-setup',
+          redirect: '/',
           role: null,
           triggerProfileCompletion: false,
         });
@@ -125,15 +129,7 @@ export async function POST(request: NextRequest) {
     }
 
     // No pending intent - user completed consent but didn't come from onboarding signup
-    // Redirect based on ai consent: profile setup if no AI, or home
-    if (!aiProcessingConsent) {
-      return NextResponse.json({
-        redirect: '/profile-setup',
-        role: null,
-        triggerProfileCompletion: false,
-      });
-    }
-
+    // Always redirect to home page - no more /profile-setup route
     return NextResponse.json({
       redirect: '/',
       role: null,

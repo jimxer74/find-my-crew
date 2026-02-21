@@ -170,24 +170,16 @@ class RedirectService {
 
   /**
    * Priority 6: Check new user redirects
-   * Facebook login or no profile → profile setup
+   * NOTE: /profile-setup route is deprecated - all onboarding now via AI flows
+   * New users are directed to crew homepage or kept in onboarding flow
    */
   private checkNewUserRedirects(
     context: RedirectContext
   ): RedirectResult | null {
-    // Facebook login for new users → profile setup
-    if (context.isFacebookLogin && context.isNewUser) {
-      return {
-        path: '/profile-setup',
-        reason: 'new_facebook_user',
-        priority: 6,
-      };
-    }
-
-    // No profile → profile setup or crew homepage
+    // New users without pending onboarding session go to crew homepage
     if (context.isNewUser) {
       return {
-        path: '/profile-setup',
+        path: '/crew',
         reason: 'new_user_no_profile',
         priority: 6,
       };

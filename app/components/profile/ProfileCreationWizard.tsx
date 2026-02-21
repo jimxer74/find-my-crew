@@ -72,8 +72,10 @@ export function ProfileCreationWizard() {
 
       if (consents?.ai_processing_consent) {
         setAiConsent(true);
-        setStep('fetching');
-        fetchFacebookData();
+        // DISABLED: Facebook profile data fetching requires app review which is not feasible
+        // Instead, proceed directly to manual profile entry
+        setStep('review');
+        // TODO: fetchFacebookData() can be re-enabled in future if Facebook app review is completed
       } else {
         setStep('consent');
       }
