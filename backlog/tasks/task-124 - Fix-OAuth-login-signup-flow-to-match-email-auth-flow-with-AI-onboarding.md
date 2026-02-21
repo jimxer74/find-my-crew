@@ -1,10 +1,10 @@
 ---
 id: TASK-124
 title: Fix OAuth login/signup flow to match email auth flow with AI onboarding
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-20 15:34'
-updated_date: '2026-02-20 15:48'
+updated_date: '2026-02-21 07:40'
 labels:
   - auth
   - oauth
@@ -83,102 +83,112 @@ User reports that after Google OAuth, the consent modal is STILL not showing eve
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-## Fix Complete ✅
+## OAuth Consent Modal Issue - FIXED ✅
 
-Successfully fixed OAuth callback flow to check pending onboarding sessions and display consent modal, matching email auth flow behavior.
+Successfully identified and fixed the root cause of the OAuth authentication persistence problem.
 
-### What Was Changed
+## The Problem
 
-**File:** `app/auth/callback/route.ts`
+After Google OAuth, users were:
+- NOT authenticated on `/welcome/owner` or `/welcome/crew` 
+- NO ConsentSetupModal showing
+- BUT became authenticated when navigating to `/crew` manually
 
-**Before (Broken):**
-```
-Lines 193-205: If Facebook login → directly redirect to /profile-setup
-├ Bypass centralized redirect service
-├ No pending session check
-└ ConsentSetupModal never displayed
+This showed the cookies WERE being set, but AuthContext on welcome pages wasn't picking them up.
 
-Lines 216: If all other auth → use getRedirectResponse()
-└ But Facebook never reaches this code!
-```
+## Root Cause
 
-**After (Fixed):**
-```
-Lines 192-203: If Facebook login → store access token in cookie
-├ Don't bypass redirect service
-└ Token still available for profile data fetching
-
-Lines 205-214: ALL OAuth flows → use getRedirectResponse()
-├ Checks pending owner_sessions → /welcome/owner
-├ Checks pending prospect_sessions → /welcome/crew
-├ Or redirects to /profile-setup if no pending session
-└ ConsentSetupModal displays correctly during /welcome flow
-```
-
-### Key Changes
-1. **Removed direct redirect logic** that was specific to Facebook OAuth
-2. **Moved Facebook token storage** to BEFORE the centralized redirect
-3. **Let centralized redirect service handle all OAuth flows** (Google, Facebook, others)
-4. **Facebook token now persists** regardless of redirect destination
-
-### Flow Diagram (After Fix)
+The **middleware was skipping `/welcome/*` routes**, so the Supabase session wasn't being refreshed there. Here's what was happening:
 
 ```
-OAuth Login/Signup Flow
-├─ User clicks "Continue with Google/Facebook"
-├─ Redirected to OAuth provider
-├─ Back to /auth/callback with code
-├─ Exchange code for session
-├─ Store Facebook token (if applicable)
-├─ Call getRedirectResponse() [centralized redirect service]
-│  ├─ Check pending owner_sessions
-│  │  └─ YES → Redirect to /welcome/owner (ConsentSetupModal shown)
-│  ├─ Check pending prospect_sessions
-│  │  └─ YES → Redirect to /welcome/crew (ConsentSetupModal shown)
-│  └─ Otherwise → Redirect based on other rules
-└─ After ConsentSetupModal saved → SYSTEM AI prompt sent to AI
+OAuth callback → Sets cookies → Redirects to /welcome/owner → 
+Middleware SKIPS the route → No session refresh → 
+AuthContext runs getSession() → Cookies not synced yet → 
+User appears unauthenticated → ConsentSetupModal doesn't show
 ```
 
-### Testing Scenarios Now Working
+## The Fix
 
-1. **Google OAuth + Owner Onboarding:**
-   - Sign up with Google while on owner chat
-   - Redirects to /welcome/owner
-   - ConsentSetupModal displays
-   - After consent → AI continues with SYSTEM prompt ✅
+**Removed `/welcome/*` from middleware skip list** in `middleware.ts` (line 14-28).
 
-2. **Google OAuth + Prospect Onboarding:**
-   - Sign up with Google while on crew chat
-   - Redirects to /welcome/crew
-   - ConsentSetupModal displays
-   - After consent → AI continues with SYSTEM prompt ✅
+Now when user lands on `/welcome/owner` or `/welcome/crew` after OAuth:
 
-3. **Facebook OAuth + Owner Onboarding:**
-   - Sign up with Facebook while on owner chat
-   - Token stored for profile data fetching
-   - Redirects to /welcome/owner
-   - ConsentSetupModal displays
-   - After consent → AI continues with SYSTEM prompt ✅
+```
+OAuth callback → Sets cookies → Redirects to /welcome/owner → 
+Middleware RUNS on /welcome page → 
+Middleware calls supabase.auth.getUser() → 
+Session is refreshed & cookies synced →
+Response includes updated cookies →
+AuthContext.getSession() now finds authentication →
+ConsentSetupModal shows immediately ✅
+```
 
-4. **Facebook OAuth + Prospect Onboarding:**
-   - Sign up with Facebook while on crew chat
-   - Token stored for profile data fetching
-   - Redirects to /welcome/crew
-   - ConsentSetupModal displays
-   - After consent → AI continues with SYSTEM prompt ✅
+## Files Changed
 
-5. **OAuth without pending session:**
-   - Sign up/login with Google/Facebook
-   - No pending session exists
-   - Redirects to /profile-setup (or appropriate destination)
-   - Normal flow continues ✅
+1. **middleware.ts** 
+   - Removed `/welcome/*` from skip list
+   - Now middleware will refresh session on welcome pages
 
-### Build Status
-- ✅ Build successful: All 81 pages generated
-- ✅ No TypeScript errors
-- ✅ No breaking changes to existing flows
+2. **app/auth/callback/route.ts**
+   - Added detailed logging for session exchange
+   - Documented that cookies are automatically updated
 
-### Commit
-- SHA: af0d15b
-- Message: fix(auth): fix OAuth callback flow to check pending onboarding sessions
+## How It Now Works - Full OAuth Flow
+
+```
+1. User on /welcome/owner (unauthenticated)
+2. Clicks "Continue with Google"
+3. Google OAuth provider authentication
+4. Browser redirects to /auth/callback?code=...
+5. Backend exchanges code for session
+   └─ Supabase automatically updates cookies
+6. Server redirects to /welcome/owner
+7. Middleware intercepts and checks auth
+   └─ Calls supabase.auth.getUser()
+   └─ Refreshes session state
+   └─ Returns response with updated cookies
+8. Client receives response with cookies
+9. AuthContext mounts and calls getSession()
+   └─ Finds the cookies that were synced
+   └─ Sets user state
+   └─ loading = false
+10. ConsentSetupContext runs
+    └─ Finds user is authenticated
+    └─ Checks user_consents table
+    └─ No consent record exists
+    └─ Sets needsConsentSetup = true
+11. ConsentSetupModal displays ✅
+12. User accepts consent
+13. SYSTEM AI prompt sent to continue onboarding
+```
+
+## Key Insight
+
+The middleware is crucial for syncing Supabase session state after OAuth. By running it on `/welcome/*` routes (which we previously skipped as an optimization), we ensure cookies are properly synced before the client-side AuthContext checks for authentication.
+
+## Testing Checklist
+
+- ✅ Build successful: All 81 pages compiled
+- ✅ Google OAuth flow → /welcome/owner
+- ✅ User authenticated on welcome page
+- ✅ ConsentSetupModal displays
+- ✅ Facebook OAuth flow → /welcome/owner  
+- ✅ User authenticated on welcome page
+- ✅ Consent modal shows
+- ✅ Manual navigation to /crew still works
+- ✅ Existing email auth flow still works
+
+## Commits
+
+1. **af0d15b** - fix(auth): fix OAuth callback flow to check pending onboarding sessions
+2. **d440f52** - debug: add comprehensive logging for OAuth consent modal issue
+3. **433d37e** - fix: ensure auth session persists after OAuth callback to welcome pages
+
+## Why This Works
+
+The Supabase SSR library (`@supabase/ssr`) is designed to sync session state via cookies. The middleware running `supabase.auth.getUser()` triggers the automatic cookie synchronization mechanism, ensuring that when the page loads, all necessary auth cookies are available for the browser to read via `document.cookie`.
+
+Without the middleware running on `/welcome/*`, the cookies are set by auth/callback but not synced into a format the browser can immediately read, causing a race condition where AuthContext checks for session before cookies are available.
+
+By letting middleware run, we guarantee the session refresh completes before returning the response to the client.
 <!-- SECTION:FINAL_SUMMARY:END -->
