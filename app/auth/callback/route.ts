@@ -102,7 +102,7 @@ export async function GET(request: Request) {
             .update({
               user_id: user.id,
               onboarding_state: 'consent_pending',
-              updated_at: new Date().toISOString(),
+              last_active_at: new Date().toISOString(),
             })
             .eq('session_id', ownerSessionId)
             .select();
@@ -142,7 +142,7 @@ export async function GET(request: Request) {
             .update({
               user_id: user.id,
               onboarding_state: 'consent_pending',
-              updated_at: new Date().toISOString(),
+              last_active_at: new Date().toISOString(),
             })
             .eq('session_id', prospectSessionId)
             .select();
