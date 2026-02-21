@@ -4,7 +4,7 @@ title: Fix OAuth login/signup flow to match email auth flow with AI onboarding
 status: Done
 assignee: []
 created_date: '2026-02-20 15:34'
-updated_date: '2026-02-21 07:40'
+updated_date: '2026-02-21 07:49'
 labels:
   - auth
   - oauth
@@ -83,112 +83,101 @@ User reports that after Google OAuth, the consent modal is STILL not showing eve
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-## OAuth Consent Modal Issue - FIXED ✅
+## OAuth Consent Modal Issue - ACTUALLY FIXED! ✅
 
-Successfully identified and fixed the root cause of the OAuth authentication persistence problem.
+Found and fixed the REAL root cause. The previous fix was incomplete - the middleware was still not running the session refresh for /welcome/* paths.
 
-## The Problem
+## The Actual Problem
 
-After Google OAuth, users were:
-- NOT authenticated on `/welcome/owner` or `/welcome/crew` 
-- NO ConsentSetupModal showing
-- BUT became authenticated when navigating to `/crew` manually
-
-This showed the cookies WERE being set, but AuthContext on welcome pages wasn't picking them up.
-
-## Root Cause
-
-The **middleware was skipping `/welcome/*` routes**, so the Supabase session wasn't being refreshed there. Here's what was happening:
-
-```
-OAuth callback → Sets cookies → Redirects to /welcome/owner → 
-Middleware SKIPS the route → No session refresh → 
-AuthContext runs getSession() → Cookies not synced yet → 
-User appears unauthenticated → ConsentSetupModal doesn't show
+The middleware had this logic:
+```typescript
+if (pathname !== '/') {
+  return NextResponse.next(); // ← Returns IMMEDIATELY for all non-root paths!
+}
 ```
 
-## The Fix
+This meant:
+- `pathname = '/'` → Middleware runs session refresh ✓
+- `pathname = '/welcome/owner'` → Returns NextResponse.next() WITHOUT session refresh ✗
+- `pathname = '/crew'` → Returns NextResponse.next() WITHOUT session refresh ✗
 
-**Removed `/welcome/*` from middleware skip list** in `middleware.ts` (line 14-28).
+So when OAuth redirected to `/welcome/owner`, the middleware wasn't calling `supabase.auth.getUser()` to sync cookies!
 
-Now when user lands on `/welcome/owner` or `/welcome/crew` after OAuth:
+## Why It Appeared to Work Elsewhere
 
-```
-OAuth callback → Sets cookies → Redirects to /welcome/owner → 
-Middleware RUNS on /welcome page → 
-Middleware calls supabase.auth.getUser() → 
-Session is refreshed & cookies synced →
-Response includes updated cookies →
-AuthContext.getSession() now finds authentication →
-ConsentSetupModal shows immediately ✅
-```
+When user manually navigated to `/crew` or manually reloaded `/owner/boats`:
+1. Enough time had passed
+2. Browser had synced cookies into localStorage
+3. AuthContext.getSession() could find them
+4. User appeared authenticated
 
-## Files Changed
+But on `/welcome/owner` immediately after redirect, cookies weren't synced unto yet.
 
-1. **middleware.ts** 
-   - Removed `/welcome/*` from skip list
-   - Now middleware will refresh session on welcome pages
+## The Real Fix
 
-2. **app/auth/callback/route.ts**
-   - Added detailed logging for session exchange
-   - Documented that cookies are automatically updated
+Changed middleware to run session refresh for BOTH root AND welcome paths:
 
-## How It Now Works - Full OAuth Flow
+```typescript
+// Before (BROKEN)
+if (pathname !== '/') {
+  return NextResponse.next();
+}
 
-```
-1. User on /welcome/owner (unauthenticated)
-2. Clicks "Continue with Google"
-3. Google OAuth provider authentication
-4. Browser redirects to /auth/callback?code=...
-5. Backend exchanges code for session
-   └─ Supabase automatically updates cookies
-6. Server redirects to /welcome/owner
-7. Middleware intercepts and checks auth
-   └─ Calls supabase.auth.getUser()
-   └─ Refreshes session state
-   └─ Returns response with updated cookies
-8. Client receives response with cookies
-9. AuthContext mounts and calls getSession()
-   └─ Finds the cookies that were synced
-   └─ Sets user state
-   └─ loading = false
-10. ConsentSetupContext runs
-    └─ Finds user is authenticated
-    └─ Checks user_consents table
-    └─ No consent record exists
-    └─ Sets needsConsentSetup = true
-11. ConsentSetupModal displays ✅
-12. User accepts consent
-13. SYSTEM AI prompt sent to continue onboarding
+// After (FIXED)
+if (pathname !== '/' && !pathname.startsWith('/welcome/')) {
+  return NextResponse.next();
+}
 ```
 
-## Key Insight
+Now when OAuth redirects to `/welcome/owner`:
+1. ✅ Middleware intercepts request
+2. ✅ Middleware calls `supabase.auth.getUser()`
+3. ✅ Session is refreshed
+4. ✅ Cookies are synced
+5. ✅ Response includes Set-Cookie headers
+6. ✅ AuthContext.getSession() finds user
+7. ✅ ConsentSetupModal displays
+8. ✅ AI onboarding continues
 
-The middleware is crucial for syncing Supabase session state after OAuth. By running it on `/welcome/*` routes (which we previously skipped as an optimization), we ensure cookies are properly synced before the client-side AuthContext checks for authentication.
+## Flow After Fix
 
-## Testing Checklist
+```
+Google OAuth
+  ↓
+auth/callback → exchangeCodeForSession()
+  ↓ (sets cookies in response)
+Redirect to /welcome/owner
+  ↓
+Middleware RUNS (because pathname.startsWith('/welcome/'))
+  ├─ Calls supabase.auth.getUser()
+  └─ Syncs cookies in response
+  ↓
+Browser receives response with cookies
+  ↓
+AuthContext.getSession() finds authentication
+  ↓
+ConsentSetupModal shows
+  ↓
+User accepts consent
+  ↓
+SYSTEM AI prompt sent ✅
+```
 
-- ✅ Build successful: All 81 pages compiled
-- ✅ Google OAuth flow → /welcome/owner
-- ✅ User authenticated on welcome page
-- ✅ ConsentSetupModal displays
-- ✅ Facebook OAuth flow → /welcome/owner  
-- ✅ User authenticated on welcome page
-- ✅ Consent modal shows
-- ✅ Manual navigation to /crew still works
-- ✅ Existing email auth flow still works
+## Key Learning
+
+The middleware is the **critical synchronization point** for Supabase session state. It must run session refresh for ANY path where the user might immediately check authentication - not just the root path.
 
 ## Commits
 
-1. **af0d15b** - fix(auth): fix OAuth callback flow to check pending onboarding sessions
-2. **d440f52** - debug: add comprehensive logging for OAuth consent modal issue
-3. **433d37e** - fix: ensure auth session persists after OAuth callback to welcome pages
+1. **af0d15b** - Fix OAuth callback flow to check pending sessions
+2. **d440f52** - Add comprehensive logging
+3. **433d37e** - Remove /welcome/* from skip list (incomplete fix)
+4. **ae19d37** - Middleware must run on /welcome/* paths (actual fix!)
 
-## Why This Works
+## Now Ready to Test
 
-The Supabase SSR library (`@supabase/ssr`) is designed to sync session state via cookies. The middleware running `supabase.auth.getUser()` triggers the automatic cookie synchronization mechanism, ensuring that when the page loads, all necessary auth cookies are available for the browser to read via `document.cookie`.
-
-Without the middleware running on `/welcome/*`, the cookies are set by auth/callback but not synced into a format the browser can immediately read, causing a race condition where AuthContext checks for session before cookies are available.
-
-By letting middleware run, we guarantee the session refresh completes before returning the response to the client.
+After Google OAuth → /welcome/owner:
+- ✅ User IS authenticated
+- ✅ ConsentSetupModal DISPLAYS
+- ✅ Can proceed with AI onboarding
 <!-- SECTION:FINAL_SUMMARY:END -->
