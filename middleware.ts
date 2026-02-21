@@ -14,12 +14,11 @@ export async function middleware(request: NextRequest) {
   // - API routes
   // - Static files (_next, images, etc.)
   // - Auth callback (handles its own redirects)
-  // - Already redirected paths (welcome/owner, welcome/crew, etc.)
+  // NOTE: NOT skipping /welcome/* anymore - need to refresh session there for OAuth
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/auth/callback') ||
-    pathname.startsWith('/welcome/') ||
     pathname.startsWith('/owner/') ||
     pathname.startsWith('/crew/') ||
     pathname.startsWith('/assistant') ||

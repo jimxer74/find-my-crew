@@ -45,9 +45,20 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/', request.url));
     }
 
+    logger.info('LOGIN CALLBACK: Successfully exchanged code for session');
+
     // Get user and session info
+    // NOTE: After exchangeCodeForSession, the Supabase client automatically updates cookies
+    // These cookies will be sent back to the browser in the response
     const { data: { user } } = await supabase.auth.getUser();
     const { data: { session } } = await supabase.auth.getSession();
+
+    if (!user) {
+      logger.error('LOGIN CALLBACK: No user found after successful code exchange');
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+
+    logger.info('LOGIN CALLBACK: User authenticated', { userId: user.id, hasSession: !!session });
 
     if (user) {
       // Check if this is a Facebook login by looking at the provider
