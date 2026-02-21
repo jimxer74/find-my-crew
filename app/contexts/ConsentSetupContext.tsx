@@ -62,14 +62,18 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
       try {
         logger.debug('[ConsentSetupContext] About to query user_consents', { userId: user.id });
 
-        // CRITICAL: Refresh session first to ensure Supabase browser client has latest auth state
-        // This is necessary because OAuth callback sets cookies, but browser client might not have synced yet
-        // The RLS policy uses auth.uid() which depends on session being current
-        const { error: refreshError } = await supabase.auth.refreshSession();
-        if (refreshError) {
-          logger.warn('[ConsentSetupContext] Session refresh failed (non-fatal)', { error: refreshError.message });
-        } else {
-          logger.debug('[ConsentSetupContext] Session refreshed before consent check');
+        // CRITICAL: Ensure browser client session is current before RLS-protected query
+        // The RLS policy uses auth.uid() which depends on session being in sync with cookies
+        // Use getSession() first to force a sync without waiting for refresh
+        try {
+          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError) {
+            logger.warn('[ConsentSetupContext] Session sync failed', { error: sessionError.message });
+          } else {
+            logger.debug('[ConsentSetupContext] Session synced before consent check', { hasSession: !!sessionData.session });
+          }
+        } catch (sessionSyncError) {
+          logger.warn('[ConsentSetupContext] Session sync exception', { error: sessionSyncError instanceof Error ? sessionSyncError.message : String(sessionSyncError) });
         }
 
         // Check if user has completed consent setup
