@@ -232,11 +232,13 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
   // Check authentication and profile status (runs immediately on mount)
   useEffect(() => {
     const supabase = getSupabaseBrowserClient();
-    
+
     async function checkAuthAndProfile() {
+      logger.debug('Checking auth state on mount', {}, true);
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
+
       if (authError || !user) {
+        logger.debug('User not authenticated', { hasError: !!authError }, true);
         setState((prev) => ({
           ...prev,
           isAuthenticated: false,
@@ -250,32 +252,10 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       }
 
       const knownProfile = extractKnownProfile(user);
-      
-      // Check if user has a profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle();
 
-      // Check if user has boats
-      const { data: boats } = await supabase
-        .from('boats')
-        .select('id')
-        .eq('owner_id', user.id)
-        .limit(1);
-
-      // Check if user has journeys (via boat ownership)
-      let hasJourney = false;
-      if (boats?.length) {
-        const { data: journeys } = await supabase
-          .from('journeys')
-          .select('id')
-          .in('boat_id', boats.map((b) => b.id))
-          .limit(1);
-        hasJourney = (journeys?.length ?? 0) > 0;
-      }
-
+      // ✅ CRITICAL: Set auth state EARLY - don't wait for profile/boats/journeys queries
+      // This allows ConsentSetupContext to proceed immediately
+      logger.debug('User authenticated, setting auth state early', { userId: user.id }, true);
       setState((prev) => ({
         ...prev,
         isAuthenticated: true,
@@ -283,22 +263,111 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         userProfile: knownProfile,
         sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
         hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
-        hasExistingProfile: !!profile,
-        hasBoat: (boats?.length ?? 0) > 0,
-        hasJourney,
       }));
+
+      // ✅ Query profile/boats/journeys with retry logic in background
+      const queryDataWithRetry = async (retryCount = 0): Promise<void> => {
+        try {
+          logger.debug('Querying profile/boats/journeys', { attempt: retryCount + 1 }, true);
+
+          // First verify session is available
+          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+          if (sessionError || !currentSession) {
+            if (retryCount < 3) {
+              logger.warn('Session not ready yet, retrying in 500ms', {});
+              setTimeout(() => queryDataWithRetry(retryCount + 1), 500);
+              return;
+            }
+            logger.warn('Session not ready after retries, using partial data', {});
+            return;
+          }
+
+          // Query profile
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (profileError) {
+            const errorMsg = profileError.message?.toLowerCase() || '';
+            if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
+              logger.warn('Auth session error on profile query, retrying in 500ms', {});
+              setTimeout(() => queryDataWithRetry(retryCount + 1), 500);
+              return;
+            }
+            logger.warn('Profile query failed after retries, continuing with fallback', { error: profileError.message });
+            return;
+          }
+
+          // Query boats
+          const { data: boats, error: boatsError } = await supabase
+            .from('boats')
+            .select('id')
+            .eq('owner_id', user.id)
+            .limit(1);
+
+          if (boatsError) {
+            logger.warn('Boats query failed, continuing with fallback', { error: boatsError.message });
+            // Update state with profile info at least
+            setState((prev) => ({
+              ...prev,
+              hasExistingProfile: !!profile,
+              hasBoat: false,
+              hasJourney: false,
+            }));
+            return;
+          }
+
+          // Query journeys if boats exist
+          let hasJourney = false;
+          if (boats?.length) {
+            const { data: journeys, error: journeysError } = await supabase
+              .from('journeys')
+              .select('id')
+              .in('boat_id', boats.map((b) => b.id))
+              .limit(1);
+
+            if (journeysError) {
+              logger.warn('Journeys query failed, continuing with fallback', { error: journeysError.message });
+            } else {
+              hasJourney = (journeys?.length ?? 0) > 0;
+            }
+          }
+
+          logger.debug('Profile/boats/journeys queries successful', {
+            hasProfile: !!profile,
+            hasBoat: (boats?.length ?? 0) > 0,
+            hasJourney,
+          }, true);
+
+          // Update state with all data
+          setState((prev) => ({
+            ...prev,
+            hasExistingProfile: !!profile,
+            hasBoat: (boats?.length ?? 0) > 0,
+            hasJourney,
+          }));
+        } catch (error) {
+          logger.error('Error querying profile/boats/journeys', { error: error instanceof Error ? error.message : String(error) });
+          // Silently fail - auth state is already set, partial data is OK
+        }
+      };
+
+      // Start retry attempt in background (don't await)
+      queryDataWithRetry();
     }
 
     // Run immediately on mount
     checkAuthAndProfile();
-    
+
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       logger.debug('Auth state changed', { event, hasUser: !!session?.user?.id }, true);
-      
+
       if (event === 'SIGNED_IN' && session?.user) {
         const knownProfile = extractKnownProfile(session.user);
-        
+
         // CRITICAL: Link owner session to authenticated user after signup
         const currentSessionId = stateRef.current?.sessionId;
         const isProfileCompletion = typeof window !== 'undefined' && window.location.search.includes('profile_completion=true');
@@ -324,30 +393,8 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             logger.error('Error linking session to user', { error: error instanceof Error ? error.message : String(error) });
           }
         }
-        
-        // Check if user has a profile, boat, journey
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', session.user.id)
-          .maybeSingle();
 
-        const { data: boats } = await supabase
-          .from('boats')
-          .select('id')
-          .eq('owner_id', session.user.id)
-          .limit(1);
-
-        let hasJourney = false;
-        if (boats?.length) {
-          const { data: journeys } = await supabase
-            .from('journeys')
-            .select('id')
-            .in('boat_id', boats.map((b) => b.id))
-            .limit(1);
-          hasJourney = (journeys?.length ?? 0) > 0;
-        }
-        
+        // ✅ Set auth state EARLY for SIGNED_IN event too
         setState((prev) => ({
           ...prev,
           isAuthenticated: true,
@@ -355,10 +402,64 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           userProfile: knownProfile,
           sessionEmail: knownProfile.email?.toLowerCase().trim() || prev.sessionEmail,
           hasSessionEmail: !!(knownProfile.email || prev.sessionEmail),
-          hasExistingProfile: !!profile,
-          hasBoat: (boats?.length ?? 0) > 0,
-          hasJourney,
         }));
+        logger.debug('Auth state set for SIGNED_IN event', { userId: session.user.id }, true);
+
+        // Query boats/journeys in background with retry
+        const queryDataWithRetry = async (retryCount = 0): Promise<void> => {
+          try {
+            const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !currentSession) {
+              if (retryCount < 3) {
+                setTimeout(() => queryDataWithRetry(retryCount + 1), 500);
+                return;
+              }
+              return;
+            }
+
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', session.user.id)
+              .maybeSingle();
+
+            if (profileError) {
+              const errorMsg = profileError.message?.toLowerCase() || '';
+              if ((errorMsg.includes('session') || errorMsg.includes('auth') || profileError.code === 'PGRST301') && retryCount < 3) {
+                setTimeout(() => queryDataWithRetry(retryCount + 1), 500);
+                return;
+              }
+              return;
+            }
+
+            const { data: boats } = await supabase
+              .from('boats')
+              .select('id')
+              .eq('owner_id', session.user.id)
+              .limit(1);
+
+            let hasJourney = false;
+            if (boats?.length) {
+              const { data: journeys } = await supabase
+                .from('journeys')
+                .select('id')
+                .in('boat_id', boats.map((b) => b.id))
+                .limit(1);
+              hasJourney = (journeys?.length ?? 0) > 0;
+            }
+
+            setState((prev) => ({
+              ...prev,
+              hasExistingProfile: !!profile,
+              hasBoat: (boats?.length ?? 0) > 0,
+              hasJourney,
+            }));
+          } catch (error) {
+            logger.error('Error in SIGNED_IN profile query', { error: error instanceof Error ? error.message : String(error) });
+          }
+        };
+
+        queryDataWithRetry();
       } else if (event === 'SIGNED_OUT') {
         setState((prev) => ({
           ...prev,

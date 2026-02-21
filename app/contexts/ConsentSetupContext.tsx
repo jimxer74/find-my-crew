@@ -62,27 +62,21 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
       try {
         logger.debug('[ConsentSetupContext] About to query user_consents', { userId: user.id });
 
-        // CRITICAL: Ensure browser client session is current before RLS-protected query
-        // The RLS policy uses auth.uid() which depends on session being in sync with cookies
-        // Use getSession() first to force a sync without waiting for refresh
-        try {
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError) {
-            logger.warn('[ConsentSetupContext] Session sync failed', { error: sessionError.message });
-          } else {
-            logger.debug('[ConsentSetupContext] Session synced before consent check', { hasSession: !!sessionData.session });
-          }
-        } catch (sessionSyncError) {
-          logger.warn('[ConsentSetupContext] Session sync exception', { error: sessionSyncError instanceof Error ? sessionSyncError.message : String(sessionSyncError) });
-        }
-
         // Check if user has completed consent setup
         // Query columns that indicate consent completion - privacy_policy and terms are required
-        const { data, error } = await supabase
-          .from('user_consents')
-          .select('privacy_policy_accepted_at, terms_accepted_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // IMPORTANT: Wrap in timeout to prevent RLS policy from hanging
+        const queryWithTimeout = Promise.race([
+          supabase
+            .from('user_consents')
+            .select('privacy_policy_accepted_at, terms_accepted_at')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('RLS query timeout')), 2000)
+          ),
+        ]);
+
+        const { data, error } = await queryWithTimeout;
 
         logger.debug('[ConsentSetupContext] Consent query result', {
           hasData: !!data,
@@ -93,8 +87,8 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
         });
 
         if (error) {
-          logger.error('[ConsentSetupContext] Error checking consent setup:', error instanceof Error ? { error: error.message } : { error: String(error) });
-          // On error, show the consent setup modal to be safe
+          logger.warn('[ConsentSetupContext] Consent query error (assuming no consent):', { error: error.message });
+          // On RLS error or query error, show the consent setup modal to be safe
           setNeedsConsentSetup(true);
         } else if (!data) {
           // No consent record exists - user needs to complete setup
@@ -110,8 +104,10 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           setNeedsConsentSetup(!hasRequiredConsents);
         }
       } catch (err) {
-        logger.error('[ConsentSetupContext] Error checking consent setup:', err instanceof Error ? { error: err.message } : { error: String(err) });
-        // On error, show the consent setup modal to be safe
+        logger.warn('[ConsentSetupContext] Consent check timeout or exception (assuming no consent):', {
+          error: err instanceof Error ? err.message : String(err)
+        });
+        // On timeout or any error, show the consent setup modal to be safe
         setNeedsConsentSetup(true);
       } finally {
         setIsLoading(false);
