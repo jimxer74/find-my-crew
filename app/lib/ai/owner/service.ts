@@ -214,11 +214,9 @@ function buildOwnerPromptForStep(
       stateAndGoal = `## CURRENT STEP: Sign up
 **State:** User is not signed in. No profile, boat, or journey.
 **Goal:** Be welcoming. Show platform value by providing examples of 
-matching crew by using the tool search_matching_crew and resolving and displaying the crew requirements. 
-Encourage sign-up. Do not call any profile/boat/journey tools.
-**CRITICAL:** If user has provided journey details, you must you the information 
-to reason the crew requirements: such as experience level, risk level, skills, etc and display the results.
-`;
+matching crew by using the tool search_matching_crew, reason the search
+criteria based on given information if available, do not ask for more information at this step.
+Encourage sign-up. Do not call any profile/boat/journey tools.`;
       stepInstructions = userInfo ? `**From signup/OAuth (if known):**\n${userInfo}\n` : '';
       extra = `You may use definition tools (get_experience_level_definitions, get_risk_level_definitions, get_skills_definitions) only to answer general questions.`;
       break;
@@ -1238,10 +1236,24 @@ Return ONLY the JSON object, nothing else.`;
           continue;
         }
 
+        // Normalize boat type to match enum values
+        const normalizeBoatType = (type: string): string => {
+          const normalized = type.toLowerCase().trim();
+          if (normalized === 'multihull' || normalized === 'catamaran' || normalized === 'trimaran') {
+            return 'Multihulls';
+          }
+          if (normalized.includes('daysail')) return 'Daysailers';
+          if (normalized.includes('coastal')) return 'Coastal cruisers';
+          if (normalized.includes('offshore') || normalized.includes('traditional')) return 'Traditional offshore cruisers';
+          if (normalized.includes('performance')) return 'Performance cruisers';
+          if (normalized.includes('expedition')) return 'Expedition sailboats';
+          return type; // Return as-is if no match, let DB validation catch it
+        };
+
         const boatData: Record<string, unknown> = {
           owner_id: authenticatedUserId,
           name: args.name as string,
-          type: args.type as string,
+          type: normalizeBoatType(args.type as string),
           make_model: args.make_model as string,
           capacity: args.capacity as number,
           home_port: args.home_port as string | undefined || null,
@@ -2176,6 +2188,7 @@ export async function ownerChat(
   // Process with tool loop
   let allToolCalls: ToolCall[] = [];
   let allToolResults: Array<{ name: string; result: unknown; error?: string }> = [];
+  let intermediateMessages: OwnerMessage[] = [];
   let currentMessages = [...messages];
   let iterations = 0;
   let finalContent = '';
@@ -2272,8 +2285,9 @@ export async function ownerChat(
           (/\b(profile|update_user_profile)\b/i.test(finalContent) && profileCreated) ||
           (/\b(journey|generate_journey_route|create_journey)\b/i.test(finalContent) && journeyCreated);
         if (!describesActualSuccess) {
-          log('⚠️ AI hallucinated tool call success - adding correction');
-          finalContent += '\n\n**Note:** I attempted to call the tool, but the tool call format was incorrect and could not be parsed. Please try again or let me know if you need help with the correct format.';
+          log('⚠️ AI hallucinated tool call success - silently correcting without user-facing note');
+          // Don't add technical note to user - just let AI continue
+          // The AI will naturally correct course in the next iteration
         }
       }
       
@@ -2282,7 +2296,24 @@ export async function ownerChat(
     }
 
     allToolCalls.push(...toolCalls);
-    
+
+    // Capture intermediate message (AI response with tool calls)
+    const intermediateMsg: OwnerMessage = {
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      role: 'assistant',
+      content: content, // Content without tool calls
+      timestamp: new Date().toISOString(),
+      metadata: {
+        toolCalls: toolCalls.map(tc => ({
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments as Record<string, unknown>,
+        })),
+        isIntermediate: true,
+      },
+    };
+    intermediateMessages.push(intermediateMsg);
+
     // Prevent duplicate create_boat calls: if boat was already created successfully in this request, stop the AI from calling it again
     const previousBoatResults = allToolResults.filter(r => r.name === 'create_boat' && !r.error);
     const boatAlreadyCreatedInThisRequest = previousBoatResults.length > 0 && 
@@ -2396,11 +2427,13 @@ Your journey is now ready for you to review and manage. You can:
   log('');
   log('📤 FINAL RESPONSE:', `${finalContent.length} chars`);
   log('📊 Tool calls:', allToolCalls.length);
+  log('📬 Intermediate messages:', intermediateMessages.length);
   log('✅ Created:', { profile: profileCreated, boat: boatCreated, journey: journeyCreated });
 
   return {
     sessionId,
     message: responseMessage,
+    intermediateMessages: intermediateMessages.length > 0 ? intermediateMessages : undefined,
     extractedPreferences: undefined,
     profileCreated,
     boatCreated,

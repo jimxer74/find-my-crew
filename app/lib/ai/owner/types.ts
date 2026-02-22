@@ -33,6 +33,8 @@ export interface OwnerMessage {
     toolResults?: Array<{ name: string; result: any; error?: string }>;
     /** Action tool calls that require user approval before execution */
     pendingAction?: PendingAction;
+    /** Flag indicating this is an intermediate message (has tool calls) */
+    isIntermediate?: boolean;
   };
 }
 
@@ -131,6 +133,8 @@ export interface OwnerChatRequest {
 export interface OwnerChatResponse {
   sessionId: string;
   message: OwnerMessage;
+  /** Array of intermediate messages from this request (containing tool calls and reasoning) */
+  intermediateMessages?: OwnerMessage[];
   extractedPreferences?: Partial<OwnerPreferences>;
   /** Flag indicating that profile was successfully created - triggers cleanup of owner data */
   profileCreated?: boolean;

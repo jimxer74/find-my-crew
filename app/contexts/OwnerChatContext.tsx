@@ -776,10 +776,23 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
         }));
       }
 
+      // Collect all messages: intermediate messages (if any) + final message
+      const allMessages = [
+        ...(data.intermediateMessages || []),
+        assistantMessage,
+      ];
+
+      if (data.intermediateMessages?.length) {
+        logger.debug('Received intermediate messages', {
+          intermediateCount: data.intermediateMessages.length,
+          totalMessages: allMessages.length,
+        }, true);
+      }
+
       setState((prev) => ({
         ...prev,
         sessionId: data.sessionId || prev.sessionId,
-        messages: [...prev.messages, assistantMessage],
+        messages: [...prev.messages, ...allMessages],
         preferences: data.extractedPreferences
           ? { ...prev.preferences, ...data.extractedPreferences }
           : prev.preferences,

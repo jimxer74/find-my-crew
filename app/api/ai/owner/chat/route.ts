@@ -119,6 +119,7 @@ export async function POST(request: NextRequest) {
     log('Owner chat response received:', {
       sessionId: response.sessionId,
       messageId: response.message?.id,
+      intermediateMessagesCount: response.intermediateMessages?.length || 0,
       profileCreated: response.profileCreated,
       boatCreated: response.boatCreated,
       journeyCreated: response.journeyCreated,

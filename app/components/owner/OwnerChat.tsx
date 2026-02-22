@@ -131,6 +131,26 @@ function CrewSearchResults({
   );
 }
 
+/**
+ * Component to display intermediate AI message
+ */
+function IntermediateMessageCard({
+  message,
+}: {
+  message: OwnerMessage;
+}) {
+  return (
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+      <div className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">
+        AI Reasoning
+      </div>
+      <div className="text-sm whitespace-pre-wrap break-words text-blue-900 dark:text-blue-100">
+        {message.content}
+      </div>
+    </div>
+  );
+}
+
 export default function OwnerChat() {
   const {
     messages,
@@ -280,67 +300,92 @@ export default function OwnerChat() {
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-[85%] rounded-lg px-4 py-2 ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
-                  <div className="text-sm whitespace-pre-wrap break-words">
-                    {message.role === 'assistant'
-                      ? removeSuggestionsFromContent(message.content)
-                      : message.content}
+                {/* Intermediate message - render as subtle info box */}
+                {message.metadata?.isIntermediate ? (
+                  <div className="max-w-[85%]">
+                    <IntermediateMessageCard message={message} />
                   </div>
-                  {/* Show suggested prompts from AI response */}
-                  {message.role === 'assistant' && (() => {
-                    const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
-                    return prompts.length > 0 ? (
-                      <SuggestedPrompts
-                        prompts={prompts}
-                        importantIndex={importantIndex}
-                        onSelect={handleSuggestionSelect}
+                ) : (
+                  <div
+                    className={`max-w-[85%] rounded-lg px-4 py-2 ${
+                      message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted text-foreground'
+                    }`}
+                  >
+                    <div className="text-sm whitespace-pre-wrap break-words">
+                      {message.role === 'assistant'
+                        ? removeSuggestionsFromContent(message.content)
+                        : message.content}
+                    </div>
+                    {/* Show suggested prompts from AI response */}
+                    {message.role === 'assistant' && (() => {
+                      const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
+                      return prompts.length > 0 ? (
+                        <SuggestedPrompts
+                          prompts={prompts}
+                          importantIndex={importantIndex}
+                          onSelect={handleSuggestionSelect}
+                          disabled={isLoading}
+                        />
+                      ) : null;
+                    })()}
+                    {/* Show pending action approval UI */}
+                    {message.role === 'assistant' && message.metadata?.pendingAction && (
+                      <PendingActionCard
+                        action={message.metadata.pendingAction}
+                        onApprove={() => handleApproveAction(message.id, message.metadata!.pendingAction!)}
+                        onCancel={() => handleCancelAction(message.id)}
                         disabled={isLoading}
                       />
-                    ) : null;
-                  })()}
-                  {/* Show pending action approval UI */}
-                  {message.role === 'assistant' && message.metadata?.pendingAction && (
-                    <PendingActionCard
-                      action={message.metadata.pendingAction}
-                      onApprove={() => handleApproveAction(message.id, message.metadata!.pendingAction!)}
-                      onCancel={() => handleCancelAction(message.id)}
-                      disabled={isLoading}
-                    />
-                  )}
-                  {/* Show crew search results if present */}
-                  {message.role === 'assistant' && message.metadata?.toolResults && (() => {
-                    // Find search_matching_crew tool result
-                    const crewSearchResult = (message.metadata.toolResults as any[])?.find(
-                      (tr: any) => tr.name === 'search_matching_crew'
-                    );
-                    return crewSearchResult?.result ? (
-                      <CrewSearchResults
-                        toolResult={crewSearchResult.result}
-                        onCrewClick={(crewId) => {
-                          // Could navigate to crew profile or show details
-                          logger.debug('Crew clicked:', { crewId });
-                        }}
-                      />
-                    ) : null;
-                  })()}
-                  {/* Show inline action button after assistant messages if user is not authenticated */}
-                  {message.role === 'assistant' && !isAuthenticated && (
-                    <div className="mt-3 pt-3 border-t border-border/50">
-                      {hasSessionEmail ? (
-                        <div className="flex flex-col items-start gap-2">
-                          {sessionEmail && (
-                            <p className="text-xs text-muted-foreground">
-                              Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
-                            </p>
-                          )}
+                    )}
+                    {/* Show crew search results if present */}
+                    {message.role === 'assistant' && message.metadata?.toolResults && (() => {
+                      // Find search_matching_crew tool result
+                      const crewSearchResult = (message.metadata.toolResults as any[])?.find(
+                        (tr: any) => tr.name === 'search_matching_crew'
+                      );
+                      return crewSearchResult?.result ? (
+                        <CrewSearchResults
+                          toolResult={crewSearchResult.result}
+                          onCrewClick={(crewId) => {
+                            // Could navigate to crew profile or show details
+                            logger.debug('Crew clicked:', { crewId });
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    {/* Show inline action button after assistant messages if user is not authenticated */}
+                    {message.role === 'assistant' && !isAuthenticated && (
+                      <div className="mt-3 pt-3 border-t border-border/50">
+                        {hasSessionEmail ? (
+                          <div className="flex flex-col items-start gap-2">
+                            {sessionEmail && (
+                              <p className="text-xs text-muted-foreground">
+                                Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
+                              </p>
+                            )}
+                            <button
+                              onClick={() => setIsLoginModalOpen(true)}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                              </svg>
+                              Log In to Continue
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            onClick={() => setIsLoginModalOpen(true)}
+                            onClick={() => setIsSignupModalOpen(true)}
                             className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
                           >
                             <svg
@@ -352,33 +397,15 @@ export default function OwnerChat() {
                               viewBox="0 0 24 24"
                               stroke="currentColor"
                             >
-                              <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                              <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                             </svg>
-                            Log In to Continue
+                            Sign up to continue
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setIsSignupModalOpen(true)}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                          </svg>
-                          Sign up to continue
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
 
