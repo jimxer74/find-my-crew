@@ -106,22 +106,28 @@ const SAILING_SKILLS = skillsConfig.general.map(skill => skill.name);
 
 /** Tool names allowed per owner onboarding step. AI only sees these tools. */
 const TOOLS_BY_STEP: Record<OwnerStep, string[]> = {
-  signup: ['search_matching_crew', 'get_experience_level_definitions', 'get_risk_level_definitions', 'get_skills_definitions'],
+  signup: ['search_matching_crew', 
+    'get_experience_level_definitions', 
+    'get_risk_level_definitions', 
+    'get_skills_definitions'],
   create_profile: [
     'search_matching_crew', 
     'update_user_profile', 
     'get_experience_level_definitions', 
     'get_risk_level_definitions', 
     'get_skills_definitions',
-    // Allow boat creation if user provides boat details during profile creation
-    'fetch_boat_details_from_sailboatdata',
-    'create_boat',
+    // Disabled for now to keep the processing time in control, Vercel default is 60 seconds, so until
+    // there is a robust backend queue based solution for running long AI jobs, keep this simpler
+    //'fetch_boat_details_from_sailboatdata',
+    //'create_boat',
   ],
   add_boat: [
     'fetch_boat_details_from_sailboatdata', 
     'create_boat',
     // Allow journey creation if user provides journey details during boat setup
-    'generate_journey_route',
+    // Disabled for now to keep the processing time in control, Vercel default is 60 seconds, so until
+    // there is a robust backend queue based solution for running long AI jobs, keep this simpler
+    //'generate_journey_route',
   ],
   post_journey: ['generate_journey_route'],
   completed: [],
@@ -207,7 +213,12 @@ function buildOwnerPromptForStep(
     case 'signup':
       stateAndGoal = `## CURRENT STEP: Sign up
 **State:** User is not signed in. No profile, boat, or journey.
-**Goal:** Encourage sign up. Be welcoming. Explain benefits (create profile, add boat, create journeys). Do not call any profile/boat/journey tools.`;
+**Goal:** Be welcoming. Show platform value by providing examples of 
+matching crew by using the tool search_matching_crew and resolving and displaying the crew requirements. 
+Encourage sign-up. Do not call any profile/boat/journey tools.
+**CRITICAL:** If user has provided journey details, you must you the information 
+to reason the crew requirements: such as experience level, risk level, skills, etc and display the results.
+`;
       stepInstructions = userInfo ? `**From signup/OAuth (if known):**\n${userInfo}\n` : '';
       extra = `You may use definition tools (get_experience_level_definitions, get_risk_level_definitions, get_skills_definitions) only to answer general questions.`;
       break;
@@ -215,21 +226,14 @@ function buildOwnerPromptForStep(
       stateAndGoal = `## CURRENT STEP: Create profile
 **State:** Profile not created yet. Boat: none. Journey: none.
 **Goal:** Gather full_name, user_description, sailing_experience (and optionally risk_level, skills). Then call \`update_user_profile\` with **roles: ['owner']** (required). When the user gives their full name, include [OWNER_NAME: Their Full Name] in your message.
-**ACCELERATED ONBOARDING:** If the user provides boat details in this conversation (e.g., "I have a Bavaria 46 named Sea Spirit"), you can create the boat immediately after creating the profile—no need to wait for the next step. Use fetch_boat_details_from_sailboatdata and create_boat.
 **AFTER PROFILE IS CREATED:** You MUST propose the next step. In [SUGGESTIONS]:
 - If boat was NOT created: suggest "Add your boat"
 - If boat was created: suggest "Create your first journey"`;
       stepInstructions = userInfo ? `**From signup/OAuth:**\n${userInfo}\n` : '';
       extra = `## SKILLS (optional)
 Use ONLY exact skill names from config. Format in profile: [{"skill_name": "exact_name", "description": "..."}]. Skills optional.
-${getSkillsStructure()}
-
-## ACCELERATED BOAT CREATION (OPTIONAL)
-If the user mentions their boat in this conversation (e.g., "I sail a Grand Soleil 43 called Admiral Fyodor"), you can create it immediately after profile creation:
-1. Call fetch_boat_details_from_sailboatdata with the make/model
-2. Use the boat name they provided
-3. Call create_boat with all available details
-This is optional—only do it if the user clearly provided boat information. Otherwise, complete profile creation and suggest adding a boat next.`;
+${getSkillsStructure()} 
+Then suggest adding a boat next.`;
       if (isProfileCompletionMode) {
         extra += `\n**Profile completion mode:** Extract info from conversation history. Present summary, get confirmation, then call update_user_profile with roles: ['owner'].`;
       }
@@ -238,10 +242,8 @@ This is optional—only do it if the user clearly provided boat information. Oth
       stateAndGoal = `## CURRENT STEP: Add boat
 **State:** Profile created. Boat: none. Journey: none.
 **Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.
-**ACCELERATED ONBOARDING:** If the user provides journey details in this conversation (e.g., "sailing from Miami to Bahamas in June"), you can create the journey immediately after creating the boat. Use generate_journey_route with boatId, startLocation, endLocation, and dates.
 **AFTER BOAT IS CREATED:** You MUST propose the next step. In [SUGGESTIONS]:
-- If journey was NOT created: suggest "Create your first journey"
-- If journey was created: suggest "View your journey" or "Invite crew to your legs"`;
+- Suggest to create a journey next.`;
       stepInstructions = `**READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
 **CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. 
 
@@ -262,19 +264,14 @@ Use data from fetch_boat_details_from_sailboatdata and your summary.`;
 
 **CRITICAL:** Always include characteristics, capabilities, and accommodations if they were returned by fetch_boat_details_from_sailboatdata. These fields provide important information about the boat.
 
-## ACCELERATED JOURNEY CREATION (OPTIONAL)
-If the user mentions their journey plan in this conversation (e.g., "I'm sailing from Fort Lauderdale to Nassau in May"), you can create it immediately after boat creation:
-1. After create_boat succeeds, extract the boatId from the result
-2. Parse journey details: start location, end location, dates
-3. Call generate_journey_route with boatId, startLocation {name, lat, lng}, endLocation {name, lat, lng}, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)
-This is optional—only do it if the user clearly provided journey information. Otherwise, complete boat creation and suggest creating a journey next.`;
+Then suggest creating a journey next.`;
       break;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
 **Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), waypointDensity ("minimal" or "moderate"). 
 **CRITICAL:** If the user mentions dates anywhere in the conversation (e.g., "01/05/2026 - 30/05/2026" or "from May 1st to May 30th"), you MUST convert them to ISO format (YYYY-MM-DD) and pass them as startDate and endDate parameters to generate_journey_route.
-**AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys" or "Invite crew to your legs."`;
+**AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys"`;
       stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
 
 generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
@@ -308,7 +305,7 @@ ${TOOL_CALL_FORMAT}
 ${extra ? `\n${extra}` : ''}
 
 ## RULES
-- Be concise. One or two questions at a time. Confirm before creating (profile/boat/journey).
+- Be concise. Preferably on one at a time. Confirm before creating (profile/boat/journey).
 - **Use conversation history:** Before asking for any detail, check if the user already provided it earlier in the conversation (e.g. boat name, make/model, profile info). If they did, use that information and do not ask again—proceed to the next action (e.g. look up boat, show summary, or create).
 - **ALWAYS propose the next onboarding step:** After completing the current step (profile created, boat created, or journey created), your [SUGGESTIONS] MUST include one suggestion that moves the user to the next step (e.g. after profile → "Add your boat"; after boat → "Create your first journey"; after journey → "View your journeys" or "Invite crew"). Never end with only generic tips—always offer the concrete next step in the flow.
 - At the end of every response, add [SUGGESTIONS] with 1–2 items: at least one must be the next step in the flow when the current step is complete; the other can be a value for a missing field or a short tip. [/SUGGESTIONS]

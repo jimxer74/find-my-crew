@@ -101,7 +101,8 @@
       "Bash(npm --version:*)",
       "Bash(npx supabase:*)",
       "mcp__backlog__task_complete",
-      "mcp__backlog__document_create"
+      "mcp__backlog__document_create",
+      "mcp__backlog__document_update"
     ]
   }
 }

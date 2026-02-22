@@ -99,20 +99,24 @@ function calculateCrewMatchScore(
   }
 
   // Location proximity (weight: 10%)
-  if (params.location && crewProfile.home_port_lat && crewProfile.home_port_lng) {
-    maxScore += 10;
-    const distance = calculateDistance(
-      params.location.lat,
-      params.location.lng,
-      crewProfile.home_port_lat,
-      crewProfile.home_port_lng
-    );
-    
-    const radius = params.location.radius || 500; // default 500km
-    if (distance <= radius) {
-      // Score decreases linearly with distance
-      const proximityScore = (1 - (distance / radius)) * 10;
-      score += proximityScore;
+  // Extract coordinates from preferred_departure_location JSONB if available
+  if (params.location && crewProfile.preferred_departure_location) {
+    const depLocation = crewProfile.preferred_departure_location as any;
+    if (depLocation.lat && depLocation.lng) {
+      maxScore += 10;
+      const distance = calculateDistance(
+        params.location.lat,
+        params.location.lng,
+        depLocation.lat,
+        depLocation.lng
+      );
+
+      const radius = params.location.radius || 500; // default 500km
+      if (distance <= radius) {
+        // Score decreases linearly with distance
+        const proximityScore = (1 - (distance / radius)) * 10;
+        score += proximityScore;
+      }
     }
   }
 
@@ -175,11 +179,53 @@ function formatLocation(homePort: string | null, lat: number | null, lng: number
 /**
  * Format availability for display
  */
-function formatAvailability(availability: string | null): string | undefined {
-  if (!availability) return undefined;
-  
-  // Availability is stored as text, could be formatted dates or free text
-  return availability;
+function formatAvailability(startDate: string | null, endDate: string | null): string | undefined {
+  if (!startDate && !endDate) return undefined;
+
+  if (startDate && endDate) {
+    return `${startDate} to ${endDate}`;
+  } else if (startDate) {
+    return `From ${startDate}`;
+  } else if (endDate) {
+    return `Until ${endDate}`;
+  }
+
+  return undefined;
+}
+
+/**
+ * Parse skills array - handles both string names and JSON objects
+ */
+function parseSkills(skillsData: any): string[] {
+  if (!Array.isArray(skillsData)) {
+    return [];
+  }
+
+  return skillsData
+    .map((skill) => {
+      // If already a string, return as-is
+      if (typeof skill === 'string') {
+        // Try to parse as JSON in case it's a stringified object
+        try {
+          const parsed = JSON.parse(skill);
+          if (typeof parsed === 'object' && parsed !== null) {
+            return parsed['skill Name'] || parsed.skillName || parsed.name || '';
+          }
+        } catch {
+          // Not JSON, return the string as-is
+          return skill;
+        }
+        return skill;
+      }
+
+      // If object, extract skill name
+      if (typeof skill === 'object' && skill !== null) {
+        return skill['skill Name'] || skill.skillName || skill.name || '';
+      }
+
+      return '';
+    })
+    .filter((skill) => skill.length > 0); // Remove empty strings
 }
 
 /**
@@ -190,18 +236,24 @@ function normalizeCrewProfile(
   matchScore: number,
   includePrivateInfo: boolean
 ): CrewMatch {
+  // Extract location from preferred_departure_location JSONB if available
+  const depLocation = profile.preferred_departure_location as any;
+  const homePort = depLocation?.name || null;
+  const depLat = depLocation?.lat || null;
+  const depLng = depLocation?.lng || null;
+
   return {
     id: profile.id,
-    name: includePrivateInfo ? (profile.first_name || 'Anonymous') : null,
-    image_url: includePrivateInfo ? profile.image_url : null,
-    experience_level: profile.experience_level || 1,
-    risk_levels: Array.isArray(profile.risk_level) 
-      ? profile.risk_level 
+    name: includePrivateInfo ? (profile.full_name || 'Anonymous') : null,
+    image_url: includePrivateInfo ? profile.profile_image_url : null,
+    experience_level: profile.sailing_experience || 1,
+    risk_levels: Array.isArray(profile.risk_level)
+      ? profile.risk_level
       : profile.risk_level ? [profile.risk_level] : [],
-    skills: profile.skills || [],
-    location: formatLocation(profile.home_port, profile.home_port_lat, profile.home_port_lng),
+    skills: parseSkills(profile.skills),
+    location: formatLocation(homePort, depLat, depLng),
     matchScore,
-    availability: formatAvailability(profile.availability),
+    availability: formatAvailability(profile.availability_start_date, profile.availability_end_date),
   };
 }
 
@@ -217,11 +269,11 @@ export async function searchMatchingCrew(
     // Build query
     let query = supabase
       .from('profiles')
-      .select('id, first_name, image_url, experience_level, risk_level, skills, home_port, home_port_lat, home_port_lng, availability');
+      .select('id, full_name, profile_image_url, sailing_experience, risk_level, skills, preferred_departure_location, availability_start_date, availability_end_date');
 
     // Filter by experience level (minimum requirement)
     if (params.experienceLevel) {
-      query = query.gte('experience_level', params.experienceLevel);
+      query = query.gte('sailing_experience', params.experienceLevel);
     }
 
     // Filter by risk levels (crew must have at least one matching risk level)
@@ -230,19 +282,8 @@ export async function searchMatchingCrew(
       query = query.overlaps('risk_level', params.riskLevels);
     }
 
-    // Filter by location (approximate bounding box first, then precise distance)
-    if (params.location) {
-      const radius = params.location.radius || 500; // km
-      // Calculate approximate bounding box (1 degree ≈ 111km)
-      const latDelta = radius / 111;
-      const lngDelta = radius / (111 * Math.cos(params.location.lat * Math.PI / 180));
-      
-      query = query
-        .gte('home_port_lat', params.location.lat - latDelta)
-        .lte('home_port_lat', params.location.lat + latDelta)
-        .gte('home_port_lng', params.location.lng - lngDelta)
-        .lte('home_port_lng', params.location.lng + lngDelta);
-    }
+    // Note: Location filtering is not applied at query level since profiles store locations as JSONB.
+    // Distance filtering will be done in post-processing after retrieving profiles.
 
     // Execute query
     const { data: profiles, error } = await query;
@@ -259,20 +300,23 @@ export async function searchMatchingCrew(
     // Calculate match scores for each profile
     const scoredProfiles = profiles.map(profile => {
       const score = calculateCrewMatchScore(profile, params);
-      
+
       // Apply precise distance filter if location specified
       let includeProfile = true;
-      if (params.location && profile.home_port_lat && profile.home_port_lng) {
-        const distance = calculateDistance(
-          params.location.lat,
-          params.location.lng,
-          profile.home_port_lat,
-          profile.home_port_lng
-        );
-        const radius = params.location.radius || 500;
-        includeProfile = distance <= radius;
+      if (params.location && profile.preferred_departure_location) {
+        const depLocation = profile.preferred_departure_location as any;
+        if (depLocation.lat && depLocation.lng) {
+          const distance = calculateDistance(
+            params.location.lat,
+            params.location.lng,
+            depLocation.lat,
+            depLocation.lng
+          );
+          const radius = params.location.radius || 500;
+          includeProfile = distance <= radius;
+        }
       }
-      
+
       return {
         profile,
         score,
