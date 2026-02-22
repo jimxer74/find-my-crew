@@ -1,9 +1,10 @@
 ---
 id: TASK-127
 title: Implement intermediate AI messages display in owner onboarding
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-22 12:28'
+updated_date: '2026-02-22 12:29'
 labels:
   - ai-onboarding
   - feature
