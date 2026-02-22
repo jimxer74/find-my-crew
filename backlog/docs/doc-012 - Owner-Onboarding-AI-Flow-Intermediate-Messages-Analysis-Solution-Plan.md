@@ -3,6 +3,7 @@ id: doc-012
 title: Owner Onboarding AI Flow - Intermediate Messages Analysis & Solution Plan
 type: other
 created_date: '2026-02-22 11:42'
+updated_date: '2026-02-22 11:52'
 ---
 # Owner Onboarding AI Flow - Intermediate Messages Not Displayed
 
@@ -413,28 +414,37 @@ Final:
 1. **Should intermediate messages include tool call JSON?**
    - Option A: Strip JSON, show only explanation
    - Option B: Show JSON for transparency
-   - Option C: Show collapsed/toggle-able JSON
+   - Option C: Show collapsed/toggle-able JSON 
+
+aswer: Option C, show toggle / collapsible JSON tool call (for now to debug, maybe to be removed later)
 
 2. **How to mark intermediate vs final messages?**
    - Flag in metadata: `isIntermediate?: boolean`
    - Different message role?
    - Separate fields?
 
+answer: Flag in metadata
+
 3. **Client behavior for intermediate messages**:
    - Display inline as they arrive (streaming-like visual)?
    - Batch display after receiving all?
    - Group with tool results?
 
+answer: Display inline as they arrive
+
 4. **Session persistence**:
    - Should intermediate messages be saved to `owner_sessions.conversation`?
    - Currently not, but should they be?
+
+answer: yes they should be saved
+
 
 5. **Backward compatibility**:
    - Keep single `message` field for old clients?
    - Or require client update?
    - Use both `message` and `intermediateMessages` together?
 
----
+answer: no need for backward compatibiliy, client needs to be updated
 
 ## Summary
 
