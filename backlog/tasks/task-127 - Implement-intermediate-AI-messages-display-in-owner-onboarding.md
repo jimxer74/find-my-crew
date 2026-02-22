@@ -4,7 +4,7 @@ title: Implement intermediate AI messages display in owner onboarding
 status: In Progress
 assignee: []
 created_date: '2026-02-22 12:28'
-updated_date: '2026-02-22 12:29'
+updated_date: '2026-02-22 12:31'
 labels:
   - ai-onboarding
   - feature
@@ -69,3 +69,31 @@ Implement Solution 1 from doc-012: Return multiple messages in response via new 
 ✅ owner_sessions.conversation includes all messages
 ✅ Build passes, no TypeScript errors
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Progress
+
+### ✅ COMPLETED: Phase 1 & 2 (Type Definitions + Service Tracking)
+
+**Changes Made:**
+
+1. **Phase 1: Updated `app/lib/ai/owner/types.ts`**
+   - Added `isIntermediate?: boolean` flag to OwnerMessage.metadata
+   - Added `intermediateMessages?: OwnerMessage[]` to OwnerChatResponse
+
+2. **Phase 2: Updated `app/lib/ai/owner/service.ts`**
+   - Added `intermediateMessages: OwnerMessage[]` tracking variable
+   - Capture intermediate messages when tool calls are found (lines 2287-2302)
+   - Store message content (without tool JSON), tool calls, and isIntermediate flag
+   - Return intermediateMessages array in response
+   - Added logging: '📬 Intermediate messages: N'
+
+**Build Status**: ✅ PASSED - No errors
+
+### Next Steps
+
+3. **Phase 3**: Ensure session persistence saves all messages to owner_sessions.conversation
+4. **Phase 4**: Client-side integration - display intermediate messages with collapsible tool calls
+<!-- SECTION:PLAN:END -->
