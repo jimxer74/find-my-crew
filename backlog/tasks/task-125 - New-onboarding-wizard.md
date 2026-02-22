@@ -4,7 +4,7 @@ title: New onboarding wizard
 status: To Do
 assignee: []
 created_date: '2026-02-21 16:20'
-updated_date: '2026-02-22 13:59'
+updated_date: '2026-02-22 15:36'
 labels: []
 dependencies: []
 ---
@@ -39,6 +39,12 @@ Based on AI assessment user proposed profile is displayed on the page. Page has 
 - Photo upload to add skipper photos (prefilled with user photo from auth flow if available)
 - Next: Skills (button to continue)
 - Back button
+
+4. Skipper sailing preferences
+Page has following components:
+- AI assessment reasoning in text displayed to user
+- Sailing preferences selection (same as in Profile edit page), preselected based on the AI assessment
+- Motivation and Sailing preferances: textarea, prefilled with AI assesment proposal
 
 4. Skipper Sailing experience and skills
 Page to display the AI assessed Experience level, skills and any certifications if provided by the user input in 2. step. Page has following components:
