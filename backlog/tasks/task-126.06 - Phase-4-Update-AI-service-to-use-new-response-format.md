@@ -1,9 +1,10 @@
 ---
 id: TASK-126.06
 title: 'Phase 4: Update AI service to use new response format'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-23 08:37'
+updated_date: '2026-02-23 08:47'
 labels: []
 dependencies: []
 references:
@@ -57,3 +58,49 @@ Changes needed:
 - [ ] #7 TypeScript compiles without errors
 - [ ] #8 AI responses properly formatted and parsed
 <!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Completion Summary
+
+Phase 4 - Update AI Service to use new response format has been started and partially completed.
+
+### Changes Made:
+
+#### 1. Response Marker Parsing Function (app/lib/ai/owner/service.ts)
+✅ Created parseResponseMarkers() function:
+  - Parses CLARIFICATION:type:label:options format
+  - Parses CONFIRMATION:type format
+  - Parses AUTH_NUDGE format
+  - Extracts metadata: responseType, questionType, dataType, options
+  - Returns cleanContent with markers removed
+  - Proper TypeScript typing
+
+#### 2. Message Metadata Extraction
+✅ Updated response message creation:
+  - Calls parseResponseMarkers() on finalContent
+  - Extracts all metadata fields
+  - Attaches to message.metadata
+  - Uses cleanContent (without markers) as message content
+
+#### 3. Prompt Updates
+✅ Removed [SUGGESTIONS] block references from:
+  - create_profile step (line ~224)
+  - add_boat step (line ~240)
+  - post_journey step (line ~268)
+
+✅ Updated prompts to generic "guide next step" language instead of [SUGGESTIONS] format
+
+### Verification:
+- ✅ TypeScript compiles without errors
+- ✅ Response parsing function properly typed
+- ✅ Message metadata extraction working
+- ✅ Build successful with 82 pages generated
+
+### Implementation Notes:
+This phase creates the infrastructure for response markers. Full AI prompt restructuring toward CLARIFICATION/CONFIRMATION format would be a larger effort and can be done incrementally. The parsing infrastructure is now in place to support new markers as AI is gradually guided toward using them.
+
+### Next Steps:
+Phase 5 - Add exit button to header (straightforward, provides immediate UI value)
+<!-- SECTION:NOTES:END -->
