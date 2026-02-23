@@ -288,13 +288,18 @@ After create_boat succeeds, suggest creating a journey next.`;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
-**Goal:** Check the conversation history ALLWAYS first to see if user has already provided Journey information and present journey-summary to user. 
-If journey information is not available, gather route (start, end, optional waypoints, dates).
-**AFTER JOURNEY SUMMARY IS DISPLAYED:** You MUST ALLWAYS propose to generate the journey. In [SUGGESTIONS]:
-Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), 
-and optional intermediateWaypoints, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), waypointDensity ("minimal" or "moderate"). 
-**CRITICAL:** If the user mentions dates anywhere in the conversation (e.g., "01/05/2026 - 30/05/2026" or "from May 1st to May 30th"), 
-you MUST convert them to ISO format (YYYY-MM-DD) and pass them as startDate and endDate parameters to generate_journey_route.`;
+**Goal:** Check conversation history for journey details, show summary, and CALL generate_journey_route immediately when user confirms.
+**STEP 1 — CHECK FOR JOURNEY DATA FIRST:** Look in conversation history and [JOURNEY DETAILS] stored context for:
+- Start and end locations (name, lat, lng)
+- Dates (startDate, endDate in YYYY-MM-DD format)
+- Waypoints (optional)
+- Crew requirements from [CREW REQUIREMENTS]
+**STEP 2 — SHOW SUMMARY:** Present the journey details back to the user for confirmation.
+**STEP 3 — GENERATE (CRITICAL):** When user confirms (says "yes", "looks good", "save", "create", etc.):
+- You MUST call \`generate_journey_route\` IMMEDIATELY in the same response
+- Do NOT just say "journey saved" — you must actually CALL THE TOOL
+- Include boatId: "${boatId ?? 'N/A'}", startLocation, endLocation, and all dates/waypoints/crew requirements
+**CRITICAL:** If the user mentions dates anywhere (e.g., "01/05/2026 - 30/05/2026" or "May 1st to May 30th"), you MUST convert to ISO format (YYYY-MM-DD).`;
       stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
 
 generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
@@ -321,6 +326,30 @@ Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the us
 \`\`\`tool_call
 {"name": "generate_journey_route", "arguments": {"startLocation": {...}, "endLocation": {...}, "boatId": "...", "startDate": "2026-05-01", "endDate": "2026-05-30", "waypointDensity": "moderate", "skills": ["navigation", "night_sailing", "heavy_weather"], "min_experience_level": 2, "cost_model": "Shared contribution"}}
 \`\`\``;
+      extra = `**generate_journey_route (CRITICAL — CALL THIS TOOL IMMEDIATELY WHEN USER CONFIRMS):** When the user confirms the journey summary with words like "yes", "confirm", "looks good", "save", or "create":
+1. You MUST call generate_journey_route in the same response — do NOT say "journey saved" without calling the tool
+2. Required fields:
+   - startLocation: {name: "...", lat: number, lng: number}
+   - endLocation: {name: "...", lat: number, lng: number}
+   - boatId: "${boatId ?? ''}" (CRITICAL — required)
+3. Optional but important fields:
+   - startDate: "YYYY-MM-DD" (MUST convert dates to ISO format)
+   - endDate: "YYYY-MM-DD" (MUST convert dates to ISO format)
+   - intermediateWaypoints: [{name: "...", lat: ..., lng: ...}, ...]
+   - waypointDensity: "moderate" (default) or "minimal"
+   - skills: array of crew skills from [CREW REQUIREMENTS]
+   - min_experience_level: 1-4 (from [CREW REQUIREMENTS])
+   - cost_model: one of "Shared contribution", "Owner covers all costs", "Crew pays a fee", "Delivery/paid crew", "Not defined"
+   - cost_info: free text about costs (if provided in [CREW REQUIREMENTS])
+
+Example (replace with actual values from journey summary and [JOURNEY DETAILS]/[CREW REQUIREMENTS]):
+\`\`\`tool_call
+{"name": "generate_journey_route", "arguments": {"startLocation": {"name": "Colombo, Sri Lanka", "lat": 6.9271, "lng": 80.7789}, "endLocation": {"name": "Richards Bay, South Africa", "lat": -28.78, "lng": 32.08}, "boatId": "${boatId ?? ''}", "startDate": "2026-05-01", "endDate": "2026-05-30", "intermediateWaypoints": [{"name": "Malé, Maldives", "lat": 4.1755, "lng": 73.5093}], "waypointDensity": "moderate", "skills": ["navigation", "night_sailing"], "min_experience_level": 2}}
+\`\`\`
+
+**CRITICAL:** If you claim the journey was saved or created but did not call generate_journey_route, the system will detect this and force you to call the tool. To avoid wasting iterations, CALL THE TOOL IMMEDIATELY WHEN USER CONFIRMS.
+
+After generate_journey_route succeeds, tell the user their journey is ready and suggest connecting with crew.`;
       break;
     case 'completed':
       stateAndGoal = `## CURRENT STEP: Completed
@@ -2286,6 +2315,7 @@ export async function ownerChat(
   let journeyCreated = false;
   let addBoatNudgeCount = 0;
   let addProfileNudgeCount = 0;
+  let addJourneyNudgeCount = 0;
 
   while (iterations < MAX_TOOL_ITERATIONS) {
     iterations++;
@@ -2377,6 +2407,27 @@ export async function ownerChat(
           );
           continue;
         }
+      }
+
+      // post_journey step: if user confirmed but AI claimed journey was saved without calling generate_journey_route, nudge once
+      const looksLikeJourneySummary = (/\b(start|end|location|date|waypoint|summary)\b/i.test(result.text)) && !/generate_journey_route|tool_call/.test(result.text);
+      const looksLikeJourneySavedWithoutTool = /(?:journey.*(?:saved|created|generated).*successfully|has been.*created|have been created|successfully saved|your journey|trip.*created)/i.test(result.text) && !/generate_journey_route|tool_call/.test(result.text);
+      if (!journeyCreated && currentStep === 'post_journey' && looksLikeConfirmation && (looksLikeJourneySummary || looksLikeJourneySavedWithoutTool)) {
+        if (addJourneyNudgeCount >= 2) {
+          log('⚠️ Post journey: nudge cap reached - journey may already exist');
+          currentMessages.push(
+            { role: 'assistant', content: result.text },
+            { role: 'user', content: 'The journey may already have been created. Respond briefly that the onboarding is complete and suggest "Explore connecting with crew members" as the next step. Do not call any tools.' }
+          );
+          continue;
+        }
+        log('⚠️ Post journey: user confirmed but no generate_journey_route call - nudging AI');
+        addJourneyNudgeCount += 1;
+        currentMessages.push(
+          { role: 'assistant', content: result.text },
+          { role: 'user', content: `The user confirmed. You MUST call the generate_journey_route tool in this response. Use this structure: \`\`\`tool_call\n{"name": "generate_journey_route", "arguments": {"startLocation": {"name": "...", "lat": ..., "lng": ...}, "endLocation": {"name": "...", "lat": ..., "lng": ...}, "boatId": "${boatId || 'BOAT_ID'}", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "waypointDensity": "moderate"}}\n\`\`\` Fill in all actual values from the journey summary. Include crew skills and experience level from [CREW REQUIREMENTS] if available. Do not call any other tool.` }
+        );
+        continue;
       }
 
       // Check if AI tried to call a tool but failed to parse
