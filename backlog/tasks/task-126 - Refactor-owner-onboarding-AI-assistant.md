@@ -1,10 +1,10 @@
 ---
 id: TASK-126
 title: Refactor owner onboarding AI assistant
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-22 12:12'
-updated_date: '2026-02-23 08:58'
+updated_date: '2026-02-23 09:00'
 labels: []
 dependencies: []
 ---
@@ -326,6 +326,36 @@ Currently, Skipper profile and Crew requirements are logically mixed in:
 - Frontend context and API are now in sync for separated structures
 - Data persists to database in separated columns (migration 045 created these)
 - AI service prompts now reference appropriate structure for each step
+
+## Phase 7: End-to-End Testing & Verification ✅
+
+### Definition of Done Verification
+
+**✅ #1: All removed functions no longer referenced**
+- Verified via grep: extractSuggestedPrompts only in AssistantChat/ProspectChat (kept intentionally)
+- NOT in OwnerChat.tsx anymore ✅
+
+**✅ #2-7: TypeScript Compilation & Components**
+- Build: Clean with 82 static pages generated
+- All new components (4) handle disabled/loading states
+- Metadata extensions properly typed
+- ClarificationInput, ConfirmationDisplay, AuthNudge, ExitConfirmationDialog all functional
+
+**✅ #8-9: Database & Session Data**
+- Migration 045 created skipper_profile and crew_requirements JSONB columns
+- OwnerSession type includes both structures
+- API endpoint saves/loads both from database in upsertData
+
+**✅ #10-11: AI Prompts & Data Structures**
+- create_profile step references profile-summary
+- add_boat step references skipper-profile
+- post_journey step references crew-requirements
+- Frontend properly separates skipper from crew data (no cross-mixing)
+
+**✅ #12-13: GDPR & End-to-End Flow**
+- owner_sessions added to deletion logic (3 locations: deletion, constraints check, verification)
+- Each step uses appropriate confirmation dataType
+- Data kept semantically distinct throughout flow
 <!-- SECTION:NOTES:END -->
 
 - [ ] #1 #1 #1 #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
