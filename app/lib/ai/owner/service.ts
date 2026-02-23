@@ -257,7 +257,10 @@ Then suggest adding a boat next.`;
 - If a specific make/model IS clearly present (e.g. "Baltic 35", "Bavaria 46"), call \`fetch_boat_details_from_sailboatdata\` with that exact string — do NOT announce intent, just call it.
 - If make/model is NOT available or unclear, ask the user for it before fetching. Do NOT guess or invent a make/model.
 **STEP 2 — PRESENT SUMMARY AND CONFIRM:** After fetching specs, show the boat summary and ask for confirmation before saving.
-**STEP 3 — SAVE:** Only call \`create_boat\` after the user confirms.
+**STEP 3 — SAVE (CRITICAL):** When the user confirms (says "yes", "confirm", "looks good", "save", "create it", or similar):
+  - You MUST call \`create_boat\` tool IMMEDIATELY in the same response
+  - Do NOT just say "I will save" or "boat has been saved" — you must actually CALL THE TOOL
+  - Include ALL available fields from fetch_boat_details_from_sailboatdata results
 **AFTER BOAT IS SAVED:** Confirm success and suggest creating a journey next.`;
       stepInstructions = `**Required fields for create_boat:** name (boat's own name), type, make_model, capacity (number)
 **IMPORTANT - Include ALL available data from fetch_boat_details_from_sailboatdata:**
@@ -267,14 +270,20 @@ Then suggest adding a boat next.`;
 - characteristics, capabilities, accommodations (CRITICAL — do NOT invent these if not returned by the tool; omit them instead)
 - sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch
 **NEVER present made-up or placeholder specs.** If fetch_boat_details_from_sailboatdata returns no data, tell the user the specs could not be found and ask them to provide the details manually.`;
-      extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Include ALL available fields from fetch_boat_details_from_sailboatdata. Example (replace with actual values from your summary and fetch_boat_details result):
+      extra = `**create_boat (CRITICAL — CALL THIS TOOL IMMEDIATELY WHEN USER CONFIRMS):** When the user confirms the boat summary with words like "yes", "confirm", "looks good", "save", or "create it":
+1. You MUST call the create_boat tool in the same response — do NOT say you will save it, ACTUALLY CALL IT
+2. Include ALL available fields from fetch_boat_details_from_sailboatdata:
+   - Required: name, type, make_model, capacity
+   - Optional but IMPORTANT: home_port, country_flag, loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots, link_to_specs, characteristics, capabilities, accommodations, sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch
+
+Example (replace with actual values from fetch_boat_details results):
 \`\`\`tool_call
 {"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6, "home_port": "Stockholm", "country_flag": "SE", "loa_m": 14.0, "beam_m": 4.2, "max_draft_m": 2.1, "displcmt_m": 12000, "average_speed_knots": 6.5, "link_to_specs": "https://sailboatdata.com/sailboat/bavaria-46", "characteristics": "Modern hull design with fin keel and spade rudder...", "capabilities": "Equipped for offshore passages with full electronics...", "accommodations": "Spacious saloon with 3 cabins and 2 heads..."}}
 \`\`\`
 
-**CRITICAL:** Always include characteristics, capabilities, and accommodations if they were returned by fetch_boat_details_from_sailboatdata. These fields provide important information about the boat.
+**CRITICAL:** If you claim the boat was saved or created but did not call create_boat, the system will detect this and force you to call the tool. To avoid wasting iterations, CALL THE TOOL IMMEDIATELY WHEN USER CONFIRMS.
 
-Then suggest creating a journey next.`;
+After create_boat succeeds, suggest creating a journey next.`;
       break;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
@@ -356,7 +365,8 @@ ${extra ? `\n${extra}` : ''}
 Never end with only generic tips—always offer the concrete action to peform.
 - At the end of every response, add [SUGGESTIONS] with 1 item: that is either confirm pending action (e.g. "Save your profile", "Save boat details", "Create your first journey"); 
 or proposed value for a missing field (e.g. "Confirm 1. Beginner experience level"). [/SUGGESTIONS]
-- Do not show tool_call JSON to the user; describe in plain language.`;
+- Do not show tool_call JSON to the user; describe in plain language.
+- **CRITICAL - NEVER claim success without calling the tool:** If you need to create/update something (profile, boat, journey), you MUST call the appropriate tool (update_user_profile, create_boat, generate_journey_route). Do NOT say "saved successfully" or "created successfully" without actually calling the tool. If you claim success without calling the tool, the system will force you to call it anyway, wasting iterations.`;
 }
 
 /**
@@ -2311,7 +2321,7 @@ export async function ownerChat(
     if (toolCalls.length === 0) {
       // Add boat step: if user confirmed and AI either showed a boat summary or claimed boat was created (without calling create_boat), nudge once
       const lastUserMessage = request.message.trim().toLowerCase();
-      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|save|save it|save boat|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead|save)\b/.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bconfirm\b.*\bboat\b/i.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bsave\b.*\bboat\b/i.test(lastUserMessage));
+      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|save|save it|save boat|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead|save)\b/.test(lastUserMessage)) || (lastUserMessage.length < 100 && /\bconfirm\b.*\bsave\b.*\bboat\b/i.test(lastUserMessage)) || (lastUserMessage.length < 100 && /\bconfirm\b.*\bboat\b/i.test(lastUserMessage)) || (lastUserMessage.length < 100 && /\bsave\b.*\bboat\b/i.test(lastUserMessage));
       const looksLikeBoatSummary = (/\b(name|type|capacity|make|model):\s*\S+/i.test(result.text) || /boat.*summary|here('s| is) (your|the) boat/i.test(result.text)) && !/create_boat|tool_call/.test(result.text);
       const looksLikeBoatCreatedWithoutTool = /(?:created successfully|saved successfully|boat profile.*created|your boat.*has been created|boat has been created|already been saved|have been saved|has been saved)/i.test(result.text) && !/create_boat|tool_call/.test(result.text);
       if (!boatCreated && currentStep === 'add_boat' && looksLikeConfirmation && (looksLikeBoatSummary || looksLikeBoatCreatedWithoutTool)) {
