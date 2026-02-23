@@ -4,7 +4,7 @@ title: Onboarding reusable modules - PART 1
 status: To Do
 assignee: []
 created_date: '2026-02-23 06:33'
-updated_date: '2026-02-23 07:23'
+updated_date: '2026-02-23 13:58'
 labels: []
 dependencies: []
 ---
@@ -36,4 +36,11 @@ Onboarding modules (not in exact order, order needs to be changeable)
 - I has input to define the journey date range
 - ACTION: Information is passed to AI for assessment, AI needs to reason and understand the characteristics of the planned journey and return structured data: rough lat/lng of the used inputted waypoints, risk level, required experience level and proposed crew skills and journey feasibility information, taking into consideration the dates and time, prevailing weather conditions of the defined time, (e.g. to avoid for example long offshore routes with prevailing headwinds, and indicate if the planned journey and timing does not make sense, e.g. atlantic crossing in hurrican season), the route considerations, potential hazards, etc. it needs to provide user a comprehensive assessment of the journey planned so that user can decided if it is a good idea. AI could propose changes to the plan, e.g. to adjust the departure or arrival locations, dates or timing etc. to better suit the known weather patterns.  
 - RESULT: If AI proposes changes or identifies issues with the planned journey, these need to be displayed to user in informative way to enable user to adjust the journey if needed. A matching crew is displayed ot user to show the value of the platform. Since user is already signed, all the information about the crew can be displayed,
+
+** Profile Module**
+Split into same sections as in Profile edit page each own page in wizard
+- Personal info (Photo upload, user description) email and names are from auth flow
+- Sailing preferences (Comfort level selector, same as in Profile page)
+- Sailing experience and skills (Experience level selectos, same as in Profile)
+-
 <!-- SECTION:DESCRIPTION:END -->
