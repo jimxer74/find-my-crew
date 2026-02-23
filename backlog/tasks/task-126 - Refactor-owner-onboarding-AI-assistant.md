@@ -4,7 +4,7 @@ title: Refactor owner onboarding AI assistant
 status: To Do
 assignee: []
 created_date: '2026-02-22 12:12'
-updated_date: '2026-02-23 08:22'
+updated_date: '2026-02-23 08:33'
 labels: []
 dependencies: []
 ---
@@ -131,14 +131,79 @@ Show confirmation again with updated data
 - Exit button functional: shows only when authenticated, requires confirmation, navigates to profile
 - No breaking changes to existing features (intermediate messages, pending actions, auth)
 - Session cleanup and GDPR archiving unchanged
+
+## Additional Requirement: Separate Skipper & Crew Profile Data Structures
+
+### Problem
+Currently, Skipper profile and Crew requirements are logically mixed in:
+- ComboSearch box on front page (shows both together)
+- Mobile wizard (combines both in single flow)
+- Session data structure (unclear separation between the two datasets)
+- This causes AI to confuse semantics when processing data
+
+### Solution: Clear Separation of Concerns
+
+#### UI Layer Changes
+1. **Front Page (ComboSearch box)**
+   - Split into two distinct sections:
+     - Section 1: "Skipper Profile" - collects boat owner/skipper information
+     - Section 2: "Crew Requirements" - collects what crew members are looking for
+   - Each section has own input fields and context
+
+2. **Mobile Wizard**
+   - Create separate pages:
+     - Page N: "Your Skipper Profile" - boat details, skipper experience, availability
+     - Page N+1: "Crew Requirements" - skills needed, experience levels, risk tolerance
+   - Each page has its own textareas/inputs with clear labels
+   - Clear visual separation and sequencing
+
+#### Data Layer Changes
+3. **Session Table Structure**
+   - Refactor `owner_sessions.conversation` and `owner_sessions.onboarding_data` or create new columns:
+     - Create clear separation:
+       ```
+       skipper_profile: {
+         boat_name: string
+         boat_make_model: string
+         boat_length: number
+         experience_level: number
+         certifications: string[]
+         availability: {...}
+       }
+       
+       crew_requirements: {
+         needed_roles: string[]
+         required_experience: number
+         required_skills: string[]
+         risk_tolerance: string[]
+         preferred_schedule: {...}
+       }
+       ```
+   - This prevents mixing of datasets in conversation context
+   - AI receives clear, semantically distinct data structures
+
+#### AI Prompt Changes
+4. **Service Updates (buildOwnerPromptForStep)**
+   - When requesting Skipper info: Only reference skipper_profile structure
+   - When requesting Crew info: Only reference crew_requirements structure
+   - Confirmation messages show each section separately
+   - Prevents confusion about which data is being discussed
+
+### Implementation Notes
+- This change should happen in parallel with the UI refactoring (phases 2-3)
+- Update type definitions to reflect new session data structure
+- Database migration to add new columns or restructure existing ones (see GDPR note)
+- Update GDPR deletion logic to handle new structure
+- Frontend reading/storing should map to new separated structure
 <!-- SECTION:PLAN:END -->
 
-- [ ] #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
-- [ ] #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
-- [ ] #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
-- [ ] #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
-- [ ] #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
-- [ ] #6 Session cleanup and GDPR archiving workflow unchanged
+- [ ] #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
+- [ ] #2 #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
+- [ ] #3 #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
+- [ ] #4 #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
+- [ ] #5 #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
+- [ ] #6 #6 Session cleanup and GDPR archiving workflow unchanged
+<!-- AC:END -->
 <!-- AC:END -->
 
 ## Definition of Done
