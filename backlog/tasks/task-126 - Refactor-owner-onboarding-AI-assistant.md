@@ -4,7 +4,7 @@ title: Refactor owner onboarding AI assistant
 status: In Progress
 assignee: []
 created_date: '2026-02-22 12:12'
-updated_date: '2026-02-23 08:37'
+updated_date: '2026-02-23 08:49'
 labels: []
 dependencies: []
 ---
@@ -197,21 +197,103 @@ Currently, Skipper profile and Crew requirements are logically mixed in:
 - Frontend reading/storing should map to new separated structure
 <!-- SECTION:PLAN:END -->
 
-- [ ] #1 #1 #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
-- [ ] #2 #2 #2 #2 #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
-- [ ] #3 #3 #3 #3 #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
-- [ ] #4 #4 #4 #4 #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
-- [ ] #5 #5 #5 #5 #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
-- [ ] #6 #6 #6 #6 #6 Session cleanup and GDPR archiving workflow unchanged
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## TASK-126 Implementation Progress
+
+### Completed Phases (5/7) ✅
+
+**Phase 1: Remove Suggestion Functionality** ✅
+- Removed SuggestedPrompts component from OwnerChat.tsx
+- Removed suggestion extraction/rendering logic
+- Build: ✅ Compiles without errors
+
+**Phase 2: Create Context-Specific UI Components** ✅
+- Phase 2a: ClarificationInput with auto-detection (radio/text/date/multi-select)
+- Phase 2b: ConfirmationDisplay with refinement loop
+- Phase 2c: AuthNudge + ExitConfirmationDialog
+- All 4 new components created and tested
+- Build: ✅ Compiles without errors
+
+**Phase 3: Update OwnerChat Message Handling** ✅
+- Extended OwnerMessage type with response metadata
+- Added message rendering logic for all response types
+- Created handler functions for clarifications/confirmations
+- Wired ExitConfirmationDialog
+- Build: ✅ Compiles without errors
+
+**Phase 4: Update AI Service** ✅
+- Created parseResponseMarkers() function
+- Added metadata extraction to message creation
+- Removed [SUGGESTIONS] references from prompts
+- Infrastructure ready for CLARIFICATION/CONFIRMATION markers
+- Build: ✅ Compiles without errors
+
+**Phase 5: Add Exit Button to Header** ✅
+- Exit button conditionally shown when authenticated + on onboarding page
+- Properly positioned in header right section
+- Connected to ExitConfirmationDialog
+- Navigates to /owner/profile on confirm
+- Build: ✅ Compiles without errors
+
+### Remaining Phases (2/7) ⏳
+
+**Phase 6: Database & Data Structure Separation** (Not started)
+- Task 126.08: Create database migration for skipper/crew separation
+- Task 126.09: Update types and data structures in code
+- Task 126.10: Update UI components for visual separation
+
+**Phase 7: End-to-end Testing** (Not started)
+- Task 126.11: Comprehensive testing of all features
+
+### Current Build Status
+- TypeScript: ✅ Compiles successfully
+- All 82 static pages: ✅ Generated successfully
+- No console errors/warnings from implemented changes
+
+### Architecture Summary
+**Three Response Types**:
+1. CLARIFICATION: Auto-detecting form input (radio/text/date/multi)
+2. CONFIRMATION: Data review with iterative refinement loop
+3. AUTH_NUDGE: Sign-in/sign-up encouragement
+
+**New Components**:
+- ClarificationInput.tsx: Smart form with auto-detection
+- ConfirmationDisplay.tsx: Data display + feedback loop
+- AuthNudge.tsx: Sign-in encouragement
+- ExitConfirmationDialog.tsx: Exit confirmation modal
+
+**Integration Points**:
+- OwnerChat: Renders response types based on metadata
+- Header: Shows exit button for authenticated users on onboarding
+- Service: Extracts response markers from AI responses
+- Types: Extended OwnerMessage with response metadata
+
+### Key Files Modified
+1. app/components/owner/OwnerChat.tsx - Integration of new components
+2. app/components/owner/{4 new components}.tsx - New UI components
+3. app/components/Header.tsx - Exit button + dialog
+4. app/lib/ai/owner/types.ts - Extended OwnerMessage metadata
+5. app/lib/ai/owner/service.ts - Response marker parsing
+<!-- SECTION:NOTES:END -->
+
+- [ ] #1 #1 #1 #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
+- [ ] #2 #2 #2 #2 #2 #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
+- [ ] #3 #3 #3 #3 #3 #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
+- [ ] #4 #4 #4 #4 #4 #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
+- [ ] #5 #5 #5 #5 #5 #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
+- [ ] #6 #6 #6 #6 #6 #6 Session cleanup and GDPR archiving workflow unchanged
 <!-- AC:END -->
 <!-- AC:END -->
 
-- [ ] #7 #7 #7 Skipper Profile and Crew Requirements clearly separated in front page ComboSearch box (visual sections)
-- [ ] #8 #8 #8 Mobile wizard has separate pages for Skipper Profile and Crew Requirements with own input fields
-- [ ] #9 #9 #9 Session data structure clearly separates skipper_profile and crew_requirements (not mixed)
-- [ ] #10 #10 #10 AI prompts reference correct data structure based on context (skipper_profile when discussing boat/skipper, crew_requirements when discussing crew needs)
-- [ ] #11 #11 #11 Confirmation displays show skipper and crew data in separate visual sections
-- [ ] #12 #12 #12 Database migration handles new structure without data loss
+- [ ] #7 #7 #7 #7 Skipper Profile and Crew Requirements clearly separated in front page ComboSearch box (visual sections)
+- [ ] #8 #8 #8 #8 Mobile wizard has separate pages for Skipper Profile and Crew Requirements with own input fields
+- [ ] #9 #9 #9 #9 Session data structure clearly separates skipper_profile and crew_requirements (not mixed)
+- [ ] #10 #10 #10 #10 AI prompts reference correct data structure based on context (skipper_profile when discussing boat/skipper, crew_requirements when discussing crew needs)
+- [ ] #11 #11 #11 #11 Confirmation displays show skipper and crew data in separate visual sections
+- [ ] #12 #12 #12 #12 Database migration handles new structure without data loss
+<!-- AC:END -->
 <!-- AC:END -->
 <!-- AC:END -->
 <!-- AC:END -->
