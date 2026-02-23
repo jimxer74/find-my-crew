@@ -4,7 +4,7 @@ title: Refactor owner onboarding AI assistant
 status: In Progress
 assignee: []
 created_date: '2026-02-22 12:12'
-updated_date: '2026-02-23 08:49'
+updated_date: '2026-02-23 08:58'
 labels: []
 dependencies: []
 ---
@@ -276,6 +276,56 @@ Currently, Skipper profile and Crew requirements are logically mixed in:
 3. app/components/Header.tsx - Exit button + dialog
 4. app/lib/ai/owner/types.ts - Extended OwnerMessage metadata
 5. app/lib/ai/owner/service.ts - Response marker parsing
+
+## Phase 6b: Updated AI Prompts for Data Separation ✅
+
+**Changes Made**:
+- Cleaned up remaining [SUGGESTIONS] references in service.ts RULES section
+- Updated create_profile step prompt to explicitly describe skipper profile data being gathered
+- Updated add_boat step prompt with "Skipper Profile" label and documentation
+- Updated post_journey step prompt with "Crew Requirements" label
+- Added CONFIRMATION format examples to prompts:
+  - CONFIRMATION:profile-summary (for owner profile)
+  - CONFIRMATION:skipper-profile (for boat/skipper info)
+  - CONFIRMATION:crew-requirements (for crew info)
+- Removed mandatory [SUGGESTIONS] requirements from RULES
+- Updated RULES to reference CONFIRMATION markers instead of suggestions
+
+**Key Prompts Updated**:
+- create_profile: Now references profile-summary confirmation with structured fields
+- add_boat: Now references skipper-profile confirmation, emphasizes boat/skipper separation
+- post_journey: Now references crew-requirements alongside journey route
+
+**Build Status**: ✅ Compiles without errors
+
+## Phase 6c: Separate Data Structure Handling in API ✅
+
+**Changes Made**:
+- Updated app/api/owner/session/data/route.ts to handle separated data structures
+- Modified upsertData to include skipper_profile and crew_requirements from session object
+- Updated POST (insert/update) to save separated fields to database
+- Updated POST (duplicate key fallback) to save separated fields
+- Updated GET to load separated fields from database and include in OwnerSession response
+
+**Specific Updates**:
+1. Line 201-202: Added skipper_profile and crew_requirements to upsertData
+2. Lines 223-224: Added skipper_profile and crew_requirements to update call (first)
+3. Lines 258-259: Added skipper_profile and crew_requirements to update call (duplicate key fallback)
+4. Lines 85-86: Added skipper_profile and crew_requirements to GET response transformation
+
+**Data Flow**:
+- OwnerChatContext → passes preferences + skipper/crew data
+- API route → transforms into upsertData with separated fields
+- Database → stores in skipper_profile and crew_requirements JSONB columns
+- GET → loads all three structures and returns in OwnerSession
+
+**Build Status**: ✅ Compiles without errors
+
+**Architecture Notes**:
+- OwnerSession type (already created in Phase 6a) now properly stores separated data
+- Frontend context and API are now in sync for separated structures
+- Data persists to database in separated columns (migration 045 created these)
+- AI service prompts now reference appropriate structure for each step
 <!-- SECTION:NOTES:END -->
 
 - [ ] #1 #1 #1 #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
