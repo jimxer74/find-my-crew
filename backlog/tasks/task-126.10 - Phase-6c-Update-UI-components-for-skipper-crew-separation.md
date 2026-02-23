@@ -1,9 +1,10 @@
 ---
 id: TASK-126.10
 title: 'Phase 6c: Update UI components for skipper/crew separation'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-23 08:38'
+updated_date: '2026-02-23 13:50'
 labels: []
 dependencies: []
 references:
