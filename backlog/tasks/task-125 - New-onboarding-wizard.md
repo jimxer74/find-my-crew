@@ -1,10 +1,10 @@
 ---
 id: TASK-125
 title: New onboarding wizard
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-21 16:20'
-updated_date: '2026-02-22 18:51'
+updated_date: '2026-02-23 13:50'
 labels: []
 dependencies: []
 ---
