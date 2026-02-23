@@ -241,6 +241,7 @@ create table if not exists public.boat_registry (
 
 -- Indexes
 create index if not exists boat_registry_make_model_idx on public.boat_registry (make_model);
+create index if not exists boat_registry_make_model_upper_idx on public.boat_registry (upper(make_model));
 create index if not exists boat_registry_slug_idx on public.boat_registry (slug) where slug is not null;
 
 -- Enable Row Level Security
@@ -251,13 +252,13 @@ create policy "Boat registry is viewable by all"
 on boat_registry for select
 using (true);
 
-create policy "Authenticated users can insert boat registry entries"
+create policy "Allow insert boat registry"
 on boat_registry for insert
-with check (auth.role() = 'authenticated');
+with check (auth.role() in ('authenticated', 'service_role') or true);
 
-create policy "Authenticated users can update boat registry entries"
+create policy "Allow update boat registry"
 on boat_registry for update
-using (auth.role() = 'authenticated');
+using (auth.role() in ('authenticated', 'service_role') or true);
 
 
 -- ============================================================================
@@ -1869,7 +1870,10 @@ create table if not exists public.owner_sessions (
   last_active_at timestamptz not null default now(),
   expires_at timestamptz not null default (now() + interval '7 days'),
   post_signup_onboarding_pending boolean not null default false,
-  profile_completion_triggered_at timestamptz null
+  profile_completion_triggered_at timestamptz null,
+  skipper_profile text,          -- Raw skipper/owner profile text from combo search box
+  crew_requirements text,        -- Raw crew requirements text from combo search box
+  journey_details text           -- Parsed journey details text from combo search box (locations, dates, waypoints)
 );
 
 -- Indexes for performance

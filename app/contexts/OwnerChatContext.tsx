@@ -68,6 +68,12 @@ interface OwnerChatState {
   hasBoat: boolean;
   /** True if user has at least one journey */
   hasJourney: boolean;
+  /** Raw skipper/owner profile text from combo search box */
+  skipperProfile: string | null;
+  /** Raw crew requirements text from combo search box */
+  crewRequirements: string | null;
+  /** Parsed journey details text from combo search box */
+  journeyDetails: string | null;
 }
 
 interface OwnerChatContextType extends OwnerChatState {
@@ -119,6 +125,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     hasExistingProfile: false,
     hasBoat: false,
     hasJourney: false,
+    skipperProfile: null,
+    crewRequirements: null,
+    journeyDetails: null,
   });
 
   // Keep stateRef in sync with state
@@ -179,6 +188,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             sessionEmail: loadedSession!.sessionEmail ?? null,
             hasSessionEmail: loadedSession!.hasSessionEmail === true,
             onboardingState: loadedSession!.onboardingState || 'signup_pending',
+            skipperProfile: loadedSession!.skipperProfile ?? null,
+            crewRequirements: loadedSession!.crewRequirements ?? null,
+            journeyDetails: loadedSession!.journeyDetails ?? null,
           }));
         } else {
           setState((prev) => ({
@@ -189,6 +201,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             sessionEmail: null,
             hasSessionEmail: false,
             onboardingState: 'signup_pending',
+            skipperProfile: null,
+            crewRequirements: null,
+            journeyDetails: null,
           }));
         }
 
@@ -569,6 +584,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             conversationHistory: session?.conversation ?? stateRef.current?.messages ?? [],
             gatheredPreferences: session?.gatheredPreferences ?? stateRef.current?.preferences ?? {},
             userProfile: knownProfile,
+            skipperProfile: session?.skipperProfile ?? stateRef.current?.skipperProfile ?? null,
+            crewRequirements: session?.crewRequirements ?? stateRef.current?.crewRequirements ?? null,
+            journeyDetails: session?.journeyDetails ?? stateRef.current?.journeyDetails ?? null,
           }),
         });
 
@@ -593,6 +611,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           role: 'user',
           content: data.triggerMessage ?? '[Profile completion]',
           timestamp: new Date().toISOString(),
+          metadata: {
+            isSystem: true, // Internal system message, don't display to user
+          },
         };
 
         setState((prev) => ({
@@ -603,10 +624,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             ? { ...prev.preferences, ...data.extractedPreferences }
             : prev.preferences,
           isLoading: false,
+          // If profile was created during trigger, advance onboarding state
+          ...(data.profileCreated ? { onboardingState: 'boat_pending', hasExistingProfile: true } : {}),
         }));
-
-        // Note: Onboarding state will be updated when profile is actually created
-        // (handled in handleSendMessage when data.profileCreated === true)
       } catch (error: any) {
         logger.error('Error triggering profile completion', { error: error instanceof Error ? error.message : String(error) });
         setState((prev) => ({
@@ -636,6 +656,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           lastActiveAt: new Date().toISOString(),
           conversation: state.messages,
           gatheredPreferences: state.preferences,
+          skipperProfile: state.skipperProfile ?? null,
+          crewRequirements: state.crewRequirements ?? null,
+          journeyDetails: state.journeyDetails ?? null,
         };
         await sessionService.saveSession(sessionId, session);
       } catch (error: any) {
@@ -650,7 +673,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }, 1000); // Debounce: save 1 second after last change
 
     return () => clearTimeout(saveTimeout);
-  }, [state.sessionId, state.messages, state.preferences, isInitialized]);
+  }, [state.sessionId, state.messages, state.preferences, state.skipperProfile, state.crewRequirements, state.journeyDetails, isInitialized]);
 
   // Cleanup owner onboarding session once onboarding is fully completed.
   // This runs when the same completion state used by the welcome card is reached.
@@ -750,6 +773,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           profileCompletionMode: state.profileCompletionMode,
           userId: state.userId,
           userProfile: state.userProfile,
+          skipperProfile: state.skipperProfile ?? null,
+          crewRequirements: state.crewRequirements ?? null,
+          journeyDetails: state.journeyDetails ?? null,
         }),
       });
 
@@ -880,6 +906,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           userId: state.userId,
           userProfile: state.userProfile,
           approvedAction: action,
+          skipperProfile: state.skipperProfile ?? null,
+          crewRequirements: state.crewRequirements ?? null,
+          journeyDetails: state.journeyDetails ?? null,
         }),
       });
 
@@ -994,6 +1023,9 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       hasExistingProfile: false,
       hasBoat: false,
       hasJourney: false,
+      skipperProfile: null,
+      crewRequirements: null,
+      journeyDetails: null,
     });
     // Reinitialize session
     initSessionRunRef.current = false;
@@ -1019,7 +1051,8 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     if (!isInitialized || initialCrewDemandProcessed.current || state.isLoading) {
       return;
     }
-    const crewDemandParam = searchParams?.get('crewDemand');
+    const skipperProfileParam = searchParams?.get('skipperProfile');
+    const crewRequirementsParam = searchParams?.get('crewRequirements');
     const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
     const startLocationParam = searchParams?.get('startLocation');
     const endLocationParam = searchParams?.get('endLocation');
@@ -1029,8 +1062,8 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     const waypointDensityParam = searchParams?.get('waypointDensity');
 
     const hasJourneyParams = !!(startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam || waypointDensityParam);
-    const hasCrewDemand = !!(crewDemandParam?.trim());
-    if (isProfileCompletion || (!hasCrewDemand && !hasJourneyParams)) {
+    const hasProfileData = !!(skipperProfileParam?.trim() || crewRequirementsParam?.trim());
+    if (isProfileCompletion || (!hasProfileData && !hasJourneyParams)) {
       return;
     }
     
@@ -1093,10 +1126,33 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }
     
     initialCrewDemandProcessed.current = true;
-    const crewDemandText = (crewDemandParam?.trim() || '');
-    const message = journeyDetailsText ? (crewDemandText ? crewDemandText + journeyDetailsText : journeyDetailsText.trim()) : crewDemandText;
+
+    // Store all three sections in state so they are persisted to DB via auto-save
+    const storedJourneyDetails = journeyDetailsText.trim() || null;
+    setState((prev) => ({
+      ...prev,
+      skipperProfile: skipperProfileParam?.trim() || null,
+      crewRequirements: crewRequirementsParam?.trim() || null,
+      journeyDetails: storedJourneyDetails,
+    }));
+
+    const parts: string[] = [];
+    if (skipperProfileParam?.trim()) {
+      parts.push(`[SKIPPER PROFILE]:\n${skipperProfileParam.trim()}`);
+    }
+    if (crewRequirementsParam?.trim()) {
+      parts.push(`[CREW REQUIREMENTS]:\n${crewRequirementsParam.trim()}`);
+    }
+    if (storedJourneyDetails) {
+      parts.push(`[JOURNEY DETAILS]:\n${storedJourneyDetails}`);
+    }
+    const message = parts.join('\n\n');
     if (message) {
-      logger.debug('Processing initial owner combo data from URL', { hasCrewDemand: !!crewDemandText, hasJourneyDetails: !!journeyDetailsText }, true);
+      logger.debug('Processing initial owner combo data from URL', {
+        hasSkipperProfile: !!skipperProfileParam?.trim(),
+        hasCrewRequirements: !!crewRequirementsParam?.trim(),
+        hasJourneyDetails: !!storedJourneyDetails,
+      }, true);
       sendMessage(message);
     }
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);

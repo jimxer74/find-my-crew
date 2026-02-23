@@ -15,7 +15,10 @@ const SESSION_COOKIE_NAME = 'owner_session_id';
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const sessionId = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    const sessionId =
+      cookieStore.get(SESSION_COOKIE_NAME)?.value ||
+      request.headers.get('X-Session-Id') ||
+      undefined;
 
     if (!sessionId) {
       return NextResponse.json(

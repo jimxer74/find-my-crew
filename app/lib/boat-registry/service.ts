@@ -62,11 +62,11 @@ export async function lookupBoatRegistry(
     }
   }
   
-  // Fallback to make_model lookup (case-insensitive, trimmed)
+  // Fallback to make_model lookup — normalize to uppercase to match how saveBoatRegistry stores values
   const { data, error } = await supabase
     .from('boat_registry')
     .select('*')
-    .eq('make_model', makeModel.trim())
+    .eq('make_model', makeModel.trim().toUpperCase())
     .single();
   
   if (error || !data) {

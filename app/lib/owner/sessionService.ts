@@ -207,6 +207,7 @@ export async function linkSessionToUser(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Session-Id': sessionId,
       },
       credentials: 'include', // Include cookies
       body: JSON.stringify({ email, postSignupOnboarding: options?.postSignupOnboarding }),

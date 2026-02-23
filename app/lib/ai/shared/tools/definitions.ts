@@ -898,7 +898,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       properties: {
         make_model: {
           type: 'string',
-          description: 'Boat make and model (e.g., "Bavaria 46", "Hallberg-Rassy 38")',
+          description: 'Boat make AND model as a single combined string (e.g., "Bavaria 46", "Hallberg-Rassy 38", "Vindö 40"). Do NOT split into separate make/model fields.',
         },
         slug: {
           type: 'string',
@@ -985,23 +985,26 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
         skills: {
           type: 'array',
-          description: 'Optional required skills for journey. Use when user has specified skills.',
-          items: { type: 'string' },
+          description: 'Required crew skills for the journey. Extract from [CREW REQUIREMENTS] stored context or user messages. Valid skill names: safety_and_mob, heavy_weather, night_sailing, watch_keeping, navigation, sailing_experience, certifications, physical_fitness, seasickness_management, first_aid, technical_skills, cooking, survival_skills',
+          items: {
+            type: 'string',
+            enum: ['safety_and_mob', 'heavy_weather', 'night_sailing', 'watch_keeping', 'navigation', 'sailing_experience', 'certifications', 'physical_fitness', 'seasickness_management', 'first_aid', 'technical_skills', 'cooking', 'survival_skills'],
+          },
         },
         min_experience_level: {
           type: 'number',
-          description: 'Optional minimum experience level: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
+          description: 'Minimum crew experience level. Extract from [CREW REQUIREMENTS] stored context or user messages. 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper',
           minimum: 1,
           maximum: 4,
         },
         cost_model: {
           type: 'string',
-          description: 'Optional cost sharing model for the journey. Use when user has specified how costs are shared.',
+          description: 'Cost sharing model for the journey. Extract from [CREW REQUIREMENTS] stored context or user messages.',
           enum: ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'],
         },
         cost_info: {
           type: 'string',
-          description: 'Optional free text for owners to inform crew about costs (e.g. shared food, fuel split, crew fee). No strict format.',
+          description: 'Free text about cost details for crew (e.g. shared food, fuel split, crew fee). Extract from [CREW REQUIREMENTS] stored context or user messages.',
         },
       },
       required: ['startLocation', 'endLocation', 'boatId'],

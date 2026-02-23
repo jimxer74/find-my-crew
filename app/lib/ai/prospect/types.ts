@@ -25,6 +25,8 @@ export interface ProspectMessage {
     legReferences?: ProspectLegReference[];
     /** Action tool calls that require user approval before execution */
     pendingAction?: PendingAction;
+    /** Flag indicating this is an internal system message not meant for display */
+    isSystem?: boolean;
   };
 }
 

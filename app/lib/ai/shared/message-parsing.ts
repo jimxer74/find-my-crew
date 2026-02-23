@@ -117,7 +117,12 @@ export function extractSuggestedPrompts(content: string): { prompts: string[]; i
  * Remove suggestions block from message content for display
  */
 export function removeSuggestionsFromContent(content: string): string {
-  return content.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/i, '').trim();
+  // Remove all [SUGGESTIONS]...[/SUGGESTIONS] sections (case-insensitive, global)
+  // Handles optional whitespace around tags: [SUGGESTIONS], [ SUGGESTIONS ], etc.
+  return content
+    .replace(/\[\s*SUGGESTIONS\s*\][\s\S]*?\[\s*\/\s*SUGGESTIONS\s*\]/gi, '') // Remove well-formed sections
+    .replace(/\[\s*SUGGESTIONS\s*\]([\s\S]*?)(?:\n\s*\n|\n\s*\[|$)/gi, '') // Remove incomplete sections
+    .trim();
 }
 
 /**

@@ -114,6 +114,9 @@ export async function POST(request: NextRequest) {
       authenticatedUserId,
       userProfile,
       approvedAction: body.approvedAction,
+      skipperProfile: body.skipperProfile ?? null,
+      crewRequirements: body.crewRequirements ?? null,
+      journeyDetails: body.journeyDetails ?? null,
     });
 
     log('Owner chat response received:', {

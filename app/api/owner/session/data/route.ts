@@ -86,6 +86,9 @@ export async function GET() {
       hasSessionEmail: !!session.email,
       profileCompletionTriggeredAt: session.profile_completion_triggered_at ?? null,
       onboardingState: session.onboarding_state || 'signup_pending',
+      skipperProfile: session.skipper_profile ?? null,
+      crewRequirements: session.crew_requirements ?? null,
+      journeyDetails: session.journey_details ?? null,
     };
 
     return NextResponse.json({ session: ownerSession });
@@ -201,6 +204,9 @@ export async function POST(request: NextRequest) {
       gathered_preferences: session.gatheredPreferences || {},
       last_active_at: new Date().toISOString(),
       expires_at: expiresAt.toISOString(),
+      skipper_profile: session.skipperProfile ?? null,
+      crew_requirements: session.crewRequirements ?? null,
+      journey_details: session.journeyDetails ?? null,
       // Only set created_at on insert, not update
       ...(existingSession ? {} : { created_at: new Date().toISOString() }),
     };
@@ -226,9 +232,12 @@ export async function POST(request: NextRequest) {
           // Preserve user_id and email if they exist
           user_id: upsertData.user_id,
           email: upsertData.email,
+          skipper_profile: upsertData.skipper_profile,
+          crew_requirements: upsertData.crew_requirements,
+          journey_details: upsertData.journey_details,
         })
         .eq('session_id', sessionId);
-      
+
       saveError = updateError;
       if (saveError) {
         logger.error('Error updating session', {
@@ -261,6 +270,9 @@ export async function POST(request: NextRequest) {
             // Preserve user_id and email if they exist
             user_id: upsertData.user_id,
             email: upsertData.email,
+            skipper_profile: upsertData.skipper_profile,
+            crew_requirements: upsertData.crew_requirements,
+            journey_details: upsertData.journey_details,
           })
           .eq('session_id', sessionId);
         

@@ -132,21 +132,37 @@ function CrewSearchResults({
 }
 
 /**
- * Component to display intermediate AI message
+ * Component to display intermediate AI message as a collapsible, closed by default.
+ * Hidden entirely when content is empty.
  */
 function IntermediateMessageCard({
   message,
 }: {
   message: OwnerMessage;
 }) {
+  const [open, setOpen] = useState(false);
+  const content = message.content?.trim();
+  if (!content) return null;
+
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-      <div className="text-xs font-medium text-blue-900 dark:text-blue-100 mb-2">
-        AI Reasoning
-      </div>
-      <div className="text-sm whitespace-pre-wrap break-words text-blue-900 dark:text-blue-100">
-        {message.content}
-      </div>
+    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 text-left"
+      >
+        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+          AI Reasoning
+        </span>
+        <span className="text-blue-500 dark:text-blue-400 text-xs leading-none">
+          {open ? '▲' : '▼'}
+        </span>
+      </button>
+      {open && (
+        <div className="px-3 pb-3 text-xs whitespace-pre-wrap break-words text-blue-900 dark:text-blue-100 border-t border-blue-200 dark:border-blue-800 pt-2">
+          {content}
+        </div>
+      )}
     </div>
   );
 }
@@ -294,7 +310,7 @@ export default function OwnerChat() {
           )}
 
           {messages
-            .filter((message) => message.role !== 'system')
+            .filter((message) => message.role !== 'system' && !message.metadata?.isSystem)
             .map((message) => (
               <div
                 key={message.id}

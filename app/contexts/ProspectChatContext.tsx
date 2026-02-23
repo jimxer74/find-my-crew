@@ -788,6 +788,9 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
           role: 'user',
           content: data.triggerMessage ?? '[Profile completion]',
           timestamp: new Date().toISOString(),
+          metadata: {
+            isSystem: true, // Internal system message, don't display to user
+          },
         };
 
         setState((prev) => ({

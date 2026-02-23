@@ -17,7 +17,7 @@ export const maxDuration = 60;
 
 /** Build the SYSTEM message sent to the AI to start profile completion (server-side). */
 function buildTriggerMessage(): string {
-  return `[SYSTEM: User just completed signup and is now authenticated. Review the ENTIRE conversation history above and extract ALL profile information the user has shared. Create a comprehensive profile summary including: bio/description, experience level, skills, certifications, comfort zones, sailing preferences, boat information, and any other relevant details. Do NOT ask for information that was already provided in the conversation. Your goal is to get the user to confirm and then SAVE their profile using update_user_profile with roles: ['owner'] so it is stored.]`;
+  return `[SYSTEM: User just completed signup and is now authenticated. Extract the skipper profile EXCLUSIVELY from [SKIPPER PROFILE] in the STORED CONTEXT — do NOT read [CREW REQUIREMENTS] for any profile field; that section describes what the skipper wants FROM crew and must be ignored here. Display a clear profile summary (name, bio, experience level, certifications, risk levels, skills) and ask the user to confirm before saving. Do NOT call update_user_profile until the user says "yes", "looks good", "save", or similar.]`;
 }
 
 export async function POST(request: NextRequest) {
@@ -56,6 +56,9 @@ export async function POST(request: NextRequest) {
     const conversationHistory = (body.conversationHistory ?? []) as OwnerMessage[];
     const gatheredPreferences = (body.gatheredPreferences ?? {}) as OwnerPreferences;
     const userProfile = body.userProfile as KnownUserProfile | null | undefined;
+    const skipperProfile = (body.skipperProfile ?? null) as string | null;
+    const crewRequirements = (body.crewRequirements ?? null) as string | null;
+    const journeyDetails = (body.journeyDetails ?? null) as string | null;
 
     const triggerMessage = buildTriggerMessage();
     log('Calling ownerChat with trigger message', { sessionId, historyLength: conversationHistory.length });
@@ -73,20 +76,32 @@ export async function POST(request: NextRequest) {
         phone: user.phone ?? null,
         avatarUrl: user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null,
       },
+      skipperProfile,
+      crewRequirements,
+      journeyDetails,
     });
 
-    log('Trigger completed', { sessionId: response.sessionId, messageId: response.message?.id });
+    log('Trigger completed', { sessionId: response.sessionId, messageId: response.message?.id, profileCreated: response.profileCreated });
 
-    // Mark session so returning users don't get duplicate triggers
+    // Mark session and update onboarding_state server-side
     const sid = response.sessionId ?? sessionId;
     if (sid) {
       const db = await getSupabaseServerClient();
+      const sessionUpdate: Record<string, unknown> = {
+        user_id: user.id,
+        profile_completion_triggered_at: new Date().toISOString(),
+        last_active_at: new Date().toISOString(),
+      };
+      // If profile was created during this trigger, advance onboarding state
+      if (response.profileCreated) {
+        sessionUpdate.onboarding_state = 'boat_pending';
+        log('Profile created during trigger — setting onboarding_state to boat_pending', { sessionId: sid });
+      }
       await db
         .from('owner_sessions')
-        .update({ profile_completion_triggered_at: new Date().toISOString() })
-        .eq('session_id', sid)
-        .eq('user_id', user.id);
-      log('Marked profile_completion_triggered_at', { sessionId: sid });
+        .update(sessionUpdate)
+        .eq('session_id', sid);
+      log('Updated session after trigger', { sessionId: sid, onboarding_state: sessionUpdate.onboarding_state ?? 'unchanged' });
     }
 
     return NextResponse.json({
@@ -94,6 +109,8 @@ export async function POST(request: NextRequest) {
       message: response.message,
       triggerMessage,
       extractedPreferences: response.extractedPreferences,
+      profileCreated: response.profileCreated ?? false,
+      boatCreated: response.boatCreated ?? false,
     });
   } catch (error: any) {
     log('Error', error?.message);

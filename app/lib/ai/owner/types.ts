@@ -35,6 +35,8 @@ export interface OwnerMessage {
     pendingAction?: PendingAction;
     /** Flag indicating this is an intermediate message (has tool calls) */
     isIntermediate?: boolean;
+    /** Flag indicating this is an internal system message not meant for display */
+    isSystem?: boolean;
   };
 }
 
@@ -105,6 +107,12 @@ export interface OwnerSession {
   profileCompletionTriggeredAt?: string | null;
   /** Onboarding state: signup_pending, consent_pending, profile_pending, boat_pending, journey_pending, completed */
   onboardingState?: string;
+  /** Raw skipper/owner profile text from combo search box */
+  skipperProfile?: string | null;
+  /** Raw crew requirements text from combo search box */
+  crewRequirements?: string | null;
+  /** Parsed journey details text from combo search box (locations, dates, waypoints) */
+  journeyDetails?: string | null;
 }
 
 /** Known user profile data from signup/OAuth metadata */
@@ -128,6 +136,12 @@ export interface OwnerChatRequest {
   authenticatedUserId?: string | null; // Set by server after auth verification
   /** Pre-approved action to execute directly (from user clicking Approve button) */
   approvedAction?: PendingAction;
+  /** Raw skipper/owner profile text from combo search box — injected into system prompt as fallback context */
+  skipperProfile?: string | null;
+  /** Raw crew requirements text from combo search box — used in post_journey step for crew fields */
+  crewRequirements?: string | null;
+  /** Parsed journey details text (locations, dates, waypoints) — used in post_journey step */
+  journeyDetails?: string | null;
 }
 
 export interface OwnerChatResponse {

@@ -417,7 +417,7 @@ export function ProspectChat() {
         )}
 
         {messages
-          .filter((message) => message.role !== 'system')
+          .filter((message) => message.role !== 'system' && !message.metadata?.isSystem)
           .map((message) => (
           <div
             key={message.id}

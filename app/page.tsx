@@ -502,9 +502,10 @@ function WelcomePageContent() {
     router.push(`/welcome/crew?${params.toString()}`);
   };
 
-  const handleOwnerPost = (crewDemand: string, aiProcessingConsent: boolean) => {
+  const handleOwnerPost = (text: string, aiProcessingConsent: boolean) => {
     const params = new URLSearchParams();
-    params.set('crewDemand', crewDemand);
+    // Legacy single-textarea dialog: treat the whole text as skipper profile
+    params.set('skipperProfile', text);
     if (aiProcessingConsent) {
       params.set('aiProcessingConsent', 'true');
     }
@@ -534,11 +535,14 @@ function WelcomePageContent() {
       params.set('waypointDensity', data.journeyDetails.waypointDensity);
     }
     
-    // Skipper/Crew profiles
-    if (data.skipperCrewProfiles.text) {
-      params.set('crewDemand', data.skipperCrewProfiles.text);
+    // Skipper profile + crew requirements (separate fields)
+    if (data.skipperProfile.text) {
+      params.set('skipperProfile', data.skipperProfile.text);
     }
-    if (data.skipperCrewProfiles.aiProcessingConsent) {
+    if (data.crewRequirements.text) {
+      params.set('crewRequirements', data.crewRequirements.text);
+    }
+    if (data.skipperProfile.aiProcessingConsent || data.crewRequirements.aiProcessingConsent) {
       params.set('aiProcessingConsent', 'true');
     }
     

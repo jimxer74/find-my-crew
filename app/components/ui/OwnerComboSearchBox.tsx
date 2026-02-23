@@ -15,7 +15,11 @@ export interface OwnerComboSearchData {
     waypoints: Location[];
     waypointDensity?: 'minimal' | 'moderate' | 'detailed';
   };
-  skipperCrewProfiles: {
+  skipperProfile: {
+    text: string;
+    aiProcessingConsent: boolean;
+  };
+  crewRequirements: {
     text: string;
     aiProcessingConsent: boolean;
   };
@@ -345,35 +349,35 @@ function JourneyDetailsDialog({
   );
 }
 
-// Skipper and Crew Profiles Dialog Component
-function SkipperCrewProfilesDialog({
+// Reusable profile/requirements dialog (used for both skipper profile and crew requirements)
+function ProfileTextDialog({
   isOpen,
   onClose,
   onSave,
+  dialogId,
   title,
+  instructions,
   placeholder,
-  aiProcessingLabel,
-  aiProcessingDesc,
   initialText,
   initialAiConsent,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (crewDemand: string, aiProcessingConsent: boolean) => void;
+  onSave: (text: string, aiProcessingConsent: boolean) => void;
+  dialogId: string;
   title: string;
+  instructions: React.ReactNode;
   placeholder: string;
-  aiProcessingLabel: string;
-  aiProcessingDesc: string;
   initialText?: string;
   initialAiConsent?: boolean;
 }) {
-  const [crewDemand, setCrewDemand] = useState(initialText || '');
+  const [text, setText] = useState(initialText || '');
   const [aiConsent, setAiConsent] = useState(initialAiConsent || false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setCrewDemand(initialText || '');
+      setText(initialText || '');
       setAiConsent(initialAiConsent || false);
     }
   }, [isOpen, initialText, initialAiConsent]);
@@ -385,10 +389,10 @@ function SkipperCrewProfilesDialog({
   }, [isOpen]);
 
   const handleSave = () => {
-    onSave(crewDemand.trim(), aiConsent);
+    onSave(text.trim(), aiConsent);
   };
 
-  const canSave = crewDemand.trim().length > 0 && aiConsent;
+  const canSave = text.trim().length > 0 && aiConsent;
 
   if (!isOpen) return null;
 
@@ -405,12 +409,12 @@ function SkipperCrewProfilesDialog({
         className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="skipper-crew-dialog-title"
+        aria-labelledby={`${dialogId}-title`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="skipper-crew-dialog-title" className="text-lg font-semibold text-gray-950 dark:text-gray-100">
+          <h2 id={`${dialogId}-title`} className="text-lg font-semibold text-gray-950 dark:text-gray-100">
             {title}
           </h2>
           <button
@@ -428,23 +432,14 @@ function SkipperCrewProfilesDialog({
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">
-              What to include:
-            </h3>
-            <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
-              <li>Your skipper profile and sailing experience</li>
-              <li>Boat details</li>
-              <li>Crew requirements and preferences</li>
-              <li>Additional information regarding crew, boat or journey</li>
-              <li>You can also include the Journey details here and SailSmart AI will pick it up</li>
-              <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
-            </ul>
+            <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
+            {instructions}
           </div>
 
           <textarea
             ref={textareaRef}
-            value={crewDemand}
-            onChange={(e) => setCrewDemand(e.target.value)}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
             placeholder={placeholder}
             maxLength={2000}
             className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
@@ -470,7 +465,7 @@ function SkipperCrewProfilesDialog({
             </button>
             <p className="text-sm text-gray-800 dark:text-gray-400">Allow AI to process the data that you provide</p>
           </div>
-          
+
           {/* Action Buttons */}
           <div className="flex items-center gap-2">
             <button
@@ -493,10 +488,29 @@ function SkipperCrewProfilesDialog({
   );
 }
 
+const SKIPPER_PROFILE_INSTRUCTIONS = (
+  <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
+    <li>Your sailing experience and certifications (RYA, ASA, etc.)</li>
+    <li>Boat details: name, make/model, type, home port</li>
+    <li>Equipment, navigation systems, safety gear</li>
+    <li>Your availability and preferred sailing areas</li>
+    <li><b>Hint:</b> You can copy-paste your existing profile from Facebook or sailing forums.</li>
+  </ul>
+);
+
+const CREW_REQUIREMENTS_INSTRUCTIONS = (
+  <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
+    <li>Positions needed (e.g. watch keeper, navigator, cook)</li>
+    <li>Required experience level and skills</li>
+    <li>Physical requirements and any restrictions</li>
+    <li>Cost sharing, compensation, or contribution model</li>
+    <li>Timeline and commitment expected from crew</li>
+  </ul>
+);
+
 // Desktop OwnerComboSearchBox Component
 function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, isFocusedControlled, compactMode = false }: OwnerComboSearchBoxProps) {
   const t = useTranslations('welcome.owner');
-  const tPrivacy = useTranslations('settings.privacy');
   const [journeyDetails, setJourneyDetails] = useState<{
     startLocation: Location | null;
     endLocation: Location | null;
@@ -512,30 +526,34 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
     waypoints: [],
     waypointDensity: 'moderate',
   });
-  const [skipperCrewText, setSkipperCrewText] = useState('');
-  const [skipperCrewAiConsent, setSkipperCrewAiConsent] = useState(false);
+  const [skipperProfileText, setSkipperProfileText] = useState('');
+  const [skipperProfileAiConsent, setSkipperProfileAiConsent] = useState(false);
+  const [crewRequirementsText, setCrewRequirementsText] = useState('');
+  const [crewRequirementsAiConsent, setCrewRequirementsAiConsent] = useState(false);
   const [isJourneyDialogOpen, setIsJourneyDialogOpen] = useState(false);
-  const [isSkipperCrewDialogOpen, setIsSkipperCrewDialogOpen] = useState(false);
-  const [focusedSegment, setFocusedSegment] = useState<'journey' | 'skipperCrew' | null>(null);
+  const [isSkipperProfileDialogOpen, setIsSkipperProfileDialogOpen] = useState(false);
+  const [isCrewRequirementsDialogOpen, setIsCrewRequirementsDialogOpen] = useState(false);
+  const [focusedSegment, setFocusedSegment] = useState<'journey' | 'skipperProfile' | 'crewRequirements' | null>(null);
 
   // Notify parent when focus state changes
   useEffect(() => {
-    const isFocused = focusedSegment !== null || isJourneyDialogOpen || isSkipperCrewDialogOpen;
+    const isFocused = focusedSegment !== null || isJourneyDialogOpen || isSkipperProfileDialogOpen || isCrewRequirementsDialogOpen;
     if (!isFocusedControlled) {
       onFocusChange?.(isFocused);
     }
-  }, [focusedSegment, isJourneyDialogOpen, isSkipperCrewDialogOpen, onFocusChange, isFocusedControlled]);
+  }, [focusedSegment, isJourneyDialogOpen, isSkipperProfileDialogOpen, isCrewRequirementsDialogOpen, onFocusChange, isFocusedControlled]);
 
   // Clear focus when parent requests it
   useEffect(() => {
     if (isFocusedControlled && focusedSegment !== null) {
       setFocusedSegment(null);
       setIsJourneyDialogOpen(false);
-      setIsSkipperCrewDialogOpen(false);
+      setIsSkipperProfileDialogOpen(false);
+      setIsCrewRequirementsDialogOpen(false);
     }
   }, [isFocusedControlled, focusedSegment]);
 
-  const hasAnyValue = journeyDetails.startLocation || journeyDetails.endLocation || journeyDetails.startDate || journeyDetails.endDate || journeyDetails.waypoints.length > 0 || skipperCrewText;
+  const hasAnyValue = journeyDetails.startLocation || journeyDetails.endLocation || journeyDetails.startDate || journeyDetails.endDate || journeyDetails.waypoints.length > 0 || skipperProfileText || crewRequirementsText;
 
   const formatJourneyDisplay = (): string => {
     const parts: string[] = [];
@@ -562,8 +580,8 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
   };
 
   const handleSubmit = () => {
-    // Only submit if skipper/crew text is provided
-    if (!skipperCrewText.trim()) {
+    // Require at least one of skipper profile or crew requirements
+    if (!skipperProfileText.trim() && !crewRequirementsText.trim()) {
       return;
     }
     const data: OwnerComboSearchData = {
@@ -575,15 +593,19 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         waypoints: journeyDetails.waypoints,
         waypointDensity: journeyDetails.waypointDensity,
       },
-      skipperCrewProfiles: {
-        text: skipperCrewText,
-        aiProcessingConsent: skipperCrewAiConsent,
+      skipperProfile: {
+        text: skipperProfileText,
+        aiProcessingConsent: skipperProfileAiConsent,
+      },
+      crewRequirements: {
+        text: crewRequirementsText,
+        aiProcessingConsent: crewRequirementsAiConsent,
       },
     };
     onSubmit(data);
   };
 
-  const clearSegment = (segment: 'journey' | 'skipperCrew') => {
+  const clearSegment = (segment: 'journey' | 'skipperProfile' | 'crewRequirements') => {
     if (segment === 'journey') {
       setJourneyDetails({
         startLocation: null,
@@ -593,9 +615,12 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         waypoints: [],
         waypointDensity: 'moderate',
       });
+    } else if (segment === 'skipperProfile') {
+      setSkipperProfileText('');
+      setSkipperProfileAiConsent(false);
     } else {
-      setSkipperCrewText('');
-      setSkipperCrewAiConsent(false);
+      setCrewRequirementsText('');
+      setCrewRequirementsAiConsent(false);
     }
   };
 
@@ -661,31 +686,68 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
             </div>
           </div>
 
-          {/* Skipper and Crew Profiles Segment */}
+          {/* Skipper Profile Segment */}
           <div className="flex-1 min-w-0">
             <div
               onClick={() => {
-                setFocusedSegment('skipperCrew');
-                setIsSkipperCrewDialogOpen(true);
+                setFocusedSegment('skipperProfile');
+                setIsSkipperProfileDialogOpen(true);
               }}
               className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative"
             >
               <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               <div className="flex-1 min-w-0">
-                {hasAnyValue && skipperCrewText ? (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{truncateText(skipperCrewText, 30)}</div>
+                {hasAnyValue && skipperProfileText ? (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{truncateText(skipperProfileText, 30)}</div>
                 ) : (
-                  <span className="text-gray-500 dark:text-gray-400">Skipper & Crew profiles</span>
+                  <span className="text-gray-500 dark:text-gray-400">About you as skipper</span>
                 )}
               </div>
-              {hasAnyValue && skipperCrewText && (
+              {hasAnyValue && skipperProfileText && (
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    clearSegment('skipperCrew');
+                    clearSegment('skipperProfile');
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                  aria-label="Clear"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Crew Requirements Segment */}
+          <div className="flex-1 min-w-0">
+            <div
+              onClick={() => {
+                setFocusedSegment('crewRequirements');
+                setIsCrewRequirementsDialogOpen(true);
+              }}
+              className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative"
+            >
+              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                {hasAnyValue && crewRequirementsText ? (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{truncateText(crewRequirementsText, 30)}</div>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">Crew requirements</span>
+                )}
+              </div>
+              {hasAnyValue && crewRequirementsText && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearSegment('crewRequirements');
                   }}
                   className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
                   aria-label="Clear"
@@ -703,7 +765,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={!skipperCrewText.trim()}
+              disabled={!skipperProfileText.trim() && !crewRequirementsText.trim()}
               className="h-14 px-6 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 rounded-r-xl"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -730,24 +792,44 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         initialData={journeyDetails}
       />
 
-      <SkipperCrewProfilesDialog
-        isOpen={isSkipperCrewDialogOpen}
+      <ProfileTextDialog
+        isOpen={isSkipperProfileDialogOpen}
         onClose={() => {
-          setIsSkipperCrewDialogOpen(false);
+          setIsSkipperProfileDialogOpen(false);
           setFocusedSegment(null);
         }}
         onSave={(text, consent) => {
-          setSkipperCrewText(text);
-          setSkipperCrewAiConsent(consent);
-          setIsSkipperCrewDialogOpen(false);
+          setSkipperProfileText(text);
+          setSkipperProfileAiConsent(consent);
+          setIsSkipperProfileDialogOpen(false);
           setFocusedSegment(null);
         }}
-        title={t('skipperCrewDialogTitle')}
-        placeholder={t('skipperCrewDialogPlaceholder')}
-        aiProcessingLabel={tPrivacy('aiProcessing')}
-        aiProcessingDesc={tPrivacy('aiProcessingDesc')}
-        initialText={skipperCrewText}
-        initialAiConsent={skipperCrewAiConsent}
+        dialogId="skipper-profile-dialog"
+        title="About You (Skipper Profile)"
+        instructions={SKIPPER_PROFILE_INSTRUCTIONS}
+        placeholder="Describe your sailing experience, certifications, boat details, home port, availability..."
+        initialText={skipperProfileText}
+        initialAiConsent={skipperProfileAiConsent}
+      />
+
+      <ProfileTextDialog
+        isOpen={isCrewRequirementsDialogOpen}
+        onClose={() => {
+          setIsCrewRequirementsDialogOpen(false);
+          setFocusedSegment(null);
+        }}
+        onSave={(text, consent) => {
+          setCrewRequirementsText(text);
+          setCrewRequirementsAiConsent(consent);
+          setIsCrewRequirementsDialogOpen(false);
+          setFocusedSegment(null);
+        }}
+        dialogId="crew-requirements-dialog"
+        title="Crew Requirements"
+        instructions={CREW_REQUIREMENTS_INSTRUCTIONS}
+        placeholder="Describe the crew you're looking for: positions, skills, experience level, cost sharing, timeline..."
+        initialText={crewRequirementsText}
+        initialAiConsent={crewRequirementsAiConsent}
       />
     </div>
   );
@@ -758,7 +840,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   const t = useTranslations('welcome.owner');
   const tPrivacy = useTranslations('settings.privacy');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<1 | 2>(1);
+  const [currentPage, setCurrentPage] = useState<1 | 2 | 3>(1);
   const [journeyDetails, setJourneyDetails] = useState<{
     startLocation: Location | null;
     endLocation: Location | null;
@@ -774,8 +856,10 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     waypoints: [],
     waypointDensity: 'moderate',
   });
-  const [skipperCrewText, setSkipperCrewText] = useState('');
-  const [skipperCrewAiConsent, setSkipperCrewAiConsent] = useState(false);
+  const [skipperProfileText, setSkipperProfileText] = useState('');
+  const [skipperProfileAiConsent, setSkipperProfileAiConsent] = useState(false);
+  const [crewRequirementsText, setCrewRequirementsText] = useState('');
+  const [crewRequirementsAiConsent, setCrewRequirementsAiConsent] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const mobileDateRange: DateRange = {
@@ -798,8 +882,8 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   }, [isFocusedControlled, isWizardOpen]);
 
   const handleWizardSubmit = () => {
-    // Only submit if skipper/crew text is provided
-    if (!skipperCrewText.trim()) {
+    // Require at least one of skipper profile or crew requirements
+    if (!skipperProfileText.trim() && !crewRequirementsText.trim()) {
       return;
     }
     const data: OwnerComboSearchData = {
@@ -811,9 +895,13 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
         waypoints: journeyDetails.waypoints,
         waypointDensity: journeyDetails.waypointDensity,
       },
-      skipperCrewProfiles: {
-        text: skipperCrewText,
-        aiProcessingConsent: skipperCrewAiConsent,
+      skipperProfile: {
+        text: skipperProfileText,
+        aiProcessingConsent: skipperProfileAiConsent,
+      },
+      crewRequirements: {
+        text: crewRequirementsText,
+        aiProcessingConsent: crewRequirementsAiConsent,
       },
     };
     onSubmit(data);
@@ -828,19 +916,20 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
       waypoints: [],
       waypointDensity: 'moderate',
     });
-    setSkipperCrewText('');
-    setSkipperCrewAiConsent(false);
+    setSkipperProfileText('');
+    setSkipperProfileAiConsent(false);
+    setCrewRequirementsText('');
+    setCrewRequirementsAiConsent(false);
   };
 
   const canGoToNextPage = () => {
-    // Page 1: Journey details - optional, can proceed without filling them
-    // Allow proceeding to next page even if journey details are not filled
+    // All pages allow proceeding (content is optional per page)
     return true;
   };
 
   const handleNext = () => {
-    if (currentPage < 2 && canGoToNextPage()) {
-      setCurrentPage((prev) => (prev + 1) as 1 | 2);
+    if (currentPage < 3 && canGoToNextPage()) {
+      setCurrentPage((prev) => (prev + 1) as 1 | 2 | 3);
     }
   };
 
@@ -853,7 +942,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
       document.activeElement.blur();
     }
     if (currentPage > 1) {
-      setCurrentPage((prev) => (prev - 1) as 1 | 2);
+      setCurrentPage((prev) => (prev - 1) as 1 | 2 | 3);
     } else {
       setIsWizardOpen(false);
     }
@@ -897,7 +986,8 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               </button>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                 {currentPage === 1 && 'Journey Details'}
-                {currentPage === 2 && 'Skipper & Crew Profiles'}
+                {currentPage === 2 && 'About You (Skipper Profile)'}
+                {currentPage === 3 && 'Crew Requirements'}
               </h2>
               <button
                 onClick={() => setIsWizardOpen(false)}
@@ -1058,28 +1148,18 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                 </div>
               )}
 
-              {/* Page 2: Skipper & Crew Profiles */}
+              {/* Page 2: Skipper Profile */}
               {currentPage === 2 && (
                 <div className="space-y-4">
-                  {/* Instructions */}
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
-                      What to include:
-                    </h3>
-                    <ul className="text-xs text-amber-900 dark:text-amber-200 space-y-1 list-disc list-inside text-left">
-                      <li>Your skipper profile and sailing experience</li>
-                      <li>Boat details, make and model, home port etc.</li>
-                      <li>Crew requirements and preferences - How experienced crew you are looking for, what skills are needed?</li>
-                      <li>Additional information regarding crew, boat or journey</li>
-                      <li>You can also include the Journey details here and SailSmart AI will pick it up</li>
-                      <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
-                    </ul>
+                    <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
+                    {SKIPPER_PROFILE_INSTRUCTIONS}
                   </div>
 
                   <textarea
-                    value={skipperCrewText}
-                    onChange={(e) => setSkipperCrewText(e.target.value)}
-                    placeholder={t('skipperCrewDialogPlaceholder')}
+                    value={skipperProfileText}
+                    onChange={(e) => setSkipperProfileText(e.target.value)}
+                    placeholder="Describe your sailing experience, certifications, boat details, home port, availability..."
                     className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
                   />
 
@@ -1091,14 +1171,52 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                     </div>
                     <button
                       type="button"
-                      onClick={() => setSkipperCrewAiConsent(!skipperCrewAiConsent)}
+                      onClick={() => setSkipperProfileAiConsent(!skipperProfileAiConsent)}
                       className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 ${
-                        skipperCrewAiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'
+                        skipperProfileAiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'
                       }`}
                     >
                       <span
                         className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
-                          skipperCrewAiConsent ? 'right-1' : 'left-1'
+                          skipperProfileAiConsent ? 'right-1' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Page 3: Crew Requirements */}
+              {currentPage === 3 && (
+                <div className="space-y-4">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
+                    {CREW_REQUIREMENTS_INSTRUCTIONS}
+                  </div>
+
+                  <textarea
+                    value={crewRequirementsText}
+                    onChange={(e) => setCrewRequirementsText(e.target.value)}
+                    placeholder="Describe the crew you're looking for: positions, skills, experience level, cost sharing, timeline..."
+                    className="w-full min-h-[200px] px-3 py-2 text-sm text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-700 dark:placeholder:text-gray-400 resize-none"
+                  />
+
+                  {/* AI Consent */}
+                  <div className="flex items-start justify-between gap-4 pt-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 dark:text-foreground">{tPrivacy('aiProcessing')}</p>
+                      <p className="text-sm text-gray-800 dark:text-muted-foreground mt-0.5">{tPrivacy('aiProcessingDesc')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCrewRequirementsAiConsent(!crewRequirementsAiConsent)}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 ${
+                        crewRequirementsAiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
+                          crewRequirementsAiConsent ? 'right-1' : 'left-1'
                         }`}
                       />
                     </button>
@@ -1125,6 +1243,21 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                     Next
                   </button>
                 </>
+              ) : currentPage === 2 ? (
+                <>
+                  <button
+                    onClick={handleBack}
+                    className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors"
+                  >
+                    Next
+                  </button>
+                </>
               ) : (
                 <>
                   <button
@@ -1135,7 +1268,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                   </button>
                   <button
                     onClick={handleWizardSubmit}
-                    disabled={!skipperCrewText.trim() || !skipperCrewAiConsent}
+                    disabled={!skipperProfileText.trim() && !crewRequirementsText.trim()}
                     className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

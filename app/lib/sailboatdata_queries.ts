@@ -254,17 +254,41 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     logger.warn('Registry lookup failed - continuing with external fetch', { error: error instanceof Error ? error.message : String(error) });
   }
 
-  // Use provided slug if available, otherwise convert make_model string to slug
+  // Use provided slug if available, otherwise discover it via search
   let cleanQuery: string;
   if (slug && slug.trim().length > 0) {
     cleanQuery = slug.trim();
   } else {
-    // Normalize Scandinavian characters, then clean the query string (remove spaces, convert to lowercase, replace spaces with hyphens)
-    const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
-    cleanQuery = normalizedQuery
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '');
+    // Try to find the correct slug by searching sailboatdata.com first.
+    // This avoids guessing the URL structure from the make_model string
+    // (e.g. "EXPLORATION 60 (GARCIA)" → search finds slug "garcia-exploration-60").
+    const searchKeyword = sailboatQueryStr
+      .trim()
+      .replace(/\s*\([^)]*\)\s*/g, ' ')  // strip parentheticals for search keyword
+      .replace(/\s+/g, ' ')
+      .trim();
+    try {
+      const searchResults = await searchSailboatData(searchKeyword);
+      if (searchResults.length > 0) {
+        cleanQuery = searchResults[0].slug;
+        logger.debug('Discovered slug via search', { keyword: searchKeyword, slug: cleanQuery }, true);
+      } else {
+        // Fallback: slugify the original string as-is (no reordering)
+        const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
+        cleanQuery = normalizedQuery
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '');
+        logger.debug('No search results — falling back to direct slug', { slug: cleanQuery }, true);
+      }
+    } catch {
+      // Fallback: slugify the original string as-is
+      const normalizedQuery = normalizeScandinavianChars(sailboatQueryStr.trim());
+      cleanQuery = normalizedQuery
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
+    }
   }
 
   const sailboatUrl = `https://sailboatdata.com/sailboat/${cleanQuery}`;
@@ -297,8 +321,9 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     if (details && details.make_model) {
       try {
         const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
-        // Use details.make_model (from parsed HTML) as the canonical name for registry
-        await saveBoatRegistry(details.make_model, details, slug);
+        // Use details.make_model (from parsed HTML) as the canonical name for registry.
+        // Use cleanQuery as slug — it is the discovered slug from search, more reliable than the caller-supplied slug param.
+        await saveBoatRegistry(details.make_model, details, cleanQuery || slug);
         logger.debug('Saved to boat registry', { makeModel: details.make_model }, true);
       } catch (error) {
         // Registry save failure is non-fatal - continue with returning details
