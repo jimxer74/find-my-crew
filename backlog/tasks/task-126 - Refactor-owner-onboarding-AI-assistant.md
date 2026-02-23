@@ -4,7 +4,7 @@ title: Refactor owner onboarding AI assistant
 status: To Do
 assignee: []
 created_date: '2026-02-22 12:12'
-updated_date: '2026-02-23 08:21'
+updated_date: '2026-02-23 08:22'
 labels: []
 dependencies: []
 ---
@@ -132,3 +132,22 @@ Show confirmation again with updated data
 - No breaking changes to existing features (intermediate messages, pending actions, auth)
 - Session cleanup and GDPR archiving unchanged
 <!-- SECTION:PLAN:END -->
+
+- [ ] #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
+- [ ] #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
+- [ ] #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
+- [ ] #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
+- [ ] #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
+- [ ] #6 Session cleanup and GDPR archiving workflow unchanged
+<!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 All removed functions no longer referenced anywhere in codebase (grep confirms)
+- [ ] #2 No console warnings or errors when running onboarding flow
+- [ ] #3 Onboarding tested end-to-end: clarification → confirmation → refinement → exit
+- [ ] #4 Exit button appears in header only for authenticated users on onboarding page
+- [ ] #5 Intermediate messages and pending actions still display correctly
+- [ ] #6 TypeScript compiles without errors; no type safety issues with new metadata
+- [ ] #7 All new components properly handle disabled/loading states
+<!-- DOD:END -->
