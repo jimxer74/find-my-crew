@@ -197,21 +197,22 @@ Currently, Skipper profile and Crew requirements are logically mixed in:
 - Frontend reading/storing should map to new separated structure
 <!-- SECTION:PLAN:END -->
 
-- [ ] #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
-- [ ] #2 #2 #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
-- [ ] #3 #3 #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
-- [ ] #4 #4 #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
-- [ ] #5 #5 #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
-- [ ] #6 #6 #6 Session cleanup and GDPR archiving workflow unchanged
+- [ ] #1 #1 #1 #1 All suggestion UI removed; free-form chat not available anywhere in the onboarding flow
+- [ ] #2 #2 #2 #2 All three response types (clarification, confirmation, auth) display with proper auto-detecting UI controls
+- [ ] #3 #3 #3 #3 Confirmation refinement loop functional: users can click Edit, provide feedback, AI updates data iteratively, then re-display confirmation
+- [ ] #4 #4 #4 #4 Exit button functional: shows only when user is authenticated, requires confirmation dialog, navigates to profile page on exit
+- [ ] #5 #5 #5 #5 No breaking changes to existing features (intermediate messages, pending action approvals, auth modals)
+- [ ] #6 #6 #6 #6 Session cleanup and GDPR archiving workflow unchanged
 <!-- AC:END -->
 <!-- AC:END -->
 
-- [ ] #7 Skipper Profile and Crew Requirements clearly separated in front page ComboSearch box (visual sections)
-- [ ] #8 Mobile wizard has separate pages for Skipper Profile and Crew Requirements with own input fields
-- [ ] #9 Session data structure clearly separates skipper_profile and crew_requirements (not mixed)
-- [ ] #10 AI prompts reference correct data structure based on context (skipper_profile when discussing boat/skipper, crew_requirements when discussing crew needs)
-- [ ] #11 Confirmation displays show skipper and crew data in separate visual sections
-- [ ] #12 Database migration handles new structure without data loss
+- [ ] #7 #7 Skipper Profile and Crew Requirements clearly separated in front page ComboSearch box (visual sections)
+- [ ] #8 #8 Mobile wizard has separate pages for Skipper Profile and Crew Requirements with own input fields
+- [ ] #9 #9 Session data structure clearly separates skipper_profile and crew_requirements (not mixed)
+- [ ] #10 #10 AI prompts reference correct data structure based on context (skipper_profile when discussing boat/skipper, crew_requirements when discussing crew needs)
+- [ ] #11 #11 Confirmation displays show skipper and crew data in separate visual sections
+- [ ] #12 #12 Database migration handles new structure without data loss
+<!-- AC:END -->
 <!-- AC:END -->
 
 ## Definition of Done
@@ -223,4 +224,10 @@ Currently, Skipper profile and Crew requirements are logically mixed in:
 - [ ] #5 Intermediate messages and pending actions still display correctly
 - [ ] #6 TypeScript compiles without errors; no type safety issues with new metadata
 - [ ] #7 All new components properly handle disabled/loading states
+- [ ] #8 Database migration successfully creates skipper_profile and crew_requirements separation
+- [ ] #9 Session data consistently stores skipper and crew information in separate structures
+- [ ] #10 AI prompts correctly reference only relevant data structure for each step
+- [ ] #11 Frontend components properly read/write to separated data structures (no cross-mixing)
+- [ ] #12 GDPR deletion logic updated to handle new data structure
+- [ ] #13 End-to-end flow tested: Skipper Profile step → Crew Requirements step → proper data separation visible in confirmations
 <!-- DOD:END -->
