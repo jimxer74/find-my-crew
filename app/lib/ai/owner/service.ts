@@ -190,11 +190,14 @@ function buildOwnerPromptForStep(
     boatId?: string;
     boatName?: string;
     isProfileCompletionMode?: boolean;
+    skipperProfile?: string | null;
+    crewRequirements?: string | null;
+    journeyDetails?: string | null;
   }
 ): string {
   const tools = getToolsForOwnerStep(step);
   const toolsBlock = formatStepToolsForPrompt(tools);
-  const { currentDate, userProfile, boatId, boatName, isProfileCompletionMode } = opts;
+  const { currentDate, userProfile, boatId, boatName, isProfileCompletionMode, skipperProfile, crewRequirements, journeyDetails } = opts;
 
   const userInfo = userProfile
     ? [
@@ -213,9 +216,9 @@ function buildOwnerPromptForStep(
     case 'signup':
       stateAndGoal = `## CURRENT STEP: Sign up
 **State:** User is not signed in. No profile, boat, or journey.
-**Goal:** Be welcoming. Show platform value by providing examples of 
-matching crew by using the tool search_matching_crew, reason the search
-criteria based on given information if available, do not ask for more information at this step.
+**Goal:** Be welcoming. Show platform value by ALLWAYS providing examples of 
+matching crew by using the tool search_matching_crew, resolve and deep reason the search
+criteria based on given information if available from user input, do not ask for more information at this step.
 Encourage sign-up. Do not call any profile/boat/journey tools.`;
       stepInstructions = userInfo ? `**From signup/OAuth (if known):**\n${userInfo}\n` : '';
       extra = `You may use definition tools (get_experience_level_definitions, get_risk_level_definitions, get_skills_definitions) only to answer general questions.`;
@@ -223,38 +226,47 @@ Encourage sign-up. Do not call any profile/boat/journey tools.`;
     case 'create_profile':
       stateAndGoal = `## CURRENT STEP: Create profile
 **State:** Profile not created yet. Boat: none. Journey: none.
-**Goal:** Gather full_name, user_description, sailing_experience (and optionally risk_level, skills). Then call \`update_user_profile\` with **roles: ['owner']** (required). When the user gives their full name, include [OWNER_NAME: Their Full Name] in your message.
-**AFTER PROFILE IS CREATED:** You MUST propose the next step. In [SUGGESTIONS]:
-- If boat was NOT created: suggest "Add your boat"
-- If boat was created: suggest "Create your first journey"`;
+**Goal:** Gather full_name, user_description, sailing_experience (and optionally risk_level, skills). Then call \`update_user_profile\` with **roles: ['owner']** (required).
+**DATA SOURCE:** Extract ALL profile fields EXCLUSIVELY from [SKIPPER PROFILE]. The [CREW REQUIREMENTS] section describes what the skipper wants FROM crew — it must NEVER be used to populate the skipper's own profile fields (experience, skills, certifications, description).
+When the user gives their full name, include [OWNER_NAME: Their Full Name] in your message.
+**SAVING THE PROFILE:** Present the profile summary to the user and ask them to confirm (e.g. "Does this look correct? Shall I save your profile?"). **Only call \`update_user_profile\` after the user explicitly confirms** (says "yes", "looks good", "save", "go ahead", or similar). Never save without confirmation.
+**NEVER say "profile saved", "profile created", or similar unless you have actually called update_user_profile in THIS exact response.**
+**AFTER PROFILE IS SAVED:** Check conversation history for boat details (name, make/model, home port). If boat details are already available, present a brief boat summary and suggest adding the boat.`;
       stepInstructions = userInfo ? `**From signup/OAuth:**\n${userInfo}\n` : '';
-      extra = `## SKILLS (optional)
-Use ONLY exact skill names from config. Format in profile: [{"skill_name": "exact_name", "description": "..."}]. Skills optional.
-${getSkillsStructure()} 
+      extra = `## LABELLED SECTIONS IN FIRST MESSAGE
+The user's first message may contain clearly-labelled sections: [SKIPPER PROFILE], [CREW REQUIREMENTS], and [JOURNEY DETAILS].
+- Use ONLY the [SKIPPER PROFILE] section to extract the skipper's name, description, experience, certifications, and risk level.
+- Do NOT use [CREW REQUIREMENTS] or [JOURNEY DETAILS] content for the skipper profile.
+- [JOURNEY DETAILS] contains structured route data; acknowledge it exists but save it for the journey step.
+
+## SKILLS (optional)
+**CRITICAL:** Only include skills that the **skipper/owner themselves** possesses. Do NOT include skills from [CREW REQUIREMENTS]. Skills optional.
+Use ONLY exact skill names from config. Format in profile: [{"skill_name": "exact_name", "description": "..."}].
+${getSkillsStructure()}
 Then suggest adding a boat next.`;
       if (isProfileCompletionMode) {
-        extra += `\n**Profile completion mode:** Extract info from conversation history. Present summary, get confirmation, then call update_user_profile with roles: ['owner'].`;
+        extra += `\n**Profile completion mode:** Extract info from conversation history. Present summary and ask for confirmation. Do NOT call update_user_profile until the user explicitly confirms.`;
       }
       break;
     case 'add_boat':
       stateAndGoal = `## CURRENT STEP: Add boat
 **State:** Profile created. Boat: none. Journey: none.
-**Goal:** Get boat make/model → call \`fetch_boat_details_from_sailboatdata\` → gather name if needed → present summary → when user confirms, you MUST call \`create_boat\` in your next response.
-**AFTER BOAT IS CREATED:** You MUST propose the next step. In [SUGGESTIONS]:
-- Suggest to create a journey next.`;
-      stepInstructions = `**READ CONVERSATION HISTORY FIRST:** Before asking for boat details, check the full conversation—the user may have already provided boat info (e.g. "Grand Soleil 43 – Admiral Fyodor", make/model, name, description). If so, use that information: call \`fetch_boat_details_from_sailboatdata\` with the make/model they gave, use the boat name they mentioned, then present a short summary and ask to confirm (or call \`create_boat\` if you have name, type, make_model, capacity). Do NOT ask again for name, type, or size if they were already stated earlier in the chat.
-**CRITICAL:** After you show a boat summary, if the user replies with ANY confirmation (e.g. "yes", "looks good", "confirm", "correct", "go ahead", "create it", "ok", "sounds good"), you MUST call the \`create_boat\` tool immediately. Do not ask again; do not only describe—actually call the tool with the boat details you just summarized. 
-
-**Required fields:** name, type, make_model, capacity (number)
-
-**IMPORTANT - Include ALL available data:** When calling create_boat, you MUST include ALL fields that are available from fetch_boat_details_from_sailboatdata results, including:
-- home_port, country_flag (if provided by user or known)
-- loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots (if available from fetch_boat_details)
-- link_to_specs (if available)
-- **characteristics, capabilities, accommodations** (CRITICAL - these are important descriptive fields that should be included if available from fetch_boat_details)
-- sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch (if available from fetch_boat_details)
-
-Use data from fetch_boat_details_from_sailboatdata and your summary.`;
+**Goal:** Collect boat make/model and name from the user, fetch specs, present a summary, and save when confirmed.
+**STEP 1 — COLLECT MAKE/MODEL FIRST:**
+- Check the conversation history and [SKIPPER PROFILE] stored context for boat details (make/model, name, home port).
+- If a specific make/model IS clearly present (e.g. "Baltic 35", "Bavaria 46"), call \`fetch_boat_details_from_sailboatdata\` with that exact string — do NOT announce intent, just call it.
+- If make/model is NOT available or unclear, ask the user for it before fetching. Do NOT guess or invent a make/model.
+**STEP 2 — PRESENT SUMMARY AND CONFIRM:** After fetching specs, show the boat summary and ask for confirmation before saving.
+**STEP 3 — SAVE:** Only call \`create_boat\` after the user confirms.
+**AFTER BOAT IS SAVED:** Confirm success and suggest creating a journey next.`;
+      stepInstructions = `**Required fields for create_boat:** name (boat's own name), type, make_model, capacity (number)
+**IMPORTANT - Include ALL available data from fetch_boat_details_from_sailboatdata:**
+- home_port, country_flag (if provided by user or in [SKIPPER PROFILE])
+- loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots
+- link_to_specs
+- characteristics, capabilities, accommodations (CRITICAL — do NOT invent these if not returned by the tool; omit them instead)
+- sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch
+**NEVER present made-up or placeholder specs.** If fetch_boat_details_from_sailboatdata returns no data, tell the user the specs could not be found and ask them to provide the details manually.`;
       extra = `**create_boat:** Call this as soon as the user confirms the boat summary. Include ALL available fields from fetch_boat_details_from_sailboatdata. Example (replace with actual values from your summary and fetch_boat_details result):
 \`\`\`tool_call
 {"name": "create_boat", "arguments": {"name": "Boat Name", "type": "Coastal cruisers", "make_model": "Bavaria 46", "capacity": 6, "home_port": "Stockholm", "country_flag": "SE", "loa_m": 14.0, "beam_m": 4.2, "max_draft_m": 2.1, "displcmt_m": 12000, "average_speed_knots": 6.5, "link_to_specs": "https://sailboatdata.com/sailboat/bavaria-46", "characteristics": "Modern hull design with fin keel and spade rudder...", "capabilities": "Equipped for offshore passages with full electronics...", "accommodations": "Spacious saloon with 3 cabins and 2 heads..."}}
@@ -267,20 +279,38 @@ Then suggest creating a journey next.`;
     case 'post_journey':
       stateAndGoal = `## CURRENT STEP: Post journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
-**Goal:** Gather route (start, end, optional waypoints, dates). Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), and optional intermediateWaypoints, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), waypointDensity ("minimal" or "moderate"). 
-**CRITICAL:** If the user mentions dates anywhere in the conversation (e.g., "01/05/2026 - 30/05/2026" or "from May 1st to May 30th"), you MUST convert them to ISO format (YYYY-MM-DD) and pass them as startDate and endDate parameters to generate_journey_route.
-**AFTER JOURNEY IS CREATED:** In [SUGGESTIONS] propose e.g. "View your journeys"`;
+**Goal:** Check the conversation history ALLWAYS first to see if user has already provided Journey information and present journey-summary to user. 
+If journey information is not available, gather route (start, end, optional waypoints, dates).
+**AFTER JOURNEY SUMMARY IS DISPLAYED:** You MUST ALLWAYS propose to generate the journey. In [SUGGESTIONS]:
+Call \`generate_journey_route\` with **boatId: "${boatId ?? ''}"**, startLocation, endLocation (each {name, lat, lng}), 
+and optional intermediateWaypoints, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), waypointDensity ("minimal" or "moderate"). 
+**CRITICAL:** If the user mentions dates anywhere in the conversation (e.g., "01/05/2026 - 30/05/2026" or "from May 1st to May 30th"), 
+you MUST convert them to ISO format (YYYY-MM-DD) and pass them as startDate and endDate parameters to generate_journey_route.`;
       stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
 
 generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
-**COORDINATES:** If the user's message includes journey details with coordinates in parentheses (e.g. "Start location: Kingston, Jamaica (lat 18.0, lng -76.8)"), use those exact lat/lng values in your generate_journey_route call. Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the user for latitude/longitude.
-**DATES:** If the user has mentioned any dates in the conversation history (e.g., "May 1-30", "01/05/2026 to 30/05/2026", "starting May 1st"), you MUST:
+**REQUIRED FIELDS ONLY:** The only required inputs are startLocation and endLocation. Do NOT ask for a journey name, journey description, or any other 
+field—these are not parameters of generate_journey_route and are not needed.
+**[JOURNEY DETAILS] SECTION (CRITICAL):** The user's first message may contain a [JOURNEY DETAILS] section with structured route data 
+(start/end locations with lat/lng coordinates, dates, waypoints). This is the PRIMARY source for route information. Use the exact coordinates 
+and dates from that section—do NOT ask again for information already present there.
+**COORDINATES:** If the first message contains a [JOURNEY DETAILS] section with coordinates in parentheses 
+(e.g. "Start location: Kingston, Jamaica (lat 18.0, lng -76.8)"), use those exact lat/lng values. 
+Otherwise supply lat and lng from your knowledge of geography. Do NOT ask the user for latitude/longitude.
+**DATES:** If the conversation contains any dates 
+(e.g., "May 1-30", "01/05/2026 to 30/05/2026", "starting May 1st", or dates in the [JOURNEY DETAILS] section), you MUST:
 1. Convert them to ISO format: YYYY-MM-DD (e.g., "2026-05-01")
 2. Pass them as startDate and endDate parameters in your generate_journey_route call
 3. Do NOT ask for dates again if they were already provided
-**Example with dates:**
+**CREW REQUIREMENTS (CRITICAL):** The [CREW REQUIREMENTS] section in STORED CONTEXT contains what the skipper wants from crew. You MUST extract and include all relevant fields in generate_journey_route — do NOT ask the user again:
+- skills: map mentioned crew skills to valid names: safety_and_mob, heavy_weather, night_sailing, watch_keeping, navigation, sailing_experience, certifications, physical_fitness, seasickness_management, first_aid, technical_skills, cooking, survival_skills
+- min_experience_level: integer 1–4 (1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper)
+- cost_model: one of "Shared contribution", "Owner covers all costs", "Crew pays a fee", "Delivery/paid crew", "Not defined"
+- cost_info: free text about cost details
+**IMPORTANT:** Always include skills and min_experience_level if [CREW REQUIREMENTS] mentions them, even if vaguely (e.g. "experienced sailors" → min_experience_level: 2 or 3; "navigation skills" → skills: ["navigation"]).
+**Example with crew requirements:**
 \`\`\`tool_call
-{"name": "generate_journey_route", "arguments": {"startLocation": {...}, "endLocation": {...}, "boatId": "...", "startDate": "2026-05-01", "endDate": "2026-05-30", "waypointDensity": "moderate"}}
+{"name": "generate_journey_route", "arguments": {"startLocation": {...}, "endLocation": {...}, "boatId": "...", "startDate": "2026-05-01", "endDate": "2026-05-30", "waypointDensity": "moderate", "skills": ["navigation", "night_sailing", "heavy_weather"], "min_experience_level": 2, "cost_model": "Shared contribution"}}
 \`\`\``;
       break;
     case 'completed':
@@ -292,8 +322,22 @@ generate_journey_route creates the journey and all legs. After it succeeds, tell
       break;
   }
 
-  return `You are SailSmart's AI assistant for owner onboarding. CURRENT DATE: ${currentDate}
+  // Build stored context block so AI always has the raw input text even if conversation history is long
+  const storedContextParts: string[] = [];
+  if (skipperProfile?.trim()) storedContextParts.push(`[SKIPPER PROFILE]:\n${skipperProfile.trim()}`);
+  if (crewRequirements?.trim()) storedContextParts.push(`[CREW REQUIREMENTS]:\n${crewRequirements.trim()}`);
+  if (journeyDetails?.trim()) storedContextParts.push(`[JOURNEY DETAILS]:\n${journeyDetails.trim()}`);
+  const storedContextBlock = storedContextParts.length > 0
+    ? `\n## STORED CONTEXT (from initial search — always authoritative)\n\n` +
+      `⚠️ DATA SOURCE RULES — apply strictly:\n` +
+      `- [SKIPPER PROFILE] → use ONLY for the skipper's own details: name, bio, experience level, certifications, skills, boat info.\n` +
+      `- [CREW REQUIREMENTS] → use ONLY when creating a journey to set crew skill/experience requirements. NEVER read crew requirements as the skipper's own skills or experience.\n` +
+      `- [JOURNEY DETAILS] → use ONLY for the journey/route step (locations, dates, waypoints). Ignore for profile and boat steps.\n\n` +
+      storedContextParts.join('\n\n') + '\n'
+    : '';
 
+  return `You are SailSmart's AI assistant for owner onboarding. CURRENT DATE: ${currentDate}
+${storedContextBlock}
 ${stateAndGoal}
 ${stepInstructions}
 
@@ -304,9 +348,14 @@ ${extra ? `\n${extra}` : ''}
 
 ## RULES
 - Be concise. Preferably on one at a time. Confirm before creating (profile/boat/journey).
-- **Use conversation history:** Before asking for any detail, check if the user already provided it earlier in the conversation (e.g. boat name, make/model, profile info). If they did, use that information and do not ask again—proceed to the next action (e.g. look up boat, show summary, or create).
-- **ALWAYS propose the next onboarding step:** After completing the current step (profile created, boat created, or journey created), your [SUGGESTIONS] MUST include one suggestion that moves the user to the next step (e.g. after profile → "Add your boat"; after boat → "Create your first journey"; after journey → "View your journeys" or "Invite crew"). Never end with only generic tips—always offer the concrete next step in the flow.
-- At the end of every response, add [SUGGESTIONS] with 1–2 items: at least one must be the next step in the flow when the current step is complete; the other can be a value for a missing field or a short tip. [/SUGGESTIONS]
+- **Use conversation history:** Before asking for any detail, check if the user already provided it earlier in the conversation 
+(e.g. boat name, make/model, profile info). If they did, use that information and do not ask again—proceed to the next action 
+(e.g. look up boat, show summary, or create).
+- **ALWAYS propose the next onboarding step:** After completing the current step (profile created, boat created, or journey created) 
+- Include ALLWAYS [SUGGESTIONS] either to confirm pending action or ask missing information (e.g. "Save your profile", "Save boat details", "Create your first journey").
+Never end with only generic tips—always offer the concrete action to peform.
+- At the end of every response, add [SUGGESTIONS] with 1 item: that is either confirm pending action (e.g. "Save your profile", "Save boat details", "Create your first journey"); 
+or proposed value for a missing field (e.g. "Confirm 1. Beginner experience level"). [/SUGGESTIONS]
 - Do not show tool_call JSON to the user; describe in plain language.`;
 }
 
@@ -973,14 +1022,18 @@ async function executeOwnerTools(
 
       // Boat tools
       if (toolCall.name === 'fetch_boat_details_from_sailboatdata') {
-        const make_model = args.make_model as string;
+        // Normalize: accept separate make/model args and combine into make_model
+        const make_model = (args.make_model as string) ||
+          ((args.make && args.model) ? `${args.make} ${args.model}`.trim() : undefined) ||
+          (args.make as string | undefined) ||
+          (args.model as string | undefined);
         const slug = args.slug as string | undefined;
 
         if (!make_model) {
           results.push({
             name: toolCall.name,
             result: null,
-            error: 'make_model is required',
+            error: 'make_model is required (e.g. "Bavaria 46" or "Vindö 40")',
           });
           continue;
         }
@@ -1095,6 +1148,19 @@ Return ONLY the JSON object, nothing else.`;
             ppi_pounds_per_inch: details?.ppi_pounds_per_inch ?? boatDetails.ppi_pounds_per_inch ?? null,
           };
           
+          // Save merged result to registry so it's not re-fetched next time
+          try {
+            const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+            // Extract slug from link_to_specs URL if available (e.g. "https://sailboatdata.com/sailboat/garcia-exploration-60")
+            const slugFromLink = mergedResult.link_to_specs
+              ? mergedResult.link_to_specs.match(/\/sailboat\/([^\/\?#]+)/)?.[1]
+              : undefined;
+            await saveBoatRegistry(make_model.trim(), mergedResult as any, slugFromLink);
+            log(`✅ Saved AI-fallback boat details to registry: ${make_model}`);
+          } catch (registryErr) {
+            logger.error(`⚠️ Failed to save AI-fallback result to registry: ${registryErr instanceof Error ? registryErr.message : 'Unknown error'}`);
+          }
+
           results.push({
             name: toolCall.name,
             result: mergedResult,
@@ -1481,15 +1547,19 @@ Return ONLY the JSON object, nothing else.`;
               make_model: boatData.make_model,
             };
             
+            // Extract slug from link_to_specs if available
+            const slugFromSpecs = boatData.link_to_specs
+              ? (boatData.link_to_specs as string).match(/\/sailboat\/([^\/\?#]+)/)?.[1]
+              : undefined;
             await saveBoatRegistry(
               boatData.make_model as string,
               registryBoatData,
-              undefined
+              slugFromSpecs
             );
             
             log(`✅ Boat registry updated for make_model: ${boatData.make_model}`);
           } catch (registryError) {
-            log(`⚠️ Failed to update boat registry: ${registryError instanceof Error ? registryError.message : 'Unknown error'}`);
+            logger.error(`⚠️ Failed to update boat registry: ${registryError instanceof Error ? registryError.message : 'Unknown error'}`);
           }
         }
         
@@ -2012,6 +2082,9 @@ export async function ownerChat(
   const authenticatedUserId = request.authenticatedUserId || null;
   const userProfile = request.userProfile || null;
   const isProfileCompletionMode = request.profileCompletionMode && !!authenticatedUserId;
+  const skipperProfile = request.skipperProfile ?? null;
+  const crewRequirements = request.crewRequirements ?? null;
+  const journeyDetails = request.journeyDetails ?? null;
 
   // Check completion status (only if authenticated)
   let hasProfile = false;
@@ -2056,7 +2129,7 @@ export async function ownerChat(
   }
 
   const currentStep = deriveOwnerStep(authenticatedUserId, hasProfile, hasBoat, hasJourney);
-  const allowedToolNames = new Set(TOOLS_BY_STEP[currentStep]);
+  let allowedToolNames = new Set(TOOLS_BY_STEP[currentStep]);
   log('📊 Completion status:', { hasProfile, hasBoat, hasJourney, currentStep });
 
   // For post_journey step, load boat id and name to inject into prompt (AI does not call get_owner_boats)
@@ -2105,6 +2178,9 @@ export async function ownerChat(
       boatId,
       boatName,
       isProfileCompletionMode,
+      skipperProfile,
+      crewRequirements,
+      journeyDetails,
     });
     const approvedActionPrompt = `${systemPrompt}\n\nuser: ${request.message}`;
     const toolResults = await executeOwnerTools(supabase, [toolCall], authenticatedUserId, allowedToolNames, approvedActionPrompt);
@@ -2161,6 +2237,9 @@ export async function ownerChat(
     boatId,
     boatName,
     isProfileCompletionMode,
+    skipperProfile,
+    crewRequirements,
+    journeyDetails,
   });
 
   // Build messages for AI
@@ -2196,6 +2275,7 @@ export async function ownerChat(
   let boatCreated = false;
   let journeyCreated = false;
   let addBoatNudgeCount = 0;
+  let addProfileNudgeCount = 0;
 
   while (iterations < MAX_TOOL_ITERATIONS) {
     iterations++;
@@ -2231,10 +2311,10 @@ export async function ownerChat(
     if (toolCalls.length === 0) {
       // Add boat step: if user confirmed and AI either showed a boat summary or claimed boat was created (without calling create_boat), nudge once
       const lastUserMessage = request.message.trim().toLowerCase();
-      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead)\b/.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bconfirm\b.*\bboat\b/i.test(lastUserMessage));
+      const looksLikeConfirmation = /^(yes|yeah|yep|ok|okay|confirm|looks good|sounds good|correct|go ahead|create it|do it|save|save it|save boat|please call create_boat|please create the boat)$/.test(lastUserMessage) || lastUserMessage.length < 60 && (/\b(yes|ok|confirm|good|correct|go ahead|save)\b/.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bconfirm\b.*\bboat\b/i.test(lastUserMessage)) || (lastUserMessage.length < 80 && /\bsave\b.*\bboat\b/i.test(lastUserMessage));
       const looksLikeBoatSummary = (/\b(name|type|capacity|make|model):\s*\S+/i.test(result.text) || /boat.*summary|here('s| is) (your|the) boat/i.test(result.text)) && !/create_boat|tool_call/.test(result.text);
-      const looksLikeBoatCreatedWithoutTool = /(?:created successfully|boat profile.*created|your boat.*has been created|boat has been created)/i.test(result.text) && !/create_boat|tool_call/.test(result.text);
-      if (currentStep === 'add_boat' && looksLikeConfirmation && (looksLikeBoatSummary || looksLikeBoatCreatedWithoutTool)) {
+      const looksLikeBoatCreatedWithoutTool = /(?:created successfully|saved successfully|boat profile.*created|your boat.*has been created|boat has been created|already been saved|have been saved|has been saved)/i.test(result.text) && !/create_boat|tool_call/.test(result.text);
+      if (!boatCreated && currentStep === 'add_boat' && looksLikeConfirmation && (looksLikeBoatSummary || looksLikeBoatCreatedWithoutTool)) {
         if (addBoatNudgeCount >= 2) {
           log('⚠️ Add boat: nudge cap reached - suggesting boat may already exist');
           currentMessages.push(
@@ -2250,6 +2330,43 @@ export async function ownerChat(
           { role: 'user', content: 'The user confirmed. You MUST call the create_boat tool in this response. Include ALL available fields from fetch_boat_details_from_sailboatdata results, especially characteristics, capabilities, and accommodations. Use this structure: ```tool_call\n{"name": "create_boat", "arguments": {"name": "...", "type": "...", "make_model": "...", "capacity": ..., "home_port": "...", "loa_m": ..., "beam_m": ..., "characteristics": "...", "capabilities": "...", "accommodations": "..."}}\n``` Replace the ... with actual values from your summary and fetch_boat_details results. Include all fields that were returned by fetch_boat_details_from_sailboatdata. No other tool is allowed in this step.' }
         );
         continue;
+      }
+
+      // Create profile step: if user confirmed but AI claimed profile was saved without calling update_user_profile, nudge once
+      const looksLikeProfileSummary = /\b(full.?name|user.?description|sailing.?experience|experience.?level|profile.?summary)\b/i.test(result.text) && !/update_user_profile|tool_call/.test(result.text);
+      const looksLikeProfileSavedWithoutTool = /(?:profile.*(?:saved|created|stored|updated).*successfully|already been saved|has been saved|have been saved|saved successfully)/i.test(result.text) && !/update_user_profile|tool_call/.test(result.text);
+      if (!profileCreated && currentStep === 'create_profile' && looksLikeConfirmation && (looksLikeProfileSummary || looksLikeProfileSavedWithoutTool)) {
+        if (addProfileNudgeCount >= 2) {
+          log('⚠️ Create profile: nudge cap reached - profile may already exist');
+          currentMessages.push(
+            { role: 'assistant', content: result.text },
+            { role: 'user', content: 'The profile may already exist. Respond briefly that the user can proceed to add their boat and suggest "Add your boat" as the next step. Do not call any tools.' }
+          );
+          continue;
+        }
+        log('⚠️ Create profile: user confirmed but no update_user_profile call - nudging AI');
+        addProfileNudgeCount += 1;
+        currentMessages.push(
+          { role: 'assistant', content: result.text },
+          { role: 'user', content: 'The user confirmed. You MUST call the update_user_profile tool NOW to save the profile. Use this structure: ```tool_call\n{"name": "update_user_profile", "arguments": {"full_name": "...", "user_description": "...", "sailing_experience": ..., "risk_level": [...], "skills": [...], "roles": ["owner"]}}\n``` Fill in the actual values from your summary. The roles field MUST include ["owner"]. Do not call any other tool.' }
+        );
+        continue;
+      }
+
+      // add_boat step: detect when AI announces intent to fetch boat details but doesn't call the tool
+      if (!boatCreated && currentStep === 'add_boat') {
+        const looksLikeFetchBoatIntent =
+          /\b(?:i will|i'll|i am going to|let me|now|please hold on)\b.{0,60}\b(?:fetch|get|gather|look.?up|find|search)\b.{0,60}\b(?:boat|vessel|specifications?|specs|details)\b/i.test(result.text) ||
+          /\b(?:fetching|gathering|looking up)\b.{0,60}\b(?:boat|vessel|specifications?|specs|details|sailboatdata)\b/i.test(result.text) ||
+          /please hold on.{0,60}\b(?:gather|fetch|collect|find|get)\b/i.test(result.text);
+        if (looksLikeFetchBoatIntent && !/tool_call|fetch_boat_details_from_sailboatdata|create_boat/.test(result.text)) {
+          log('⚠️ Add boat: AI announced fetch intent without calling tool - forcing fetch_boat_details_from_sailboatdata');
+          currentMessages.push(
+            { role: 'assistant', content: result.text },
+            { role: 'user', content: 'You mentioned fetching boat details but did not call the tool. If a specific make/model is present in the conversation or [SKIPPER PROFILE], call fetch_boat_details_from_sailboatdata now with that exact make/model. If no make/model is available, ask the user for it instead.' }
+          );
+          continue;
+        }
       }
 
       // Check if AI tried to call a tool but failed to parse
@@ -2362,6 +2479,9 @@ export async function ownerChat(
     if (profileResult) {
       profileCreated = true;
       log('🎉 Profile created successfully!');
+      // Unlock boat tools so AI can auto-chain to boat creation in the same request
+      allowedToolNames.add('fetch_boat_details_from_sailboatdata');
+      allowedToolNames.add('create_boat');
     }
     if (boatResult) {
       boatCreated = true;
@@ -2396,7 +2516,14 @@ Your journey is now ready for you to review and manage. You can:
 
     // Add tool results for next iteration (only if journey wasn't created)
     const toolResultsText = formatToolResultsForAI(toolResults);
-    const contextMessage = `Tool results:\n${toolResultsText}\n\nNow provide a helpful response to the user.`;
+    let contextMessage: string;
+    if (profileResult && !boatCreated) {
+      contextMessage = `Tool results:\n${toolResultsText}\n\nProfile saved! Check the conversation history and [SKIPPER PROFILE] for boat details (make/model, name, home port). If a specific make/model is present (e.g. "Baltic 35", "Bavaria 46"), call fetch_boat_details_from_sailboatdata with that make/model. If no make/model is found, congratulate the user on saving their profile and ask for their boat's make/model to continue.`;
+    } else if (boatResult && !journeyCreated) {
+      contextMessage = `Tool results:\n${toolResultsText}\n\nBoat saved! Confirm the boat was added successfully and let the user know the next step is creating their first journey. Do NOT attempt to call generate_journey_route — journey creation is handled in the next step after this response.`;
+    } else {
+      contextMessage = `Tool results:\n${toolResultsText}\n\nNow provide a helpful response to the user.`;
+    }
 
     currentMessages.push(
       { role: 'assistant', content: result.text },
