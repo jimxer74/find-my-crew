@@ -37,6 +37,7 @@ export interface CrewMatch {
   location: string; // Formatted location string
   matchScore: number; // 0-100
   availability?: string; // Formatted availability text
+  requiredSkills?: string[]; // Skills that were searched for (if applicable)
 }
 
 export interface CrewSearchResult {
@@ -236,7 +237,8 @@ function parseSkills(skillsData: any): string[] {
 function normalizeCrewProfile(
   profile: any,
   matchScore: number,
-  includePrivateInfo: boolean
+  includePrivateInfo: boolean,
+  requiredSkills?: string[]
 ): CrewMatch {
   // Extract location from preferred_departure_location JSONB if available
   const depLocation = profile.preferred_departure_location as any;
@@ -256,6 +258,7 @@ function normalizeCrewProfile(
     location: formatLocation(homePort, depLat, depLng),
     matchScore,
     availability: formatAvailability(profile.availability_start_date, profile.availability_end_date),
+    requiredSkills: requiredSkills && requiredSkills.length > 0 ? requiredSkills : undefined,
   };
 }
 
@@ -319,7 +322,7 @@ export async function searchMatchingCrew(
 
     // Normalize profiles for API response
     const matches = limitedResults.map(item =>
-      normalizeCrewProfile(item.profile, item.score, params.includePrivateInfo || false)
+      normalizeCrewProfile(item.profile, item.score, params.includePrivateInfo || false, params.skills)
     );
 
     return {
