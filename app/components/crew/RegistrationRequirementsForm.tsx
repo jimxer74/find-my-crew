@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LoadingButton } from '@/app/components/ui/LoadingButton';
+import { Button } from '@/app/components/ui/Button/Button';
 import { logger } from '@/app/lib/logger';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
@@ -340,14 +341,14 @@ export function RegistrationRequirementsForm({
       {/* Sticky Footer */}
       <div className="flex-shrink-0 border-t border-border bg-card p-6 pt-4">
         <div className="flex gap-3 justify-end">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             disabled={isRegistering}
-            className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline"
           >
             Cancel
-          </button>
+          </Button>
           <LoadingButton
             type="button"
             onClick={handleSubmit}
