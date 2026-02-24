@@ -4,6 +4,7 @@ import { logger } from '@/app/lib/logger';
 import { Notification } from '@/app/lib/notifications';
 import { isAIPendingAction, hasAIPendingActionMetadata, requiresInput } from '@/app/lib/notifications/types';
 import React, { ReactElement, useState } from 'react';
+import { Button } from '@/app/components/ui/Button/Button';
 import { ActionModal } from './ActionModal';
 
 interface ActionConfirmationProps {
@@ -182,18 +183,22 @@ export function ActionConfirmation({ notification, onApprove, onReject, onRedire
               {notification.metadata.action_explanation || notification.message}
             </p>
             <div className="flex gap-2 mt-3">
-              <button
+              <Button
                 onClick={handleRedirectToProfile}
-                className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors cursor-pointer"
+                variant="primary"
+                size="sm"
+                className="!text-xs !bg-blue-600 hover:!bg-blue-700"
               >
                 Update in Profile
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleReject}
-                className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors cursor-pointer"
+                variant="secondary"
+                size="sm"
+                className="!text-xs"
               >
                 Mark as Completed
-              </button>
+              </Button>
             </div>
           </div>
         </div>

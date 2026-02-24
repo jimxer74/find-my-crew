@@ -1,6 +1,7 @@
 'use client';
 
 import { type Notification, NotificationType } from '@/app/lib/notifications';
+import { Button } from '@/app/components/ui/Button/Button';
 import { ActionConfirmation } from './ActionConfirmation';
 import { isAIPendingAction } from '@/app/lib/notifications/types';
 
@@ -208,13 +209,15 @@ export function NotificationItem({
         )}
       {!isPendingAction && (
       <div className="flex gap-2 mt-3">
-           <button
-                   className="px-3 py-1.5 text-xs font-medium bg-muted hover:bg-accent text-foreground rounded transition-colors cursor-pointer"
+           <Button
+                   variant="secondary"
+                   size="sm"
+                   className="!text-xs"
                    onClick={(e) => {
                    e.stopPropagation();
                    onDelete(notification.id)}}>
               Mark as Read
-           </button>
+           </Button>
         </div>
        )}  
       </div>

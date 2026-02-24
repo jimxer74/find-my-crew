@@ -4,6 +4,7 @@ import { logger } from '@/app/lib/logger';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/app/components/ui/Button/Button';
 import { NotificationCenter } from './NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
 import { useAssistant } from '@/app/contexts/AssistantContext';
@@ -74,10 +75,12 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
   return (
     <div>
       {/* Bell button - shows X icon when open */}
-      <button
+      <Button
         ref={buttonRef}
         onClick={handleToggle}
-        className="cursor-pointer relative flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+        variant="ghost"
+        size="sm"
+        className="relative !p-2"
         aria-label={`${t('notifications')}${totalBadgeCount > 0 ? ` (${totalBadgeCount})` : ''}`}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -104,7 +107,7 @@ export function NotificationBell({ pendingActionsCount = 0 }: { pendingActionsCo
             {totalBadgeCount > 99 ? '99+' : totalBadgeCount}
           </span>
         )}
-      </button>
+      </Button>
 
       {/* Notification center - rendered as sibling to escape stacking context */}
       <NotificationCenter

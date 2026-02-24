@@ -124,22 +124,26 @@ export function ActionInputModal({ notification, onSubmit, onCancel, isOpen = tr
                   placeholder={`Item ${index + 1}`}
                   className="flex-1 px-3 py-2 border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring"
                 />
-                <button
+                <Button
                   type="button"
                   onClick={() => handleRemoveMultiValue(index)}
-                  className="px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                  variant="destructive"
+                  size="sm"
+                  className="!text-xs"
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             ))}
-            <button
+            <Button
               type="button"
               onClick={handleAddMultiValue}
-              className="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+              variant="primary"
+              size="sm"
+              className="!text-xs !bg-blue-600 hover:!bg-blue-700"
             >
               Add Item
-            </button>
+            </Button>
           </div>
         )}
 
