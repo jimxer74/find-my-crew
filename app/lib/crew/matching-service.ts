@@ -54,70 +54,48 @@ function calculateCrewMatchScore(
   let score = 0;
   let maxScore = 0;
 
-  // Experience level matching (weight: 30%)
+  // Experience level matching (weight: 34%)
   if (params.experienceLevel) {
-    maxScore += 30;
+    maxScore += 34;
     if (crewProfile.experience_level >= params.experienceLevel) {
       // Perfect match if exactly at level, bonus for higher
       const levelDiff = crewProfile.experience_level - params.experienceLevel;
-      score += 30 + (levelDiff * 5); // Bonus up to 15 points for higher levels
+      score += 34 + (levelDiff * 5); // Bonus up to 15 points for higher levels
       score = Math.min(score, maxScore); // Cap at maxScore
     }
   }
 
-  // Risk level matching (weight: 25%)
+  // Risk level matching (weight: 33%)
   if (params.riskLevels && params.riskLevels.length > 0) {
-    maxScore += 25;
-    const crewRiskLevels = Array.isArray(crewProfile.risk_level) 
-      ? crewProfile.risk_level 
+    maxScore += 33;
+    const crewRiskLevels = Array.isArray(crewProfile.risk_level)
+      ? crewProfile.risk_level
       : crewProfile.risk_level ? [crewProfile.risk_level] : [];
-    
+
     // Check if any crew risk levels match params
-    const hasMatch = crewRiskLevels.some((level: string) => 
+    const hasMatch = crewRiskLevels.some((level: string) =>
       params.riskLevels!.includes(level)
     );
-    
+
     if (hasMatch) {
-      score += 25;
+      score += 33;
     }
   }
 
-  // Skills matching (weight: 35%)
+  // Skills matching (weight: 33%)
   if (params.skills && params.skills.length > 0) {
-    maxScore += 35;
-    const crewSkills = (crewProfile.skills || []).map((s: string) => 
+    maxScore += 33;
+    const crewSkills = (crewProfile.skills || []).map((s: string) =>
       toCanonicalSkillName(s)
     );
     const requiredSkills = params.skills.map(s => toCanonicalSkillName(s));
-    
-    const matchingSkills = requiredSkills.filter(skill => 
+
+    const matchingSkills = requiredSkills.filter(skill =>
       crewSkills.includes(skill)
     );
-    
+
     const skillMatchRatio = matchingSkills.length / requiredSkills.length;
-    score += skillMatchRatio * 35;
-  }
-
-  // Location proximity (weight: 10%)
-  // Extract coordinates from preferred_departure_location JSONB if available
-  if (params.location && crewProfile.preferred_departure_location) {
-    const depLocation = crewProfile.preferred_departure_location as any;
-    if (depLocation.lat && depLocation.lng) {
-      maxScore += 10;
-      const distance = calculateDistance(
-        params.location.lat,
-        params.location.lng,
-        depLocation.lat,
-        depLocation.lng
-      );
-
-      const radius = params.location.radius || 500; // default 500km
-      if (distance <= radius) {
-        // Score decreases linearly with distance
-        const proximityScore = (1 - (distance / radius)) * 10;
-        score += proximityScore;
-      }
-    }
+    score += skillMatchRatio * 33;
   }
 
   // If no criteria specified, return neutral score
@@ -301,32 +279,14 @@ export async function searchMatchingCrew(
     const scoredProfiles = profiles.map(profile => {
       const score = calculateCrewMatchScore(profile, params);
 
-      // Apply precise distance filter if location specified
-      let includeProfile = true;
-      if (params.location && profile.preferred_departure_location) {
-        const depLocation = profile.preferred_departure_location as any;
-        if (depLocation.lat && depLocation.lng) {
-          const distance = calculateDistance(
-            params.location.lat,
-            params.location.lng,
-            depLocation.lat,
-            depLocation.lng
-          );
-          const radius = params.location.radius || 500;
-          includeProfile = distance <= radius;
-        }
-      }
-
       return {
         profile,
         score,
-        includeProfile,
       };
     });
 
-    // Filter by distance and sort by score
+    // Sort by score (no location filtering)
     const filteredAndSorted = scoredProfiles
-      .filter(item => item.includeProfile)
       .sort((a, b) => b.score - a.score);
 
     // Apply limit
