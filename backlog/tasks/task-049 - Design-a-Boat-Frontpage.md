@@ -4,6 +4,7 @@ title: Design a Boat Frontpage
 status: To Do
 assignee: []
 created_date: '2026-01-28 14:16'
+updated_date: '2026-02-24 18:06'
 labels: []
 dependencies: []
 ---
@@ -17,5 +18,5 @@ Boat Management Hub or Boat Frontpage should be informative, provide often neede
 - Update maintain boat basic information (likely not going to be used much after boat is initially created)
 - Boat Maintenance log / manager (used a lot)
 - Boat owners / crew handbook (to be read a lot, but seldom updated once created initially)
--
+- Boat Voyage log
 <!-- SECTION:DESCRIPTION:END -->
