@@ -286,9 +286,9 @@ Example (replace with actual values from fetch_boat_details results):
 After create_boat succeeds, suggest creating a journey next.`;
       break;
     case 'post_journey':
-      stateAndGoal = `## CURRENT STEP: Post journey
+      stateAndGoal = `## CURRENT STEP: Plan journey
 **State:** Profile created. Boat: ${boatName ?? 'N/A'} (id: ${boatId ?? 'N/A'}). Journey: none.
-**Goal:** Check conversation history for journey details, show summary, and CALL generate_journey_route immediately when user confirms.
+**Goal:** Check conversation history for journey details, show summary, and CALL generate_journey_route immediately when user confirms. The journey will be created as a DRAFT—the user will need to verify it and publish it themselves.
 **STEP 1 — CHECK FOR JOURNEY DATA FIRST:** Look in conversation history and [JOURNEY DETAILS] stored context for:
 - Start and end locations (name, lat, lng)
 - Dates (startDate, endDate in YYYY-MM-DD format)
@@ -302,7 +302,7 @@ After create_boat succeeds, suggest creating a journey next.`;
 **CRITICAL:** If the user mentions dates anywhere (e.g., "01/05/2026 - 30/05/2026" or "May 1st to May 30th"), you MUST convert to ISO format (YYYY-MM-DD).`;
       stepInstructions = `To create a journey from a route (e.g. Jamaica to San Blas), you MUST call generate_journey_route with startLocation, endLocation, boatId, and optional waypoints/dates. Do NOT call create_journey for route-based journeys; create_journey is not available in this step.
 
-generate_journey_route creates the journey and all legs. After it succeeds, tell the user their journey is ready. waypointDensity: "moderate" default.
+generate_journey_route creates the journey and all legs as a DRAFT. After it succeeds, tell the user their journey plan is ready and they should review it in their journeys section. They will need to verify and publish it themselves before crew can see or join it. waypointDensity: "moderate" default.
 **REQUIRED FIELDS ONLY:** The only required inputs are startLocation and endLocation. Do NOT ask for a journey name, journey description, or any other 
 field—these are not parameters of generate_journey_route and are not needed.
 **[JOURNEY DETAILS] SECTION (CRITICAL):** The user's first message may contain a [JOURNEY DETAILS] section with structured route data 
@@ -349,7 +349,12 @@ Example (replace with actual values from journey summary and [JOURNEY DETAILS]/[
 
 **CRITICAL:** If you claim the journey was saved or created but did not call generate_journey_route, the system will detect this and force you to call the tool. To avoid wasting iterations, CALL THE TOOL IMMEDIATELY WHEN USER CONFIRMS.
 
-After generate_journey_route succeeds, tell the user their journey is ready and suggest connecting with crew.`;
+**IMPORTANT - DRAFT JOURNEY:** After generate_journey_route succeeds, always tell the user:
+1. Their journey has been created as a DRAFT
+2. They need to review and verify it in their journeys section
+3. They must PUBLISH the journey themselves before crew can see or join it
+4. AI will NOT publish the journey automatically—this is a deliberate design choice to let the user review first
+Do NOT suggest connecting with crew until they confirm the journey is published.`;
       break;
     case 'completed':
       stateAndGoal = `## CURRENT STEP: Completed
