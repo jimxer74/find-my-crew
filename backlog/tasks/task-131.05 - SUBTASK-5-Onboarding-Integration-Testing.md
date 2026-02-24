@@ -1,9 +1,10 @@
 ---
 id: TASK-131.05
 title: 'SUBTASK 5: Onboarding Integration & Testing'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-24 11:49'
+updated_date: '2026-02-24 17:31'
 labels: []
 dependencies: []
 parent_task_id: TASK-131
@@ -93,18 +94,20 @@ Update `app/lib/ai/owner/types.ts`:
 - Integration tests for onboarding flow
 
 ## Acceptance Criteria
-- [x] OwnerChatContext stores and handles importedProfile
-- [x] Initial message includes [IMPORTED_PROFILE] when available
-- [x] AI service receives imported profile in prompts
-- [x] create_profile step uses imported content
-- [x] Types updated and exported correctly
-- [x] Unit tests for detectResourceType (all platforms + edge cases)
-- [x] Unit tests for fetchResourceContent (success + fallbacks)
-- [x] Unit tests for URLImportForm (all states)
-- [x] Integration test: Full URL import flow
-- [x] Integration test: Error handling and retry
-- [x] Integration test: Onboarding with imported profile
-- [x] All tests passing
-- [x] >80% code coverage for new code
-- [x] No console errors or warnings in tests
+<!-- AC:BEGIN -->
+- [x] #1 OwnerChatContext stores and handles importedProfile
+- [x] #2 Initial message includes [IMPORTED_PROFILE] when available
+- [x] #3 AI service receives imported profile in prompts
+- [x] #4 create_profile step uses imported content
+- [x] #5 Types updated and exported correctly
+- [x] #6 Unit tests for detectResourceType (all platforms + edge cases)
+- [x] #7 Unit tests for fetchResourceContent (success + fallbacks)
+- [x] #8 Unit tests for URLImportForm (all states)
+- [x] #9 Integration test: Full URL import flow
+- [x] #10 Integration test: Error handling and retry
+- [x] #11 Integration test: Onboarding with imported profile
+- [x] #12 All tests passing
+- [x] #13 >80% code coverage for new code
+- [x] #14 No console errors or warnings in tests
 <!-- SECTION:DESCRIPTION:END -->
+<!-- AC:END -->
