@@ -24,9 +24,10 @@ function CrewOnboardingContent() {
   } = useProspectChat();
   const [isNavigatingToJourneys, setIsNavigatingToJourneys] = useState(false);
 
-  const handleStartFresh = () => {
+  const handleStartFresh = async () => {
     if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
-      clearSession();
+      await clearSession();
+      router.push('/');
     }
   };
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { Footer } from '@/app/components/Footer';
 import { OwnerChatProvider, useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';
@@ -11,6 +12,7 @@ import OwnerChat from '@/app/components/owner/OwnerChat';
  * Owner onboarding layout: sticky steps bar + chat
  */
 function OwnerOnboardingContent() {
+  const router = useRouter();
   const {
     isAuthenticated,
     hasExistingProfile,
@@ -23,9 +25,10 @@ function OwnerOnboardingContent() {
     messages,
   } = useOwnerChat();
 
-  const handleStartFresh = () => {
+  const handleStartFresh = async () => {
     if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
-      clearSession();
+      await clearSession();
+      router.push('/');
     }
   };
 
