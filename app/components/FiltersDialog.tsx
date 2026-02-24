@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { logger } from '@/app/lib/logger';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
+import { Button } from '@/app/components/ui/Button/Button';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
 import { RiskLevelSelector } from './ui/RiskLevelSelector';
@@ -102,15 +103,17 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border bg-card">
         <div className="flex items-center">
           {/* Close button - mobile only */}
-          <button
+          <Button
             onClick={onClose}
-            className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+            variant="ghost"
+            size="sm"
+            className="md:hidden !p-2 -ml-2 mr-2"
             aria-label={t('close')}
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
           <h2 className="text-lg font-semibold text-foreground">{t('search')}</h2>
         </div>
         <div className="flex items-center gap-3">
@@ -130,13 +133,15 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
             </div>
             <span className="text-sm font-medium text-foreground">Profile</span>
           </div>
-          <button
+          <Button
             onClick={clearFilters}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            variant="ghost"
+            size="sm"
+            className="!text-sm !text-muted-foreground hover:!text-foreground !p-0"
             aria-label={t('clearAll')}
           >
             {t('clearAll')}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -478,9 +483,10 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                     ) : null}
                   </div>
                   <div className="relative group">
-                    <button
+                    <Button
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                      className="flex items-center gap-2 w-full px-3 py-2 min-h-[44px] rounded-md border border-border bg-background hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                      variant="outline"
+                      className="flex items-center gap-2 w-full !justify-start"
                       aria-label={tFilters('selectDateRange')}
                     >
                       <svg
@@ -508,14 +514,16 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                       }`}>
                         {formatDateRange()}
                       </span>
-                    </button>
+                    </Button>
                     {(tempDateRange.start || tempDateRange.end) && (
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           setTempDateRange({ start: null, end: null });
                         }}
-                        className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md bg-background border border-border opacity-0 group-hover:opacity-100 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-opacity shadow-sm"
+                        variant="outline"
+                        size="sm"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                         aria-label={tFilters('clearDateRange')}
                       >
                         <svg
@@ -529,7 +537,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         >
                           <path d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
+                      </Button>
                     )}
                   </div>
                   {isDatePickerOpen && (
@@ -595,15 +603,16 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                       placeholder={tFilters('departureLocationPlaceholder')}
                     />
                     {tempLocation && (
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           setTempLocation(null);
                           setTempLocationInput('');
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] p-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground"
                         aria-label={tFilters('clearLocation')}
-                        type="button"
                       >
                         <svg
                           className="w-4 h-4"
@@ -616,7 +625,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         >
                           <path d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -656,15 +665,16 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                       placeholder={tFilters('arrivalLocationPlaceholder')}
                     />
                     {tempArrivalLocation && (
-                      <button
+                      <Button
                         onClick={(e) => {
                           e.stopPropagation();
                           setTempArrivalLocation(null);
                           setTempArrivalLocationInput('');
                         }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] p-1 text-muted-foreground hover:text-foreground transition-colors focus:outline-none focus:ring-2 focus:ring-ring rounded"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground"
                         aria-label={tFilters('clearArrivalLocation')}
-                        type="button"
                       >
                         <svg
                           className="w-4 h-4"
@@ -677,7 +687,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         >
                           <path d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -735,12 +745,13 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
 
       {/* Action button - sticky footer */}
       <div className="flex-shrink-0 flex items-center justify-center p-4 border-t border-border bg-card">
-        <button
+        <Button
           onClick={handleSave}
-          className="px-6 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+          variant="primary"
+          className="px-6 py-3 min-h-[44px]"
         >
           {tFilters('saveAndSearch')}
-        </button>
+        </Button>
       </div>
     </div>
   );
