@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { Button } from '@/app/components/ui/Button/Button';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { LegMobileCard } from './LegMobileCard';
 import { BottomSheet, SnapPoint } from '../ui/BottomSheet';
@@ -2042,15 +2043,17 @@ export function CrewBrowseMap({
                 {visibleLegs.length} Leg{visibleLegs.length !== 1 ? 's' : ''} in View
               </span>
               {selectedLeg && (
-                <button
+                <Button
                   onClick={() => {
                     setSelectedLeg(null);
                     setLegWaypoints([]);
                   }}
-                  className="text-sm text-primary hover:underline cursor-pointer"
+                  variant="ghost"
+                  size="sm"
+                  className="!text-sm !text-primary hover:!underline !p-0"
                 >
                   Clear selection
-                </button>
+                </Button>
               )}
             </div>
           }
