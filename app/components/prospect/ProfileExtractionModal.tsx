@@ -5,6 +5,8 @@ import { logger } from '@/app/lib/logger';
 import { extractProfileFromConversation, ExtractedProfile } from '@/app/lib/prospect/profileExtraction';
 import { ProspectMessage } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface ProfileExtractionModalProps {
   isOpen: boolean;
@@ -141,204 +143,195 @@ export function ProfileExtractionModal({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-card rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground">
-              Review Your Profile Information
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Review Your Profile Information"
+      size="lg"
+      showCloseButton={true}
+      closeOnBackdropClick={true}
+      closeOnEscape={!isSaving}
+      footer={
+        <div className="flex gap-3">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !formData.user_description || !formData.sailing_experience}
+            isLoading={isSaving}
+            variant="primary"
+            className="flex-1"
+          >
+            {isSaving ? 'Saving...' : 'Save Profile'}
+          </Button>
+          <Button
+            onClick={onClose}
+            disabled={isSaving}
+            variant="outline"
+          >
+            Cancel
+          </Button>
+        </div>
+      }
+    >
+      <p className="text-sm text-muted-foreground mb-6">
+        I've extracted your profile information from our conversation. Please review and edit as needed, then save your profile.
+      </p>
+
+      {isExtracting ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="flex gap-2">
+            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
+          <span className="ml-3 text-sm text-muted-foreground">Extracting profile information...</span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={formData.full_name || ''}
+              onChange={(e) => handleFieldChange('full_name', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              placeholder="Your full name"
+            />
           </div>
 
-          <p className="text-sm text-muted-foreground mb-6">
-            I've extracted your profile information from our conversation. Please review and edit as needed, then save your profile.
-          </p>
+          {/* Bio/Description */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Bio / Description <span className="text-destructive">*</span>
+            </label>
+            <textarea
+              value={formData.user_description || ''}
+              onChange={(e) => handleFieldChange('user_description', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              placeholder="Tell us about yourself and your sailing background..."
+              rows={4}
+              required
+            />
+          </div>
 
-          {isExtracting ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="flex gap-2">
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-              <span className="ml-3 text-sm text-muted-foreground">Extracting profile information...</span>
+          {/* Sailing Experience */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Sailing Experience Level <span className="text-destructive">*</span>
+            </label>
+            <select
+              value={formData.sailing_experience || ''}
+              onChange={(e) => handleFieldChange('sailing_experience', parseInt(e.target.value, 10))}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              required
+            >
+              <option value="">Select experience level</option>
+              {Object.entries(EXPERIENCE_LEVELS).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {value}. {label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Risk Level */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Comfort Zones
+            </label>
+            <div className="space-y-2">
+              {['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].map((level) => (
+                <label key={level} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.risk_level?.includes(level) || false}
+                    onChange={(e) => {
+                      const current = formData.risk_level || [];
+                      if (e.target.checked) {
+                        handleFieldChange('risk_level', [...current, level]);
+                      } else {
+                        handleFieldChange('risk_level', current.filter(l => l !== level));
+                      }
+                    }}
+                    className="mr-2"
+                  />
+                  <span className="text-sm text-foreground">{level}</span>
+                </label>
+              ))}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Full Name */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.full_name || ''}
-                  onChange={(e) => handleFieldChange('full_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  placeholder="Your full name"
-                />
-              </div>
+          </div>
 
-              {/* Bio/Description */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Bio / Description <span className="text-destructive">*</span>
-                </label>
-                <textarea
-                  value={formData.user_description || ''}
-                  onChange={(e) => handleFieldChange('user_description', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  placeholder="Tell us about yourself and your sailing background..."
-                  rows={4}
-                  required
-                />
-              </div>
-
-              {/* Sailing Experience */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Sailing Experience Level <span className="text-destructive">*</span>
-                </label>
-                <select
-                  value={formData.sailing_experience || ''}
-                  onChange={(e) => handleFieldChange('sailing_experience', parseInt(e.target.value, 10))}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  required
-                >
-                  <option value="">Select experience level</option>
-                  {Object.entries(EXPERIENCE_LEVELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {value}. {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Risk Level */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Comfort Zones
-                </label>
-                <div className="space-y-2">
-                  {['Coastal sailing', 'Offshore sailing', 'Extreme sailing'].map((level) => (
-                    <label key={level} className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.risk_level?.includes(level) || false}
-                        onChange={(e) => {
-                          const current = formData.risk_level || [];
-                          if (e.target.checked) {
-                            handleFieldChange('risk_level', [...current, level]);
-                          } else {
-                            handleFieldChange('risk_level', current.filter(l => l !== level));
-                          }
-                        }}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-foreground">{level}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Skills */}
-              {formData.skills && formData.skills.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground mb-2">
-                    Skills
-                  </label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {formData.skills.map((skill, index) => (
-                      <div key={index} className="p-2 bg-muted rounded">
-                        <div className="font-medium text-sm">{skill.skill_name}</div>
-                        {skill.description && (
-                          <div className="text-xs text-muted-foreground mt-1">{skill.description}</div>
-                        )}
-                      </div>
-                    ))}
+          {/* Skills */}
+          {formData.skills && formData.skills.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Skills
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {formData.skills.map((skill, index) => (
+                  <div key={index} className="p-2 bg-muted rounded">
+                    <div className="font-medium text-sm">{skill.skill_name}</div>
+                    {skill.description && (
+                      <div className="text-xs text-muted-foreground mt-1">{skill.description}</div>
+                    )}
                   </div>
-                </div>
-              )}
-
-              {/* Sailing Preferences */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Sailing Preferences
-                </label>
-                <textarea
-                  value={formData.sailing_preferences || ''}
-                  onChange={(e) => handleFieldChange('sailing_preferences', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  placeholder="Where do you want to sail? What are you looking for?"
-                  rows={3}
-                />
-              </div>
-
-              {/* Certifications */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Certifications
-                </label>
-                <input
-                  type="text"
-                  value={formData.certifications || ''}
-                  onChange={(e) => handleFieldChange('certifications', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  placeholder="RYA, ASA, etc."
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Phone (optional)
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleFieldChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground"
-                  placeholder="Your phone number"
-                />
-              </div>
-
-              {error && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                  <p className="text-sm text-destructive">{error}</p>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving || !formData.user_description || !formData.sailing_experience}
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                >
-                  {isSaving ? 'Saving...' : 'Save Profile'}
-                </button>
-                <button
-                  onClick={onClose}
-                  disabled={isSaving}
-                  className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
+                ))}
               </div>
             </div>
           )}
+
+          {/* Sailing Preferences */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Sailing Preferences
+            </label>
+            <textarea
+              value={formData.sailing_preferences || ''}
+              onChange={(e) => handleFieldChange('sailing_preferences', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              placeholder="Where do you want to sail? What are you looking for?"
+              rows={3}
+            />
+          </div>
+
+          {/* Certifications */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Certifications
+            </label>
+            <input
+              type="text"
+              value={formData.certifications || ''}
+              onChange={(e) => handleFieldChange('certifications', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              placeholder="RYA, ASA, etc."
+            />
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              Phone (optional)
+            </label>
+            <input
+              type="tel"
+              value={formData.phone || ''}
+              onChange={(e) => handleFieldChange('phone', e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground text-sm"
+              placeholder="Your phone number"
+            />
+          </div>
+
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+              <p className="text-sm text-destructive">{error}</p>
+            </div>
+          )}
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 }
