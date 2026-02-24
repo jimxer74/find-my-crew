@@ -193,11 +193,12 @@ function buildOwnerPromptForStep(
     skipperProfile?: string | null;
     crewRequirements?: string | null;
     journeyDetails?: string | null;
+    importedProfile?: { url: string; source: string; content: string } | null;
   }
 ): string {
   const tools = getToolsForOwnerStep(step);
   const toolsBlock = formatStepToolsForPrompt(tools);
-  const { currentDate, userProfile, boatId, boatName, isProfileCompletionMode, skipperProfile, crewRequirements, journeyDetails } = opts;
+  const { currentDate, userProfile, boatId, boatName, isProfileCompletionMode, skipperProfile, crewRequirements, journeyDetails, importedProfile } = opts;
 
   const userInfo = userProfile
     ? [
@@ -367,12 +368,17 @@ Do NOT suggest connecting with crew until they confirm the journey is published.
 
   // Build stored context block so AI always has the raw input text even if conversation history is long
   const storedContextParts: string[] = [];
+  if (importedProfile?.content?.trim()) {
+    const importedContent = `Source: ${importedProfile.source}\nURL: ${importedProfile.url}\n\n${importedProfile.content.trim()}`;
+    storedContextParts.push(`[IMPORTED_PROFILE]:\n${importedContent}`);
+  }
   if (skipperProfile?.trim()) storedContextParts.push(`[SKIPPER PROFILE]:\n${skipperProfile.trim()}`);
   if (crewRequirements?.trim()) storedContextParts.push(`[CREW REQUIREMENTS]:\n${crewRequirements.trim()}`);
   if (journeyDetails?.trim()) storedContextParts.push(`[JOURNEY DETAILS]:\n${journeyDetails.trim()}`);
   const storedContextBlock = storedContextParts.length > 0
     ? `\n## STORED CONTEXT (from initial search — always authoritative)\n\n` +
       `⚠️ DATA SOURCE RULES — apply strictly:\n` +
+      `- [IMPORTED_PROFILE] → user-shared content from external platform (Facebook, etc.). Use for profile information and context only; do NOT use for crew requirements.\n` +
       `- [SKIPPER PROFILE] → use ONLY for the skipper's own details: name, bio, experience level, certifications, skills, boat info.\n` +
       `- [CREW REQUIREMENTS] → use ONLY when creating a journey to set crew skill/experience requirements. NEVER read crew requirements as the skipper's own skills or experience.\n` +
       `- [JOURNEY DETAILS] → use ONLY for the journey/route step (locations, dates, waypoints). Ignore for profile and boat steps.\n\n` +
@@ -2129,6 +2135,7 @@ export async function ownerChat(
   const skipperProfile = request.skipperProfile ?? null;
   const crewRequirements = request.crewRequirements ?? null;
   const journeyDetails = request.journeyDetails ?? null;
+  const importedProfile = request.importedProfile ?? null;
 
   // Check completion status (only if authenticated)
   let hasProfile = false;
@@ -2225,6 +2232,7 @@ export async function ownerChat(
       skipperProfile,
       crewRequirements,
       journeyDetails,
+      importedProfile,
     });
     const approvedActionPrompt = `${systemPrompt}\n\nuser: ${request.message}`;
     const toolResults = await executeOwnerTools(supabase, [toolCall], authenticatedUserId, allowedToolNames, approvedActionPrompt);
@@ -2284,6 +2292,7 @@ export async function ownerChat(
     skipperProfile,
     crewRequirements,
     journeyDetails,
+    importedProfile,
   });
 
   // Build messages for AI

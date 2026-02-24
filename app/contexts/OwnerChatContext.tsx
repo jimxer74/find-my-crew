@@ -74,6 +74,12 @@ interface OwnerChatState {
   crewRequirements: string | null;
   /** Parsed journey details text from combo search box */
   journeyDetails: string | null;
+  /** Imported profile data from URL import feature */
+  importedProfile: {
+    url: string;
+    source: string;
+    content: string;
+  } | null;
 }
 
 interface OwnerChatContextType extends OwnerChatState {
@@ -128,6 +134,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     skipperProfile: null,
     crewRequirements: null,
     journeyDetails: null,
+    importedProfile: null,
   });
 
   // Keep stateRef in sync with state
@@ -191,6 +198,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             skipperProfile: loadedSession!.skipperProfile ?? null,
             crewRequirements: loadedSession!.crewRequirements ?? null,
             journeyDetails: loadedSession!.journeyDetails ?? null,
+            importedProfile: loadedSession!.importedProfile ?? null,
           }));
         } else {
           setState((prev) => ({
@@ -204,6 +212,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             skipperProfile: null,
             crewRequirements: null,
             journeyDetails: null,
+            importedProfile: null,
           }));
         }
 
@@ -587,6 +596,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
             skipperProfile: session?.skipperProfile ?? stateRef.current?.skipperProfile ?? null,
             crewRequirements: session?.crewRequirements ?? stateRef.current?.crewRequirements ?? null,
             journeyDetails: session?.journeyDetails ?? stateRef.current?.journeyDetails ?? null,
+            importedProfile: session?.importedProfile ?? stateRef.current?.importedProfile ?? null,
           }),
         });
 
@@ -659,6 +669,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           skipperProfile: state.skipperProfile ?? null,
           crewRequirements: state.crewRequirements ?? null,
           journeyDetails: state.journeyDetails ?? null,
+          importedProfile: state.importedProfile ?? null,
         };
         await sessionService.saveSession(sessionId, session);
       } catch (error: any) {
@@ -673,7 +684,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }, 1000); // Debounce: save 1 second after last change
 
     return () => clearTimeout(saveTimeout);
-  }, [state.sessionId, state.messages, state.preferences, state.skipperProfile, state.crewRequirements, state.journeyDetails, isInitialized]);
+  }, [state.sessionId, state.messages, state.preferences, state.skipperProfile, state.crewRequirements, state.journeyDetails, state.importedProfile, isInitialized]);
 
   // Cleanup owner onboarding session once onboarding is fully completed.
   // This runs when the same completion state used by the welcome card is reached.
@@ -776,6 +787,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           skipperProfile: state.skipperProfile ?? null,
           crewRequirements: state.crewRequirements ?? null,
           journeyDetails: state.journeyDetails ?? null,
+          importedProfile: state.importedProfile ?? null,
         }),
       });
 
@@ -909,6 +921,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
           skipperProfile: state.skipperProfile ?? null,
           crewRequirements: state.crewRequirements ?? null,
           journeyDetails: state.journeyDetails ?? null,
+          importedProfile: state.importedProfile ?? null,
         }),
       });
 
@@ -1053,6 +1066,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     }
     const skipperProfileParam = searchParams?.get('skipperProfile');
     const crewRequirementsParam = searchParams?.get('crewRequirements');
+    const importedProfileParam = searchParams?.get('importedProfile');
     const isProfileCompletion = searchParams?.get('profile_completion') === 'true';
     const startLocationParam = searchParams?.get('startLocation');
     const endLocationParam = searchParams?.get('endLocation');
@@ -1062,7 +1076,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     const waypointDensityParam = searchParams?.get('waypointDensity');
 
     const hasJourneyParams = !!(startLocationParam || endLocationParam || startDateParam || endDateParam || waypointsParam || waypointDensityParam);
-    const hasProfileData = !!(skipperProfileParam?.trim() || crewRequirementsParam?.trim());
+    const hasProfileData = !!(skipperProfileParam?.trim() || crewRequirementsParam?.trim() || importedProfileParam?.trim());
     if (isProfileCompletion || (!hasProfileData && !hasJourneyParams)) {
       return;
     }
@@ -1127,16 +1141,31 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     
     initialCrewDemandProcessed.current = true;
 
-    // Store all three sections in state so they are persisted to DB via auto-save
+    // Parse imported profile if present
+    let parsedImportedProfile: { url: string; source: string; content: string } | null = null;
+    if (importedProfileParam?.trim()) {
+      try {
+        parsedImportedProfile = JSON.parse(importedProfileParam);
+      } catch (error) {
+        logger.error('Error parsing imported profile from URL', { error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
+    // Store all sections in state so they are persisted to DB via auto-save
     const storedJourneyDetails = journeyDetailsText.trim() || null;
     setState((prev) => ({
       ...prev,
       skipperProfile: skipperProfileParam?.trim() || null,
       crewRequirements: crewRequirementsParam?.trim() || null,
       journeyDetails: storedJourneyDetails,
+      importedProfile: parsedImportedProfile,
     }));
 
     const parts: string[] = [];
+    if (parsedImportedProfile) {
+      const importedContent = `Source: ${parsedImportedProfile.source}\nURL: ${parsedImportedProfile.url}\n\n${parsedImportedProfile.content}`;
+      parts.push(`[IMPORTED_PROFILE]:\n${importedContent}`);
+    }
     if (skipperProfileParam?.trim()) {
       parts.push(`[SKIPPER PROFILE]:\n${skipperProfileParam.trim()}`);
     }
@@ -1149,6 +1178,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
     const message = parts.join('\n\n');
     if (message) {
       logger.debug('Processing initial owner combo data from URL', {
+        hasImportedProfile: !!parsedImportedProfile,
         hasSkipperProfile: !!skipperProfileParam?.trim(),
         hasCrewRequirements: !!crewRequirementsParam?.trim(),
         hasJourneyDetails: !!storedJourneyDetails,

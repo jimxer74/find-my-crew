@@ -5,6 +5,8 @@ import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { LocationAutocomplete, type Location } from './LocationAutocomplete';
 import { DateRangePicker, type DateRange } from './DateRangePicker';
+import { URLImportModal } from '@/app/components/onboarding/URLImportModal';
+import { URLImportWizardPage } from '@/app/components/onboarding/URLImportWizardPage';
 
 export interface OwnerComboSearchData {
   journeyDetails: {
@@ -22,6 +24,11 @@ export interface OwnerComboSearchData {
   crewRequirements: {
     text: string;
     aiProcessingConsent: boolean;
+  };
+  importedProfile?: {
+    url: string;
+    source: string;
+    content: string;
   };
 }
 
@@ -534,14 +541,21 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
   const [isSkipperProfileDialogOpen, setIsSkipperProfileDialogOpen] = useState(false);
   const [isCrewRequirementsDialogOpen, setIsCrewRequirementsDialogOpen] = useState(false);
   const [focusedSegment, setFocusedSegment] = useState<'journey' | 'skipperProfile' | 'crewRequirements' | null>(null);
+  const [showURLImportModal, setShowURLImportModal] = useState(false);
+  const [importedProfile, setImportedProfile] = useState<{
+    url: string;
+    source: string;
+    content: string;
+    metadata: any;
+  } | null>(null);
 
   // Notify parent when focus state changes
   useEffect(() => {
-    const isFocused = focusedSegment !== null || isJourneyDialogOpen || isSkipperProfileDialogOpen || isCrewRequirementsDialogOpen;
+    const isFocused = focusedSegment !== null || isJourneyDialogOpen || isSkipperProfileDialogOpen || isCrewRequirementsDialogOpen || showURLImportModal;
     if (!isFocusedControlled) {
       onFocusChange?.(isFocused);
     }
-  }, [focusedSegment, isJourneyDialogOpen, isSkipperProfileDialogOpen, isCrewRequirementsDialogOpen, onFocusChange, isFocusedControlled]);
+  }, [focusedSegment, isJourneyDialogOpen, isSkipperProfileDialogOpen, isCrewRequirementsDialogOpen, showURLImportModal, onFocusChange, isFocusedControlled]);
 
   // Clear focus when parent requests it
   useEffect(() => {
@@ -601,6 +615,11 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
         text: crewRequirementsText,
         aiProcessingConsent: crewRequirementsAiConsent,
       },
+      importedProfile: importedProfile ? {
+        url: importedProfile.url,
+        source: importedProfile.source,
+        content: importedProfile.content,
+      } : undefined,
     };
     onSubmit(data);
   };
@@ -647,7 +666,33 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="bg-white/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-hidden">
+      {/* URL Import Section */}
+      <div className="mb-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+          Have an existing profile? Paste the link to auto-fill your information.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowURLImportModal(true)}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+        >
+          Paste Link to Profile
+        </button>
+      </div>
+
+      {/* Imported Profile Success Banner */}
+      {importedProfile && (
+        <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+          <p className="text-sm text-green-900 dark:text-green-100 font-medium">
+            ✅ Profile imported from {importedProfile.source}
+          </p>
+          <p className="text-xs text-green-800 dark:text-green-300 mt-1">
+            Review the details below and make any changes as needed.
+          </p>
+        </div>
+      )}
+
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-hidden">
         <div className="flex divide-x divide-gray-200 dark:divide-gray-700">
           {/* Journey Details Segment */}
           <div className="flex-1 min-w-0">
@@ -778,6 +823,20 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
       </div>
 
       {/* Dialogs */}
+      <URLImportModal
+        isOpen={showURLImportModal}
+        onClose={() => setShowURLImportModal(false)}
+        onSuccess={(content, metadata) => {
+          setImportedProfile({
+            url: metadata.url || '',
+            source: metadata.platform || 'unknown',
+            content,
+            metadata,
+          });
+          setShowURLImportModal(false);
+        }}
+      />
+
       <JourneyDetailsDialog
         isOpen={isJourneyDialogOpen}
         onClose={() => {
@@ -840,7 +899,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   const t = useTranslations('welcome.owner');
   const tPrivacy = useTranslations('settings.privacy');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<1 | 2 | 3>(1);
+  const [currentPage, setCurrentPage] = useState<0 | 1 | 2 | 3>(0);
   const [journeyDetails, setJourneyDetails] = useState<{
     startLocation: Location | null;
     endLocation: Location | null;
@@ -861,6 +920,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   const [crewRequirementsText, setCrewRequirementsText] = useState('');
   const [crewRequirementsAiConsent, setCrewRequirementsAiConsent] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [importedProfile, setImportedProfile] = useState<{
+    url: string;
+    source: string;
+    content: string;
+    metadata: any;
+  } | null>(null);
 
   const mobileDateRange: DateRange = {
     start: journeyDetails.startDate ? new Date(journeyDetails.startDate) : null,
@@ -903,11 +968,16 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
         text: crewRequirementsText,
         aiProcessingConsent: crewRequirementsAiConsent,
       },
+      importedProfile: importedProfile ? {
+        url: importedProfile.url,
+        source: importedProfile.source,
+        content: importedProfile.content,
+      } : undefined,
     };
     onSubmit(data);
     setIsWizardOpen(false);
     // Reset wizard state
-    setCurrentPage(1);
+    setCurrentPage(0);
     setJourneyDetails({
       startLocation: null,
       endLocation: null,
@@ -920,6 +990,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     setSkipperProfileAiConsent(false);
     setCrewRequirementsText('');
     setCrewRequirementsAiConsent(false);
+    setImportedProfile(null);
   };
 
   const canGoToNextPage = () => {
@@ -929,7 +1000,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
 
   const handleNext = () => {
     if (currentPage < 3 && canGoToNextPage()) {
-      setCurrentPage((prev) => (prev + 1) as 1 | 2 | 3);
+      setCurrentPage((prev) => (prev + 1) as 0 | 1 | 2 | 3);
     }
   };
 
@@ -941,8 +1012,8 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    if (currentPage > 1) {
-      setCurrentPage((prev) => (prev - 1) as 1 | 2 | 3);
+    if (currentPage > 0) {
+      setCurrentPage((prev) => (prev - 1) as 0 | 1 | 2 | 3);
     } else {
       setIsWizardOpen(false);
     }
@@ -985,6 +1056,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                 </svg>
               </button>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {currentPage === 0 && 'Quick Start'}
                 {currentPage === 1 && 'Journey Details'}
                 {currentPage === 2 && 'About You (Skipper Profile)'}
                 {currentPage === 3 && 'Crew Requirements'}
@@ -1002,6 +1074,24 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
+              {/* Page 0: URL Import */}
+              {currentPage === 0 && (
+                <URLImportWizardPage
+                  onImportSuccess={(content, metadata) => {
+                    setImportedProfile({
+                      url: metadata.url || '',
+                      source: metadata.platform || 'unknown',
+                      content,
+                      metadata,
+                    });
+                    setCurrentPage(1);
+                  }}
+                  onContinueManually={() => {
+                    setCurrentPage(1);
+                  }}
+                />
+              )}
+
               {/* Page 1: Journey Details */}
               {currentPage === 1 && (
                 <div className="space-y-4">

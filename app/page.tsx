@@ -545,7 +545,12 @@ function WelcomePageContent() {
     if (data.skipperProfile.aiProcessingConsent || data.crewRequirements.aiProcessingConsent) {
       params.set('aiProcessingConsent', 'true');
     }
-    
+
+    // Imported profile (from URL import feature)
+    if (data.importedProfile) {
+      params.set('importedProfile', JSON.stringify(data.importedProfile));
+    }
+
     router.push(`/welcome/owner?${params.toString()}`);
   };
 

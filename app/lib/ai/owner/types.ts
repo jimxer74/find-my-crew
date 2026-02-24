@@ -113,6 +113,12 @@ export interface OwnerSession {
   crewRequirements?: string | null;
   /** Parsed journey details text from combo search box (locations, dates, waypoints) */
   journeyDetails?: string | null;
+  /** Imported profile data from URL import feature */
+  importedProfile?: {
+    url: string;
+    source: string;
+    content: string;
+  } | null;
 }
 
 /** Known user profile data from signup/OAuth metadata */
@@ -142,6 +148,12 @@ export interface OwnerChatRequest {
   crewRequirements?: string | null;
   /** Parsed journey details text (locations, dates, waypoints) — used in post_journey step */
   journeyDetails?: string | null;
+  /** Imported profile data from URL import feature */
+  importedProfile?: {
+    url: string;
+    source: string;
+    content: string;
+  } | null;
 }
 
 export interface OwnerChatResponse {

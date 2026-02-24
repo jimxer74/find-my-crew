@@ -59,6 +59,11 @@ export async function POST(request: NextRequest) {
     const skipperProfile = (body.skipperProfile ?? null) as string | null;
     const crewRequirements = (body.crewRequirements ?? null) as string | null;
     const journeyDetails = (body.journeyDetails ?? null) as string | null;
+    const importedProfile = body.importedProfile as {
+      url: string;
+      source: string;
+      content: string;
+    } | null | undefined;
 
     const triggerMessage = buildTriggerMessage();
     log('Calling ownerChat with trigger message', { sessionId, historyLength: conversationHistory.length });
@@ -79,6 +84,7 @@ export async function POST(request: NextRequest) {
       skipperProfile,
       crewRequirements,
       journeyDetails,
+      importedProfile: importedProfile ?? null,
     });
 
     log('Trigger completed', { sessionId: response.sessionId, messageId: response.message?.id, profileCreated: response.profileCreated });
