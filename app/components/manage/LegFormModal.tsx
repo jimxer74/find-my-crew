@@ -11,6 +11,8 @@ import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } fro
 import { toDisplaySkillName } from '@/app/lib/skillUtils';
 import { canCreateLeg } from '@/app/lib/limits';
 import Image from 'next/image';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -698,33 +700,37 @@ export function LegFormModal({
   if (!isOpen) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50 flex justify-center pt-[5rem] px-4 pb-4"
-        onClick={onClose}
-      >
-        {/* Modal */}
-        <div
-          className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[calc(100vh-5rem)] overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-card-foreground">
-                {legId ? 'Edit Leg' : 'Create New Leg'}
-              </h2>
-              <button
-                onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Close"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={legId ? 'Edit Leg' : 'Create New Leg'}
+      size="lg"
+      showCloseButton
+      closeOnBackdropClick={!saving}
+      closeOnEscape={!saving}
+      footer={
+        <div className="flex justify-end gap-4">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            size="sm"
+            className="!text-sm"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !legName.trim() || waypoints.length < 2 || (!legId && limitReached)}
+            variant="primary"
+            size="sm"
+            className="!text-sm"
+          >
+            {saving ? 'Saving...' : legId ? 'Save Changes' : 'Create Leg'}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
 
             {error && (
               <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded mb-4">
@@ -1048,13 +1054,15 @@ export function LegFormModal({
                                 </span>
                               </div>
                               {!isStart && !isEnd && (
-                                <button
+                                <Button
                                   onClick={() => handleRemoveWaypoint(waypoint.index)}
-                                  className="text-destructive hover:opacity-80 text-sm"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="!text-sm !h-auto !p-0 !text-destructive hover:!opacity-80"
                                   title="Remove waypoint"
                                 >
                                   Remove
-                                </button>
+                                </Button>
                               )}
                             </div>
                             {isEditing ? (
@@ -1083,21 +1091,25 @@ export function LegFormModal({
                                 <div className="text-xs text-muted-foreground">
                                   {lat.toFixed(4)}, {lng.toFixed(4)}
                                 </div>
-                                <button
+                                <Button
                                   onClick={() => setEditingWaypointIndex(waypoint.index)}
-                                  className="text-sm text-primary hover:opacity-80"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="!text-sm !h-auto !p-0 !text-primary hover:!opacity-80"
                                 >
                                   Change location
-                                </button>
+                                </Button>
                               </div>
                             )}
                             {idx < waypoints.length - 1 && (
-                              <button
+                              <Button
                                 onClick={() => handleAddWaypoint(idx)}
-                                className="mt-2 text-xs text-primary hover:opacity-80"
+                                variant="ghost"
+                                size="sm"
+                                className="mt-2 !text-xs !h-auto !p-0 !text-primary hover:!opacity-80"
                               >
                                 + Add waypoint after this
-                              </button>
+                              </Button>
                             )}
                           </div>
                         );
@@ -1106,27 +1118,9 @@ export function LegFormModal({
                   )}
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex justify-end gap-4 pt-4 border-t border-border">
-                  <button
-                    onClick={onClose}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !legName.trim() || waypoints.length < 2 || (!legId && limitReached)}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-                  >
-                    {saving ? 'Saving...' : legId ? 'Save Changes' : 'Create Leg'}
-                  </button>
-                </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </>
+    </Modal>
   );
 }
