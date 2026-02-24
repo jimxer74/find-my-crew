@@ -1,7 +1,6 @@
 'use client';
 
 import { LegListItem, LegListItemData } from './LegListItem';
-import { Card } from '@/app/components/ui/Card/Card';
 import { Button } from '@/app/components/ui/Button/Button';
 
 type Leg = {
@@ -85,26 +84,25 @@ export function LegMobileCard({ leg, onClose, onClick, showMatchBadge = false, s
         </Button>
       </div>
 
-      {/* LegListItem as the card content */}
-      <Card className="shadow-xl">
-        <LegListItem
-          leg={legData}
-          onClick={onClick ? () => onClick() : undefined}
-          displayOptions={{
-            showCarousel: true,
-            showMatchBadge,
-            showLegName: true,
-            showJourneyName: true,
-            showLocations: true,
-            showDates: true,
-            showDuration: true,
-            showBoatInfo: true,
-            blurSkipperBoat: showBlurSkipperBoat,
-            carouselHeight: 'h-48', // Taller carousel for mobile card
-            compact: false,
-          }}
-        />
-      </Card>
+      {/* LegListItem (which renders its own Card) */}
+      <LegListItem
+        leg={legData}
+        onClick={onClick ? () => onClick() : undefined}
+        className="shadow-xl"
+        displayOptions={{
+          showCarousel: true,
+          showMatchBadge,
+          showLegName: true,
+          showJourneyName: true,
+          showLocations: true,
+          showDates: true,
+          showDuration: true,
+          showBoatInfo: true,
+          blurSkipperBoat: showBlurSkipperBoat,
+          carouselHeight: 'h-48', // Taller carousel for mobile card
+          compact: false,
+        }}
+      />
     </div>
   );
 }
