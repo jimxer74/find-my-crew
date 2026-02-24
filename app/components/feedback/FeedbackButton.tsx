@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
+import { Button } from '@/app/components/ui/Button/Button';
 import { type CreateFeedbackPayload, type FeedbackType } from '@/app/lib/feedback/types';
 
 interface FeedbackButtonProps {
@@ -38,15 +39,16 @@ export function FeedbackButton({
   if (variant === 'fab') {
     return (
       <>
-        <button
+        <Button
           onClick={() => setIsModalOpen(true)}
-          className="fixed bottom-6 right-6 z-40 p-4 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          variant="primary"
+          className="fixed bottom-6 right-6 z-40 !p-4 rounded-full shadow-lg hover:scale-105"
           aria-label={t('shareFeedback')}
         >
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-        </button>
+        </Button>
 
         <FeedbackModal
           isOpen={isModalOpen}
@@ -64,15 +66,17 @@ export function FeedbackButton({
   if (variant === 'nav') {
     return (
       <>
-        <button
+        <Button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-foreground hover:bg-accent rounded-md transition-colors"
+          variant="ghost"
+          size="sm"
+          className="w-full !justify-start !text-sm"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           {t('shareFeedback')}
-        </button>
+        </Button>
 
         <FeedbackModal
           isOpen={isModalOpen}
@@ -89,15 +93,16 @@ export function FeedbackButton({
   // Inline button variant (default)
   return (
     <>
-      <button
+      <Button
         onClick={() => setIsModalOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm"
+        variant="primary"
+        size="sm"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         {t('shareFeedback')}
-      </button>
+      </Button>
 
       <FeedbackModal
         isOpen={isModalOpen}
