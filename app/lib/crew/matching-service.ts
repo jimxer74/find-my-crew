@@ -57,17 +57,19 @@ function calculateCrewMatchScore(
     experienceLevel: params.experienceLevel,
     riskLevels: params.riskLevels,
     skills: params.skills,
-    crewExperience: crewProfile.experience_level,
+    crewExperience: crewProfile.sailing_experience || crewProfile.experience_level,
     crewRiskLevels: crewProfile.risk_level,
     scoreBreakdown: {} as any,
   };
 
   // Experience level matching (weight: 34%)
+  // Note: Profile from DB has 'sailing_experience', not 'experience_level'
+  const crewExperienceLevel = crewProfile.sailing_experience || crewProfile.experience_level;
   if (params.experienceLevel) {
     maxScore += 34;
-    if (crewProfile.experience_level >= params.experienceLevel) {
+    if (crewExperienceLevel >= params.experienceLevel) {
       // Perfect match if exactly at level, bonus for higher
-      const levelDiff = crewProfile.experience_level - params.experienceLevel;
+      const levelDiff = crewExperienceLevel - params.experienceLevel;
       score += 34 + (levelDiff * 5); // Bonus up to 15 points for higher levels
       score = Math.min(score, maxScore); // Cap at maxScore
       debugInfo.scoreBreakdown.experience = `+34 (match)`;
