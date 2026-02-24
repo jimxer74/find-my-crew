@@ -1,6 +1,7 @@
 'use client';
 
 import { useTheme, Theme } from '@/app/contexts/ThemeContext';
+import { Button } from './Button/Button';
 
 interface ThemeToggleProps {
   /** Display variant */
@@ -73,14 +74,16 @@ export function ThemeToggle({ variant = 'segmented', className = '' }: ThemeTogg
     const currentTheme = themes.find((t) => t.value === theme) || themes[1];
 
     return (
-      <button
+      <Button
         onClick={cycleTheme}
-        className={`p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-md hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors ${className}`}
+        className={`!p-2 !min-w-[44px] !min-h-[44px] !flex !items-center !justify-center !text-foreground ${className}`}
+        variant="ghost"
+        size="sm"
         aria-label={`Theme: ${currentTheme.label}. Click to change.`}
         title={`Current theme: ${currentTheme.label}`}
       >
-        <span className="text-foreground">{currentTheme.icon}</span>
-      </button>
+        <span>{currentTheme.icon}</span>
+      </Button>
     );
   }
 
@@ -92,24 +95,21 @@ export function ThemeToggle({ variant = 'segmented', className = '' }: ThemeTogg
       aria-label="Theme selection"
     >
       {themes.map((t) => (
-        <button
+        <Button
           key={t.value}
           onClick={() => setTheme(t.value)}
-          className={`
-            flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all
-            ${
-              theme === t.value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            }
-          `}
+          variant={theme === t.value ? 'primary' : 'ghost'}
+          size="sm"
+          className={`!px-3 !py-1.5 !text-sm !flex !items-center !justify-center !gap-1.5 !rounded-md ${
+            theme === t.value ? '!shadow-sm' : ''
+          }`}
           role="radio"
           aria-checked={theme === t.value}
           aria-label={t.label}
         >
           {t.icon}
           {/*<span className="hidden sm:inline">{t.label}</span>*/}
-        </button>
+        </Button>
       ))}
     </div>
   );
