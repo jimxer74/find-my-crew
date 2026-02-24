@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackCard } from './FeedbackCard';
+import { Button } from '@/app/components/ui/Button/Button';
 import {
   FeedbackType,
   FeedbackStatus,
@@ -190,13 +191,13 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
       {/* Load more button */}
       {hasMore && (
         <div className="flex justify-center pt-4">
-          <button
+          <Button
             onClick={handleLoadMore}
             disabled={isLoading}
-            className="px-6 py-2 border border-border rounded-lg hover:bg-accent transition-colors disabled:opacity-50"
+            variant="outline"
           >
             {isLoading ? t('loading') : t('loadMore')}
-          </button>
+          </Button>
         </div>
       )}
     </div>
