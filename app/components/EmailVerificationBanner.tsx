@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useEmailVerificationStatus } from '@/app/hooks/useEmailVerificationStatus';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface EmailVerificationBannerProps {
   userEmail?: string;
@@ -50,18 +51,23 @@ export function EmailVerificationBanner({ userEmail }: EmailVerificationBannerPr
             )}
           </p>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               onClick={handleResend}
               disabled={!canResend()}
-              className="px-3 py-1.5 text-sm bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="primary"
+              size="sm"
+              className="!bg-yellow-600 hover:!bg-yellow-700"
             >
               {canResend() ? 'Resend Verification Email' : `Resend in ${getCooldownRemaining()}s`}
-            </button>
-            <Link
-              href="/help/verify-email"
-              className="px-3 py-1.5 text-sm bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200"
-            >
-              Need Help?
+            </Button>
+            <Link href="/help/verify-email">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="!bg-yellow-100 !text-yellow-800 hover:!bg-yellow-200"
+              >
+                Need Help?
+              </Button>
             </Link>
           </div>
           {resendMessage && (
@@ -70,14 +76,16 @@ export function EmailVerificationBanner({ userEmail }: EmailVerificationBannerPr
             </p>
           )}
         </div>
-        <button
+        <Button
           onClick={() => setShowResendSuccess(false)}
-          className="text-yellow-600 hover:text-yellow-800 flex-shrink-0"
+          variant="ghost"
+          size="sm"
+          className="!text-yellow-600 hover:!text-yellow-800 flex-shrink-0 !p-1"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );
