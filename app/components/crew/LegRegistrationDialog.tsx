@@ -6,6 +6,7 @@ import { useLegRegistration, LegRegistrationData } from '@/app/hooks/useLegRegis
 import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { PassportVerificationStep } from './PassportVerificationStep';
+import { Button } from '@/app/components/ui/Button/Button';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { logger } from '@/app/lib/logger';
 import { Z_INDEX } from '@/app/lib/designTokens';
@@ -313,15 +314,17 @@ export function LegRegistrationDialog({
           <h2 id="registration-dialog-title" className="text-lg font-semibold text-foreground">
             Register for {leg.leg_name}
           </h2>
-          <button
+          <Button
             onClick={onClose}
-            className="p-2 hover:bg-accent rounded-md transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+            variant="ghost"
+            size="sm"
+            className="!p-2"
             aria-label="Close"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Content */}
@@ -392,20 +395,22 @@ export function LegRegistrationDialog({
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={onClose}
                   disabled={isRegistering}
-                  className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                  variant="outline"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSimpleSubmit}
                   disabled={isRegistering || hasProfileSharingConsent === false}
-                  className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                  variant="primary"
+                  className="flex-1"
                 >
                   {isRegistering ? 'Registering...' : 'Register'}
-                </button>
+                </Button>
               </div>
             </div>
           ) : hasRequirements && !hasQuestionRequirements ? (
@@ -443,20 +448,22 @@ export function LegRegistrationDialog({
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={onClose}
                   disabled={isRegistering}
-                  className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                  variant="outline"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSimpleSubmit}
                   disabled={isRegistering || hasProfileSharingConsent === false}
-                  className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                  variant="primary"
+                  className="flex-1"
                 >
                   {isRegistering ? 'Registering...' : 'Register'}
-                </button>
+                </Button>
               </div>
             </div>
           ) : !isCheckingRequirements && (hasRequirements || hasQuestionRequirements) ? (
@@ -494,20 +501,22 @@ export function LegRegistrationDialog({
               </div>
 
               <div className="flex gap-3 pt-4">
-                <button
+                <Button
                   onClick={onClose}
                   disabled={isRegistering}
-                  className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+                  variant="outline"
+                  className="flex-1"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleSimpleSubmit}
                   disabled={isRegistering || hasProfileSharingConsent === false}
-                  className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50"
+                  variant="primary"
+                  className="flex-1"
                 >
                   {isRegistering ? 'Registering...' : 'Register'}
-                </button>
+                </Button>
               </div>
             </div>
           ) : !isCheckingRequirements && leg ? (
