@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { Button } from '@/app/components/ui/Button/Button';
 import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
@@ -207,9 +208,11 @@ export function CruisingRegionSection({
         <h2 className="text-lg sm:text-xl font-semibold text-foreground">
           {region.name}
         </h2>
-        <button
+        <Button
           onClick={() => router.push(getMapUrl())}
-          className="flex items-center gap-1.5 px-2 py-1 text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+          variant="ghost"
+          size="sm"
+          className="flex items-center gap-1.5 !text-muted-foreground hover:!text-foreground !p-1"
           title={t('viewOnMap')}
         >
           <svg
@@ -226,7 +229,7 @@ export function CruisingRegionSection({
             />
           </svg>
           <span className="hidden sm:inline">{t('viewOnMap')}</span>
-        </button>
+        </Button>
       </div>
 
       {/* Region Description (optional) */}

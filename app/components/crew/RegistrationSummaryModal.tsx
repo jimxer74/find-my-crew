@@ -110,9 +110,10 @@ const CollapsibleSection = ({
 
   return (
     <div className="bg-card rounded-lg shadow mb-4">
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 flex items-center justify-between text-left hover:bg-accent/50 transition-colors rounded-t-lg"
+        variant="ghost"
+        className="w-full !justify-between text-left !p-4 hover:bg-accent/50 rounded-t-lg !text-muted-foreground"
       >
         <div className="flex items-center gap-3">
           <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
@@ -126,7 +127,7 @@ const CollapsibleSection = ({
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
-      </button>
+      </Button>
       {isOpen && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
