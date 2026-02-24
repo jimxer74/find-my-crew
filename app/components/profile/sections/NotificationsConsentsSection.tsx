@@ -1,6 +1,7 @@
 'use client';
 
 import { UserConsents } from '@/app/types/consents';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type EmailPreferences = {
   registration_updates: boolean;
@@ -41,20 +42,21 @@ export function NotificationsConsentsSection({
                 Allow us to use AI to match your profile with sailing opportunities.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onConsentToggle('ai_processing')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                consents?.ai_processing_consent ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                consents?.ai_processing_consent ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   consents?.ai_processing_consent ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
 
           {/* Profile Sharing */}
@@ -65,20 +67,21 @@ export function NotificationsConsentsSection({
                 Allow boat owners to view your profile when you apply for crew positions.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onConsentToggle('profile_sharing')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                consents?.profile_sharing_consent ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                consents?.profile_sharing_consent ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   consents?.profile_sharing_consent ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
 
           {/* Marketing */}
@@ -89,20 +92,21 @@ export function NotificationsConsentsSection({
                 Receive emails about new features, tips, and sailing opportunities.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onConsentToggle('marketing')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                consents?.marketing_consent ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                consents?.marketing_consent ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   consents?.marketing_consent ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -123,20 +127,21 @@ export function NotificationsConsentsSection({
                 Get notified when your crew applications are approved or denied.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onEmailPrefToggle('registration_updates')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                emailPrefs?.registration_updates ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                emailPrefs?.registration_updates ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   emailPrefs?.registration_updates ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
 
           {/* Journey Updates */}
@@ -147,20 +152,21 @@ export function NotificationsConsentsSection({
                 Get notified about changes to journeys you&apos;re registered for.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onEmailPrefToggle('journey_updates')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                emailPrefs?.journey_updates ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                emailPrefs?.journey_updates ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   emailPrefs?.journey_updates ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
 
           {/* Profile Reminders */}
@@ -171,20 +177,21 @@ export function NotificationsConsentsSection({
                 Receive reminders to complete or update your profile.
               </p>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onEmailPrefToggle('profile_reminders')}
               disabled={isUpdating}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
-                emailPrefs?.profile_reminders ? 'bg-green-500' : 'bg-muted'
-              } ${isUpdating ? 'opacity-50' : ''}`}
+              className={`!relative !flex-shrink-0 !w-11 !h-6 !rounded-full !p-0 !border-0 ${
+                emailPrefs?.profile_reminders ? '!bg-green-500' : '!bg-muted'
+              }`}
+              variant="ghost"
             >
               <span
                 className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                   emailPrefs?.profile_reminders ? 'right-1' : 'left-1'
                 }`}
               />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
