@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { logger } from '@/app/lib/logger';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 // Sailboat category information (duplicated from BoatFormModal to keep independence)
 const sailboatCategories = {
@@ -245,16 +247,18 @@ export function NewBoatWizardStep2({
             <label htmlFor="type" className="block text-sm font-medium text-foreground">
               Sailboat Category
             </label>
-            <button
+            <Button
               type="button"
               onClick={() => setShowCategoryInfo(true)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              variant="ghost"
+              size="sm"
+              className="!p-0 !h-auto text-muted-foreground hover:text-foreground"
               aria-label="Show category information"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-            </button>
+            </Button>
           </div>
           <select
             id="type"
@@ -532,16 +536,18 @@ export function NewBoatWizardStep2({
                       alt={`Boat image ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg border border-border"
                     />
-                    <button
+                    <Button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity !p-1 !h-auto"
                       aria-label="Remove image"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -556,34 +562,41 @@ export function NewBoatWizardStep2({
 
       {/* Actions */}
       <div className="flex justify-between gap-4 pt-4 border-t border-border">
-        <button
+        <Button
           type="button"
           onClick={onBack}
           disabled={isSaving}
-          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors flex items-center gap-2"
+          variant="outline"
+          size="sm"
+          leftIcon={
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          }
+          className="!text-sm"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-          </svg>
           Back
-        </button>
+        </Button>
         <div className="flex gap-4">
-          <button
+          <Button
             type="button"
             onClick={onCancel}
             disabled={isSaving}
-            className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+            variant="outline"
+            size="sm"
+            className="!text-sm"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={onSave}
             disabled={isSaving || !data.name.trim()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            {isSaving ? (
-              <>
+            variant="primary"
+            size="sm"
+            className="!text-sm"
+            leftIcon={
+              isSaving ? (
                 <svg
                   className="animate-spin h-4 w-4"
                   xmlns="http://www.w3.org/2000/svg"
@@ -593,47 +606,29 @@ export function NewBoatWizardStep2({
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Saving...
-              </>
-            ) : (
-              <>
+              ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                 </svg>
-                Save Boat
-              </>
-            )}
-          </button>
+              )
+            }
+          >
+            {isSaving ? 'Saving...' : 'Save Boat'}
+          </Button>
         </div>
       </div>
 
       {/* Category Info Modal */}
-      {showCategoryInfo && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
-          onClick={() => setShowCategoryInfo(false)}
-        >
-          <div
-            className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-card-foreground">
-                  Sailboat Categories Information
-                </h2>
-                <button
-                  onClick={() => setShowCategoryInfo(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
+      <Modal
+        isOpen={showCategoryInfo}
+        onClose={() => setShowCategoryInfo(false)}
+        title="Sailboat Categories Information"
+        size="lg"
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+      >
+        <div className="space-y-4">
                 {Object.entries(sailboatCategories).map(([category, info]) => (
                   <div
                     key={category}
@@ -648,16 +643,18 @@ export function NewBoatWizardStep2({
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-xl font-semibold text-foreground">{category}</h3>
                       {data.type !== category && (
-                        <button
+                        <Button
                           onClick={(e) => {
                             e.stopPropagation();
                             onDataChange({ ...data, type: category as SailboatCategory });
                             setShowCategoryInfo(false);
                           }}
-                          className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+                          variant="primary"
+                          size="sm"
+                          className="!text-xs"
                         >
                           Select
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <div className="space-y-3 text-sm text-muted-foreground">
@@ -676,21 +673,19 @@ export function NewBoatWizardStep2({
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="flex justify-end mt-6 pt-4 border-t border-border">
-                <button
-                  onClick={() => setShowCategoryInfo(false)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
+        ))}
         </div>
-      )}
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setShowCategoryInfo(false)}
+            variant="primary"
+            size="sm"
+            className="!text-sm"
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
