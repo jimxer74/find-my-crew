@@ -7,8 +7,8 @@
  * Opens when user clicks "Paste Link" on the combo search box.
  */
 
-import { X } from 'lucide-react';
 import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 import { URLImportForm } from './URLImportForm';
 
 interface URLImportModalProps {
@@ -26,45 +26,26 @@ export function URLImportModal({ isOpen, onClose, onSuccess }: URLImportModalPro
   };
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-40 transition-opacity"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Import Your Profile"
+      size="md"
+      showCloseButton
+      closeOnBackdropClick
+      closeOnEscape
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Have a link to your sailing profile, Facebook post, or blog? Paste it below and we'll extract the
+          information to help you get started.
+        </p>
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Import Your Profile</h2>
-            <Button
-              onClick={onClose}
-              variant="ghost"
-              size="sm"
-              className="!p-1 flex-shrink-0"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </Button>
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              Have a link to your sailing profile, Facebook post, or blog? Paste it below and we'll extract the
-              information to help you get started.
-            </p>
-
-            <URLImportForm
-              onSuccess={handleSuccess}
-              onCancel={onClose}
-            />
-          </div>
-        </div>
+        <URLImportForm
+          onSuccess={handleSuccess}
+          onCancel={onClose}
+        />
       </div>
-    </>
+    </Modal>
   );
 }
