@@ -4,6 +4,7 @@ import { logger } from '@/app/lib/logger';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
+import { Button } from '@/app/components/ui/Button/Button';
 import { type CreateFeedbackPayload, type PromptStatusResponse, FeedbackPromptType } from '@/app/lib/feedback/types';
 
 interface FeedbackPromptProps {
@@ -106,16 +107,18 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
       <div className="fixed bottom-0 left-0 right-0 z-40 p-4 sm:bottom-6 sm:left-auto sm:right-6 sm:max-w-sm">
         <div className="bg-card border border-border rounded-lg shadow-lg p-4">
           {/* Close button */}
-          <button
+          <Button
             onClick={() => handleDismiss(7)}
             disabled={isDismissing}
-            className="absolute top-2 right-2 p-1 rounded-full hover:bg-accent transition-colors"
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 !p-1"
             aria-label={t('close')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
 
           {/* Content */}
           <div className="pr-6">
@@ -129,29 +132,34 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2">
-              <button
+              <Button
                 onClick={() => setIsModalOpen(true)}
-                className="flex-1 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+                variant="primary"
+                size="sm"
+                className="flex-1"
               >
                 {t('shareFeedback')}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => handleDismiss(30)}
                 disabled={isDismissing}
-                className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors disabled:opacity-50"
+                variant="outline"
+                size="sm"
               >
                 {t('maybeLater')}
-              </button>
+              </Button>
             </div>
 
             {/* Don't show again link */}
-            <button
+            <Button
               onClick={() => handleDismiss()}
               disabled={isDismissing}
-              className="mt-2 text-xs text-muted-foreground hover:underline"
+              variant="ghost"
+              size="sm"
+              className="mt-2 !text-xs !text-muted-foreground hover:!underline !p-0"
             >
               {t('dontShowAgain')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
