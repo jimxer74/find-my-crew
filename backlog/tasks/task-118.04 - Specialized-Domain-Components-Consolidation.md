@@ -4,7 +4,7 @@ title: Specialized Domain Components Consolidation
 status: In Progress
 assignee: []
 created_date: '2026-02-18 21:10'
-updated_date: '2026-02-24 19:07'
+updated_date: '2026-02-24 19:11'
 labels:
   - Components
   - Consolidation
@@ -503,6 +503,60 @@ Estimated 25 more components to consolidate:
 2. Additional modal components that follow established patterns
 3. Form-based modals if they fit pattern
 4. Specialized domain components
+
+## Session 6 - 4 Additional Components Refactored (Continued)
+
+### Components Completed This Session (Total: 4)
+1. ✅ LegMobileCard - Card wrapper refactored
+2. ✅ CrewSummaryCard - Complex card with buttons and badge
+3. ✅ CrewCarousel - Scroll navigation buttons refactored
+4. ✅ LegCarousel - Multiple button types refactored
+
+### Updated Total Progress
+- **Total Components Refactored: 27** (54% of estimated 50)
+- Badge components: 4 ✅
+- Card components: 7 ✅
+- Modal components: 14 ✅
+- Carousel/Navigation: 2 ✅ (added 2 new ones this session)
+
+### Key Changes - Carousel Components
+**CrewCarousel** (app/components/crew/):
+- Replaced custom scroll left/right buttons with Button components (outline variant)
+- Maintains hover opacity and circular styling with shadow
+- Uses icon-only button pattern with !p-0 sizing overrides
+
+**LegCarousel** (app/components/crew/):
+- Replaced scroll left/right buttons with Button components
+- Converted join button to Button component (primary variant)
+- Converted tab buttons for grouped legs to Button components (primary/secondary for selection state)
+- Replaced show more map button with Button component (outline variant)
+- All interactions and positioning maintained
+
+### Build Status
+✅ All 82 pages compile successfully
+✅ No TypeScript errors
+✅ No functionality regressions
+
+### Pattern Consistency
+All refactored components consistently use:
+- Card component for card containers
+- Button component with appropriate variants (primary, secondary, outline, destructive)
+- Badge component for status indicators
+- Proper sizing and spacing props
+- Custom className overrides for specialized layouts (!p-0, !w-10, etc.)
+
+### Remaining Work Estimate
+Estimated 23 more components:
+- Complex form modals (LegFormModal ~1132 lines, BoatFormModal, etc.): 5-7 components
+- Card variants (other specialized cards): 5-8 components
+- Form sections and other specialized components: 5-8 components
+- List/table items and utilities: 3-5 components
+
+### Next Recommended Components
+1. ChatLegCarousel - Similar to LegCarousel, likely has buttons
+2. Other modal components that haven't been refactored
+3. Form-based domain components
+4. Specialized list/table item components
 <!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
