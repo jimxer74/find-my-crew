@@ -1,9 +1,10 @@
 ---
 id: TASK-131
 title: Generic URL Onboarding - Core Implementation
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-24 11:48'
+updated_date: '2026-02-24 17:33'
 labels:
   - onboarding
   - feature
