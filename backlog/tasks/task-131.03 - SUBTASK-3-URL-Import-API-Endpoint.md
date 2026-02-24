@@ -1,9 +1,10 @@
 ---
 id: TASK-131.03
 title: 'SUBTASK 3: URL Import API Endpoint'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-24 11:49'
+updated_date: '2026-02-24 11:51'
 labels: []
 dependencies: []
 parent_task_id: TASK-131
@@ -85,17 +86,36 @@ Log successful imports and errors with:
 - Error details (if failed)
 
 ## Acceptance Criteria
-- [x] Endpoint accessible at POST /api/url-import/fetch-content
-- [x] Validates URL format before processing
-- [x] Requires authenticated user
-- [x] Extracts user's OAuth tokens if available
-- [x] Detects resource type correctly
-- [x] Calls fetchResourceContent with proper options
-- [x] Returns success response with proper structure
-- [x] Returns error response with user-friendly messages
-- [x] Implements rate limiting (10/hour)
-- [x] Logs all imports and errors
-- [x] Handles all error cases (network, timeout, rate limit)
-- [x] Fully typed with TypeScript
-- [x] Uses Supabase server client from getSupabaseServer()
+<!-- AC:BEGIN -->
+- [x] #1 Endpoint accessible at POST /api/url-import/fetch-content
+- [x] #2 Validates URL format before processing
+- [x] #3 Requires authenticated user
+- [x] #4 Extracts user's OAuth tokens if available
+- [x] #5 Detects resource type correctly
+- [x] #6 Calls fetchResourceContent with proper options
+- [x] #7 Returns success response with proper structure
+- [x] #8 Returns error response with user-friendly messages
+- [x] #9 Implements rate limiting (10/hour)
+- [x] #10 Logs all imports and errors
+- [x] #11 Handles all error cases (network, timeout, rate limit)
+- [x] #12 Fully typed with TypeScript
+- [x] #13 Uses Supabase server client from getSupabaseServer()
 <!-- SECTION:DESCRIPTION:END -->
+
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+✅ Completed 2026-02-24
+
+- app/api/url-import/fetch-content/route.ts created
+
+- POST /api/url-import/fetch-content endpoint implemented
+
+- Authentication, validation, rate limiting (10/hour)
+
+- Error handling and logging
+
+- All 13 acceptance criteria met
+<!-- SECTION:NOTES:END -->
