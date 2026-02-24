@@ -226,20 +226,22 @@ export function LegCarousel({
                       size="sm"
                       className="!text-xs flex-shrink-0"
                       title={t('joinLeg')}
+                      leftIcon={
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                          />
+                        </svg>
+                      }
                     >
-                      <svg
-                        className="w-3 h-3"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-                        />
-                      </svg>
                       {t('join')}
                     </Button>
                   )
@@ -292,10 +294,9 @@ export function LegCarousel({
         {/* Show More Card */}
         {showShowMoreCard && (
           <div className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start">
-            <Button
+            <button
               onClick={() => router.push(showMoreUrl)}
-              variant="outline"
-              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 flex-shrink-0"
+              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 rounded-md border border-input bg-background hover:bg-accent active:bg-accent/50 transition-colors font-medium text-foreground"
             >
               <svg
                 className="w-8 h-8"
@@ -310,10 +311,10 @@ export function LegCarousel({
                   d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
                 />
               </svg>
-              <span className="text-sm font-medium">
+              <span className="text-sm font-medium whitespace-nowrap">
                 {t('showMoreOnMap')}
               </span>
-            </Button>
+            </button>
           </div>
         )}
       </div>

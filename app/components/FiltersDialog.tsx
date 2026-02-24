@@ -486,28 +486,30 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                     <Button
                       onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                       variant="outline"
-                      className="flex items-center gap-2 w-full !justify-start"
+                      className="w-full !justify-start"
                       aria-label={tFilters('selectDateRange')}
+                      leftIcon={
+                        <svg
+                          className={`w-5 h-5 flex-shrink-0 ${
+                            tempDateRange.start || tempDateRange.end
+                              ? 'text-foreground'
+                              : 'text-muted-foreground'
+                          }`}
+                          fill="none"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                          <line x1="16" y1="2" x2="16" y2="6" />
+                          <line x1="8" y1="2" x2="8" y2="6" />
+                          <line x1="3" y1="10" x2="21" y2="10" />
+                        </svg>
+                      }
                     >
-                      <svg
-                        className={`w-5 h-5 flex-shrink-0 ${
-                          tempDateRange.start || tempDateRange.end
-                            ? 'text-foreground'
-                            : 'text-muted-foreground'
-                        }`}
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                      <span className={`text-sm font-medium flex-1 text-left ${
+                      <span className={`text-sm font-medium text-left ${
                         tempDateRange.start || tempDateRange.end
                           ? 'text-foreground'
                           : 'text-muted-foreground'
