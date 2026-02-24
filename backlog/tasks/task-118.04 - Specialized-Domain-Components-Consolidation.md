@@ -4,7 +4,7 @@ title: Specialized Domain Components Consolidation
 status: In Progress
 assignee: []
 created_date: '2026-02-18 21:10'
-updated_date: '2026-02-24 18:47'
+updated_date: '2026-02-24 19:07'
 labels:
   - Components
   - Consolidation
@@ -450,6 +450,60 @@ All modals follow the same proven pattern:
 4. Focus on systematic refactoring to maintain quality
 5. Estimate: 5-7 more components can be refactored in next session at current pace
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Session 6 - 2 Additional Components Refactored
+
+### Components Completed This Session
+1. ✅ LegMobileCard - Card wrapper refactored to use core Card and Button components
+2. ✅ CrewSummaryCard - Complex card with buttons and badge refactored
+
+### Updated Total Progress
+- **Total Components Refactored: 25** (50% of estimated 50)
+- Badge components: 4 ✅
+- Card components: 7 ✅ (added 2 new ones this session)
+- Modal components: 14 ✅
+
+### Key Changes This Session
+**LegMobileCard** (app/components/crew/):
+- Replaced custom button element with Button component (outline variant)
+- Wrapped LegListItem content in core Card component
+- Maintained mobile-specific positioning and layout
+
+**CrewSummaryCard** (app/components/owner/):
+- Replaced main container div with Card component
+- Converted Approve button to Button component (primary variant)
+- Converted Deny button to Button component (destructive variant)
+- Replaced status badge with Badge component with mapped variants
+- Now displays: 'Approved'→success, 'Pending approval'→warning, 'Not approved'→error, 'Cancelled'→secondary
+- Maintained all responsive behavior and functionality
+
+### Build Status
+✅ All 82 pages compile successfully
+✅ No TypeScript errors
+✅ No functionality regressions
+
+### Refactoring Pattern Validation
+Both components confirm the established refactoring patterns work well:
+- Card components: Simple div → Card replacement
+- Button elements: Custom styling → Button component with variants
+- Badge elements: Custom span → Badge component with variant mapping
+
+### Remaining Work Estimate
+Estimated 25 more components to consolidate:
+- Complex form modals (LegFormModal ~1132 lines, BoatFormModal, etc.): 5-7 components
+- Card variants (LegCarousel, CrewCarousel, specialized cards): 10-12 components
+- Form sections and other specialized components: 5-8 components
+- List/table items and utilities: 3-5 components
+
+### Next Recommended Components
+1. LegCarousel, CrewCarousel (card wrapper variants)
+2. Additional modal components that follow established patterns
+3. Form-based modals if they fit pattern
+4. Specialized domain components
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
