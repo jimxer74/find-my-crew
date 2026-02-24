@@ -9,7 +9,7 @@
  */
 
 import React, { useState } from 'react';
-import { Card } from '@/app/components/ui';
+import { Card, Button } from '@/app/components/ui';
 import { User, MapPin, Award, Shield, Check, AlertCircle, ChevronDown } from 'lucide-react';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
@@ -181,14 +181,15 @@ export default function CrewCard({
       {skills.length > 0 && (
         <div className="px-4 pb-3 border-t border-gray-100">
           {/* Collapsible Header */}
-          <button
+          <Button
             onClick={(e) => {
               e.stopPropagation();
               setSkillsExpanded(!skillsExpanded);
             }}
-            className="w-full flex items-center justify-between py-2 hover:bg-gray-50 rounded transition-colors"
+            variant="ghost"
+            className="w-full !justify-between !p-2 !text-gray-700 hover:!bg-gray-50 rounded"
           >
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium">
               {skills.length} {skills.length === 1 ? 'Skill' : 'Skills'}
             </span>
             <ChevronDown
@@ -196,7 +197,7 @@ export default function CrewCard({
                 skillsExpanded ? 'rotate-180' : ''
               }`}
             />
-          </button>
+          </Button>
 
           {/* Expanded Skills Content */}
           {skillsExpanded && (

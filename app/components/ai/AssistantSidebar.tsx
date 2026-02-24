@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
+import { Button } from '@/app/components/ui/Button/Button';
 import { AssistantChat } from './AssistantChat';
 
 const MIN_PANEL_WIDTH = 320;  // px
@@ -112,15 +113,17 @@ export function AssistantSidebar() {
       <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           {/* Close button - mobile only */}
-          <button
+          <Button
             onClick={closeAssistant}
-            className="md:hidden p-2 -ml-2 hover:bg-accent rounded-md transition-colors"
+            variant="ghost"
+            size="sm"
+            className="md:hidden !p-2 -ml-2"
             aria-label="Close"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </button>
+          </Button>
           <svg
             className="w-5 h-5 text-primary hidden md:block"
             fill="none"
@@ -134,15 +137,17 @@ export function AssistantSidebar() {
           </svg>
           <h2 className="font-semibold text-foreground">{t('title')}</h2>
         </div>
-        <button
+        <Button
           onClick={createNewConversation}
-          className="p-2 hover:bg-accent rounded-md transition-colors"
+          variant="ghost"
+          size="sm"
+          className="!p-2"
           title={t('newConversation')}
         >
           <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
           </svg>
-        </button>
+        </Button>
       </div>
 
       {/* Conversation list (collapsible) */}
@@ -172,18 +177,20 @@ export function AssistantSidebar() {
                   <span className="flex-1 text-sm truncate">
                     {conv.title || t('newConversation')}
                   </span>
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       deleteConversation(conv.id);
                     }}
-                    className="p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 rounded transition-all"
+                    variant="ghost"
+                    size="sm"
+                    className="!p-1 opacity-0 group-hover:opacity-100 hover:!bg-destructive/10 transition-all"
                     title={t('deleteConversation')}
                   >
                     <svg className="w-4 h-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
