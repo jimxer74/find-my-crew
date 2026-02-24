@@ -324,11 +324,15 @@ export function ProspectChat() {
             <p className="text-sm max-w-sm mx-auto mb-4">
               {isReturningUser
                 ? "Ready to continue exploring? Let's pick up where we left off."
-                : "Tell me about your sailing goals and I'll help you find matching opportunities. No sign-up needed to start exploring!"}
+                : "Tell me about your sailing goals and I'll help you find matching opportunities."}
             </p>
-            {/* For returning users not authenticated, choose action based on session email */}
-            {!isAuthenticated && isReturningUser && (
-              <div className="mt-4 flex justify-center">
+            {/* For unauthenticated users, show sign-up/login instructions and buttons */}
+            {!isAuthenticated && (
+              <div className="space-y-4">
+                <p className="text-xs max-w-sm mx-auto text-muted-foreground">
+                  Please sign up or log in to start chatting with the AI assistant and explore sailing opportunities.
+                </p>
+              <div className="mt-4 flex justify-center gap-2">
                 {hasSessionEmail ? (
                   <button
                     onClick={() => setShowAuthForm('login')}
@@ -345,7 +349,7 @@ export function ProspectChat() {
                     >
                       <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                     </svg>
-                    Log In to Continue
+                    Log In
                   </button>
                 ) : (
                   <button
@@ -363,9 +367,29 @@ export function ProspectChat() {
                     >
                       <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
-                    Sign Up to Continue
+                    Sign Up
                   </button>
                 )}
+                {hasSessionEmail && (
+                  <button
+                    onClick={() => setShowAuthForm('signup')}
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                    Create New Account
+                  </button>
+                )}
+              </div>
               </div>
             )}
           </div>
