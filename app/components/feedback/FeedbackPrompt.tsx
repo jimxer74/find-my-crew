@@ -112,7 +112,7 @@ export function FeedbackPrompt({ userId }: FeedbackPromptProps) {
             disabled={isDismissing}
             variant="ghost"
             size="sm"
-            className="absolute top-2 right-2 !p-1"
+            className="absolute top-2 right-2 !p-1 flex-shrink-0"
             aria-label={t('close')}
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

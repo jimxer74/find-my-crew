@@ -212,7 +212,7 @@ export function CruisingRegionSection({
           onClick={() => router.push(getMapUrl())}
           variant="ghost"
           size="sm"
-          className="flex items-center gap-1.5 !text-muted-foreground hover:!text-foreground !p-1"
+          className="flex items-center gap-1.5 !text-muted-foreground hover:!text-foreground !p-1 flex-shrink-0"
           title={t('viewOnMap')}
         >
           <svg

@@ -73,7 +73,7 @@ export function LegBrowsePane({
             onClick={() => setIsMinimized(true)}
             variant="outline"
             size="sm"
-            className="hidden md:flex !w-8 !h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 rounded-r-md !p-0 shadow-md"
+            className="hidden md:flex !w-8 !h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 rounded-r-md !p-0 shadow-md flex-shrink-0"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
@@ -146,7 +146,7 @@ export function LegBrowsePane({
           onClick={() => setIsMinimized(false)}
           variant="outline"
           size="sm"
-          className="hidden md:flex !w-8 !h-12 fixed top-1/2 left-0 -translate-y-1/2 rounded-r-md !p-0 shadow-md z-30"
+          className="hidden md:flex !w-8 !h-12 fixed top-1/2 left-0 -translate-y-1/2 rounded-r-md !p-0 shadow-md z-30 flex-shrink-0"
           title="Show legs list"
           aria-label="Show legs list"
         >

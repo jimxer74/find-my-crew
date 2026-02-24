@@ -107,7 +107,7 @@ export function FiltersDialog({ isOpen, onClose, buttonRef }: FiltersDialogProps
             onClick={onClose}
             variant="ghost"
             size="sm"
-            className="md:hidden !p-2 -ml-2 mr-2"
+            className="md:hidden !p-2 -ml-2 mr-2 flex-shrink-0"
             aria-label={t('close')}
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,7 +523,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         }}
                         variant="outline"
                         size="sm"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                         aria-label={tFilters('clearDateRange')}
                       >
                         <svg
@@ -611,7 +611,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         }}
                         variant="ghost"
                         size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground flex-shrink-0"
                         aria-label={tFilters('clearLocation')}
                       >
                         <svg
@@ -673,7 +673,7 @@ export function FiltersPageContent({ onClose, onRestoreProfile, useProfileSettin
                         }}
                         variant="ghost"
                         size="sm"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 z-[101] !p-1 !text-muted-foreground hover:!text-foreground flex-shrink-0"
                         aria-label={tFilters('clearArrivalLocation')}
                       >
                         <svg

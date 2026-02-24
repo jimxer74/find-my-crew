@@ -117,7 +117,7 @@ export function AssistantSidebar() {
             onClick={closeAssistant}
             variant="ghost"
             size="sm"
-            className="md:hidden !p-2 -ml-2"
+            className="md:hidden !p-2 -ml-2 flex-shrink-0"
             aria-label="Close"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,7 +141,7 @@ export function AssistantSidebar() {
           onClick={createNewConversation}
           variant="ghost"
           size="sm"
-          className="!p-2"
+          className="!p-2 flex-shrink-0"
           title={t('newConversation')}
         >
           <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +184,7 @@ export function AssistantSidebar() {
                     }}
                     variant="ghost"
                     size="sm"
-                    className="!p-1 opacity-0 group-hover:opacity-100 hover:!bg-destructive/10 transition-all"
+                    className="!p-1 opacity-0 group-hover:opacity-100 hover:!bg-destructive/10 transition-all flex-shrink-0"
                     title={t('deleteConversation')}
                   >
                     <svg className="w-4 h-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">

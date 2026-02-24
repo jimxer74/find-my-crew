@@ -42,7 +42,7 @@ export function ActionFeedback({ result, onDismiss }: ActionFeedbackProps) {
           onClick={onDismiss}
           variant="ghost"
           size="sm"
-          className="ml-2 !p-0 !text-gray-400 hover:!text-gray-600 dark:hover:!text-gray-200"
+          className="ml-2 !p-0 !text-gray-400 hover:!text-gray-600 dark:hover:!text-gray-200 flex-shrink-0"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
