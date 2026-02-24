@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button/Button';
 import { LegList, LegListItemData } from './LegList';
 import { CostModel } from '@/app/types/cost-models';
 
@@ -68,14 +69,16 @@ export function LegBrowsePane({
 
         {/* Minimize button - Right edge of pane */}
         {!isMinimized && (
-          <button
+          <Button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer"
+            variant="outline"
+            size="sm"
+            className="hidden md:flex !w-8 !h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 rounded-r-md !p-0 shadow-md"
             title="Minimize panel"
             aria-label="Minimize panel"
           >
             <ChevronLeft className="w-5 h-5 text-foreground" />
-          </button>
+          </Button>
         )}
 
         {/* Header */}
@@ -139,14 +142,16 @@ export function LegBrowsePane({
 
       {/* Maximize button when minimized */}
       {isMinimized && (
-        <button
+        <Button
           onClick={() => setIsMinimized(false)}
-          className="hidden md:flex w-8 h-12 fixed top-1/2 left-0 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer z-30"
+          variant="outline"
+          size="sm"
+          className="hidden md:flex !w-8 !h-12 fixed top-1/2 left-0 -translate-y-1/2 rounded-r-md !p-0 shadow-md z-30"
           title="Show legs list"
           aria-label="Show legs list"
         >
           <ChevronRight className="w-5 h-5 text-foreground" />
-        </button>
+        </Button>
       )}
     </>
   );
