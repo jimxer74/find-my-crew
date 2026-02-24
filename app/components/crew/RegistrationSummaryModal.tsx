@@ -6,6 +6,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { formatDate } from '@/app/lib/dateFormat';
 import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
+import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -259,343 +261,316 @@ export function RegistrationSummaryModal({
   const isApproved = data?.registration.status === 'Approved';
   const isDenied = data?.registration.status === 'Not approved';
 
-  if (!isOpen) return null;
-
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 z-50"
-        onClick={onClose}
-      />
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Registration Summary"
+      size="xl"
+      showCloseButton={true}
+      closeOnBackdropClick={true}
+      closeOnEscape={true}
+      footer={
+        <Button variant="primary" onClick={onClose}>
+          Close
+        </Button>
+      }
+    >
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      )}
 
-      {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div className="bg-card rounded-lg shadow-xl border border-border max-w-4xl w-full max-h-[90vh] overflow-y-auto my-auto">
-          {/* Header */}
-          <div className="sticky top-0 bg-card border-b border-border px-6 py-4 flex items-center justify-between z-10">
-            <h2 className="text-xl font-bold text-foreground">Registration Summary</h2>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-accent rounded-md transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+          <p className="text-red-800 font-medium">{error}</p>
+        </div>
+      )}
+
+      {data && !loading && (
+        <div className="space-y-6">
+          {/* Status Header */}
+          <div className="bg-card rounded-lg shadow p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground mb-2">Registration Status</h3>
+                <div className="flex items-center gap-3 flex-wrap">
+                  {getStatusBadge(data.registration.status)}
+                  {data.registration.auto_approved && (
+                    <span className="inline-flex items-center gap-1 text-xs text-primary">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Auto-approved by AI
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p>Registered: {formatDate(data.registration.created_at)}</p>
+                {data.registration.updated_at !== data.registration.created_at && (
+                  <p>Updated: {formatDate(data.registration.updated_at)}</p>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Content */}
-          <div className="p-6">
-            {loading && (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-              </div>
-            )}
+          {/* Owner Message / Denial Reason */}
+          {isApproved && data.registration.notes && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-green-800 mb-2">Message from Skipper</h4>
+              <p className="text-sm text-green-900 whitespace-pre-wrap">{data.registration.notes}</p>
+            </div>
+          )}
 
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                <p className="text-red-800 font-medium">{error}</p>
-              </div>
-            )}
+          {isDenied && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-red-800 mb-2">Reason for Denial</h4>
+              {data.registration.notes ? (
+                <p className="text-sm text-red-900 whitespace-pre-wrap">{data.registration.notes}</p>
+              ) : data.registration.ai_match_reasoning ? (
+                <div>
+                  <p className="text-xs text-red-700 mb-2 font-medium">AI Assessment:</p>
+                  <p className="text-sm text-red-900 whitespace-pre-wrap">{data.registration.ai_match_reasoning}</p>
+                </div>
+              ) : (
+                <p className="text-sm text-red-900">No specific reason provided.</p>
+              )}
+            </div>
+          )}
 
-            {data && !loading && (
-              <>
-                {/* Status Header */}
-                <div className="bg-card rounded-lg shadow p-6 mb-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Journey & Leg Information */}
+          <CollapsibleSection title="Journey & Leg" defaultOpen={true}>
+            <div className="space-y-4">
+              {/* Journey */}
+              <div>
+                <h4 className="text-base font-semibold text-foreground mb-1">{data.journey.name}</h4>
+                {(data.journey.start_date || data.journey.end_date) && (
+                  <p className="text-sm text-muted-foreground">
+                    {formatDate(data.journey.start_date)} - {formatDate(data.journey.end_date)}
+                  </p>
+                )}
+              </div>
+
+              {/* Leg */}
+              <div className="pt-3 border-t border-border">
+                <p className="font-medium text-foreground mb-2">{data.leg.name}</p>
+
+                {/* Waypoints */}
+                {(data.leg.start_waypoint || data.leg.end_waypoint) && (
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-3">
                     <div>
-                      <h3 className="text-lg font-bold text-foreground mb-2">Registration Status</h3>
-                      <div className="flex items-center gap-3 flex-wrap">
-                        {getStatusBadge(data.registration.status)}
-                        {data.registration.auto_approved && (
-                          <span className="inline-flex items-center gap-1 text-xs text-primary">
-                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Auto-approved by AI
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      <p>Registered: {formatDate(data.registration.created_at)}</p>
-                      {data.registration.updated_at !== data.registration.created_at && (
-                        <p>Updated: {formatDate(data.registration.updated_at)}</p>
+                      {data.leg.start_waypoint?.name && (
+                        <p className="text-sm font-medium text-foreground">{data.leg.start_waypoint.name}</p>
                       )}
+                      {data.leg.start_date && (
+                        <p className="text-xs text-muted-foreground">{formatDate(data.leg.start_date)}</p>
+                      )}
+                    </div>
+                    <div className="text-foreground">
+                      <span className="text-lg">→</span>
+                    </div>
+                    <div>
+                      {data.leg.end_waypoint?.name && (
+                        <p className="text-sm font-medium text-foreground">{data.leg.end_waypoint.name}</p>
+                      )}
+                      {data.leg.end_date && (
+                        <p className="text-xs text-muted-foreground">{formatDate(data.leg.end_date)}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Distance and Duration */}
+                {distance !== null && (
+                  <div className="flex gap-6 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Distance: </span>
+                      <span className="font-medium text-foreground">{Math.round(distance)} nm</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Duration: </span>
+                      <span className="font-medium text-foreground">{duration}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Boat & Skipper Information - blur when not authenticated */}
+          <CollapsibleSection title="Boat & Skipper" defaultOpen={true}>
+            <div className="relative">
+              {!user && (
+                <div
+                  className="absolute inset-0 z-10 rounded-md backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[120px]"
+                  aria-hidden="true"
+                >
+                  <p className="text-sm text-muted-foreground px-4 text-center">
+                    Sign in to view skipper & boat details
+                  </p>
+                </div>
+              )}
+              <div className="space-y-4">
+              {/* Boat */}
+              <div className="flex gap-4">
+                {data.boat.image_url && (
+                  <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
+                    <Image
+                      src={data.boat.image_url}
+                      alt={data.boat.name}
+                      fill
+                      className="object-cover"
+                      sizes="96px"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h4 className="text-base font-semibold text-foreground mb-1">{data.boat.name}</h4>
+                  {data.boat.type && (
+                    <p className="text-sm text-muted-foreground mb-1">{data.boat.type}</p>
+                  )}
+                  {(data.boat.make || data.boat.model) && (
+                    <p className="text-sm text-muted-foreground">
+                      {data.boat.make && data.boat.model ? `${data.boat.make} ${data.boat.model}` : data.boat.make || data.boat.model || ''}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Skipper */}
+              {data.owner && (
+                <div className="pt-3 border-t border-border flex items-center gap-3">
+                  {data.owner.profile_image_url ? (
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
+                      <Image
+                        src={data.owner.profile_image_url}
+                        alt={data.owner.full_name || data.owner.username || 'Skipper'}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground">Skipper</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {data.owner.full_name || data.owner.username || 'Unknown'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+            </div>
+          </CollapsibleSection>
+
+          {/* Requirements (if applicable) */}
+          {data.effective_risk_level && getRiskLevelConfig(data.effective_risk_level) && (
+            <CollapsibleSection title="Requirements" defaultOpen={false}>
+              <div className="space-y-4">
+                {/* Risk Level */}
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Risk Level</p>
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-12 h-12 flex-shrink-0">
+                      <Image
+                        src={getRiskLevelConfig(data.effective_risk_level)!.icon}
+                        alt={getRiskLevelConfig(data.effective_risk_level)!.displayName}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {getRiskLevelConfig(data.effective_risk_level)!.displayName}
+                      </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Owner Message / Denial Reason */}
-                {isApproved && data.registration.notes && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                    <h4 className="text-sm font-semibold text-green-800 mb-2">Message from Skipper</h4>
-                    <p className="text-sm text-green-900 whitespace-pre-wrap">{data.registration.notes}</p>
-                  </div>
-                )}
-
-                {isDenied && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <h4 className="text-sm font-semibold text-red-800 mb-2">Reason for Denial</h4>
-                    {data.registration.notes ? (
-                      <p className="text-sm text-red-900 whitespace-pre-wrap">{data.registration.notes}</p>
-                    ) : data.registration.ai_match_reasoning ? (
-                      <div>
-                        <p className="text-xs text-red-700 mb-2 font-medium">AI Assessment:</p>
-                        <p className="text-sm text-red-900 whitespace-pre-wrap">{data.registration.ai_match_reasoning}</p>
+                {/* Experience Level */}
+                {data.effective_min_experience_level && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Minimum Experience Level</p>
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-12 h-12 flex-shrink-0">
+                        <Image
+                          src={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).icon}
+                          alt={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
+                          fill
+                          className="object-contain"
+                        />
                       </div>
-                    ) : (
-                      <p className="text-sm text-red-900">No specific reason provided.</p>
-                    )}
-                  </div>
-                )}
-
-                {/* Journey & Leg Information */}
-                <CollapsibleSection title="Journey & Leg" defaultOpen={true}>
-                  <div className="space-y-4">
-                    {/* Journey */}
-                    <div>
-                      <h4 className="text-base font-semibold text-foreground mb-1">{data.journey.name}</h4>
-                      {(data.journey.start_date || data.journey.end_date) && (
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(data.journey.start_date)} - {formatDate(data.journey.end_date)}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Leg */}
-                    <div className="pt-3 border-t border-border">
-                      <p className="font-medium text-foreground mb-2">{data.leg.name}</p>
-
-                      {/* Waypoints */}
-                      {(data.leg.start_waypoint || data.leg.end_waypoint) && (
-                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-3">
-                          <div>
-                            {data.leg.start_waypoint?.name && (
-                              <p className="text-sm font-medium text-foreground">{data.leg.start_waypoint.name}</p>
-                            )}
-                            {data.leg.start_date && (
-                              <p className="text-xs text-muted-foreground">{formatDate(data.leg.start_date)}</p>
-                            )}
-                          </div>
-                          <div className="text-foreground">
-                            <span className="text-lg">→</span>
-                          </div>
-                          <div>
-                            {data.leg.end_waypoint?.name && (
-                              <p className="text-sm font-medium text-foreground">{data.leg.end_waypoint.name}</p>
-                            )}
-                            {data.leg.end_date && (
-                              <p className="text-xs text-muted-foreground">{formatDate(data.leg.end_date)}</p>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Distance and Duration */}
-                      {distance !== null && (
-                        <div className="flex gap-6 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">Distance: </span>
-                            <span className="font-medium text-foreground">{Math.round(distance)} nm</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">Duration: </span>
-                            <span className="font-medium text-foreground">{duration}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CollapsibleSection>
-
-                {/* Boat & Skipper Information - blur when not authenticated */}
-                <CollapsibleSection title="Boat & Skipper" defaultOpen={true}>
-                  <div className="relative">
-                    {!user && (
-                      <div
-                        className="absolute inset-0 z-10 rounded-md backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[120px]"
-                        aria-hidden="true"
-                      >
-                        <p className="text-sm text-muted-foreground px-4 text-center">
-                          Sign in to view skipper & boat details
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
                         </p>
                       </div>
-                    )}
-                    <div className="space-y-4">
-                    {/* Boat */}
-                    <div className="flex gap-4">
-                      {data.boat.image_url && (
-                        <div className="relative w-24 h-24 rounded-lg overflow-hidden flex-shrink-0">
-                          <Image
-                            src={data.boat.image_url}
-                            alt={data.boat.name}
-                            fill
-                            className="object-cover"
-                            sizes="96px"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h4 className="text-base font-semibold text-foreground mb-1">{data.boat.name}</h4>
-                        {data.boat.type && (
-                          <p className="text-sm text-muted-foreground mb-1">{data.boat.type}</p>
-                        )}
-                        {(data.boat.make || data.boat.model) && (
-                          <p className="text-sm text-muted-foreground">
-                            {data.boat.make && data.boat.model ? `${data.boat.make} ${data.boat.model}` : data.boat.make || data.boat.model || ''}
-                          </p>
-                        )}
-                      </div>
                     </div>
-
-                    {/* Skipper */}
-                    {data.owner && (
-                      <div className="pt-3 border-t border-border flex items-center gap-3">
-                        {data.owner.profile_image_url ? (
-                          <div className="relative w-12 h-12 rounded-full overflow-hidden flex-shrink-0">
-                            <Image
-                              src={data.owner.profile_image_url}
-                              alt={data.owner.full_name || data.owner.username || 'Skipper'}
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                            />
-                          </div>
-                        ) : (
-                          <div className="w-12 h-12 bg-accent rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg className="w-6 h-6 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
-                        )}
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Skipper</p>
-                          <p className="text-sm font-medium text-foreground">
-                            {data.owner.full_name || data.owner.username || 'Unknown'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                  </div>
-                </CollapsibleSection>
-
-                {/* Requirements (if applicable) */}
-                {data.effective_risk_level && getRiskLevelConfig(data.effective_risk_level) && (
-                  <CollapsibleSection title="Requirements" defaultOpen={false}>
-                    <div className="space-y-4">
-                      {/* Risk Level */}
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Risk Level</p>
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-12 h-12 flex-shrink-0">
-                            <Image
-                              src={getRiskLevelConfig(data.effective_risk_level)!.icon}
-                              alt={getRiskLevelConfig(data.effective_risk_level)!.displayName}
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">
-                              {getRiskLevelConfig(data.effective_risk_level)!.displayName}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Experience Level */}
-                      {data.effective_min_experience_level && (
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Minimum Experience Level</p>
-                          <div className="flex items-center gap-3">
-                            <div className="relative w-12 h-12 flex-shrink-0">
-                              <Image
-                                src={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).icon}
-                                alt={getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
-                                fill
-                                className="object-contain"
-                              />
-                            </div>
-                            <div>
-                              <p className="font-medium text-foreground">
-                                {getExperienceLevelConfig(data.effective_min_experience_level as ExperienceLevel).displayName}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleSection>
                 )}
+              </div>
+            </CollapsibleSection>
+          )}
 
-                {/* AI Assessment (if available) */}
-                {data.registration.ai_match_score !== null && (
-                  <CollapsibleSection
-                    title="AI Assessment"
-                    defaultOpen={false}
-                    badge={
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        data.registration.ai_match_score >= 80 ? 'bg-green-100 text-green-700' :
-                        data.registration.ai_match_score >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {data.registration.ai_match_score}%
-                      </span>
-                    }
-                  >
-                    <div className="space-y-4">
-                      {/* Score bar */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-foreground">Match Score</span>
-                          <span className={`text-lg font-bold ${
-                            data.registration.ai_match_score >= 80 ? 'text-green-600' :
-                            data.registration.ai_match_score >= 60 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {data.registration.ai_match_score}%
-                          </span>
-                        </div>
-                        <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-300 ${
-                              data.registration.ai_match_score >= 80 ? 'bg-green-500' :
-                              data.registration.ai_match_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${data.registration.ai_match_score}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Reasoning */}
-                      {data.registration.ai_match_reasoning && (
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground mb-2">AI Reasoning</p>
-                          <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">
-                            {data.registration.ai_match_reasoning}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </CollapsibleSection>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="sticky bottom-0 bg-card border-t border-border px-6 py-4 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+          {/* AI Assessment (if available) */}
+          {data.registration.ai_match_score !== null && (
+            <CollapsibleSection
+              title="AI Assessment"
+              defaultOpen={false}
+              badge={
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                  data.registration.ai_match_score >= 80 ? 'bg-green-100 text-green-700' :
+                  data.registration.ai_match_score >= 60 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {data.registration.ai_match_score}%
+                </span>
+              }
             >
-              Close
-            </button>
-          </div>
+              <div className="space-y-4">
+                {/* Score bar */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-foreground">Match Score</span>
+                    <span className={`text-lg font-bold ${
+                      data.registration.ai_match_score >= 80 ? 'text-green-600' :
+                      data.registration.ai_match_score >= 60 ? 'text-yellow-600' : 'text-red-600'
+                    }`}>
+                      {data.registration.ai_match_score}%
+                    </span>
+                  </div>
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        data.registration.ai_match_score >= 80 ? 'bg-green-500' :
+                        data.registration.ai_match_score >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${data.registration.ai_match_score}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Reasoning */}
+                {data.registration.ai_match_reasoning && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">AI Reasoning</p>
+                    <p className="text-sm text-foreground bg-muted/50 rounded-lg p-3">
+                      {data.registration.ai_match_reasoning}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CollapsibleSection>
+          )}
         </div>
-      </div>
-    </>
+      )}
+    </Modal>
   );
 }
