@@ -53,6 +53,14 @@ function calculateCrewMatchScore(
 ): number {
   let score = 0;
   let maxScore = 0;
+  const debugInfo = {
+    experienceLevel: params.experienceLevel,
+    riskLevels: params.riskLevels,
+    skills: params.skills,
+    crewExperience: crewProfile.experience_level,
+    crewRiskLevels: crewProfile.risk_level,
+    scoreBreakdown: {} as any,
+  };
 
   // Experience level matching (weight: 34%)
   if (params.experienceLevel) {
@@ -62,6 +70,9 @@ function calculateCrewMatchScore(
       const levelDiff = crewProfile.experience_level - params.experienceLevel;
       score += 34 + (levelDiff * 5); // Bonus up to 15 points for higher levels
       score = Math.min(score, maxScore); // Cap at maxScore
+      debugInfo.scoreBreakdown.experience = `+34 (match)`;
+    } else {
+      debugInfo.scoreBreakdown.experience = `0 (no match)`;
     }
   }
 
@@ -79,6 +90,9 @@ function calculateCrewMatchScore(
 
     if (hasMatch) {
       score += 33;
+      debugInfo.scoreBreakdown.risk = `+33 (match)`;
+    } else {
+      debugInfo.scoreBreakdown.risk = `0 (no match)`;
     }
   }
 
@@ -96,15 +110,23 @@ function calculateCrewMatchScore(
 
     const skillMatchRatio = matchingSkills.length / requiredSkills.length;
     score += skillMatchRatio * 33;
+    debugInfo.scoreBreakdown.skills = `+${Math.round(skillMatchRatio * 33)} (${matchingSkills.length}/${requiredSkills.length} match)`;
+  } else {
+    debugInfo.scoreBreakdown.skills = 'skipped (no skills required)';
   }
 
   // If no criteria specified, return neutral score
   if (maxScore === 0) {
+    logger.debug('[calculateCrewMatchScore] DEBUG (neutral):', debugInfo);
     return 50;
   }
 
+  const finalScore = Math.round((score / maxScore) * 100);
+  debugInfo.scoreBreakdown.final = `${score}/${maxScore} = ${finalScore}%`;
+  logger.debug('[calculateCrewMatchScore] DEBUG:', debugInfo);
+
   // Normalize to 0-100 range
-  return Math.round((score / maxScore) * 100);
+  return finalScore;
 }
 
 /**
