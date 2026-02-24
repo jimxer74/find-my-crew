@@ -120,13 +120,13 @@ function calculateCrewMatchScore(
 
   // If no criteria specified, return neutral score
   if (maxScore === 0) {
-    logger.debug('[calculateCrewMatchScore] DEBUG (neutral):', debugInfo);
+    //logger.debug('[calculateCrewMatchScore] DEBUG (neutral):', debugInfo);
     return 50;
   }
 
   const finalScore = Math.round((score / maxScore) * 100);
   debugInfo.scoreBreakdown.final = `${score}/${maxScore} = ${finalScore}%`;
-  logger.debug('[calculateCrewMatchScore] DEBUG:', debugInfo);
+  //logger.debug('[calculateCrewMatchScore] DEBUG:', debugInfo);
 
   // Normalize to 0-100 range
   return finalScore;

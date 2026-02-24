@@ -8,9 +8,9 @@
  * Refactored to use core Card component.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/app/components/ui';
-import { User, MapPin, Award, Shield, Check, AlertCircle } from 'lucide-react';
+import { User, MapPin, Award, Shield, Check, AlertCircle, ChevronDown } from 'lucide-react';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
 
@@ -88,10 +88,11 @@ export default function CrewCard({
   requiredSkills,
   onClick,
 }: CrewCardProps) {
+  const [skillsExpanded, setSkillsExpanded] = useState(false);
   const experienceInfo = getExperienceLevelInfo(experience_level);
   const isAnonymous = !name; // Anonymous if no name (unauthenticated viewer)
-  
-  // Show top 3-4 skills only
+
+  // Show top 3-4 skills only when collapsed
   const displaySkills = skills.slice(0, 4);
   
   return (
@@ -176,66 +177,87 @@ export default function CrewCard({
         </div>
       )}
 
-      {/* Skills - with matching display if requiredSkills provided */}
-      {requiredSkills && requiredSkills.length > 0 ? (
-        // Show matched vs missing skills when search criteria provided
-        (() => {
-          const { matching, missing } = getMatchingAndMissingSkills(skills, requiredSkills);
-          return (
-            <div className="px-4 pb-3">
-              <div className="space-y-2">
-                {/* Matched Skills */}
-                {matching.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {matching.map((skill) => (
-                      <span
-                        key={`matched-${skill}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-300/80 text-green-800 text-xs font-medium rounded border border-green-500"
-                      >
-                        <Check className="w-3 h-3" />
-                        {formatSkillName(skill)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {/* Missing Skills */}
-                {missing.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {missing.map((skill) => (
-                      <span
-                        key={`missing-${skill}`}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-300/80 text-orange-800 text-xs font-medium rounded border border-orange-600"
-                      >
-                        <AlertCircle className="w-3 h-3" />
-                        {formatSkillName(skill)}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+      {/* Skills - Collapsible */}
+      {skills.length > 0 && (
+        <div className="px-4 pb-3 border-t border-gray-100">
+          {/* Collapsible Header */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSkillsExpanded(!skillsExpanded);
+            }}
+            className="w-full flex items-center justify-between py-2 hover:bg-gray-50 rounded transition-colors"
+          >
+            <span className="text-sm font-medium text-gray-700">
+              {skills.length} {skills.length === 1 ? 'Skill' : 'Skills'}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-500 transition-transform ${
+                skillsExpanded ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
+
+          {/* Expanded Skills Content */}
+          {skillsExpanded && (
+            <div className="space-y-2 mt-2 pt-2">
+              {requiredSkills && requiredSkills.length > 0 ? (
+                // Show matched vs missing skills when search criteria provided
+                (() => {
+                  const { matching, missing } = getMatchingAndMissingSkills(
+                    skills,
+                    requiredSkills
+                  );
+                  return (
+                    <>
+                      {/* Matched Skills */}
+                      {matching.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {matching.map((skill) => (
+                            <span
+                              key={`matched-${skill}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-300/80 text-green-800 text-xs font-medium rounded border border-green-500"
+                            >
+                              <Check className="w-3 h-3" />
+                              {formatSkillName(skill)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {/* Missing Skills */}
+                      {missing.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {missing.map((skill) => (
+                            <span
+                              key={`missing-${skill}`}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-300/80 text-orange-800 text-xs font-medium rounded border border-orange-600"
+                            >
+                              <AlertCircle className="w-3 h-3" />
+                              {formatSkillName(skill)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()
+              ) : (
+                // Show all skills when no search criteria
+                <div className="flex flex-wrap gap-1.5">
+                  {skills.map((skill) => (
+                    <span
+                      key={skill}
+                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-200"
+                    >
+                      {formatSkillName(skill)}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
-          );
-        })()
-      ) : displaySkills.length > 0 ? (
-        // Show basic skill list when no search criteria
-        <div className="px-4 pb-3">
-          <div className="flex flex-wrap gap-1.5">
-            {displaySkills.map((skill) => (
-              <span
-                key={skill}
-                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-200"
-              >
-                {formatSkillName(skill)}
-              </span>
-            ))}
-            {skills.length > 4 && (
-              <span className="px-2 py-1 bg-gray-50 text-gray-500 text-xs rounded border border-gray-200">
-                +{skills.length - 4} more
-              </span>
-            )}
-          </div>
+          )}
         </div>
-      ) : null}
+      )}
 
       {/* Availability */}
       {availability && (
