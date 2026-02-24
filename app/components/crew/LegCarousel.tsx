@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { LegListItem, LegListItemData } from './LegListItem';
 import { RegistrationStatusBadge } from './RegistrationStatusBadge';
 import { useUserRegistrations } from '@/app/hooks/useUserRegistrations';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type LegCarouselProps = {
   legs: LegListItemData[];
@@ -167,13 +168,15 @@ export function LegCarousel({
     <div className="relative group">
       {/* Left Arrow - Desktop only */}
       {canScrollLeft && (
-        <button
+        <Button
           onClick={() => scroll('left')}
-          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-card/90 hover:bg-card border border-border rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-5"
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-5 !p-0"
           aria-label="Scroll left"
         >
           <svg
-            className="w-5 h-5 text-foreground"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -185,7 +188,7 @@ export function LegCarousel({
               d="M15 19l-7-7 7-7"
             />
           </svg>
-        </button>
+        </Button>
       )}
 
       {/* Scrollable Container */}
@@ -214,13 +217,14 @@ export function LegCarousel({
                   registrationStatus ? (
                     <RegistrationStatusBadge status={registrationStatus} />
                   ) : (
-                    <button
-                      type="button"
+                    <Button
                       onClick={(e) => {
                         e.stopPropagation();
                         onJoinClick(displayedLeg);
                       }}
-                      className="flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors"
+                      variant="primary"
+                      size="sm"
+                      className="!text-xs"
                       title={t('joinLeg')}
                     >
                       <svg
@@ -237,7 +241,7 @@ export function LegCarousel({
                         />
                       </svg>
                       {t('join')}
-                    </button>
+                    </Button>
                   )
                 ) : null;
 
@@ -265,21 +269,19 @@ export function LegCarousel({
               {group.isGrouped && (
                 <div className="flex items-center justify-center gap-1 mt-2">
                   {group.legs.map((leg, legIndex) => (
-                    <button
+                    <Button
                       key={leg.leg_id}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedLegIndex(group, legIndex);
                       }}
-                      className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                        legIndex === selectedIndex
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
+                      variant={legIndex === selectedIndex ? 'primary' : 'secondary'}
+                      size="sm"
+                      className="!text-xs !px-2 !py-1"
                       title={`Leg ${legIndex + 1}: ${leg.leg_name}`}
                     >
                       {legIndex + 1}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -290,12 +292,13 @@ export function LegCarousel({
         {/* Show More Card */}
         {showShowMoreCard && (
           <div className="flex-shrink-0 w-[calc(50%-0.5rem)] sm:w-[280px] snap-start">
-            <button
+            <Button
               onClick={() => router.push(showMoreUrl)}
-              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 bg-card border border-border rounded-lg hover:bg-accent transition-colors"
+              variant="outline"
+              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2"
             >
               <svg
-                className="w-8 h-8 text-muted-foreground"
+                className="w-8 h-8"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -307,10 +310,10 @@ export function LegCarousel({
                   d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
                 />
               </svg>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium">
                 {t('showMoreOnMap')}
               </span>
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -337,13 +340,15 @@ export function LegCarousel({
 
       {/* Right Arrow - Desktop only */}
       {canScrollRight && (
-        <button
+        <Button
           onClick={() => scroll('right')}
-          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-10 h-10 items-center justify-center bg-card/90 hover:bg-card border border-border rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-5"
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-5 !p-0"
           aria-label="Scroll right"
         >
           <svg
-            className="w-5 h-5 text-foreground"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -355,7 +360,7 @@ export function LegCarousel({
               d="M9 5l7 7-7 7"
             />
           </svg>
-        </button>
+        </Button>
       )}
 
       {/* Hide scrollbar with CSS */}
