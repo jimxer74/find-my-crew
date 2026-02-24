@@ -130,44 +130,6 @@ function renderMessageWithLegLinks(
   return parts;
 }
 
-/**
- * Quick suggestion buttons for starting the conversation
- */
-function QuickSuggestions({
-  onSelect,
-  isReturning,
-}: {
-  onSelect: (message: string) => void;
-  isReturning: boolean;
-}) {
-  const suggestions = isReturning
-    ? [
-        { label: 'Show me more options', message: 'Can you show me more sailing opportunities?' },
-        { label: 'Different dates', message: "I'd like to explore different dates" },
-        { label: 'Different location', message: "Let's look at a different sailing area" },
-      ]
-    : [
-        { label: 'Mediterranean sailing', message: "I'm interested in sailing the Mediterranean" },
-        { label: 'Caribbean adventure', message: 'I want to explore the Caribbean' },
-        { label: 'Learn to sail', message: "I'm a beginner looking to learn" },
-        { label: 'Ocean crossing', message: "I'd love to do an ocean crossing" },
-      ];
-
-  return (
-    <div className="flex flex-wrap justify-center gap-2 mt-4">
-      {suggestions.map((s, i) => (
-        <button
-          key={i}
-          onClick={() => onSelect(s.message)}
-          className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-        >
-          {s.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function ProspectChat() {
   const t = useTranslations('common');
   const router = useRouter();
@@ -364,13 +326,6 @@ export function ProspectChat() {
                 ? "Ready to continue exploring? Let's pick up where we left off."
                 : "Tell me about your sailing goals and I'll help you find matching opportunities. No sign-up needed to start exploring!"}
             </p>
-            {/* Only show quick suggestions for users without existing profile */}
-            {!hasExistingProfile && (
-              <QuickSuggestions
-                onSelect={handleSuggestionSelect}
-                isReturning={isReturningUser}
-              />
-            )}
             {/* For returning users not authenticated, choose action based on session email */}
             {!isAuthenticated && isReturningUser && (
               <div className="mt-4 flex justify-center">
