@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { LegListItem, LegListItemData } from '@/app/components/crew/LegListItem';
+import { Button } from '@/app/components/ui/Button/Button';
 
 /**
  * Leg reference from AI chat messages
@@ -198,13 +199,15 @@ export function ChatLegCarousel({
     <div className="relative group my-2">
       {/* Left Arrow - Desktop only */}
       {canScrollLeft && (
-        <button
+        <Button
           onClick={() => scroll('left')}
-          className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center bg-card/90 hover:bg-card border border-border rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-4"
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-8 !h-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-4 !p-0"
           aria-label="Scroll left"
         >
           <svg
-            className="w-4 h-4 text-foreground"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -216,7 +219,7 @@ export function ChatLegCarousel({
               d="M15 19l-7-7 7-7"
             />
           </svg>
-        </button>
+        </Button>
       )}
 
       {/* Scrollable Container */}
@@ -258,12 +261,14 @@ export function ChatLegCarousel({
                 />
                 {/* Join button overlay */}
                 {onJoinClick && (
-                  <button
+                  <Button
                     onClick={(e) => {
                       e.stopPropagation();
                       onJoinClick(displayedLeg.leg_id, displayedLeg.leg_name);
                     }}
-                    className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md shadow-md transition-colors z-10"
+                    variant="primary"
+                    size="sm"
+                    className="absolute top-2 right-2 !text-xs z-10"
                     title={`Join ${displayedLeg.leg_name}`}
                   >
                     <svg
@@ -280,28 +285,26 @@ export function ChatLegCarousel({
                       />
                     </svg>
                     Join
-                  </button>
+                  </Button>
                 )}
               </div>
               {/* Tab buttons for grouped legs */}
               {group.isGrouped && (
                 <div className="flex items-center justify-center gap-1 mt-2">
                   {group.legs.map((leg, legIndex) => (
-                    <button
+                    <Button
                       key={leg.leg_id}
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedLegIndex(group, legIndex);
                       }}
-                      className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                        legIndex === selectedIndex
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      }`}
+                      variant={legIndex === selectedIndex ? 'primary' : 'secondary'}
+                      size="sm"
+                      className="!text-xs !px-2 !py-1"
                       title={`Leg ${legIndex + 1}: ${leg.leg_name}`}
                     >
                       {legIndex + 1}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -332,13 +335,15 @@ export function ChatLegCarousel({
 
       {/* Right Arrow - Desktop only */}
       {canScrollRight && (
-        <button
+        <Button
           onClick={() => scroll('right')}
-          className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 items-center justify-center bg-card/90 hover:bg-card border border-border rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-4"
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-8 !h-8 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-4 !p-0"
           aria-label="Scroll right"
         >
           <svg
-            className="w-4 h-4 text-foreground"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -350,7 +355,7 @@ export function ChatLegCarousel({
               d="M9 5l7 7-7 7"
             />
           </svg>
-        </button>
+        </Button>
       )}
 
       {/* Hide scrollbar with CSS */}
