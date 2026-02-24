@@ -191,15 +191,17 @@ export function DocumentUploadModal({ isOpen, onClose, onUploadComplete }: Docum
                 <p className="text-xs text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB</p>
               </div>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => setFile(null)}
-              className="p-1.5 hover:bg-accent rounded-md transition-colors flex-shrink-0"
+              variant="ghost"
+              size="sm"
+              className="!p-1.5 flex-shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface PassportVerificationSectionProps {
   passportData?: {
@@ -271,14 +272,16 @@ export function PassportVerificationSection({
           />
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="relative flex items-center justify-center">
-              <button
+              <Button
                 onClick={() => setPhotoEnlarged(false)}
-                className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-colors z-10"
+                className="absolute top-4 right-4 !p-2 !bg-white/10 hover:!bg-white/20 !text-white z-10"
+                variant="ghost"
+                size="sm"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
               <img
                 src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
                 alt="Crew verification photo enlarged"

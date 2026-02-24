@@ -296,12 +296,14 @@ export function GrantManagementModal({ isOpen, onClose, documentId, documentName
                   </div>
                 </div>
                 {isActive && (
-                  <button
+                  <Button
                     onClick={() => handleRevoke(grant.id)}
-                    className="px-3 py-1.5 min-h-[36px] text-xs font-medium text-destructive bg-destructive/10 rounded hover:bg-destructive/20 transition-colors flex-shrink-0 ml-2"
+                    variant="destructive"
+                    size="sm"
+                    className="!px-3 !py-1.5 !text-xs flex-shrink-0 ml-2"
                   >
                     {t('revoke')}
-                  </button>
+                  </Button>
                 )}
               </div>
             );
