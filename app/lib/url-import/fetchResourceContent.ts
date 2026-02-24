@@ -7,9 +7,45 @@
  * 3. Return user-friendly errors if all fail
  */
 
-import { fetchWithScraperAPI } from '@/app/lib/sailboatdata_queries';
 import { logger } from '@/app/lib/logger';
 import type { ResourceType, AuthProvider } from './detectResourceType';
+
+/**
+ * Fetch URL content using ScraperAPI with optional JavaScript rendering
+ */
+async function fetchWithScraperAPI(url: string, options?: Record<string, any>, renderJavaScript = true): Promise<Response> {
+  const apiKey = process.env.SCRAPERAPI_API_KEY;
+  if (!apiKey) {
+    throw new Error('SCRAPERAPI_API_KEY not configured');
+  }
+
+  // Build ScraperAPI request URL
+  const scraperParams = new URLSearchParams({
+    api_key: apiKey,
+    url: url,
+    render: renderJavaScript ? 'true' : 'false',
+  });
+
+  const scraperUrl = `http://api.scraperapi.com?${scraperParams.toString()}`;
+
+  try {
+    // Use AbortController for timeout (30 seconds)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    try {
+      const response = await fetch(scraperUrl, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  } catch (error) {
+    throw new Error(`ScraperAPI request failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
 
 export interface FetchOptions {
   url: string;

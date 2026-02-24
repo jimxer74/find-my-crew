@@ -540,7 +540,7 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
   const [isJourneyDialogOpen, setIsJourneyDialogOpen] = useState(false);
   const [isSkipperProfileDialogOpen, setIsSkipperProfileDialogOpen] = useState(false);
   const [isCrewRequirementsDialogOpen, setIsCrewRequirementsDialogOpen] = useState(false);
-  const [focusedSegment, setFocusedSegment] = useState<'journey' | 'skipperProfile' | 'crewRequirements' | null>(null);
+  const [focusedSegment, setFocusedSegment] = useState<'journey' | 'skipperProfile' | 'crewRequirements' | 'importProfile' | null>(null);
   const [showURLImportModal, setShowURLImportModal] = useState(false);
   const [importedProfile, setImportedProfile] = useState<{
     url: string;

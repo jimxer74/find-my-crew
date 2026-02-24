@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/app/lib/logger';
-import { getSupabaseServer } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { detectResourceType, isValidUrl } from '@/app/lib/url-import/detectResourceType';
 import { fetchResourceContent } from '@/app/lib/url-import/fetchResourceContent';
 
@@ -57,7 +57,7 @@ interface ErrorResponse {
 export async function POST(request: NextRequest): Promise<NextResponse<SuccessResponse | ErrorResponse>> {
   try {
     // Get authenticated user
-    const supabase = getSupabaseServer();
+    const supabase = await getSupabaseServerClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -106,7 +106,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
     // Check if user has OAuth token for this provider
     let accessToken: string | undefined;
     if (detection.authProvider) {
-      const { data: session } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const session = data?.session;
       if (session?.user?.identities) {
         const providerIdentity = session.user.identities.find((i) => i.provider === detection.authProvider);
         if (providerIdentity?.identity_data?.access_token) {

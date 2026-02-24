@@ -1039,6 +1039,7 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       skipperProfile: null,
       crewRequirements: null,
       journeyDetails: null,
+      importedProfile: null,
     });
     // Reinitialize session
     initSessionRunRef.current = false;
