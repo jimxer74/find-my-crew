@@ -26,6 +26,8 @@ import { useProfile } from '@/app/lib/profile/useProfile';
 import { hasProfile } from '@/app/lib/profileUtils';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LoadingButton } from '@/app/components/ui/LoadingButton';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -1150,102 +1152,118 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       >
         {/* Close button for mobile - Top right */}
         {isOpen && !isMinimized && (
-          <button
+          <Button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] flex items-center justify-center shadow-sm hover:bg-accent transition-all md:hidden cursor-pointer"
+            variant="ghost"
+            className="absolute top-4 right-4 z-10 md:hidden !p-2 !min-w-[44px] !min-h-[44px] !h-auto flex items-center justify-center shadow-sm"
             title="Close panel"
             aria-label="Close panel"
+            leftIcon={
+              <svg
+                className="w-6 h-6 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            }
           >
-            <svg
-              className="w-6 h-6 text-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+            {' '}
+          </Button>
         )}
 
         {/* Minimize button - Desktop only - Right edge of pane */}
         {isOpen && !isMinimized && (
-          <button
+          <Button
             onClick={() => setIsMinimized(true)}
-            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer"
+            variant="ghost"
+            className="hidden md:flex w-8 h-12 absolute top-1/2 -right-7.5 -z-10 -translate-y-1/2 !p-0 items-center justify-center shadow-md"
             title="Minimize panel"
             aria-label="Minimize panel"
+            leftIcon={
+              <svg
+                className="w-5 h-5 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 18l-6-6 6-6"
+                />
+              </svg>
+            }
           >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 18l-6-6 6-6"
-              />
-            </svg>
-          </button>
+            {' '}
+          </Button>
         )}
 
         {/* Maximize button when minimized - Desktop only */}
         {isOpen && isMinimized && (
-          <button
+          <Button
             onClick={() => setIsMinimized(false)}
-            className="hidden md:flex w-8 h-12 absolute top-1/2 -translate-y-1/2 left-0 z-10 bg-card border border-border rounded-r-md items-center justify-center shadow-md hover:bg-accent transition-all cursor-pointer"
+            variant="ghost"
+            className="hidden md:flex w-8 h-12 absolute top-1/2 -translate-y-1/2 left-0 z-10 !p-0 items-center justify-center shadow-md"
             title="Maximize panel"
             aria-label="Maximize panel"
+            leftIcon={
+              <svg
+                className="w-5 h-5 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 5l7 7-7 7"
+                />
+              </svg>
+            }
           >
-            <svg
-              className="w-5 h-5 text-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 5l7 7-7 7"
-              />
-            </svg>
-          </button>
+            {' '}
+          </Button>
         )}
 
         {/* Close button - Desktop only - Top right inside panel */}
         {isOpen && !isMinimized && (
-          <button
+          <Button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               onClose();
             }}
-            className="hidden md:flex absolute top-4 right-4 z-10 bg-card border border-border rounded-md p-2 min-w-[44px] min-h-[44px] items-center justify-center shadow-sm hover:bg-accent transition-all cursor-pointer"
+            variant="ghost"
+            className="hidden md:flex absolute top-4 right-4 z-10 !p-2 !min-w-[44px] !min-h-[44px] !h-auto items-center justify-center shadow-sm"
             title="Close panel"
             aria-label="Close panel"
+            leftIcon={
+              <svg
+                className="w-6 h-6 text-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            }
           >
-            <svg
-              className="w-6 h-6 text-foreground"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+            {' '}
+          </Button>
         )}
 
         {/* Content */}
@@ -1326,7 +1344,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 {/* Sticky footer */}
                 <div className="flex-shrink-0 border-t border-border bg-card p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                   <div className="flex gap-3 justify-end">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => {
                         setShowRegistrationModal(false);
@@ -1334,11 +1352,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                         setRequirementsAnswers([]);
                         setRegistrationError(null);
                       }}
+                      variant="outline"
+                      size="sm"
                       disabled={isRegistering}
-                      className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors disabled:opacity-50"
                     >
                       Cancel
-                    </button>
+                    </Button>
                     <LoadingButton
                       type="button"
                       onClick={async () => {
@@ -1823,23 +1842,25 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                                 ? journeyDescription.substring(0, 100) + '...'
                                 : journeyDescription}
                               {journeyDescription && journeyDescription.length > 100 && (
-                                <button
+                                <Button
                                   onClick={() => setShowFullDescription(true)}
-                                  className="ml-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                                  variant="ghost"
+                                  className="ml-2 !text-xs !p-0 !h-auto"
                                 >
                                   Show more
-                                </button>
+                                </Button>
                               )}
                             </p>
                           ) : (
                             <div className="text-sm text-foreground whitespace-pre-wrap">
                               {journeyDescription}
-                              <button
+                              <Button
                                 onClick={() => setShowFullDescription(false)}
-                                className="ml-2 text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+                                variant="ghost"
+                                className="ml-2 !text-xs !p-0 !h-auto"
                               >
                                 Show less
-                              </button>
+                              </Button>
                             </div>
                           )}
                         </>
@@ -1874,13 +1895,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     {getStatusBadge(registrationStatus)}
                   </div>
                   {registrationStatus === 'Pending approval' && (
-                    <button
+                    <Button
                       onClick={handleCancelRegistration}
+                      variant="secondary"
                       disabled={isRegistering}
-                      className="w-full bg-secondary text-secondary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full"
                     >
                       Cancel Registration
-                    </button>
+                    </Button>
                   )}
                 </div>
               ) : registrationStatus ? (
@@ -1890,13 +1912,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <span className="text-xs text-muted-foreground">Registration Status:</span>
                     {getStatusBadge(registrationStatus)}
                   </div>
-                  <button
+                  <Button
                     onClick={handleRegister}
+                    variant="primary"
                     disabled={isRegistering || checkingProfileConsent}
-                    className="w-full bg-primary text-primary-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full"
                   >
                     {isRegistering ? 'Registering...' : checkingProfileConsent ? 'Checking...' : 'Register Again'}
-                  </button>
+                  </Button>
                 </div>
               ) : hasProfileSharingConsent === false ? (
                 <div className="space-y-3">
@@ -1945,12 +1968,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       </div>
                     </div>
                   </div>
-                  <button
+                  <Button
                     disabled
-                    className="w-full bg-muted text-muted-foreground px-4 py-3 min-h-[44px] rounded-md text-sm font-medium cursor-not-allowed opacity-50"
+                    variant="secondary"
+                    className="w-full opacity-50"
                   >
                     Register for leg
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <LoadingButton
@@ -1976,125 +2000,57 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
       </div>
       </div>
       {/* Risk Level Info Dialog */}
-      {isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-50"
-            onClick={() => setIsRiskLevelDialogOpen(false)}
-          />
-          {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
-            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                    {getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.displayName}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setIsRiskLevelDialogOpen(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Close"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {/* Content */}
-              <div className="p-3 sm:p-4 overflow-y-auto flex-1">
-                <div className="prose prose-sm max-w-none text-foreground">
-                  {getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.fullInfoText.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
+      <Modal
+        isOpen={isRiskLevelDialogOpen && effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') ? true : false}
+        onClose={() => setIsRiskLevelDialogOpen(false)}
+        title={effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') ? getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.displayName : ''}
+        size="md"
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+      >
+        <div className="prose prose-sm max-w-none text-foreground">
+          {effectiveRiskLevel && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark') && getRiskLevelConfig(effectiveRiskLevel, theme.resolvedTheme === 'dark')!.fullInfoText.split('\n\n').map((paragraph, index) => (
+            <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+        </div>
+      </Modal>
 
       {/* Experience Level Info Dialog */}
-      {isExperienceLevelDialogOpen && leg.min_experience_level && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-50"
-            onClick={() => setIsExperienceLevelDialogOpen(false)}
-          />
-          {/* Dialog */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 mt-8">
-            <div className="bg-card rounded-lg shadow-xl border border-border max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-hidden flex flex-col">
-              {/* Header */}
-              <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border">
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <h2 className="text-base sm:text-lg font-semibold text-foreground">
-                    {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName}
-                  </h2>
-                </div>
-                <button
-                  onClick={() => setIsExperienceLevelDialogOpen(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Close"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {/* Content */}
-              <div className="p-3 sm:p-4 overflow-y-auto flex-1">
-                <div className="prose prose-sm max-w-none text-foreground">
-                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).infoText.split('\n\n').map((paragraph, index) => (
-                    <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
-                      {paragraph}
-                    </p>
-                  ))}
-                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="font-semibold mb-2">Typical Equivalents:</p>
-                      <p className="text-sm text-muted-foreground">
-                        {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents}
-                      </p>
-                    </div>
-                  )}
-                  {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note && (
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <p className="text-sm italic text-muted-foreground">
-                        {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+      <Modal
+        isOpen={isExperienceLevelDialogOpen && leg.min_experience_level ? true : false}
+        onClose={() => setIsExperienceLevelDialogOpen(false)}
+        title={leg.min_experience_level ? getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).displayName : ''}
+        size="md"
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+      >
+        <div className="prose prose-sm max-w-none text-foreground">
+          {leg.min_experience_level && getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).infoText.split('\n\n').map((paragraph, index) => (
+            <p key={index} className="mb-4 text-xs sm:text-sm leading-relaxed">
+              {paragraph}
+            </p>
+          ))}
+          {leg.min_experience_level && getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="font-semibold mb-2">Typical Equivalents:</p>
+              <p className="text-sm text-muted-foreground">
+                {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).typicalEquivalents}
+              </p>
             </div>
-          </div>
-        </>
-      )}
+          )}
+          {leg.min_experience_level && getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note && (
+            <div className="mt-4 pt-4 border-t border-border">
+              <p className="text-sm italic text-muted-foreground">
+                {getExperienceLevelConfig(leg.min_experience_level as ExperienceLevel).note}
+              </p>
+            </div>
+          )}
+        </div>
+      </Modal>
       {leg && (
         <RegistrationSuccessModal
           isOpen={showSuccessModal}
