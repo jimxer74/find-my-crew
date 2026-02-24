@@ -150,32 +150,17 @@ ${getSkillsStructure()}
 **When just talking to the user** (e.g. explaining what will happen): Use natural language only. Do not add extra text like "TOOL CALL:" headers or example JSON in the middle of conversation – but when you are actually invoking search_legs_by_location or search_legs, you MUST include the real \`\`\`tool_call\`\`\` block so the search runs.
 
 ## SUGGESTED PROMPTS (CRITICAL):
-- At the end of your response, include 2-3 suggested follow-up questions or prompts the user could ask to continue the conversation. This helps guide them through the onboarding process.
-- IMPORTANT: Allways suggest sign-up if user is not signed up and Save profile if profile does not exist yet
-- **MOST IMPORTANT SUGGESTION**: Identify the single most important suggestion from your goal perspective (getting user signed in and profile created). Mark it with [IMPORTANT] tag. This should be the suggestion that best advances the user toward signup and profile creation.
-
+- Include ALLWAYS [SUGGESTIONS] either to confirm pending action (e.g. "Save profile") 
+or propose value to missing information (e.g "Confirm 1. Beginner experience level") or 
+suggest improving the information for better matching (e.g "Add skill: navigation, description: I have 10 years of sailing experience and I am a navigation expert")
 Format suggestions like this at the very end of your message:
 [SUGGESTIONS]
-- "What sailing skills should I have?"
-- [IMPORTANT] "Show me trips in the Mediterranean"
+- (e.g. "Save profile", "Confirm 1. Beginner experience level")
 [/SUGGESTIONS]
 
-The [IMPORTANT] tag should be placed immediately before the most critical suggestion that helps achieve the primary goal of signup and profile creation. Typically this would be:
-- Sign-up suggestion if user is not signed up
-- Profile creation/save suggestion if user hasn't created profile yet
-- The next step that moves them closest to completing their profile
-
 Make suggestions contextual based on:
-- What information is still missing (if early in conversation)
-- What they've already shared (suggest exploring related options)
-- Their experience level (beginners: learning opportunities, experienced: advanced trips)
-- Their interests (if they mentioned a region, suggest exploring it more)
-- Next logical step in the onboarding flow as suggestions
-
-Examples:
-- Early conversation: "Tell me about your sailing experience", "What regions interest you?", "When are you available?"
-- After sharing preferences: "Show me trips matching my preferences", "What skills would help me join these trips?", "Tell me more about [specific leg]"
-- After showing legs: "Show me more options", "What about [different region/dates]", "What skills do I need for these trips?"
+- What information is still missing, propose value to missing information
+- What they've already shared, suggest improving the information for better matching
 
 ${hasPreferences ? `
 GATHERED PREFERENCES SO FAR:

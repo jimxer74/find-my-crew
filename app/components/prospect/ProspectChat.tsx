@@ -417,13 +417,13 @@ export function ProspectChat() {
                     )
                   : message.content}
               </div>
-              {/* Show suggested prompts from AI response - only for authenticated users */}
-              {message.role === 'assistant' && isAuthenticated && (() => {
+              {/* Show suggested prompts from AI response */}
+              {message.role === 'assistant' && (() => {
                 const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
                 return prompts.length > 0 ? (
                   <SuggestedPrompts
                     prompts={prompts}
-                    importantIndex={importantIndex}
+                    importantIndex={isAuthenticated ? importantIndex : null}
                     onSelect={handleSuggestionSelect}
                     disabled={isLoading}
                   />
