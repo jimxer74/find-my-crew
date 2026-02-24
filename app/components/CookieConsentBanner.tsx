@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { Button } from '@/app/components/ui/Button/Button';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { CookiePreferences } from '@/app/types/consents';
 
@@ -238,49 +239,61 @@ export function CookieConsentBanner() {
                 <div className="flex flex-col sm:flex-row gap-3">
                   {!showDetails ? (
                     <>
-                      <button
+                      <Button
                         onClick={handleAcceptAll}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        variant="primary"
+                        size="sm"
+                        className="!text-sm"
                       >
                         Accept All
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={handleRejectAll}
                         disabled={isSaving}
-                        className="px-6 py-2 border border-border bg-background text-foreground rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                        variant="outline"
+                        size="sm"
+                        className="!text-sm"
                       >
                         Reject All
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setShowDetails(true)}
-                        className="px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="!text-sm"
                       >
                         Customize
-                      </button>
+                      </Button>
                     </>
                   ) : (
                     <>
-                      <button
+                      <Button
                         onClick={handleSavePreferences}
                         disabled={isSaving}
-                        className="px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        variant="primary"
+                        size="sm"
+                        className="!text-sm"
                       >
                         {isSaving ? 'Saving...' : 'Save Preferences'}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={handleAcceptAll}
                         disabled={isSaving}
-                        className="px-6 py-2 border border-border bg-background text-foreground rounded-md text-sm font-medium hover:bg-accent transition-colors disabled:opacity-50"
+                        variant="outline"
+                        size="sm"
+                        className="!text-sm"
                       >
                         Accept All
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         onClick={() => setShowDetails(false)}
-                        className="px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="!text-sm"
                       >
                         Back
-                      </button>
+                      </Button>
                     </>
                   )}
                 </div>
