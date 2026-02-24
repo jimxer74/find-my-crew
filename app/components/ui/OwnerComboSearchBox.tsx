@@ -779,43 +779,6 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
             </div>
           </div>
 
-          {/* Paste Profile Link Segment */}
-          <div className="flex-1 min-w-0">
-            <div
-              onClick={() => {
-                setFocusedSegment('importProfile');
-                setShowURLImportModal(true);
-              }}
-              className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative"
-            >
-              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-              <div className="flex-1 min-w-0">
-                {importedProfile ? (
-                  <div className="text-xs text-amber-600 dark:text-amber-400 font-medium truncate">✅ Imported from {importedProfile.source}</div>
-                ) : (
-                  <span className="text-gray-500 dark:text-gray-400">Paste profile link</span>
-                )}
-              </div>
-              {importedProfile && (
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setImportedProfile(null);
-                  }}
-                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
-                  aria-label="Clear"
-                >
-                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          </div>
-
           {/* Post Button */}
           <div className="flex-shrink-0">
             <button
@@ -910,7 +873,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
   const t = useTranslations('welcome.owner');
   const tPrivacy = useTranslations('settings.privacy');
   const [isWizardOpen, setIsWizardOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState<0 | 1 | 2 | 3>(0);
+  const [currentPage, setCurrentPage] = useState<1 | 2 | 3>(1);
   const [journeyDetails, setJourneyDetails] = useState<{
     startLocation: Location | null;
     endLocation: Location | null;
@@ -988,7 +951,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     onSubmit(data);
     setIsWizardOpen(false);
     // Reset wizard state
-    setCurrentPage(0);
+    setCurrentPage(1);
     setJourneyDetails({
       startLocation: null,
       endLocation: null,
@@ -1011,7 +974,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
 
   const handleNext = () => {
     if (currentPage < 3 && canGoToNextPage()) {
-      setCurrentPage((prev) => (prev + 1) as 0 | 1 | 2 | 3);
+      setCurrentPage((prev) => (prev + 1) as 1 | 2 | 3);
     }
   };
 
@@ -1023,8 +986,8 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-    if (currentPage > 0) {
-      setCurrentPage((prev) => (prev - 1) as 0 | 1 | 2 | 3);
+    if (currentPage > 1) {
+      setCurrentPage((prev) => (prev - 1) as 1 | 2 | 3);
     } else {
       setIsWizardOpen(false);
     }
@@ -1067,7 +1030,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                 </svg>
               </button>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {currentPage === 0 && 'Paste Profile Link'}
                 {currentPage === 1 && 'Journey Details'}
                 {currentPage === 2 && 'About You (Skipper Profile)'}
                 {currentPage === 3 && 'Crew Requirements'}
@@ -1085,21 +1047,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4">
-              {/* Page 0: URL Import */}
-              {currentPage === 0 && (
-                <URLImportWizardPage
-                  onImportSuccess={(content, metadata) => {
-                    setImportedProfile({
-                      url: metadata.url || '',
-                      source: metadata.platform || 'unknown',
-                      content,
-                      metadata,
-                    });
-                    setCurrentPage(1);
-                  }}
-                />
-              )}
-
               {/* Page 1: Journey Details */}
               {currentPage === 1 && (
                 <div className="space-y-4">
