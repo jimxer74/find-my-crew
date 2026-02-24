@@ -4,7 +4,7 @@ title: Boat operation and maintenance tool
 status: To Do
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-24 18:02'
+updated_date: '2026-02-24 18:06'
 labels: []
 dependencies: []
 ---
@@ -71,8 +71,11 @@ Why Include?: Sailboats degrade quickly without routine care; this ensures nothi
 
 Engine Log: Track hours run, fuel consumption, RPM logs; calculate efficiency.
 Sail and Rigging Log: Record sail usage (hours per sail), reefing events, line wear; note weather conditions.
-Voyage Log: Simple entries for passages—route, duration, issues encountered (e.g., "Starboard shroud tension adjusted").
-Sensor Integration (Optional Premium): Basic API for connecting to boat instruments (e.g., log engine data automatically via Bluetooth).
+
+Voyage Log: Simple entries for passages—route, duration, weather, conditions,  issues encountered (e.g., "Starboard shroud tension adjusted").
+
+Sensor Integration (Optional Premium): Basic API for connecting to boat instruments (e.g., log engine data automatically via Bluetooth) --> This is for future option
+
 Why Include?: Essential for warranty claims, resale value, and diagnosing issues. Owners often forget to log manually; mobile app makes it easy during watches.
 
 6. Checklists and Procedures
