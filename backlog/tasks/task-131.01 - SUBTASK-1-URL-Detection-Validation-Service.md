@@ -1,9 +1,10 @@
 ---
 id: TASK-131.01
 title: 'SUBTASK 1: URL Detection & Validation Service'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-24 11:49'
+updated_date: '2026-02-24 11:51'
 labels: []
 dependencies: []
 parent_task_id: TASK-131
@@ -50,14 +51,31 @@ function isValidUrl(str: string): boolean
 ```
 
 ## Acceptance Criteria
-- [x] Correctly detects Facebook post URLs (facebook.com/user/posts/ID)
-- [x] Correctly detects Facebook profile URLs (facebook.com/username)
-- [x] Correctly detects Twitter/X post URLs (twitter.com/user/status/ID, x.com/...)
-- [x] Correctly detects Twitter profile URLs
-- [x] Validates URL format (rejects javascript:, data:, invalid URLs)
-- [x] Extracts resource IDs and metadata correctly
-- [x] Handles edge cases (www prefix, trailing slashes, query params)
-- [x] Exports isValidUrl helper for upstream validation
-- [x] Fully typed with TypeScript (no any types except metadata dict)
-- [x] Includes JSDoc comments for functions
+<!-- AC:BEGIN -->
+- [x] #1 Correctly detects Facebook post URLs (facebook.com/user/posts/ID)
+- [x] #2 Correctly detects Facebook profile URLs (facebook.com/username)
+- [x] #3 Correctly detects Twitter/X post URLs (twitter.com/user/status/ID, x.com/...)
+- [x] #4 Correctly detects Twitter profile URLs
+- [x] #5 Validates URL format (rejects javascript:, data:, invalid URLs)
+- [x] #6 Extracts resource IDs and metadata correctly
+- [x] #7 Handles edge cases (www prefix, trailing slashes, query params)
+- [x] #8 Exports isValidUrl helper for upstream validation
+- [x] #9 Fully typed with TypeScript (no any types except metadata dict)
+- [x] #10 Includes JSDoc comments for functions
 <!-- SECTION:DESCRIPTION:END -->
+
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+✅ Completed 2026-02-24
+
+- app/lib/url-import/detectResourceType.ts created
+
+- Supports Facebook, Twitter, generic web detection
+
+- Full test coverage in __tests__/detectResourceType.test.ts
+
+- All 10 acceptance criteria met
+<!-- SECTION:NOTES:END -->
