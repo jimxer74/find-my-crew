@@ -1,10 +1,10 @@
 ---
 id: TASK-126.07
 title: 'Phase 5: Add exit button to header'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-23 08:37'
-updated_date: '2026-02-23 08:49'
+updated_date: '2026-02-24 17:33'
 labels: []
 dependencies: []
 references:
