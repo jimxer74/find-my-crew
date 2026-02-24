@@ -417,70 +417,16 @@ export function ProspectChat() {
                     )
                   : message.content}
               </div>
-              {/* Show suggested prompts from AI response */}
-              {message.role === 'assistant' && (() => {
+              {/* Show suggested prompts from AI response - only for authenticated users */}
+              {message.role === 'assistant' && isAuthenticated && (() => {
                 const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
                 return prompts.length > 0 ? (
                   <SuggestedPrompts
                     prompts={prompts}
-                    importantIndex={isAuthenticated ? importantIndex : null}
+                    importantIndex={importantIndex}
                     onSelect={handleSuggestionSelect}
                     disabled={isLoading}
                   />
-                ) : null;
-              })()}
-              {/* Show fallback suggestion badge after 3+ user messages (profile completion mode) */}
-              {/* Only show on the LAST assistant message to avoid showing it multiple times */}
-              {(() => {
-                const lastAssistantMessage = messages.filter(m => m.role === 'assistant').slice(-1)[0];
-                const isLastAssistantMessage = message.id === lastAssistantMessage?.id;
-                const shouldShowBadge = 
-                  message.role === 'assistant' &&
-                  isAuthenticated &&
-                  !hasExistingProfile &&
-                  typeof userMessageCountAfterSignup === 'number' &&
-                  userMessageCountAfterSignup >= 3 &&
-                  isLastAssistantMessage;
-                
-                // Debug logging
-                if (message.role === 'assistant' && isAuthenticated && !hasExistingProfile) {
-                  logger.debug('[ProspectChat] 🔍 Fallback badge check:', {
-                    messageId: message.id,
-                    lastAssistantId: lastAssistantMessage?.id,
-                    isLastMessage: isLastAssistantMessage,
-                    userMessageCount: userMessageCountAfterSignup,
-                    shouldShow: shouldShowBadge,
-                    conditions: {
-                      isAssistant: message.role === 'assistant',
-                      isAuthenticated,
-                      noProfile: !hasExistingProfile,
-                      countOk: typeof userMessageCountAfterSignup === 'number' && userMessageCountAfterSignup >= 1,
-                      isLast: isLastAssistantMessage,
-                    },
-                  });
-                }
-                
-                return shouldShowBadge ? (
-                  <div className="mt-3 pt-3 border-t border-border/50 flex justify-end">
-                    <button
-                      onClick={() => setShowProfileExtractionModal(true)}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
-                      title="Skip the AI assistant and fill in your profile manually"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Exit Assistant
-                    </button>
-                  </div>
                 ) : null;
               })()}
               {/* Show leg carousel if leg references are available */}

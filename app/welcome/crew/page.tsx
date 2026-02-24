@@ -8,6 +8,7 @@ import { ProspectChatProvider, useProspectChat } from '@/app/contexts/ProspectCh
 import { CrewOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';
 import { OnboardingStickyBar } from '@/app/components/onboarding/OnboardingStickyBar';
 import { ProspectChat } from '@/app/components/prospect/ProspectChat';
+import { ProfileExtractionModal } from '@/app/components/prospect/ProfileExtractionModal';
 
 /**
  * Crew onboarding layout: sticky steps bar + chat
@@ -21,8 +22,13 @@ function CrewOnboardingContent() {
     clearSession,
     isLoading,
     messages,
+    userMessageCountAfterSignup,
   } = useProspectChat();
   const [isNavigatingToJourneys, setIsNavigatingToJourneys] = useState(false);
+  const [showProfileExtractionModal, setShowProfileExtractionModal] = useState(false);
+
+  // Determine when to show Exit Assistant button (same logic as in ProspectChat)
+  const showExitAssistant = isAuthenticated && !hasExistingProfile && typeof userMessageCountAfterSignup === 'number' && userMessageCountAfterSignup >= 3;
 
   const handleStartFresh = async () => {
     if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
@@ -51,6 +57,8 @@ function CrewOnboardingContent() {
         showViewJourneys={hasExistingProfile && isAuthenticated}
         onViewJourneys={handleViewJourneys}
         isNavigatingToJourneys={isNavigatingToJourneys}
+        showExitAssistant={showExitAssistant}
+        onExitAssistant={() => setShowProfileExtractionModal(true)}
       >
         <CrewOnboardingSteps
           isAuthenticated={isAuthenticated}
@@ -68,6 +76,17 @@ function CrewOnboardingContent() {
       </main>
 
       <Footer />
+
+      {/* Profile Extraction Modal */}
+      <ProfileExtractionModal
+        isOpen={showProfileExtractionModal}
+        onClose={() => setShowProfileExtractionModal(false)}
+        messages={messages}
+        onSuccess={() => {
+          setShowProfileExtractionModal(false);
+          // Profile extraction will trigger the completion flow
+        }}
+      />
     </div>
   );
 }
