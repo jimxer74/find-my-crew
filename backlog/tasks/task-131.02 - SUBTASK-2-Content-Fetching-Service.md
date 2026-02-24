@@ -1,9 +1,10 @@
 ---
 id: TASK-131.02
 title: 'SUBTASK 2: Content Fetching Service'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-24 11:49'
+updated_date: '2026-02-24 11:51'
 labels: []
 dependencies: []
 parent_task_id: TASK-131
@@ -84,16 +85,35 @@ async function fetchResourceContent(options: FetchOptions): Promise<FetchResult>
 ```
 
 ## Acceptance Criteria
-- [x] Facebook API fetcher works with valid access token
-- [x] Facebook fallback to scraper when unauthenticated
-- [x] Twitter API fetcher works with valid access token
-- [x] Twitter fallback to scraper
-- [x] Generic web scraper uses existing ScraperAPI
-- [x] Content truncated to 5000 characters max
-- [x] HTML/scripts/styles stripped from scraped content
-- [x] Error messages are user-friendly
-- [x] All errors logged with sufficient context
-- [x] Metadata extracted for each platform
-- [x] Fully typed with TypeScript
-- [x] Handles edge cases (redirects, timeouts, blocked content)
+<!-- AC:BEGIN -->
+- [x] #1 Facebook API fetcher works with valid access token
+- [x] #2 Facebook fallback to scraper when unauthenticated
+- [x] #3 Twitter API fetcher works with valid access token
+- [x] #4 Twitter fallback to scraper
+- [x] #5 Generic web scraper uses existing ScraperAPI
+- [x] #6 Content truncated to 5000 characters max
+- [x] #7 HTML/scripts/styles stripped from scraped content
+- [x] #8 Error messages are user-friendly
+- [x] #9 All errors logged with sufficient context
+- [x] #10 Metadata extracted for each platform
+- [x] #11 Fully typed with TypeScript
+- [x] #12 Handles edge cases (redirects, timeouts, blocked content)
 <!-- SECTION:DESCRIPTION:END -->
+
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+✅ Completed 2026-02-24
+
+- app/lib/url-import/fetchResourceContent.ts created
+
+- Implements Facebook API + ScraperAPI, Twitter API + ScraperAPI, generic scraper
+
+- Multi-tier fallback system implemented
+
+- Full test coverage in __tests__/fetchResourceContent.test.ts
+
+- All 12 acceptance criteria met
+<!-- SECTION:NOTES:END -->
