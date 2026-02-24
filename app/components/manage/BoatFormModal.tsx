@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { canCreateBoat } from '@/app/lib/limits';
 import { logger } from '@/app/lib/logger';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 // Sailboat category information
 const sailboatCategories = {
@@ -362,16 +364,20 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
               <h1 className="text-2xl font-bold text-foreground">
                 {boatId ? 'Edit Boat' : 'Add New Boat'}
               </h1>
-              <button
+              <Button
                 onClick={onClose}
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+                variant="ghost"
+                size="sm"
+                leftIcon={
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                }
+                className="text-muted-foreground hover:text-foreground"
                 aria-label="Cancel and go back"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
                 <span className="text-sm font-medium">Cancel</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -412,16 +418,18 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       <label htmlFor="type" className="block text-sm font-medium text-foreground">
                         Sailboat Category
                       </label>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => setShowCategoryInfo(true)}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        variant="ghost"
+                        size="sm"
+                        className="!p-0 !h-auto text-muted-foreground hover:text-foreground"
                         aria-label="Show category information"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                      </button>
+                      </Button>
                     </div>
                     <select
                       id="type"
@@ -801,16 +809,18 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                                 alt={`Boat image ${index + 1}`}
                                 className="w-full h-32 object-cover rounded-lg border border-border"
                               />
-                              <button
+                              <Button
                                 type="button"
                                 onClick={() => removeImage(index)}
-                                className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity !p-1 !h-auto"
                                 aria-label="Remove image"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                              </button>
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -825,20 +835,24 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
 
                 {/* Form Actions */}
                 <div className="flex justify-end gap-4 pt-4 border-t border-border mt-6">
-                  <button
+                  <Button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+                    variant="outline"
+                    size="sm"
+                    className="!text-sm"
                   >
                     Cancel
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading || (limitReached && !boatId)}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+                    variant="primary"
+                    size="sm"
+                    className="!text-sm"
                   >
                     {loading ? 'Saving...' : boatId ? 'Update Boat' : 'Create Boat'}
-                  </button>
+                  </Button>
                 </div>
               </form>
             )}
@@ -846,34 +860,16 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         </div>
 
       {/* Category Info Modal */}
-      {showCategoryInfo && (
-        <div
-          className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"
-          onClick={() => setShowCategoryInfo(false)}
-        >
-          <div
-            className="bg-card rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              {/* Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-card-foreground">
-                  Sailboat Categories Information
-                </h2>
-                <button
-                  onClick={() => setShowCategoryInfo(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Close"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Categories List */}
-              <div className="space-y-4">
+      <Modal
+        isOpen={showCategoryInfo}
+        onClose={() => setShowCategoryInfo(false)}
+        title="Sailboat Categories Information"
+        size="lg"
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+      >
+        <div className="space-y-4">
                 {Object.entries(sailboatCategories).map(([category, info]) => (
                   <div
                     key={category}
@@ -888,16 +884,18 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                     <div className="flex items-start justify-between mb-3">
                       <h3 className="text-xl font-semibold text-foreground">{category}</h3>
                       {formData.type !== category && (
-                        <button
+                        <Button
                           onClick={(e) => {
                             e.stopPropagation();
                             setFormData((prev) => ({ ...prev, type: category as Boat['type'] }));
                             setShowCategoryInfo(false);
                           }}
-                          className="px-3 py-1 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+                          variant="primary"
+                          size="sm"
+                          className="!text-xs"
                         >
                           Select
-                        </button>
+                        </Button>
                       )}
                     </div>
                     <div className="space-y-3 text-sm text-muted-foreground">
@@ -923,21 +921,18 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Close Button */}
-              <div className="flex justify-end mt-6 pt-4 border-t border-border">
-                <button
-                  onClick={() => setShowCategoryInfo(false)}
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
-      )}
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setShowCategoryInfo(false)}
+            variant="primary"
+            size="sm"
+            className="!text-sm"
+          >
+            Close
+          </Button>
+        </div>
+      </Modal>
     </>
   );
 }
