@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface PhotoUploadStepProps {
   onComplete: (photoFile: Blob) => void;
@@ -279,18 +280,20 @@ export function PhotoUploadStep({ onComplete, onCancel, isLoading = false, error
         <>
           {/* Tab switching */}
           <div className="flex gap-2 border-b border-border">
-            <button
+            <Button
               type="button"
               onClick={() => setCameraMode(false)}
-              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              variant={!cameraMode ? 'primary' : 'ghost'}
+              size="sm"
+              className={`!border-0 border-b-2 !rounded-none !p-3 ${
                 !cameraMode
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                  ? 'border-primary'
+                  : 'border-transparent'
               }`}
             >
               Upload File
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => {
                 if (cameraPermission === 'denied') {
@@ -300,14 +303,16 @@ export function PhotoUploadStep({ onComplete, onCancel, isLoading = false, error
                 }
               }}
               disabled={cameraPermission === 'denied'}
-              className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+              variant={cameraMode ? 'primary' : 'ghost'}
+              size="sm"
+              className={`!border-0 border-b-2 !rounded-none !p-3 ${
                 cameraMode
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground disabled:opacity-50'
+                  ? 'border-primary'
+                  : 'border-transparent'
               }`}
             >
               Take Photo
-            </button>
+            </Button>
           </div>
 
           {/* Upload Mode */}
@@ -368,21 +373,23 @@ export function PhotoUploadStep({ onComplete, onCancel, isLoading = false, error
                   style={{ aspectRatio: '4/5' }}
                 />
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={takePhoto}
                 disabled={isCompressing}
-                className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 font-medium"
+                variant="primary"
+                className="w-full"
               >
                 {isCompressing ? 'Processing...' : 'Take Photo'}
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setCameraMode(false)}
-                className="w-full px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors"
+                variant="outline"
+                className="w-full"
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           )}
 
@@ -410,34 +417,38 @@ export function PhotoUploadStep({ onComplete, onCancel, isLoading = false, error
                   {(file.size / 1024).toFixed(1)} KB
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={handleReset}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                variant="ghost"
+                size="sm"
+                className="!text-xs !text-muted-foreground hover:!text-foreground !p-0"
               >
                 Change
-              </button>
+              </Button>
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex gap-3">
-            <button
+            <Button
               type="button"
               onClick={handleReset}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50 font-medium text-sm"
+              variant="outline"
+              className="flex-1"
             >
               Choose Another
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={handleSubmit}
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 font-medium text-sm"
+              variant="primary"
+              className="flex-1"
             >
               {isLoading ? 'Uploading...' : 'Use This Photo'}
-            </button>
+            </Button>
           </div>
         </>
       )}

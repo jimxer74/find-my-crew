@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/app/components/ui/Button/Button';
+
 interface ActionFeedbackProps {
   result: {
     success: boolean;
@@ -36,14 +38,16 @@ export function ActionFeedback({ result, onDismiss }: ActionFeedbackProps) {
           </div>
           <p className="text-sm">{result.message}</p>
         </div>
-        <button
+        <Button
           onClick={onDismiss}
-          className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+          variant="ghost"
+          size="sm"
+          className="ml-2 !p-0 !text-gray-400 hover:!text-gray-600 dark:hover:!text-gray-200"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );
