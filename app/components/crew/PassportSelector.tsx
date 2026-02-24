@@ -5,6 +5,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import Link from 'next/link';
 import type { DocumentVault } from '@/app/lib/documents/types';
 import { logger } from '@/app/lib/logger';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface PassportSelectorProps {
   onSelect: (passportId: string) => void;
@@ -368,23 +369,25 @@ export function PassportSelector({ onSelect, onCancel, isLoading = false, error 
 
       {/* Action buttons */}
       <div className="flex gap-3 pt-4">
-        <button
+        <Button
           type="button"
           onClick={onCancel}
           disabled={isLoading}
-          className="flex-1 px-4 py-2 text-sm font-medium border border-border rounded-md hover:bg-accent transition-colors disabled:opacity-50"
+          variant="outline"
+          className="flex-1"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={handleSelect}
           disabled={!selectedId || isLoading || (selectedId && grantStatus[selectedId] ? !grantStatus[selectedId].hasGrant : false)}
-          className="flex-1 px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary"
+          className="flex-1"
           title={selectedId && grantStatus[selectedId] && !grantStatus[selectedId].hasGrant ? 'Must grant access in Document Vault first' : undefined}
         >
           {isLoading ? 'Verifying...' : 'Select Passport'}
-        </button>
+        </Button>
       </div>
     </div>
   );
