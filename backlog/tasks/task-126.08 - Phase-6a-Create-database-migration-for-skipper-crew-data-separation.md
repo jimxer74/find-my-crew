@@ -1,10 +1,10 @@
 ---
 id: TASK-126.08
 title: 'Phase 6a: Create database migration for skipper/crew data separation'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-23 08:37'
-updated_date: '2026-02-23 08:52'
+updated_date: '2026-02-24 17:33'
 labels: []
 dependencies: []
 references:
