@@ -4,7 +4,7 @@ title: Boat operation and maintenance tool
 status: To Do
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-24 18:06'
+updated_date: '2026-02-24 18:16'
 labels: []
 dependencies: []
 ---
@@ -47,7 +47,11 @@ Below, I detail each section, including what to include, why it's useful, and im
 
 - Data missing: All engine and equipment related, maybe to add generic datamodel for adding boat equipment, with a classification scheme for equipment and modules:  specifics like solar panel setup, watermaker, winches, masts, spars, anchors, electronics, etc.
 Why Include?: Centralizes info often scattered in paper files; useful for quick reference during repairs or crew handovers.
- 
+
+- Ideas using AI: 
+- AI assessment of the equipment and idenification for example common know issues considering the age, running hours, usage etc. 
+- AI image identifcation of equipment and parts, and autogenerate and fill the equipment database / hierarchy without manual typing
+- AI autodiscovery of the equipment specs, documentation, instructions, maintenance documents etc. without need to search them manually from web
 
 - Documentation Vault exits, but it is a user specific not per Boat, option is to extend the Document Value metadata to include a boat_id for which particular documet belongs and create boat specific view on Document vault that displayes only documents for the specific boat.  Upload PDFs/photos of manuals, registration, insurance docs; searchable by keyword.
 
@@ -73,8 +77,6 @@ Engine Log: Track hours run, fuel consumption, RPM logs; calculate efficiency.
 Sail and Rigging Log: Record sail usage (hours per sail), reefing events, line wear; note weather conditions.
 
 Voyage Log: Simple entries for passages—route, duration, weather, conditions,  issues encountered (e.g., "Starboard shroud tension adjusted").
-
-Sensor Integration (Optional Premium): Basic API for connecting to boat instruments (e.g., log engine data automatically via Bluetooth) --> This is for future option
 
 Why Include?: Essential for warranty claims, resale value, and diagnosing issues. Owners often forget to log manually; mobile app makes it easy during watches.
 
