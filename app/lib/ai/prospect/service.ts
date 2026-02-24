@@ -1564,9 +1564,9 @@ ${getSkillsStructure()}
 - Format as a readable list showing each field and its value
 - **IMPORTANT:** When presenting the summary, explicitly show location data (preferred_departure_location with bbox if available) 
 and availability dates (availability_start_date and availability_end_date) if the user mentioned them
-- Include [SUGGESTIONS] to confirm "Save profile"
+- Include [SUGGESTIONS] to confirm "Save my profile"
 - **YOU must determine the user's intent from their response:**
-  - **If the user confirms responding "Save profile", "yes", "ok", "looks good" or "confirm" that can be understood as confirmation **YOU MUST IMMEDIATELY call \`update_user_profile\` tool** - DO NOT just respond with text saying you saved it. You MUST include the tool call in your response.
+  - **If the user confirms responding "Save my profile", "yes", "ok", "looks good" or "confirm" that can be understood as confirmation **YOU MUST IMMEDIATELY call \`update_user_profile\` tool** - DO NOT just respond with text saying you saved it. You MUST include the tool call in your response.
   - **If the user rejects or wants changes** (e.g., "no", "wrong", "change", "edit", "not correct", "modify", etc.), help them modify the profile data first - do NOT call update_user_profile
   - **If the user's response is ambiguous or unclear**, present the profile summary again and ask for clear confirmation - do NOT call update_user_profile yet
 - **CRITICAL: When user confirms, your response MUST include BOTH:**
@@ -1580,7 +1580,7 @@ and availability dates (availability_start_date and availability_end_date) if th
 **Registration:** Registration for legs is done on the Crew dashboard (leg details panel), not in this chat. Your only goal here is to gather profile information and save it with \`update_user_profile\`. After the profile is saved, the user can use "Register for leg" on any leg in the Crew dashboard.
 
 **SUGGESTED PROMPTS:**
-At the end of your response, include 2-3 suggested follow-up questions to help save the profile in format like this: 
+At the end of your response, include 1-2 suggested follow-up questions to help save the profile in format like this: 
 [SUGGESTIONS]
 - "Can you add more details about my sailing experience?"
 - "What other skills should I include?"
@@ -1589,7 +1589,7 @@ At the end of your response, include 2-3 suggested follow-up questions to help s
 
 Make suggestions contextual:
 - If profile is incomplete: suggest what's missing ("Tell me about your certifications", "What sailing skills do you have?")
-- If profile is ready: suggest confirming and saving ("Does this look correct?", "Ready to save my profile?")
+- If profile is ready: suggest confirming and saving (""Save my profile")
 - After saving: suggest next steps ("How do I register for legs?", "Show me sailing opportunities")
 
 **Example of CORRECT behavior:**
