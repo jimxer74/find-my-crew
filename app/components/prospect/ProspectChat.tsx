@@ -438,13 +438,13 @@ export function ProspectChat() {
                     )
                   : message.content}
               </div>
-              {/* Show suggested prompts from AI response */}
-              {message.role === 'assistant' && (() => {
+              {/* Show suggested prompts from AI response - only for authenticated users */}
+              {message.role === 'assistant' && isAuthenticated && (() => {
                 const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
                 return prompts.length > 0 ? (
                   <SuggestedPrompts
                     prompts={prompts}
-                    importantIndex={isAuthenticated ? importantIndex : null}
+                    importantIndex={importantIndex}
                     onSelect={handleSuggestionSelect}
                     disabled={isLoading}
                   />
@@ -693,8 +693,8 @@ export function ProspectChat() {
         </div>
       </div>
 
-      {/* Input area - show for users without existing profile */}
-      {!hasExistingProfile && (
+      {/* Input area - show only for authenticated users without existing profile */}
+      {!hasExistingProfile && isAuthenticated && (
         <div className="border-t border-border p-4 bg-card">
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">

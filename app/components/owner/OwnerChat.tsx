@@ -334,8 +334,8 @@ export default function OwnerChat() {
                         ? removeSuggestionsFromContent(message.content)
                         : message.content}
                     </div>
-                    {/* Show suggested prompts from AI response */}
-                    {message.role === 'assistant' && (() => {
+                    {/* Show suggested prompts from AI response - only for authenticated users */}
+                    {message.role === 'assistant' && isAuthenticated && (() => {
                       const { prompts, importantIndex } = extractSuggestedPrompts(message.content);
                       return prompts.length > 0 ? (
                         <SuggestedPrompts
@@ -537,8 +537,8 @@ export default function OwnerChat() {
         </div>
       )}
 
-      {/* Input area - hidden once onboarding is fully completed */}
-      {!isFullyOnboarded && (
+      {/* Input area - hidden once onboarding is fully completed or user is not authenticated */}
+      {!isFullyOnboarded && isAuthenticated && (
         <div className="border-t border-border bg-card p-4">
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">
