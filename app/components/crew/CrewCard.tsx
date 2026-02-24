@@ -10,8 +10,9 @@
 
 import React from 'react';
 import { Card } from '@/app/components/ui';
-import { User, MapPin, Award, Shield } from 'lucide-react';
+import { User, MapPin, Award, Shield, Check, AlertCircle } from 'lucide-react';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
+import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
 
 interface CrewCardProps {
   id: string;
@@ -23,6 +24,7 @@ interface CrewCardProps {
   location: string;
   matchScore: number; // 0-100
   availability?: string;
+  requiredSkills?: string[]; // Skills searched for - shows matched/missing if provided
   onClick?: (crewId: string) => void;
 }
 
@@ -83,6 +85,7 @@ export default function CrewCard({
   location,
   matchScore,
   availability,
+  requiredSkills,
   onClick,
 }: CrewCardProps) {
   const experienceInfo = getExperienceLevelInfo(experience_level);
@@ -94,7 +97,7 @@ export default function CrewCard({
   return (
     <Card
       className={`
-        relative flex flex-col transition-all duration-200 hover:shadow-md
+        relative flex flex-col flex-grow transition-all duration-200 hover:shadow-md
         ${onClick ? 'cursor-pointer' : ''}
         min-w-[280px] max-w-[320px]
       `}
@@ -173,8 +176,48 @@ export default function CrewCard({
         </div>
       )}
 
-      {/* Skills */}
-      {displaySkills.length > 0 && (
+      {/* Skills - with matching display if requiredSkills provided */}
+      {requiredSkills && requiredSkills.length > 0 ? (
+        // Show matched vs missing skills when search criteria provided
+        (() => {
+          const { matching, missing } = getMatchingAndMissingSkills(skills, requiredSkills);
+          return (
+            <div className="px-4 pb-3">
+              <div className="space-y-2">
+                {/* Matched Skills */}
+                {matching.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {matching.map((skill) => (
+                      <span
+                        key={`matched-${skill}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-300/80 text-green-800 text-xs font-medium rounded border border-green-500"
+                      >
+                        <Check className="w-3 h-3" />
+                        {formatSkillName(skill)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* Missing Skills */}
+                {missing.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {missing.map((skill) => (
+                      <span
+                        key={`missing-${skill}`}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-300/80 text-orange-800 text-xs font-medium rounded border border-orange-600"
+                      >
+                        <AlertCircle className="w-3 h-3" />
+                        {formatSkillName(skill)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()
+      ) : displaySkills.length > 0 ? (
+        // Show basic skill list when no search criteria
         <div className="px-4 pb-3">
           <div className="flex flex-wrap gap-1.5">
             {displaySkills.map((skill) => (
@@ -192,21 +235,12 @@ export default function CrewCard({
             )}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Availability */}
       {availability && (
         <div className="px-4 pb-3 text-sm text-gray-600">
           <span className="font-medium">Available:</span> {availability}
-        </div>
-      )}
-
-      {/* Privacy Notice for Anonymous Users */}
-      {isAnonymous && (
-        <div className="mt-auto border-t border-gray-100 bg-gray-50 px-4 py-2.5 rounded-b-lg">
-          <p className="text-xs text-gray-600 text-center">
-            Sign up to see full profile details
-          </p>
         </div>
       )}
     </Card>

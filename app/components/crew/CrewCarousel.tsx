@@ -25,6 +25,7 @@ interface CrewMember {
   location: string;
   matchScore: number;
   availability?: string;
+  requiredSkills?: string[];
 }
 
 interface CrewCarouselProps {
@@ -33,6 +34,7 @@ interface CrewCarouselProps {
   onCrewClick?: (crewId: string) => void;
   title?: string;
   subtitle?: string;
+  requiredSkills?: string[];
 }
 
 export default function CrewCarousel({
@@ -41,6 +43,7 @@ export default function CrewCarousel({
   onCrewClick,
   title = 'Matching Crew Members',
   subtitle,
+  requiredSkills,
 }: CrewCarouselProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -177,6 +180,7 @@ export default function CrewCarousel({
             <div key={crew.id} className="snap-start flex-shrink-0">
               <CrewCard
                 {...crew}
+                requiredSkills={requiredSkills || crew.requiredSkills}
                 onClick={onCrewClick}
               />
             </div>
