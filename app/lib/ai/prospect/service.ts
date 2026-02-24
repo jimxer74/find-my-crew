@@ -377,44 +377,58 @@ function getSkillsStructure(): string {
 
 /**
  * Normalize risk_level field to ensure it's a proper array
- * Handles: JSON strings, single strings, arrays, null/undefined
+ * Handles: JSON strings, comma-separated strings, single strings, arrays, null/undefined
+ * Examples: ["Coastal sailing"], "Coastal sailing, Offshore sailing", "Coastal sailing"
  */
 function normalizeRiskLevel(value: unknown): string[] | null {
   if (value === null || value === undefined) {
     return null;
   }
-  
-  // If it's already an array, return it
+
+  // If it's already an array, return it (filter out empty strings)
   if (Array.isArray(value)) {
-    return value.filter(v => typeof v === 'string' && v.length > 0);
+    return value
+      .map(v => typeof v === 'string' ? v.trim() : null)
+      .filter((v): v is string => v !== null && v.length > 0);
   }
-  
-  // If it's a string, try to parse as JSON first
+
+  // If it's a string, try to parse as JSON first, then split by comma
   if (typeof value === 'string') {
     const trimmed = value.trim();
-    
+
     // Try parsing as JSON (handles cases like "["Coastal sailing"]")
     if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
       try {
         const parsed = JSON.parse(trimmed);
         if (Array.isArray(parsed)) {
-          return parsed.filter(v => typeof v === 'string' && v.length > 0);
+          return parsed
+            .map(v => typeof v === 'string' ? v.trim() : null)
+            .filter((v): v is string => v !== null && v.length > 0);
         }
         // If parsed to a single value, wrap in array
         if (typeof parsed === 'string') {
-          return [parsed];
+          return [parsed.trim()].filter(v => v.length > 0);
         }
       } catch {
-        // If JSON parsing fails, treat as single string value
+        // If JSON parsing fails, continue to comma-split logic
       }
     }
-    
-    // If not JSON, treat as single string value
+
+    // If not JSON, try splitting by comma (handles "Coastal sailing, Offshore sailing")
+    if (trimmed.includes(',')) {
+      return trimmed
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v.length > 0);
+    }
+
+    // If no comma and not JSON, treat as single string value
     return trimmed.length > 0 ? [trimmed] : null;
   }
-  
+
   // For any other type, convert to string and wrap in array
-  return [String(value)];
+  const str = String(value).trim();
+  return str.length > 0 ? [str] : null;
 }
 
 /**
@@ -1548,10 +1562,11 @@ ${getSkillsStructure()}
 **CRITICAL: AUTO-SAVE ON USER CONFIRMATION**
 - FIRST present a clear summary of ALL extracted profile data
 - Format as a readable list showing each field and its value
-- **IMPORTANT:** When presenting the summary, explicitly show location data (preferred_departure_location with bbox if available) and availability dates (availability_start_date and availability_end_date) if the user mentioned them
-- Ask: "Does this capture your profile correctly? Just say 'yes' or 'ok' and I'll save it for you."
+- **IMPORTANT:** When presenting the summary, explicitly show location data (preferred_departure_location with bbox if available) 
+and availability dates (availability_start_date and availability_end_date) if the user mentioned them
+- Include [SUGGESTIONS] to confirm "Save profile"
 - **YOU must determine the user's intent from their response:**
-  - **If the user confirms** (e.g., "yes", "ok", "sounds good", "correct", "save it", "go ahead", "that's right", "yes, save my profile", etc.), **YOU MUST IMMEDIATELY call \`update_user_profile\` tool** - DO NOT just respond with text saying you saved it. You MUST include the tool call in your response.
+  - **If the user confirms responding "Save profile", "yes", "ok", "looks good" or "confirm" that can be understood as confirmation **YOU MUST IMMEDIATELY call \`update_user_profile\` tool** - DO NOT just respond with text saying you saved it. You MUST include the tool call in your response.
   - **If the user rejects or wants changes** (e.g., "no", "wrong", "change", "edit", "not correct", "modify", etc.), help them modify the profile data first - do NOT call update_user_profile
   - **If the user's response is ambiguous or unclear**, present the profile summary again and ask for clear confirmation - do NOT call update_user_profile yet
 - **CRITICAL: When user confirms, your response MUST include BOTH:**
