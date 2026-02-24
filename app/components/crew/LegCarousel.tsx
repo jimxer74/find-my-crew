@@ -172,7 +172,7 @@ export function LegCarousel({
           onClick={() => scroll('left')}
           variant="outline"
           size="sm"
-          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-5 !p-0"
+          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-5 !p-0 flex-shrink-0"
           aria-label="Scroll left"
         >
           <svg
@@ -224,7 +224,7 @@ export function LegCarousel({
                       }}
                       variant="primary"
                       size="sm"
-                      className="!text-xs"
+                      className="!text-xs flex-shrink-0"
                       title={t('joinLeg')}
                     >
                       <svg
@@ -295,7 +295,7 @@ export function LegCarousel({
             <Button
               onClick={() => router.push(showMoreUrl)}
               variant="outline"
-              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2"
+              className="w-full h-32 sm:h-40 flex flex-col items-center justify-center gap-2 flex-shrink-0"
             >
               <svg
                 className="w-8 h-8"
@@ -344,7 +344,7 @@ export function LegCarousel({
           onClick={() => scroll('right')}
           variant="outline"
           size="sm"
-          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-5 !p-0"
+          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-5 !p-0 flex-shrink-0"
           aria-label="Scroll right"
         >
           <svg
