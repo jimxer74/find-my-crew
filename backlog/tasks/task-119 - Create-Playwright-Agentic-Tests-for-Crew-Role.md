@@ -1,11 +1,11 @@
 ---
 id: TASK-119
 title: Create Playwright Agentic Tests for Crew Role
-status: In Progress
+status: Done
 assignee:
   - claude
 created_date: '2026-02-19 07:07'
-updated_date: '2026-02-19 10:16'
+updated_date: '2026-02-24 17:34'
 labels:
   - Testing
   - Playwright
