@@ -1,9 +1,10 @@
 ---
 id: TASK-131.04
 title: 'SUBTASK 4: URL Import React Component'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-24 11:49'
+updated_date: '2026-02-24 11:51'
 labels: []
 dependencies: []
 parent_task_id: TASK-131
@@ -100,18 +101,37 @@ const [preview, setPreview] = useState<{
 ```
 
 ## Acceptance Criteria
-- [x] Component renders URL input form on initial load
-- [x] User can enter URL and validate format
-- [x] Clicking import calls /api/url-import/fetch-content
-- [x] Loading spinner shows during fetch
-- [x] Success shows preview with content
-- [x] Error shows user-friendly message
-- [x] [Use This Content] calls onSuccess with content + metadata
-- [x] [Skip] calls onSkip callback
-- [x] [Try Another URL] returns to input state
-- [x] Help text explains how to get URLs
-- [x] Responsive design (mobile + desktop)
-- [x] No console errors or warnings
-- [x] Fully typed with TypeScript
-- [x] Uses lucide-react icons consistently
+<!-- AC:BEGIN -->
+- [x] #1 Component renders URL input form on initial load
+- [x] #2 User can enter URL and validate format
+- [x] #3 Clicking import calls /api/url-import/fetch-content
+- [x] #4 Loading spinner shows during fetch
+- [x] #5 Success shows preview with content
+- [x] #6 Error shows user-friendly message
+- [x] #7 [Use This Content] calls onSuccess with content + metadata
+- [x] #8 [Skip] calls onSkip callback
+- [x] #9 [Try Another URL] returns to input state
+- [x] #10 Help text explains how to get URLs
+- [x] #11 Responsive design (mobile + desktop)
+- [x] #12 No console errors or warnings
+- [x] #13 Fully typed with TypeScript
+- [x] #14 Uses lucide-react icons consistently
 <!-- SECTION:DESCRIPTION:END -->
+
+<!-- AC:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+✅ Completed 2026-02-24
+
+- app/components/onboarding/URLImportForm.tsx created
+
+- React component with 3 states: input, loading, preview
+
+- Full responsive UI with error handling
+
+- Success/error flows implemented
+
+- All 14 acceptance criteria met
+<!-- SECTION:NOTES:END -->
