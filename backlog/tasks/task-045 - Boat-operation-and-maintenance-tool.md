@@ -4,7 +4,7 @@ title: Boat operation and maintenance tool
 status: To Do
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-01-28 15:20'
+updated_date: '2026-02-24 18:02'
 labels: []
 dependencies: []
 ---
@@ -39,24 +39,22 @@ Safety and Compliance Features
 Additional Utilities and Settings
 
 Below, I detail each section, including what to include, why it's useful, and implementation ideas tailored to sailboat owners' needs (e.g., handling irregular usage, harsh conditions).
-1. User Setup and Dashboard
-
-Account Creation: Simple sign-up with email/phone; optional social login. Profile includes owner details, emergency contacts.
-Dashboard Overview: Home screen showing quick stats—upcoming maintenance, low inventory alerts, recent logs, boat status (e.g., "Ready for Sail" based on checklists). Visual indicators like color-coded icons (green for good, red for overdue).
-Multi-Boat Support: For owners with multiple vessels; switch between profiles easily.
-Why Include?: Central hub reduces navigation time; helps owners glance at critical info on mobile while at the dock.
+1. Users and Accounts
+- Use the current user and authentication model and auto providers.
 
 2. Boat Profile Management
+- Basic table and data structures are in place, boat data is fetched from external source when created. A local boat_registry database is also available, which will be extended with every new boat added to system
 
-Basic Specs: Input boat model, year, length, engine type (e.g., diesel inboard), rigging details (e.g., sloop rig, mast height), hull material.
-Documentation Storage: Upload PDFs/photos of manuals, registration, insurance docs; searchable by keyword.
-Custom Fields: Add specifics like solar panel setup, watermaker brand.
+- Data missing: All engine and equipment related, maybe to add generic datamodel for adding boat equipment, with a classification scheme for equipment and modules:  specifics like solar panel setup, watermaker, winches, masts, spars, anchors, electronics, etc.
 Why Include?: Centralizes info often scattered in paper files; useful for quick reference during repairs or crew handovers.
+ 
+
+- Documentation Vault exits, but it is a user specific not per Boat, option is to extend the Document Value metadata to include a boat_id for which particular documet belongs and create boat specific view on Document vault that displayes only documents for the specific boat.  Upload PDFs/photos of manuals, registration, insurance docs; searchable by keyword.
 
 3. Inventory and Spare Parts Tracking
 
 Item Database: Categorize by systems—engine (filters, belts), rigging (shackles, lines), electrical (batteries, fuses), safety (flares, life jackets), galley (provisions).
-Tracking Features: Add items with details (quantity, location on boat, purchase date, supplier, cost, expiration if applicable). Barcode/QR scanning for quick entry on mobile.
+Tracking Features: Add items with details (quantity, location on boat, purchase date, supplier, cost, expiration if applicable). Barcode/QR scanning or AI image idenfication for quick entry on mobile.
 Low Stock Alerts: Set thresholds (e.g., notify when oil filters drop below 2).
 Usage Logging: Deduct quantities automatically when used in maintenance tasks.
 Why Include?: Prevents running out of critical spares mid-passage; tracks costs for budgeting. Sailboats often have limited storage, so location tracking avoids frantic searches.
