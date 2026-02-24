@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ThumbsUp } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button/Button';
 
 interface VoteButtonsProps {
   feedbackId: string;
@@ -35,14 +36,16 @@ export function VoteButtons({
   };
 
   return (
-    <button
+    <Button
       onClick={handleVote}
       disabled={disabled || isVoting}
-      className={`flex items-center gap-1 transition-colors ${
+      variant="ghost"
+      size="sm"
+      className={`!p-0 flex items-center gap-1 ${
         hasVoted
-          ? 'text-blue-600 dark:text-blue-400'
-          : 'text-muted-foreground hover:text-foreground'
-      } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          ? '!text-blue-600 dark:!text-blue-400'
+          : '!text-muted-foreground hover:!text-foreground'
+      }`}
       aria-label={hasVoted ? 'Remove like' : 'Like'}
     >
       <ThumbsUp
@@ -54,6 +57,6 @@ export function VoteButtons({
           {upvotes}
         </span>
       )}
-    </button>
+    </Button>
   );
 }

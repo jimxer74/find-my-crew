@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Button } from '@/app/components/ui/Button/Button';
 import { PassportSelector } from './PassportSelector';
 import { PhotoUploadStep } from './PhotoUploadStep';
 
@@ -152,13 +153,14 @@ export function PassportVerificationStep({
                 isLoading={isLoading}
                 error={error}
               />
-              <button
+              <Button
                 type="button"
                 onClick={handlePhotoCancel}
-                className="w-full px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                variant="ghost"
+                className="w-full !text-muted-foreground hover:!text-foreground"
               >
                 ← Back to Passport Selection
-              </button>
+              </Button>
             </div>
           ) : null}
         </div>
