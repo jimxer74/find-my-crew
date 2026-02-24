@@ -8,6 +8,9 @@ import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
 import { formatDate } from '@/app/lib/dateFormat';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { Card } from '@/app/components/ui/Card/Card';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Badge } from '@/app/components/ui/Badge/Badge';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -120,7 +123,7 @@ export function CrewSummaryCard({
   };
 
   return (
-    <div className="bg-card rounded-lg shadow p-6 mb-6 border border-border">
+    <Card className="mb-6">
       {/* Top Row: Avatar, Name, Status */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div className="flex items-start gap-4">
@@ -158,25 +161,32 @@ export function CrewSummaryCard({
         <div className="flex flex-col items-start sm:items-end gap-2">
           {registration.status === 'Pending approval' ? (
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={onApprove}
                 disabled={isUpdating}
-                className="px-4 py-2 bg-green-600 text-white rounded-md text-xs font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="primary"
+                size="sm"
               >
                 {isUpdating ? 'Approving...' : 'Approve'}
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={onDeny}
                 disabled={isUpdating}
-                className="px-4 py-2 bg-red-600 text-white rounded-md text-xs font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                variant="destructive"
+                size="sm"
               >
                 {isUpdating ? 'Denying...' : 'Deny'}
-              </button>
+              </Button>
             </div>
           ) : (
-            <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-medium border ${getStatusBadge(registration.status)}`}>
+            <Badge variant={
+              registration.status === 'Approved' ? 'success' :
+              registration.status === 'Not approved' ? 'error' :
+              registration.status === 'Cancelled' ? 'secondary' :
+              'warning'
+            }>
               {registration.status}
-            </span>
+            </Badge>
           )}
           {registration.auto_approved && (
             <span className="inline-flex items-center gap-1 text-xs text-primary">
@@ -405,6 +415,6 @@ export function CrewSummaryCard({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
