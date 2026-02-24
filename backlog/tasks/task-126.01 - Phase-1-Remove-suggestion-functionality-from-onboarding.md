@@ -1,10 +1,10 @@
 ---
 id: TASK-126.01
 title: 'Phase 1: Remove suggestion functionality from onboarding'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-23 08:37'
-updated_date: '2026-02-23 08:40'
+updated_date: '2026-02-24 17:34'
 labels: []
 dependencies: []
 references:
