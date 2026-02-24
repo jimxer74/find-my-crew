@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { Button } from './Button/Button';
 
 export type DateRange = {
   start: Date | null;
@@ -241,27 +242,31 @@ export function DateRangePicker({
     return (
       <div className="flex flex-col min-w-[280px] w-full sm:w-auto">
         <div className="flex items-center justify-center gap-3 mb-4 sm:mb-5">
-          <button
+          <Button
             onClick={() => navigateMonth('prev')}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
+            variant="ghost"
+            size="sm"
+            className="!p-2 !min-w-[44px] !min-h-[44px] !flex !items-center !justify-center"
             aria-label="Previous month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
+          </Button>
           <div className="font-semibold text-foreground text-sm sm:text-base">
             {monthName} {year}
           </div>
-          <button
+          <Button
             onClick={() => navigateMonth('next')}
-            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
+            variant="ghost"
+            size="sm"
+            className="!p-2 !min-w-[44px] !min-h-[44px] !flex !items-center !justify-center"
             aria-label="Next month"
           >
             <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Button>
         </div>
 
         {/* Weekday headers */}
@@ -286,26 +291,18 @@ export function DateRangePicker({
             const isDisabled = isDateDisabled(day, month);
 
             return (
-              <button
+              <Button
                 key={`${month.getTime()}-${day}`}
                 onClick={() => !isDisabled && handleDateClick(day, month)}
                 disabled={isDisabled}
-                className={`
-                  w-9 h-9 min-w-[36px] min-h-[36px] flex items-center justify-center text-sm rounded-md transition-colors font-medium
-                  ${isDisabled 
-                    ? 'text-muted-foreground/30 cursor-not-allowed' 
-                    : 'hover:bg-accent cursor-pointer active:scale-95'
-                  }
-                  ${isStart || isEnd
-                    ? 'bg-foreground text-background font-semibold shadow-sm'
-                    : isInRange
-                    ? 'bg-muted text-foreground'
-                    : 'text-foreground'
-                  }
-                `}
+                variant={isStart || isEnd ? 'primary' : isInRange ? 'outline' : 'ghost'}
+                size="sm"
+                className={`!w-9 !h-9 !min-w-[36px] !min-h-[36px] !p-0 !text-sm !rounded-md !font-medium ${
+                  isStart || isEnd ? '!shadow-sm' : ''
+                } ${isDisabled ? '!text-muted-foreground/30' : ''}`}
               >
                 {day}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -319,9 +316,11 @@ export function DateRangePicker({
       className={`bg-card border border-border rounded-xl shadow-lg p-4 sm:p-6 relative z-[1] ${className}`}
     >
       {/* Close button */}
-      <button
+      <Button
         onClick={handleCancel}
-        className="absolute top-2 right-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-md transition-colors"
+        className="absolute top-2 right-2 !p-2 !min-w-[44px] !min-h-[44px] !flex !items-center !justify-center"
+        variant="ghost"
+        size="sm"
         aria-label="Close"
       >
         <svg
@@ -335,7 +334,7 @@ export function DateRangePicker({
         >
           <path d="M6 18L18 6M6 6l12 12" />
         </svg>
-      </button>
+      </Button>
 
       {/* Availability label - shown on large screens */}
       <div className="hidden lg:block mb-4 pb-4 border-b border-border">
@@ -356,18 +355,20 @@ export function DateRangePicker({
 
       {/* Save and Cancel buttons */}
       <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 pt-4 border-t border-border">
-        <button
+        <Button
           onClick={handleCancel}
-          className="px-4 py-3 min-h-[44px] text-sm font-medium text-foreground hover:bg-accent rounded-md transition-colors"
+          variant="ghost"
+          className="!px-4 !py-3 !min-h-[44px] !text-sm"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
-          className="px-4 py-3 min-h-[44px] text-sm font-medium text-background bg-foreground hover:opacity-90 rounded-md transition-opacity"
+          variant="primary"
+          className="!px-4 !py-3 !min-h-[44px] !text-sm"
         >
           {isInDialog ? 'Save' : 'Save and Search'}
-        </button>
+        </Button>
       </div>
     </div>
   );
