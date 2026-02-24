@@ -50,14 +50,14 @@ export function URLImportModal({ isOpen, onClose, onSuccess }: URLImportModalPro
 
           {/* Content */}
           <div className="p-6">
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Have a link to your sailing profile, Facebook post, or blog? Paste it below and we'll extract the
               information to help you get started.
             </p>
 
             <URLImportForm
               onSuccess={handleSuccess}
-              onSkip={onClose}
+              onCancel={onClose}
             />
           </div>
         </div>

@@ -666,32 +666,6 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
 
   return (
     <div className={`w-full ${className}`}>
-      {/* URL Import Section */}
-      <div className="mb-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
-          Have an existing profile? Paste the link to auto-fill your information.
-        </p>
-        <button
-          type="button"
-          onClick={() => setShowURLImportModal(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
-        >
-          Paste Link to Profile
-        </button>
-      </div>
-
-      {/* Imported Profile Success Banner */}
-      {importedProfile && (
-        <div className="mb-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-900 dark:text-green-100 font-medium">
-            ✅ Profile imported from {importedProfile.source}
-          </p>
-          <p className="text-xs text-green-800 dark:text-green-300 mt-1">
-            Review the details below and make any changes as needed.
-          </p>
-        </div>
-      )}
-
       <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-0 rounded-xl shadow-lg overflow-hidden">
         <div className="flex divide-x divide-gray-200 dark:divide-gray-700">
           {/* Journey Details Segment */}
@@ -793,6 +767,43 @@ function DesktopOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, i
                   onClick={(e) => {
                     e.stopPropagation();
                     clearSegment('crewRequirements');
+                  }}
+                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
+                  aria-label="Clear"
+                >
+                  <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Paste Profile Link Segment */}
+          <div className="flex-1 min-w-0">
+            <div
+              onClick={() => {
+                setFocusedSegment('importProfile');
+                setShowURLImportModal(true);
+              }}
+              className="w-full h-14 px-4 text-left text-sm text-gray-900 dark:text-gray-100 hover:bg-white/90 dark:hover:bg-gray-800/90 transition-colors flex items-center gap-3 cursor-pointer relative"
+            >
+              <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                {importedProfile ? (
+                  <div className="text-xs text-amber-600 dark:text-amber-400 font-medium truncate">✅ Imported from {importedProfile.source}</div>
+                ) : (
+                  <span className="text-gray-500 dark:text-gray-400">Paste profile link</span>
+                )}
+              </div>
+              {importedProfile && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImportedProfile(null);
                   }}
                   className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex-shrink-0"
                   aria-label="Clear"
@@ -1056,7 +1067,7 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                 </svg>
               </button>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {currentPage === 0 && 'Quick Start'}
+                {currentPage === 0 && 'Paste Profile Link'}
                 {currentPage === 1 && 'Journey Details'}
                 {currentPage === 2 && 'About You (Skipper Profile)'}
                 {currentPage === 3 && 'Crew Requirements'}
@@ -1084,9 +1095,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
                       content,
                       metadata,
                     });
-                    setCurrentPage(1);
-                  }}
-                  onContinueManually={() => {
                     setCurrentPage(1);
                   }}
                 />
