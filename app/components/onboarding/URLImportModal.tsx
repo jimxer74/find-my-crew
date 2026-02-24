@@ -8,6 +8,7 @@
  */
 
 import { X } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button/Button';
 import { URLImportForm } from './URLImportForm';
 
 interface URLImportModalProps {
@@ -39,13 +40,15 @@ export function URLImportModal({ isOpen, onClose, onSuccess }: URLImportModalPro
           {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Import Your Profile</h2>
-            <button
+            <Button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              variant="ghost"
+              size="sm"
+              className="!p-1 flex-shrink-0"
               aria-label="Close modal"
             >
               <X className="w-5 h-5 text-gray-500" />
-            </button>
+            </Button>
           </div>
 
           {/* Content */}

@@ -5,6 +5,7 @@ import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { Button } from "@/app/components/ui/Button/Button";
 import { NotificationItem } from "./NotificationItem";
 import { type Notification } from "@/app/lib/notifications";
 import { useAssistant, parseProfileAction } from "@/app/contexts/AssistantContext";
@@ -193,9 +194,11 @@ export function NotificationCenter({
       {/* Header */}
       <div className="flex-shrink-0 flex items-center px-4 py-3 border-b border-border bg-card">
         {/* Close button - mobile only */}
-        <button
+        <Button
           onClick={onClose}
-          className="md:hidden p-2 -ml-2 mr-2 hover:bg-accent rounded-md transition-colors"
+          variant="ghost"
+          size="sm"
+          className="md:hidden !p-2 !-ml-2 !mr-2 flex-shrink-0"
           aria-label="Close"
         >
           <svg
@@ -211,7 +214,7 @@ export function NotificationCenter({
               d="M6 18L18 6M6 6l12 12"
             />
           </svg>
-        </button>
+        </Button>
         <h2 className="text-lg font-semibold text-foreground">{t("title")}</h2>
       </div>
 
@@ -360,13 +363,14 @@ export function NotificationPageContent({
           {/* Load more button */}
           {hasMore && onLoadMore && (
             <div className="p-3 border-t border-border">
-              <button
+              <Button
                 onClick={onLoadMore}
                 disabled={isLoading}
-                className="w-full py-2 text-sm text-primary hover:text-primary/80 disabled:opacity-50 transition-colors"
+                variant="ghost"
+                className="w-full !text-primary hover:!text-primary/80"
               >
                 {isLoading ? tCommon("loading") : t("loadMore")}
-              </button>
+              </Button>
             </div>
           )}
         </>

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/app/components/ui/Button/Button';
 import type { OwnerPreferences } from '@/app/lib/ai/owner/types';
 
 export type OnboardingStepStatus = 'completed' | 'current' | 'upcoming';
@@ -314,26 +315,29 @@ function OnboardingStepsBar({
           return (
             <React.Fragment key={index}>
               {isClickable ? (
-                <button
+                <Button
                   onClick={onCurrentStepClick}
-                  className={`${textClassName} cursor-pointer hover:underline`}
+                  variant="ghost"
+                  className={`!p-0 !h-auto ${textClassName} hover:!underline`}
+                  rightIcon={
+                    <svg
+                      className="inline-block ml-1 h-3 w-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  }
                   aria-label={`Continue ${step.label}`}
                 >
                   {stepText}
-                  <svg
-                    className="inline-block ml-1 h-3 w-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
+                </Button>
               ) : (
                 <span className={textClassName}>
                   {stepText}
@@ -347,15 +351,16 @@ function OnboardingStepsBar({
         }
         
         // Original circle rendering for homepage/banner variants
-        const wrapperClassName = `flex shrink-0 ${isHomepage ? 'flex-col items-center gap-1 justify-center' : 'items-center gap-1.5 sm:gap-2'} ${isClickable ? 'cursor-pointer group' : ''}`;
-        
+        const wrapperClassName = `!flex !shrink-0 ${isHomepage ? '!flex-col items-center gap-1 justify-center' : 'items-center gap-1.5 sm:gap-2'} ${isClickable ? 'cursor-pointer group' : ''}`;
+
         return (
         <React.Fragment key={index}>
           {isClickable ? (
-            <button
-              className={wrapperClassName}
+            <Button
+              className={`!p-0 !h-auto ${wrapperClassName}`}
               onClick={onCurrentStepClick}
               aria-label={`Continue ${step.label}`}
+              variant="ghost"
             >
             <span
               className={`flex shrink-0 items-center justify-center rounded-full text-sm font-medium transition-all ${
@@ -429,7 +434,7 @@ function OnboardingStepsBar({
                 />
               </svg>
             </span>
-          </button>
+          </Button>
           ) : (
             <div className={wrapperClassName}>
               <span
