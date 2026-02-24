@@ -317,7 +317,7 @@ export default function AllRegistrationsPage() {
                   : 'bg-muted text-foreground hover:bg-muted/80'
               }`}
             >
-              P
+              Pending
             </button>
             <button
               onClick={() => handleStatusFilter('Approved')}
@@ -327,7 +327,7 @@ export default function AllRegistrationsPage() {
                   : 'bg-muted text-foreground hover:bg-muted/80'
               }`}
             >
-              A
+              Approved
             </button>
             <button
               onClick={() => handleStatusFilter('Not approved')}
@@ -337,7 +337,7 @@ export default function AllRegistrationsPage() {
                   : 'bg-muted text-foreground hover:bg-muted/80'
               }`}
             >
-              N
+              Not approved
             </button>
             <button
               onClick={() => handleStatusFilter('Cancelled')}
@@ -347,7 +347,7 @@ export default function AllRegistrationsPage() {
                   : 'bg-muted text-foreground hover:bg-muted/80'
               }`}
             >
-              C
+              Cancelled
             </button>
           </div>
         </div>
