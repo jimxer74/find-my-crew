@@ -13,6 +13,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Button } from '@/app/components/ui/Button/Button';
 import CrewCard from './CrewCard';
 
 interface CrewMember {
@@ -125,40 +126,26 @@ export default function CrewCarousel({
       {/* Carousel Container */}
       <div className="relative group">
         {/* Scroll Left Button - Hidden on mobile, shown on desktop when there's overflow */}
-        <button
+        <Button
           onClick={() => scroll('left')}
-          className="
-            hidden md:flex
-            absolute left-0 top-1/2 -translate-y-1/2 z-10
-            w-10 h-10 items-center justify-center
-            bg-white/90 hover:bg-white
-            border border-gray-300 rounded-full shadow-md
-            opacity-0 group-hover:opacity-100
-            transition-opacity duration-200
-            disabled:opacity-0 disabled:cursor-not-allowed
-          "
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 !p-0"
           aria-label="Scroll left"
         >
-          <ChevronLeft className="w-5 h-5 text-gray-700" />
-        </button>
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
 
         {/* Scroll Right Button */}
-        <button
+        <Button
           onClick={() => scroll('right')}
-          className="
-            hidden md:flex
-            absolute right-0 top-1/2 -translate-y-1/2 z-10
-            w-10 h-10 items-center justify-center
-            bg-white/90 hover:bg-white
-            border border-gray-300 rounded-full shadow-md
-            opacity-0 group-hover:opacity-100
-            transition-opacity duration-200
-            disabled:opacity-0 disabled:cursor-not-allowed
-          "
+          variant="outline"
+          size="sm"
+          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 !p-0"
           aria-label="Scroll right"
         >
-          <ChevronRight className="w-5 h-5 text-gray-700" />
-        </button>
+          <ChevronRight className="w-5 h-5" />
+        </Button>
 
         {/* Scrollable Cards Container */}
         <div
