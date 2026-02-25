@@ -1,13 +1,18 @@
 ---
 id: TASK-045
 title: Boat operation and maintenance tool
-status: To Do
-priority: high
+status: In Progress
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-25 15:00'
-labels: [boat-management, MVP, monorepo, new-module]
-dependencies: [TASK-133]
+updated_date: '2026-02-25 16:10'
+labels:
+  - boat-management
+  - MVP
+  - monorepo
+  - new-module
+dependencies:
+  - TASK-133
+priority: high
 ---
 
 ## Description
@@ -143,19 +148,19 @@ Potential Challenges: Data accuracy (user-input reliant); privacy for shared log
 <!-- SECTION:ACCEPTANCE:END -->
 
 ## Definition of Done
-
+<!-- DOD:BEGIN -->
 <!-- SECTION:DOD:BEGIN -->
-- [ ] Module builds successfully within monorepo (npm run build passes)
-- [ ] All new database tables documented in specs/tables.sql with RLS policies
-- [ ] GDPR account deletion updated for new tables (per CLAUDE.md requirement)
-- [ ] Responsive UI using shared design system (@shared/ui components)
-- [ ] Mobile-friendly interface for on-boat usage
+- [ ] #1 Module builds successfully within monorepo (npm run build passes)
+- [ ] #2 All new database tables documented in specs/tables.sql with RLS policies
+- [ ] #3 GDPR account deletion updated for new tables (per CLAUDE.md requirement)
+- [ ] #4 Responsive UI using shared design system (@shared/ui components)
+- [ ] #5 Mobile-friendly interface for on-boat usage
 <!-- SECTION:DOD:END -->
+<!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-
 ### Monorepo Integration (2026-02-25)
 
 #### Module Location
@@ -395,5 +400,4 @@ These are planned for post-MVP and will leverage @shared/ai infrastructure:
 2. **AI condition assessment** based on age, running hours, usage patterns
 3. **AI auto-discovery** of equipment specs, manuals, and documentation from web
 4. **AI maintenance recommendations** based on equipment profile and usage history
-
 <!-- SECTION:NOTES:END -->
