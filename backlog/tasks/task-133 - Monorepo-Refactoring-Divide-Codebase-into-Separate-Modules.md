@@ -4,7 +4,7 @@ title: 'Monorepo Refactoring: Divide Codebase into Separate Modules'
 status: In Progress
 assignee: []
 created_date: '2026-02-25 07:20'
-updated_date: '2026-02-25 10:50'
+updated_date: '2026-02-25 11:08'
 labels:
   - Architecture
   - Monorepo
@@ -340,4 +340,58 @@ Created comprehensive index.ts exports for shared/components/
 
 **Next Phase - Phase 5: Crew-Matching Module Build-Out**:
 Create complete crew-matching/ module structure and move crew-specific components/api routes/pages there.
+
+## Phase 5 COMPLETE: Move Platform-Wide Components and Libraries to Shared ✅
+
+**Completed: 2026-02-25 13:00**
+
+**Components Moved to shared/components/**:
+- ai/ (8 files): AssistantButton, AssistantChat, AssistantSidebar, ActionFeedback, ChatLegCarousel, TextInputModal, MultiSelectInputModal
+- vault/ (4 files): DocumentCard, DocumentUploadModal, GrantManagementModal, SecureDocumentViewer
+- onboarding/ (5 files): OnboardingSteps, OnboardingStickyBar, URLImportForm, URLImportModal, URLImportWizardPage
+
+**Libraries Moved to shared/lib/**:
+- facebook/ (3 files): graphApi.ts, index.ts, types.ts
+- notifications/ (5 files): service.ts, types.ts, email.ts, index.ts, and tests
+- documents/ (2 files): types.ts, audit.ts
+
+**Import Path Updates**:
+- Updated 50+ files with new @shared/components/* and @shared/lib/* paths
+- Updated API routes and UI components
+- Fixed cross-module imports
+
+**Barrel Export Organization**:
+- Created index.ts files for ai, vault, onboarding
+- Created index.ts for documents and geocoding
+- Updated shared/components/index.ts (now exports 23+ components)
+- Updated shared/lib/index.ts (now exports all platform libraries)
+
+**Cleanup**:
+- Removed old directories from app/components/ and app/lib/
+- Resolved duplicate geocoding definition
+- All 82 pages compile successfully
+
+**Build Status**: ✓ All 82 pages compile (11.0s build time)
+
+**Current Architecture After Phase 5**:
+- **shared/** (170+ files): Complete platform foundation
+  - components/ (5 subdirectories): auth, feedback, notifications, ai, vault, onboarding
+  - lib/ (10+ modules): auth, database, ai, logging, hooks, contexts, boat-registry, documents, facebook, notifications
+  - ui/ (25+ design system components)
+  - types/, utils/, hooks/
+- **app/** (82 pages): Main Next.js app with crew-matching specific pages and routes
+- **crew-matching/** (minimal): lib/matching-service.ts only
+- Path aliases working: @shared/*, @crew-matching/*
+
+**Next Phase - Phase 6: Finalization**:
+- Create complete crew-matching/ module structure (optional - depends on workspaces setup)
+- Set up pnpm/npm workspaces for multi-package build (Phase 5 in original audit)
+- Document monorepo structure and guidelines
+- Optimize build configuration for workspaces
+
+**Summary**:
+Phase 5 successfully consolidated all platform-wide components and libraries into shared/. The codebase now has a clear separation:
+- Shared: Platform features used across multiple apps
+- App: Crew-matching specific features
+- Future: boat-management module can easily be created from Phase 1 audit blueprint
 <!-- SECTION:NOTES:END -->
