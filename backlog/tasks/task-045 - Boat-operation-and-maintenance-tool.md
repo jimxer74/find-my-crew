@@ -4,7 +4,7 @@ title: Boat operation and maintenance tool
 status: To Do
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-25 12:46'
+updated_date: '2026-02-25 14:39'
 labels: []
 dependencies: []
 ---
@@ -49,7 +49,7 @@ Below, I detail each section, including what to include, why it's useful, and im
 - Data missing: All engine and equipment related, maybe to add generic datamodel for adding boat equipment, with a classification scheme for equipment and modules:  specifics like solar panel setup, watermaker, winches, masts, spars, anchors, electronics, etc.
 Why Include?: Centralizes info often scattered in paper files; useful for quick reference during repairs or crew handovers.
 
-- Ideas using AI: 
+- Ideas using AI **Important** These are ideas to further investigate and plan, DO NOT IMPLEMENT these at first.
 - AI assessment of the equipment and idenification for example common know issues considering the age, running hours, usage etc. 
 - AI image identifcation of equipment and parts, and autogenerate and fill the equipment database / hierarchy without manual typing
 - AI autodiscovery of the equipment specs, documentation, instructions, maintenance documents etc. without need to search them manually from web
@@ -72,7 +72,7 @@ Task Details: Step-by-step instructions (editable), required tools/parts, estima
 Completion Logging: Mark as done with notes; auto-link to inventory deductions.
 Why Include?: Sailboats degrade quickly without routine care; this ensures nothing slips through, extending boat life and safety.
 
-5. Operation Logs and Usage Tracking
+5. Voyage, Operation Logs and Usage Tracking
 
 Engine Log: Track hours run, fuel consumption, RPM logs; calculate efficiency.
 Sail and Rigging Log: Record sail usage (hours per sail), reefing events, line wear; note weather conditions.
@@ -120,7 +120,7 @@ Why Include?: Enhances usability; keeps the tool evolving based on user needs.
 
 Implementation Roadmap
 
-MVP (Minimum Viable Product): Start with sections 1-5; launch web version first, then mobile app.
+MVP (Minimum Viable Product): Start with sections 1-4; launch web version first, then mobile app.
 Monetization: Freemium model—basic free, premium for unlimited storage/analytics ($5/month).
 Testing: Beta with sailboat owners; focus on offline reliability.
 Potential Challenges: Data accuracy (user-input reliant); privacy for shared logs.
