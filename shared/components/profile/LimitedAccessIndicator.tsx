@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
+import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
 
 type LimitedAccessIndicatorProps = {
   message?: string;

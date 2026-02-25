@@ -10,8 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { detectResourceType, isValidUrl } from '@/app/lib/url-import/detectResourceType';
-import { fetchResourceContent } from '@/app/lib/url-import/fetchResourceContent';
+import { detectResourceType, isValidUrl } from '@shared/lib/url-import/detectResourceType';
+import { fetchResourceContent } from '@shared/lib/url-import/fetchResourceContent';
 
 // Simple in-memory rate limiting (in production, use Redis)
 const importAttempts = new Map<string, number[]>();

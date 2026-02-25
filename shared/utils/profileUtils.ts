@@ -6,7 +6,7 @@
  * - Profile exists but incomplete → Use available data for matching calculations
  */
 
-import { ProfileData } from '@/app/lib/profile/useProfile';
+import { ProfileData } from '@shared/lib/profile/useProfile';
 
 /**
  * Check if a profile exists (is not null)

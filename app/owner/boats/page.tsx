@@ -11,8 +11,8 @@ import { BoatFormModal } from '@/app/components/manage/BoatFormModal';
 import { NewBoatWizard } from '@/app/components/manage/NewBoatWizard';
 import { FeatureGate } from '@shared/components/auth/FeatureGate';
 import { Footer } from '@/app/components/Footer';
-import { useProfile } from '@/app/lib/profile/useProfile';
-import { checkProfile } from '@/app/lib/profile/checkProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
+import { checkProfile } from '@shared/lib/profile/checkProfile';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 
 export default function BoatsPage() {

@@ -1,4 +1,4 @@
-import { ProfileCreationWizard } from '@/app/components/profile/ProfileCreationWizard';
+import { ProfileCreationWizard } from '@shared/components/profile/ProfileCreationWizard';
 
 export const metadata = {
   title: 'Set Up Your Profile | SailSmart',

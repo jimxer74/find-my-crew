@@ -1,5 +1,5 @@
-import type { ProfileStatus } from '@/app/lib/profile/checkProfile';
-import { hasRole } from '@/app/lib/profile/hasRole';
+import type { ProfileStatus } from '@shared/lib/profile/checkProfile';
+import { hasRole } from '@shared/lib/profile/hasRole';
 
 export type FeatureName = 
   | 'browse_legs_full'

@@ -4,8 +4,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MissingFieldsIndicator } from './MissingFieldsIndicator';
-import { useProfile } from '@/app/lib/profile/useProfile';
-import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
+import { useProfile } from '@shared/lib/profile/useProfile';
+import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
 
 type ProfileCompletionBarProps = {
   showLink?: boolean;

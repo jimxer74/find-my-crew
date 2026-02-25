@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 import { useUserLocation } from '@shared/hooks';
 import {
   LocationRegion,
@@ -13,7 +13,7 @@ import {
   sortRegionsByDistance,
 } from '@shared/lib/geocoding/locations';
 import { CruisingRegionSection } from '@/app/components/crew/CruisingRegionSection';
-import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
+import { ProfileCompletionPrompt } from '@shared/components/profile/ProfileCompletionPrompt';
 import { Footer } from '@/app/components/Footer';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import { LegListItemData } from '@/app/components/crew/LegListItem';

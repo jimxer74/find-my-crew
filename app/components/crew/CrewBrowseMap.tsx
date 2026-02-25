@@ -13,7 +13,7 @@ import { LegList } from './LegList';
 import { LegBrowsePane } from './LegBrowsePane';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@shared/utils';
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@shared/types/cost-models';

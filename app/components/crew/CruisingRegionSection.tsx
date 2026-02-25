@@ -9,7 +9,7 @@ import { LocationRegion } from '@shared/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
 import { calculateMatchPercentage } from '@shared/utils';
-import { ProfileLocation, useProfile } from '@/app/lib/profile/useProfile';
+import { ProfileLocation, useProfile } from '@shared/lib/profile/useProfile';
 import { logger } from '@shared/logging';
 import { hasProfile } from '@shared/utils';
 

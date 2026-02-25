@@ -6,7 +6,7 @@ import { MissingFieldsIndicator } from './MissingFieldsIndicator';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 
 type ProfileCompletionPromptProps = {

@@ -11,7 +11,7 @@ import { Pagination } from '@shared/ui/Pagination';
 import { formatDate } from '@shared/utils';
 import { FeatureGate } from '@shared/components/auth/FeatureGate';
 import { Footer } from '@/app/components/Footer';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 
 export default function JourneysPage() {
   const t = useTranslations('journeys');

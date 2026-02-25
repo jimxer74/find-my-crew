@@ -9,7 +9,7 @@ import { getSupabaseBrowserClient } from '@shared/database/client';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
 import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { LegFormModal } from '@/app/components/manage/LegFormModal';
-import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
+import { ProfileCompletionPrompt } from '@shared/components/profile/ProfileCompletionPrompt';
 import { toGeocode } from '@/app/lib/IGeoCode';
 import { formatDate } from '@shared/utils';
 

@@ -10,8 +10,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { ThemeToggle } from '@shared/ui/ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
-import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
+import { useProfile } from '@shared/lib/profile/useProfile';
 
 type NavigationMenuProps = {
   onOpenLogin?: () => void;

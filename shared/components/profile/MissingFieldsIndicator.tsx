@@ -8,9 +8,9 @@ import {
   calculateProfileCompletion,
   type ProfileDataForCompletion,
   type ProfileFieldStatus,
-} from '@/app/lib/profile/completionCalculator';
-import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
-import { useProfile } from '@/app/lib/profile/useProfile';
+} from '@shared/lib/profile/completionCalculator';
+import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
+import { useProfile } from '@shared/lib/profile/useProfile';
 
 type MissingFieldsIndicatorProps = {
   variant?: 'inline' | 'list' | 'compact';

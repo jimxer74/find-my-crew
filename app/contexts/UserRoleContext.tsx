@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useAuth } from '@/app/contexts/AuthContext';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 
 type UserRolesContextType = {
   userRoles: string[] | null

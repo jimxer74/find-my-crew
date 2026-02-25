@@ -15,13 +15,13 @@ import {
   SailingPreferencesSection,
   ExperienceSkillsSection,
   NotificationsConsentsSection,
-} from '@/app/components/profile/sections';
+} from '@shared/components/profile/sections';
 import skillsConfig from '@/app/config/skills-config.json';
 import {
   calculateProfileCompletion,
   isProfileFieldMissing,
   type ProfileDataForCompletion,
-} from '@/app/lib/profile/completionCalculator';
+} from '@shared/lib/profile/completionCalculator';
 import { type Location } from '@shared/ui/LocationAutocomplete';
 
 type SkillEntry = {

@@ -14,15 +14,15 @@ import { RegistrationSuccessModal } from '@/app/components/crew/RegistrationSucc
 import { PassportVerificationStep } from '@/app/components/crew/PassportVerificationStep';
 import { useAuth } from '@/app/contexts/AuthContext';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
-import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
+import { LimitedAccessIndicator } from '@shared/components/profile/LimitedAccessIndicator';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '@shared/ui/MatchBadge';
 import { CostModelBadge } from '@shared/ui/CostModelBadge';
 import { CostModelIcon } from '@shared/ui/CostModelIcon';
 import { ImageCarousel } from '@shared/ui/ImageCarousel';
 import { matchRiskLevel } from '@shared/utils';
-import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
+import { useProfile } from '@shared/lib/profile/useProfile';
 import { hasProfile } from '@shared/utils';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LoadingButton } from '@shared/ui/LoadingButton';

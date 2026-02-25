@@ -3,9 +3,9 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { hasFeatureAccess, FeatureName } from '@shared/auth';
-import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
+import { LimitedAccessIndicator } from '@shared/components/profile/LimitedAccessIndicator';
 import Link from 'next/link';
-import { useProfile } from '@/app/lib/profile/useProfile';
+import { useProfile } from '@shared/lib/profile/useProfile';
 
 type FeatureGateProps = {
   feature: FeatureName;
