@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { TypeBadge } from '@/app/components/feedback/TypeBadge';
-import { StatusBadge } from '@/app/components/feedback/StatusBadge';
-import { VoteButtons } from '@/app/components/feedback/VoteButtons';
+import { TypeBadge } from '@shared/components/feedback/TypeBadge';
+import { StatusBadge } from '@shared/components/feedback/StatusBadge';
+import { VoteButtons } from '@shared/components/feedback/VoteButtons';
 import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
 
 interface FeedbackDetailPageProps {

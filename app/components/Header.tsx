@@ -10,7 +10,7 @@ import { NavigationMenu } from './NavigationMenu';
 import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
 import { FiltersDialog } from './FiltersDialog';
-import { NotificationBell } from './notifications/NotificationBell';
+import { NotificationBell } from '@shared/components/notifications/NotificationBell';
 import { AssistantButton } from './ai/AssistantButton';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';

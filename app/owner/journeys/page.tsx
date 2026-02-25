@@ -9,7 +9,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { Pagination } from '@shared/ui/Pagination';
 import { formatDate } from '@shared/utils';
-import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { FeatureGate } from '@shared/components/auth/FeatureGate';
 import { Footer } from '@/app/components/Footer';
 import { useProfile } from '@/app/lib/profile/useProfile';
 

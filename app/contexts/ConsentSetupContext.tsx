@@ -4,8 +4,8 @@ import { logger } from '@shared/logging';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';
-import { getSupabaseBrowserClient } from '../lib/supabaseClient';
-import { ConsentSetupModal } from '../components/auth/ConsentSetupModal';
+import { getSupabaseBrowserClient } from '@shared/database/client';
+import { ConsentSetupModal } from '@shared/components/auth/ConsentSetupModal';
 
 // Pages where the consent modal should not be displayed
 const CONSENT_MODAL_EXCLUDED_PATHS = ['/privacy-policy', '/terms-of-service'];

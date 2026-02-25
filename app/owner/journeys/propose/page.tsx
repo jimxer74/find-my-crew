@@ -9,7 +9,7 @@ import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
 import { formatDate, formatDateShort } from '@shared/utils';
 import { Footer } from '@/app/components/Footer';
-import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { FeatureGate } from '@shared/components/auth/FeatureGate';
 import { WorkingIndicator } from '@shared/ui/WorkingIndicator';
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)

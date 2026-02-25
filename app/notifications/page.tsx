@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { NotificationPageContent } from '@/app/components/notifications/NotificationCenter';
+import { NotificationPageContent } from '@shared/components/notifications/NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 

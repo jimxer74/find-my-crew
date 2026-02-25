@@ -3,8 +3,8 @@
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { FeedbackList } from '@/app/components/feedback/FeedbackList';
-import { FeedbackButton } from '@/app/components/feedback/FeedbackButton';
+import { FeedbackList } from '@shared/components/feedback/FeedbackList';
+import { FeedbackButton } from '@shared/components/feedback/FeedbackButton';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 

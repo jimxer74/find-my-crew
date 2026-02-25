@@ -13,7 +13,7 @@ import { ExperienceLevel } from '@shared/types/experience-levels';
 import { normalizeSkillNames } from '@shared/utils';
 import { canCreateJourney } from '@/app/lib/limits';
 import { Footer } from '@/app/components/Footer';
-import { FeatureGate } from '@/app/components/auth/FeatureGate';
+import { FeatureGate } from '@shared/components/auth/FeatureGate';
 
 type JourneyState = 'In planning' | 'Published' | 'Archived';
 
