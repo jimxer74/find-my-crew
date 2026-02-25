@@ -1,6 +1,6 @@
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
-import { updateRegistryDescriptiveFields } from '@/app/lib/boat-registry/service';
+import { updateRegistryDescriptiveFields } from '@shared/lib/boat-registry/service';
 
 /**
  * API route to update descriptive fields (characteristics, capabilities, accommodations)

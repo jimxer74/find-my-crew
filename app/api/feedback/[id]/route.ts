@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { getFeedbackById, updateFeedback, deleteFeedback } from '@/app/lib/feedback/service';
+import { getFeedbackById, updateFeedback, deleteFeedback } from '@shared/lib/feedback/service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

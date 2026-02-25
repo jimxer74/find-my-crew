@@ -9,7 +9,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { FeedbackButton } from '@shared/components/feedback/FeedbackButton';
 import { TypeBadge } from '@shared/components/feedback/TypeBadge';
 import { StatusBadge } from '@shared/components/feedback/StatusBadge';
-import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
+import { type FeedbackWithAuthor } from '@shared/lib/feedback/types';
 
 export default function MyFeedbackPage() {
   const t = useTranslations('feedback');

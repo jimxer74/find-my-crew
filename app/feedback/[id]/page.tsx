@@ -9,7 +9,7 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { TypeBadge } from '@shared/components/feedback/TypeBadge';
 import { StatusBadge } from '@shared/components/feedback/StatusBadge';
 import { VoteButtons } from '@shared/components/feedback/VoteButtons';
-import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
+import { type FeedbackWithAuthor } from '@shared/lib/feedback/types';
 
 interface FeedbackDetailPageProps {
   params: Promise<{ id: string }>;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { getPromptStatus } from '@/app/lib/feedback/service';
+import { getPromptStatus } from '@shared/lib/feedback/service';
 
 /**
  * GET /api/feedback/prompts

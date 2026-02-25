@@ -234,7 +234,7 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
   // Check boat registry first (cache layer)
   try {
     const { lookupBoatRegistry, registryToSailboatDetails, incrementRegistryFetchCount } =
-      await import('@/app/lib/boat-registry/service');
+      await import('@shared/lib/boat-registry/service');
 
     const registryEntry = await lookupBoatRegistry(sailboatQueryStr.trim(), slug);
     if (registryEntry) {
@@ -320,7 +320,7 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     // Save to registry before returning (non-blocking)
     if (details && details.make_model) {
       try {
-        const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+        const { saveBoatRegistry } = await import('@shared/lib/boat-registry/service');
         // Use details.make_model (from parsed HTML) as the canonical name for registry.
         // Use cleanQuery as slug — it is the discovered slug from search, more reliable than the caller-supplied slug param.
         await saveBoatRegistry(details.make_model, details, cleanQuery || slug);

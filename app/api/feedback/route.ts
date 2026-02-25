@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { createFeedback, getFeedbackList } from '@/app/lib/feedback/service';
-import { FeedbackType, FeedbackStatus, isFeedbackType, isFeedbackStatus } from '@/app/lib/feedback/types';
+import { createFeedback, getFeedbackList } from '@shared/lib/feedback/service';
+import { FeedbackType, FeedbackStatus, isFeedbackType, isFeedbackStatus } from '@shared/lib/feedback/types';
 
 /**
  * GET /api/feedback

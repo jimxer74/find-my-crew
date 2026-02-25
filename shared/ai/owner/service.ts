@@ -1200,7 +1200,7 @@ Return ONLY the JSON object, nothing else.`;
           
           // Save merged result to registry so it's not re-fetched next time
           try {
-            const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+            const { saveBoatRegistry } = await import('@shared/lib/boat-registry/service');
             // Extract slug from link_to_specs URL if available (e.g. "https://sailboatdata.com/sailboat/garcia-exploration-60")
             const slugFromLink = mergedResult.link_to_specs
               ? mergedResult.link_to_specs.match(/\/sailboat\/([^\/\?#]+)/)?.[1]
@@ -1572,7 +1572,7 @@ Return ONLY the JSON object, nothing else.`;
         // Update boat_registry with AI-generated fields
         if (boatData.make_model) {
           try {
-            const { saveBoatRegistry } = await import('@/app/lib/boat-registry/service');
+            const { saveBoatRegistry } = await import('@shared/lib/boat-registry/service');
             
             // Prepare boat data for registry (including AI-generated fields)
             const registryBoatData: any = {

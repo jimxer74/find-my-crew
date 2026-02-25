@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Card } from '@shared/ui';
-import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
+import { type FeedbackWithAuthor } from '@shared/lib/feedback/types';
 import { TypeBadge } from './TypeBadge';
 import { StatusBadge } from './StatusBadge';
 import { VoteButtons } from './VoteButtons';

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Modal, Button, Checkbox } from '@shared/ui';
-import { FeedbackType, type CreateFeedbackPayload } from '@/app/lib/feedback/types';
+import { FeedbackType, type CreateFeedbackPayload } from '@shared/lib/feedback/types';
 
 interface FeedbackModalProps {
   isOpen: boolean;

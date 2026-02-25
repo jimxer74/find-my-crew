@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchSailboatDetails } from '@/app/lib/sailboatdata_queries';
-import { lookupBoatRegistry } from '@/app/lib/boat-registry/service';
+import { lookupBoatRegistry } from '@shared/lib/boat-registry/service';
 import { logger } from '@shared/logging';
 
 export async function POST(request: NextRequest) {

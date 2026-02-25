@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
 import { Button } from '@shared/ui/Button/Button';
-import { type CreateFeedbackPayload, type FeedbackType } from '@/app/lib/feedback/types';
+import { type CreateFeedbackPayload, type FeedbackType } from '@shared/lib/feedback/types';
 
 interface FeedbackButtonProps {
   variant?: 'fab' | 'inline' | 'nav';

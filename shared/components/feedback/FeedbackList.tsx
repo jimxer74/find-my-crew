@@ -11,7 +11,7 @@ import {
   type FeedbackFilters,
   getFeedbackTypeLabel,
   getFeedbackStatusLabel,
-} from '@/app/lib/feedback/types';
+} from '@shared/lib/feedback/types';
 import { logger } from '@shared/logging';
 
 interface FeedbackListProps {

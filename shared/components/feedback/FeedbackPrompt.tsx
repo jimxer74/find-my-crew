@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
 import { Button } from '@shared/ui/Button/Button';
-import { type CreateFeedbackPayload, type PromptStatusResponse, FeedbackPromptType } from '@/app/lib/feedback/types';
+import { type CreateFeedbackPayload, type PromptStatusResponse, FeedbackPromptType } from '@shared/lib/feedback/types';
 
 interface FeedbackPromptProps {
   userId?: string;

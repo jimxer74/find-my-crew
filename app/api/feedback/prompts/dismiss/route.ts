@@ -2,7 +2,7 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { dismissPrompt } from '@/app/lib/feedback/service';
+import { dismissPrompt } from '@shared/lib/feedback/service';
 
 /**
  * POST /api/feedback/prompts/dismiss

@@ -2,7 +2,7 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { voteFeedback } from '@/app/lib/feedback/service';
+import { voteFeedback } from '@shared/lib/feedback/service';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

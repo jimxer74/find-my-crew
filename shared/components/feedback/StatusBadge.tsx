@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge } from '@shared/ui';
-import { FeedbackStatus, getFeedbackStatusLabel } from '@/app/lib/feedback/types';
+import { FeedbackStatus, getFeedbackStatusLabel } from '@shared/lib/feedback/types';
 import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 interface StatusBadgeProps {
