@@ -587,7 +587,7 @@ function WelcomePageContent() {
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
-          View map
+          Map
         </Link>
         <button
           onClick={() => setIsLoginModalOpen(true)}
@@ -631,6 +631,7 @@ function WelcomePageContent() {
 
           {/* Use consistent max-width to prevent header shift when ComboSearchBox is focused */}
           <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
+            {/*
             <div className="mb-4">
               <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                 <svg
@@ -654,6 +655,7 @@ function WelcomePageContent() {
                 </svg>
               </div>
             </div>
+            */}
 
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
               {t('crew.title')}
@@ -808,6 +810,7 @@ function WelcomePageContent() {
             )}
 
             <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
+              {/*
               <div className="mb-4">
                 <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
                   <svg
@@ -825,7 +828,7 @@ function WelcomePageContent() {
                   </svg>
                 </div>
               </div>
-
+              */}
               <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
                 {t('owner.title')}
               </h1>

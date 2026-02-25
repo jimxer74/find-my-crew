@@ -459,7 +459,7 @@ function DesktopComboSearchBox({ onSubmit, className = '', onFocusChange, isFocu
           <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          <span className="text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
+          <span className="text-gray-500 truncate">Post your sailing profile...</span>
         </button>
       </div>
     );
@@ -688,7 +688,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
         <svg className="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
         </svg>
-        <span className="text-gray-500 truncate">Search sailing trips by location and your preferences...</span>
+        <span className="text-gray-500 truncate">Post your sailing profile...</span>
       </button>
 
       {/* Mobile Wizard Dialog */}

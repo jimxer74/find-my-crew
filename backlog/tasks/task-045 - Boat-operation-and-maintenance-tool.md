@@ -2,11 +2,12 @@
 id: TASK-045
 title: Boat operation and maintenance tool
 status: To Do
+priority: high
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-25 14:39'
-labels: []
-dependencies: []
+updated_date: '2026-02-25 15:00'
+labels: [boat-management, MVP, monorepo, new-module]
+dependencies: [TASK-133]
 ---
 
 ## Description
@@ -125,3 +126,274 @@ Monetization: Freemium model—basic free, premium for unlimited storage/analyti
 Testing: Beta with sailboat owners; focus on offline reliability.
 Potential Challenges: Data accuracy (user-input reliant); privacy for shared logs.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria (MVP - Sections 1-4)
+
+<!-- SECTION:ACCEPTANCE:BEGIN -->
+- [ ] #1 boat-management/ module created in monorepo with proper structure (components/, lib/) importing from @shared/*
+- [ ] #2 Equipment data model: boat_equipment table with category/subcategory, JSONB specs, parent_id hierarchy, linked to boats table
+- [ ] #3 Document vault extended: boat_id FK added to document_vault, boat-scoped document views and upload working
+- [ ] #4 Boat Profile page: displays boat details + linked equipment hierarchy + boat-specific documents from vault
+- [ ] #5 Equipment CRUD: owners can add/edit/delete equipment items with category classification, specs, photos, and manual/doc links
+- [ ] #6 Inventory tracking: boat_inventory table with quantity, location, purchase date, supplier, cost, expiration; low-stock threshold alerts
+- [ ] #7 Maintenance task library: pre-built templates for common sailboat maintenance (engine, rigging, antifouling, winch servicing, etc.)
+- [ ] #8 Maintenance scheduling: calendar view, recurring tasks (time-based or usage-based), task assignment, completion logging with notes/photos
+- [ ] #9 Maintenance-inventory link: completing a maintenance task auto-deducts linked spare parts from inventory
+- [ ] #10 All new tables have RLS policies, GDPR deletion logic updated, and migrations created in /migrations/
+<!-- SECTION:ACCEPTANCE:END -->
+
+## Definition of Done
+
+<!-- SECTION:DOD:BEGIN -->
+- [ ] Module builds successfully within monorepo (npm run build passes)
+- [ ] All new database tables documented in specs/tables.sql with RLS policies
+- [ ] GDPR account deletion updated for new tables (per CLAUDE.md requirement)
+- [ ] Responsive UI using shared design system (@shared/ui components)
+- [ ] Mobile-friendly interface for on-boat usage
+<!-- SECTION:DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+
+### Monorepo Integration (2026-02-25)
+
+#### Module Location
+
+Create `boat-management/` module in monorepo root (template directory already exists).
+
+**Target Structure:**
+```
+boat-management/
+├── components/
+│   ├── equipment/       # Equipment CRUD, hierarchy tree view
+│   ├── inventory/       # Spare parts tracking UI
+│   ├── maintenance/     # Task scheduling, calendar, completion forms
+│   └── dashboard/       # Main boat management dashboard
+├── lib/
+│   ├── equipment-service.ts
+│   ├── inventory-service.ts
+│   ├── maintenance-service.ts
+│   └── types.ts
+└── index.ts
+```
+
+Pages and API routes live in `app/` (Next.js requirement) but import from `boat-management/`:
+```
+app/owner/boats/[boatId]/          # Boat profile + equipment
+app/owner/boats/[boatId]/inventory # Spare parts
+app/owner/boats/[boatId]/maintenance # Maintenance tasks
+app/api/boat-management/           # API endpoints
+```
+
+#### Shared Infrastructure to Reuse
+
+These modules are ALREADY BUILT in shared/ and must be reused:
+
+| Shared Module | Use in boat-management |
+|---|---|
+| `@shared/auth` | Authentication, role checks, feature access |
+| `@shared/database` | Supabase client/server, error handling |
+| `@shared/ui/*` | Button, Modal, Card, Badge, Input, Select, ImageUpload, etc. |
+| `@shared/components/vault` | DocumentCard, DocumentUploadModal, SecureDocumentViewer |
+| `@shared/components/notifications` | NotificationBell, notification alerts |
+| `@shared/components/ai` | AssistantChat (extend for boat management context later) |
+| `@shared/lib/boat-registry` | Boat spec lookup and caching service |
+| `@shared/lib/documents` | Document types and audit utilities |
+| `@shared/lib/notifications` | Notification service for reminders/alerts |
+| `@shared/lib/limits` | Rate limiting for API endpoints |
+| `@shared/logging` | Structured logging |
+| `@shared/ai` | AI service providers (for future AI features) |
+
+#### Existing Database Tables to Leverage
+
+- **boats** - Boat profile with full sailboat specs (LOA, beam, draft, displacement, sail area, performance ratios, images)
+- **boat_registry** - External boat model spec cache (sailboatdata.com etc.)
+- **document_vault** - Document storage with AI classification (extend with boat_id)
+- **document_access_grants** - Shareable document access (reuse for boat docs)
+- **profiles** - User profiles (boat owner identity)
+- **notifications** - Notification delivery system
+
+---
+
+### Database Schema (New Tables)
+
+#### 1. Equipment Table (`boat_equipment`)
+
+Single table with JSONB specs for flexibility. Parent-child hierarchy via `parent_id`.
+
+```sql
+create table if not exists public.boat_equipment (
+  id            uuid primary key default gen_random_uuid(),
+  boat_id       uuid not null references public.boats(id) on delete cascade,
+  parent_id     uuid references public.boat_equipment(id) on delete set null,
+  name          text not null,
+  category      text not null,     -- engine, rigging, electrical, safety, navigation, plumbing, etc.
+  subcategory   text,              -- e.g. for engine: fuel_system, cooling, alternator, gearbox
+  manufacturer  text,
+  model         text,
+  serial_number text,
+  year_installed int,
+  specs         jsonb default '{}',  -- Flexible: {power_kw, voltage, capacity_liters, running_hours, etc.}
+  notes         text,
+  images        text[] default '{}',
+  status        text default 'active',  -- active, decommissioned, needs_replacement
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+-- RLS: owner of the boat can CRUD, others read-only if boat is public
+```
+
+#### 2. Spare Parts / Inventory (`boat_inventory`)
+
+```sql
+create table if not exists public.boat_inventory (
+  id            uuid primary key default gen_random_uuid(),
+  boat_id       uuid not null references public.boats(id) on delete cascade,
+  equipment_id  uuid references public.boat_equipment(id) on delete set null,
+  name          text not null,
+  category      text not null,
+  quantity      int not null default 0,
+  min_quantity  int default 0,     -- threshold for low-stock alert
+  unit          text,              -- pieces, liters, meters, kg
+  location      text,              -- where on boat: engine_room, lazarette, forepeak, etc.
+  supplier      text,
+  part_number   text,
+  cost          numeric,
+  currency      text default 'EUR',
+  purchase_date date,
+  expiry_date   date,              -- for flares, batteries, medical supplies
+  notes         text,
+  images        text[] default '{}',
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+-- Alert trigger: when quantity <= min_quantity, create notification
+```
+
+#### 3. Maintenance Tasks (`boat_maintenance_tasks`)
+
+Dual-purpose: templates (is_template=true) and scheduled instances.
+
+```sql
+create table if not exists public.boat_maintenance_tasks (
+  id            uuid primary key default gen_random_uuid(),
+  boat_id       uuid not null references public.boats(id) on delete cascade,
+  equipment_id  uuid references public.boat_equipment(id) on delete set null,
+  title         text not null,
+  description   text,
+  category      text not null,     -- routine, seasonal, repair, inspection, safety
+  priority      text default 'medium',  -- low, medium, high, critical
+  status        text default 'pending',  -- pending, in_progress, completed, overdue, skipped
+  is_template   boolean default false,
+  template_id   uuid references public.boat_maintenance_tasks(id),
+  recurrence    jsonb,             -- {type: 'time'|'usage', interval_days: 90, engine_hours: 100}
+  due_date      date,
+  completed_at  timestamptz,
+  completed_by  uuid references auth.users(id),
+  assigned_to   uuid references auth.users(id),
+  estimated_hours numeric,
+  actual_hours  numeric,
+  estimated_cost numeric,
+  actual_cost   numeric,
+  instructions  text,              -- step-by-step guide
+  parts_needed  jsonb default '[]',  -- [{inventory_id, quantity}]
+  notes         text,
+  images_before text[] default '{}',
+  images_after  text[] default '{}',
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+```
+
+#### 4. Document Vault Extension (migration only)
+
+Add optional boat_id to existing document_vault table:
+
+```sql
+alter table public.document_vault
+  add column if not exists boat_id uuid references public.boats(id) on delete set null;
+
+create index if not exists idx_document_vault_boat_id
+  on public.document_vault(boat_id) where boat_id is not null;
+```
+
+This allows: `null boat_id` = personal document, `set boat_id` = boat-specific document.
+
+---
+
+### Equipment Category Taxonomy
+
+```
+Engine & Propulsion:  engine, fuel_system, cooling, gearbox, propeller, alternator, exhaust
+Rigging & Sails:      mast, boom, standing_rigging, running_rigging, winches, sails, furlers
+Electrical:           batteries, solar, wind_generator, shore_power, wiring, inverter, charger
+Navigation:           gps, chartplotter, radar, ais, compass, autopilot, instruments
+Safety:               life_raft, life_jackets, epirb, flares, fire_extinguishers, jacklines
+Plumbing:             freshwater, watermaker, bilge_pumps, heads, holding_tank
+Anchoring:            anchors, chain, windlass
+Hull & Deck:          hull, keel, rudder, hatches, ports, teak_deck
+Electronics:          vhf_radio, ssb, satellite_phone, wifi
+Galley:               stove, oven, refrigeration, provisions
+Comfort:              heating, ventilation, lighting, cushions
+Dinghy & Tender:      dinghy, outboard, davits
+```
+
+---
+
+### MVP Implementation Phases
+
+#### Phase 1: Module Setup + Boat Profile Enhancement
+- Create boat-management/ module structure in monorepo
+- Add boat_equipment table + migration
+- Add boat_id to document_vault + migration
+- Create Boat Profile page with equipment hierarchy view
+- Equipment CRUD (add/edit/delete with category classification)
+- Boat-scoped document vault view (filter by boat_id)
+
+#### Phase 2: Inventory + Spare Parts
+- Add boat_inventory table + migration
+- Inventory list with category filtering and search
+- Add/edit spare parts with all tracking details
+- Low-stock alerts using @shared/lib/notifications
+- Location-on-boat tracking field
+
+#### Phase 3: Maintenance Scheduling
+- Add boat_maintenance_tasks table + migration
+- Task template library with pre-built common sailboat tasks
+- Calendar view for scheduling (due dates, recurring)
+- Recurring task support (time-based: every N days; usage-based: every N engine hours)
+- Task completion with notes, photos, and inventory deduction
+
+#### Phase 4: Integration + Polish
+- Dashboard home screen with status overview (upcoming tasks, low stock, equipment status)
+- Maintenance-inventory auto-deduction on task completion
+- Notification reminders for due maintenance and low stock
+- Mobile-optimized layout for on-boat usage
+- Export functionality (PDF/CSV for reports, insurance, resale)
+
+---
+
+### Post-MVP Features (Sections 5-10)
+
+These sections are defined in the Description above but are NOT part of MVP:
+
+- **Section 5**: Voyage/Operation Logs (engine hours, sail usage, voyage entries)
+- **Section 6**: Checklists (pre-departure, arrival, emergency, seasonal)
+- **Section 7**: Advanced Reminders (weather-linked, escalation)
+- **Section 8**: Reporting & Analytics (trends, budget tracking, forecasting)
+- **Section 9**: Safety & Compliance (certifications, incident reporting, crew sharing)
+- **Section 10**: Utilities (global search, community templates, settings)
+
+---
+
+### AI Features (Future - DO NOT IMPLEMENT in MVP)
+
+These are planned for post-MVP and will leverage @shared/ai infrastructure:
+
+1. **AI equipment identification** from photos (upload photo → auto-fill equipment fields)
+2. **AI condition assessment** based on age, running hours, usage patterns
+3. **AI auto-discovery** of equipment specs, manuals, and documentation from web
+4. **AI maintenance recommendations** based on equipment profile and usage history
+
+<!-- SECTION:NOTES:END -->
