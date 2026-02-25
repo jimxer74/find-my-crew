@@ -98,7 +98,7 @@ export default function MyRegistrationsPage() {
 
       if (profile) {
         // Parse and normalize skills from JSON strings to canonical format
-        const { normalizeSkillNames } = await import('@/app/lib/skillUtils');
+        const { normalizeSkillNames } = await import('@shared/utils');
         const skills = normalizeSkillNames(profile.skills || []);
         
         logger.debug('[MyRegistrations] Loaded user skills (canonical):', { skills });

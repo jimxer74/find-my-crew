@@ -466,7 +466,7 @@ export function LegFormModal({
       };
       
       // Normalize skills to canonical format (snake_case) for storage
-      const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+      const { normalizeSkillNames } = require('@shared/utils');
       
       // Only save skills to leg if journey doesn't have skills defined
       // If journey has skills, they are read-only and not stored in leg table

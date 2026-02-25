@@ -4,7 +4,7 @@
  * Fetches user data from Facebook Graph API using the OAuth access token
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import {
   FacebookProfile,
   FacebookPost,

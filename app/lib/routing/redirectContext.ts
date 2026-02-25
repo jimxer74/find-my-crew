@@ -3,7 +3,7 @@
  * Assembles all required data for redirect logic
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RedirectContext, RedirectSource } from './redirectTypes';
 

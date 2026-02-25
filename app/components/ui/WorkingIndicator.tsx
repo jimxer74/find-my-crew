@@ -1,5 +1,5 @@
 // components/ui/image-skeleton.tsx
-import { cn } from "@/app/lib/utils"; // shadcn/ui helper or your own classNames util
+import { cn } from "@shared/utils"; // shadcn/ui helper or your own classNames util
 
 interface WorkingIndicatorProps {
   className?: string;

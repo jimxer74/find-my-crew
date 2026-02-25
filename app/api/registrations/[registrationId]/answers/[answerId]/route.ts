@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { hasCrewRole } from '@/app/lib/auth/checkRole';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { hasCrewRole } from '@shared/auth';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**

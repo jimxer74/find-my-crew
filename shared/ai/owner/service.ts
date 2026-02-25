@@ -1128,8 +1128,8 @@ async function executeOwnerTools(
 
           // Screenscraping returned null OR missing capabilities/accommodations - use AI fallback
           // If screenscraping succeeded but missing text fields, merge AI results with screenscraping data
-          const { callAI } = await import('@/app/lib/ai/service');
-          const { parseJsonObjectFromAIResponse } = await import('@/app/lib/ai/shared');
+          const { callAI } = await import('@shared/ai');
+          const { parseJsonObjectFromAIResponse } = await import('@shared/ai');
           const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(make_model.trim())}&sort-select&sailboats_per_page=50`;
           const prompt = `You are a sailing expert with comprehensive knowledge of sailboats from www.sailboatdata.com database.
 
@@ -1678,7 +1678,7 @@ Return ONLY the JSON object, nothing else.`;
 
           // Call shared function directly (avoids HTTP self-call which fails in serverless)
           // Use speed planning if speed is available (defaults to true)
-          const { generateJourneyRoute } = await import('@/app/lib/ai/generateJourney');
+          const { generateJourneyRoute } = await import('@shared/ai');
           const journeyResult = await generateJourneyRoute({
             startLocation,
             endLocation,

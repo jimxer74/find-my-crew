@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 // Debug logging helper

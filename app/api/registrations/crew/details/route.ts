@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { hasCrewRole } from '@/app/lib/auth/checkRole';
+import { hasCrewRole } from '@shared/auth';
 import { calculateMatchPercentage } from '@shared/utils';
 import { normalizeSkillNames } from '@shared/utils';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**

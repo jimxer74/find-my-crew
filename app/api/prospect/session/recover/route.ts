@@ -1,4 +1,4 @@
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUnauthenticatedClient } from '@shared/database/server';

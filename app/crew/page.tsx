@@ -36,7 +36,7 @@ export default function CrewHomePage() {
   // Extract user profile data from useProfile hook
   const userSkills = useMemo(() => {
     if (!profile?.skills) return [];
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
     return normalizeSkillNames(profile.skills);
   }, [profile?.skills]);
 

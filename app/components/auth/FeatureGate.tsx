@@ -2,7 +2,7 @@
 
 import { useEffect, useState, ReactNode } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { hasFeatureAccess, FeatureName } from '@/app/lib/auth/featureAccess';
+import { hasFeatureAccess, FeatureName } from '@shared/auth';
 import { LimitedAccessIndicator } from '@/app/components/profile/LimitedAccessIndicator';
 import Link from 'next/link';
 import { useProfile } from '@/app/lib/profile/useProfile';

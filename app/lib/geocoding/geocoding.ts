@@ -4,7 +4,7 @@
  * Server-side geocoding using Mapbox Search Box API for location-based leg searches.
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 
 // Debug logging helper
 const DEBUG = true;

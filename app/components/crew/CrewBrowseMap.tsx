@@ -361,7 +361,7 @@ export function CrewBrowseMap({
     if (profile) {
       // Load skills - keep in canonical format for matching
       if (profile.skills && Array.isArray(profile.skills)) {
-        const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+        const { normalizeSkillNames } = require('@shared/utils');
         const parsedSkills = normalizeSkillNames(profile.skills);
         logger.debug('User skills loaded (canonical)', { count: parsedSkills.length }, true);
         setUserSkills(parsedSkills);

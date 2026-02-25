@@ -1,7 +1,7 @@
 /**
  * Audit logging helper for document vault access events
  */
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DocumentAccessType } from './types';
 

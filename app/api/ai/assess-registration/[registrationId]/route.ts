@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
 import { callAI } from '@shared/ai/service';
-import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { hasOwnerRole } from '@shared/auth';
 import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 // Extend timeout for AI assessment (can take up to 60+ seconds)

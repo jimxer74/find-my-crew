@@ -6,7 +6,7 @@
  * onboarding chat pages instead of the profile page.
  */
 
-import { getSupabaseBrowserClient } from '../supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database';
 
 export type OnboardingSessionType = 'owner' | 'prospect' | null;
 

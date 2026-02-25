@@ -3,11 +3,11 @@
  * Use in API routes and server components
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import { redirectService } from './redirectService';
 import { buildRedirectContext } from './redirectContext';
 import type { RedirectSource, RedirectContext } from './redirectTypes';
-import { getSupabaseServerClient } from '../supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**
@@ -291,7 +291,7 @@ export async function GET(request: NextRequest) {
 
     // Normalize skills to canonical format (handles both display and canonical formats)
     // This ensures compatibility even if migration hasn't been run yet
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
     
     // Transform waypoints from GeoJSON to { lng, lat, name } format
     // Also normalize skills to canonical format

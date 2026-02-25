@@ -3,11 +3,11 @@
  * Use in React components (marked with 'use client')
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import { redirectService } from './redirectService';
 import { buildRedirectContext } from './redirectContext';
 import type { RedirectSource, RedirectContext } from './redirectTypes';
-import { getSupabaseBrowserClient } from '../supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database';
 
 /**
  * Client-side redirect helper

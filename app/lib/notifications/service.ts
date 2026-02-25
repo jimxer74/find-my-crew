@@ -5,7 +5,7 @@
  * Provides CRUD operations for notifications and helper functions.
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   NotificationType,

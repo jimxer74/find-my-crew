@@ -5,7 +5,7 @@
  * If a limit is not configured (env var not set), the check always passes.
  */
 
-import { logger } from '../logger';
+import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { getLimits } from './config';
 import { LimitCheckResult, UserUsage, JourneyUsage, SystemUsage, AIUsage } from './types';

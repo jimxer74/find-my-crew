@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@shared/ai/service';
 import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 export async function POST(request: NextRequest) {

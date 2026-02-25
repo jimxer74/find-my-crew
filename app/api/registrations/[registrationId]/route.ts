@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { hasOwnerRole } from '@/app/lib/auth/checkRole';
+import { hasOwnerRole } from '@shared/auth';
 import {
   notifyRegistrationApproved,
   notifyRegistrationDenied,
   notifyPendingRegistration,
 } from '@/app/lib/notifications';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { hasOwnerRole } from '@/app/lib/auth/checkRole';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { hasOwnerRole } from '@shared/auth';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 const VALID_REQUIREMENT_TYPES = ['risk_level', 'experience_level', 'skill', 'passport', 'question'] as const;

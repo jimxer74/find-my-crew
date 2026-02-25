@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**
@@ -143,7 +143,7 @@ export async function GET(
     }
 
     // Normalize skills to canonical format
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
 
     // Compute effective risk level (leg overrides journey)
     const effectiveRiskLevel = data.risk_level || journeyData?.risk_level || null;

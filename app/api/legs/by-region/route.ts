@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Normalize skills
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
 
     // Transform waypoints from GeoJSON to { lng, lat, name } format
     // Ensure all fields from RPC are preserved, especially journey_risk_level

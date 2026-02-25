@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { hasCrewRole } from '@/app/lib/auth/checkRole';
-import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
+import { hasCrewRole } from '@shared/auth';
+import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 /**
@@ -250,7 +250,7 @@ export async function GET(
     });
 
     // Combine journey and leg skills (remove duplicates)
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
     const journeySkills = normalizeSkillNames(legs.journeys.skills || []);
     const legSkills = normalizeSkillNames(legs.skills || []);
     const combinedSkills = [...new Set([...journeySkills, ...legSkills])].filter(Boolean);

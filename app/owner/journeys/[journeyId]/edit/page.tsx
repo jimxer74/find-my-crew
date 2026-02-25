@@ -218,7 +218,7 @@ export default function EditJourneyPage() {
     }
 
     // Normalize skills to canonical format (snake_case) for storage
-    const { normalizeSkillNames } = require('@/app/lib/skillUtils');
+    const { normalizeSkillNames } = require('@shared/utils');
     const normalizedSkills = normalizeSkillNames(formData.skills || []);
 
     const journeyData = {
