@@ -11,6 +11,7 @@ import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import { ProfileExtractionModal } from './ProfileExtractionModal';
+import { Button } from '@/app/components/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -46,20 +47,21 @@ function SuggestedPrompts({
         {prompts.map((prompt, i) => {
           const isImportant = importantIndex !== null && i === importantIndex;
           return (
-            <button
+            <Button
               key={i}
               type="button"
               onClick={() => handleClick(prompt)}
+              variant={isImportant ? 'primary' : 'outline'}
               disabled={disabled}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-all border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`inline-flex items-center gap-1 !text-xs !px-2.5 !py-1 rounded-full ${
                 isImportant
-                  ? 'text-white bg-primary hover:bg-primary/90 border-primary shadow-md ring-2 ring-primary/30'
-                  : 'text-primary bg-primary/10 hover:bg-primary/20 border-primary/20 disabled:hover:bg-primary/10'
+                  ? '!text-white shadow-md ring-2 ring-primary/30'
+                  : '!text-primary !bg-primary/10 !border-primary/20'
               }`}
               title={`Click to send: ${prompt}`}
             >
               <span className="text-left">{prompt}</span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -92,26 +94,29 @@ function renderMessageWithLegLinks(
     const legName = match[2];
 
     parts.push(
-      <button
+      <Button
         key={`leg-${keyIndex++}`}
         onClick={() => onLegClick(legId, legName)}
-        className="inline-flex items-center gap-1 px-2 py-0.5 text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-full transition-colors font-medium text-sm"
+        variant="outline"
+        className="inline-flex items-center gap-1 !text-sm !px-2 !py-0.5 !text-blue-700 dark:!text-blue-400 !bg-blue-100 dark:!bg-blue-900/30 !border-blue-200 dark:!border-blue-800"
         title={`View ${legName}`}
+        leftIcon={
+          <svg
+            className="w-3.5 h-3.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        }
       >
-        <svg
-          className="w-3.5 h-3.5"
-          fill="none"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
         {legName}
-      </button>
+      </Button>
     );
 
     lastIndex = match.index + match[0].length;
@@ -334,60 +339,69 @@ export function ProspectChat() {
                 </p>
               <div className="mt-4 flex justify-center gap-2">
                 {hasSessionEmail ? (
-                  <button
+                  <Button
                     onClick={() => setShowAuthForm('login')}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                    variant="primary"
+                    size="sm"
+                    leftIcon={
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                      </svg>
+                    }
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
                     Log In
-                  </button>
+                  </Button>
                 ) : (
-                  <button
+                  <Button
                     onClick={() => setShowAuthForm('signup')}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                    variant="primary"
+                    size="sm"
+                    leftIcon={
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    }
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
                     Sign Up
-                  </button>
+                  </Button>
                 )}
                 {hasSessionEmail && (
-                  <button
+                  <Button
                     onClick={() => setShowAuthForm('signup')}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                    variant="outline"
+                    size="sm"
+                    leftIcon={
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    }
                   >
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                    </svg>
                     Create New Account
-                  </button>
+                  </Button>
                 )}
               </div>
               </div>
@@ -457,10 +471,33 @@ export function ProspectChat() {
                           Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
                         </p>
                       )}
-                      <button
+                      <Button
                         onClick={() => setShowAuthForm('login')}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                        variant="primary"
+                        size="sm"
+                        leftIcon={
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                          </svg>
+                        }
                       >
+                        Log in to continue
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => setShowAuthForm('signup')}
+                      variant="primary"
+                      size="sm"
+                      leftIcon={
                         <svg
                           className="w-4 h-4"
                           fill="none"
@@ -470,29 +507,12 @@ export function ProspectChat() {
                           viewBox="0 0 24 24"
                           stroke="currentColor"
                         >
-                          <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                          <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
-                        Log in to continue
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowAuthForm('signup')}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                      }
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
                       Sign up to join
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -543,12 +563,13 @@ export function ProspectChat() {
               </svg>
               <div className="flex-1">
                 <p className="text-sm text-destructive">{error}</p>
-                <button
+                <Button
                   onClick={clearError}
-                  className="text-sm text-muted-foreground hover:text-foreground mt-1"
+                  variant="ghost"
+                  className="!text-sm !p-0 !h-auto !text-muted-foreground !hover:text-foreground mt-1"
                 >
                   Dismiss
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -592,24 +613,26 @@ export function ProspectChat() {
             )}
 
             <div className="mt-4 pt-4 border-t border-primary/20">
-              <button
+              <Button
                 onClick={handleViewJourneys}
+                variant="primary"
                 disabled={isNavigatingToCrew}
-                className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity disabled:opacity-50 shadow-sm"
+                leftIcon={
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                }
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                </svg>
                 View All Journeys
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -633,23 +656,27 @@ export function ProspectChat() {
                 rows={1}
                 className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"
               />
-              <button
+              <Button
                 type="submit"
+                variant="primary"
                 disabled={!inputValue.trim() || isLoading}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+                leftIcon={
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                }
+                className="!p-2 !min-h-[44px]"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-              </button>
+                {' '}
+              </Button>
             </form>
           </div>
         </div>

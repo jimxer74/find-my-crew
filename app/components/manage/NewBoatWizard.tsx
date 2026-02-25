@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { getCountryFlag } from '@/app/lib/country-flags';
 import { NewBoatWizardStep1, WizardStep1Data } from './NewBoatWizardStep1';
 import { NewBoatWizardStep2, WizardStep2Data } from './NewBoatWizardStep2';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type NewBoatWizardProps = {
   isOpen: boolean;
@@ -300,16 +301,20 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold text-foreground">Add New Boat</h1>
-            <button
+            <Button
               onClick={handleClose}
-              className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+              variant="ghost"
+              size="sm"
+              leftIcon={
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              }
+              className="text-muted-foreground hover:text-foreground"
               aria-label="Cancel and go back"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
               <span className="text-sm font-medium">Cancel</span>
-            </button>
+            </Button>
           </div>
         </div>
       </div>

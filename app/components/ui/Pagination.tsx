@@ -1,5 +1,7 @@
 'use client';
 
+import { Button } from '@/app/components/ui/Button/Button';
+
 type PaginationProps = {
   currentPage: number;
   totalPages: number;
@@ -90,14 +92,15 @@ export function Pagination({
       )}
       <div className="flex items-center gap-2">
         {/* Previous button */}
-        <button
+        <Button
           onClick={handlePrevious}
+          variant="outline"
+          size="sm"
           disabled={currentPage === 1}
-          className="px-3 py-2 border border-border rounded-md text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Previous page"
         >
           Previous
-        </button>
+        </Button>
 
         {/* Page numbers */}
         {showPageNumbers && (
@@ -118,33 +121,32 @@ export function Pagination({
               const isActive = pageNum === currentPage;
 
               return (
-                <button
+                <Button
                   key={pageNum}
                   onClick={() => handlePageClick(pageNum)}
-                  className={`px-3 py-2 min-w-[2.5rem] border rounded-md transition-colors ${
-                    isActive
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-foreground hover:bg-accent'
-                  }`}
+                  variant={isActive ? 'primary' : 'outline'}
+                  size="sm"
+                  className="!min-w-[2.5rem]"
                   aria-label={`Go to page ${pageNum}`}
                   aria-current={isActive ? 'page' : undefined}
                 >
                   {pageNum}
-                </button>
+                </Button>
               );
             })}
           </div>
         )}
 
         {/* Next button */}
-        <button
+        <Button
           onClick={handleNext}
+          variant="outline"
+          size="sm"
           disabled={currentPage === totalPages}
-          className="px-3 py-2 border border-border rounded-md text-foreground hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Next page"
         >
           Next
-        </button>
+        </Button>
       </div>
     </div>
   );

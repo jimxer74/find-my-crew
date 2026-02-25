@@ -4,6 +4,7 @@ import { logger } from '@/app/lib/logger';
 import { useState } from 'react';
 import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
 import { getCountryFlag, COUNTRY_CODES } from '@/app/lib/country-flags';
+import { Button } from '@/app/components/ui/Button/Button';
 
 export type WizardStep1Data = {
   boatName: string;
@@ -225,14 +226,14 @@ export function NewBoatWizardStep1({
             placeholder="e.g., Hallberg-Rassy 38"
             className="flex-1 px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
           />
-          <button
+          <Button
             type="button"
             onClick={handleSearch}
             disabled={isSearching || !makeModelInput || makeModelInput.trim().length < 2}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSearching ? (
-              <>
+            variant="primary"
+            size="sm"
+            leftIcon={
+              isSearching ? (
                 <svg
                   className="animate-spin h-4 w-4"
                   xmlns="http://www.w3.org/2000/svg"
@@ -253,10 +254,7 @@ export function NewBoatWizardStep1({
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                <span className="hidden sm:inline">Searching...</span>
-              </>
-            ) : (
-              <>
+              ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
@@ -265,10 +263,15 @@ export function NewBoatWizardStep1({
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-                <span className="hidden sm:inline">Search</span>
-              </>
+              )
+            }
+          >
+            {isSearching ? (
+              <span className="hidden sm:inline">Searching...</span>
+            ) : (
+              <span className="hidden sm:inline">Search</span>
             )}
-          </button>
+          </Button>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Search sailboatdata.com for your boat's specifications
@@ -360,21 +363,24 @@ export function NewBoatWizardStep1({
 
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-4 border-t border-border">
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          variant="outline"
+          size="sm"
+          className="!text-sm"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onNext}
           disabled={!canProceed || isLoading}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex items-center gap-2"
-        >
-          {isLoading ? (
-            <>
+          variant="primary"
+          size="sm"
+          className="!text-sm"
+          leftIcon={
+            isLoading ? (
               <svg
                 className="animate-spin h-4 w-4"
                 xmlns="http://www.w3.org/2000/svg"
@@ -395,22 +401,21 @@ export function NewBoatWizardStep1({
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              Loading...
-            </>
-          ) : (
-            <>
-              Next
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </>
+            ) : undefined
+          }
+        >
+          {isLoading ? 'Loading...' : 'Next'}
+          {!isLoading && (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

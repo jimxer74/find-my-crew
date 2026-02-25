@@ -2,6 +2,7 @@
 
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { type Location } from '@/app/components/ui/LocationAutocomplete';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type SkillEntry = {
   skill_name: string;
@@ -134,17 +135,19 @@ export function PersonalInfoSection({
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover border-4 border-border"
               />
-              <button
+              <Button
                 type="button"
                 onClick={removeProfileImage}
-                className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-2 min-w-[44px] min-h-[44px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                variant="destructive"
+                size="sm"
+                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg !p-2 !min-w-[44px] !min-h-[44px]"
                 aria-label="Remove profile image"
                 title="Remove profile image"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="w-32 h-32 rounded-full border-4 border-dashed border-border flex items-center justify-center bg-muted">

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { useTheme } from '@/app/contexts/ThemeContext';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -186,13 +187,14 @@ export function RiskLevelSelector({
       </label>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 md:gap-2 auto-rows-fr items-start">
         {/* Coastal sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => handleClick('Coastal sailing')}
-          className={`relative p-2 md:p-2 border-2 rounded-lg bg-card transition-all flex flex-col items-start  ${
+          variant="outline"
+          className={`relative !p-2 md:!p-2 !border-2 rounded-lg !bg-card !flex !flex-col !items-start !h-auto !justify-start ${
             isSelected('Coastal sailing')
-              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
-              : 'border-border hover:border-primary/50 hover:bg-accent/50'
+              ? '!border-primary !bg-primary/10 !shadow-md !ring-2 !ring-primary/20'
+              : '!border-border hover:!border-primary/50 hover:!bg-accent/50'
           }`}
         >
           {isProfileValue('Coastal sailing') && (
@@ -222,16 +224,17 @@ export function RiskLevelSelector({
               </h3>
             </div>
           </div>
-        </button>
+        </Button>
 
         {/* Offshore sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => handleClick('Offshore sailing')}
-          className={`relative p-2 md:p-2 border-2 rounded-lg bg-card transition-all flex flex-col items-start ${
+          variant="outline"
+          className={`relative !p-2 md:!p-2 !border-2 rounded-lg !bg-card !flex !flex-col !items-start !h-auto !justify-start ${
             isSelected('Offshore sailing')
-              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
-              : 'border-border hover:border-primary/50 hover:bg-accent/50'
+              ? '!border-primary !bg-primary/10 !shadow-md !ring-2 !ring-primary/20'
+              : '!border-border hover:!border-primary/50 hover:!bg-accent/50'
           }`}
         >
           {isProfileValue('Offshore sailing') && (
@@ -260,16 +263,17 @@ export function RiskLevelSelector({
               </h3>
             </div>
           </div>
-        </button>
+        </Button>
 
         {/* Extreme sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => handleClick('Extreme sailing')}
-          className={`relative p-2 md:p-2 border-2 rounded-lg bg-card transition-all flex flex-col items-start ${
+          variant="outline"
+          className={`relative !p-2 md:!p-2 !border-2 rounded-lg !bg-card !flex !flex-col !items-start !h-auto !justify-start ${
             isSelected('Extreme sailing')
-              ? 'border-primary bg-primary/10 shadow-md ring-2 ring-primary/20'
-              : 'border-border hover:border-primary/50 hover:bg-accent/50'
+              ? '!border-primary !bg-primary/10 !shadow-md !ring-2 !ring-primary/20'
+              : '!border-border hover:!border-primary/50 hover:!bg-accent/50'
           }`}
         >
           {isProfileValue('Extreme sailing') && (
@@ -298,7 +302,7 @@ export function RiskLevelSelector({
             </h3>
           </div>
           </div>
-        </button>
+        </Button>
       </div>
     </div>
   );

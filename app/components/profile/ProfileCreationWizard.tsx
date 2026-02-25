@@ -8,6 +8,7 @@ import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
 import { ExperienceLevel } from '@/app/types/experience-levels';
 import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type WizardStep = 'loading' | 'consent' | 'fetching' | 'analyzing' | 'review' | 'saving' | 'complete' | 'error';
 
@@ -343,21 +344,23 @@ export function ProfileCreationWizard() {
         </div>
 
         <div className="flex gap-3">
-          <button
+          <Button
             onClick={() => {
               setAiConsent(false);
               setStep('review');
             }}
-            className="flex-1 px-4 py-3 border border-border rounded-md text-foreground hover:bg-accent transition-colors"
+            variant="outline"
+            className="flex-1"
           >
             Skip, I&apos;ll fill manually
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleConsentSubmit}
-            className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-colors"
+            variant="primary"
+            className="flex-1"
           >
             Continue
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -379,12 +382,13 @@ export function ProfileCreationWizard() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         <p className="text-foreground font-medium">Analyzing your profile with AI...</p>
         <p className="text-muted-foreground text-sm">Looking for sailing-related content</p>
-        <button
+        <Button
           onClick={handleSkipToManual}
-          className="mt-4 text-sm text-primary hover:underline"
+          variant="ghost"
+          className="mt-4 !text-primary !p-0 !h-auto"
         >
           Skip and fill manually
-        </button>
+        </Button>
       </div>
     );
   }
@@ -422,12 +426,12 @@ export function ProfileCreationWizard() {
         </div>
         <h2 className="text-xl font-bold text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground">{error}</p>
-        <button
+        <Button
           onClick={() => setStep('review')}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:opacity-90"
+          variant="primary"
         >
           Try again
-        </button>
+        </Button>
       </div>
     );
   }
@@ -543,14 +547,16 @@ export function ProfileCreationWizard() {
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="text-xs text-muted-foreground">Alternatives:</span>
                 {suggestion.usernameAlternatives.map((alt) => (
-                  <button
+                  <Button
                     key={alt}
                     type="button"
                     onClick={() => handleUsernameChange(alt)}
-                    className="text-xs px-2 py-1 bg-muted rounded hover:bg-accent transition-colors"
+                    variant="outline"
+                    size="sm"
+                    className="!text-xs !px-2 !py-1"
                   >
                     {alt}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -637,19 +643,21 @@ export function ProfileCreationWizard() {
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <button
+        <Button
           onClick={() => router.push('/')}
-          className="flex-1 px-4 py-3 border border-border rounded-md text-foreground hover:bg-accent transition-colors"
+          variant="outline"
+          className="flex-1"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSaveProfile}
+          variant="primary"
           disabled={!formData.username || formData.roles.length === 0}
-          className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1"
         >
           Save Profile
-        </button>
+        </Button>
       </div>
     </div>
   );

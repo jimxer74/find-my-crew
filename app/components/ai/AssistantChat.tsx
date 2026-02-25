@@ -13,6 +13,7 @@ import { MultiSelectInputModal } from './MultiSelectInputModal';
 import { ChatLegCarousel } from './ChatLegCarousel';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
+import { Button } from '@/app/components/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -43,27 +44,30 @@ function SuggestedPrompts({
       <p className="text-xs text-muted-foreground mb-2 font-medium">Try asking:</p>
       <div className="flex flex-wrap gap-2">
         {prompts.map((prompt, i) => (
-          <button
+          <Button
             key={i}
             type="button"
             onClick={() => handleClick(prompt)}
+            variant="outline"
             disabled={disabled}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 hover:shadow-sm active:bg-primary/25 rounded-lg transition-all border border-primary/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary/10"
+            className="!bg-primary/10 !border-primary/20 !text-primary !text-sm"
             title={`Click to send: ${prompt}`}
+            leftIcon={
+              <svg
+                className="w-3.5 h-3.5 flex-shrink-0"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+              </svg>
+            }
           >
-            <svg
-              className="w-3.5 h-3.5 flex-shrink-0"
-              fill="none"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-            </svg>
             <span className="text-left">{prompt}</span>
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -106,72 +110,81 @@ function renderMessageWithLegLinks(
       const path = legId; // In this case, legId contains the path
       const label = legName; // And legName contains the button label
       parts.push(
-        <button
+        <Button
           key={`close-${keyIndex++}`}
           onClick={() => onCloseAndRedirect?.(path)}
-          className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2.5 text-white bg-primary hover:bg-primary/90 rounded-lg transition-colors font-medium text-sm shadow-sm"
+          variant="primary"
+          className="mt-3 w-full !text-white !shadow-sm"
           title={label}
+          leftIcon={
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          }
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M5 12h14M12 5l7 7-7 7" />
-          </svg>
           {label}
-        </button>
+        </Button>
       );
     } else if (type === 'register') {
       // Registration questions badge
       parts.push(
-        <button
+        <Button
           key={`register-${keyIndex++}`}
           onClick={() => onRegisterClick(legId)}
-          className="inline-flex items-center gap-1 px-2 py-0.5 text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 rounded-full transition-colors font-medium text-sm"
+          variant="outline"
+          className="inline-flex items-center gap-1 !px-2 !py-0.5 !text-emerald-700 dark:!text-emerald-300 !bg-emerald-100 dark:!bg-emerald-900/40 !border-emerald-200 dark:!border-emerald-800 !text-sm"
           title={`Register for ${legName}`}
+          leftIcon={
+            <svg
+              className="w-3.5 h-3.5"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          }
         >
-          <svg
-            className="w-3.5 h-3.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
           Register: {legName}
-        </button>
+        </Button>
       );
     } else {
       // Regular leg link - hide on mobile if hideLegBadgesOnMobile is true
       parts.push(
-        <button
+        <Button
           key={`leg-${keyIndex++}`}
           onClick={() => onLegClick(legId)}
-          className={`inline-flex items-center gap-1 px-2 py-0.5 text-blue-200 dark:text-blue-300 bg-blue-800 dark:bg-blue-500/40 hover:bg-blue-500 dark:hover:bg-blue-800/50 rounded-full transition-colors font-medium text-sm cursor-pointer ${hideLegBadgesOnMobile ? 'hidden md:inline-flex' : ''}`}
+          variant="outline"
+          className={`inline-flex items-center gap-1 !px-2 !py-0.5 !text-blue-200 dark:!text-blue-300 !bg-blue-800 dark:!bg-blue-500/40 !border-blue-600 dark:!border-blue-700 !text-sm cursor-pointer ${hideLegBadgesOnMobile ? 'hidden md:inline-flex' : ''}`}
           title={`View ${legName}`}
+          leftIcon={
+            <svg
+              className="w-3 h-3"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          }
         >
-          <svg
-            className="w-3 h-3"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
           {legName}
-        </button>
+        </Button>
       );
     }
 
@@ -202,29 +215,33 @@ function getContextAwareSuggestions(userRoles: string[] | null, sendMessage: (me
   }
 
   if(userRoles.includes('crew')) {
-      return ([<button key="findMatchingJourneys"
+      return ([<Button key="findMatchingJourneys"
         onClick={() => sendMessage("Show me sailing opportunities that match my profile")}
-        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+        variant="outline"
+        className="!bg-primary/10 !border-primary/20 !text-primary !text-sm !px-3 !py-1.5 rounded-full"
       >
         {t('findMatchingJourneys')}
-      </button>, <button key="findByDepartureLocation"
+      </Button>, <Button key="findByDepartureLocation"
         onClick={() => sendMessage("I would like to find sailing trips departing from:")}
-        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+        variant="outline"
+        className="!bg-primary/10 !border-primary/20 !text-primary !text-sm !px-3 !py-1.5 rounded-full"
       >
         {t('findByDepartureLocation')}
-      </button>])
+      </Button>])
     } else if(userRoles.includes('owner')) {
-      return ([<button key="createJourney"
+      return ([<Button key="createJourney"
         onClick={() => sendMessage("Create a new journey")}
-        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+        variant="outline"
+        className="!bg-primary/10 !border-primary/20 !text-primary !text-sm !px-3 !py-1.5 rounded-full"
       >
         {t('createJourney')}
-      </button>, <button key="addBoat"
+      </Button>, <Button key="addBoat"
         onClick={() => sendMessage("Add a new boat")}
-        className="px-3 py-1.5 text-sm bg-primary/10 hover:bg-primary/20 text-primary rounded-full transition-colors"
+        variant="outline"
+        className="!bg-primary/10 !border-primary/20 !text-primary !text-sm !px-3 !py-1.5 rounded-full"
       >
         {t('addBoat')}
-      </button>])
+      </Button>])
   }
   return [];
 }
@@ -595,23 +612,29 @@ export function AssistantChat() {
                 {/* Action buttons */}
                 <div className="flex items-center gap-2 mt-3">
                   {errorDetails?.canRetry && (
-                    <button
+                    <Button
                       onClick={() => retryLastMessage()}
+                      variant="outline"
+                      size="sm"
                       disabled={isLoading}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors disabled:opacity-50"
+                      className="!bg-primary/10 !border-primary/20 !text-primary"
+                      leftIcon={
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      }
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
                       Try Again
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button
                     onClick={() => clearError()}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                    variant="ghost"
+                    size="sm"
+                    className="!text-muted-foreground !hover:text-foreground"
                   >
                     Dismiss
-                  </button>
+                  </Button>
                 </div>
 
                 {/* Retry timer hint for rate limits */}
@@ -642,23 +665,27 @@ export function AssistantChat() {
               rows={1}
               className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"
             />
-            <button
+            <Button
               type="submit"
+              variant="primary"
               disabled={!inputValue.trim() || isLoading}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[44px]"
+              className="!p-2 !min-h-[44px]"
+              leftIcon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              }
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
+              {' '}
+            </Button>
           </form>
         </div>
       )}

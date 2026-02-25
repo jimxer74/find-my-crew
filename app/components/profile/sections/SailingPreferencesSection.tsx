@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
 import { LocationAutocomplete, type Location } from '@/app/components/ui/LocationAutocomplete';
 import { ExperienceLevel } from '@/app/types/experience-levels';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type SkillEntry = {
   skill_name: string;
@@ -108,16 +109,18 @@ export function SailingPreferencesSection({
                 Preferred Departure
               </label>
               {formData.preferred_departure_location && (
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     setFormData(prev => ({ ...prev, preferred_departure_location: null }));
                     setDepartureInput('');
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  variant="ghost"
+                  size="sm"
+                  className="!text-xs !h-auto !p-0 text-muted-foreground hover:text-foreground"
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
             <LocationAutocomplete
@@ -144,16 +147,18 @@ export function SailingPreferencesSection({
                 Preferred Arrival
               </label>
               {formData.preferred_arrival_location && (
-                <button
+                <Button
                   type="button"
                   onClick={() => {
                     setFormData(prev => ({ ...prev, preferred_arrival_location: null }));
                     setArrivalInput('');
                   }}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  variant="ghost"
+                  size="sm"
+                  className="!text-xs !h-auto !p-0 text-muted-foreground hover:text-foreground"
                 >
                   Clear
-                </button>
+                </Button>
               )}
             </div>
             <LocationAutocomplete

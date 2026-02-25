@@ -4,6 +4,7 @@ import { logger } from '@/app/lib/logger';
 import { useEffect, useState } from 'react';
 import { toDisplaySkillName, toCanonicalSkillName } from '@/app/lib/skillUtils';
 import skillsConfig from '@/app/config/skills-config.json';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 
@@ -448,17 +449,21 @@ export function RequirementsManager({ journeyId, journeySkills: passedJourneySki
           <p className="text-xs font-medium text-muted-foreground mb-2">Add Requirement:</p>
           <div className="flex flex-wrap gap-2">
             {availableTypes.map((type) => (
-              <button
+              <Button
                 key={type}
                 type="button"
                 onClick={() => handleStartAdd(type)}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs border border-border rounded-md hover:bg-accent transition-colors"
+                variant="outline"
+                size="sm"
+                leftIcon={
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                }
+                className="!text-xs"
               >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
                 {REQUIREMENT_TYPE_LABELS[type]}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -557,21 +562,25 @@ function RequirementDisplay({
       <div className="flex gap-2 ml-4">
         {/* Only show Edit for types with editable fields */}
         {(type === 'question' || type === 'skill' || type === 'passport') && (
-          <button
+          <Button
             type="button"
             onClick={onEdit}
-            className="text-xs text-primary hover:underline"
+            variant="ghost"
+            size="sm"
+            className="!text-xs !h-auto !p-0 !text-primary hover:!underline"
           >
             Edit
-          </button>
+          </Button>
         )}
-        <button
+        <Button
           type="button"
           onClick={onDelete}
-          className="text-xs text-destructive hover:underline"
+          variant="ghost"
+          size="sm"
+          className="!text-xs !h-auto !p-0 !text-destructive hover:!underline"
         >
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -733,20 +742,24 @@ function RequirementForm({ requirement, onChange, onSave, onCancel, journeySkill
       )}
 
       <div className="flex gap-2 justify-end">
-        <button
+        <Button
           type="button"
           onClick={onCancel}
-          className="px-3 py-1 text-sm border border-border rounded hover:bg-accent"
+          variant="outline"
+          size="sm"
+          className="!text-sm"
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={onSave}
-          className="px-3 py-1 text-sm bg-primary text-primary-foreground rounded hover:opacity-90"
+          variant="primary"
+          size="sm"
+          className="!text-sm"
         >
           Save
-        </button>
+        </Button>
       </div>
     </div>
   );

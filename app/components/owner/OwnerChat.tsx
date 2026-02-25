@@ -8,6 +8,7 @@ import { OwnerMessage, PendingAction } from '@/app/lib/ai/owner/types';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import CrewCarousel from '@/app/components/crew/CrewCarousel';
+import { Button } from '@/app/components/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
@@ -42,20 +43,20 @@ function SuggestedPrompts({
         {prompts.map((prompt, i) => {
           const isImportant = importantIndex !== null && i === importantIndex;
           return (
-            <button
+            <Button
               key={i}
               type="button"
               onClick={() => handleClick(prompt)}
               disabled={disabled}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full transition-all border cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
-                isImportant
-                  ? 'text-white bg-primary hover:bg-primary/90 border-primary shadow-md ring-2 ring-primary/30'
-                  : 'text-primary bg-primary/10 hover:bg-primary/20 border-primary/20 disabled:hover:bg-primary/10'
+              variant={isImportant ? 'primary' : 'outline'}
+              size="sm"
+              className={`!text-xs !px-2.5 !py-1 !rounded-full !inline-flex !gap-1 ${
+                isImportant ? '!shadow-md !ring-2 !ring-primary/30' : '!border-primary/20 !bg-primary/10 hover:!bg-primary/20 !text-primary'
               }`}
               title={`Click to send: ${prompt}`}
             >
               <span className="text-left">{prompt}</span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -84,20 +85,24 @@ function PendingActionCard({
           {action.label || `Approve ${action.toolName}?`}
         </p>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={onApprove}
             disabled={disabled}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-primary hover:bg-primary/90 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="primary"
+            size="sm"
+            className="!text-xs"
           >
             Approve
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={onCancel}
             disabled={disabled}
-            className="px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-md transition-colors disabled:opacity-50"
+            variant="ghost"
+            size="sm"
+            className="!text-xs"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -146,10 +151,11 @@ function IntermediateMessageCard({
 
   return (
     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
-      <button
+      <Button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 text-left"
+        variant="ghost"
+        className="!w-full !justify-between !text-left !p-0 !h-auto !px-3 !py-2 rounded-none"
       >
         <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
           AI Reasoning
@@ -157,7 +163,7 @@ function IntermediateMessageCard({
         <span className="text-blue-500 dark:text-blue-400 text-xs leading-none">
           {open ? '▲' : '▼'}
         </span>
-      </button>
+      </Button>
       {open && (
         <div className="px-3 pb-3 text-xs whitespace-pre-wrap break-words text-blue-900 dark:text-blue-100 border-t border-blue-200 dark:border-blue-800 pt-2">
           {content}
@@ -274,35 +280,43 @@ export default function OwnerChat() {
                 <div className="flex justify-center gap-2 mt-4">
                   {/* Show primary action based on whether session already has known email */}
                   {hasSessionEmail ? (
-                    <button
+                    <Button
                       onClick={() => setIsLoginModalOpen(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
+                      variant="primary"
+                      size="sm"
+                      className="!text-sm"
                     >
                       Log In to Continue
-                    </button>
+                    </Button>
                   ) : (
-                    <button
+                    <Button
                       onClick={() => setIsSignupModalOpen(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
+                      variant="primary"
+                      size="sm"
+                      className="!text-sm"
                     >
                       Sign Up
-                    </button>
+                    </Button>
                   )}
                   {/* Show secondary action */}
                   {hasSessionEmail ? (
-                    <button
+                    <Button
                       onClick={() => setIsSignupModalOpen(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                      variant="outline"
+                      size="sm"
+                      className="!text-sm"
                     >
                       Create New Account
-                    </button>
+                    </Button>
                   ) : (
-                    <button
+                    <Button
                       onClick={() => setIsLoginModalOpen(true)}
-                      className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                      variant="outline"
+                      size="sm"
+                      className="!text-sm"
                     >
                       Log In
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}
@@ -381,10 +395,35 @@ export default function OwnerChat() {
                                 Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
                               </p>
                             )}
-                            <button
+                            <Button
                               onClick={() => setIsLoginModalOpen(true)}
-                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                              variant="primary"
+                              size="sm"
+                              className="!text-sm"
+                              leftIcon={
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                </svg>
+                              }
                             >
+                              Log In to Continue
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            onClick={() => setIsSignupModalOpen(true)}
+                            variant="primary"
+                            size="sm"
+                            className="!text-sm"
+                            leftIcon={
                               <svg
                                 className="w-4 h-4"
                                 fill="none"
@@ -394,29 +433,12 @@ export default function OwnerChat() {
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
                               >
-                                <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                               </svg>
-                              Log In to Continue
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setIsSignupModalOpen(true)}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity shadow-sm"
+                            }
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            </svg>
                             Sign up to continue
-                          </button>
+                          </Button>
                         )}
                       </div>
                     )}
@@ -478,42 +500,50 @@ export default function OwnerChat() {
                 You&apos;re all set. Please review your generated Journey, correct and update any details and publish it when you are ready. Please also review your Profile and Boat details and ensure they are correct before publishing.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
-                <button
+                <Button
                   type="button"
                   onClick={() => router.push('/owner/boats')}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:opacity-90 rounded-lg transition-opacity"
+                  variant="primary"
+                  size="sm"
+                  className="!text-sm"
+                  leftIcon={
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                    </svg>
+                  }
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                  </svg>
                   View Boat Details
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
                   onClick={() => router.push('/owner/journeys')}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-muted rounded-lg transition-colors"
+                  variant="outline"
+                  size="sm"
+                  className="!text-sm"
+                  leftIcon={
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                  }
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
                   View Journey Details
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -527,12 +557,14 @@ export default function OwnerChat() {
         <div className="px-4 py-2 bg-destructive/10 border-t border-destructive/20">
           <div className="max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-between">
             <p className="text-sm text-destructive">{error}</p>
-            <button
+            <Button
               onClick={clearError}
-              className="text-sm text-destructive hover:text-destructive/80 underline"
+              variant="ghost"
+              size="sm"
+              className="!text-sm !text-destructive hover:!text-destructive/80 !underline"
             >
               Dismiss
-            </button>
+            </Button>
           </div>
         </div>
       )}

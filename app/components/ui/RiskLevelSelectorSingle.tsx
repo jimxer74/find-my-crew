@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
 
@@ -22,19 +23,20 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
       </label>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Coastal sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => {
             onChange(value === 'Coastal sailing' ? null : 'Coastal sailing');
           }}
-          className={`relative p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
+          variant="outline"
+          className={`relative !p-3 rounded-md !bg-card !flex !flex-col !h-auto !aspect-square ${
             value === 'Coastal sailing'
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? '!border-primary !bg-primary/5'
+              : '!border-border hover:!border-primary/50'
           }`}
         >
           {/* Info icon in top left corner */}
-          <div 
+          <div
             className="absolute top-2 left-2 z-10"
             onMouseEnter={() => setShowCoastalTooltip(true)}
             onMouseLeave={() => setShowCoastalTooltip(false)}
@@ -65,22 +67,23 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
               className="object-contain"
             />
           </div>
-        </button>
+        </Button>
 
         {/* Offshore sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => {
             onChange(value === 'Offshore sailing' ? null : 'Offshore sailing');
           }}
-          className={`relative p-3 border-2 rounded-lg bg-card transition-all aspect-square flex flex-col ${
+          variant="outline"
+          className={`relative !p-3 !border-2 rounded-lg !bg-card !flex !flex-col !h-auto !aspect-square ${
             value === 'Offshore sailing'
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? '!border-primary !bg-primary/5'
+              : '!border-border hover:!border-primary/50'
           }`}
         >
           {/* Info icon in top left corner */}
-          <div 
+          <div
             className="absolute top-2 left-2 z-10"
             onMouseEnter={() => setShowOffshoreTooltip(true)}
             onMouseLeave={() => setShowOffshoreTooltip(false)}
@@ -111,22 +114,23 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
               className="object-contain"
             />
           </div>
-        </button>
+        </Button>
 
         {/* Extreme sailing */}
-        <button
+        <Button
           type="button"
           onClick={() => {
             onChange(value === 'Extreme sailing' ? null : 'Extreme sailing');
           }}
-          className={`relative p-3 border rounded-md bg-card transition-colors aspect-square flex flex-col ${
+          variant="outline"
+          className={`relative !p-3 rounded-md !bg-card !flex !flex-col !h-auto !aspect-square ${
             value === 'Extreme sailing'
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-primary/50'
+              ? '!border-primary !bg-primary/5'
+              : '!border-border hover:!border-primary/50'
           }`}
         >
           {/* Info icon in top left corner */}
-          <div 
+          <div
             className="absolute top-2 left-2 z-10"
             onMouseEnter={() => setShowExtremeTooltip(true)}
             onMouseLeave={() => setShowExtremeTooltip(false)}
@@ -157,7 +161,7 @@ export function RiskLevelSelectorSingle({ value, onChange }: RiskLevelSelectorSi
               className="object-contain"
             />
           </div>
-        </button>
+        </Button>
       </div>
     </div>
   );

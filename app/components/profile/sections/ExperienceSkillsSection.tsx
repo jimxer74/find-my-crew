@@ -6,6 +6,7 @@ import { ExperienceLevel } from '@/app/types/experience-levels';
 import skillsConfig from '@/app/config/skills-config.json';
 import { useEffect } from 'react';
 import { type Location } from '@/app/components/ui/LocationAutocomplete';
+import { Button } from '@/app/components/ui/Button/Button';
 
 type SkillEntry = {
   skill_name: string;
@@ -153,14 +154,16 @@ export function ExperienceSkillsSection({
                       <label className="text-sm font-medium text-foreground">
                         {displayName}
                       </label>
-                      <button
+                      <Button
                         type="button"
                         onClick={() => removeSkill(index)}
-                        className="text-red-500 hover:text-red-700 text-sm font-medium"
+                        variant="ghost"
+                        size="sm"
+                        className="!text-sm !h-auto !p-0 !text-red-500 hover:!text-red-700"
                         title="Remove skill"
                       >
                         Remove
-                      </button>
+                      </Button>
                     </div>
                     <textarea
                       id={`skill-${skill.skill_name}-${index}`}
@@ -178,17 +181,21 @@ export function ExperienceSkillsSection({
         )}
 
         {/* Add Skills button */}
-        <button
+        <Button
           id="skill-add-button"
           type="button"
           onClick={onShowSkillsSidebar}
-          className="w-full px-4 py-3 min-h-[44px] border-2 border-dashed border-border rounded-md bg-card hover:bg-accent hover:border-primary transition-colors text-sm font-medium text-foreground flex items-center justify-center gap-2"
+          variant="outline"
+          size="sm"
+          leftIcon={
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+          }
+          className="w-full !text-sm !border-2 !border-dashed"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-          </svg>
           Add Skills
-        </button>
+        </Button>
       </div>
 
       {/* Certifications */}
