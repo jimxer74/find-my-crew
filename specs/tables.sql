@@ -1996,3 +1996,196 @@ using (
   and (storage.foldername(name))[1] = auth.uid()::text
 );
 
+
+-- ============================================================================
+-- BOAT MANAGEMENT MODULE TABLES
+-- ============================================================================
+
+-- Document Vault Extension: optional boat_id for boat-specific documents
+-- (boat_id column added to existing document_vault table)
+-- alter table public.document_vault add column if not exists boat_id uuid references public.boats(id) on delete set null;
+-- create index if not exists idx_document_vault_boat_id on public.document_vault(boat_id) where boat_id is not null;
+
+-- Extended document categories include boat management types:
+-- 'equipment_manual', 'service_record', 'warranty', 'boat_survey', 'safety_certificate'
+
+
+-- ============================================================================
+-- Boat Equipment Table
+-- Hierarchical equipment registry with parent-child relationships.
+-- Uses JSONB specs for flexible equipment-specific attributes.
+-- ============================================================================
+
+create table if not exists public.boat_equipment (
+  id              uuid primary key default gen_random_uuid(),
+  boat_id         uuid not null references public.boats(id) on delete cascade,
+  parent_id       uuid references public.boat_equipment(id) on delete set null,
+  name            text not null,
+  category        text not null,
+  subcategory     text,
+  manufacturer    text,
+  model           text,
+  serial_number   text,
+  year_installed  int,
+  specs           jsonb default '{}',
+  notes           text,
+  images          text[] default '{}',
+  status          text not null default 'active',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+
+  constraint boat_equipment_category_valid check (
+    category in (
+      'engine', 'rigging', 'electrical', 'navigation', 'safety',
+      'plumbing', 'anchoring', 'hull_deck', 'electronics',
+      'galley', 'comfort', 'dinghy'
+    )
+  ),
+  constraint boat_equipment_status_valid check (
+    status in ('active', 'decommissioned', 'needs_replacement')
+  )
+);
+
+create index if not exists idx_boat_equipment_boat_id on public.boat_equipment(boat_id);
+create index if not exists idx_boat_equipment_parent_id on public.boat_equipment(parent_id) where parent_id is not null;
+create index if not exists idx_boat_equipment_category on public.boat_equipment(category);
+
+alter table boat_equipment enable row level security;
+
+create policy "Anyone can view equipment"
+  on boat_equipment for select using (true);
+
+create policy "Boat owners can insert equipment"
+  on boat_equipment for insert
+  with check (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can update equipment"
+  on boat_equipment for update
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can delete equipment"
+  on boat_equipment for delete
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+
+-- ============================================================================
+-- Boat Inventory / Spare Parts Table
+-- Tracks spare parts, consumables, and supplies per boat.
+-- Links to equipment via optional equipment_id.
+-- ============================================================================
+
+create table if not exists public.boat_inventory (
+  id              uuid primary key default gen_random_uuid(),
+  boat_id         uuid not null references public.boats(id) on delete cascade,
+  equipment_id    uuid references public.boat_equipment(id) on delete set null,
+  name            text not null,
+  category        text not null,
+  quantity        int not null default 0,
+  min_quantity    int default 0,
+  unit            text,
+  location        text,
+  supplier        text,
+  part_number     text,
+  cost            numeric,
+  currency        text default 'EUR',
+  purchase_date   date,
+  expiry_date     date,
+  notes           text,
+  images          text[] default '{}',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+
+  constraint boat_inventory_quantity_non_negative check (quantity >= 0),
+  constraint boat_inventory_min_quantity_non_negative check (min_quantity >= 0)
+);
+
+create index if not exists idx_boat_inventory_boat_id on public.boat_inventory(boat_id);
+create index if not exists idx_boat_inventory_equipment_id on public.boat_inventory(equipment_id) where equipment_id is not null;
+create index if not exists idx_boat_inventory_category on public.boat_inventory(category);
+
+alter table boat_inventory enable row level security;
+
+create policy "Anyone can view inventory"
+  on boat_inventory for select using (true);
+
+create policy "Boat owners can insert inventory"
+  on boat_inventory for insert
+  with check (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can update inventory"
+  on boat_inventory for update
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can delete inventory"
+  on boat_inventory for delete
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+
+-- ============================================================================
+-- Boat Maintenance Tasks Table
+-- Dual-purpose: templates (is_template=true) and scheduled task instances.
+-- Supports time-based and usage-based recurrence via JSONB config.
+-- ============================================================================
+
+create table if not exists public.boat_maintenance_tasks (
+  id              uuid primary key default gen_random_uuid(),
+  boat_id         uuid not null references public.boats(id) on delete cascade,
+  equipment_id    uuid references public.boat_equipment(id) on delete set null,
+  title           text not null,
+  description     text,
+  category        text not null,
+  priority        text not null default 'medium',
+  status          text not null default 'pending',
+  is_template     boolean default false,
+  template_id     uuid references public.boat_maintenance_tasks(id) on delete set null,
+  recurrence      jsonb,
+  due_date        date,
+  completed_at    timestamptz,
+  completed_by    uuid references auth.users(id) on delete set null,
+  assigned_to     uuid references auth.users(id) on delete set null,
+  estimated_hours numeric,
+  actual_hours    numeric,
+  estimated_cost  numeric,
+  actual_cost     numeric,
+  instructions    text,
+  parts_needed    jsonb default '[]',
+  notes           text,
+  images_before   text[] default '{}',
+  images_after    text[] default '{}',
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+
+  constraint boat_maintenance_category_valid check (
+    category in ('routine', 'seasonal', 'repair', 'inspection', 'safety')
+  ),
+  constraint boat_maintenance_priority_valid check (
+    priority in ('low', 'medium', 'high', 'critical')
+  ),
+  constraint boat_maintenance_status_valid check (
+    status in ('pending', 'in_progress', 'completed', 'overdue', 'skipped')
+  )
+);
+
+create index if not exists idx_boat_maintenance_boat_id on public.boat_maintenance_tasks(boat_id);
+create index if not exists idx_boat_maintenance_equipment_id on public.boat_maintenance_tasks(equipment_id) where equipment_id is not null;
+create index if not exists idx_boat_maintenance_status on public.boat_maintenance_tasks(status) where is_template = false;
+create index if not exists idx_boat_maintenance_due_date on public.boat_maintenance_tasks(due_date) where due_date is not null and is_template = false;
+create index if not exists idx_boat_maintenance_template on public.boat_maintenance_tasks(is_template) where is_template = true;
+
+alter table boat_maintenance_tasks enable row level security;
+
+create policy "Anyone can view maintenance tasks"
+  on boat_maintenance_tasks for select using (true);
+
+create policy "Boat owners can insert maintenance tasks"
+  on boat_maintenance_tasks for insert
+  with check (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can update maintenance tasks"
+  on boat_maintenance_tasks for update
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+
+create policy "Boat owners can delete maintenance tasks"
+  on boat_maintenance_tasks for delete
+  using (exists (select 1 from boats where boats.id = boat_id and boats.owner_id = auth.uid()));
+

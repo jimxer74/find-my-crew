@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
       const db = await getSupabaseServerClient();
       const sessionUpdate: Record<string, unknown> = {
         user_id: user.id,
+        email: user.email,
         profile_completion_triggered_at: new Date().toISOString(),
         last_active_at: new Date().toISOString(),
       };
@@ -102,7 +103,11 @@ export async function POST(request: NextRequest) {
       if (response.profileCreated) {
         sessionUpdate.onboarding_state = 'boat_pending';
         log('Profile created during trigger — setting onboarding_state to boat_pending', { sessionId: sid });
+      } else {
+        sessionUpdate.onboarding_state = 'profile_pending';
+        log('Profile not created during trigger — setting onboarding_state to profile_pending', { sessionId: sid });
       }
+
       await db
         .from('owner_sessions')
         .update(sessionUpdate)

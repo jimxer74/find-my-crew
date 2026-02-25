@@ -192,14 +192,23 @@ export default function BoatsPage() {
                 </div>
               </div>
 
-              {/* Edit button – bottom, centered */}
-              <div className="pt-3 mt-auto border-t border-border">
+              {/* Actions – bottom */}
+              <div className="pt-3 mt-auto border-t border-border flex items-center justify-between">
+                <Link
+                  href={`/owner/boats/${boat.id}`}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17l-4.655 4.655a2.121 2.121 0 01-3-3l4.655-4.655m3-3l1.586-1.586a2 2 0 012.828 0L19.8 9.98a2 2 0 010 2.828l-1.586 1.586m-3-3l3 3" />
+                  </svg>
+                  <span>Manage</span>
+                </Link>
                 <button
                   onClick={() => {
                     setEditingBoatId(boat.id);
                     setIsModalOpen(true);
                   }}
-                  className="mx-auto flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
                   title="Edit boat"
                   aria-label="Edit boat"
                 >

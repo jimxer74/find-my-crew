@@ -291,6 +291,7 @@ function ProfileDialog({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
+          {/*
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
               What to include:
@@ -303,6 +304,7 @@ function ProfileDialog({
               <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook</li>
             </ul>
           </div>
+            */}
 
           <textarea
             ref={textareaRef}
@@ -819,6 +821,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
               {currentPage === 2 && (
                 <div className="space-y-4">
                   {/* Instructions */}
+                  {/*}
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-blue-950 dark:text-blue-100 mb-2">
                       What to include:
@@ -831,6 +834,7 @@ function MobileComboSearchBox({ onSubmit, className = '', onFocusChange, isFocus
                       <li><b>Hint:</b> You can copy-paste your existing post for example from Facebook.</li>
                     </ul>
                   </div>
+                    */}
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2 text-left">

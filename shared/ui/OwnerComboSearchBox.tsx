@@ -159,9 +159,7 @@ function JourneyDetailsDialog({
 
         {/* Content - Date range first, then locations, then waypoints */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
-            You can enter exact departure and arrival details if you already know where and when you going to sail. You can also include the Journey information as part of your profile description and SailSmart AI will pick it up from there. Don't know your exact plans yet? No worries, you can skip this step and add details later.
-          </p>
+          
           {/* Date range - first, same pattern as crew Availability dialog (owner amber theme) */}
           <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div>
@@ -438,11 +436,12 @@ function ProfileTextDialog({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Instructions */}
+          {/*}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
             <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
             {instructions}
           </div>
-
+          */}
           <textarea
             ref={textareaRef}
             value={text}
@@ -1050,9 +1049,6 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {/* Page 1: Journey Details */}
               {currentPage === 1 && (
                 <div className="space-y-4">
-                  <p className="text-sm text-gray-800 dark:text-gray-400 text-left">
-                  You can enter exact departure and arrival details if you already know where and when you going to sail. You can also include the Journey information as part of your profile description and SailSmart AI will pick it up from there. Don't know your exact plans yet? No worries, you can skip this step and add details later.
-                  </p>
                   {/* Date range first - same pattern as desktop (owner amber theme) */}
                   <div className="flex items-center justify-between p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
                     <div>
@@ -1196,11 +1192,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {/* Page 2: Skipper Profile */}
               {currentPage === 2 && (
                 <div className="space-y-4">
+                  {/*}
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
                     {SKIPPER_PROFILE_INSTRUCTIONS}
                   </div>
-
+                  */}
                   <textarea
                     value={skipperProfileText}
                     onChange={(e) => setSkipperProfileText(e.target.value)}
@@ -1234,11 +1231,12 @@ function MobileOwnerComboSearchBox({ onSubmit, className = '', onFocusChange, is
               {/* Page 3: Crew Requirements */}
               {currentPage === 3 && (
                 <div className="space-y-4">
+                  {/*}
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-amber-950 dark:text-amber-100 mb-2">What to include:</h3>
                     {CREW_REQUIREMENTS_INSTRUCTIONS}
                   </div>
-
+                  */}
                   <textarea
                     value={crewRequirementsText}
                     onChange={(e) => setCrewRequirementsText(e.target.value)}

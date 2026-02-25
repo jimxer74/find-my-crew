@@ -1,0 +1,1 @@
+export { BoatDetailNav } from './BoatDetailNav';

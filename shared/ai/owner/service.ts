@@ -401,8 +401,6 @@ ${extra ? `\n${extra}` : ''}
 (e.g. boat name, make/model, profile info). If they did, use that information and do not ask again—proceed to the next action 
 (e.g. look up boat, show summary, or create).
 - **ALWAYS propose the next onboarding step:** After completing the current step (profile created, boat created, or journey created) 
-- Include ALLWAYS [SUGGESTIONS] either to confirm pending action or ask missing information (e.g. "Save your profile", "Save boat details", "Create your first journey").
-Never end with only generic tips—always offer the concrete action to peform.
 - At the end of every response, add [SUGGESTIONS] with 1 item: that is either confirm pending action (e.g. "Save your profile", "Save boat details", "Create your first journey"); 
 or proposed value for a missing field (e.g. "Confirm 1. Beginner experience level"). [/SUGGESTIONS]
 - Do not show tool_call JSON to the user; describe in plain language.

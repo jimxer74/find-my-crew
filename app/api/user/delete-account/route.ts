@@ -266,7 +266,26 @@ export async function DELETE(request: NextRequest) {
     const docVaultResult = await safeDelete('document_vault', { owner_id: user.id }, supabase, user.id);
     deletionResults.push(docVaultResult);
 
+    // 8.5. Clear boat_maintenance_tasks references where user is assigned/completed
+    // These reference auth.users with ON DELETE SET NULL, but we clear explicitly before boat deletion
+    logger.debug(`Clearing boat_maintenance_tasks user references`, {}, true);
+    const { error: maintCompletedError } = await supabase
+      .from('boat_maintenance_tasks')
+      .update({ completed_by: null })
+      .eq('completed_by', user.id);
+    if (maintCompletedError) {
+      logger.warn('Failed to clear maintenance completed_by', { error: maintCompletedError.message });
+    }
+    const { error: maintAssignedError } = await supabase
+      .from('boat_maintenance_tasks')
+      .update({ assigned_to: null })
+      .eq('assigned_to', user.id);
+    if (maintAssignedError) {
+      logger.warn('Failed to clear maintenance assigned_to', { error: maintAssignedError.message });
+    }
+
     // 9. For owned boats: delete waypoints, legs, journeys, boats (cascade)
+    // Note: boat_equipment, boat_inventory, boat_maintenance_tasks cascade-delete with boats
     const { data: ownedBoats, error: boatsError } = await supabase
       .from('boats')
       .select('id')
@@ -732,7 +751,9 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
       { table: 'email_preferences', column: 'user_id' },
       { table: 'document_vault', column: 'owner_id' },
       { table: 'document_access_grants', column: 'grantor_id' },
-      { table: 'document_access_log', column: 'document_owner_id' }
+      { table: 'document_access_log', column: 'document_owner_id' },
+      { table: 'boat_maintenance_tasks', column: 'completed_by' },
+      { table: 'boat_maintenance_tasks', column: 'assigned_to' },
     ];
 
     for (const { table, column } of tablesToCheck) {
@@ -804,7 +825,10 @@ async function verifyUserDeletion(userId: string, supabase: any) {
     'feedback_prompt_dismissals',
     'document_vault',
     'document_access_grants',
-    'document_access_log'
+    'document_access_log',
+    'boat_equipment',
+    'boat_inventory',
+    'boat_maintenance_tasks'
   ];
 
   const verificationResults: any[] = [];
