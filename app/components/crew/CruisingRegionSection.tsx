@@ -252,7 +252,7 @@ export function CruisingRegionSection({
       <LegCarousel
         legs={legs}
         onLegClick={handleLegClick}
-        onJoinClick={user ? handleJoinClickInternal : undefined}
+        onJoinClick={user && hasProfile(profile) ? handleJoinClickInternal : undefined}
         loading={loading}
         showMoreUrl={getMapUrl()}
         showMatchBadge={hasProfile(profile)}
