@@ -10,8 +10,8 @@ import { formatDate } from '@shared/utils';
 import { getExperienceLevelConfig, ExperienceLevel } from '@shared/types/experience-levels';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { toDisplaySkillName } from '@shared/utils';
-import { CrewSummaryCard } from '@/app/components/owner/CrewSummaryCard';
-import { PassportVerificationSection } from '@/app/components/owner/PassportVerificationSection';
+import { CrewSummaryCard } from '@shared/components/owner/CrewSummaryCard';
+import { PassportVerificationSection } from '@shared/components/owner/PassportVerificationSection';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import { CollapsibleSection } from '@shared/ui/CollapsibleSection';
 

@@ -6,7 +6,7 @@ import { Footer } from '@/app/components/Footer';
 import { OwnerChatProvider, useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerOnboardingSteps } from '@shared/components/onboarding/OnboardingSteps';
 import { OnboardingStickyBar } from '@shared/components/onboarding/OnboardingStickyBar';
-import OwnerChat from '@/app/components/owner/OwnerChat';
+import OwnerChat from '@shared/components/owner/OwnerChat';
 
 /**
  * Owner onboarding layout: sticky steps bar + chat

@@ -7,8 +7,8 @@ import { Footer } from '@/app/components/Footer';
 import { ProspectChatProvider, useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { CrewOnboardingSteps } from '@shared/components/onboarding/OnboardingSteps';
 import { OnboardingStickyBar } from '@shared/components/onboarding/OnboardingStickyBar';
-import { ProspectChat } from '@/app/components/prospect/ProspectChat';
-import { ProfileExtractionModal } from '@/app/components/prospect/ProfileExtractionModal';
+import { ProspectChat } from '@shared/components/prospect/ProspectChat';
+import { ProfileExtractionModal } from '@shared/components/prospect/ProfileExtractionModal';
 
 /**
  * Crew onboarding layout: sticky steps bar + chat
