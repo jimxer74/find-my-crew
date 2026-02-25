@@ -1,306 +1,265 @@
-# SailSmart Monorepo Architecture
+# Monorepo Structure Documentation
+
+**Last Updated:** 2026-02-25
+**Status:** Production Ready
+**Build Time:** ~11.8 seconds
+**Pages Compiling:** 82/82 ✅
 
 ## Overview
 
-SailSmart is organized as a monorepo containing multiple applications and a shared module, enabling code reuse, independent development, and scalable architecture.
+This is a modular monorepo architecture with a clear separation of concerns:
+- **shared/** - Platform-wide capabilities (used by all modules)
+- **app/** - Crew-matching specific implementation (main Next.js app)
+- **crew-matching/** - Crew-matching module structure (ready for expansion)
+
+**Core Principle:** One-way dependency flow: `app → shared` (no cross-module dependencies)
+
+---
 
 ## Module Structure
 
-### 1. `shared/` - Platform-Wide Services
+### 1. **shared/** - Platform Foundation (150+ files)
 
-Core functionality available to all applications.
+Universal code used across all current and future modules.
 
-#### Subdirectories:
-- **`ai/`** - AI integration and services
-  - Assistant framework
-  - Tool definitions and execution
-  - AI configuration and provider setup
+#### **shared/components/** (35+ components)
+Platform-wide UI components and features organized by category:
+- **auth/** - ConsentSetupModal, FeatureGate
+- **ai/** - AssistantButton, AssistantChat, AssistantSidebar, ChatLegCarousel
+- **feedback/** - FeedbackButton, FeedbackCard, FeedbackList, FeedbackModal, etc.
+- **notifications/** - NotificationBell, NotificationCenter, ActionModal, etc.
+- **vault/** - DocumentCard, DocumentUploadModal, GrantManagementModal, SecureDocumentViewer
+- **onboarding/** - OnboardingSteps, OnboardingStickyBar, URLImportModal, etc.
+- **owner/** - OwnerChat, CrewSummaryCard, PassportVerificationSection
+- **prospect/** - ProspectChat, ProfileExtractionModal
+- **profile/** - ProfileCompletionBar, ProfileCreationWizard
 
-- **`auth/`** - Authentication and authorization
-  - Auth context and hooks
-  - User role management
-  - Feature access control
+#### **shared/lib/** (40+ modules)
+Core business logic and services:
+- **auth/** - Authentication, roles, feature access
+- **database/** - Supabase client setup, database helpers
+- **ai/** - AI service providers, prompts, tools, assistant logic
+- **logging/** - Structured logging
+- **hooks/** - Reusable React hooks
+- **contexts/** - Global state contexts
+- **types/** - Shared TypeScript types
+- **utils/** - General utilities
+- **boat-registry/** - Boat database service
+- **documents/** - Document types and audit utilities
+- **facebook/** - Facebook Graph API integration
+- **feedback/** - Feedback/review service
+- **notifications/** - Notification service
+- **limits/** - Rate limiting
+- **routing/** - Redirect helpers
+- **url-import/** - URL content detection
+- **owner/** - Owner session service
+- **prospect/** - Prospect session service
+- **profile/** - Profile utilities
 
-- **`database/`** - Database services
-  - Supabase client setup (browser and server)
-  - Database helpers and utilities
-  - Error response handling
+#### **shared/ui/** (25+ components)
+Design system components: Button, Modal, Card, Badge, Input, Select, etc.
 
-- **`logging/`** - Logging utilities
-  - Logger instance
-  - Debug and error logging
+---
 
-- **`types/`** - Shared TypeScript types
-  - Cost models
-  - Experience levels
-  - Consent types
+### 2. **app/** - Crew-Matching Main Application (82 pages)
 
-- **`ui/`** - Design system components
-  - Reusable UI components (Button, Modal, Card, etc.)
-  - Design tokens and theming
+The primary Next.js application implementing crew-matching functionality.
 
-- **`hooks/`** - Shared React hooks
-  - `useProfile` - User profile management
-  - `useUserLocation` - Geolocation
-  - `useMediaQuery` - Responsive design
-  - `useNotifications` - Notifications
+#### **app/pages/** (82 pages)
+- `/` - Homepage
+- `/crew/**` - Crew browsing and dashboard
+- `/owner/**` - Owner journey management
+- `/assistant/**` - AI assistant
+- `/feedback/**` - Feedback system
+- `/vault/**` - Document vault
+- And more...
 
-- **`contexts/`** - Shared React contexts
-  - Theme context
-  - Notification context
-  - Filter context
-  - Consent setup context
+#### **app/api/**
+API routes for crew-matching features organized by domain.
 
-- **`utils/`** - Utility functions
-  - Skill matching and normalization
-  - Geocoding and location services
-  - Date formatting
-  - Error handling
+#### **app/components/**
+Crew-matching specific UI components:
+- **crew/** - Crew cards, carousels, registration
+- **manage/** - Journey/boat management
+- **browse/** - Browsing UI
+- **registrations/** - Registration management
 
-- **`lib/`** - Platform libraries
-  - **`boat-registry/`** - Boat database and registry
-  - **`documents/`** - Document vault and management
-  - **`feedback/`** - Feedback and review system
-  - **`owner/`** - Owner onboarding and sessions
-  - **`prospect/`** - Prospect onboarding and sessions
+#### **app/lib/**
+Crew-matching specific business logic:
+- **crew/** - Crew matching algorithms
 
-### 2. `crew-matching/` - Crew Matching Application
+---
 
-Crew search and matching specific functionality.
+### 3. **crew-matching/** - Module Template
 
-#### Subdirectories:
-- **`lib/`**
-  - `matching-service.ts` - Crew search and matching algorithms
+Minimal structure set up for future expansion with crew-matching specific code.
 
-### 3. `boat-management/` - Future Module Template
+---
 
-Reserved for future boat management application module.
+## Import Path Strategy
 
-### 4. `app/` - Next.js Application
-
-Main Next.js application structure containing:
-- API routes (`app/api/`)
-- Pages (`app/crew/`, `app/owner/`, etc.)
-- Components (`app/components/`)
-- Contexts (`app/contexts/`)
-- Lib (`app/lib/` - crew-matching specific utilities)
-
-## Import Guidelines
-
-### Using Path Aliases
-
-All modules support TypeScript path aliases for clean imports:
+### Path Aliases (configured in tsconfig.json)
 
 ```typescript
-// Shared module imports
-import { useAuth } from '@shared/auth';
-import { useProfile } from '@shared/hooks';
-import { logger } from '@shared/logging';
-import { Button } from '@shared/ui';
-import { searchMatchingCrew } from '@shared/lib';
+// Shared modules
+import { Button } from '@shared/ui/Button';
+import { getAuth } from '@shared/auth';
+import { useAuth } from '@shared/hooks';
 
-// Crew-matching specific imports
-import { calculateCrewMatchScore } from '@crew-matching/lib';
-
-// Direct component imports
-import { CrewCard } from '@/app/components/crew';
+// Current app code (relative imports)
+import { CrewCard } from '@/app/components/crew/CrewCard';
 ```
 
-### Import Paths by Module
+### Import Rules
 
-| Module | Path Alias | Usage |
-|--------|-----------|-------|
-| Shared | `@shared/*` | Platform-wide utilities, types, hooks, UI |
-| Crew-Matching | `@crew-matching/*` | Crew search and matching logic |
-| Boat-Management | `@boat-management/*` | Future boat management specific code |
-| App Root | `@/*` | Application-specific code |
-| Relative | `./` or `../` | Within same file or directory tree |
+✅ **Allowed:**
+- `app/` → `shared/`
+- `app/` → `app/`
+- `shared/` → `shared/`
 
-## Module Dependencies
+❌ **NOT Allowed:**
+- `shared/` → `app/`
+- Cross-module dependencies
 
-```
-app/ ──┐
-       ├──> crew-matching/ ──┐
-       └──> app/lib/ ────────┼──> shared/
-                             │
-boat-management/ ───────────┘
-```
+---
 
-**Key Rule:** All modules depend on `shared/`, but `shared/` has no external dependencies.
+## Adding New Code
 
-## Creating New Features
+### Adding a Shared Component
 
-### Adding to Shared Module
+1. Create in `shared/components/{category}/ComponentName.tsx`
+2. Export in `shared/components/{category}/index.ts`
+3. Update `shared/components/index.ts` if needed
+4. Import as: `import { ComponentName } from '@shared/components/{category}'`
 
-If creating a new feature used by multiple apps:
+### Adding a Shared Service
 
-1. Create directory in `shared/lib/` or appropriate subdirectory
-2. Export types and functions in module's `index.ts`
-3. Export from `shared/index.ts` for convenience
-4. Use `@shared/*` path alias in imports
+1. Create in `shared/lib/{service}/service.ts`
+2. Export in `shared/lib/{service}/index.ts`
+3. Update `shared/lib/index.ts` if needed
+4. Import as: `import { functionName } from '@shared/lib/{service}'`
 
-Example:
-```typescript
-// shared/lib/my-feature/service.ts
-export async function myFeatureService() { ... }
+### Adding Crew-Matching Code
 
-// shared/lib/my-feature/index.ts
-export * from './service';
+Create in `app/components/`, `app/lib/`, `app/api/`, or `app/pages/` as appropriate.
+**Do NOT move to shared** unless it becomes platform-wide.
 
-// shared/lib/index.ts
-export * from './my-feature';
+---
 
-// Usage anywhere
-import { myFeatureService } from '@shared/lib';
+## Build & Deployment
+
+### Commands
+```bash
+npm run dev      # Start dev server
+npm run build    # Build for production
+npm run lint     # Run linter
 ```
 
-### Adding to Crew-Matching Module
+### Build Info
+- Framework: Next.js 16+ with Turbopack
+- Build Time: ~11.8 seconds
+- Pages: 82 total
+- Status: All compile successfully ✅
 
-If creating crew-matching specific functionality:
-
-1. Create in `crew-matching/lib/`
-2. Export from `crew-matching/lib/index.ts`
-3. Use `@crew-matching/lib` path alias
-4. Or use relative imports within app/
-
-## File Organization Best Practices
-
-### Within Modules
-```
-module-name/
-├── index.ts           # Re-exports public API
-├── service.ts         # Main service/business logic
-├── types.ts           # TypeScript type definitions
-├── utils.ts           # Helper functions
-├── hooks/
-│   └── useFeature.ts
-└── __tests__/
-    └── service.test.ts
-```
-
-### Naming Conventions
-- Files: `camelCase.ts` or `kebab-case.ts`
-- Exports: `camelCase` for functions/variables, `PascalCase` for types/components
-- Directories: `kebab-case`
-
-## Build Configuration
-
-### TypeScript Path Aliases
-
-Configured in `tsconfig.json`:
-```json
-{
-  "compilerOptions": {
-    "paths": {
-      "@/*": ["./*"],
-      "@shared/*": ["./shared/*"],
-      "@crew-matching/*": ["./crew-matching/*"],
-      "@boat-management/*": ["./boat-management/*"]
-    }
-  }
-}
-```
-
-### Next.js
-
-- Next.js app router handles routing
-- All modules are TypeScript compatible
-- Build output includes all modules
-
-## Adding a New Application Module
-
-To create a new module (e.g., `boat-management/`):
-
-1. Create directory structure:
-   ```
-   boat-management/
-   ├── lib/
-   ├── components/
-   ├── hooks/
-   └── index.ts
-   ```
-
-2. Create `index.ts` with public exports:
-   ```typescript
-   export * from './lib';
-   ```
-
-3. Update imports to use `@boat-management/*`
-
-4. All shared services automatically available via `@shared/*`
-
-## Common Tasks
-
-### Import a Shared Service
-```typescript
-import { logger } from '@shared/logging';
-import { getSupabaseBrowserClient } from '@shared/database';
-import { useAuth } from '@shared/auth';
-```
-
-### Create a New Hook in Shared
-```typescript
-// shared/hooks/useMyHook.ts
-export function useMyHook() { ... }
-
-// shared/hooks/index.ts (add export)
-export { useMyHook } from './useMyHook';
-
-// Usage in any module
-import { useMyHook } from '@shared/hooks';
-```
-
-### Access Crew-Matching Specific Code
-```typescript
-import { calculateCrewMatchScore } from '@crew-matching/lib';
-```
-
-### Import App-Specific Components
-```typescript
-import { CrewCard } from '@/app/components/crew';
-import { Header } from '@/app/components';
-```
-
-## Troubleshooting
-
-### "Cannot find module" Error
-
-1. Check path alias is correct in `tsconfig.json`
-2. Verify file exists at import path
-3. Ensure module exports the imported item
-4. Check for circular dependencies
-
-### Import Conflicts
-
-If multiple modules export same name:
-```typescript
-// Use namespace imports
-import * as shared from '@shared/lib';
-import * as crew from '@crew-matching/lib';
-
-shared.myFunction();
-crew.myFunction();
-```
-
-### Relative Path Issues
-
-When moving files between modules:
-- Update relative imports to use `@shared/*` or `@crew-matching/*`
-- Avoid `../` chains that cross module boundaries
+---
 
 ## Architecture Principles
 
-1. **Separation of Concerns** - Each module has clear responsibility
-2. **DRY (Don't Repeat Yourself)** - Shared code in `shared/` module
-3. **One-Way Dependencies** - Apps depend on shared, not vice versa
-4. **Scalability** - Easy to add new application modules
-5. **Reusability** - Shared services used by multiple apps
-6. **Maintainability** - Clear boundaries and module ownership
+### 1. Separation of Concerns
+- **Shared:** Platform features, reusable services, design system
+- **App:** Crew-matching specific implementation
+- **Future Modules:** Independent implementations
 
-## Future Enhancements
+### 2. One-Way Dependencies
+```
+app → shared (always allowed)
+shared → app (NEVER allowed)
+```
 
-- [ ] pnpm/npm workspace configuration
-- [ ] Module-level testing setup
-- [ ] CI/CD pipeline for multi-module builds
-- [ ] Shared documentation generation
-- [ ] Module dependency visualization
+### 3. Module Independence
+- Modules don't depend on each other
+- Common code lives in shared
+- Each module independently deployable
+
+### 4. Clear Interfaces
+- Modules export clean, documented interfaces
+- Internal details are private
+- Public APIs defined in index.ts
+
+### 5. Type Safety
+- All shared code fully typed
+- No `any` types in public APIs
+- Types in `shared/types/`
+
+---
+
+## File Organization
+
+### Naming Conventions
+- **Components:** PascalCase (`UserProfile.tsx`)
+- **Functions/Utilities:** camelCase (`getUserRoles.ts`)
+- **Types:** PascalCase (`User.ts`)
+- **Hooks:** camelCase with `use` prefix (`useAuth.ts`)
+- **Services:** camelCase with `service` suffix (`authService.ts`)
+
+### Directory Structure
+```
+feature/
+├── index.ts                 # Barrel export
+├── ComponentName.tsx        # React components
+├── serviceName.ts           # Business logic
+├── types.ts                 # Type definitions
+└── __tests__/               # Tests
+    └── feature.test.ts
+```
+
+### Always Export via index.ts
+```typescript
+export { ComponentName } from './ComponentName';
+export { functionName } from './service';
+export type { TypeName } from './types';
+```
+
+---
+
+## Migration Path for Future Modules
+
+### Adding boat-management Module
+
+1. **Create structure** under `boat-management/`
+2. **Import from shared** - never from app
+3. **Configure path aliases** in tsconfig.json
+4. **Deploy independently** with shared as dependency
+
+---
+
+## Troubleshooting
+
+### Import Not Found
+- Check path alias in tsconfig.json
+- Verify file and index.ts exports
+- Check path case sensitivity
+
+### Circular Dependencies
+- Run `npm run build` to see errors
+- Ensure one-way: `app → shared`
+- Move common code to shared
+
+### Type Errors
+- Use `import type` for type-only imports
+- Use `export type` in index files
+- Check public API definitions
+
+---
+
+## Summary
+
+This monorepo architecture provides:
+✅ **Clear separation** - Shared vs crew-matching specific
+✅ **Scalability** - Ready for boat-management and future modules
+✅ **Type safety** - Full TypeScript with proper exports
+✅ **Performance** - Fast builds (~11.8s) and code splitting
+✅ **Maintainability** - One-way dependencies, clean interfaces
+✅ **Reusability** - Shared platform foundation
+
+**Ready for:** Crew-matching app + future modules + expansion
