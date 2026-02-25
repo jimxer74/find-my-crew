@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from './AuthContext';

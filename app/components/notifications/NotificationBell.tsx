@@ -1,10 +1,10 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { NotificationCenter } from './NotificationCenter';
 import { useNotificationContext } from '@/app/contexts/NotificationContext';
 import { useAssistant } from '@/app/contexts/AssistantContext';

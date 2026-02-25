@@ -2,13 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useOwnerChat } from '@/app/contexts/OwnerChatContext';
 import { OwnerMessage, PendingAction } from '@/app/lib/ai/owner/types';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import CrewCarousel from '@/app/components/crew/CrewCarousel';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,

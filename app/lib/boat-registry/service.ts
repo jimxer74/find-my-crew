@@ -6,7 +6,7 @@
  * in a local registry table.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SailboatDetails } from '@/app/lib/sailboatdata_queries';
 import { getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';

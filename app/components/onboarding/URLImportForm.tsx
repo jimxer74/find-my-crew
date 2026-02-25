@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { AlertCircle, Loader, CheckCircle } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 interface PreviewData {
   content: string;

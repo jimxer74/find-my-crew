@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal } from '@/app/components/ui/Modal/Modal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
 
 interface SecureDocumentViewerProps {
   isOpen: boolean;

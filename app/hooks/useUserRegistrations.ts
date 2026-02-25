@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 export interface UserRegistration {
   id: string;

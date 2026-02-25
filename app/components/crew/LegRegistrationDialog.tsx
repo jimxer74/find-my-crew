@@ -5,10 +5,10 @@ import { useLegRegistration, LegRegistrationData } from '@/app/hooks/useLegRegis
 import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { PassportVerificationStep } from './PassportVerificationStep';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 type LegRegistrationDialogProps = {
   isOpen: boolean;

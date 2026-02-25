@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import Link from 'next/link';
 import { MissingFieldsIndicator } from './MissingFieldsIndicator';
 import { useAuth } from '@/app/contexts/AuthContext';

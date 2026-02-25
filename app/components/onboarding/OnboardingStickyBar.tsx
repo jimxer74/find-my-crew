@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 export interface OnboardingStickyBarProps {
   title: string;

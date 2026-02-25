@@ -19,7 +19,10 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@shared/*": ["./shared/*"],
+      "@crew-matching/*": ["./crew-matching/*"],
+      "@boat-management/*": ["./boat-management/*"]
     }
   },
   "include": [

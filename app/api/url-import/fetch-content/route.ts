@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { detectResourceType, isValidUrl } from '@/app/lib/url-import/detectResourceType';
 import { fetchResourceContent } from '@/app/lib/url-import/fetchResourceContent';

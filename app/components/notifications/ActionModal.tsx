@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState } from 'react';
 import { Modal, Button } from '@/app/components/ui';
 import { Notification } from '@/app/lib/notifications';

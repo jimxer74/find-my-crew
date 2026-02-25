@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useCallback, useRef, useEffect, Re
 import { AIConversation, AIMessage, AIPendingAction } from '@/app/lib/ai/assistant/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 // Type declaration for custom event
 declare global {

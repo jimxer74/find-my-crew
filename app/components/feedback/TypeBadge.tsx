@@ -2,7 +2,7 @@
 
 import { Badge } from '@/app/components/ui';
 import { FeedbackType, getFeedbackTypeLabel } from '@/app/lib/feedback/types';
-import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
+import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 interface TypeBadgeProps {
   type: FeedbackType;

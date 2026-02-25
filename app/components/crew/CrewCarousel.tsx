@@ -13,7 +13,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import CrewCard from './CrewCard';
 
 interface CrewMember {

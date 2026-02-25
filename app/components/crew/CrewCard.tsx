@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import { Card, Button } from '@/app/components/ui';
 import { User, MapPin, Award, Shield, Check, AlertCircle, ChevronDown } from 'lucide-react';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
-import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
+import { getMatchingAndMissingSkills } from '@shared/utils';
 
 interface CrewCardProps {
   id: string;

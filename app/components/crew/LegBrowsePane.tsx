@@ -3,9 +3,9 @@
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { LegList, LegListItemData } from './LegList';
-import { CostModel } from '@/app/types/cost-models';
+import { CostModel } from '@shared/types/cost-models';
 
 // Extended leg type that includes all fields needed for LegDetailsPanel
 export type LegBrowsePaneData = LegListItemData & {

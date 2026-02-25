@@ -1,10 +1,10 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackModal } from './FeedbackModal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { type CreateFeedbackPayload, type PromptStatusResponse, FeedbackPromptType } from '@/app/lib/feedback/types';
 
 interface FeedbackPromptProps {

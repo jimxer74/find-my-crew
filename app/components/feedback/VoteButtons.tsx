@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ThumbsUp } from 'lucide-react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 interface VoteButtonsProps {
   feedbackId: string;

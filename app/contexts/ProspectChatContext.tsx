@@ -21,7 +21,7 @@ import {
 } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import * as sessionService from '@/app/lib/prospect/sessionService';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 const SESSION_EXPIRY_DAYS = 7; // Keep for reference, expiry handled server-side
 

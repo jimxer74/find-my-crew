@@ -10,7 +10,7 @@
  * bounding box handling, and shared infrastructure.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { callAI } from '../service';
 import {

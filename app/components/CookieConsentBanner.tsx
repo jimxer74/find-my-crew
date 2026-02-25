@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { CookiePreferences } from '@/app/types/consents';
+import { CookiePreferences } from '@shared/types/consents';
 
 const COOKIE_CONSENT_KEY = 'cookie_consent';
 

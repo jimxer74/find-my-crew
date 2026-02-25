@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import { FeedbackCard } from './FeedbackCard';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import {
   FeedbackType,
   FeedbackStatus,
@@ -12,7 +12,7 @@ import {
   getFeedbackTypeLabel,
   getFeedbackStatusLabel,
 } from '@/app/lib/feedback/types';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 interface FeedbackListProps {
   currentUserId?: string;

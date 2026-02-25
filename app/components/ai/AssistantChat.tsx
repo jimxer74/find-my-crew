@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
@@ -13,7 +13,7 @@ import { MultiSelectInputModal } from './MultiSelectInputModal';
 import { ChatLegCarousel } from './ChatLegCarousel';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,

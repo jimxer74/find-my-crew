@@ -1,16 +1,16 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import Image from 'next/image';
-import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
-import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { getExperienceLevelConfig, ExperienceLevel } from '@shared/types/experience-levels';
+import { toDisplaySkillName } from '@shared/utils';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
-import { formatDate } from '@/app/lib/dateFormat';
+import { formatDate } from '@shared/utils';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import { Card } from '@/app/components/ui/Card/Card';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Badge } from '@/app/components/ui/Badge/Badge';
+import { Card } from '@shared/ui/Card/Card';
+import { Button } from '@shared/ui/Button/Button';
+import { Badge } from '@shared/ui/Badge/Badge';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

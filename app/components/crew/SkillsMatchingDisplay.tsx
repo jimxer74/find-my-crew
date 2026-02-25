@@ -1,8 +1,8 @@
 'use client';
 
-import { MatchBadge } from '@/app/components/ui/MatchBadge';
-import { getMatchingAndMissingSkills } from '@/app/lib/skillMatching';
-import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { MatchBadge } from '@shared/ui/MatchBadge';
+import { getMatchingAndMissingSkills } from '@shared/utils';
+import { toDisplaySkillName } from '@shared/utils';
 
 type SkillsMatchingDisplayProps = {
   legSkills: string[];

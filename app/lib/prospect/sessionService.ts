@@ -5,7 +5,7 @@
  * Replaces localStorage-based session storage with server-side database storage.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';
 
 /**

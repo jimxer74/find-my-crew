@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * PATCH /api/journeys/[journeyId]/auto-approval

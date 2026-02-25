@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import type { Notification } from '@/app/lib/notifications';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 

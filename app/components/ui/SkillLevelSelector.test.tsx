@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { SkillLevelSelector } from './SkillLevelSelector';
-import { ExperienceLevel } from '@/app/types/experience-levels';
+import { ExperienceLevel } from '@shared/types/experience-levels';
 
 describe('SkillLevelSelector', () => {
   const mockOnChange = vi.fn();

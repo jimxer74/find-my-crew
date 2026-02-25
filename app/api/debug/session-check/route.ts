@@ -1,4 +1,4 @@
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { cookies } from 'next/headers';

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { markAllAsRead } from '@/app/lib/notifications';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * POST /api/notifications/mark-all-read

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 // Debug logging helper
 const DEBUG = true;

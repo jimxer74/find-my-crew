@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { LegListItem, LegListItemData } from './LegListItem';
 import { RegistrationStatusBadge } from './RegistrationStatusBadge';
 import { useUserRegistrations } from '@/app/hooks/useUserRegistrations';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type LegCarouselProps = {
   legs: LegListItemData[];

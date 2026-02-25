@@ -7,7 +7,7 @@
  * 3. Return user-friendly errors if all fail
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import type { ResourceType, AuthProvider } from './detectResourceType';
 
 /**

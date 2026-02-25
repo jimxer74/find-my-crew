@@ -1,16 +1,16 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
-import { formatDate, formatDateShort } from '@/app/lib/dateFormat';
+import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
+import { formatDate, formatDateShort } from '@shared/utils';
 import { Footer } from '@/app/components/Footer';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
-import { WorkingIndicator } from '@/app/components/ui/WorkingIndicator';
+import { WorkingIndicator } from '@shared/ui/WorkingIndicator';
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

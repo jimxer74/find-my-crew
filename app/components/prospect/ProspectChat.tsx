@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,7 +11,7 @@ import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import { ProfileExtractionModal } from './ProfileExtractionModal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,

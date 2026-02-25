@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { CrewBrowseMap } from '@/app/components/crew/CrewBrowseMap';
-import { Location } from '@/app/components/ui/LocationAutocomplete';
+import { Location } from '@shared/ui/LocationAutocomplete';
 
 export default function CrewDashboard() {
   const t = useTranslations('crewDashboard');

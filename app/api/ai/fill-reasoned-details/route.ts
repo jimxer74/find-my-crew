@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 export async function POST(request: NextRequest) {
   try {

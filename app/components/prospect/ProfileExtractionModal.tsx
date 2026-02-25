@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { extractProfileFromConversation, ExtractedProfile } from '@/app/lib/prospect/profileExtraction';
 import { ProspectMessage } from '@/app/lib/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Modal } from '@/app/components/ui/Modal/Modal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
 
 interface ProfileExtractionModalProps {
   isOpen: boolean;

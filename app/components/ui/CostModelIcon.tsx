@@ -1,6 +1,6 @@
 'use client';
 
-import { getCostModelIconColor, CostModel } from '@/app/types/cost-models';
+import { getCostModelIconColor, CostModel } from '@shared/types/cost-models';
 
 interface CostModelIconProps {
   model: CostModel;

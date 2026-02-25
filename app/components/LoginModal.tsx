@@ -4,8 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
-import { Modal } from '@/app/components/ui/Modal/Modal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
 
 type LoginModalProps = {
   isOpen: boolean;

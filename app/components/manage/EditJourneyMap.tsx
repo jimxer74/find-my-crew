@@ -1,13 +1,13 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { splitLineAtAntimeridian } from '@/app/lib/postgis-helpers';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 
 type Waypoint = {
   index: number;

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useTheme } from '../contexts/ThemeContext';
 
 type LogoWithTextProps = {

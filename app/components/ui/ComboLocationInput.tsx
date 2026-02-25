@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { getAllRegions, type LocationSearchResult } from '@/app/lib/geocoding/locations';
 import type { Location } from './LocationAutocomplete';
 

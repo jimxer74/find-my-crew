@@ -1,18 +1,18 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
+import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';
 import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
-import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@/app/types/experience-levels';
-import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@shared/types/experience-levels';
+import { toDisplaySkillName } from '@shared/utils';
 import { canCreateLeg } from '@/app/lib/limits';
 import Image from 'next/image';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

@@ -5,7 +5,7 @@
  * Uses shared utilities from @/app/lib/ai/shared for common operations.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';

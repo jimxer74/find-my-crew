@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDate } from '@/app/lib/dateFormat';
+import { formatDate } from '@shared/utils';
 import { StatusBadge } from './StatusBadge';
 
 type Status = 'Pending approval' | 'Approved' | 'Not approved' | 'Cancelled';

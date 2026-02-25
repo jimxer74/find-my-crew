@@ -5,7 +5,7 @@ import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
 import { waitUntil } from '@vercel/functions';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * Helper function to convert a Blob to base64 string

@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
-import { ExperienceLevel } from '@/app/types/experience-levels';
-import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
-import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
-import { Button } from '@/app/components/ui/Button/Button';
+import { ExperienceLevel } from '@shared/types/experience-levels';
+import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
+import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';
+import { Button } from '@shared/ui/Button/Button';
 
 type WizardStep = 'loading' | 'consent' | 'fetching' | 'analyzing' | 'review' | 'saving' | 'complete' | 'error';
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useProfile } from '@/app/lib/profile/useProfile';
 import { useUserLocation } from '@/app/hooks/useUserLocation';

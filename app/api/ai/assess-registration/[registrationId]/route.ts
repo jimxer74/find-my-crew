@@ -4,7 +4,7 @@ import { callAI } from '@/app/lib/ai/service';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 // Extend timeout for AI assessment (can take up to 60+ seconds)
 export const maxDuration = 90; // 90 seconds

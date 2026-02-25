@@ -1,10 +1,10 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState } from 'react';
-import { LocationAutocomplete, Location } from '@/app/components/ui/LocationAutocomplete';
-import { getCountryFlag, COUNTRY_CODES } from '@/app/lib/country-flags';
-import { Button } from '@/app/components/ui/Button/Button';
+import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
+import { getCountryFlag, COUNTRY_CODES } from '@shared/utils';
+import { Button } from '@shared/ui/Button/Button';
 
 export type WizardStep1Data = {
   boatName: string;

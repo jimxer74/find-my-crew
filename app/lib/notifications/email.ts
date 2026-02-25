@@ -9,7 +9,7 @@
  * 3. Update the sendEmail function to use Resend
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { EmailPreferences } from './types';
 

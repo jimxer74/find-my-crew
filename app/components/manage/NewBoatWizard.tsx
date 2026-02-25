@@ -1,12 +1,12 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { getCountryFlag } from '@/app/lib/country-flags';
+import { getCountryFlag } from '@shared/utils';
 import { NewBoatWizardStep1, WizardStep1Data } from './NewBoatWizardStep1';
 import { NewBoatWizardStep2, WizardStep2Data } from './NewBoatWizardStep2';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type NewBoatWizardProps = {
   isOpen: boolean;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
 import { getFeedbackById, updateFeedback, deleteFeedback } from '@/app/lib/feedback/service';
 

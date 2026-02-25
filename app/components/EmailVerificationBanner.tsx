@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useEmailVerificationStatus } from '@/app/hooks/useEmailVerificationStatus';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 interface EmailVerificationBannerProps {
   userEmail?: string;

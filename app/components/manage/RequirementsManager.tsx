@@ -1,10 +1,10 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
-import { toDisplaySkillName, toCanonicalSkillName } from '@/app/lib/skillUtils';
+import { toDisplaySkillName, toCanonicalSkillName } from '@shared/utils';
 import skillsConfig from '@/app/config/skills-config.json';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 

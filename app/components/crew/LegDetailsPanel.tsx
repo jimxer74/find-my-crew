@@ -1,13 +1,13 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { formatDate } from '@/app/lib/dateFormat';
-import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
-import { getCostModelConfig, CostModel } from '@/app/types/cost-models';
+import { formatDate } from '@shared/utils';
+import { getExperienceLevelConfig, ExperienceLevel } from '@shared/types/experience-levels';
+import { getCostModelConfig, CostModel } from '@shared/types/cost-models';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { RegistrationRequirementsForm } from '@/app/components/crew/RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from '@/app/components/crew/RegistrationSuccessModal';
@@ -19,15 +19,15 @@ import { useTheme } from '@/app/contexts/ThemeContext';
 import { MatchBadge } from '../ui/MatchBadge';
 import { CostModelBadge } from '../ui/CostModelBadge';
 import { CostModelIcon } from '../ui/CostModelIcon';
-import { matchRiskLevel } from '@/app/lib/skillMatching';
+import { matchRiskLevel } from '@shared/utils';
 import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { ImageCarousel } from '../ui/ImageCarousel';
 import { useProfile } from '@/app/lib/profile/useProfile';
-import { hasProfile } from '@/app/lib/profileUtils';
+import { hasProfile } from '@shared/utils';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { LoadingButton } from '@/app/components/ui/LoadingButton';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { LoadingButton } from '@shared/ui/LoadingButton';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

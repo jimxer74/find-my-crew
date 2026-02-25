@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 
 interface PassportVerificationSectionProps {
   passportData?: {

@@ -7,8 +7,8 @@
  * Opens when user clicks "Paste Link" on the combo search box.
  */
 
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 import { URLImportForm } from './URLImportForm';
 
 interface URLImportModalProps {

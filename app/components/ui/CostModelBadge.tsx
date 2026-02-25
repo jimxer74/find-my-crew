@@ -1,6 +1,6 @@
 'use client';
 
-import { getCostModelConfig, getCostModelColorClass, getCostModelAbbreviation, CostModel } from '@/app/types/cost-models';
+import { getCostModelConfig, getCostModelColorClass, getCostModelAbbreviation, CostModel } from '@shared/types/cost-models';
 
 interface CostModelBadgeProps {
   costModel: CostModel;

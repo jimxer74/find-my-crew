@@ -1,16 +1,16 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
-import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';
+import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';
-import { ExperienceLevel } from '@/app/types/experience-levels';
-import { normalizeSkillNames } from '@/app/lib/skillUtils';
+import { ExperienceLevel } from '@shared/types/experience-levels';
+import { normalizeSkillNames } from '@shared/utils';
 import { canCreateJourney } from '@/app/lib/limits';
 import { Footer } from '@/app/components/Footer';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';

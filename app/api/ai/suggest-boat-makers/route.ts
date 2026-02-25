@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 // Curated list of popular sailboat makers
 const POPULAR_BOAT_MAKERS = [

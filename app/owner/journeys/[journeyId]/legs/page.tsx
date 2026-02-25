@@ -1,6 +1,6 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -11,7 +11,7 @@ import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { LegFormModal } from '@/app/components/manage/LegFormModal';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { toGeocode } from '@/app/lib/IGeoCode';
-import { formatDate } from '@/app/lib/dateFormat';
+import { formatDate } from '@shared/utils';
 
 type Journey = {
   id: string;

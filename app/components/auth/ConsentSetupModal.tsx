@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Modal, Button } from '@/app/components/ui';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 type ConsentSetupModalProps = {
   userId: string;

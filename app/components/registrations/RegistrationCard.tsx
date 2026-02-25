@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card } from '@/app/components/ui';
-import { formatDate } from '@/app/lib/dateFormat';
+import { formatDate } from '@shared/utils';
 import { StatusBadge } from './StatusBadge';
 
 type Status = 'Pending approval' | 'Approved' | 'Not approved' | 'Cancelled';

@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { LocationRegion } from '@/app/lib/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
-import { calculateMatchPercentage } from '@/app/lib/skillMatching';
+import { calculateMatchPercentage } from '@shared/utils';
 import { ProfileLocation, useProfile } from '@/app/lib/profile/useProfile';
-import { logger } from '@/app/lib/logger';
-import { hasProfile } from '@/app/lib/profileUtils';
+import { logger } from '@shared/logging';
+import { hasProfile } from '@shared/utils';
 
 type CruisingRegionSectionProps = {
   region: LocationRegion;

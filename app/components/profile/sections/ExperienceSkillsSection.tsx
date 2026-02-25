@@ -1,12 +1,12 @@
 'use client';
 
-import { SkillLevelSelector } from '@/app/components/ui/SkillLevelSelector';
+import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
 import { useTheme } from '@/app/contexts/ThemeContext';
-import { ExperienceLevel } from '@/app/types/experience-levels';
+import { ExperienceLevel } from '@shared/types/experience-levels';
 import skillsConfig from '@/app/config/skills-config.json';
 import { useEffect } from 'react';
-import { type Location } from '@/app/components/ui/LocationAutocomplete';
-import { Button } from '@/app/components/ui/Button/Button';
+import { type Location } from '@shared/ui/LocationAutocomplete';
+import { Button } from '@shared/ui/Button/Button';
 
 type SkillEntry = {
   skill_name: string;

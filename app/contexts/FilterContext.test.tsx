@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { FilterProvider, useFilters } from './FilterContext';
 import { setupSessionStorageMock, cleanupSessionStorageMock } from '@/__tests__/utils/test-utils';
-import { ExperienceLevel } from '@/app/types/experience-levels';
+import { ExperienceLevel } from '@shared/types/experience-levels';
 
 describe('FilterContext', () => {
   let mockStorage: ReturnType<typeof setupSessionStorageMock>;

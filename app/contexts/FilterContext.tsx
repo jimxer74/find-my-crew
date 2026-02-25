@@ -1,11 +1,11 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { ExperienceLevel } from '@/app/types/experience-levels';
-import { DateRange } from '@/app/components/ui/DateRangePicker';
-import { Location } from '@/app/components/ui/LocationAutocomplete';
+import { ExperienceLevel } from '@shared/types/experience-levels';
+import { DateRange } from '@shared/ui/DateRangePicker';
+import { Location } from '@shared/ui/LocationAutocomplete';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';

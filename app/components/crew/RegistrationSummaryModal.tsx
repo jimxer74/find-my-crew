@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { formatDate } from '@/app/lib/dateFormat';
-import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
+import { formatDate } from '@shared/utils';
+import { getExperienceLevelConfig, ExperienceLevel } from '@shared/types/experience-levels';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
-import { Modal } from '@/app/components/ui/Modal/Modal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

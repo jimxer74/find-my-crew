@@ -1,7 +1,7 @@
 'use client';
 
-import { UserConsents } from '@/app/types/consents';
-import { Button } from '@/app/components/ui/Button/Button';
+import { UserConsents } from '@shared/types/consents';
+import { Button } from '@shared/ui/Button/Button';
 
 type EmailPreferences = {
   registration_updates: boolean;

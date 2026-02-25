@@ -5,10 +5,10 @@
  * Matches crew members based on experience level, risk tolerance, location, skills, and availability.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { toCanonicalSkillName } from '@/app/lib/skillUtils';
-import { checkExperienceLevelMatch } from '@/app/lib/skillMatching';
+import { toCanonicalSkillName } from '@shared/utils';
+import { checkExperienceLevelMatch } from '@shared/utils';
 
 export interface CrewSearchParams {
   experienceLevel?: number; // 1-4: Minimum experience level

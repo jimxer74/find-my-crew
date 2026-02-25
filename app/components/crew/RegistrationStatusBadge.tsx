@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Badge } from '@/app/components/ui';
-import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
+import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 interface RegistrationStatusBadgeProps {
   status: 'Pending approval' | 'Approved' | 'Not approved' | 'Cancelled';

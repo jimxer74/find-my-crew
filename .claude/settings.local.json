@@ -103,7 +103,8 @@
       "mcp__backlog__task_complete",
       "mcp__backlog__document_create",
       "mcp__backlog__document_update",
-      "mcp__backlog__document_view"
+      "mcp__backlog__document_view",
+      "Bash(cd:*)"
     ]
   }
 }

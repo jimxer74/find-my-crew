@@ -20,7 +20,7 @@ import {
 } from '@/app/lib/ai/owner/types';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import * as sessionService from '@/app/lib/owner/sessionService';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * Fetch session ID from server (stored in HttpOnly cookie)

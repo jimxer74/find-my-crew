@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { getCostModelConfig, getAllCostModels, getCostModelColorClass, CostModel } from '@/app/types/cost-models';
+import { getCostModelConfig, getAllCostModels, getCostModelColorClass, CostModel } from '@shared/types/cost-models';
 import { CostModelIcon } from './CostModelIcon';
 import { useTheme } from '@/app/contexts/ThemeContext';
 

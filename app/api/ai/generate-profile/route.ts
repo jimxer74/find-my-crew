@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { callAI } from '@/app/lib/ai/service';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
 import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
 

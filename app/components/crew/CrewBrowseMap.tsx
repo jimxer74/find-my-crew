@@ -1,11 +1,11 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { LegMobileCard } from './LegMobileCard';
 import { BottomSheet, SnapPoint } from '../ui/BottomSheet';
@@ -14,11 +14,11 @@ import { LegBrowsePane } from './LegBrowsePane';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { useProfile } from '@/app/lib/profile/useProfile';
-import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@/app/lib/skillMatching';
+import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@shared/utils';
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
-import { CostModel } from '@/app/types/cost-models';
+import { CostModel } from '@shared/types/cost-models';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { hasProfile } from '@/app/lib/profileUtils';
+import { hasProfile } from '@shared/utils';
 
 type Leg = {
   leg_id: string;

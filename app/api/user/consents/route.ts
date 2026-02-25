@@ -1,8 +1,8 @@
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
-import { ConsentType, CookiePreferences } from '@/app/types/consents';
+import { ConsentType, CookiePreferences } from '@shared/types/consents';
 
 /**
  * GET /api/user/consents

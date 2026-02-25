@@ -1,4 +1,4 @@
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateJourneyRoute } from '@/app/lib/ai/generateJourney';
 

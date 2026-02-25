@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
-import { ExperienceLevel, getExperienceLevelConfig, getAllExperienceLevels } from '@/app/types/experience-levels';
+import { ExperienceLevel, getExperienceLevelConfig, getAllExperienceLevels } from '@shared/types/experience-levels';
 import { useTheme } from '@/app/contexts/ThemeContext';
 
 type SkillLevelSelectorProps = {

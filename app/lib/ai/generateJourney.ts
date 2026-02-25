@@ -4,7 +4,7 @@
  * Avoids HTTP self-calls that fail in serverless environments.
  */
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { callAI, AIServiceError } from '@/app/lib/ai/service';
 import {
   validateLocation,

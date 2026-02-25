@@ -1,14 +1,14 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Pagination } from '@/app/components/ui/Pagination';
-import { formatDate } from '@/app/lib/dateFormat';
+import { Pagination } from '@shared/ui/Pagination';
+import { formatDate } from '@shared/utils';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';
 import { Footer } from '@/app/components/Footer';
 import { useProfile } from '@/app/lib/profile/useProfile';

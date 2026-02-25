@@ -1,8 +1,8 @@
 'use client';
 
-import { formatDate } from '@/app/lib/dateFormat';
-import { Card } from '@/app/components/ui/Card/Card';
-import { Button } from '@/app/components/ui/Button/Button';
+import { formatDate } from '@shared/utils';
+import { Card } from '@shared/ui/Card/Card';
+import { Button } from '@shared/ui/Button/Button';
 
 type Waypoint = {
   index: number;

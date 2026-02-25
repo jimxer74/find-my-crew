@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect, useMemo } from 'react';
 import { LegListItem, LegListItemData } from '@/app/components/crew/LegListItem';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 /**
  * Leg reference from AI chat messages

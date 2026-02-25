@@ -1,5 +1,5 @@
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseUnauthenticatedClient } from '@/app/lib/supabaseServer';
 import { ProspectSession } from '@/app/lib/ai/prospect/types';

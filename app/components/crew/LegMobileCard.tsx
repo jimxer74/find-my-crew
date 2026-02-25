@@ -1,7 +1,7 @@
 'use client';
 
 import { LegListItem, LegListItemData } from './LegListItem';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type Leg = {
   leg_id: string;

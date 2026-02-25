@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Card } from '@/app/components/ui';
-import { formatDate } from '@/app/lib/dateFormat';
-import { MatchBadge } from '@/app/components/ui/MatchBadge';
-import { ImageCarousel } from '@/app/components/ui/ImageCarousel';
+import { formatDate } from '@shared/utils';
+import { MatchBadge } from '@shared/ui/MatchBadge';
+import { ImageCarousel } from '@shared/ui/ImageCarousel';
 
 // Leg type matching the codebase pattern
 export type LegListItemData = {

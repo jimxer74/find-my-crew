@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
-import { ThemeToggle } from '@/app/components/ui/ThemeToggle';
+import { ThemeToggle } from '@shared/ui/ThemeToggle';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
 import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';

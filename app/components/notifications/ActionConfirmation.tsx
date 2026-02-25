@@ -1,10 +1,10 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { Notification } from '@/app/lib/notifications';
 import { isAIPendingAction, hasAIPendingActionMetadata, requiresInput } from '@/app/lib/notifications/types';
 import React, { ReactElement, useState } from 'react';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { ActionModal } from './ActionModal';
 
 interface ActionConfirmationProps {

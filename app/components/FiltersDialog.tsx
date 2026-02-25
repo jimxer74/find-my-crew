@@ -4,16 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
 import { RiskLevelSelector } from './ui/RiskLevelSelector';
 import { SkillLevelSelector } from './ui/SkillLevelSelector';
 import { DateRangePicker, DateRange } from './ui/DateRangePicker';
-import { ExperienceLevel } from '@/app/types/experience-levels';
+import { ExperienceLevel } from '@shared/types/experience-levels';
 
 type FiltersDialogProps = {
   isOpen: boolean;

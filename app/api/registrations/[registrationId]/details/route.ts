@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
-import { calculateMatchPercentage } from '@/app/lib/skillMatching';
-import { normalizeSkillNames } from '@/app/lib/skillUtils';
+import { calculateMatchPercentage } from '@shared/utils';
+import { normalizeSkillNames } from '@shared/utils';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * GET /api/registrations/[registrationId]/details

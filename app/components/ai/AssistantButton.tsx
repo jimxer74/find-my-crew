@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 export function AssistantButton({ userRoles }: { userRoles: string[] | null }) {
   const t = useTranslations('navigation');

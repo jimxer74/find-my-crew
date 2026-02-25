@@ -4,16 +4,16 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { formatDate } from '@/app/lib/dateFormat';
-import { getExperienceLevelConfig, ExperienceLevel } from '@/app/types/experience-levels';
+import { formatDate } from '@shared/utils';
+import { getExperienceLevelConfig, ExperienceLevel } from '@shared/types/experience-levels';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
-import { toDisplaySkillName } from '@/app/lib/skillUtils';
+import { toDisplaySkillName } from '@shared/utils';
 import { CrewSummaryCard } from '@/app/components/owner/CrewSummaryCard';
 import { PassportVerificationSection } from '@/app/components/owner/PassportVerificationSection';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
-import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
+import { CollapsibleSection } from '@shared/ui/CollapsibleSection';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 

@@ -3,7 +3,7 @@
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { SecureDocumentViewer } from '@/app/components/vault/SecureDocumentViewer';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 export default function DocumentViewPage() {
   const params = useParams();

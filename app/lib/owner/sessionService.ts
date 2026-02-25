@@ -6,7 +6,7 @@
  */
 
 import { OwnerSession } from '@/app/lib/ai/owner/types';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 
 /**
  * Load session from server using session_id from cookie

@@ -1,4 +1,4 @@
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 /**
  * API Route: POST /api/crew/search-matches
  * 

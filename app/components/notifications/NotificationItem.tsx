@@ -1,7 +1,7 @@
 'use client';
 
 import { type Notification, NotificationType } from '@/app/lib/notifications';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { ActionConfirmation } from './ActionConfirmation';
 import { isAIPendingAction } from '@/app/lib/notifications/types';
 

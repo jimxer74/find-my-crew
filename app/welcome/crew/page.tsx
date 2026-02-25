@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { Footer } from '@/app/components/Footer';
 import { ProspectChatProvider, useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { CrewOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';

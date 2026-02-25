@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import { AssistantChat } from './AssistantChat';
 
 const MIN_PANEL_WIDTH = 320;  // px

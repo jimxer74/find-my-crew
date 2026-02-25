@@ -3,11 +3,11 @@
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useTransition, useState } from 'react';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 interface LanguageSwitcherProps {
   variant?: 'dropdown' | 'buttons' | 'menu-item';

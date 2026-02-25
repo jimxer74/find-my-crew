@@ -1,11 +1,11 @@
 'use client';
 
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { Modal } from '@/app/components/ui/Modal/Modal';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
+import { Button } from '@shared/ui/Button/Button';
 
 type SignupModalProps = {
   isOpen: boolean;

@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { logger } from '@/app/lib/logger';
-import { Button } from '@/app/components/ui/Button/Button';
-import { Modal } from '@/app/components/ui/Modal/Modal';
+import { logger } from '@shared/logging';
+import { Button } from '@shared/ui/Button/Button';
+import { Modal } from '@shared/ui/Modal/Modal';
 
 // Sailboat category information (duplicated from BoatFormModal to keep independence)
 const sailboatCategories = {

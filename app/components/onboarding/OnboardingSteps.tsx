@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useTranslations } from 'next-intl';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 import type { OwnerPreferences } from '@/app/lib/ai/owner/types';
 
 export type OnboardingStepStatus = 'completed' | 'current' | 'upcoming';

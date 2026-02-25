@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { RiskLevelSelector } from '@/app/components/ui/RiskLevelSelector';
-import { LocationAutocomplete, type Location } from '@/app/components/ui/LocationAutocomplete';
-import { ExperienceLevel } from '@/app/types/experience-levels';
-import { Button } from '@/app/components/ui/Button/Button';
+import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';
+import { LocationAutocomplete, type Location } from '@shared/ui/LocationAutocomplete';
+import { ExperienceLevel } from '@shared/types/experience-levels';
+import { Button } from '@shared/ui/Button/Button';
 
 type SkillEntry = {
   skill_name: string;

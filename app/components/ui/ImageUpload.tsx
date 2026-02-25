@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { logger } from '@/app/lib/logger';
+import { logger } from '@shared/logging';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
 
 interface ImageUploadProps {

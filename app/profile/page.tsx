@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
-import { logger } from '@/app/lib/logger';
-import { ExperienceLevel, getAllExperienceLevels } from '@/app/types/experience-levels';
-import { UserConsents } from '@/app/types/consents';
-import { CollapsibleSection } from '@/app/components/ui/CollapsibleSection';
+import { logger } from '@shared/logging';
+import { ExperienceLevel, getAllExperienceLevels } from '@shared/types/experience-levels';
+import { UserConsents } from '@shared/types/consents';
+import { CollapsibleSection } from '@shared/ui/CollapsibleSection';
 import {
   PersonalInfoSection,
   SailingPreferencesSection,
@@ -22,7 +22,7 @@ import {
   isProfileFieldMissing,
   type ProfileDataForCompletion,
 } from '@/app/lib/profile/completionCalculator';
-import { type Location } from '@/app/components/ui/LocationAutocomplete';
+import { type Location } from '@shared/ui/LocationAutocomplete';
 
 type SkillEntry = {
   skill_name: string;
