@@ -8,7 +8,8 @@ interface BoatDetailNavProps {
 }
 
 const tabs = [
-  { href: '', label: 'Equipment', icon: WrenchIcon },
+  { href: '', label: 'Dashboard', icon: DashboardIcon },
+  { href: '/equipment', label: 'Equipment', icon: WrenchIcon },
   { href: '/inventory', label: 'Inventory', icon: BoxIcon },
   { href: '/maintenance', label: 'Maintenance', icon: ClipboardIcon },
 ];
@@ -45,6 +46,14 @@ export function BoatDetailNav({ boatId }: BoatDetailNavProps) {
         })}
       </div>
     </nav>
+  );
+}
+
+function DashboardIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+    </svg>
   );
 }
 
