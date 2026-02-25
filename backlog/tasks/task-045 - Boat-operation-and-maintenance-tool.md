@@ -4,7 +4,7 @@ title: Boat operation and maintenance tool
 status: To Do
 assignee: []
 created_date: '2026-01-28 13:18'
-updated_date: '2026-02-24 18:18'
+updated_date: '2026-02-25 12:46'
 labels: []
 dependencies: []
 ---
@@ -24,7 +24,7 @@ Data Security: User accounts with encrypted storage; optional sharing for co-own
 Customization: Allow users to add custom categories/items.
 Cost-Effective: Free basic version; premium for advanced analytics or multi-boat support.
 Integrations: Basic ones like calendar sync for reminders; avoid overkill.
-This could be an app of its own in the SailSmart ecosystem. Accessible using the same accounts and basic boats table, but separate from the crew matching app.
+Create own folder boat-management for this app in the monorepo
 
 Table of Contents for Tool Features
 
