@@ -11,6 +11,7 @@ export * from './ai';
 export * from './ui';
 export * from './hooks';
 export * from './contexts';
+export * from './lib';
 
 // Version info
 export const SHARED_VERSION = '0.1.0';
