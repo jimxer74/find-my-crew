@@ -331,16 +331,15 @@ export function ProspectChat() {
                 ? "Ready to continue exploring? Let's pick up where we left off."
                 : "Tell me about your sailing goals and I'll help you find matching opportunities."}
             </p>
-            {/* For unauthenticated users, show sign-up/login instructions and buttons */}
+            {/* For unauthenticated users, show link to landing page for onboarding */}
             {!isAuthenticated && (
               <div className="space-y-4">
                 <p className="text-xs max-w-sm mx-auto text-muted-foreground">
-                  Please sign up or log in to start chatting with the AI assistant and explore sailing opportunities.
+                  To start your onboarding journey, please visit our home page.
                 </p>
-              <div className="mt-4 flex justify-center gap-2">
-                {hasSessionEmail ? (
+                <div className="mt-4 flex justify-center">
                   <Button
-                    onClick={() => setShowAuthForm('login')}
+                    onClick={() => router.push('/')}
                     variant="primary"
                     size="sm"
                     leftIcon={
@@ -353,57 +352,14 @@ export function ProspectChat() {
                         viewBox="0 0 24 24"
                         stroke="currentColor"
                       >
-                        <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                        <path d="M3 12a9 9 0 1 1 18 0a9 9 0 0 1-18 0" />
+                        <path d="M9 6.75L15 12l-6 5.25" />
                       </svg>
                     }
                   >
-                    Log In
+                    Go to Home Page
                   </Button>
-                ) : (
-                  <Button
-                    onClick={() => setShowAuthForm('signup')}
-                    variant="primary"
-                    size="sm"
-                    leftIcon={
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                    }
-                  >
-                    Sign Up
-                  </Button>
-                )}
-                {hasSessionEmail && (
-                  <Button
-                    onClick={() => setShowAuthForm('signup')}
-                    variant="outline"
-                    size="sm"
-                    leftIcon={
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                      </svg>
-                    }
-                  >
-                    Create New Account
-                  </Button>
-                )}
-              </div>
+                </div>
               </div>
             )}
           </div>

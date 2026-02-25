@@ -277,47 +277,29 @@ export default function OwnerChat() {
                 I&apos;ll help you create your profile, add your boat, and plan your first journey. Let&apos;s get started!
               </p>
               {!isAuthenticated && (
-                <div className="flex justify-center gap-2 mt-4">
-                  {/* Show primary action based on whether session already has known email */}
-                  {hasSessionEmail ? (
-                    <Button
-                      onClick={() => setIsLoginModalOpen(true)}
-                      variant="primary"
-                      size="sm"
-                      className="!text-sm"
-                    >
-                      Log In to Continue
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => setIsSignupModalOpen(true)}
-                      variant="primary"
-                      size="sm"
-                      className="!text-sm"
-                    >
-                      Sign Up
-                    </Button>
-                  )}
-                  {/* Show secondary action */}
-                  {hasSessionEmail ? (
-                    <Button
-                      onClick={() => setIsSignupModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="!text-sm"
-                    >
-                      Create New Account
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => setIsLoginModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="!text-sm"
-                    >
-                      Log In
-                    </Button>
-                  )}
+                <div className="flex justify-center mt-4">
+                  <Button
+                    onClick={() => router.push('/')}
+                    variant="primary"
+                    size="sm"
+                    className="!text-sm"
+                    leftIcon={
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M3 12a9 9 0 1 1 18 0a9 9 0 0 1-18 0" />
+                        <path d="M9 6.75L15 12l-6 5.25" />
+                      </svg>
+                    }
+                  >
+                    Go to Home Page
+                  </Button>
                 </div>
               )}
             </div>
