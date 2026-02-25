@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { Modal, Button, Checkbox } from '@shared/ui';
-import type { DocumentCategory } from '@/app/lib/documents/types';
+import type { DocumentCategory } from '@shared/lib/documents/types';
 
 interface DocumentUploadModalProps {
   isOpen: boolean;

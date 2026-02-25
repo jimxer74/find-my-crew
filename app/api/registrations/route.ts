@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
 import { assessRegistrationWithAI, performPreChecks } from '@shared/ai/assessRegistration';
 import { hasCrewRole } from '@shared/auth';
-import { notifyNewRegistration } from '@/app/lib/notifications';
+import { notifyNewRegistration } from '@shared/lib/notifications';
 import { waitUntil } from '@vercel/functions';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';

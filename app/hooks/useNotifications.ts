@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { logger } from '@shared/logging';
-import type { Notification } from '@/app/lib/notifications';
+import type { Notification } from '@shared/lib/notifications';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const NOTIFICATIONS_PER_PAGE = 5;

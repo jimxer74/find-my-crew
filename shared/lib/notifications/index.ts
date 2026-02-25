@@ -10,7 +10,7 @@
  *   notifyRegistrationApproved,
  *   sendRegistrationApprovedEmail,
  *   NotificationType,
- * } from '@/app/lib/notifications';
+ * } from '@shared/lib/notifications';
  * ```
  */
 

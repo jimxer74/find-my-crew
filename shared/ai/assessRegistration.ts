@@ -18,7 +18,7 @@ import {
   NotificationType,
   sendReviewNeededEmail,
   notifyPendingRegistration,
-} from '@/app/lib/notifications';
+} from '@shared/lib/notifications';
 
 type RequirementType = 'risk_level' | 'experience_level' | 'skill' | 'passport' | 'question';
 

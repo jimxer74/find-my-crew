@@ -1,3 +1,14 @@
+// AI components
+export {
+  ActionFeedback,
+  AssistantButton,
+  AssistantChat,
+  AssistantSidebar,
+  ChatLegCarousel,
+  MultiSelectInputModal,
+  TextInputModal,
+} from './ai';
+
 // Auth components
 export { ConsentSetupModal, FeatureGate } from './auth';
 
@@ -22,3 +33,23 @@ export {
   NotificationCenter,
   NotificationItem,
 } from './notifications';
+
+// Onboarding components
+export {
+  CrewOnboardingSteps,
+  OwnerOnboardingSteps,
+  CrewOnboardingStepsInline,
+  OwnerOnboardingStepsInline,
+  OnboardingStickyBar,
+  URLImportForm,
+  URLImportModal,
+  URLImportWizardPage,
+} from './onboarding';
+
+// Vault components
+export {
+  DocumentCard,
+  DocumentUploadModal,
+  GrantManagementModal,
+  SecureDocumentViewer,
+} from './vault';

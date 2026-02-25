@@ -5,7 +5,7 @@ import {
   notifyRegistrationApproved,
   notifyRegistrationDenied,
   notifyPendingRegistration,
-} from '@/app/lib/notifications';
+} from '@shared/lib/notifications';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 

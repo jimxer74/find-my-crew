@@ -4,8 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Footer } from '@/app/components/Footer';
 import { OwnerChatProvider, useOwnerChat } from '@/app/contexts/OwnerChatContext';
-import { OwnerOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';
-import { OnboardingStickyBar } from '@/app/components/onboarding/OnboardingStickyBar';
+import { OwnerOnboardingSteps } from '@shared/components/onboarding/OnboardingSteps';
+import { OnboardingStickyBar } from '@shared/components/onboarding/OnboardingStickyBar';
 import OwnerChat from '@/app/components/owner/OwnerChat';
 
 /**

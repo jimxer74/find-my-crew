@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@shared/logging';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
+import { FacebookUserData, ProfileSuggestion } from '@shared/lib/facebook/types';
 import { ExperienceLevel } from '@shared/types/experience-levels';
 import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
 import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';

@@ -2,9 +2,9 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
-import { MAX_GRANT_DURATION_DAYS } from '@/app/lib/documents/types';
-import type { GrantPurpose } from '@/app/lib/documents/types';
+import { logDocumentAccess, getClientIp } from '@shared/lib/documents/audit';
+import { MAX_GRANT_DURATION_DAYS } from '@shared/lib/documents/types';
+import type { GrantPurpose } from '@shared/lib/documents/types';
 
 type RouteParams = { params: Promise<{ id: string }> };
 

@@ -2,7 +2,7 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
+import { logDocumentAccess, getClientIp } from '@shared/lib/documents/audit';
 
 type RouteParams = { params: Promise<{ id: string }> };
 

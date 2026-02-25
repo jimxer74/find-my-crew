@@ -3,7 +3,7 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@shared/database/server';
 import { classifyDocument } from '@shared/ai/documents/classification-service';
-import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
+import { logDocumentAccess, getClientIp } from '@shared/lib/documents/audit';
 
 type RouteParams = { params: Promise<{ id: string }> };
 

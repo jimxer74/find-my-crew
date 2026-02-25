@@ -2,7 +2,7 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { fetchAllUserData, validateAccessToken } from '@/app/lib/facebook/graphApi';
+import { fetchAllUserData, validateAccessToken } from '@shared/lib/facebook/graphApi';
 
 export async function GET(request: NextRequest) {
   try {

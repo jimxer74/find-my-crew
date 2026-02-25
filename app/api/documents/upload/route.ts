@@ -2,12 +2,12 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
+import { logDocumentAccess, getClientIp } from '@shared/lib/documents/audit';
 import {
   ALLOWED_DOCUMENT_TYPES,
   MAX_DOCUMENT_SIZE,
   MAX_UPLOADS_PER_HOUR,
-} from '@/app/lib/documents/types';
+} from '@shared/lib/documents/types';
 
 /**
  * POST /api/documents/upload

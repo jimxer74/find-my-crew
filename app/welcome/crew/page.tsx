@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@shared/logging';
 import { Footer } from '@/app/components/Footer';
 import { ProspectChatProvider, useProspectChat } from '@/app/contexts/ProspectChatContext';
-import { CrewOnboardingSteps } from '@/app/components/onboarding/OnboardingSteps';
-import { OnboardingStickyBar } from '@/app/components/onboarding/OnboardingStickyBar';
+import { CrewOnboardingSteps } from '@shared/components/onboarding/OnboardingSteps';
+import { OnboardingStickyBar } from '@shared/components/onboarding/OnboardingStickyBar';
 import { ProspectChat } from '@/app/components/prospect/ProspectChat';
 import { ProfileExtractionModal } from '@/app/components/prospect/ProfileExtractionModal';
 

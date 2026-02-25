@@ -1,6 +1,6 @@
 'use client';
 
-import { Notification, NotificationType, type NotificationMetadata } from '@/app/lib/notifications';
+import { Notification, NotificationType, type NotificationMetadata } from '@shared/lib/notifications';
 import { type AIPendingAction } from '@shared/ai/assistant/types';
 
 // Action labels matching those in ActionConfirmation.tsx

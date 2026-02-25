@@ -2,7 +2,7 @@
 
 import { createContext, useContext, ReactNode } from 'react';
 import { useNotifications } from '@/app/hooks/useNotifications';
-import type { Notification } from '@/app/lib/notifications';
+import type { Notification } from '@shared/lib/notifications';
 
 interface NotificationContextType {
   notifications: Notification[];

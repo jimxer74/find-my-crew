@@ -1,8 +1,8 @@
 'use client';
 
 import { logger } from '@shared/logging';
-import { Notification } from '@/app/lib/notifications';
-import { isAIPendingAction, hasAIPendingActionMetadata, requiresInput } from '@/app/lib/notifications/types';
+import { Notification } from '@shared/lib/notifications';
+import { isAIPendingAction, hasAIPendingActionMetadata, requiresInput } from '@shared/lib/notifications/types';
 import React, { ReactElement, useState } from 'react';
 import { Button } from '@shared/ui/Button/Button';
 import { ActionModal } from './ActionModal';

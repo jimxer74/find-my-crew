@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAssistant } from '@/app/contexts/AssistantContext';
-import { AssistantChat } from '@/app/components/ai/AssistantChat';
+import { AssistantChat } from '@shared/components/ai/AssistantChat';
 import { useAuth } from '@/app/contexts/AuthContext';
 
 export default function AssistantPage() {

@@ -17,7 +17,7 @@ import { shouldStayOnHomepage, redirectAfterAuth, getRedirectPath } from '@/app/
 import { ProspectSession } from '@shared/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@shared/ui/ComboSearchBox';
 import { OwnerComboSearchBox, type OwnerComboSearchData } from '@shared/ui/OwnerComboSearchBox';
-import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@/app/components/onboarding/OnboardingSteps';
+import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@shared/components/onboarding/OnboardingSteps';
 import type { OwnerPreferences } from '@shared/ai/owner/types';
 
 function OwnerPostDialog({

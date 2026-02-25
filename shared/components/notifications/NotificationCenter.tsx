@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Button } from "@shared/ui/Button";
 import { NotificationItem } from "./NotificationItem";
-import { type Notification } from "@/app/lib/notifications";
+import { type Notification } from "@shared/lib/notifications";
 import { useAssistant, parseProfileAction } from "@/app/contexts/AssistantContext";
 import { ActionConfirmation } from "./ActionConfirmation";
 import { convertActionToNotification } from "./helpers/actionUtils";

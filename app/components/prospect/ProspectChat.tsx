@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
 import { ProspectMessage, PendingAction, ProspectLegReference } from '@shared/ai/prospect/types';
-import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
+import { ChatLegCarousel } from '@shared/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';

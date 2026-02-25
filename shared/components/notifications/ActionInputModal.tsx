@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Modal, Button, Input } from '@shared/ui';
-import { Notification, NotificationMetadata } from '@/app/lib/notifications';
+import { Notification, NotificationMetadata } from '@shared/lib/notifications';
 
 interface ActionInputModalProps {
   notification: Notification;

@@ -5,8 +5,8 @@ import { createPortal } from 'react-dom';
 import { useTranslations } from 'next-intl';
 import { LocationAutocomplete, type Location } from './LocationAutocomplete';
 import { DateRangePicker, type DateRange } from './DateRangePicker';
-import { URLImportModal } from '@/app/components/onboarding/URLImportModal';
-import { URLImportWizardPage } from '@/app/components/onboarding/URLImportWizardPage';
+import { URLImportModal } from '@shared/components/onboarding/URLImportModal';
+import { URLImportWizardPage } from '@shared/components/onboarding/URLImportWizardPage';
 
 export interface OwnerComboSearchData {
   journeyDetails: {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { getNotifications } from '@/app/lib/notifications';
+import { getNotifications } from '@shared/lib/notifications';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 

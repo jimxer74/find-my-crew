@@ -7,7 +7,7 @@
  */
 
 import { logger } from '@shared/logging';
-import type { DocumentClassificationResult, DocumentCategory } from '@/app/lib/documents/types';
+import type { DocumentClassificationResult, DocumentCategory } from '@shared/lib/documents/types';
 import { getUseCaseConfig, getAIConfig, getAPIKeys } from '@shared/ai/config';
 
 const VALID_CATEGORIES: DocumentCategory[] = [

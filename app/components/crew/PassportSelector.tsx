@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/contexts/AuthContext';
 import Link from 'next/link';
-import type { DocumentVault } from '@/app/lib/documents/types';
+import type { DocumentVault } from '@shared/lib/documents/types';
 import { logger } from '@shared/logging';
 import { Button } from '@shared/ui/Button/Button';
 

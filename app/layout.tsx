@@ -14,7 +14,7 @@ import { AssistantProvider } from "./contexts/AssistantContext";
 import { CookieConsentBanner } from "./components/CookieConsentBanner";
 import { Header } from "./components/Header";
 import { ThemeScript } from "./components/ThemeScript";
-import { AssistantSidebar } from "./components/ai/AssistantSidebar";
+import { AssistantSidebar } from "@shared/components/ai/AssistantSidebar";
 import { UserRolesProvider } from "./contexts/UserRoleContext";
 import { EmailVerificationBanner } from "./components/EmailVerificationBanner";
 import { MainContent } from "./components/MainContent";

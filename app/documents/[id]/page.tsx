@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { SecureDocumentViewer } from '@/app/components/vault/SecureDocumentViewer';
+import { SecureDocumentViewer } from '@shared/components/vault/SecureDocumentViewer';
 import { logger } from '@shared/logging';
 
 export default function DocumentViewPage() {

@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Card, Button } from '@shared/ui';
-import type { DocumentVault, DocumentCategory } from '@/app/lib/documents/types';
+import type { DocumentVault, DocumentCategory } from '@shared/lib/documents/types';
 
 interface DocumentCardProps {
   document: DocumentVault;

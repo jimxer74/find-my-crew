@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Footer } from '@/app/components/Footer';
-import { DocumentCard } from '@/app/components/vault/DocumentCard';
-import { DocumentUploadModal } from '@/app/components/vault/DocumentUploadModal';
-import { SecureDocumentViewer } from '@/app/components/vault/SecureDocumentViewer';
-import { GrantManagementModal } from '@/app/components/vault/GrantManagementModal';
-import type { DocumentVault, DocumentCategory } from '@/app/lib/documents/types';
+import { DocumentCard } from '@shared/components/vault/DocumentCard';
+import { DocumentUploadModal } from '@shared/components/vault/DocumentUploadModal';
+import { SecureDocumentViewer } from '@shared/components/vault/SecureDocumentViewer';
+import { GrantManagementModal } from '@shared/components/vault/GrantManagementModal';
+import type { DocumentVault, DocumentCategory } from '@shared/lib/documents/types';
 
 const CATEGORY_FILTERS: (DocumentCategory | 'all')[] = [
   'all',

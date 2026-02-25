@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
-import { markAllAsRead } from '@/app/lib/notifications';
+import { markAllAsRead } from '@shared/lib/notifications';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
