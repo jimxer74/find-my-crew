@@ -7,4 +7,5 @@ export * from './dateFormat';
 export * from './country-flags';
 export * from './errors';
 export * from './IGeoCode';
-export * from './geocoding/locations';
+// Geocoding moved to shared/lib/geocoding - import from there if needed
+// export * from './geocoding/locations';

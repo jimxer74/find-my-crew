@@ -13,6 +13,9 @@ export * from './facebook';
 export * from './feedback/service';
 export * from './feedback/types';
 
+// Geocoding
+export * from './geocoding';
+
 // Notifications
 export * from './notifications';
 

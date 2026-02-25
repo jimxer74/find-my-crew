@@ -6,7 +6,7 @@
  */
 
 import { logger } from '@shared/logging';
-import { BoundingBox, describeBbox } from '@shared/utils/geocoding/geocoding';
+import { BoundingBox, describeBbox } from '@shared/lib/geocoding/geocoding';
 
 // Re-export BoundingBox type for convenience
 export type { BoundingBox };

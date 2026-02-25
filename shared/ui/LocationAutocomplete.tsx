@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { logger } from '@shared/logging';
-import { searchLocation, type LocationSearchResult } from '@shared/utils/geocoding/locations';
+import { searchLocation, type LocationSearchResult } from '@shared/lib/geocoding/locations';
 
 export type Location = {
   name: string;
@@ -138,7 +138,7 @@ export function LocationAutocomplete({
         const cruisingMatches: LocationSearchResult[] = [];
         
         // Import getAllRegions to search through all regions
-        const { getAllRegions } = await import('@/app/lib/geocoding/locations');
+        const { getAllRegions } = await import('@shared/lib/geocoding/locations');
         const allRegions = getAllRegions();
         
         for (const region of allRegions) {

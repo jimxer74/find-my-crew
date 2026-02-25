@@ -11,7 +11,7 @@ import {
   LocationRegion,
   getAllRegions,
   sortRegionsByDistance,
-} from '@shared/utils/geocoding/locations';
+} from '@shared/lib/geocoding/locations';
 import { CruisingRegionSection } from '@/app/components/crew/CruisingRegionSection';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { Footer } from '@/app/components/Footer';

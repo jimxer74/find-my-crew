@@ -9,8 +9,8 @@ import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
-import { BoundingBox, describeBbox } from '@shared/utils/geocoding/geocoding';
-import { getLocationBbox, listRegions, getCategories } from '@shared/utils/geocoding/locations';
+import { BoundingBox, describeBbox } from '@shared/lib/geocoding/geocoding';
+import { getLocationBbox, listRegions, getCategories } from '@shared/lib/geocoding/locations';
 import {
   normalizeBboxArgs,
   isValidBbox,
