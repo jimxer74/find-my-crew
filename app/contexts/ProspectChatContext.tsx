@@ -20,7 +20,7 @@ import {
   ProspectLegReference,
 } from '@shared/ai/prospect/types';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import * as sessionService from '@/app/lib/prospect/sessionService';
+import * as sessionService from '@shared/lib/prospect/sessionService';
 import { logger } from '@shared/logging';
 
 const SESSION_EXPIRY_DAYS = 7; // Keep for reference, expiry handled server-side

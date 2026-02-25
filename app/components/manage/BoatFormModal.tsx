@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import { canCreateBoat } from '@/app/lib/limits';
+import { canCreateBoat } from '@shared/lib/limits';
 import { logger } from '@shared/logging';
 import { Button } from '@shared/ui/Button/Button';
 import { Modal } from '@shared/ui/Modal/Modal';

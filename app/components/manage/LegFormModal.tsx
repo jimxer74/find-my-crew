@@ -9,7 +9,7 @@ import skillsConfig from '@/app/config/skills-config.json';
 import { postGISToWaypoint, validateCoordinates } from '@/app/lib/postgis-helpers';
 import { ExperienceLevel, getAllExperienceLevels, getExperienceLevelConfig } from '@shared/types/experience-levels';
 import { toDisplaySkillName } from '@shared/utils';
-import { canCreateLeg } from '@/app/lib/limits';
+import { canCreateLeg } from '@shared/lib/limits';
 import Image from 'next/image';
 import { Button } from '@shared/ui/Button/Button';
 import { Modal } from '@shared/ui/Modal/Modal';

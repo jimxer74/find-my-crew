@@ -2,7 +2,7 @@ import { logger } from '@shared/logging';
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getRedirectResponse } from '@/app/lib/routing/redirectHelpers.server';
+import { getRedirectResponse } from '@shared/lib/routing/redirectHelpers.server';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)

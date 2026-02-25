@@ -19,7 +19,7 @@ import {
   OWNER_NAME_TAG_REGEX,
 } from '@shared/ai/owner/types';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import * as sessionService from '@/app/lib/owner/sessionService';
+import * as sessionService from '@shared/lib/owner/sessionService';
 import { logger } from '@shared/logging';
 
 /**

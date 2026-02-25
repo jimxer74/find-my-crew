@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { getRedirectPathServer, shouldStayOnHomepageServer } from './app/lib/routing/redirectHelpers.server';
+import { getRedirectPathServer, shouldStayOnHomepageServer } from '@shared/lib/routing/redirectHelpers.server';
 
 /**
  * Middleware for handling redirects

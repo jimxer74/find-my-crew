@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import { redirectAfterAuth } from '@/app/lib/routing/redirectHelpers.client';
+import { redirectAfterAuth } from '@shared/lib/routing/redirectHelpers.client';
 
 export default function LoginPage() {
   const t = useTranslations('auth.login');
