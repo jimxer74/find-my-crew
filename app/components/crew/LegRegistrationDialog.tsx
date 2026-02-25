@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useEffect } from 'react';
 import { useLegRegistration, LegRegistrationData } from '@/app/hooks/useLegRegistration';
 import { RegistrationRequirementsForm } from './RegistrationRequirementsForm';
 import { RegistrationSuccessModal } from './RegistrationSuccessModal';
 import { PassportVerificationStep } from './PassportVerificationStep';
 import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 import { useMediaQuery } from '@/app/hooks/useMediaQuery';
 import { logger } from '@/app/lib/logger';
-import { Z_INDEX } from '@/app/lib/designTokens';
 
 type LegRegistrationDialogProps = {
   isOpen: boolean;
@@ -27,7 +26,6 @@ export function LegRegistrationDialog({
   onSuccess,
 }: LegRegistrationDialogProps) {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  const dialogRef = useRef<HTMLDivElement>(null);
   const [showPassportStep, setShowPassportStep] = useState(false);
   const [showRequirementsForm, setShowRequirementsForm] = useState(false);
   const [showSimpleForm, setShowSimpleForm] = useState(false);
@@ -157,40 +155,7 @@ export function LegRegistrationDialog({
     }
   }, [isOpen, leg, requirementsChecked, passportVerificationComplete, checkRequirements, setHookRegistrationError]);
 
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
 
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  // Prevent body scroll when dialog is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
 
   const handlePassportComplete = (data: { passport_document_id: string; photo_file?: Blob }) => {
     setPassportData(data);
@@ -237,100 +202,28 @@ export function LegRegistrationDialog({
     onClose();
   };
 
-  if (!isOpen) return null;
+  const getModalTitle = () => {
+    if (loadingLeg) return 'Loading...';
+    return leg ? `Register for ${leg.leg_name}` : 'Register';
+  };
 
-  if (loadingLeg) {
-    return createPortal(
-      <>
-        {/* Backdrop */}
-        <div
-          className={`fixed inset-0 bg-black/50 ${isMobile ? '' : 'flex items-center justify-center p-4'}`}
-          style={{ zIndex: Z_INDEX.modalBackdrop }}
-          aria-hidden="true"
-        />
-        {/* Content */}
-        <div
-          className={`fixed ${
-            isMobile
-              ? 'top-16 left-0 right-0 bottom-0'
-              : 'inset-0 flex items-center justify-center p-4'
-          }`}
-          style={{ zIndex: Z_INDEX.modal }}
-        >
-        <div
-          className={`bg-card shadow-xl flex flex-col overflow-hidden ${
-            isMobile
-              ? 'w-full h-full'
-              : 'rounded-lg w-full max-w-2xl max-h-[90vh]'
-          }`}
-        >
-          <div className="flex items-center justify-center py-12">
-            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-3 text-muted-foreground">Loading leg information...</span>
-          </div>
+  const getModalContent = () => {
+    if (loadingLeg) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-3 text-muted-foreground">Loading leg information...</span>
         </div>
-        </div>
-      </>,
-      document.body
-    );
-  }
+      );
+    }
 
-  if (!leg) return null;
+    if (!leg) {
+      return null;
+    }
 
-  // Mobile: Full width dialog under header
-  // Desktop: Centered modal dialog
-  const dialogContent = (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50"
-        style={{ zIndex: Z_INDEX.modalBackdrop }}
-        onClick={handleBackdropClick}
-        aria-hidden="true"
-      />
-      {/* Container */}
-      <div
-        className={`fixed ${
-          isMobile
-            ? 'top-16 left-0 right-0 bottom-0'
-            : 'top-18 inset-0 flex items-center justify-center p-4'
-        }`}
-        style={{ zIndex: Z_INDEX.modal }}
-      >
-      <div
-        ref={dialogRef}
-        className={`bg-card shadow-xl flex flex-col overflow-hidden ${
-          isMobile
-            ? 'w-full h-full'
-            : 'rounded-lg w-full max-w-2xl max-h-[90vh]'
-        }`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="registration-dialog-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-border">
-          <h2 id="registration-dialog-title" className="text-lg font-semibold text-foreground">
-            Register for {leg.leg_name}
-          </h2>
-          <Button
-            onClick={onClose}
-            variant="ghost"
-            size="sm"
-            className="!p-2"
-            aria-label="Close"
-          >
-            <svg className="w-5 h-5 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-
-          {displayError && !isCheckingRequirements && !showPassportStep && !showRequirementsForm && !showSimpleForm ? (
+    return (
+      <div className="flex-1 overflow-y-auto">
+        {displayError && !isCheckingRequirements && !showPassportStep && !showRequirementsForm && !showSimpleForm ? (
             <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
               {displayError}
             </div>
@@ -528,17 +421,23 @@ export function LegRegistrationDialog({
               </div>
             </div>
           ) : null}
-        </div>
       </div>
-      </div>
-    </>
-  );
+    );
+  };
 
-  if (typeof document === 'undefined') return null;
   return (
     <>
-      {/* Only show registration dialog if success modal is not showing */}
-      {!showSuccessModal && createPortal(dialogContent, document.body)}
+      <Modal
+        isOpen={isOpen && !showSuccessModal}
+        onClose={onClose}
+        title={getModalTitle()}
+        size={isMobile ? 'full' : 'xl'}
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+      >
+        {getModalContent()}
+      </Modal>
       {/* Show success modal on top when registration is submitted */}
       {leg && (
         <RegistrationSuccessModal
