@@ -65,6 +65,38 @@ Take existing domain-specific components and refactor them to leverage core comp
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
+## Session 8 - 1 Additional Component Refactored + Front-page UI Preservation
+
+### Components Completed This Session
+1. ✅ **PassportVerificationSection** - Photo lightbox modal refactored to use Modal component
+
+### Session Constraints Applied
+- **Preserved front-page UI**: Reverted planned ComboSearchBox and OwnerComboSearchBox refactorings to maintain existing front-page UI/appearance
+- These components are used on the front page and user requested no changes to homepage/front-page UI
+
+### Updated Progress Summary
+- **Total Components Refactored: 40 (80% of 50 estimated)**
+- Previously: 39 components from Sessions 1-7
+- Added this session: 1 (PassportVerificationSection)
+
+### Session 8 Work
+- Identified PassportVerificationSection with custom photo enlargement modal
+- Converted custom fixed div-based modal to Modal component
+- Removed custom backdrop and positioning code
+- Maintained photo verification functionality and styling
+- Build: All 82 pages compile successfully
+
+### Remaining Work Assessment
+- Approximately 10 components remaining to reach 90%+
+- Most obvious high-value refactoring targets completed
+- Remaining components are either:
+  * Already using core components properly (many Modal/Button refactored earlier)
+  * Specialized/unique domain logic components
+  * Complex multi-step components like LegRegistrationDialog
+  * Minor utility components
+
+---
+
 ## Session 7 - Continuation - 7 Additional Modal/Component Refactorings
 
 ### Refactored Components (Continued)
