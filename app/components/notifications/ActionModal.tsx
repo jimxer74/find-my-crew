@@ -2,7 +2,7 @@
 
 import { logger } from '@shared/logging';
 import { useState } from 'react';
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 import { Notification } from '@/app/lib/notifications';
 import { ActionInputModal } from './ActionInputModal';
 import { ActionConfirmation } from './ActionConfirmation';

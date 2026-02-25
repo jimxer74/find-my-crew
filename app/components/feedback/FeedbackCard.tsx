@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Card } from '@/app/components/ui';
+import { Card } from '@shared/ui';
 import { type FeedbackWithAuthor } from '@/app/lib/feedback/types';
 import { TypeBadge } from './TypeBadge';
 import { StatusBadge } from './StatusBadge';

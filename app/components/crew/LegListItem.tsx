@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Card } from '@/app/components/ui';
+import { Card } from '@shared/ui';
 import { formatDate } from '@shared/utils';
 import { MatchBadge } from '@shared/ui/MatchBadge';
 import { ImageCarousel } from '@shared/ui/ImageCarousel';

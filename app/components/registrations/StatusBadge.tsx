@@ -1,4 +1,4 @@
-import { Badge } from '@/app/components/ui';
+import { Badge } from '@shared/ui';
 import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 type Status = 'Pending approval' | 'Approved' | 'Not approved' | 'Cancelled';

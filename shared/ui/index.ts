@@ -5,7 +5,7 @@
  * Import components from this index for convenience:
  *
  * @example
- * import { Button, Card } from '@/app/components/ui';
+ * import { Button, Card } from '@shared/ui';
  */
 
 export { Button } from './Button';

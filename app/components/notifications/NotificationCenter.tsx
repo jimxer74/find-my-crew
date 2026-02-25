@@ -1,11 +1,11 @@
 "use client";
 
-import { logger } from "@/app/lib/logger";
+import { logger } from "@shared/logging";
 import { useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { Button } from "@/app/components/ui/Button/Button";
+import { Button } from "@shared/ui/Button";
 import { NotificationItem } from "./NotificationItem";
 import { type Notification } from "@/app/lib/notifications";
 import { useAssistant, parseProfileAction } from "@/app/contexts/AssistantContext";

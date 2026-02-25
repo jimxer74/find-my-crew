@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge } from '@/app/components/ui';
-import type { BadgeVariant } from '@/app/components/ui/Badge/Badge.types';
+import { Badge } from '@shared/ui';
+import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 interface MatchBadgeProps {
   percentage: number;

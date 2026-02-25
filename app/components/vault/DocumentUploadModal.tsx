@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal, Button, Checkbox } from '@/app/components/ui';
+import { Modal, Button, Checkbox } from '@shared/ui';
 import type { DocumentCategory } from '@/app/lib/documents/types';
 
 interface DocumentUploadModalProps {

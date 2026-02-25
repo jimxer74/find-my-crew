@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 import { useEmailVerificationStatus } from '@/app/hooks/useEmailVerificationStatus';
 
 interface EmailConfirmationModalProps {

@@ -9,10 +9,10 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { Button } from '@shared/ui/Button/Button';
 import { getSupabaseBrowserClient } from '@shared/database/client';
-import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
-import { RiskLevelSelector } from './ui/RiskLevelSelector';
-import { SkillLevelSelector } from './ui/SkillLevelSelector';
-import { DateRangePicker, DateRange } from './ui/DateRangePicker';
+import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
+import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';
+import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
+import { DateRangePicker, DateRange } from '@shared/ui/DateRangePicker';
 import { ExperienceLevel } from '@shared/types/experience-levels';
 
 type FiltersDialogProps = {

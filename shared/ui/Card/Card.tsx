@@ -15,7 +15,7 @@ const paddingMap = {
  *
  * @example
  * // Basic card
- * import { Card, CardHeader, CardBody } from '@/app/components/ui';
+ * import { Card, CardHeader, CardBody } from '@shared/ui';
  *
  * <Card>
  *   <CardHeader>Title</CardHeader>

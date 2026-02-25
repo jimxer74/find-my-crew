@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 import { AIPendingAction } from '@shared/ai/assistant/types';
 
 interface TextInputModalProps {

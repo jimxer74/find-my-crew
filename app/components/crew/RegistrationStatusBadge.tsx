@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Badge } from '@/app/components/ui';
+import { Badge } from '@shared/ui';
 import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 
 interface RegistrationStatusBadgeProps {

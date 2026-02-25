@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
 

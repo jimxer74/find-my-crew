@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing' | null;
 

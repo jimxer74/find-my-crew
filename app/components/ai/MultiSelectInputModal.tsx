@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Button, Checkbox } from '@/app/components/ui';
+import { Modal, Button, Checkbox } from '@shared/ui';
 import { AIPendingAction } from '@shared/ai/assistant/types';
 
 interface MultiSelectInputModalProps {

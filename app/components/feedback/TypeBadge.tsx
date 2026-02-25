@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge } from '@/app/components/ui';
+import { Badge } from '@shared/ui';
 import { FeedbackType, getFeedbackTypeLabel } from '@/app/lib/feedback/types';
 import type { BadgeVariant } from '@shared/ui/Badge/Badge.types';
 

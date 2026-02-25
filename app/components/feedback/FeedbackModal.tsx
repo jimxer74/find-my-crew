@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal, Button, Checkbox } from '@/app/components/ui';
+import { Modal, Button, Checkbox } from '@shared/ui';
 import { FeedbackType, type CreateFeedbackPayload } from '@/app/lib/feedback/types';
 
 interface FeedbackModalProps {

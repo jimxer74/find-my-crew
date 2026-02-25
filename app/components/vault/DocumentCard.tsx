@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Card, Button } from '@/app/components/ui';
+import { Card, Button } from '@shared/ui';
 import type { DocumentVault, DocumentCategory } from '@/app/lib/documents/types';
 
 interface DocumentCardProps {

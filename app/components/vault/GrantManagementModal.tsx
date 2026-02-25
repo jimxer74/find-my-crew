@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 import type { DocumentAccessGrant, GrantPurpose } from '@/app/lib/documents/types';
 
 interface GrantManagementModalProps {

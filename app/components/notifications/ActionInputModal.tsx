@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Button, Input } from '@/app/components/ui';
+import { Modal, Button, Input } from '@shared/ui';
 import { Notification, NotificationMetadata } from '@/app/lib/notifications';
 
 interface ActionInputModalProps {

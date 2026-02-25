@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card } from '@/app/components/ui';
+import { Card } from '@shared/ui';
 import { formatDate } from '@shared/utils';
 import { StatusBadge } from './StatusBadge';
 

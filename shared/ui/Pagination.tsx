@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@/app/components/ui/Button/Button';
+import { Button } from '@shared/ui/Button/Button';
 
 type PaginationProps = {
   currentPage: number;

@@ -8,7 +8,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from '@shared/ui/Button/Button';
 import { LegDetailsPanel } from './LegDetailsPanel';
 import { LegMobileCard } from './LegMobileCard';
-import { BottomSheet, SnapPoint } from '../ui/BottomSheet';
+import { BottomSheet, SnapPoint } from '@shared/ui/BottomSheet';
 import { LegList } from './LegList';
 import { LegBrowsePane } from './LegBrowsePane';
 import { useAuth } from '@/app/contexts/AuthContext';

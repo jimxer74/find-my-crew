@@ -1,6 +1,6 @@
 'use client';
 
-import { Modal, Button } from '@/app/components/ui';
+import { Modal, Button } from '@shared/ui';
 
 type RegistrationSuccessModalProps = {
   isOpen: boolean;
