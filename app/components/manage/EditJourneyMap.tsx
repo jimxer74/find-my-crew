@@ -6,6 +6,8 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/contexts/ThemeContext';
 import { splitLineAtAntimeridian } from '@/app/lib/postgis-helpers';
+import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 type Waypoint = {
   index: number;
@@ -956,146 +958,134 @@ export function EditJourneyMap({
     >
       {/* Location Modal */}
       {locationInfo && (
-        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-50">
-          <div
-            className="bg-card border border-border rounded-lg shadow-xl max-w-xs w-full mx-4 pointer-events-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold text-card-foreground">
-                  {isLoadingLocation ? 'Loading...' : locationInfo.name}
-                </h3>
-                <button
-                  onClick={handleCloseModal}
-                  className="text-muted-foreground hover:text-foreground transition-colors ml-4"
-                  aria-label="Close"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-4">
-                {hasActiveLegWithoutEnd ? (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        if (locationInfo) {
-                          // Find the active leg (one without an end point) to get its ID
-                          const activeLeg = allLegsWaypoints.find(leg => !leg.isComplete);
-                          const activeLegId = activeLeg?.legId;
-                          
-                          if (!activeLegId) {
-                            logger.error('No active leg found to add waypoint to');
-                            return;
-                          }
-                          
-                          // Convert the temporary gray marker to a permanent waypoint marker
-                          if (markerRef.current) {
-                            const currentLngLat = markerRef.current.getLngLat();
-                            markerRef.current.remove();
-                            markerRef.current = null;
-                            addPermanentWaypointMarker(currentLngLat.lng, currentLngLat.lat, activeLegId);
-                          } else {
-                            addPermanentWaypointMarker(locationInfo.lng, locationInfo.lat, activeLegId);
-                          }
-                          
-                          // Call the callback to add waypoint to the leg
-                          if (onAddWaypoint) {
-                            onAddWaypoint(locationInfo.lng, locationInfo.lat, locationInfo.name);
-                          }
-                          
-                          // Close the dialog
-                          setLocationInfo(null);
-                        }
-                      }}
-                      className="flex-1 px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition-colors"
-                    >
-                      Add waypoint
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (locationInfo) {
-                          // Find the active leg (one without an end point) to get its ID
-                          const activeLeg = allLegsWaypoints.find(leg => !leg.isComplete);
-                          const activeLegId = activeLeg?.legId;
-                          
-                          if (!activeLegId) {
-                            logger.error('No active leg found to end');
-                            return;
-                          }
-                          
-                          // Get the exact marker coordinates
-                          let finalLng = locationInfo.lng;
-                          let finalLat = locationInfo.lat;
-                          
-                          if (markerRef.current) {
-                            const markerLngLat = markerRef.current.getLngLat();
-                            finalLng = markerLngLat.lng;
-                            finalLat = markerLngLat.lat;
-                            markerRef.current.remove();
-                            markerRef.current = null;
-                          }
-                          
-                          // Convert the temporary gray marker to a permanent red end marker
-                          addEndMarker(finalLng, finalLat, activeLegId);
-                          
-                          // Call the callback to end the leg with exact coordinates
-                          if (onEndLeg) {
-                            onEndLeg(finalLng, finalLat, locationInfo.name);
-                          }
-                          
-                          // Close the dialog and reset state
-                          setLocationInfo(null);
-                        }
-                      }}
-                      className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-                    >
-                      End leg
-                    </button>
-                  </div>
-                ) : (
-                  <button
+        <Modal
+          isOpen={true}
+          onClose={handleCloseModal}
+          title={isLoadingLocation ? 'Loading...' : locationInfo.name}
+          size="sm"
+          showCloseButton
+          closeOnBackdropClick
+          closeOnEscape
+          children={<></>}
+          footer={
+            <div className="flex gap-2">
+              {hasActiveLegWithoutEnd ? (
+                <>
+                  <Button
                     onClick={() => {
-                      if (locationInfo && markerRef.current) {
-                        // Get the EXACT marker coordinates - this is the source of truth
-                        // The marker position is what we see on the map, so use that
-                        const markerLngLat = markerRef.current.getLngLat();
-                        const finalLng = markerLngLat.lng;
-                        const finalLat = markerLngLat.lat;
-                        
-                        // Call the callback first to create the leg
-                        // The marker will be created by the sync effect when allLegsWaypoints updates
-                        if (onStartNewLeg) {
-                          onStartNewLeg(finalLng, finalLat, locationInfo.name);
+                      if (locationInfo) {
+                        // Find the active leg (one without an end point) to get its ID
+                        const activeLeg = allLegsWaypoints.find(leg => !leg.isComplete);
+                        const activeLegId = activeLeg?.legId;
+
+                        if (!activeLegId) {
+                          logger.error('No active leg found to add waypoint to');
+                          return;
                         }
-                        
-                        // Close the dialog without removing the marker
-                        // The sync effect will convert it to a permanent marker
+
+                        // Convert the temporary gray marker to a permanent waypoint marker
+                        if (markerRef.current) {
+                          const currentLngLat = markerRef.current.getLngLat();
+                          markerRef.current.remove();
+                          markerRef.current = null;
+                          addPermanentWaypointMarker(currentLngLat.lng, currentLngLat.lat, activeLegId);
+                        } else {
+                          addPermanentWaypointMarker(locationInfo.lng, locationInfo.lat, activeLegId);
+                        }
+
+                        // Call the callback to add waypoint to the leg
+                        if (onAddWaypoint) {
+                          onAddWaypoint(locationInfo.lng, locationInfo.lat, locationInfo.name);
+                        }
+
+                        // Close the dialog
                         setLocationInfo(null);
                       }
                     }}
-                    className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
                   >
-                    Start new leg
-                  </button>
-                )}
-              </div>
+                    Add waypoint
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (locationInfo) {
+                        // Find the active leg (one without an end point) to get its ID
+                        const activeLeg = allLegsWaypoints.find(leg => !leg.isComplete);
+                        const activeLegId = activeLeg?.legId;
+
+                        if (!activeLegId) {
+                          logger.error('No active leg found to end');
+                          return;
+                        }
+
+                        // Get the exact marker coordinates
+                        let finalLng = locationInfo.lng;
+                        let finalLat = locationInfo.lat;
+
+                        if (markerRef.current) {
+                          const markerLngLat = markerRef.current.getLngLat();
+                          finalLng = markerLngLat.lng;
+                          finalLat = markerLngLat.lat;
+                          markerRef.current.remove();
+                          markerRef.current = null;
+                        }
+
+                        // Convert the temporary gray marker to a permanent red end marker
+                        addEndMarker(finalLng, finalLat, activeLegId);
+
+                        // Call the callback to end the leg with exact coordinates
+                        if (onEndLeg) {
+                          onEndLeg(finalLng, finalLat, locationInfo.name);
+                        }
+
+                        // Close the dialog and reset state
+                        setLocationInfo(null);
+                      }
+                    }}
+                    variant="primary"
+                    size="sm"
+                    className="flex-1"
+                  >
+                    End leg
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={() => {
+                    if (locationInfo && markerRef.current) {
+                      // Get the EXACT marker coordinates - this is the source of truth
+                      // The marker position is what we see on the map, so use that
+                      const markerLngLat = markerRef.current.getLngLat();
+                      const finalLng = markerLngLat.lng;
+                      const finalLat = markerLngLat.lat;
+
+                      // Call the callback first to create the leg
+                      // The marker will be created by the sync effect when allLegsWaypoints updates
+                      if (onStartNewLeg) {
+                        onStartNewLeg(finalLng, finalLat, locationInfo.name);
+                      }
+
+                      // Close the dialog without removing the marker
+                      // The sync effect will convert it to a permanent marker
+                      setLocationInfo(null);
+                    }
+                  }}
+                  variant="primary"
+                  size="sm"
+                  className="w-full"
+                >
+                  Start new leg
+                </Button>
+              )}
             </div>
-          </div>
-        </div>
+          }
+        >
+          {/* Empty content for location info modal - actions are in footer */}
+        </Modal>
       )}
+
     </div>
   );
 }
