@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { prospectChat } from '@/app/lib/ai/prospect/service';
-import { ProspectChatRequest } from '@/app/lib/ai/prospect/types';
+import { prospectChat } from '@shared/ai/prospect/service';
+import { ProspectChatRequest } from '@shared/ai/prospect/types';
 
 // Debug logging helper
 const DEBUG = true;

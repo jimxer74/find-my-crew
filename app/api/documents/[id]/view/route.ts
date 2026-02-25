@@ -1,7 +1,7 @@
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@shared/database/server';
 import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
 import { SIGNED_URL_EXPIRY_SECONDS } from '@/app/lib/documents/types';
 

@@ -36,7 +36,7 @@ import {
   ProspectPreferences,
   ProspectLegReference,
 } from './types';
-import { searchLocation, LocationSearchResult, getAllRegions } from '@/app/lib/geocoding/locations';
+import { searchLocation, LocationSearchResult, getAllRegions } from '@shared/utils/geocoding/locations';
 import skillsConfig from '@/app/config/skills-config.json';
 
 const MAX_HISTORY_MESSAGES = 15;

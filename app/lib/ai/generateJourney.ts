@@ -5,14 +5,14 @@
  */
 
 import { logger } from '@shared/logging';
-import { callAI, AIServiceError } from '@/app/lib/ai/service';
+import { callAI, AIServiceError } from '@shared/ai/service';
 import {
   validateLocation,
   validateWaypointArray,
   validateDateString,
   validatePositiveNumber,
-} from '@/app/lib/ai/validation';
-import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+} from '@shared/ai/validation';
+import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
 
 export interface GenerateJourneyInput {
   startLocation: { name: string; lat: number; lng: number };

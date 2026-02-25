@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
-import { callAI } from '@/app/lib/ai/service';
+import { getSupabaseServerClient } from '@shared/database/server';
+import { callAI } from '@shared/ai/service';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
-import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 

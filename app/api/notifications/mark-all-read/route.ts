@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { markAllAsRead } from '@/app/lib/notifications';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';

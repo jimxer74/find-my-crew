@@ -1,8 +1,8 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode, RefObject } from 'react';
-import { AIConversation, AIMessage, AIPendingAction } from '@/app/lib/ai/assistant/types';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { AIConversation, AIMessage, AIPendingAction } from '@shared/ai/assistant/types';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import type { AuthChangeEvent } from '@supabase/supabase-js';
 import { logger } from '@shared/logging';
 

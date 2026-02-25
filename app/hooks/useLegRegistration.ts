@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 
 export type LegRegistrationData = {
   leg_id: string;

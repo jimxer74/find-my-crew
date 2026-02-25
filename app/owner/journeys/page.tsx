@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { Pagination } from '@shared/ui/Pagination';
 import { formatDate } from '@shared/utils';
 import { FeatureGate } from '@/app/components/auth/FeatureGate';

@@ -8,7 +8,7 @@ import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { Button } from '@shared/ui/Button/Button';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LocationAutocomplete, Location } from './ui/LocationAutocomplete';
 import { RiskLevelSelector } from './ui/RiskLevelSelector';
 import { SkillLevelSelector } from './ui/SkillLevelSelector';

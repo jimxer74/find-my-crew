@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LoadingButton } from '@shared/ui/LoadingButton';
 import { Button } from '@shared/ui/Button/Button';
 import { logger } from '@shared/logging';

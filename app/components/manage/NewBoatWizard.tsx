@@ -2,7 +2,7 @@
 
 import { logger } from '@shared/logging';
 import { useState } from 'react';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { getCountryFlag } from '@shared/utils';
 import { NewBoatWizardStep1, WizardStep1Data } from './NewBoatWizardStep1';
 import { NewBoatWizardStep2, WizardStep2Data } from './NewBoatWizardStep2';

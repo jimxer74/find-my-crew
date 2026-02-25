@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';

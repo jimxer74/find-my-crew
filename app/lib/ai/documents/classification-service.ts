@@ -8,7 +8,7 @@
 
 import { logger } from '@shared/logging';
 import type { DocumentClassificationResult, DocumentCategory } from '@/app/lib/documents/types';
-import { getUseCaseConfig, getAIConfig, getAPIKeys } from '@/app/lib/ai/config';
+import { getUseCaseConfig, getAIConfig, getAPIKeys } from '@shared/ai/config';
 
 const VALID_CATEGORIES: DocumentCategory[] = [
   'passport', 'drivers_license', 'national_id',

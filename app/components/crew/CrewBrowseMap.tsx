@@ -17,7 +17,7 @@ import { useProfile } from '@/app/lib/profile/useProfile';
 import { calculateMatchPercentage, checkExperienceLevelMatch, getMatchBorderColorForMap, getMatchColorForMap } from '@shared/utils';
 import { splitLineAtAntimeridian, calculateBoundsWithAntimeridian } from '@/app/lib/postgis-helpers';
 import { CostModel } from '@shared/types/cost-models';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { hasProfile } from '@shared/utils';
 
 type Leg = {

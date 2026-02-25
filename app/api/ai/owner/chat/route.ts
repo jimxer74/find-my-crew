@@ -2,9 +2,9 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { ownerChat } from '@/app/lib/ai/owner/service';
-import { OwnerChatRequest } from '@/app/lib/ai/owner/types';
-import { getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
+import { ownerChat } from '@shared/ai/owner/service';
+import { OwnerChatRequest } from '@shared/ai/owner/types';
+import { getSupabaseServiceRoleClient } from '@shared/database/server';
 
 // Debug logging helper
 const DEBUG = true;

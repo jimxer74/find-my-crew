@@ -2,8 +2,8 @@ import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getSupabaseServerClient, getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
-import { OwnerSession } from '@/app/lib/ai/owner/types';
+import { getSupabaseServerClient, getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@shared/database/server';
+import { OwnerSession } from '@shared/ai/owner/types';
 
 const SESSION_COOKIE_NAME = 'owner_session_id';
 const SESSION_EXPIRY_DAYS = 7;

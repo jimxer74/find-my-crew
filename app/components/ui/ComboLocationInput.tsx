@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { logger } from '@shared/logging';
-import { getAllRegions, type LocationSearchResult } from '@/app/lib/geocoding/locations';
+import { getAllRegions, type LocationSearchResult } from '@shared/utils/geocoding/locations';
 import type { Location } from './LocationAutocomplete';
 
 // Unified suggestion type for both Mapbox and cruising regions

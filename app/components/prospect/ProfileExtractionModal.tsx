@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@shared/logging';
 import { extractProfileFromConversation, ExtractedProfile } from '@/app/lib/prospect/profileExtraction';
-import { ProspectMessage } from '@/app/lib/ai/prospect/types';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { ProspectMessage } from '@shared/ai/prospect/types';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { Modal } from '@shared/ui/Modal/Modal';
 import { Button } from '@shared/ui/Button/Button';
 

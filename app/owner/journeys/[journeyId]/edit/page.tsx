@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { RequirementsManager } from '@/app/components/manage/RequirementsManager';
 import { ImageUpload } from '@shared/ui/ImageUpload';
 import { ImageCarousel } from '@shared/ui/ImageCarousel';

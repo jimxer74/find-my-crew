@@ -6,7 +6,7 @@ import { useTransition, useState } from 'react';
 import { logger } from '@shared/logging';
 import { locales, localeNames, localeFlags, type Locale } from '@/i18n/config';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { Button } from '@shared/ui/Button/Button';
 
 interface LanguageSwitcherProps {

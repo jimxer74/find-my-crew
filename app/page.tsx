@@ -9,16 +9,16 @@ import { logger } from '@shared/logging';
 import { Footer } from '@/app/components/Footer';
 import { LoginModal } from '@/app/components/LoginModal';
 import { SignupModal } from '@/app/components/SignupModal';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@/app/lib/prospect/sessionService';
 import * as ownerSessionService from '@/app/lib/owner/sessionService';
 import { shouldStayOnHomepage, redirectAfterAuth, getRedirectPath } from '@/app/lib/routing/redirectHelpers.client';
-import { ProspectSession } from '@/app/lib/ai/prospect/types';
+import { ProspectSession } from '@shared/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@shared/ui/ComboSearchBox';
 import { OwnerComboSearchBox, type OwnerComboSearchData } from '@shared/ui/OwnerComboSearchBox';
 import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@/app/components/onboarding/OnboardingSteps';
-import type { OwnerPreferences } from '@/app/lib/ai/owner/types';
+import type { OwnerPreferences } from '@shared/ai/owner/types';
 
 function OwnerPostDialog({
   isOpen,

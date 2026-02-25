@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { canCreateBoat } from '@/app/lib/limits';
 import { logger } from '@shared/logging';
 import { Button } from '@shared/ui/Button/Button';

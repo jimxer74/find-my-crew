@@ -2,7 +2,7 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { createConversation, listConversations } from '@/app/lib/ai/assistant';
+import { createConversation, listConversations } from '@shared/ai/assistant';
 
 // GET /api/ai/assistant/conversations - List user's conversations
 export async function GET(request: NextRequest) {

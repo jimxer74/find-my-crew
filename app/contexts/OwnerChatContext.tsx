@@ -17,8 +17,8 @@ import {
   PendingAction,
   KnownUserProfile,
   OWNER_NAME_TAG_REGEX,
-} from '@/app/lib/ai/owner/types';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+} from '@shared/ai/owner/types';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import * as sessionService from '@/app/lib/owner/sessionService';
 import { logger } from '@shared/logging';
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callAI, AIServiceError } from '@/app/lib/ai/service';
-import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+import { callAI, AIServiceError } from '@shared/ai/service';
+import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 

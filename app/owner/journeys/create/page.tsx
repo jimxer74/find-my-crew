@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { RiskLevelSelector } from '@shared/ui/RiskLevelSelector';
 import { SkillLevelSelector } from '@shared/ui/SkillLevelSelector';
 import skillsConfig from '@/app/config/skills-config.json';

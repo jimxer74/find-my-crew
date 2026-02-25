@@ -11,13 +11,13 @@ import { ActionFeedback } from './ActionFeedback';
 import { TextInputModal } from './TextInputModal';
 import { MultiSelectInputModal } from './MultiSelectInputModal';
 import { ChatLegCarousel } from './ChatLegCarousel';
-import { useMediaQuery } from '@/app/hooks/useMediaQuery';
+import { useMediaQuery } from '@shared/hooks';
 import { LegRegistrationDialog } from '@/app/components/crew/LegRegistrationDialog';
 import { Button } from '@shared/ui/Button/Button';
 import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
-} from '@/app/lib/ai/shared';
+} from '@shared/ai/shared';
 
 /**
  * Component to display suggested prompts below assistant messages

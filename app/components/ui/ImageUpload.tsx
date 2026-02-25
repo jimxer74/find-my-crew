@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { logger } from '@shared/logging';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 
 interface ImageUploadProps {
   onUpload: (urls: string[]) => void;

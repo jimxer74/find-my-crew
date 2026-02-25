@@ -9,7 +9,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@shared/logging';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { detectResourceType, isValidUrl } from '@/app/lib/url-import/detectResourceType';
 import { fetchResourceContent } from '@/app/lib/url-import/fetchResourceContent';
 

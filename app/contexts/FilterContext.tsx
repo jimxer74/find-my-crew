@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { ExperienceLevel } from '@shared/types/experience-levels';
 import { DateRange } from '@shared/ui/DateRangePicker';
 import { Location } from '@shared/ui/LocationAutocomplete';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 

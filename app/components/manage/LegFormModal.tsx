@@ -2,7 +2,7 @@
 
 import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 import skillsConfig from '@/app/config/skills-config.json';

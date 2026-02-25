@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callAI, AIServiceError } from '@/app/lib/ai/service';
+import { callAI, AIServiceError } from '@shared/ai/service';
 import { logger } from '@shared/logging';
 
 export async function POST(request: NextRequest) {

@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Footer } from '@/app/components/Footer';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { UserConsents } from '@shared/types/consents';
 
 type UserData = {

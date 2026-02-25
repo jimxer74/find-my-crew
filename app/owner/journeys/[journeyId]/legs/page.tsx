@@ -5,7 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
 import { EditLegCard } from '@/app/components/manage/EditLegCard';
 import { LegFormModal } from '@/app/components/manage/LegFormModal';

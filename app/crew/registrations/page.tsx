@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { calculateMatchPercentage } from '@shared/utils';
 import { SkillsMatchingDisplay } from '@/app/components/crew/SkillsMatchingDisplay';
 import { Footer } from '@/app/components/Footer';

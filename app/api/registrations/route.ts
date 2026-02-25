@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
-import { assessRegistrationWithAI, performPreChecks } from '@/app/lib/ai/assessRegistration';
+import { getSupabaseServerClient } from '@shared/database/server';
+import { assessRegistrationWithAI, performPreChecks } from '@shared/ai/assessRegistration';
 import { hasCrewRole } from '@/app/lib/auth/checkRole';
 import { notifyNewRegistration } from '@/app/lib/notifications';
 import { waitUntil } from '@vercel/functions';

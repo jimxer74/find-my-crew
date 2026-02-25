@@ -9,7 +9,7 @@
 import { logger } from '@shared/logging';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SailboatDetails } from '@/app/lib/sailboatdata_queries';
-import { getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
+import { getSupabaseUnauthenticatedClient, getSupabaseServiceRoleClient } from '@shared/database/server';
 
 export interface BoatRegistryEntry {
   id: string;

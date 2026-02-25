@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { logger } from '@shared/logging';
-import { searchLocation, type LocationSearchResult } from '@/app/lib/geocoding/locations';
+import { searchLocation, type LocationSearchResult } from '@shared/utils/geocoding/locations';
 
 export type Location = {
   name: string;

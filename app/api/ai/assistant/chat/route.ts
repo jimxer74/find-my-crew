@@ -2,7 +2,7 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { chat, ChatRequest } from '@/app/lib/ai/assistant';
+import { chat, ChatRequest } from '@shared/ai/assistant';
 import { canSendAIMessage } from '@/app/lib/limits';
 
 // Debug logging helper

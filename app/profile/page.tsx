@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
 import { ExperienceLevel, getAllExperienceLevels } from '@shared/types/experience-levels';
 import { UserConsents } from '@shared/types/consents';

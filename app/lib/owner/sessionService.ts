@@ -5,7 +5,7 @@
  * Similar to prospect session service but owners are always authenticated.
  */
 
-import { OwnerSession } from '@/app/lib/ai/owner/types';
+import { OwnerSession } from '@shared/ai/owner/types';
 import { logger } from '@shared/logging';
 
 /**

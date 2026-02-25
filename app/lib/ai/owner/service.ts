@@ -22,7 +22,7 @@ import {
   getToolByName,
   toolsToPromptFormat,
 } from '../shared';
-import { getAllRegions } from '@/app/lib/geocoding/locations';
+import { getAllRegions } from '@shared/utils/geocoding/locations';
 import {
   OwnerMessage,
   OwnerChatRequest,

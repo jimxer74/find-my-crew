@@ -2,7 +2,7 @@ import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { getSupabaseServerClient, getSupabaseUnauthenticatedClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient, getSupabaseUnauthenticatedClient } from '@shared/database/server';
 
 const SESSION_COOKIE_NAME = 'owner_session_id';
 

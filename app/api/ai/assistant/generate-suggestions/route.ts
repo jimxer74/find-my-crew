@@ -2,9 +2,9 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { getUserContext } from '@/app/lib/ai/assistant/context';
-import { callAI } from '@/app/lib/ai/service';
-import { parseJsonArrayFromAIResponse } from '@/app/lib/ai/shared';
+import { getUserContext } from '@shared/ai/assistant/context';
+import { callAI } from '@shared/ai/service';
+import { parseJsonArrayFromAIResponse } from '@shared/ai/shared';
 
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {

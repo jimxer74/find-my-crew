@@ -1,6 +1,6 @@
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
-import { generateJourneyRoute } from '@/app/lib/ai/generateJourney';
+import { generateJourneyRoute } from '@shared/ai/generateJourney';
 
 export async function POST(request: NextRequest) {
   try {

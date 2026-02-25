@@ -1,4 +1,4 @@
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { ClientTest } from '@/app/debug/client-test';
 
 export default async function DebugPage() {

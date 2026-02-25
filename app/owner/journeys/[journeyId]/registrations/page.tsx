@@ -4,7 +4,7 @@ import { logger } from '@shared/logging';
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { EditJourneyMap } from '@/app/components/manage/EditJourneyMap';
 import { formatDate } from '@shared/utils';
 import Image from 'next/image';

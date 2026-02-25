@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient, getSupabaseServiceRoleClient } from '@shared/database/server';
 import { hasOwnerRole } from '@/app/lib/auth/checkRole';
 import { calculateMatchPercentage } from '@shared/utils';
 import { normalizeSkillNames } from '@shared/utils';

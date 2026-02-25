@@ -1,7 +1,7 @@
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { logDocumentAccess, getClientIp } from '@/app/lib/documents/audit';
 import { MAX_GRANT_DURATION_DAYS } from '@/app/lib/documents/types';
 import type { GrantPurpose } from '@/app/lib/documents/types';

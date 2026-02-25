@@ -6,12 +6,12 @@ import { useTranslations } from 'next-intl';
 import { logger } from '@shared/logging';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useProfile } from '@/app/lib/profile/useProfile';
-import { useUserLocation } from '@/app/hooks/useUserLocation';
+import { useUserLocation } from '@shared/hooks';
 import {
   LocationRegion,
   getAllRegions,
   sortRegionsByDistance,
-} from '@/app/lib/geocoding/locations';
+} from '@shared/utils/geocoding/locations';
 import { CruisingRegionSection } from '@/app/components/crew/CruisingRegionSection';
 import { ProfileCompletionPrompt } from '@/app/components/profile/ProfileCompletionPrompt';
 import { Footer } from '@/app/components/Footer';

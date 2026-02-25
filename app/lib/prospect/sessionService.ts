@@ -6,7 +6,7 @@
  */
 
 import { logger } from '@shared/logging';
-import { ProspectSession } from '@/app/lib/ai/prospect/types';
+import { ProspectSession } from '@shared/ai/prospect/types';
 
 /**
  * Load session from server using session_id from cookie

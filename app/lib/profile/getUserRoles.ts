@@ -1,4 +1,4 @@
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import type { User } from '@supabase/supabase-js';
 
 /**

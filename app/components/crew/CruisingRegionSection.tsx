@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { Button } from '@shared/ui/Button/Button';
-import { LocationRegion } from '@/app/lib/geocoding/locations';
+import { LocationRegion } from '@shared/utils/geocoding/locations';
 import { LegCarousel } from './LegCarousel';
 import { LegListItemData } from './LegListItem';
 import { calculateMatchPercentage } from '@shared/utils';

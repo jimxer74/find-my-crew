@@ -4,7 +4,7 @@
  * Used as fallback when AI fails to complete profile creation
  */
 
-import { ProspectMessage } from '@/app/lib/ai/prospect/types';
+import { ProspectMessage } from '@shared/ai/prospect/types';
 import skillsConfig from '@/app/config/skills-config.json';
 
 export interface ExtractedProfile {

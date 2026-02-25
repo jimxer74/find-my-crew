@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Modal, Button, Checkbox } from '@/app/components/ui';
-import { AIPendingAction } from '@/app/lib/ai/assistant/types';
+import { AIPendingAction } from '@shared/ai/assistant/types';
 
 interface MultiSelectInputModalProps {
   action: AIPendingAction;

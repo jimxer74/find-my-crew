@@ -24,7 +24,7 @@ import { useProfileRedirect } from '@/app/lib/profile/redirectHelper';
 import { ImageCarousel } from '../ui/ImageCarousel';
 import { useProfile } from '@/app/lib/profile/useProfile';
 import { hasProfile } from '@shared/utils';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LoadingButton } from '@shared/ui/LoadingButton';
 import { Button } from '@shared/ui/Button/Button';
 import { Modal } from '@shared/ui/Modal/Modal';

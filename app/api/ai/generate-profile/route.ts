@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { callAI } from '@/app/lib/ai/service';
+import { callAI } from '@shared/ai/service';
 import { logger } from '@shared/logging';
 import { FacebookUserData, ProfileSuggestion } from '@/app/lib/facebook/types';
-import { parseJsonObjectFromAIResponse } from '@/app/lib/ai/shared';
+import { parseJsonObjectFromAIResponse } from '@shared/ai/shared';
 
 const PROFILE_GENERATION_PROMPT = `You are an AI assistant helping to create a sailing crew member profile based on Facebook data. Analyze the provided data and suggest profile fields.
 

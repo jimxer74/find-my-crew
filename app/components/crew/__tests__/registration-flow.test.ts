@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LegDetailsPanel } from '../LegDetailsPanel';
 
 // Mock dependencies

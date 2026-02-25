@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useProspectChat } from '@/app/contexts/ProspectChatContext';
-import { ProspectMessage, PendingAction, ProspectLegReference } from '@/app/lib/ai/prospect/types';
+import { ProspectMessage, PendingAction, ProspectLegReference } from '@shared/ai/prospect/types';
 import { ChatLegCarousel } from '@/app/components/ai/ChatLegCarousel';
 import { SignupModal } from '@/app/components/SignupModal';
 import { LoginModal } from '@/app/components/LoginModal';
@@ -16,7 +16,7 @@ import {
   extractSuggestedPrompts,
   removeSuggestionsFromContent,
   suggestsSignupOrProfileCreation,
-} from '@/app/lib/ai/shared';
+} from '@shared/ai/shared';
 
 /**
  * Component to display suggested prompts below assistant messages

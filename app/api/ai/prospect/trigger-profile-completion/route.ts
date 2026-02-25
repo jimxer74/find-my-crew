@@ -2,9 +2,9 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { prospectChat } from '@/app/lib/ai/prospect/service';
-import type { KnownUserProfile, ProspectMessage, ProspectPreferences } from '@/app/lib/ai/prospect/types';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { prospectChat } from '@shared/ai/prospect/service';
+import type { KnownUserProfile, ProspectMessage, ProspectPreferences } from '@shared/ai/prospect/types';
+import { getSupabaseServerClient } from '@shared/database/server';
 
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {

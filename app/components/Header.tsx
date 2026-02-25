@@ -14,7 +14,7 @@ import { NotificationBell } from './notifications/NotificationBell';
 import { AssistantButton } from './ai/AssistantButton';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { useUserRoles } from '@/app/contexts/UserRoleContext';
 import { useAssistant } from '@/app/contexts/AssistantContext';
 

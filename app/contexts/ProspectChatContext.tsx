@@ -18,8 +18,8 @@ import {
   KnownUserProfile,
   PROSPECT_NAME_TAG_REGEX,
   ProspectLegReference,
-} from '@/app/lib/ai/prospect/types';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+} from '@shared/ai/prospect/types';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import * as sessionService from '@/app/lib/prospect/sessionService';
 import { logger } from '@shared/logging';
 

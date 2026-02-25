@@ -13,7 +13,7 @@ import { FeatureGate } from '@/app/components/auth/FeatureGate';
 import { Footer } from '@/app/components/Footer';
 import { useProfile } from '@/app/lib/profile/useProfile';
 import { checkProfile } from '@/app/lib/profile/checkProfile';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 
 export default function BoatsPage() {
   const t = useTranslations('boats');

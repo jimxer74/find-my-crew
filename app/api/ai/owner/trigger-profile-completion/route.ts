@@ -2,9 +2,9 @@ import { logger } from '@shared/logging';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { ownerChat } from '@/app/lib/ai/owner/service';
-import type { KnownUserProfile, OwnerMessage, OwnerPreferences } from '@/app/lib/ai/owner/types';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { ownerChat } from '@shared/ai/owner/service';
+import type { KnownUserProfile, OwnerMessage, OwnerPreferences } from '@shared/ai/owner/types';
+import { getSupabaseServerClient } from '@shared/database/server';
 
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {

@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
-import { getSupabaseBrowserClient } from '@/app/lib/supabaseClient';
+import { getSupabaseBrowserClient } from '@shared/database/client';
 import { LocationAutocomplete, Location } from '@shared/ui/LocationAutocomplete';
 import { formatDate, formatDateShort } from '@shared/utils';
 import { Footer } from '@/app/components/Footer';

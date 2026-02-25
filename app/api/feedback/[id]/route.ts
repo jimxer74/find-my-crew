@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sanitizeErrorResponse } from '@/app/lib/errorResponseHelper';
 import { logger } from '@shared/logging';
-import { getSupabaseServerClient } from '@/app/lib/supabaseServer';
+import { getSupabaseServerClient } from '@shared/database/server';
 import { getFeedbackById, updateFeedback, deleteFeedback } from '@/app/lib/feedback/service';
 
 interface RouteParams {
