@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/app/components/ui/Button/Button';
+import { Modal } from '@/app/components/ui/Modal/Modal';
 
 interface PassportVerificationSectionProps {
   passportData?: {
@@ -264,33 +265,24 @@ export function PassportVerificationSection({
       )}
 
       {/* Enlarged Photo Modal */}
-      {photoEnlarged && passportData.photo_file_data && (
-        <>
-          <div
-            className="fixed inset-0 bg-black/75 z-50"
-            onClick={() => setPhotoEnlarged(false)}
+      <Modal
+        isOpen={photoEnlarged && !!passportData.photo_file_data}
+        onClose={() => setPhotoEnlarged(false)}
+        title="Verification Photo"
+        size="xl"
+        showCloseButton
+        closeOnBackdropClick
+        closeOnEscape
+        className="!bg-black/75"
+      >
+        <div className="flex items-center justify-center">
+          <img
+            src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
+            alt="Crew verification photo enlarged"
+            className="w-auto h-[90vh] object-contain rounded-lg"
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="relative flex items-center justify-center">
-              <Button
-                onClick={() => setPhotoEnlarged(false)}
-                className="absolute top-4 right-4 !p-2 !bg-white/10 hover:!bg-white/20 !text-white z-10"
-                variant="ghost"
-                size="sm"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </Button>
-              <img
-                src={passportData.photo_file_data?.startsWith('data:') ? passportData.photo_file_data : `data:image/jpeg;base64,${passportData.photo_file_data}`}
-                alt="Crew verification photo enlarged"
-                className="w-auto h-[90vh] object-contain rounded-lg"
-              />
-            </div>
-          </div>
-        </>
-      )}
+        </div>
+      </Modal>
     </div>
   );
 }
