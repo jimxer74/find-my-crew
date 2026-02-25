@@ -4,6 +4,7 @@ title: Color & Theme Refactoring
 status: To Do
 assignee: []
 created_date: '2026-02-18 21:10'
+updated_date: '2026-02-25 06:58'
 labels:
   - Colors
   - Theme
@@ -20,6 +21,9 @@ Eliminate all hardcoded colors throughout the application and replace with theme
 
 ## Scope
 Search the entire codebase for hardcoded color values and replace them with design system tokens. This ensures visual consistency and makes theme updates (including dark mode) much simpler.
+
+**Important**
+Landing page / and it's components use different color scheme and styling, do not refactor landing page / and any of the components on it
 
 ## What This Task Produces
 - All hardcoded colors removed from components
