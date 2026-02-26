@@ -1,9 +1,10 @@
 ---
 id: TASK-138
 title: AI product search and product registry update
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-26 12:46'
+updated_date: '2026-02-26 12:53'
 labels: []
 dependencies: []
 ---
@@ -24,3 +25,17 @@ Clicking Search triggers a AI driven search, where input parameters are provided
 
 - If AI search did not found the approriate product, user has allways to chance to add the equipment information manually, but these will not be part of the registry automatically.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Name field has inline autocomplete that searches the product registry as the user types
+- [ ] #2 Selecting a registry product from the Name autocomplete auto-fills manufacturer, model, category, subcategory and links product_registry_id
+- [ ] #3 Above the Name field there is a 'Not found? Search it' link with magnifying glass icon
+- [ ] #4 Clicking the link opens a dialog with manufacturer, model, and 'Additional search text' fields plus Cancel and Search buttons
+- [ ] #5 Clicking Search triggers an AI-driven search and shows up to 5 matching products
+- [ ] #6 Each AI result shows manufacturer, model, description, and a Select button with optional details expand
+- [ ] #7 Selecting an AI result auto-fills the EquipmentForm
+- [ ] #8 AI search results (up to 5) are stored in the Product Registry for future use
+- [ ] #9 If AI finds no results, user can add equipment manually without registry link
+- [ ] #10 Old 'Find Product in Registry' dedicated search section is removed from the form
+<!-- AC:END -->
