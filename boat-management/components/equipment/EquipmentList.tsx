@@ -173,7 +173,14 @@ function EquipmentCard({
     <Card padding="sm" className="flex flex-col">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
+          <div className="flex items-center gap-1.5">
+            <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
+            {(item.quantity ?? 1) > 1 && (
+              <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                ×{item.quantity}
+              </span>
+            )}
+          </div>
           {item.subcategory && (
             <p className="text-xs text-muted-foreground">
               {getSubcategoryLabel(item.category, item.subcategory)}

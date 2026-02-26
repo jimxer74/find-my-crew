@@ -38,6 +38,7 @@ export interface BoatEquipment {
   images: string[];
   status: EquipmentStatus;
   product_registry_id: string | null;
+  quantity: number;
   created_at: string;
   updated_at: string;
 }
@@ -57,6 +58,7 @@ export interface BoatEquipmentInsert {
   images?: string[];
   status?: EquipmentStatus;
   product_registry_id?: string | null;
+  quantity?: number;
 }
 
 export interface BoatEquipmentUpdate {
@@ -73,6 +75,7 @@ export interface BoatEquipmentUpdate {
   status?: EquipmentStatus;
   parent_id?: string | null;
   product_registry_id?: string | null;
+  quantity?: number;
 }
 
 // ============================================================================

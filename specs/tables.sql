@@ -2039,10 +2039,17 @@ create table if not exists public.product_registry (
 
 create index if not exists idx_product_registry_category on public.product_registry(category);
 create index if not exists idx_product_registry_manufacturer_model on public.product_registry(manufacturer, model);
-create index if not exists idx_product_registry_fts on public.product_registry
-  using gin(to_tsvector('english',
-    coalesce(manufacturer, '') || ' ' || coalesce(model, '') || ' ' || coalesce(description, '')
-  ));
+-- FTS index on stored column (replaces expression-based idx_product_registry_fts)
+create index if not exists idx_product_registry_search_vector
+  on public.product_registry using gin(search_vector);
+
+-- pg_trgm index for fast ILIKE '%partial%' matching
+create index if not exists idx_product_registry_trgm
+  on public.product_registry
+  using gin(
+    (coalesce(manufacturer, '') || ' ' || coalesce(model, '') || ' ' || coalesce(description, ''))
+    gin_trgm_ops
+  );
 
 alter table public.product_registry enable row level security;
 
@@ -2085,6 +2092,14 @@ create table if not exists public.boat_equipment (
   images          text[] default '{}',
   status          text not null default 'active',
   product_registry_id uuid references public.product_registry(id) on delete set null,
+  search_vector   tsvector generated always as (
+                    to_tsvector('english',
+                      coalesce(manufacturer, '') || ' ' ||
+                      coalesce(model,        '') || ' ' ||
+                      coalesce(description,  '')
+                    )
+                  ) stored,
+  quantity        integer not null default 1,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
 
@@ -2097,7 +2112,8 @@ create table if not exists public.boat_equipment (
   ),
   constraint boat_equipment_status_valid check (
     status in ('active', 'decommissioned', 'needs_replacement')
-  )
+  ),
+  constraint boat_equipment_quantity_positive check (quantity >= 1)
 );
 
 create index if not exists idx_boat_equipment_boat_id on public.boat_equipment(boat_id);
