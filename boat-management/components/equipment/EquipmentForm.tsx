@@ -6,9 +6,11 @@ import type {
   BoatEquipment,
   EquipmentCategory,
   EquipmentStatus,
-  EQUIPMENT_CATEGORIES,
+  ProductRegistryEntry,
 } from '@boat-management/lib/types';
 import { EQUIPMENT_CATEGORIES as CATEGORIES } from '@boat-management/lib/types';
+import { ProductRegistrySearch } from '../registry/ProductRegistrySearch';
+import { ProductRegistryForm } from '../registry/ProductRegistryForm';
 
 interface EquipmentFormProps {
   isOpen: boolean;
@@ -29,11 +31,13 @@ export interface EquipmentFormData {
   notes: string;
   status: EquipmentStatus;
   parent_id: string | null;
+  product_registry_id: string | null;
 }
 
 export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOptions = [] }: EquipmentFormProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showAddToRegistry, setShowAddToRegistry] = useState(false);
 
   const [name, setName] = useState('');
   const [category, setCategory] = useState<EquipmentCategory>('engine');
@@ -45,6 +49,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<EquipmentStatus>('active');
   const [parentId, setParentId] = useState<string>('');
+  const [productRegistryId, setProductRegistryId] = useState<string | null>(null);
 
   // Reset form when equipment changes or modal opens
   useEffect(() => {
@@ -60,6 +65,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         setNotes(equipment.notes ?? '');
         setStatus(equipment.status);
         setParentId(equipment.parent_id ?? '');
+        setProductRegistryId(equipment.product_registry_id ?? null);
       } else {
         setName('');
         setCategory('engine');
@@ -71,8 +77,10 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         setNotes('');
         setStatus('active');
         setParentId('');
+        setProductRegistryId(null);
       }
       setError('');
+      setShowAddToRegistry(false);
     }
   }, [isOpen, equipment]);
 
@@ -81,6 +89,22 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
     value: s.value,
     label: s.label,
   })) ?? [];
+
+  const handleProductSelect = (product: ProductRegistryEntry) => {
+    setProductRegistryId(product.id);
+    setManufacturer(product.manufacturer);
+    setModel(product.model);
+    if (product.subcategory) setSubcategory(product.subcategory);
+    if (product.category) setCategory(product.category as EquipmentCategory);
+    // Pre-fill name if not already set
+    if (!name) setName(`${product.manufacturer} ${product.model}`);
+    setShowAddToRegistry(false);
+  };
+
+  const handleRegistryProductCreated = (product: ProductRegistryEntry) => {
+    setShowAddToRegistry(false);
+    handleProductSelect(product);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,6 +126,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         notes: notes.trim(),
         status,
         parent_id: parentId || null,
+        product_registry_id: productRegistryId,
       });
       onClose();
     } catch (err) {
@@ -130,6 +155,48 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         {error && (
           <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-md text-sm">
             {error}
+          </div>
+        )}
+
+        {/* Registry search — only shown when adding new equipment */}
+        {!equipment && (
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-foreground">
+              Find in Product Registry
+            </label>
+            {showAddToRegistry ? (
+              <div className="border border-border rounded-md p-4 bg-muted/30">
+                <ProductRegistryForm
+                  initialManufacturer={manufacturer}
+                  initialModel={model}
+                  initialCategory={category}
+                  onCreated={handleRegistryProductCreated}
+                  onCancel={() => setShowAddToRegistry(false)}
+                />
+              </div>
+            ) : (
+              <>
+                <ProductRegistrySearch
+                  category={category !== 'engine' ? undefined : 'engine'}
+                  onSelect={handleProductSelect}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Select a product to auto-fill the form.{' '}
+                  <button
+                    type="button"
+                    onClick={() => setShowAddToRegistry(true)}
+                    className="text-primary hover:underline"
+                  >
+                    Not in registry? Add it
+                  </button>
+                </p>
+                {productRegistryId && (
+                  <p className="text-xs text-green-700 dark:text-green-400">
+                    ✓ Linked to product registry
+                  </p>
+                )}
+              </>
+            )}
           </div>
         )}
 

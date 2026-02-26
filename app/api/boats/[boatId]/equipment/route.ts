@@ -62,7 +62,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { name, category, subcategory, manufacturer, model, serial_number, year_installed, specs, notes, images, status, parent_id } = body;
+    const { name, category, subcategory, manufacturer, model, serial_number, year_installed, specs, notes, images, status, parent_id, product_registry_id } = body;
 
     if (!name || !category) {
       return NextResponse.json({ error: 'Name and category are required' }, { status: 400 });
@@ -82,6 +82,7 @@ export async function POST(
       images,
       status,
       parent_id,
+      product_registry_id: product_registry_id ?? null,
     };
 
     const equipment = await createEquipment(insertData, supabase);

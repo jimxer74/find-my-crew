@@ -2,8 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { Button, Badge, Card, Select } from '@shared/ui';
-import type { BoatEquipment, EquipmentCategory } from '@boat-management/lib/types';
+import type { BoatEquipment, EquipmentCategory, ProductRegistryEntry } from '@boat-management/lib/types';
 import { EQUIPMENT_CATEGORIES, getCategoryLabel, getSubcategoryLabel } from '@boat-management/lib/types';
+import { ProductLinks } from '../registry/ProductLinks';
 
 interface EquipmentListProps {
   equipment: BoatEquipment[];
@@ -140,7 +141,33 @@ function EquipmentCard({
   isOwner: boolean;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showLinks, setShowLinks] = useState(false);
+  const [registryProduct, setRegistryProduct] = useState<ProductRegistryEntry | null>(null);
+  const [loadingLinks, setLoadingLinks] = useState(false);
   const statusInfo = statusConfig[item.status] ?? statusConfig.active;
+
+  const handleToggleLinks = async () => {
+    if (showLinks) {
+      setShowLinks(false);
+      return;
+    }
+    if (registryProduct) {
+      setShowLinks(true);
+      return;
+    }
+    if (!item.product_registry_id) return;
+    setLoadingLinks(true);
+    try {
+      const res = await fetch(`/api/product-registry/${item.product_registry_id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setRegistryProduct(json.product);
+        setShowLinks(true);
+      }
+    } finally {
+      setLoadingLinks(false);
+    }
+  };
 
   return (
     <Card padding="sm" className="flex flex-col">
@@ -176,6 +203,24 @@ function EquipmentCard({
           </p>
         )}
       </div>
+
+      {/* Registry links toggle */}
+      {item.product_registry_id && (
+        <div className="mt-2">
+          <button
+            onClick={handleToggleLinks}
+            disabled={loadingLinks}
+            className="text-xs text-primary hover:underline disabled:opacity-50"
+          >
+            {loadingLinks ? 'Loading...' : showLinks ? 'Hide docs & parts' : 'View docs & parts'}
+          </button>
+          {showLinks && registryProduct && (
+            <div className="mt-2 border-t border-border pt-2">
+              <ProductLinks product={registryProduct} />
+            </div>
+          )}
+        </div>
+      )}
 
       {isOwner && (
         <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">

@@ -2011,9 +2011,62 @@ using (
 
 
 -- ============================================================================
+-- Product Registry Table
+-- Community-grown catalog of marine equipment (engines, electronics, rigging…).
+-- Category-agnostic: all per-category specs stored in JSONB.
+-- shared across all boats and owners.
+-- ============================================================================
+
+create table if not exists public.product_registry (
+  id                  uuid primary key default gen_random_uuid(),
+  category            text not null,                -- matches boat_equipment.category values
+  subcategory         text,
+  manufacturer        text not null,
+  model               text not null,
+  description         text,
+  variants            text[] default '{}',
+  specs               jsonb default '{}',           -- agnostic: {hp: 27, cooling: "heat-exchanger", ...}
+  manufacturer_url    text,
+  documentation_links jsonb default '[]',           -- [{title: "...", url: "..."}]
+  spare_parts_links   jsonb default '[]',           -- [{region: "eu|us|uk|asia|global", title: "...", url: "..."}]
+  is_verified         boolean default false,        -- true = curated/seeded; false = community submission
+  submitted_by        uuid references auth.users(id) on delete set null,
+  created_at          timestamptz not null default now(),
+  updated_at          timestamptz not null default now(),
+
+  unique (manufacturer, model)
+);
+
+create index if not exists idx_product_registry_category on public.product_registry(category);
+create index if not exists idx_product_registry_manufacturer_model on public.product_registry(manufacturer, model);
+create index if not exists idx_product_registry_fts on public.product_registry
+  using gin(to_tsvector('english',
+    coalesce(manufacturer, '') || ' ' || coalesce(model, '') || ' ' || coalesce(description, '')
+  ));
+
+alter table public.product_registry enable row level security;
+
+create policy "Anyone can view product registry"
+  on public.product_registry for select using (true);
+
+create policy "Authenticated users can submit products"
+  on public.product_registry for insert
+  with check (auth.uid() is not null);
+
+create policy "Submitters can update their own products"
+  on public.product_registry for update
+  using (submitted_by = auth.uid());
+
+create policy "Submitters can delete their own products"
+  on public.product_registry for delete
+  using (submitted_by = auth.uid());
+
+
+-- ============================================================================
 -- Boat Equipment Table
 -- Hierarchical equipment registry with parent-child relationships.
 -- Uses JSONB specs for flexible equipment-specific attributes.
+-- Optional link to product_registry for auto-fill and documentation.
 -- ============================================================================
 
 create table if not exists public.boat_equipment (
@@ -2031,6 +2084,7 @@ create table if not exists public.boat_equipment (
   notes           text,
   images          text[] default '{}',
   status          text not null default 'active',
+  product_registry_id uuid references public.product_registry(id) on delete set null,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
 
@@ -2049,6 +2103,7 @@ create table if not exists public.boat_equipment (
 create index if not exists idx_boat_equipment_boat_id on public.boat_equipment(boat_id);
 create index if not exists idx_boat_equipment_parent_id on public.boat_equipment(parent_id) where parent_id is not null;
 create index if not exists idx_boat_equipment_category on public.boat_equipment(category);
+create index if not exists idx_boat_equipment_product_registry_id on public.boat_equipment(product_registry_id) where product_registry_id is not null;
 
 alter table boat_equipment enable row level security;
 

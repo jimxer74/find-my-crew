@@ -37,6 +37,7 @@ export interface BoatEquipment {
   notes: string | null;
   images: string[];
   status: EquipmentStatus;
+  product_registry_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +56,7 @@ export interface BoatEquipmentInsert {
   notes?: string | null;
   images?: string[];
   status?: EquipmentStatus;
+  product_registry_id?: string | null;
 }
 
 export interface BoatEquipmentUpdate {
@@ -70,6 +72,55 @@ export interface BoatEquipmentUpdate {
   images?: string[];
   status?: EquipmentStatus;
   parent_id?: string | null;
+  product_registry_id?: string | null;
+}
+
+// ============================================================================
+// Product Registry Types
+// ============================================================================
+
+export type ProductRegion = 'eu' | 'us' | 'uk' | 'asia' | 'global';
+
+export interface DocumentationLink {
+  title: string;
+  url: string;
+}
+
+export interface SparePartsLink {
+  region: ProductRegion;
+  title: string;
+  url: string;
+}
+
+export interface ProductRegistryEntry {
+  id: string;
+  category: string;
+  subcategory: string | null;
+  manufacturer: string;
+  model: string;
+  description: string | null;
+  variants: string[];
+  specs: Record<string, any>;
+  manufacturer_url: string | null;
+  documentation_links: DocumentationLink[];
+  spare_parts_links: SparePartsLink[];
+  is_verified: boolean;
+  submitted_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductRegistryInsert {
+  category: string;
+  subcategory?: string | null;
+  manufacturer: string;
+  model: string;
+  description?: string | null;
+  variants?: string[];
+  specs?: Record<string, any>;
+  manufacturer_url?: string | null;
+  documentation_links?: DocumentationLink[];
+  spare_parts_links?: SparePartsLink[];
 }
 
 /** Equipment with its children for tree views */
