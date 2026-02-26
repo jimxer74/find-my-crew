@@ -1,10 +1,10 @@
 ---
 id: TASK-136
 title: Product registry for Boat Management
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-26 09:49'
-updated_date: '2026-02-26 10:51'
+updated_date: '2026-02-26 10:57'
 labels:
   - boat-management
   - database
