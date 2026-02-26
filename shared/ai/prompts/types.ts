@@ -18,7 +18,8 @@ export type UseCase =
   | 'general-conversation'
   | 'suggest-makers'
   | 'suggest-models'
-  | 'document-classification';
+  | 'document-classification'
+  | 'product-search';
 
 // Prompt format types
 export type PromptFormat = 'template' | 'builder' | 'constant';

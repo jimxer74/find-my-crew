@@ -126,6 +126,19 @@ export const prodConfig: EnvironmentConfig = {
       ],
       temperature: 0.1,
       maxTokens: 1024
+    },
+    // Marine equipment product search — structured JSON output, factual accuracy over creativity
+    'product-search': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openai/gpt-4o-mini'],
+          temperature: 0.1,
+          maxTokens: 4000
+        }
+      ],
+      temperature: 0.1,
+      maxTokens: 4000
     }
 
   },

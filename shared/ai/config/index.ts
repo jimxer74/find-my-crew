@@ -19,7 +19,8 @@ export type UseCase =
   | 'prospect-chat'          // AI chat for unauthenticated prospect users
   | 'owner-chat'             // AI chat for owner/skipper onboarding
   | 'general-conversation'   // General conversation fallback for intent classification
-  | 'document-classification'; // AI vision classification for document vault uploads
+  | 'document-classification'  // AI vision classification for document vault uploads
+  | 'product-search';          // AI-driven marine equipment product search for registry
 
 export interface AIProviderConfig {
   provider: AIProvider;
