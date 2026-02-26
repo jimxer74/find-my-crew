@@ -1,10 +1,10 @@
 ---
 id: TASK-138
 title: AI product search and product registry update
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-26 12:46'
-updated_date: '2026-02-26 12:53'
+updated_date: '2026-02-26 12:59'
 labels: []
 dependencies: []
 ---
@@ -39,3 +39,21 @@ Clicking Search triggers a AI driven search, where input parameters are provided
 - [ ] #9 If AI finds no results, user can add equipment manually without registry link
 - [ ] #10 Old 'Find Product in Registry' dedicated search section is removed from the form
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## TASK-138 Complete
+
+**Changes implemented:**
+
+1. **`shared/ai/config/index.ts`** — Added `'product-search'` to `UseCase` type
+2. **`shared/ai/prompts/types.ts`** — Added `'product-search'` to `UseCase` type (fixes build error)
+3. **`shared/ai/config/prod.ts`** — Added `product-search` override (gpt-4o-mini, temp 0.1, 4000 tokens)
+4. **`app/api/product-registry/ai-search/route.ts`** — New AI search endpoint: authenticates user, calls `callAI({useCase: 'product-search'})`, validates/sanitizes products, upserts to product_registry, returns records with IDs
+5. **`boat-management/components/registry/ProductAISearchDialog.tsx`** — New modal: manufacturer/model/additional text inputs → POST to ai-search → results list with Details toggle (specs, ProductLinks) and Select button
+6. **`boat-management/components/registry/index.ts`** — Added ProductAISearchDialog export
+7. **`boat-management/components/equipment/EquipmentForm.tsx`** — Fully rewritten: removed dedicated registry search section, Name field is now custom inline autocomplete (debounced GET /api/product-registry?q=), "Not found? Search it" link above Name opens ProductAISearchDialog, ProductAISearchDialog rendered outside `<form>` to avoid nested form issues
+
+Build: ✅ 83 pages compiled successfully
+<!-- SECTION:FINAL_SUMMARY:END -->
