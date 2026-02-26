@@ -355,8 +355,10 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   useEffect(() => {
     // Only trigger if we're not in the process of checking requirements AND
     // if we somehow have requirements but neither form is active (edge case)
-    if (hasRequirements && !showRequirementsForm && !showRegistrationModal && !isCheckingRequirements) {
+    if (hasRequirements && !showRequirementsForm && !showRegistrationModal && !isCheckingRequirements && !showPassportStep) {
       // Very conservative check - only switch if we're in a broken state
+      // Guard: never fire while passport step is active or after user cancelled (hasRequirements
+      // is reset to false on cancel, so this effect won't re-open the form uninvited)
       const checkRequirementsType = async () => {
         try {
           const requirementsResponse = await fetch(`/api/journeys/${leg.journey_id}/requirements`, {
@@ -384,7 +386,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
       checkRequirementsType();
     }
-  }, [hasRequirements, showRequirementsForm, showRegistrationModal, isCheckingRequirements, leg.journey_id]);
+  }, [hasRequirements, showRequirementsForm, showRegistrationModal, isCheckingRequirements, showPassportStep, leg.journey_id]);
 
   // Prevent regular modal from showing if question requirements exist
   // Only blocks if we have question requirements that need the form
@@ -710,7 +712,11 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const handlePassportCancel = useCallback(() => {
     logger.debug('Passport verification cancelled', {}, true);
     setShowPassportStep(false);
-    setShowRegistrationModal(false); // Ensure registration form is not shown after passport cancel
+    setShowRegistrationModal(false);
+    // Reset hasRequirements so the Safety effect (which fires whenever hasRequirements=true
+    // and no form is shown) does not re-open the registration form after cancel.
+    // checkRequirements() will re-set it correctly if the user clicks Register again.
+    setHasRequirements(false);
     setPassportVerificationComplete(false);
     setPassportData(null);
     setRegistrationNotes('');
@@ -1291,6 +1297,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   onComplete={handleRequirementsComplete}
                   onCancel={() => {
                     setShowRequirementsForm(false);
+                    // Reset hasRequirements so the Safety effect does not re-open the form
+                    setHasRequirements(false);
                     setRegistrationNotes('');
                     setRequirementsAnswers([]);
                     setRegistrationError(null);
@@ -1349,6 +1357,8 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                       type="button"
                       onClick={() => {
                         setShowRegistrationModal(false);
+                        // Reset hasRequirements so the Safety effect does not re-open the form
+                        setHasRequirements(false);
                         setRegistrationNotes('');
                         setRequirementsAnswers([]);
                         setRegistrationError(null);

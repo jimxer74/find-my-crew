@@ -104,7 +104,8 @@
       "mcp__backlog__document_create",
       "mcp__backlog__document_update",
       "mcp__backlog__document_view",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "mcp__backlog__document_list"
     ]
   }
 }

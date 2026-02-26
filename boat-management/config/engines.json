@@ -1,0 +1,387 @@
+{
+    "engines": [
+      {
+        "id": 1,
+        "manufacturer": "Yanmar",
+        "model": "1GM10",
+        "hp": 9,
+        "type": "Single-cylinder raw-water or heat-exchanger inboard / saildrive",
+        "variants": ["1GM10C (saildrive)", "1GM10F", "1GM10L"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/marine/wp-content/uploads/2020/05/0AGMM-EN0013_2018.04.pdf (Official Operation Manual)",
+          "https://nhmr.nl/wp-content/uploads/2022/03/YANMAR-WORKSHOP-MANUAL-1GM10-2GM30-3GM30-3HM35.pdf (Workshop/Service Manual)"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-gm-series (Yanmar GM parts kits & spares)",
+          "https://www.defender.com/search?keywords=yanmar+1gm10 (Defender Marine)",
+          "https://www.yanmar.com/marine/dealer-locator/ (Official Yanmar dealers)"
+        ]
+      },
+      {
+        "id": 2,
+        "manufacturer": "Yanmar",
+        "model": "2GM20",
+        "hp": 18,
+        "type": "Twin-cylinder raw-water or heat-exchanger inboard / saildrive",
+        "variants": ["2GM20F", "2GM20C (saildrive)"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/marine/wp-content/uploads/2020/05/0AGMM-EN0013_2018.04.pdf (GM Series Operation Manual)",
+          "https://nhmr.nl/wp-content/uploads/2022/03/YANMAR-WORKSHOP-MANUAL-1GM10-2GM30-3GM30-3HM35.pdf (Workshop Manual)"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-gm-series",
+          "https://www.defender.com/search?keywords=yanmar+2gm20"
+        ]
+      },
+      {
+        "id": 3,
+        "manufacturer": "Yanmar",
+        "model": "3GM30",
+        "hp": 27,
+        "type": "Three-cylinder raw-water or heat-exchanger inboard / saildrive",
+        "variants": ["3GM30F", "3GM30C"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/marine/wp-content/uploads/2020/05/0AGMM-EN0013_2018.04.pdf",
+          "https://nhmr.nl/wp-content/uploads/2022/03/YANMAR-WORKSHOP-MANUAL-1GM10-2GM30-3GM30-3HM35.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-gm-series",
+          "https://www.defender.com/search?keywords=yanmar+3gm30"
+        ]
+      },
+      {
+        "id": 4,
+        "manufacturer": "Yanmar",
+        "model": "3YM30",
+        "hp": 29,
+        "type": "Modern three-cylinder heat-exchanger inboard / saildrive",
+        "variants": ["3YM20 (21 hp sibling)", "3YM30C saildrive"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/media/global/com/product/marinepleasure/sailBoatPropulsion/operationmanual/0AYMM-EN0023_English.pdf (YM Series Operation Manual)",
+          "https://j109.org/docs/yanmar_3ym-2ym-service-manual.pdf (Service Manual)"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-ym-series",
+          "https://www.defender.com/search?keywords=yanmar+3ym30"
+        ]
+      },
+      {
+        "id": 5,
+        "manufacturer": "Yanmar",
+        "model": "3JH5E",
+        "hp": 39,
+        "type": "Three-cylinder common-rail / heat-exchanger inboard / saildrive",
+        "variants": ["3JH40 (40 hp CR update)"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/marine/wp-content/uploads/2020/05/Operation-Manual_4JH3DTE-49961-202851.pdf (JH series similar)",
+          "Yanmar JH-CR Operation & Service manuals via dealer portal"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-jh-series",
+          "https://www.defender.com/search?keywords=yanmar+3jh5"
+        ]
+      },
+      {
+        "id": 6,
+        "manufacturer": "Yanmar",
+        "model": "4JH5E",
+        "hp": 54,
+        "type": "Four-cylinder heat-exchanger inboard / saildrive",
+        "variants": ["4JH57", "4JH-CR series"],
+        "maintenance_documentation": [
+          "https://www.yanmar.com/marine/wp-content/uploads/2020/05/Operation-Manual_4JH3DTE-49961-202851.pdf",
+          "JH series service manuals via Yanmar"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-jh-series",
+          "https://www.defender.com/search?keywords=yanmar+4jh"
+        ]
+      },
+      {
+        "id": 7,
+        "manufacturer": "Yanmar",
+        "model": "3JH40",
+        "hp": 40,
+        "type": "Modern common-rail three-cylinder",
+        "variants": ["Saildrive & shaft versions"],
+        "maintenance_documentation": [
+          "Yanmar official JH-CR manuals (download from dealer portal or https://www.yanmar.com/marine/service/)"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/yanmar-jh-series",
+          "https://www.yanmar.com/marine/dealer-locator/"
+        ]
+      },
+      {
+        "id": 8,
+        "manufacturer": "Volvo Penta",
+        "model": "D1-13",
+        "hp": 12,
+        "type": "Twin-cylinder heat-exchanger inboard / saildrive",
+        "variants": ["D1-13B/F"],
+        "maintenance_documentation": [
+          "https://j109.org/docs/volvo_d1-30_operators_manual.pdf (covers D1-13/20/30 & D2-40)",
+          "https://pubs.volvopenta.com/publications/ (official search)"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/ (official parts)",
+          "https://www.defender.com/search?keywords=volvo+d1-13"
+        ]
+      },
+      {
+        "id": 9,
+        "manufacturer": "Volvo Penta",
+        "model": "D1-20",
+        "hp": 18,
+        "type": "Three-cylinder heat-exchanger",
+        "variants": ["D1-20B/F"],
+        "maintenance_documentation": [
+          "https://j109.org/docs/volvo_d1-30_operators_manual.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://www.defender.com/search?keywords=volvo+d1-20"
+        ]
+      },
+      {
+        "id": 10,
+        "manufacturer": "Volvo Penta",
+        "model": "D1-30",
+        "hp": 27,
+        "type": "Three-cylinder heat-exchanger / saildrive",
+        "variants": ["D1-30B/F"],
+        "maintenance_documentation": [
+          "https://j109.org/docs/volvo_d1-30_operators_manual.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://www.defender.com/search?keywords=volvo+d1-30"
+        ]
+      },
+      {
+        "id": 11,
+        "manufacturer": "Volvo Penta",
+        "model": "D2-40",
+        "hp": 37,
+        "type": "Four-cylinder heat-exchanger / saildrive",
+        "variants": ["D2-40B/F"],
+        "maintenance_documentation": [
+          "https://j109.org/docs/volvo_d1-30_operators_manual.pdf",
+          "https://sailing.mit.edu/wikiupload/d/de/Engine_service_manual.pdf (D1/D2 service)"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://www.defender.com/search?keywords=volvo+d2-40"
+        ]
+      },
+      {
+        "id": 12,
+        "manufacturer": "Volvo Penta",
+        "model": "MD2030",
+        "hp": 29,
+        "type": "Older three-cylinder (very common on 1980s–2000s boats)",
+        "variants": ["MD2020, MD2040 siblings"],
+        "maintenance_documentation": [
+          "Volvo Penta MD series operator & workshop manuals via https://pubs.volvopenta.com/"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://www.defender.com/search?keywords=volvo+md2030"
+        ]
+      },
+      {
+        "id": 13,
+        "manufacturer": "Beta Marine",
+        "model": "Beta 25",
+        "hp": 25,
+        "type": "Kubota-based three-cylinder heat-exchanger / saildrive",
+        "variants": ["Beta 20, Beta 30 siblings"],
+        "maintenance_documentation": [
+          "https://betamarineusa.com/literature-downloads-engines/ (Official Operators Maintenance Manuals)"
+        ],
+        "spare_parts_sources": [
+          "https://parts.betamarineusa.com/ (Official Beta parts store)",
+          "https://www.betamarinewest.com/online-store/Beta-30-Parts-c29710197 (Beta 25/30 parts)"
+        ]
+      },
+      {
+        "id": 14,
+        "manufacturer": "Beta Marine",
+        "model": "Beta 30",
+        "hp": 30,
+        "type": "Kubota-based three-cylinder",
+        "variants": ["Beta 28, Beta 35"],
+        "maintenance_documentation": [
+          "https://betamarineusa.com/literature-downloads-engines/",
+          "https://www.marinedieselbasics.com/wp-content/uploads/Beta-43-5050.pdf (similar range)"
+        ],
+        "spare_parts_sources": [
+          "https://parts.betamarineusa.com/",
+          "https://admarineservices.com/wp-content/uploads/2017/02/B30_Spares_List.pdf (Illustrated parts list)"
+        ]
+      },
+      {
+        "id": 15,
+        "manufacturer": "Beta Marine",
+        "model": "Beta 38",
+        "hp": 38,
+        "type": "Four-cylinder Kubota-based",
+        "variants": ["Beta 43"],
+        "maintenance_documentation": [
+          "https://betamarineusa.com/literature-downloads-engines/"
+        ],
+        "spare_parts_sources": [
+          "https://parts.betamarineusa.com/",
+          "https://betamarine.co.uk/spares-support-section/"
+        ]
+      },
+      {
+        "id": 16,
+        "manufacturer": "Perkins",
+        "model": "4.108",
+        "hp": 37,
+        "type": "Classic four-cylinder (ubiquitous on older boats)",
+        "variants": ["4.108M marine"],
+        "maintenance_documentation": [
+          "https://sbo.sailboatowners.com/downloads/Hunter_gen_93327239.pdf (Workshop Manual)"
+        ],
+        "spare_parts_sources": [
+          "https://parts4engines.com/collections/perkins-4-108m-parts",
+          "https://www.tadiesels.com/perkins-4108.html (Trans Atlantic Diesels cruise kits)"
+        ]
+      },
+      {
+        "id": 17,
+        "manufacturer": "Westerbeke",
+        "model": "20B Two",
+        "hp": 18,
+        "type": "Three-cylinder heat-exchanger (common repower)",
+        "variants": ["12.5B, 30B siblings"],
+        "maintenance_documentation": [
+          "Westerbeke official operator & service manuals at https://www.westerbeke.com/"
+        ],
+        "spare_parts_sources": [
+          "https://www.westerbeke.com/parts/",
+          "https://www.defender.com/search?keywords=westerbeke+20b"
+        ]
+      },
+      {
+        "id": 18,
+        "manufacturer": "Universal (Westerbeke)",
+        "model": "M-25XP",
+        "hp": 26,
+        "type": "Kubota-based three-cylinder (very common on US boats)",
+        "variants": ["M-25, M-35"],
+        "maintenance_documentation": [
+          "Universal / Westerbeke manuals via https://www.westerbeke.com/"
+        ],
+        "spare_parts_sources": [
+          "https://www.westerbeke.com/parts/",
+          "https://www.defender.com/search?keywords=universal+m-25"
+        ]
+      },
+      {
+        "id": 19,
+        "manufacturer": "Nanni",
+        "model": "N3.30",
+        "hp": 30,
+        "type": "Kubota-based three-cylinder (European popular)",
+        "variants": ["N2.10, N4.38 etc."],
+        "maintenance_documentation": [
+          "Nanni / Kubota-based manuals via Nanni dealers or https://marine-diesel-engine-manuals.com/"
+        ],
+        "spare_parts_sources": [
+          "https://www.nanni.com/en/ (dealer locator)",
+          "https://www.defender.com/ or European ASAP Supplies"
+        ]
+      },
+      {
+        "id": 20,
+        "manufacturer": "Sole",
+        "model": "Mini-33",
+        "hp": 33,
+        "type": "Modern compact diesels (popular on smaller yachts)",
+        "variants": ["Sole Mini series"],
+        "maintenance_documentation": [
+          "Sole Diesel official manuals at https://www.solediesel.com/"
+        ],
+        "spare_parts_sources": [
+          "https://www.solediesel.com/en/spare-parts/",
+          "https://www.defender.com/search?keywords=sole+mini+diesel"
+        ]
+      },
+      {
+        "id": 21,
+        "manufacturer": "Volvo Penta",
+        "model": "D2-50",
+        "hp": 50,
+        "type": "Four-cylinder naturally aspirated heat-exchanger inboard / saildrive",
+        "variants": ["D2-50F (flange/shaft focus)", "D2-50 with 130S saildrive"],
+        "maintenance_documentation": [
+          "https://www.volvopenta.com/en-us/marine/all-marine-engines/d2 (Official product page with leaflets)",
+          "https://pubs.volvopenta.com/ProdDocs/Home/Disclaimer?publication=47710130&lang=en-US (Product leaflet PDF)",
+          "D1/D2 series service manual (covers D2-40 to D2-75): https://sailing.mit.edu/wikiupload/d/de/Engine_service_manual.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/ (Official Volvo Penta parts portal & dealer locator)",
+          "https://parts4engines.com/collections/volvo-penta-d2-40-d2-50f-d2-55-d2-60f-d2-75 (Parts4Engines D2 series kits)",
+          "https://www.defender.com/search?keywords=volvo+d2-50 (Defender Marine)"
+        ]
+      },
+      {
+        "id": 22,
+        "manufacturer": "Volvo Penta",
+        "model": "D2-55",
+        "hp": 55,
+        "type": "Four-cylinder naturally aspirated heat-exchanger inboard / saildrive (older model, phased out ~2010s)",
+        "variants": ["D2-55 A/B/C (generational updates)", "D2-55 with MS25/HS25 gearbox or 130S saildrive"],
+        "maintenance_documentation": [
+          "https://sailing.mit.edu/wikiupload/d/de/Engine_service_manual.pdf (D1/D2 service manual covers D2-55)",
+          "Older brochure/tech data often via https://www.tadiesels.com/releases/Volvo%20D2-55%20Brochure.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://parts4engines.com/collections/volvo-penta-d2-55-parts",
+          "https://www.defender.com/search?keywords=volvo+d2-55"
+        ]
+      },
+      {
+        "id": 23,
+        "manufacturer": "Volvo Penta",
+        "model": "D2-60",
+        "hp": 60,
+        "type": "Four-cylinder turbocharged with charge air cooler heat-exchanger inboard / saildrive",
+        "variants": ["D2-60F", "D2-60 with 150S saildrive"],
+        "maintenance_documentation": [
+          "https://www.volvopenta.com/en-us/marine/all-marine-engines/d2 (Current D2 series page, includes D2-60)",
+          "https://pubs.volvopenta.com/ (Search for D2 operator/service PDFs via official pubs portal)",
+          "D1/D2 series manual: https://sailing.mit.edu/wikiupload/d/de/Engine_service_manual.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://parts4engines.com/collections/volvo-penta-d2-40-d2-50f-d2-55-d2-60f-d2-75",
+          "https://www.defender.com/search?keywords=volvo+d2-60"
+        ]
+      },
+      {
+        "id": 24,
+        "manufacturer": "Volvo Penta",
+        "model": "D2-75",
+        "hp": 75,
+        "type": "Four-cylinder turbocharged with charge air cooler heat-exchanger inboard / saildrive",
+        "variants": ["D2-75F", "D2-75 with 150S saildrive"],
+        "maintenance_documentation": [
+          "https://www.volvopenta.com/en-us/marine/all-marine-engines/d2 (Official D2 page covers D2-75)",
+          "https://main2.likipevpreseller.com/wp-content/uploads/sites/40/2016/04/english_D2-75.pdf (Technical data PDF)",
+          "D1/D2 service manual: https://sailing.mit.edu/wikiupload/d/de/Engine_service_manual.pdf"
+        ],
+        "spare_parts_sources": [
+          "https://www.volvopenta.com/en-us/parts-service/",
+          "https://parts4engines.com/collections/volvo-penta-d2-40-d2-50f-d2-55-d2-60f-d2-75",
+          "https://www.defender.com/search?keywords=volvo+d2-75"
+        ]
+      }
+   
+    ]
+  }
+
