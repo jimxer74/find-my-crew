@@ -10,6 +10,22 @@ import { getRedirectPathServer, shouldStayOnHomepageServer } from '@shared/lib/r
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Handle OAuth fallback: when Supabase can't validate redirectTo (e.g. allowed redirect URLs
+  // list doesn't include query params), it falls back to the Site URL and the OAuth code lands
+  // at /?code=... instead of /auth/callback?code=...  Forward it to the callback route so the
+  // server-side PKCE exchange still happens.
+  if (pathname === '/') {
+    const code = request.nextUrl.searchParams.get('code');
+    if (code) {
+      const callbackUrl = new URL('/auth/callback', request.url);
+      request.nextUrl.searchParams.forEach((value, key) => {
+        callbackUrl.searchParams.set(key, value);
+      });
+      console.log('[Middleware] Forwarding OAuth code from / to /auth/callback');
+      return NextResponse.redirect(callbackUrl);
+    }
+  }
+
   // Skip middleware for:
   // - API routes
   // - Static files (_next, images, etc.)
