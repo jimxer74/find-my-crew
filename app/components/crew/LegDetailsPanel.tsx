@@ -710,6 +710,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const handlePassportCancel = useCallback(() => {
     logger.debug('Passport verification cancelled', {}, true);
     setShowPassportStep(false);
+    setShowRegistrationModal(false); // Ensure registration form is not shown after passport cancel
     setPassportVerificationComplete(false);
     setPassportData(null);
     setRegistrationNotes('');

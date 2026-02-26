@@ -152,6 +152,8 @@ export function LegRegistrationDialog({
       setPassportVerificationComplete(false);
       setRegistrationError(null);
       setHookRegistrationError(null);
+      setShowSuccessModal(false);
+      setRegistrationResult(null);
     }
   }, [isOpen, leg, requirementsChecked, passportVerificationComplete, checkRequirements, setHookRegistrationError]);
 
@@ -172,7 +174,9 @@ export function LegRegistrationDialog({
   };
 
   const handlePassportCancel = () => {
-    setShowPassportStep(false);
+    // Don't clear showPassportStep here — the !isOpen cleanup effect will reset all state.
+    // Calling setShowPassportStep(false) before onClose() causes a brief render where
+    // fallback form conditions fire (hasRequirements=true but all show-flags=false).
     onClose();
   };
 
@@ -195,9 +199,10 @@ export function LegRegistrationDialog({
   };
 
   const handleSuccessModalClose = () => {
-    setShowSuccessModal(false);
-    setRegistrationResult(null);
-    // Now call onSuccess after modal is closed to allow parent to update
+    // Don't explicitly reset showSuccessModal/registrationResult here.
+    // If we set showSuccessModal=false before onClose() causes isOpen=false, the main modal
+    // briefly becomes visible again (isOpen && !false = true) and the form re-renders.
+    // Instead, let the !isOpen cleanup effect reset all state atomically.
     onSuccess?.();
     onClose();
   };
@@ -306,9 +311,10 @@ export function LegRegistrationDialog({
                 </Button>
               </div>
             </div>
-          ) : hasRequirements && !hasQuestionRequirements ? (
+          ) : hasRequirements && !hasQuestionRequirements && (!hasPassportRequirement || passportVerificationComplete) ? (
             // Show simple form when there are requirements but no question requirements
             // (e.g., only risk_level, experience_level, skill - which are handled server-side)
+            // Guard: never show this form when passport is required but not yet verified
             <div className="space-y-4">
               {displayError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
@@ -359,9 +365,10 @@ export function LegRegistrationDialog({
                 </Button>
               </div>
             </div>
-          ) : !isCheckingRequirements && (hasRequirements || hasQuestionRequirements) ? (
+          ) : !isCheckingRequirements && (hasRequirements || hasQuestionRequirements) && (!hasPassportRequirement || passportVerificationComplete) ? (
             // Fallback: Show simple form when requirements check is done but no forms are active
             // This handles the case where requirements exist but forms aren't being shown
+            // Guard: never show this form when passport is required but not yet verified
             <div className="space-y-4">
               {displayError && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md text-destructive text-sm">
