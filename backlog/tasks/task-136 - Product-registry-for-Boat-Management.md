@@ -1,10 +1,10 @@
 ---
 id: TASK-136
 title: Product registry for Boat Management
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-26 09:49'
-updated_date: '2026-02-26 10:57'
+updated_date: '2026-02-26 11:15'
 labels:
   - boat-management
   - database
@@ -227,15 +227,15 @@ app/api/product-registry/
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Owners can search the product registry by typing a manufacturer and/or model name in the EquipmentForm — results appear as an autocomplete dropdown
-- [ ] #2 Selecting a registry product auto-fills the equipment form (manufacturer, model, subcategory, specs) and links the equipment record via product_registry_id
-- [ ] #3 If a product is not found, the owner can submit it through a lightweight form — it is saved to the registry (is_verified=false) and immediately usable
-- [ ] #4 The product_registry table is category-agnostic: all specs stored in JSONB, no category-specific columns
-- [ ] #5 Documentation links are displayed for equipment linked to a registry product
-- [ ] #6 Spare parts links are displayed filtered by the user's region (eu/us/uk/asia/global) with always-visible global links
-- [ ] #7 The 24 engine models from engines.json are seeded into the registry as part of the DB migration
-- [ ] #8 Adding equipment without using the registry still works (product_registry_id is optional)
-- [ ] #9 RLS: anyone can read the registry; only authenticated users can submit; only owner or admin can edit/delete
+- [x] #1 Owners can search the product registry by typing a manufacturer and/or model name in the EquipmentForm — results appear as an autocomplete dropdown
+- [x] #2 Selecting a registry product auto-fills the equipment form (manufacturer, model, subcategory, specs) and links the equipment record via product_registry_id
+- [x] #3 If a product is not found, the owner can submit it through a lightweight form — it is saved to the registry (is_verified=false) and immediately usable
+- [x] #4 The product_registry table is category-agnostic: all specs stored in JSONB, no category-specific columns
+- [x] #5 Documentation links are displayed for equipment linked to a registry product
+- [x] #6 Spare parts links are displayed filtered by the user's region (eu/us/uk/asia/global) with always-visible global links
+- [x] #7 The 24 engine models from engines.json are seeded into the registry as part of the DB migration
+- [x] #8 Adding equipment without using the registry still works (product_registry_id is optional)
+- [x] #9 RLS: anyone can read the registry; only authenticated users can submit; only owner or admin can edit/delete
 <!-- AC:END -->
 
 ## Implementation Plan
@@ -357,16 +357,54 @@ For each engine entry:
 - `specs/tables.sql` — add product_registry table and boat_equipment FK column
 <!-- SECTION:NOTES:END -->
 
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## TASK-136 Implementation Summary
+
+### Phases Completed: 1–4 (Phase 5 = future seed expansion)
+
+### Files Created
+- `migrations/050_product_registry.sql` — DB migration with table, RLS, FK, GIN index, and all 24 engine seed rows
+- `boat-management/lib/product-registry-service.ts` — `searchProducts()`, `getProductById()`, `createProduct()`
+- `boat-management/lib/region-utils.ts` — `countryToRegion()`, `localeToRegion()`, `filterSparePartsByRegion()`
+- `boat-management/components/registry/ProductRegistrySearch.tsx` — debounced autocomplete (300ms), keyboard navigation (↑↓ Enter Esc), verified badge
+- `boat-management/components/registry/ProductRegistryForm.tsx` — community submission form (manufacturer/model/category required)
+- `boat-management/components/registry/ProductLinks.tsx` — documentation links + region-filtered spare parts with "Show all regions" toggle
+- `boat-management/components/registry/index.ts` — barrel export
+- `app/api/product-registry/route.ts` — GET (search/list) + POST (submit)
+- `app/api/product-registry/[id]/route.ts` — GET single product
+
+### Files Modified
+- `boat-management/lib/types.ts` — added `product_registry_id` to `BoatEquipment*` types + new `ProductRegistryEntry`, `ProductRegistryInsert`, `DocumentationLink`, `SparePartsLink`, `ProductRegion` types
+- `boat-management/lib/index.ts` — exports for new service and region-utils
+- `boat-management/components/equipment/EquipmentForm.tsx` — added registry search at top of form, auto-fill on select, "Not in registry? Add it" inline form, `product_registry_id` in form data
+- `boat-management/components/equipment/EquipmentList.tsx` — "View docs & parts" toggle on cards linked to registry; lazy-fetches product on expand
+- `app/api/boats/[boatId]/equipment/route.ts` — passes `product_registry_id` through POST
+- `app/api/boats/[boatId]/equipment/[equipmentId]/route.ts` — allows `product_registry_id` in PUT
+- `specs/tables.sql` — added `product_registry` table (before `boat_equipment`) + `product_registry_id` FK column + index
+
+### Key Design Decisions
+- Category-agnostic specs in JSONB — no schema migration needed for new equipment types
+- `UNIQUE(manufacturer, model)` — community submissions on conflict return existing entry
+- `submitted_by ON DELETE SET NULL` — GDPR-safe (entries survive account deletion)
+- All 24 seed entries tagged `is_verified=true`, `region=global` — regional tagging deferred to Phase 5
+- Region detection: `countryToRegion(profile.location)` → `localeToRegion(navigator.language)` fallback
+- ProductLinks lazy-loads from API on first expand — no over-fetching on large equipment lists
+
+### Build: ✓ Compiled successfully (83 pages)
+<!-- SECTION:FINAL_SUMMARY:END -->
+
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 DB migration file created with product_registry table, boat_equipment.product_registry_id FK column, and engine seed data
-- [ ] #2 specs/tables.sql updated with both schema changes
-- [ ] #3 API routes GET /api/product-registry and GET /api/product-registry/[id] return correct data with search/filter
-- [ ] #4 POST /api/product-registry allows authenticated users to submit new products
-- [ ] #5 ProductRegistrySearch autocomplete component works with debounce and keyboard navigation
-- [ ] #6 EquipmentForm integration: auto-fill on product select, graceful fallback when no registry match
-- [ ] #7 ProductLinks component renders documentation + region-filtered spare parts links
-- [ ] #8 Region detection implemented (from user profile location, with locale fallback)
-- [ ] #9 GDPR: submitted_by FK has ON DELETE SET NULL — no orphaned user references on account deletion
-- [ ] #10 No regression in existing equipment CRUD flows
+- [x] #1 DB migration file created with product_registry table, boat_equipment.product_registry_id FK column, and engine seed data
+- [x] #2 specs/tables.sql updated with both schema changes
+- [x] #3 API routes GET /api/product-registry and GET /api/product-registry/[id] return correct data with search/filter
+- [x] #4 POST /api/product-registry allows authenticated users to submit new products
+- [x] #5 ProductRegistrySearch autocomplete component works with debounce and keyboard navigation
+- [x] #6 EquipmentForm integration: auto-fill on product select, graceful fallback when no registry match
+- [x] #7 ProductLinks component renders documentation + region-filtered spare parts links
+- [x] #8 Region detection implemented (from user profile location, with locale fallback)
+- [x] #9 GDPR: submitted_by FK has ON DELETE SET NULL — no orphaned user references on account deletion
+- [x] #10 No regression in existing equipment CRUD flows
 <!-- DOD:END -->
