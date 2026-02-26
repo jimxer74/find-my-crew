@@ -72,7 +72,7 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
             .eq('user_id', user.id)
             .maybeSingle(),
           new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('RLS query timeout')), 2000)
+            setTimeout(() => reject(new Error('RLS query timeout')), 5000)
           ),
         ]) as Promise<{ data: { privacy_policy_accepted_at?: string | null; terms_accepted_at?: string | null } | null; error: null } | { error: Error; data: null }>;
 
@@ -88,9 +88,11 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
         });
 
         if (error) {
-          logger.warn('[ConsentSetupContext] Consent query error (assuming no consent):', { error: error.message });
-          // On RLS error or query error, show the consent setup modal to be safe
-          setNeedsConsentSetup(true);
+          // On query error (e.g. RLS issue, network error) assume consents are already saved.
+          // Showing the modal when we're uncertain is worse than silently skipping it — the user
+          // would have to re-accept consents they already accepted.
+          logger.warn('[ConsentSetupContext] Consent query error (assuming consent OK):', { error: error.message });
+          setNeedsConsentSetup(false);
         } else if (!data) {
           // No consent record exists - user needs to complete setup
           logger.info('[ConsentSetupContext] No consent record found - showing modal');
@@ -105,11 +107,13 @@ export function ConsentSetupProvider({ children }: { children: React.ReactNode }
           setNeedsConsentSetup(!hasRequiredConsents);
         }
       } catch (err) {
-        logger.warn('[ConsentSetupContext] Consent check timeout or exception (assuming no consent):', {
+        // On timeout or any exception, assume consents are already saved.
+        // Showing the modal on a slow query would interrupt users who have already accepted.
+        // New users without consents will be caught on the next successful load.
+        logger.warn('[ConsentSetupContext] Consent check timeout or exception (assuming consent OK):', {
           error: err instanceof Error ? err.message : String(err)
         });
-        // On timeout or any error, show the consent setup modal to be safe
-        setNeedsConsentSetup(true);
+        setNeedsConsentSetup(false);
       } finally {
         setIsLoading(false);
       }
