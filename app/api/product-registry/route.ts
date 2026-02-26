@@ -1,9 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
 
+const REGISTRY_COLUMNS =
+  'id, category, subcategory, manufacturer, model, description, variants, specs, is_verified';
+
+/**
+ * Converts a raw user query into a PostgreSQL prefix tsquery.
+ * e.g. "yan 3ym" → "yan:* & 3ym:*"
+ */
+function buildPrefixTsQuery(raw: string): string | null {
+  const tokens = raw
+    .trim()
+    .split(/\s+/)
+    .map(t => t.replace(/[^a-zA-Z0-9\-]/g, ''))
+    .filter(t => t.length >= 1);
+  if (tokens.length === 0) return null;
+  return tokens.map(t => `${t}:*`).join(' & ');
+}
+
 /**
  * GET /api/product-registry?q=&category=
  * Search the product registry. Accessible without authentication.
+ * Uses FTS prefix matching on the stored search_vector GIN index.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('product_registry')
-      .select('id, category, subcategory, manufacturer, model, description, variants, specs, is_verified')
+      .select(REGISTRY_COLUMNS)
       .order('is_verified', { ascending: false })
       .order('manufacturer', { ascending: true })
       .order('model', { ascending: true })
@@ -26,9 +44,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (q.trim()) {
-      query = query.or(
-        `manufacturer.ilike.%${q}%,model.ilike.%${q}%,description.ilike.%${q}%`
-      );
+      const tsQuery = buildPrefixTsQuery(q);
+      if (tsQuery) {
+        query = query.textSearch('search_vector', tsQuery, { config: 'english' });
+      }
     }
 
     const { data, error } = await query;
