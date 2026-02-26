@@ -27,11 +27,13 @@ export async function POST(request: NextRequest) {
     const aiProcessingConsent = body.aiProcessingConsent ?? false;
 
     // Check owner_sessions first (owner takes precedence if user visited both)
+    // Accept both 'consent_pending' (normal) and 'signup_pending' (race condition where the
+    // signup→consent_pending state transition failed but user_id was already linked).
     const { data: ownerSession } = await supabase
       .from('owner_sessions')
       .select('session_id, conversation')
       .eq('user_id', user.id)
-      .eq('onboarding_state', 'consent_pending')
+      .in('onboarding_state', ['signup_pending', 'consent_pending'])
       .limit(1)
       .maybeSingle();
 
@@ -78,11 +80,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check prospect_sessions
+    // Accept both 'consent_pending' (normal) and 'signup_pending' (race condition where the
+    // signup→consent_pending state transition failed but user_id was already linked).
     const { data: prospectSession } = await supabase
       .from('prospect_sessions')
       .select('session_id, conversation')
       .eq('user_id', user.id)
-      .eq('onboarding_state', 'consent_pending')
+      .in('onboarding_state', ['signup_pending', 'consent_pending'])
       .limit(1)
       .maybeSingle();
 
