@@ -1,9 +1,10 @@
 ---
 id: TASK-142
 title: New Async Owner AI Onboarding Flow with Equipment & Journey Creation
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-27 18:53'
+updated_date: '2026-02-27 19:09'
 labels:
   - onboarding
   - ai
@@ -256,3 +257,34 @@ interface OnboardingState {
 - [ ] #11 Profile and boat are required — cannot proceed past boat checkpoint without saving both
 - [ ] #12 year_built is passed to equipment generation for age-aware assessment
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Summary
+
+New async owner onboarding flow implemented at `/welcome/owner-v2`. The existing `/welcome/owner` flow is completely untouched.
+
+### Files Created (10)
+
+**API Routes:**
+- `app/api/onboarding/v2/chat/route.ts` — Stateless pre-signup AI chat. Accepts conversation history + new message, returns `{ message, extractedData, isComplete }`. Uses `owner-chat` useCase via `callAI`.
+- `app/api/onboarding/v2/extract/route.ts` — Structured data extraction from transcript, returns `{ profile, boat, journey }`.
+
+**Components:**
+- `app/components/onboarding/CheckpointCard.tsx` — Reusable confirm/edit card with field list and action buttons.
+- `app/components/onboarding/OnboardingChat.tsx` — Pre-signup AI chat panel. Shows typing indicators, message bubbles, "Create account" banner when `isComplete: true`.
+- `app/components/onboarding/ProfileCheckpoint.tsx` — Checkpoint 1: review/edit name, experience level, about. Saves to `profiles` table.
+- `app/components/onboarding/BoatCheckpoint.tsx` — Checkpoint 2: review/edit make/model, home port, year built, LOA. Inserts to `boats` table, returns `boatId`.
+- `app/components/onboarding/EquipmentCheckpoint.tsx` — Checkpoint 3: offer card → delegates to `NewBoatWizardStep3` for async generation + review + save.
+- `app/components/onboarding/JourneyCheckpoint.tsx` — Checkpoint 4: shows collected journey info, redirects to `/owner/journeys/new`.
+- `app/components/onboarding/OwnerOnboardingV2.tsx` — State machine orchestrator. Manages `pre_chat → awaiting_signup → confirming_profile → confirming_boat → equipment_offer → journey_offer → done`. Persists to `sessionStorage` post-signup. Shows `SignupModal` when AI chat completes. Shows step indicator throughout.
+- `app/welcome/owner-v2/page.tsx` — Next.js route entry point.
+
+### Key Design Decisions
+- Pre-signup chat is stateless (no DB) — conversation history sent with each request
+- `sessionStorage` survives page refresh during OAuth/email signup redirect
+- Equipment generation fully reuses `NewBoatWizardStep3` (no duplication)
+- Journey checkpoint redirects to existing planner (geocoding handled there)
+- `SignupModal` used with `redirectPath="/welcome/owner-v2"` to return post-signup
+<!-- SECTION:FINAL_SUMMARY:END -->
