@@ -1,9 +1,10 @@
 ---
 id: TASK-139
 title: Generate equipment list for boat
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-27 14:14'
+updated_date: '2026-02-27 14:14'
 labels: []
 dependencies: []
 ---
