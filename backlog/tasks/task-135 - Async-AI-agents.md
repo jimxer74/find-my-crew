@@ -1,10 +1,10 @@
 ---
 id: TASK-135
 title: Async AI agents
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-02-26 08:19'
-updated_date: '2026-02-26 09:37'
+updated_date: '2026-02-27 09:29'
 labels:
   - ai
   - architecture
@@ -223,6 +223,70 @@ Async mode naturally resolves the intermediate message problem. The worker emits
 9. GDPR deletion verification
 10. Regression test: all existing synchronous AI flows work unchanged
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## TASK-135 Complete — Async AI Job Infrastructure
+
+### What was built
+
+**Database (migration 053)**
+- `async_jobs` table — job registry with status, payload, result, GDPR cascade on user delete
+- `async_job_progress` table — append-only progress log; cascades from async_jobs
+- RLS: users can only see their own jobs/progress
+- `REPLICA IDENTITY FULL` on both tables for Supabase Realtime
+
+**Shared module `shared/lib/async-jobs/`**
+- `types.ts` — AsyncJob, JobProgress, JobType, JobStatus, GenerateJourneyPayload
+- `submitJob.ts` — client-side function: POST /api/async-jobs → returns { jobId }
+- `useJobProgress.ts` — React hook: Realtime subscription for live INSERT events on async_job_progress
+- `useJobResult.ts` — React hook: Realtime subscription for UPDATE events on async_jobs, plus initial fetch
+- `index.ts` — barrel export; also re-exported from shared/lib/index.ts
+
+**Next.js API routes**
+- `POST /api/async-jobs` — creates job row, fires Edge Function (fire-and-forget), returns { jobId } immediately
+- `GET /api/async-jobs/[jobId]` — polling fallback: returns job + progress rows with auth check
+
+**Supabase Edge Function `supabase/functions/ai-job-worker/index.ts`**
+- Deno-based, excluded from tsconfig compilation
+- Uses `EdgeRuntime.waitUntil()` to continue after 202 response — no timeout constraint
+- Handles `generate-journey` job type: builds prompt, calls OpenRouter gpt-4o-mini, parses result, emits progress events at 10/25/70/100%
+- Includes intermediate AI message in 70% progress event
+- On failure: marks job failed + emits final progress event with error
+- Env vars: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (auto-injected), OPENROUTER_API_KEY (supabase secrets set)
+
+**UI Component `shared/components/async-jobs/JobProgressPanel`**
+- Progress bar with percentage
+- Step history list with dot indicators
+- Intermediate AI message snippets (line-clamped)
+- Calls onComplete(result) / onError(error) when job finishes
+- Exported from shared/components/index.ts
+
+**GDPR**
+- Explicit deletion of async_jobs in delete-account route (step 5c, after ai_pending_actions)
+- async_job_progress cascades automatically when async_jobs row is deleted
+- async_jobs added to tablesToCheck verification list
+
+**tsconfig.json**: `supabase/functions/**` excluded from TypeScript compilation
+
+### PoC usage (journey generation)
+```tsx
+const { jobId } = await submitJob({
+  job_type: 'generate-journey',
+  payload: { startLocation, endLocation, boatId, startDate, endDate, waypointDensity }
+});
+// Then render:
+<JobProgressPanel jobId={jobId} onComplete={result => setJourney(result.journey)} />
+```
+
+### Deploy instructions
+1. `supabase functions deploy ai-job-worker`
+2. `supabase secrets set OPENROUTER_API_KEY=sk-or-...`
+3. Enable Realtime: Dashboard → Database → Replication → add async_jobs and async_job_progress
+
+Build: ✅ 85 pages compiled successfully
+<!-- SECTION:FINAL_SUMMARY:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
