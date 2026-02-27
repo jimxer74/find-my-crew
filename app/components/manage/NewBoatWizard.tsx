@@ -188,8 +188,32 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             average_speed_knots: newStep2Data.average_speed_knots,
           });
 
-          // Now call AI to fill reasoned fields
-          logger.debug('=== Calling AI to fill reasoned fields ===');
+          // If data came from boat_registry and it already has descriptive fields,
+          // skip the AI call — registry is the source of truth.
+          const isFromRegistry = hardDataResult.source === 'registry';
+          const registryHasDescriptiveData = isFromRegistry && (
+            hardData.type || hardData.characteristics || hardData.capabilities || hardData.accommodations
+          );
+
+          if (registryHasDescriptiveData) {
+            logger.debug('✅ Using registry descriptive data — skipping AI call', {
+              type: hardData.type,
+              hasCharacteristics: !!hardData.characteristics,
+            });
+            const validCategories = [
+              'Daysailers', 'Coastal cruisers', 'Traditional offshore cruisers',
+              'Performance cruisers', 'Multihulls', 'Expedition sailboats',
+            ];
+            newStep2Data = {
+              ...newStep2Data,
+              type: hardData.type && validCategories.includes(hardData.type) ? hardData.type as any : null,
+              characteristics: hardData.characteristics || '',
+              capabilities: hardData.capabilities || '',
+              accommodations: hardData.accommodations || '',
+            };
+          } else {
+          // Now call AI to fill reasoned fields (external scrape or registry missing descriptive data)
+          logger.debug('=== Calling AI to fill reasoned fields ===', { isFromRegistry });
           try {
             const aiResponse = await fetch('/api/ai/fill-reasoned-details', {
               method: 'POST',
@@ -286,6 +310,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
           } catch (aiError) {
             logger.warn('AI fill failed, continuing without AI data:', aiError instanceof Error ? { error: aiError.message } : { error: String(aiError) });
           }
+          } // end else (AI path)
         } else {
           const errorData = await hardDataResponse.json().catch(() => ({}));
           logger.error('❌ API fetch failed:', {
