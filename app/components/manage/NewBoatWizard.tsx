@@ -288,7 +288,13 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
           }
         } else {
           const errorData = await hardDataResponse.json().catch(() => ({}));
-          logger.warn('Failed to fetch sailboat details:', errorData.error);
+          logger.error('❌ API fetch failed:', {
+            status: hardDataResponse.status,
+            statusText: hardDataResponse.statusText,
+            error: errorData.error || errorData,
+            make_model: step1Data.selectedSailboat?.name,
+            slug: step1Data.selectedSailboat?.slug,
+          });
           // Continue without prefilled data - user can enter manually
         }
       }
