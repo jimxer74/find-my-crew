@@ -1,7 +1,7 @@
 'use client';
 
 import { logger } from '@shared/logging';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { getCountryFlag } from '@shared/utils';
 import { NewBoatWizardStep1, WizardStep1Data } from './NewBoatWizardStep1';
@@ -62,11 +62,37 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Load wizard state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('newBoatWizardState');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setCurrentStep(state.currentStep || 1);
+        setStep1Data(state.step1Data || initialStep1Data);
+        setStep2Data(state.step2Data || initialStep2Data);
+      } catch (err) {
+        logger.debug('Failed to restore wizard state from localStorage', { error: err });
+      }
+    }
+  }, []);
+
+  // Save wizard state to localStorage whenever data changes
+  useEffect(() => {
+    const wizardState = {
+      currentStep,
+      step1Data,
+      step2Data,
+    };
+    localStorage.setItem('newBoatWizardState', JSON.stringify(wizardState));
+  }, [currentStep, step1Data, step2Data]);
+
   const resetWizard = () => {
     setCurrentStep(1);
     setStep1Data(initialStep1Data);
     setStep2Data(initialStep2Data);
     setError(null);
+    localStorage.removeItem('newBoatWizardState');
   };
 
   const handleClose = () => {
@@ -282,6 +308,8 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         throw insertError;
       }
 
+      // Clear wizard state from localStorage on successful save
+      localStorage.removeItem('newBoatWizardState');
       onSuccess();
       handleClose();
     } catch (err: any) {
