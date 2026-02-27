@@ -68,7 +68,7 @@ export default function ProposeJourneyPage() {
   const [intermediateWaypoints, setIntermediateWaypoints] = useState<Location[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [useSpeedPlanning, setUseSpeedPlanning] = useState(false);
+  const [useSpeedPlanning, setUseSpeedPlanning] = useState(true);
   const [waypointDensity, setWaypointDensity] = useState<'minimal' | 'moderate' | 'detailed'>('moderate');
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -93,7 +93,6 @@ export default function ProposeJourneyPage() {
   useEffect(() => {
     if (user) {
       loadBoats();
-      resetForm();
     }
   }, [user]);
 
@@ -105,12 +104,13 @@ export default function ProposeJourneyPage() {
     setIntermediateWaypoints([]);
     setStartDate('');
     setEndDate('');
-    setUseSpeedPlanning(false);
+    setUseSpeedPlanning(true);
     setWaypointDensity('moderate');
     setGeneratedJourney(null);
     setAiPrompt(null);
     setActiveJobId(null);
     setError(null);
+    localStorage.removeItem('proposeJourneyFormState');
   };
 
   const loadBoats = async () => {
@@ -137,6 +137,41 @@ export default function ProposeJourneyPage() {
       setSelectedBoatSpeed(null);
     }
   }, [selectedBoatId, boats]);
+
+  // Load form state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('proposeJourneyFormState');
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        setSelectedBoatId(state.selectedBoatId || '');
+        setStartLocation(state.startLocation || { name: '', lat: 0, lng: 0 });
+        setEndLocation(state.endLocation || { name: '', lat: 0, lng: 0 });
+        setIntermediateWaypoints(state.intermediateWaypoints || []);
+        setStartDate(state.startDate || '');
+        setEndDate(state.endDate || '');
+        setUseSpeedPlanning(state.useSpeedPlanning !== undefined ? state.useSpeedPlanning : true);
+        setWaypointDensity(state.waypointDensity || 'moderate');
+      } catch (err) {
+        logger.debug('Failed to restore form state from localStorage', { error: err });
+      }
+    }
+  }, []); // Run only on mount
+
+  // Save form state to localStorage whenever any field changes
+  useEffect(() => {
+    const formState = {
+      selectedBoatId,
+      startLocation,
+      endLocation,
+      intermediateWaypoints,
+      startDate,
+      endDate,
+      useSpeedPlanning,
+      waypointDensity,
+    };
+    localStorage.setItem('proposeJourneyFormState', JSON.stringify(formState));
+  }, [selectedBoatId, startLocation, endLocation, intermediateWaypoints, startDate, endDate, useSpeedPlanning, waypointDensity]);
 
   const handleGenerate = async () => {
     setError(null);
