@@ -165,24 +165,47 @@ export function OwnerOnboardingV2() {
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [extractedChatData, setExtractedChatData] = useState<Record<string, unknown>>({});
 
-  // On mount: if user is logged in and we have saved state, resume from where we left off
+  // On mount: resolve starting state from auth + sessionStorage
   useEffect(() => {
     if (authLoading) return;
 
     const saved = loadState();
 
-    if (user && saved && saved.phase !== 'pre_chat' && saved.phase !== 'awaiting_signup') {
-      // Resume post-signup flow
-      setState(saved);
-    } else if (!user && saved?.phase === 'awaiting_signup') {
-      // User had completed chat but not yet signed up — re-show signup
-      setState(saved);
-      setShowSignupModal(true);
-    } else if (user && !saved) {
-      // User is already signed in but no onboarding state → start from profile checkpoint
-      setState((prev) => ({ ...prev, phase: 'confirming_profile' }));
+    if (!user) {
+      // Not signed in
+      if (saved?.phase === 'awaiting_signup') {
+        // Chat completed but signup not finished → restore and re-show modal
+        setState(saved);
+        setShowSignupModal(true);
+      }
+      // else: fresh pre_chat (INITIAL_STATE is already correct)
+      return;
+    }
+
+    // Signed in
+    if (saved && saved.phase !== 'pre_chat') {
+      if (saved.phase === 'awaiting_signup') {
+        // Just returned from signup redirect — advance to profile checkpoint
+        setState({ ...saved, phase: 'confirming_profile' });
+      } else {
+        // Resume from wherever they left off
+        setState(saved);
+      }
+    } else {
+      // Signed in with no meaningful saved state → skip chat, show profile checkpoint
+      // Pre-fill display name from auth metadata if available
+      const nameFromAuth =
+        (user.user_metadata?.full_name as string) ??
+        user.email?.split('@')[0] ??
+        '';
+      setState({
+        phase: 'confirming_profile',
+        profile: { displayName: nameFromAuth },
+        boat: { makeModel: '', homePort: '' },
+        journey: null,
+        savedBoatId: null,
+      });
     }
   }, [user, authLoading]);
 
@@ -204,8 +227,6 @@ export function OwnerOnboardingV2() {
   // Handle when pre-signup chat is complete
   const handleChatComplete = useCallback(
     async (chatExtractedData: Record<string, unknown>, messages: ChatMessage[]) => {
-      setExtractedChatData(chatExtractedData);
-
       // Extract structured data from full conversation
       let profile: OnboardingProfile | null = null;
       let boat: OnboardingBoat | null = null;
@@ -260,13 +281,6 @@ export function OwnerOnboardingV2() {
   const handleSignupModalClose = useCallback(() => {
     setShowSignupModal(false);
   }, []);
-
-  // When user is signed in and we were awaiting signup → advance to profile checkpoint
-  useEffect(() => {
-    if (user && state.phase === 'awaiting_signup') {
-      updateState({ phase: 'confirming_profile' });
-    }
-  }, [user, state.phase, updateState]);
 
   // Advance phase helpers
   const handleProfileSaved = useCallback(() => {
@@ -407,25 +421,6 @@ export function OwnerOnboardingV2() {
         </div>
       )}
 
-      {/* Misc: if user is signed in but profile/boat not yet in state, prompt to fill */}
-      {user &&
-        (state.phase === 'pre_chat' || state.phase === 'awaiting_signup') && (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            <p>Welcome back! Let&apos;s continue setting up your profile.</p>
-            <button
-              onClick={() =>
-                updateState({
-                  phase: 'confirming_profile',
-                  profile: state.profile ?? { displayName: user.email?.split('@')[0] ?? '' },
-                  boat: state.boat ?? { makeModel: '', homePort: '' },
-                })
-              }
-              className="mt-3 text-primary hover:underline text-sm"
-            >
-              Continue →
-            </button>
-          </div>
-        )}
     </div>
   );
 }
