@@ -1,10 +1,10 @@
 ---
 id: TASK-135
 title: Async AI agents
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-26 08:19'
-updated_date: '2026-02-27 09:38'
+updated_date: '2026-02-27 13:56'
 labels:
   - ai
   - architecture
