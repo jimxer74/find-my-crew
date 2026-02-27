@@ -77,9 +77,11 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
 
       const redirectTo = prospectPreferences
         ? `${window.location.origin}/auth/callback?from=prospect`
-        : redirectPath?.includes('/welcome/owner')
-          ? `${window.location.origin}/auth/callback?from=owner`
-          : undefined;
+        : redirectPath === '/welcome/owner-v2'
+          ? `${window.location.origin}/auth/callback?from=owner-v2`
+          : redirectPath?.includes('/welcome/owner')
+            ? `${window.location.origin}/auth/callback?from=owner`
+            : undefined;
 
 
 
@@ -138,8 +140,9 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
     // Determine OAuth callback redirect
     let callbackPath = '/auth/callback';
     if (redirectPath) {
-      // If custom redirect path provided, determine callback parameter
-      if (redirectPath.includes('/welcome/owner')) {
+      if (redirectPath === '/welcome/owner-v2') {
+        callbackPath = '/auth/callback?from=owner-v2';
+      } else if (redirectPath.includes('/welcome/owner')) {
         callbackPath = '/auth/callback?from=owner';
       } else if (redirectPath.includes('/welcome/crew')) {
         callbackPath = '/auth/callback?from=prospect';
@@ -177,8 +180,9 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
     // Determine OAuth callback redirect
     let callbackPath = '/auth/callback';
     if (redirectPath) {
-      // If custom redirect path provided, determine callback parameter
-      if (redirectPath.includes('/welcome/owner')) {
+      if (redirectPath === '/welcome/owner-v2') {
+        callbackPath = '/auth/callback?from=owner-v2';
+      } else if (redirectPath.includes('/welcome/owner')) {
         callbackPath = '/auth/callback?from=owner';
       } else if (redirectPath.includes('/welcome/crew')) {
         callbackPath = '/auth/callback?from=prospect';

@@ -114,6 +114,15 @@ class RedirectService {
   private checkSourceBasedRedirects(
     context: RedirectContext
   ): RedirectResult | null {
+    // New async onboarding v2 — must be checked before fromOwner
+    if (context.fromOwnerV2) {
+      return {
+        path: '/welcome/owner-v2',
+        reason: 'source_owner_v2_onboarding',
+        priority: 4,
+      };
+    }
+
     // If user came from owner chat, redirect back to owner chat with profile completion
     if (context.fromOwner) {
       return {

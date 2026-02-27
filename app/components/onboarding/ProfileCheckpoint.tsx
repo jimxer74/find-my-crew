@@ -20,11 +20,12 @@ interface ProfileData {
 
 interface ProfileCheckpointProps {
   userId: string;
+  email?: string;
   profile: ProfileData;
   onSaved: () => void;
 }
 
-export function ProfileCheckpoint({ userId, profile, onSaved }: ProfileCheckpointProps) {
+export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCheckpointProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [data, setData] = useState<ProfileData>(profile);
   const [isSaving, setIsSaving] = useState(false);
@@ -42,17 +43,17 @@ export function ProfileCheckpoint({ userId, profile, onSaved }: ProfileCheckpoin
     try {
       const supabase = getSupabaseBrowserClient();
 
-      // Derive username from display name
-      const username = data.displayName
-        .toLowerCase()
-        .replace(/[^a-z0-9]/g, '')
-        .slice(0, 20) + '_' + Math.floor(Math.random() * 1000);
+      // Generate a collision-resistant username using a base36 timestamp suffix
+      const base = data.displayName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 14) || 'sailor';
+      const suffix = Date.now().toString(36).slice(-5); // 5 base36 chars ≈ 60M combinations
+      const username = `${base}${suffix}`;
 
       const { error: upsertErr } = await supabase.from('profiles').upsert(
         {
           id: userId,
           full_name: data.displayName.trim(),
           username,
+          email: email ?? null,
           user_description: data.aboutMe?.trim() ?? null,
           sailing_experience: data.experienceLevel ?? null,
           roles: ['owner'],

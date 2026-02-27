@@ -67,8 +67,9 @@ export async function GET(request: Request) {
 
       // Check if this user has prospect preferences to sync (from in-chat signup)
       const prospectPreferences = user.user_metadata?.prospect_preferences;
-      const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner');
+      const isFromOwnerV2 = from === 'owner-v2';
       const isFromOwner = from === 'owner';
+      const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2');
 
       // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
       // These sessions need to be linked to the authenticated user
@@ -321,6 +322,7 @@ export async function GET(request: Request) {
       const additionalContext = {
         isFacebookLogin,
         fromOwner: isFromOwner,
+        fromOwnerV2: isFromOwnerV2,
         fromProspect: isFromProspect,
         isNewUser,
       };

@@ -373,6 +373,7 @@ export function OwnerOnboardingV2() {
           </div>
           <ProfileCheckpoint
             userId={user.id}
+            email={user.email ?? undefined}
             profile={state.profile}
             onSaved={handleProfileSaved}
           />

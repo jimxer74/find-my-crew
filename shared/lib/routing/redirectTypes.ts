@@ -26,6 +26,7 @@ export interface RedirectContext {
   isNewUser?: boolean;
   isFacebookLogin?: boolean;
   fromOwner?: boolean;
+  fromOwnerV2?: boolean;
   fromProspect?: boolean;
 }
 
