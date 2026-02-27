@@ -16,7 +16,7 @@ export type JobTriggeredBy = 'user' | 'scheduler';
  * All supported async job types.
  * Add new job types here as new workflows are migrated to async mode.
  */
-export type JobType = 'generate-journey';
+export type JobType = 'generate-journey' | 'generate-boat-equipment';
 
 // ============================================================================
 // Database row shapes
@@ -63,6 +63,16 @@ export interface SubmitJobResult {
 // ============================================================================
 // Job-type-specific payloads
 // ============================================================================
+
+/** Payload for the 'generate-boat-equipment' job type */
+export interface GenerateBoatEquipmentPayload {
+  boatId: string;
+  makeModel: string;
+  boatType: string | null;
+  loa_m: number | null;
+  selectedCategories: string[];
+  maintenanceCategories: string[];
+}
 
 /** Payload for the 'generate-journey' job type */
 export interface GenerateJourneyPayload {

@@ -6,6 +6,7 @@ import { getSupabaseBrowserClient } from '@shared/database/client';
 import { getCountryFlag } from '@shared/utils';
 import { NewBoatWizardStep1, WizardStep1Data } from './NewBoatWizardStep1';
 import { NewBoatWizardStep2, WizardStep2Data } from './NewBoatWizardStep2';
+import { NewBoatWizardStep3 } from './NewBoatWizardStep3';
 import { Button } from '@shared/ui/Button/Button';
 
 type NewBoatWizardProps = {
@@ -55,9 +56,10 @@ const initialStep2Data: WizardStep2Data = {
 };
 
 export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWizardProps) {
-  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [step1Data, setStep1Data] = useState<WizardStep1Data>(initialStep1Data);
   const [step2Data, setStep2Data] = useState<WizardStep2Data>(initialStep2Data);
+  const [savedBoatId, setSavedBoatId] = useState<string | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +99,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
     setCurrentStep(1);
     setStep1Data(initialStep1Data);
     setStep2Data(initialStep2Data);
+    setSavedBoatId(null);
     setError(null);
     localStorage.removeItem('newBoatWizardState');
   };
@@ -372,16 +375,22 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         images: step2Data.images.length > 0 ? step2Data.images : null,
       };
 
-      const { error: insertError } = await supabase.from('boats').insert(boatData);
+      const { data: inserted, error: insertError } = await supabase
+        .from('boats')
+        .insert(boatData)
+        .select('id')
+        .single();
 
-      if (insertError) {
-        throw insertError;
+      if (insertError || !inserted) {
+        throw insertError ?? new Error('Failed to retrieve inserted boat id');
       }
 
-      // Clear wizard state from localStorage on successful save
+      // Clear wizard state from localStorage — boat is now saved
       localStorage.removeItem('newBoatWizardState');
-      onSuccess();
-      handleClose();
+
+      // Advance to Step 3 (Equipment & Maintenance)
+      setSavedBoatId(inserted.id);
+      setCurrentStep(3);
     } catch (err: any) {
       logger.error('Error saving boat:', err instanceof Error ? { error: err.message } : { error: String(err) });
       setError(err.message || 'Failed to save boat');
@@ -417,9 +426,56 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         </div>
       </div>
 
+      {/* Step indicators */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <div className="flex items-center gap-2 mb-6">
+          {[
+            { step: 1, label: 'Basic Info' },
+            { step: 2, label: 'Details' },
+            { step: 3, label: 'Equipment' },
+          ].map(({ step, label }, idx) => (
+            <div key={step} className="flex items-center gap-2">
+              {idx > 0 && (
+                <div
+                  className={`h-px w-8 flex-shrink-0 ${
+                    currentStep > idx ? 'bg-primary' : 'bg-border'
+                  }`}
+                />
+              )}
+              <div className="flex items-center gap-1.5">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${
+                    currentStep === step
+                      ? 'bg-primary text-primary-foreground'
+                      : currentStep > step
+                      ? 'bg-green-500 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {currentStep > step ? (
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  ) : (
+                    step
+                  )}
+                </div>
+                <span
+                  className={`text-sm hidden sm:inline ${
+                    currentStep === step ? 'font-medium text-foreground' : 'text-muted-foreground'
+                  }`}
+                >
+                  {label}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {currentStep === 1 ? (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-6">
+        {currentStep === 1 && (
           <NewBoatWizardStep1
             data={step1Data}
             onDataChange={setStep1Data}
@@ -427,7 +483,8 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             onCancel={handleClose}
             isLoading={isLoadingDetails}
           />
-        ) : (
+        )}
+        {currentStep === 2 && (
           <NewBoatWizardStep2
             data={step2Data}
             onDataChange={setStep2Data}
@@ -437,6 +494,16 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             isSaving={isSaving}
             error={error}
             userId={userId}
+          />
+        )}
+        {currentStep === 3 && savedBoatId && (
+          <NewBoatWizardStep3
+            boatId={savedBoatId}
+            makeModel={step2Data.makeModel}
+            boatType={step2Data.type}
+            loa_m={step2Data.loa_m}
+            onComplete={() => { onSuccess(); handleClose(); }}
+            onSkip={() => { onSuccess(); handleClose(); }}
           />
         )}
       </div>

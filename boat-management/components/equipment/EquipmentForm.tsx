@@ -52,13 +52,23 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
   const [productRegistryId, setProductRegistryId] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  // Name autocomplete state
-  const [nameSuggestions, setNameSuggestions] = useState<ProductRegistryEntry[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeSuggestion, setActiveSuggestion] = useState(-1);
-  const [isSearchingRegistry, setIsSearchingRegistry] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nameWrapperRef = useRef<HTMLDivElement>(null);
+  // Manufacturer autocomplete state
+  const [manufacturerSuggestions, setManufacturerSuggestions] = useState<string[]>([]);
+  const [showManufacturerSuggestions, setShowManufacturerSuggestions] = useState(false);
+  const [activeManufacturerSuggestion, setActiveManufacturerSuggestion] = useState(-1);
+  const [isSearchingManufacturer, setIsSearchingManufacturer] = useState(false);
+
+  // Model autocomplete state
+  const [modelSuggestions, setModelSuggestions] = useState<ProductRegistryEntry[]>([]);
+  const [showModelSuggestions, setShowModelSuggestions] = useState(false);
+  const [activeModelSuggestion, setActiveModelSuggestion] = useState(-1);
+  const [isSearchingModel, setIsSearchingModel] = useState(false);
+
+  const manufacturerDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const manufacturerWrapperRef = useRef<HTMLDivElement>(null);
+  const modelWrapperRef = useRef<HTMLDivElement>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
 
   // Reset form when equipment changes or modal opens
   useEffect(() => {
@@ -91,77 +101,170 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         setQuantity(1);
       }
       setError('');
-      setNameSuggestions([]);
-      setShowSuggestions(false);
+      setManufacturerSuggestions([]);
+      setShowManufacturerSuggestions(false);
+      setModelSuggestions([]);
+      setShowModelSuggestions(false);
     }
   }, [isOpen, equipment]);
 
   // Close suggestions on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (nameWrapperRef.current && !nameWrapperRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false);
+      if (manufacturerWrapperRef.current && !manufacturerWrapperRef.current.contains(e.target as Node)) {
+        setShowManufacturerSuggestions(false);
+      }
+      if (modelWrapperRef.current && !modelWrapperRef.current.contains(e.target as Node)) {
+        setShowModelSuggestions(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Debounced registry search for name autocomplete
-  const searchRegistry = useCallback(async (query: string) => {
+  // -------------------------------------------------------------------------
+  // Registry search helpers
+  // -------------------------------------------------------------------------
+
+  const searchManufacturers = useCallback(async (query: string) => {
     if (!query.trim() || query.length < 2) {
-      setNameSuggestions([]);
-      setShowSuggestions(false);
+      setManufacturerSuggestions([]);
+      setShowManufacturerSuggestions(false);
       return;
     }
-    setIsSearchingRegistry(true);
+    setIsSearchingManufacturer(true);
     try {
       const res = await fetch(`/api/product-registry?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const json = await res.json();
-        setNameSuggestions(json.products ?? []);
-        setShowSuggestions(true);
-        setActiveSuggestion(-1);
+        const products: ProductRegistryEntry[] = json.products ?? [];
+        // Deduplicate manufacturer names, preserve order
+        const seen = new Set<string>();
+        const unique: string[] = [];
+        for (const p of products) {
+          if (p.manufacturer && !seen.has(p.manufacturer)) {
+            seen.add(p.manufacturer);
+            unique.push(p.manufacturer);
+          }
+        }
+        setManufacturerSuggestions(unique);
+        setShowManufacturerSuggestions(unique.length > 0);
+        setActiveManufacturerSuggestion(-1);
       }
     } finally {
-      setIsSearchingRegistry(false);
+      setIsSearchingManufacturer(false);
     }
   }, []);
 
-  const handleNameChange = (value: string) => {
-    setName(value);
-    setProductRegistryId(null); // Clear registry link when name is manually edited
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => searchRegistry(value), 300);
+  const searchModels = useCallback(async (manufacturerVal: string, modelQuery: string) => {
+    if (!modelQuery.trim() || modelQuery.length < 1) {
+      setModelSuggestions([]);
+      setShowModelSuggestions(false);
+      return;
+    }
+    setIsSearchingModel(true);
+    try {
+      // Combine manufacturer + model for a tighter search when manufacturer is known
+      const q = manufacturerVal.trim() ? `${manufacturerVal} ${modelQuery}` : modelQuery;
+      const res = await fetch(`/api/product-registry?q=${encodeURIComponent(q)}`);
+      if (res.ok) {
+        const json = await res.json();
+        const products: ProductRegistryEntry[] = json.products ?? [];
+        setModelSuggestions(products);
+        setShowModelSuggestions(products.length > 0);
+        setActiveModelSuggestion(-1);
+      }
+    } finally {
+      setIsSearchingModel(false);
+    }
+  }, []);
+
+  // -------------------------------------------------------------------------
+  // Change handlers
+  // -------------------------------------------------------------------------
+
+  const handleManufacturerChange = (value: string) => {
+    setManufacturer(value);
+    setProductRegistryId(null);
+    // Changing manufacturer invalidates any existing model suggestions
+    setModelSuggestions([]);
+    setShowModelSuggestions(false);
+    if (manufacturerDebounceRef.current) clearTimeout(manufacturerDebounceRef.current);
+    manufacturerDebounceRef.current = setTimeout(() => searchManufacturers(value), 300);
   };
 
+  const handleModelChange = (value: string) => {
+    setModel(value);
+    setProductRegistryId(null);
+    if (modelDebounceRef.current) clearTimeout(modelDebounceRef.current);
+    modelDebounceRef.current = setTimeout(() => searchModels(manufacturer, value), 300);
+  };
+
+  // -------------------------------------------------------------------------
+  // Selection handlers
+  // -------------------------------------------------------------------------
+
+  const selectManufacturer = (mfr: string) => {
+    setManufacturer(mfr);
+    setShowManufacturerSuggestions(false);
+    setManufacturerSuggestions([]);
+    setProductRegistryId(null);
+    // Move focus to model field so the user can continue
+    modelInputRef.current?.focus();
+  };
+
+  /** Called when user picks a full product entry from the model dropdown */
   const applyProduct = (product: ProductRegistryEntry) => {
     setProductRegistryId(product.id);
     setManufacturer(product.manufacturer);
     setModel(product.model);
     if (product.category) setCategory(product.category as EquipmentCategory);
     if (product.subcategory) setSubcategory(product.subcategory);
-    // Set name to manufacturer + model if the current name is empty or matches old registry value
-    setName(`${product.manufacturer} ${product.model}`);
-    setShowSuggestions(false);
-    setNameSuggestions([]);
+    setShowModelSuggestions(false);
+    setModelSuggestions([]);
+    setShowManufacturerSuggestions(false);
+    setManufacturerSuggestions([]);
   };
 
-  const handleNameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || nameSuggestions.length === 0) return;
+  // -------------------------------------------------------------------------
+  // Keyboard navigation
+  // -------------------------------------------------------------------------
+
+  const handleManufacturerKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showManufacturerSuggestions || manufacturerSuggestions.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActiveSuggestion(i => Math.min(i + 1, nameSuggestions.length - 1));
+      setActiveManufacturerSuggestion(i => Math.min(i + 1, manufacturerSuggestions.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActiveSuggestion(i => Math.max(i - 1, -1));
-    } else if (e.key === 'Enter' && activeSuggestion >= 0) {
+      setActiveManufacturerSuggestion(i => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && activeManufacturerSuggestion >= 0) {
       e.preventDefault();
-      applyProduct(nameSuggestions[activeSuggestion]);
+      selectManufacturer(manufacturerSuggestions[activeManufacturerSuggestion]);
     } else if (e.key === 'Escape') {
-      setShowSuggestions(false);
+      setShowManufacturerSuggestions(false);
     }
   };
+
+  const handleModelKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showModelSuggestions || modelSuggestions.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveModelSuggestion(i => Math.min(i + 1, modelSuggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveModelSuggestion(i => Math.max(i - 1, -1));
+    } else if (e.key === 'Enter' && activeModelSuggestion >= 0) {
+      e.preventDefault();
+      applyProduct(modelSuggestions[activeModelSuggestion]);
+    } else if (e.key === 'Escape') {
+      setShowModelSuggestions(false);
+    }
+  };
+
+  // -------------------------------------------------------------------------
+  // Form submit
+  // -------------------------------------------------------------------------
 
   const currentCategoryInfo = CATEGORIES.find(c => c.value === category);
   const subcategoryOptions = currentCategoryInfo?.subcategories.map(s => ({
@@ -208,6 +311,10 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
     { value: 'needs_replacement', label: 'Needs Replacement' },
   ];
 
+  // Shared input class (matches the existing inline input styling)
+  const inputCls =
+    'w-full rounded border border-border bg-background text-foreground px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
+
   return (
     <>
       <Modal
@@ -223,83 +330,14 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
             </div>
           )}
 
-          {/* Name field with inline registry autocomplete (add mode only) */}
-          <div ref={nameWrapperRef} className="relative">
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-sm font-medium text-foreground">
-                Name <span className="text-destructive">*</span>
-              </label>
-              {!equipment && (
-                <button
-                  type="button"
-                  onClick={() => setShowAISearch(true)}
-                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                  </svg>
-                  Not found? Search it
-                </button>
-              )}
-            </div>
-            <div className="relative">
-              <input
-                value={name}
-                onChange={e => handleNameChange(e.target.value)}
-                onKeyDown={handleNameKeyDown}
-                onFocus={() => nameSuggestions.length > 0 && setShowSuggestions(true)}
-                placeholder="e.g., Yanmar 3YM30 or Main Engine"
-                required
-                autoComplete="off"
-                className="w-full rounded border border-border bg-background text-foreground px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              {isSearchingRegistry && (
-                <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-            </div>
-            {productRegistryId && (
-              <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">✓ Linked to product registry</p>
-            )}
-
-            {/* Autocomplete dropdown */}
-            {showSuggestions && nameSuggestions.length > 0 && (
-              <ul className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-52 overflow-y-auto">
-                {nameSuggestions.map((product, i) => (
-                  <li
-                    key={product.id}
-                    onMouseDown={() => applyProduct(product)}
-                    className={`px-3 py-2 cursor-pointer text-sm hover:bg-muted ${
-                      i === activeSuggestion ? 'bg-muted' : ''
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground">
-                        {product.manufacturer} {product.model}
-                      </span>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {product.is_verified && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                            verified
-                          </span>
-                        )}
-                        {product.specs?.hp && (
-                          <span className="text-xs text-muted-foreground">{product.specs.hp} hp</span>
-                        )}
-                      </div>
-                    </div>
-                    {product.description && (
-                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {product.description}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {/* Name — plain input, no autocomplete */}
+          <Input
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g., Main Engine, Genoa, VHF Radio"
+            required
+          />
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Select
@@ -322,19 +360,125 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
             />
           </div>
 
+          {/* Manufacturer + Model — both with registry autocomplete */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Input
-              label="Manufacturer"
-              value={manufacturer}
-              onChange={(e) => setManufacturer(e.target.value)}
-              placeholder="e.g., Yanmar"
-            />
-            <Input
-              label="Model"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g., 3YM30"
-            />
+
+            {/* Manufacturer */}
+            <div ref={manufacturerWrapperRef} className="relative">
+              <label className="block text-sm font-medium text-foreground mb-1">
+                Manufacturer
+              </label>
+              <div className="relative">
+                <input
+                  value={manufacturer}
+                  onChange={e => handleManufacturerChange(e.target.value)}
+                  onKeyDown={handleManufacturerKeyDown}
+                  onFocus={() => manufacturerSuggestions.length > 0 && setShowManufacturerSuggestions(true)}
+                  placeholder="e.g., Yanmar"
+                  autoComplete="off"
+                  className={inputCls}
+                />
+                {isSearchingManufacturer && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {showManufacturerSuggestions && manufacturerSuggestions.length > 0 && (
+                <ul className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {manufacturerSuggestions.map((mfr, i) => (
+                    <li
+                      key={mfr}
+                      onMouseDown={() => selectManufacturer(mfr)}
+                      className={`px-3 py-2 cursor-pointer text-sm text-foreground hover:bg-muted ${
+                        i === activeManufacturerSuggestion ? 'bg-muted' : ''
+                      }`}
+                    >
+                      {mfr}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Model */}
+            <div ref={modelWrapperRef} className="relative">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-foreground">
+                  Model
+                </label>
+                {!equipment && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAISearch(true)}
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                    </svg>
+                    Not found? Search it
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  ref={modelInputRef}
+                  value={model}
+                  onChange={e => handleModelChange(e.target.value)}
+                  onKeyDown={handleModelKeyDown}
+                  onFocus={() => modelSuggestions.length > 0 && setShowModelSuggestions(true)}
+                  placeholder="e.g., 3YM30"
+                  autoComplete="off"
+                  className={inputCls}
+                />
+                {isSearchingModel && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {productRegistryId && (
+                <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">✓ Linked to product registry</p>
+              )}
+
+              {showModelSuggestions && modelSuggestions.length > 0 && (
+                <ul className="absolute z-50 mt-1 w-full bg-card border border-border rounded-md shadow-lg max-h-52 overflow-y-auto">
+                  {modelSuggestions.map((product, i) => (
+                    <li
+                      key={product.id}
+                      onMouseDown={() => applyProduct(product)}
+                      className={`px-3 py-2 cursor-pointer text-sm hover:bg-muted ${
+                        i === activeModelSuggestion ? 'bg-muted' : ''
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-foreground">
+                          {product.manufacturer} {product.model}
+                        </span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {product.is_verified && (
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                              verified
+                            </span>
+                          )}
+                          {product.specs?.hp && (
+                            <span className="text-xs text-muted-foreground">{product.specs.hp} hp</span>
+                          )}
+                        </div>
+                      </div>
+                      {product.description && (
+                        <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                          {product.description}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

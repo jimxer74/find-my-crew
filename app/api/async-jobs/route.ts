@@ -3,7 +3,7 @@ import { getSupabaseServerClient } from '@shared/database/server';
 import { logger } from '@shared/logging';
 import type { JobType } from '@shared/lib/async-jobs';
 
-const VALID_JOB_TYPES: JobType[] = ['generate-journey'];
+const VALID_JOB_TYPES: JobType[] = ['generate-journey', 'generate-boat-equipment'];
 
 /**
  * POST /api/async-jobs

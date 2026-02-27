@@ -8,13 +8,22 @@ import { EquipmentList } from '@boat-management/components/equipment';
 import { EquipmentForm } from '@boat-management/components/equipment';
 import type { EquipmentFormData } from '@boat-management/components/equipment';
 import type { BoatEquipment } from '@boat-management/lib/types';
+import { NewBoatWizardStep3 } from '@/app/components/manage/NewBoatWizardStep3';
+
+interface BoatInfo {
+  make_model: string | null;
+  type: string | null;
+  loa_m: number | null;
+}
 
 export default function EquipmentPage({ params }: { params: Promise<{ boatId: string }> }) {
   const { boatId } = use(params);
   const { user } = useAuth();
   const [equipment, setEquipment] = useState<BoatEquipment[]>([]);
+  const [boatInfo, setBoatInfo] = useState<BoatInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [editingItem, setEditingItem] = useState<BoatEquipment | null>(null);
   const [isOwner, setIsOwner] = useState(false);
 
@@ -40,11 +49,18 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
     const supabase = getSupabaseBrowserClient();
     supabase
       .from('boats')
-      .select('owner_id')
+      .select('owner_id, make_model, type, loa_m')
       .eq('id', boatId)
       .single()
       .then(({ data }) => {
-        setIsOwner(data?.owner_id === user.id);
+        if (data) {
+          setIsOwner(data.owner_id === user.id);
+          setBoatInfo({
+            make_model: data.make_model ?? null,
+            type: data.type ?? null,
+            loa_m: data.loa_m ?? null,
+          });
+        }
       });
   }, [user?.id, boatId]);
 
@@ -85,6 +101,11 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
     await loadEquipment();
   };
 
+  const handleGenerateComplete = useCallback(async () => {
+    setIsGenerating(false);
+    await loadEquipment();
+  }, [loadEquipment]);
+
   const parentOptions = equipment
     .filter(e => !e.parent_id && e.id !== editingItem?.id)
     .map(e => ({ value: e.id, label: `${e.name} (${e.category})` }));
@@ -97,6 +118,33 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
     );
   }
 
+  // AI generation overlay — full-width, replaces the equipment list
+  if (isGenerating && boatInfo) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 pb-2 border-b border-border">
+          <button
+            onClick={() => setIsGenerating(false)}
+            className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Equipment
+          </button>
+        </div>
+        <NewBoatWizardStep3
+          boatId={boatId}
+          makeModel={boatInfo.make_model ?? ''}
+          boatType={boatInfo.type}
+          loa_m={boatInfo.loa_m}
+          onComplete={handleGenerateComplete}
+          onSkip={() => setIsGenerating(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <>
       <EquipmentList
@@ -104,6 +152,7 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onGenerateAI={isOwner && boatInfo ? () => setIsGenerating(true) : undefined}
         isOwner={isOwner}
       />
       <EquipmentForm

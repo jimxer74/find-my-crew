@@ -11,6 +11,7 @@ interface EquipmentListProps {
   onAdd: () => void;
   onEdit: (item: BoatEquipment) => void;
   onDelete: (item: BoatEquipment) => void;
+  onGenerateAI?: () => void;
   isOwner: boolean;
 }
 
@@ -20,7 +21,7 @@ const statusConfig: Record<string, { variant: 'success' | 'warning' | 'secondary
   decommissioned: { variant: 'secondary', label: 'Decommissioned' },
 };
 
-export function EquipmentList({ equipment, onAdd, onEdit, onDelete, isOwner }: EquipmentListProps) {
+export function EquipmentList({ equipment, onAdd, onEdit, onDelete, onGenerateAI, isOwner }: EquipmentListProps) {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -78,9 +79,16 @@ export function EquipmentList({ equipment, onAdd, onEdit, onDelete, isOwner }: E
           />
         </div>
         {isOwner && (
-          <Button variant="primary" onClick={onAdd} size="sm">
-            + Add Equipment
-          </Button>
+          <div className="flex items-center gap-2">
+            {onGenerateAI && (
+              <Button variant="secondary" onClick={onGenerateAI} size="sm">
+                ✦ Generate with AI
+              </Button>
+            )}
+            <Button variant="primary" onClick={onAdd} size="sm">
+              + Add Equipment
+            </Button>
+          </div>
         )}
       </div>
 
