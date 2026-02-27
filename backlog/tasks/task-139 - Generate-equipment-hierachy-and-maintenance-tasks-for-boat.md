@@ -4,7 +4,7 @@ title: Generate equipment hierachy and maintenance tasks for boat
 status: In Progress
 assignee: []
 created_date: '2026-02-27 14:14'
-updated_date: '2026-02-27 14:43'
+updated_date: '2026-02-27 14:56'
 labels: []
 dependencies: []
 ---
@@ -24,3 +24,16 @@ When user clicks create, an async AI job is started to fetch standard equipment 
 - user can save the equipment and task list to boat_management equipments and maintenance or cancel
 - when saved, save also equipments in local product registry, check for duplicates, do not create duplicate entries in product registry table
 <!-- SECTION:DESCRIPTION:END -->
+
+## Implementation Plan
+
+<!-- SECTION:PLAN:BEGIN -->
+## Implementation Plan
+
+1. Update `shared/lib/async-jobs/types.ts` — add `generate-boat-equipment` to JobType, add payload interface
+2. Update `app/api/async-jobs/route.ts` — add to VALID_JOB_TYPES
+3. Create `supabase/functions/ai-job-worker/handlers/generate-boat-equipment.ts` — Edge Function handler
+4. Update `supabase/functions/ai-job-worker/_registry.ts` — register new handler
+5. Create `app/components/manage/NewBoatWizardStep3.tsx` — Step 3 UI component
+6. Update `app/components/manage/NewBoatWizard.tsx` — integrate Step 3, update step indicators, savedBoatId state
+<!-- SECTION:PLAN:END -->
