@@ -1,10 +1,10 @@
 ---
 id: TASK-141
 title: Equipment Age-Aware Replacement Assessment in AI Generation
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-27 18:25'
-updated_date: '2026-02-27 18:27'
+updated_date: '2026-02-27 18:35'
 labels:
   - boat-management
   - ai
@@ -165,14 +165,14 @@ interface GenerateBoatEquipmentPayload {
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 year_built field added to boats table (migration + specs/tables.sql)
-- [ ] #2 Year Built input in boat wizard Step 2 (and boat edit form if one exists)
-- [ ] #3 Edge function receives yearBuilt, includes age context in Phase 1 prompt
-- [ ] #4 AI outputs replacementLikelihood and replacementReason per equipment item
-- [ ] #5 Review UI shows yellow warning for 'high' likelihood items with Confirm / Replace / Remove actions
-- [ ] #6 Inline replacement mini-form uses product_registry autocomplete (manufacturer + model)
-- [ ] #7 Review UI shows amber collapsed indicator for 'medium' likelihood items
-- [ ] #8 Saving uses replacement manufacturer/model/productRegistryId when user chose 'replaced'
-- [ ] #9 Newer boats (< 5 years) produce no warnings (AI reasons items as low likelihood)
-- [ ] #10 Feature works in both wizard Step 3 and equipment page AI generate overlay
+- [x] #1 year_built field added to boats table (migration + specs/tables.sql)
+- [x] #2 Year Built input in boat wizard Step 2 (and boat edit form if one exists)
+- [x] #3 Edge function receives yearBuilt, includes age context in Phase 1 prompt
+- [x] #4 AI outputs replacementLikelihood and replacementReason per equipment item
+- [x] #5 Review UI shows yellow warning for 'high' likelihood items with Confirm / Replace / Remove actions
+- [x] #6 Inline replacement mini-form uses product_registry autocomplete (manufacturer + model)
+- [x] #7 Review UI shows amber collapsed indicator for 'medium' likelihood items
+- [x] #8 Saving uses replacement manufacturer/model/productRegistryId when user chose 'replaced'
+- [x] #9 Newer boats (< 5 years) produce no warnings (AI reasons items as low likelihood)
+- [x] #10 Feature works in both wizard Step 3 and equipment page AI generate overlay
 <!-- AC:END -->
