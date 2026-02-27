@@ -1,7 +1,7 @@
 'use client';
 
 import { logger } from '@shared/logging';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -11,6 +11,9 @@ import { formatDate, formatDateShort } from '@shared/utils';
 import { Footer } from '@/app/components/Footer';
 import { FeatureGate } from '@shared/components/auth/FeatureGate';
 import { WorkingIndicator } from '@shared/ui/WorkingIndicator';
+import { submitJob } from '@shared/lib/async-jobs';
+import { JobProgressPanel } from '@shared/components/async-jobs';
+import type { GenerateJourneyPayload } from '@shared/lib/async-jobs';
 
 // Calculate distance between two coordinates using Haversine formula (nautical miles)
 function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -72,6 +75,20 @@ export default function ProposeJourneyPage() {
   const [error, setError] = useState<string | null>(null);
   const [generatedJourney, setGeneratedJourney] = useState<any>(null);
   const [aiPrompt, setAiPrompt] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+
+  const handleJobComplete = useCallback((result: Record<string, unknown>) => {
+    const journey = result.journey;
+    if (journey) {
+      setGeneratedJourney(journey);
+    }
+    setActiveJobId(null);
+  }, []);
+
+  const handleJobError = useCallback((errorMsg: string) => {
+    setError(errorMsg);
+    setActiveJobId(null);
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -92,6 +109,7 @@ export default function ProposeJourneyPage() {
     setWaypointDensity('moderate');
     setGeneratedJourney(null);
     setAiPrompt(null);
+    setActiveJobId(null);
     setError(null);
   };
 
@@ -153,44 +171,26 @@ export default function ProposeJourneyPage() {
     ];
 
     try {
-      const response = await fetch('/api/ai/generate-journey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          boatId: selectedBoatId,
-          startLocation: {
-            name: startLocation.name,
-            lat: startLocation.lat,
-            lng: startLocation.lng,
-          },
-          endLocation: {
-            name: endLocation.name,
-            lat: endLocation.lat,
-            lng: endLocation.lng,
-          },
-          intermediateWaypoints: intermediateWaypoints.length > 0 ? intermediateWaypoints.map((wp) => ({
-            name: wp.name,
-            lat: wp.lat,
-            lng: wp.lng,
-          })) : null,
-          startDate: startDate || null,
-          endDate: endDate || null,
-          useSpeedPlanning,
-          boatSpeed: selectedBoatSpeed || null,
-          waypointDensity,
-        }),
+      const payload: GenerateJourneyPayload = {
+        boatId: selectedBoatId,
+        startLocation: { name: startLocation.name, lat: startLocation.lat, lng: startLocation.lng },
+        endLocation: { name: endLocation.name, lat: endLocation.lat, lng: endLocation.lng },
+        intermediateWaypoints: intermediateWaypoints.length > 0
+          ? intermediateWaypoints.map((wp) => ({ name: wp.name, lat: wp.lat, lng: wp.lng }))
+          : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        useSpeedPlanning,
+        boatSpeed: selectedBoatSpeed || undefined,
+        waypointDensity,
+      };
+      const { jobId } = await submitJob({
+        job_type: 'generate-journey',
+        payload: payload as unknown as Record<string, unknown>,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to generate journey');
-      }
-
-      setGeneratedJourney(result.data);
-      setAiPrompt(result.prompt || null);
+      setActiveJobId(jobId);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate journey');
+      setError(err.message || 'Failed to start journey generation');
     } finally {
       setGenerating(false);
     }
@@ -430,7 +430,33 @@ export default function ProposeJourneyPage() {
               </div>
             )}
 
-            {!generatedJourney ? (
+            {activeJobId ? (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Generating your journey…</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    AI is building a custom sailing itinerary. This may take up to 60 seconds.
+                  </p>
+                </div>
+                <JobProgressPanel
+                  jobId={activeJobId}
+                  onComplete={handleJobComplete}
+                  onError={handleJobError}
+                />
+                <div className="flex justify-end pt-4 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveJobId(null);
+                      setError(null);
+                    }}
+                    className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : !generatedJourney ? (
               <div className="space-y-4">
                 <div>
                   <label htmlFor="boat-select" className="block text-sm font-medium text-foreground mb-1">
@@ -646,7 +672,7 @@ export default function ProposeJourneyPage() {
                     disabled={generating || !selectedBoatId || !startLocation.name || !endLocation.name}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition"
                   >
-                    {generating ? 'Generating...' : 'Generate Journey'}
+                    {generating ? 'Starting…' : 'Generate Journey'}
                   </button>
                 </div>
               </div>
@@ -771,6 +797,7 @@ export default function ProposeJourneyPage() {
                     type="button"
                     onClick={() => {
                       setGeneratedJourney(null);
+                      setActiveJobId(null);
                       setError(null);
                     }}
                     className="px-4 py-2 border border-border rounded-md text-sm font-medium text-foreground hover:bg-accent transition"
