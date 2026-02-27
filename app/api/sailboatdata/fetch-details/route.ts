@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     // Return the details in the same format as the AI endpoint
     return NextResponse.json({
       boatDetails: {
+        make_model: details.make_model || null, // Include canonical make_model
         type: details.type || null,
         capacity: details.capacity ?? null,
         loa_m: details.loa_m ?? null,

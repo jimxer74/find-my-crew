@@ -71,6 +71,12 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         setCurrentStep(state.currentStep || 1);
         setStep1Data(state.step1Data || initialStep1Data);
         setStep2Data(state.step2Data || initialStep2Data);
+        logger.debug('Restored wizard state from localStorage', {
+          step: state.currentStep,
+          hasStep1Data: !!state.step1Data,
+          hasStep2Data: !!state.step2Data,
+          step2DataLoa: state.step2Data?.loa_m,
+        });
       } catch (err) {
         logger.debug('Failed to restore wizard state from localStorage', { error: err });
       }
@@ -135,20 +141,34 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         if (hardDataResponse.ok) {
           const hardDataResult = await hardDataResponse.json();
           const hardData = hardDataResult.boatDetails;
-          logger.debug('Hard data fetched:', { hardData });
+          logger.debug('Hard data fetched:', {
+            source: hardDataResult.source,
+            hasLoa: hardData.loa_m !== null && hardData.loa_m !== undefined,
+            hasBeam: hardData.beam_m !== null && hardData.beam_m !== undefined,
+            loa_m: hardData.loa_m,
+            beam_m: hardData.beam_m,
+            type: hardData.type,
+            make_model: hardData.make_model,
+          });
 
-          // Use the canonical make_model from parsed HTML (more reliable than search query)
+          // Use the canonical make_model from API response (more reliable than search query)
           const canonicalMakeModel = hardData.make_model || step1Data.selectedSailboat.name;
-          logger.debug('Canonical make_model for registry:', { canonicalMakeModel });
+          logger.debug('Canonical make_model for registry:', {
+            canonical: canonicalMakeModel,
+            fromAPI: hardData.make_model,
+            fromSelection: step1Data.selectedSailboat.name
+          });
 
           // Merge hard data
           newStep2Data = {
             ...newStep2Data,
             makeModel: canonicalMakeModel, // Update with canonical name
+            capacity: hardData.capacity ?? null,
             loa_m: hardData.loa_m ?? null,
             beam_m: hardData.beam_m ?? null,
             max_draft_m: hardData.max_draft_m ?? null,
             displcmt_m: hardData.displcmt_m ?? null,
+            average_speed_knots: hardData.average_speed_knots ?? null,
             link_to_specs: hardData.link_to_specs || '',
             sa_displ_ratio: hardData.sa_displ_ratio ?? null,
             ballast_displ_ratio: hardData.ballast_displ_ratio ?? null,
@@ -158,6 +178,15 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             hull_speed_knots: hardData.hull_speed_knots ?? null,
             ppi_pounds_per_inch: hardData.ppi_pounds_per_inch ?? null,
           };
+          logger.debug('Merged hard data into step2:', {
+            capacity: newStep2Data.capacity,
+            loa_m: newStep2Data.loa_m,
+            beam_m: newStep2Data.beam_m,
+            displcmt_m: newStep2Data.displcmt_m,
+            type: newStep2Data.type,
+            makeModel: newStep2Data.makeModel,
+            average_speed_knots: newStep2Data.average_speed_knots,
+          });
 
           // Now call AI to fill reasoned fields
           logger.debug('=== Calling AI to fill reasoned fields ===');
@@ -204,12 +233,22 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
               newStep2Data = {
                 ...newStep2Data,
                 type: validatedType,
-                capacity: reasonedData.capacity ?? null,
-                average_speed_knots: reasonedData.average_speed_knots ?? null,
+                // Only update capacity/average_speed_knots if AI has values, otherwise keep hard data values
+                capacity: reasonedData.capacity ?? newStep2Data.capacity,
+                average_speed_knots: reasonedData.average_speed_knots ?? newStep2Data.average_speed_knots,
                 characteristics: reasonedData.characteristics || '',
                 capabilities: reasonedData.capabilities || '',
                 accommodations: reasonedData.accommodations || '',
               };
+
+              logger.debug('Merged AI reasoned data into step2:', {
+                type: newStep2Data.type,
+                capacity: newStep2Data.capacity,
+                average_speed_knots: newStep2Data.average_speed_knots,
+                hasCharacteristics: !!newStep2Data.characteristics,
+                hasCapabilities: !!newStep2Data.capabilities,
+                hasAccommodations: !!newStep2Data.accommodations,
+              });
 
               // Update boat registry with AI-generated descriptive fields
               // This ensures these fields are available for future lookups

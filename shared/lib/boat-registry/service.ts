@@ -225,11 +225,11 @@ export async function updateRegistryDescriptiveFields(
     return; // Only updated_at, nothing else to update
   }
   
-  // Find existing entry
+  // Find existing entry — normalize make_model to uppercase to match how saveBoatRegistry stores values
   const { data: existing } = await supabase
     .from('boat_registry')
     .select('id')
-    .eq('make_model', makeModel.trim())
+    .eq('make_model', makeModel.trim().toUpperCase())
     .single();
   
   if (existing) {
