@@ -154,6 +154,7 @@ create table if not exists public.boats (
   type        sailboat_category, -- Sailboat category (nullable)
   make_model  text, -- Combined make and model field (e.g., "Bavaria 46")
   capacity    int,
+  year_built  int,           -- Year the boat was built; used for age-aware equipment assessment
   home_port   text,
   country_flag text, -- ISO 3166-1 alpha-2 country code (e.g., US, GB, FR)
   loa_m       numeric, -- length overall in meters

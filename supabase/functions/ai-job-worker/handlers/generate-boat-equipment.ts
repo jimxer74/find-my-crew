@@ -50,6 +50,7 @@ interface GenerateBoatEquipmentPayload {
   makeModel: string;
   boatType: string | null;
   loa_m: number | null;
+  yearBuilt: number | null;
   selectedCategories: string[];
   maintenanceCategories: string[];
 }
@@ -67,6 +68,8 @@ interface EquipmentItem {
   manufacturer: string | null;
   model: string | null;
   notes: string | null;
+  replacementLikelihood?: 'low' | 'medium' | 'high';
+  replacementReason?: string | null;
   productRegistryId?: string | null;
 }
 
@@ -98,11 +101,14 @@ function extractJson(text: string): string {
 // ---------------------------------------------------------------------------
 
 function buildEquipmentPrompt(payload: GenerateBoatEquipmentPayload): string {
-  const { makeModel, boatType, loa_m, selectedCategories } = payload;
+  const { makeModel, boatType, loa_m, yearBuilt, selectedCategories } = payload;
+  const currentYear = new Date().getFullYear();
+  const boatAge = yearBuilt ? currentYear - yearBuilt : null;
   const boatDesc = [
     makeModel,
     boatType ? `type: ${boatType}` : null,
     loa_m ? `LOA: ${loa_m}m` : null,
+    yearBuilt ? `built: ${yearBuilt} (${boatAge} years old)` : null,
   ]
     .filter(Boolean)
     .join(', ');
@@ -145,7 +151,18 @@ STEP 2 — OUTPUT RULES (CRITICAL — read carefully):
 4. Use parent-child hierarchy: top-level items have parentIndex: null; sub-items reference the parent's index.
 5. Use ONLY these exact category values: engine, rigging, electrical, navigation, safety, plumbing, anchoring, hull_deck, electronics, galley, comfort, dinghy
 6. notes must be a brief factual description sourced from the research — not generic filler text.
+${yearBuilt ? `
+STEP 3 — REPLACEMENT LIKELIHOOD ASSESSMENT:
+This boat was built in ${yearBuilt} (${boatAge} years old). For every equipment item, assess how likely it is that the item has been replaced since the boat was new and no longer matches the original manufacturer specification.
 
+Set replacementLikelihood as follows:
+- "high": items very commonly replaced at this age — e.g. engines after 20–25 years, chartplotters/electronics after 10–15 years, batteries after 5–7 years, watermaker after 8–10 years, sails after 10–15 years, standing rigging after 10–15 years
+- "medium": items that are sometimes replaced — e.g. autopilot, refrigeration, VHF radio, running rigging, outboard motor
+- "low": items rarely replaced — e.g. hull, keel, mast structure, winches, blocks, cleats, anchors, chain
+
+For boats less than 5 years old: all items should be "low" unless there is specific evidence of replacement.
+Set replacementReason to a concise explanation when likelihood is "high" or "medium" (1–2 sentences). Set to null for "low".
+` : ''}
 CATEGORIES TO GENERATE EQUIPMENT FOR:
 ${categoryList}
 
@@ -159,8 +176,10 @@ Return ONLY valid JSON with no extra text, markdown fences, or commentary:
       "subcategory": "engine",
       "parentIndex": null,
       "manufacturer": "Volvo Penta",
-      "model": "D2-75",
-      "notes": "75hp diesel inboard, standard fit per manufacturer brochure"
+      "model": "MD2030",
+      "notes": "28hp diesel inboard, standard fit per manufacturer brochure",
+      "replacementLikelihood": "high",
+      "replacementReason": "This boat is 35 years old. Diesel engines typically last 20–25 years before replacement — original spec may not be accurate."
     },
     {
       "index": 1,
@@ -170,7 +189,9 @@ Return ONLY valid JSON with no extra text, markdown fences, or commentary:
       "parentIndex": 0,
       "manufacturer": null,
       "model": null,
-      "notes": "Inline fuel filter, part of fuel system per service manual"
+      "notes": "Inline fuel filter, part of fuel system per service manual",
+      "replacementLikelihood": "low",
+      "replacementReason": null
     }
   ]
 }`;
@@ -181,6 +202,7 @@ function parseEquipment(text: string): EquipmentItem[] {
   if (!Array.isArray(raw.equipment)) {
     throw new Error('Invalid response: equipment must be an array');
   }
+  const VALID_LIKELIHOODS = ['low', 'medium', 'high'];
   return raw.equipment.map((item: Record<string, unknown>, i: number) => ({
     index: typeof item.index === 'number' ? item.index : i,
     name: String(item.name ?? 'Unknown'),
@@ -190,6 +212,10 @@ function parseEquipment(text: string): EquipmentItem[] {
     manufacturer: item.manufacturer ? String(item.manufacturer) : null,
     model: item.model ? String(item.model) : null,
     notes: item.notes ? String(item.notes) : null,
+    replacementLikelihood: VALID_LIKELIHOODS.includes(String(item.replacementLikelihood))
+      ? (String(item.replacementLikelihood) as 'low' | 'medium' | 'high')
+      : 'low',
+    replacementReason: item.replacementReason ? String(item.replacementReason) : null,
   }));
 }
 

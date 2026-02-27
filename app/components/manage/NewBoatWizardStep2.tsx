@@ -66,6 +66,7 @@ export type WizardStep2Data = {
   // Form fields
   type: SailboatCategory | null;
   capacity: number | null;
+  year_built: number | null;
   loa_m: number | null;
   beam_m: number | null;
   max_draft_m: number | null;
@@ -116,7 +117,7 @@ export function NewBoatWizardStep2({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    const numericFields = ['capacity', 'loa_m', 'beam_m', 'max_draft_m', 'displcmt_m', 'average_speed_knots'];
+    const numericFields = ['capacity', 'year_built', 'loa_m', 'beam_m', 'max_draft_m', 'displcmt_m', 'average_speed_knots'];
 
     onDataChange({
       ...data,
@@ -291,6 +292,24 @@ export function NewBoatWizardStep2({
             onChange={handleChange}
             className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
             placeholder="e.g., 6"
+          />
+        </div>
+
+        {/* Year Built */}
+        <div>
+          <label htmlFor="year_built" className="block text-sm font-medium text-foreground mb-1">
+            Year Built
+          </label>
+          <input
+            type="number"
+            id="year_built"
+            name="year_built"
+            min="1900"
+            max={new Date().getFullYear()}
+            value={data.year_built || ''}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+            placeholder="e.g., 1995"
           />
         </div>
 

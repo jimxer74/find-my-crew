@@ -36,6 +36,7 @@ const initialStep2Data: WizardStep2Data = {
   makeModel: '',
   type: null,
   capacity: null,
+  year_built: null,
   loa_m: null,
   beam_m: null,
   max_draft_m: null,
@@ -354,6 +355,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
         type: step2Data.type,
         make_model: step2Data.makeModel || null,
         capacity: step2Data.capacity,
+        year_built: step2Data.year_built,
         home_port: step2Data.homePort || null,
         country_flag: step1Data.countryCode || null,
         loa_m: step2Data.loa_m,
@@ -502,6 +504,7 @@ export function NewBoatWizard({ isOpen, onClose, onSuccess, userId }: NewBoatWiz
             makeModel={step2Data.makeModel}
             boatType={step2Data.type}
             loa_m={step2Data.loa_m}
+            yearBuilt={step2Data.year_built}
             onComplete={() => { onSuccess(); handleClose(); }}
             onSkip={() => { onSuccess(); handleClose(); }}
           />

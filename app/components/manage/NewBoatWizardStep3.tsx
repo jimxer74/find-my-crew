@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { submitJob } from '@shared/lib/async-jobs/submitJob';
 import { JobProgressPanel } from '@shared/components/async-jobs';
@@ -22,6 +22,15 @@ interface GeneratedEquipmentItem {
   model: string | null;
   notes: string | null;
   productRegistryId?: string | null;
+  // Age-aware replacement assessment (from AI)
+  replacementLikelihood?: 'low' | 'medium' | 'high';
+  replacementReason?: string | null;
+  // UI-only state (set by user interactions in review phase)
+  replacementStatus?: 'confirmed' | 'replaced';
+  replacementManufacturer?: string | null;
+  replacementModel?: string | null;
+  replacementProductRegistryId?: string | null;
+  showReplaceForm?: boolean;
 }
 
 interface GeneratedTaskItem {
@@ -43,6 +52,7 @@ interface NewBoatWizardStep3Props {
   makeModel: string;
   boatType: string | null;
   loa_m: number | null;
+  yearBuilt?: number | null;
   onComplete: () => void;
   onSkip: () => void;
 }
@@ -56,6 +66,173 @@ type Phase = 'select' | 'generating' | 'review' | 'saving';
 const ALL_CATEGORIES = EQUIPMENT_CATEGORIES.map((c) => c.value);
 
 // ---------------------------------------------------------------------------
+// Inline replacement form sub-component
+// ---------------------------------------------------------------------------
+
+function InlineReplaceForm({
+  initialManufacturer,
+  onApply,
+  onCancel,
+}: {
+  initialManufacturer: string | null;
+  onApply: (manufacturer: string, model: string, productRegistryId: string | null) => void;
+  onCancel: () => void;
+}) {
+  const [manufacturer, setManufacturer] = useState(initialManufacturer ?? '');
+  const [model, setModel] = useState('');
+  const [mfrSuggestions, setMfrSuggestions] = useState<string[]>([]);
+  const [modelSuggestions, setModelSuggestions] = useState<
+    { id: string; manufacturer: string; model: string }[]
+  >([]);
+  const [showMfrList, setShowMfrList] = useState(false);
+  const [showModelList, setShowModelList] = useState(false);
+  const [selectedRegistryId, setSelectedRegistryId] = useState<string | null>(null);
+  const mfrDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modelDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMfrChange = (value: string) => {
+    setManufacturer(value);
+    setModel('');
+    setSelectedRegistryId(null);
+    if (mfrDebounce.current) clearTimeout(mfrDebounce.current);
+    if (!value.trim()) {
+      setMfrSuggestions([]);
+      setShowMfrList(false);
+      return;
+    }
+    mfrDebounce.current = setTimeout(async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase
+        .from('product_registry')
+        .select('manufacturer')
+        .ilike('manufacturer', `%${value}%`)
+        .limit(15);
+      const unique = [...new Set((data ?? []).map((d) => d.manufacturer as string))];
+      setMfrSuggestions(unique);
+      setShowMfrList(unique.length > 0);
+    }, 300);
+  };
+
+  const selectManufacturer = (mfr: string) => {
+    setManufacturer(mfr);
+    setMfrSuggestions([]);
+    setShowMfrList(false);
+  };
+
+  const handleModelChange = (value: string) => {
+    setModel(value);
+    setSelectedRegistryId(null);
+    if (modelDebounce.current) clearTimeout(modelDebounce.current);
+    if (!value.trim()) {
+      setModelSuggestions([]);
+      setShowModelList(false);
+      return;
+    }
+    modelDebounce.current = setTimeout(async () => {
+      const supabase = getSupabaseBrowserClient();
+      const { data } = await supabase
+        .from('product_registry')
+        .select('id, manufacturer, model')
+        .ilike('model', `%${value}%`)
+        .ilike('manufacturer', `%${manufacturer}%`)
+        .limit(10);
+      setModelSuggestions(data ?? []);
+      setShowModelList((data ?? []).length > 0);
+    }, 300);
+  };
+
+  const selectModel = (entry: { id: string; manufacturer: string; model: string }) => {
+    setManufacturer(entry.manufacturer);
+    setModel(entry.model);
+    setSelectedRegistryId(entry.id);
+    setModelSuggestions([]);
+    setShowModelList(false);
+  };
+
+  const handleApply = () => {
+    if (!manufacturer.trim() || !model.trim()) return;
+    onApply(manufacturer.trim(), model.trim(), selectedRegistryId);
+  };
+
+  const inputCls =
+    'w-full px-2 py-1.5 text-sm border border-border bg-background text-foreground rounded focus:outline-none focus:ring-2 focus:ring-primary/50';
+
+  return (
+    <div className="mt-3 p-3 bg-background border border-amber-200 dark:border-amber-800 rounded-md space-y-2">
+      <p className="text-xs font-medium text-foreground">Enter replacement details:</p>
+      <div className="grid grid-cols-2 gap-2">
+        {/* Manufacturer */}
+        <div className="relative">
+          <label className="text-xs text-muted-foreground block mb-0.5">Manufacturer</label>
+          <input
+            type="text"
+            value={manufacturer}
+            onChange={(e) => handleMfrChange(e.target.value)}
+            onBlur={() => setTimeout(() => setShowMfrList(false), 150)}
+            placeholder="e.g. Yanmar"
+            className={inputCls}
+          />
+          {showMfrList && (
+            <ul className="absolute z-20 top-full left-0 right-0 bg-popover border border-border rounded shadow-md text-sm max-h-36 overflow-y-auto">
+              {mfrSuggestions.map((s) => (
+                <li
+                  key={s}
+                  onMouseDown={() => selectManufacturer(s)}
+                  className="px-3 py-1.5 hover:bg-accent cursor-pointer"
+                >
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {/* Model */}
+        <div className="relative">
+          <label className="text-xs text-muted-foreground block mb-0.5">Model</label>
+          <input
+            type="text"
+            value={model}
+            onChange={(e) => handleModelChange(e.target.value)}
+            onBlur={() => setTimeout(() => setShowModelList(false), 150)}
+            placeholder="e.g. 3JH5E"
+            className={inputCls}
+          />
+          {showModelList && (
+            <ul className="absolute z-20 top-full left-0 right-0 bg-popover border border-border rounded shadow-md text-sm max-h-36 overflow-y-auto">
+              {modelSuggestions.map((s) => (
+                <li
+                  key={s.id}
+                  onMouseDown={() => selectModel(s)}
+                  className="px-3 py-1.5 hover:bg-accent cursor-pointer"
+                >
+                  <span className="font-medium">{s.manufacturer}</span>{' '}
+                  <span className="text-muted-foreground">{s.model}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-2 justify-end">
+        <button
+          onClick={onCancel}
+          className="text-xs text-muted-foreground hover:text-foreground px-2 py-1"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleApply}
+          disabled={!manufacturer.trim() || !model.trim()}
+          className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded disabled:opacity-40 hover:bg-primary/90"
+        >
+          Apply
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -64,6 +241,7 @@ export function NewBoatWizardStep3({
   makeModel,
   boatType,
   loa_m,
+  yearBuilt,
   onComplete,
   onSkip,
 }: NewBoatWizardStep3Props) {
@@ -75,7 +253,7 @@ export function NewBoatWizardStep3({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([...ALL_CATEGORIES]);
   const [maintenanceCategories, setMaintenanceCategories] = useState<string[]>([...ALL_CATEGORIES]);
 
-  // Generated results (mutable — user can delete items)
+  // Generated results (mutable — user can delete or verify items)
   const [equipment, setEquipment] = useState<GeneratedEquipmentItem[]>([]);
   const [maintenanceTasks, setMaintenanceTasks] = useState<GeneratedTaskItem[]>([]);
   const [isSaving, setSaving] = useState(false);
@@ -109,6 +287,7 @@ export function NewBoatWizardStep3({
           makeModel,
           boatType,
           loa_m,
+          yearBuilt: yearBuilt ?? null,
           selectedCategories,
           maintenanceCategories,
         },
@@ -134,19 +313,27 @@ export function NewBoatWizardStep3({
   }, []);
 
   // -------------------------------------------------------------------------
-  // Delete helpers
+  // Equipment mutation helpers
   // -------------------------------------------------------------------------
 
+  const updateItem = (index: number, patch: Partial<GeneratedEquipmentItem>) => {
+    setEquipment((prev) =>
+      prev.map((item) => (item.index === index ? { ...item, ...patch } : item)),
+    );
+  };
+
   const deleteEquipment = (index: number) => {
-    // Remove the item and all its children
     const toRemove = new Set<number>();
     toRemove.add(index);
-    // Find all descendants
     let changed = true;
     while (changed) {
       changed = false;
       equipment.forEach((item) => {
-        if (item.parentIndex !== null && toRemove.has(item.parentIndex) && !toRemove.has(item.index)) {
+        if (
+          item.parentIndex !== null &&
+          toRemove.has(item.parentIndex) &&
+          !toRemove.has(item.index)
+        ) {
           toRemove.add(item.index);
           changed = true;
         }
@@ -154,8 +341,35 @@ export function NewBoatWizardStep3({
     }
     setEquipment((prev) => prev.filter((item) => !toRemove.has(item.index)));
     setMaintenanceTasks((prev) =>
-      prev.filter((task) => task.equipmentIndex === null || !toRemove.has(task.equipmentIndex))
+      prev.filter((task) => task.equipmentIndex === null || !toRemove.has(task.equipmentIndex)),
     );
+  };
+
+  const confirmOriginal = (index: number) => {
+    updateItem(index, { replacementStatus: 'confirmed', showReplaceForm: false });
+  };
+
+  const toggleReplaceForm = (index: number) => {
+    setEquipment((prev) =>
+      prev.map((item) =>
+        item.index === index ? { ...item, showReplaceForm: !item.showReplaceForm } : item,
+      ),
+    );
+  };
+
+  const markReplaced = (
+    index: number,
+    manufacturer: string,
+    model: string,
+    productRegistryId: string | null,
+  ) => {
+    updateItem(index, {
+      replacementStatus: 'replaced',
+      replacementManufacturer: manufacturer,
+      replacementModel: model,
+      replacementProductRegistryId: productRegistryId,
+      showReplaceForm: false,
+    });
   };
 
   const deleteTask = (taskIdx: number) => {
@@ -176,8 +390,23 @@ export function NewBoatWizardStep3({
       // Build index → inserted DB id map
       const indexToId: Record<number, string> = {};
 
+      // Resolve effective manufacturer/model/registryId per item (replacement takes precedence)
+      const effectiveValues = (item: GeneratedEquipmentItem) => ({
+        manufacturer:
+          item.replacementStatus === 'replaced'
+            ? (item.replacementManufacturer ?? null)
+            : item.manufacturer,
+        model:
+          item.replacementStatus === 'replaced'
+            ? (item.replacementModel ?? null)
+            : item.model,
+        product_registry_id:
+          item.replacementStatus === 'replaced'
+            ? (item.replacementProductRegistryId ?? null)
+            : (item.productRegistryId ?? null),
+      });
+
       // Step 1: Insert parent items (parentIndex === null)
-      // productRegistryId is already populated by the edge function — use it directly.
       const parents = equipment.filter((e) => e.parentIndex === null);
       if (parents.length > 0) {
         const { data: insertedParents, error: parentErr } = await supabase
@@ -188,12 +417,10 @@ export function NewBoatWizardStep3({
               name: e.name,
               category: e.category,
               subcategory: e.subcategory,
-              manufacturer: e.manufacturer,
-              model: e.model,
               notes: e.notes,
               status: 'active',
-              product_registry_id: e.productRegistryId ?? null,
-            }))
+              ...effectiveValues(e),
+            })),
           )
           .select('id');
 
@@ -215,12 +442,10 @@ export function NewBoatWizardStep3({
               name: e.name,
               category: e.category,
               subcategory: e.subcategory,
-              manufacturer: e.manufacturer,
-              model: e.model,
               notes: e.notes,
               status: 'active',
-              product_registry_id: e.productRegistryId ?? null,
-            }))
+              ...effectiveValues(e),
+            })),
           )
           .select('id');
 
@@ -247,13 +472,18 @@ export function NewBoatWizardStep3({
         }));
 
       if (tasksToInsert.length > 0) {
-        const { error: taskErr } = await supabase.from('boat_maintenance_tasks').insert(tasksToInsert);
+        const { error: taskErr } = await supabase
+          .from('boat_maintenance_tasks')
+          .insert(tasksToInsert);
         if (taskErr) throw new Error(`Failed to save maintenance tasks: ${taskErr.message}`);
       }
 
       onComplete();
     } catch (err) {
-      logger.error('[Step3] Save failed:', err instanceof Error ? { error: err.message } : { error: String(err) });
+      logger.error(
+        '[Step3] Save failed:',
+        err instanceof Error ? { error: err.message } : { error: String(err) },
+      );
       setSaveError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
@@ -261,7 +491,7 @@ export function NewBoatWizardStep3({
   };
 
   // -------------------------------------------------------------------------
-  // Grouped review data
+  // Derived data for review
   // -------------------------------------------------------------------------
 
   const equipmentByCategory = equipment.reduce<Record<string, GeneratedEquipmentItem[]>>(
@@ -270,21 +500,17 @@ export function NewBoatWizardStep3({
       acc[item.category].push(item);
       return acc;
     },
-    {}
-  );
-
-  const tasksByEquipmentIndex = maintenanceTasks.reduce<Record<string, GeneratedTaskItem[]>>(
-    (acc, task, i) => {
-      const key = task.equipmentIndex !== null ? String(task.equipmentIndex) : '_unlinked';
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(task);
-      return acc;
-    },
-    {}
+    {},
   );
 
   const getCategoryLabel = (value: string) =>
     EQUIPMENT_CATEGORIES.find((c) => c.value === value)?.label ?? value;
+
+  const unreviewedCount = equipment.filter(
+    (e) =>
+      (e.replacementLikelihood === 'high' || e.replacementLikelihood === 'medium') &&
+      !e.replacementStatus,
+  ).length;
 
   // -------------------------------------------------------------------------
   // Render: Selection phase
@@ -297,8 +523,14 @@ export function NewBoatWizardStep3({
           <h2 className="text-xl font-semibold text-foreground">Equipment & Maintenance</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             AI will generate a standard equipment list and maintenance schedule for{' '}
-            <span className="font-medium text-foreground">{makeModel || 'your boat'}</span>. Select
-            which categories to include. You can review and remove items before saving.
+            <span className="font-medium text-foreground">{makeModel || 'your boat'}</span>.
+            {yearBuilt && (
+              <>
+                {' '}Built in <span className="font-medium text-foreground">{yearBuilt}</span> —
+                AI will flag items commonly replaced at this age for your review.
+              </>
+            )}{' '}
+            Select which categories to include.
           </p>
         </div>
 
@@ -327,7 +559,9 @@ export function NewBoatWizardStep3({
                     type="checkbox"
                     className="rounded border-border"
                     checked={selectedCategories.includes(cat.value)}
-                    onChange={() => toggleCategory(cat.value, selectedCategories, setSelectedCategories)}
+                    onChange={() =>
+                      toggleCategory(cat.value, selectedCategories, setSelectedCategories)
+                    }
                   />
                   <span className="text-sm text-foreground">{cat.label}</span>
                 </label>
@@ -343,7 +577,9 @@ export function NewBoatWizardStep3({
                 onClick={() => toggleAll(maintenanceCategories, setMaintenanceCategories)}
                 className="text-xs text-primary hover:underline"
               >
-                {maintenanceCategories.length === ALL_CATEGORIES.length ? 'Deselect all' : 'Select all'}
+                {maintenanceCategories.length === ALL_CATEGORIES.length
+                  ? 'Deselect all'
+                  : 'Select all'}
               </button>
             </div>
             <div className="space-y-2">
@@ -368,10 +604,7 @@ export function NewBoatWizardStep3({
           <Button variant="ghost" onClick={onSkip}>
             Skip
           </Button>
-          <Button
-            onClick={handleGenerate}
-            disabled={selectedCategories.length === 0}
-          >
+          <Button onClick={handleGenerate} disabled={selectedCategories.length === 0}>
             Generate Equipment & Tasks
           </Button>
         </div>
@@ -396,11 +629,7 @@ export function NewBoatWizardStep3({
         </div>
 
         {jobId && (
-          <JobProgressPanel
-            jobId={jobId}
-            onComplete={handleJobComplete}
-            onError={handleJobError}
-          />
+          <JobProgressPanel jobId={jobId} onComplete={handleJobComplete} onError={handleJobError} />
         )}
 
         <div className="flex justify-end">
@@ -427,6 +656,34 @@ export function NewBoatWizardStep3({
           </p>
         </div>
 
+        {/* Unreviewed items banner */}
+        {unreviewedCount > 0 && (
+          <div className="flex items-start gap-3 rounded-md bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3">
+            <svg
+              className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+              />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                {unreviewedCount} item{unreviewedCount > 1 ? 's' : ''} may no longer match
+                original spec
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                Review the flagged items below and confirm, update, or remove them before saving.
+              </p>
+            </div>
+          </div>
+        )}
+
         {saveError && (
           <div className="rounded-md bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {saveError}
@@ -450,39 +707,193 @@ export function NewBoatWizardStep3({
                   <div className="space-y-1">
                     {items.map((item) => {
                       const isChild = item.parentIndex !== null;
+                      const isHighRisk =
+                        item.replacementLikelihood === 'high' && !item.replacementStatus;
+                      const isMediumRisk =
+                        item.replacementLikelihood === 'medium' && !item.replacementStatus;
+
                       return (
                         <div
                           key={item.index}
-                          className={`flex items-start justify-between gap-2 rounded-md px-3 py-2 bg-muted/40 ${
-                            isChild ? 'ml-6' : ''
-                          }`}
+                          className={`rounded-md px-3 py-2 ${
+                            isHighRisk
+                              ? 'bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800'
+                              : 'bg-muted/40'
+                          } ${isChild ? 'ml-6' : ''}`}
                         >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              {isChild && (
-                                <span className="text-muted-foreground text-xs flex-shrink-0">↳</span>
-                              )}
-                              <span className="text-sm font-medium text-foreground">{item.name}</span>
-                              {item.manufacturer && (
-                                <span className="text-xs text-muted-foreground">
-                                  {item.manufacturer}
-                                  {item.model ? ` ${item.model}` : ''}
+                          {/* Item header row */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {isChild && (
+                                  <span className="text-muted-foreground text-xs flex-shrink-0">
+                                    ↳
+                                  </span>
+                                )}
+                                <span className="text-sm font-medium text-foreground">
+                                  {item.name}
                                 </span>
+                                {/* Show effective manufacturer/model */}
+                                {(item.replacementStatus === 'replaced'
+                                  ? item.replacementManufacturer
+                                  : item.manufacturer) && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {item.replacementStatus === 'replaced'
+                                      ? `${item.replacementManufacturer}${item.replacementModel ? ` ${item.replacementModel}` : ''}`
+                                      : `${item.manufacturer}${item.model ? ` ${item.model}` : ''}`}
+                                  </span>
+                                )}
+                                {/* Status badges */}
+                                {item.replacementStatus === 'confirmed' && (
+                                  <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                    Original confirmed
+                                  </span>
+                                )}
+                                {item.replacementStatus === 'replaced' && (
+                                  <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                                    <svg
+                                      className="w-3 h-3"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M5 13l4 4L19 7"
+                                      />
+                                    </svg>
+                                    Updated
+                                  </span>
+                                )}
+                                {isHighRisk && (
+                                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                    ⚠ Verify
+                                  </span>
+                                )}
+                                {isMediumRisk && (
+                                  <button
+                                    onClick={() => toggleReplaceForm(item.index)}
+                                    className="text-xs text-amber-500 hover:text-amber-700 dark:text-amber-400 hover:underline"
+                                  >
+                                    ◇ Verify?
+                                  </button>
+                                )}
+                              </div>
+                              {item.notes && (
+                                <p className="text-xs text-muted-foreground mt-0.5 ml-4">
+                                  {item.notes}
+                                </p>
                               )}
                             </div>
-                            {item.notes && (
-                              <p className="text-xs text-muted-foreground mt-0.5 ml-4">{item.notes}</p>
+                            {/* Delete button — only for top-level or when not showing replace form */}
+                            {!item.showReplaceForm && (
+                              <button
+                                onClick={() => deleteEquipment(item.index)}
+                                className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors p-1"
+                                title="Remove"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
                             )}
                           </div>
-                          <button
-                            onClick={() => deleteEquipment(item.index)}
-                            className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors p-1"
-                            title="Remove"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+
+                          {/* HIGH likelihood — always expanded warning */}
+                          {isHighRisk && (
+                            <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-700">
+                              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                                {item.replacementReason}
+                              </p>
+                              {!item.showReplaceForm ? (
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <button
+                                    onClick={() => confirmOriginal(item.index)}
+                                    className="text-xs px-2.5 py-1 rounded border border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                                  >
+                                    Confirm original
+                                  </button>
+                                  <button
+                                    onClick={() => toggleReplaceForm(item.index)}
+                                    className="text-xs px-2.5 py-1 rounded border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors"
+                                  >
+                                    It&apos;s been replaced
+                                  </button>
+                                  <button
+                                    onClick={() => deleteEquipment(item.index)}
+                                    className="text-xs px-2.5 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                              ) : (
+                                <InlineReplaceForm
+                                  initialManufacturer={item.manufacturer}
+                                  onApply={(mfr, mdl, regId) =>
+                                    markReplaced(item.index, mfr, mdl, regId)
+                                  }
+                                  onCancel={() => toggleReplaceForm(item.index)}
+                                />
+                              )}
+                            </div>
+                          )}
+
+                          {/* MEDIUM likelihood — collapsed, expand on "Verify?" click */}
+                          {isMediumRisk && item.showReplaceForm && (
+                            <div className="mt-2 pt-2 border-t border-amber-100 dark:border-amber-900">
+                              {item.replacementReason && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mb-2">
+                                  {item.replacementReason}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 flex-wrap mb-2">
+                                <button
+                                  onClick={() => confirmOriginal(item.index)}
+                                  className="text-xs px-2.5 py-1 rounded border border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors"
+                                >
+                                  Confirm original
+                                </button>
+                                <button
+                                  onClick={() => deleteEquipment(item.index)}
+                                  className="text-xs px-2.5 py-1 rounded border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                              <InlineReplaceForm
+                                initialManufacturer={item.manufacturer}
+                                onApply={(mfr, mdl, regId) =>
+                                  markReplaced(item.index, mfr, mdl, regId)
+                                }
+                                onCancel={() => toggleReplaceForm(item.index)}
+                              />
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -553,8 +964,18 @@ export function NewBoatWizardStep3({
                       className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors p-1"
                       title="Remove"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
                       </svg>
                     </button>
                   </div>

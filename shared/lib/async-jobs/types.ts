@@ -70,6 +70,7 @@ export interface GenerateBoatEquipmentPayload {
   makeModel: string;
   boatType: string | null;
   loa_m: number | null;
+  yearBuilt: number | null;
   selectedCategories: string[];
   maintenanceCategories: string[];
 }

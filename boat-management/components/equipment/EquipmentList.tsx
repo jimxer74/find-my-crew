@@ -217,6 +217,11 @@ function EquipmentCard({
             <span className="font-medium">Installed:</span> {item.year_installed}
           </p>
         )}
+        {item.notes && (
+          <p className="truncate text-xs mt-1" title={item.notes}>
+            {item.notes}
+          </p>
+        )}
       </div>
 
       {/* Registry links toggle */}

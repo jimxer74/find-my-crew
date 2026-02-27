@@ -14,6 +14,7 @@ interface BoatInfo {
   make_model: string | null;
   type: string | null;
   loa_m: number | null;
+  year_built: number | null;
 }
 
 export default function EquipmentPage({ params }: { params: Promise<{ boatId: string }> }) {
@@ -49,7 +50,7 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
     const supabase = getSupabaseBrowserClient();
     supabase
       .from('boats')
-      .select('owner_id, make_model, type, loa_m')
+      .select('owner_id, make_model, type, loa_m, year_built')
       .eq('id', boatId)
       .single()
       .then(({ data }) => {
@@ -59,6 +60,7 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
             make_model: data.make_model ?? null,
             type: data.type ?? null,
             loa_m: data.loa_m ?? null,
+            year_built: data.year_built ?? null,
           });
         }
       });
@@ -138,6 +140,7 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
           makeModel={boatInfo.make_model ?? ''}
           boatType={boatInfo.type}
           loa_m={boatInfo.loa_m}
+          yearBuilt={boatInfo.year_built}
           onComplete={handleGenerateComplete}
           onSkip={() => setIsGenerating(false)}
         />
