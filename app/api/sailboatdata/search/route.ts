@@ -23,21 +23,45 @@ export async function POST(request: NextRequest) {
       // Try exact match first (case-sensitive)
       let registryEntry = await lookupBoatRegistry(queryTrimmed);
       
-      // If no exact match, try case-insensitive lookup
+      // If no exact match, try case-insensitive partial/prefix search
       if (!registryEntry) {
         const { getSupabaseUnauthenticatedClient } = await import('@/app/lib/supabaseServer');
         const supabase = getSupabaseUnauthenticatedClient();
-        
-        // Case-insensitive search using ilike
+
+        // Case-insensitive prefix/contains search using ilike with wildcard
         const { data } = await supabase
           .from('boat_registry')
           .select('*')
-          .ilike('make_model', queryTrimmed)
-          .limit(1)
-          .maybeSingle();
-        
-        if (data) {
-          registryEntry = data as any;
+          .ilike('make_model', `%${queryTrimmed}%`)
+          .limit(5);
+
+        if (data && data.length > 0) {
+          // Return multiple registry matches if found
+          const registrySuggestions = data.map((entry: any) => {
+            let url = '';
+            let slug = entry.slug || null;
+
+            if (slug) {
+              url = `https://sailboatdata.com/sailboat/${slug}`;
+            } else if (entry.link_to_specs) {
+              url = entry.link_to_specs;
+              const slugMatch = url.match(/sailboat\/([^\/]+)/);
+              if (slugMatch) slug = slugMatch[1];
+            } else {
+              const normalizedModel = entry.make_model.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+              url = `https://sailboatdata.com/sailboat/${normalizedModel}`;
+              slug = normalizedModel;
+            }
+
+            return { name: entry.make_model, url, slug: slug || '' };
+          });
+
+          logger.debug('Registry partial match results', { count: registrySuggestions.length });
+
+          return NextResponse.json({
+            suggestions: registrySuggestions,
+            source: 'registry',
+          });
         }
       }
       

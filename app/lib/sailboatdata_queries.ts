@@ -240,12 +240,24 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     if (registryEntry) {
       logger.debug('Found boat in registry', { makeModel: registryEntry.make_model }, true);
 
-      // Increment fetch count asynchronously (don't wait for it)
-      incrementRegistryFetchCount(registryEntry.id).catch(err =>
-        logger.warn('Failed to increment registry fetch count', { error: err instanceof Error ? err.message : String(err) })
-      );
+      // Only use registry entry if it has at least some spec data
+      // If all spec fields are null, fall through to fetch fresh data from external API
+      const hasSpecData = registryEntry.loa_m !== null
+        || registryEntry.beam_m !== null
+        || registryEntry.displcmt_m !== null
+        || registryEntry.max_draft_m !== null
+        || registryEntry.sa_displ_ratio !== null;
 
-      return registryToSailboatDetails(registryEntry);
+      if (hasSpecData) {
+        // Increment fetch count asynchronously (don't wait for it)
+        incrementRegistryFetchCount(registryEntry.id).catch(err =>
+          logger.warn('Failed to increment registry fetch count', { error: err instanceof Error ? err.message : String(err) })
+        );
+
+        return registryToSailboatDetails(registryEntry);
+      }
+
+      logger.debug('Registry entry has no spec data - fetching from external source', { makeModel: registryEntry.make_model }, true);
     }
 
     logger.debug('Registry miss - fetching from external source', { query: sailboatQueryStr }, true);
