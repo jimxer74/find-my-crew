@@ -62,11 +62,12 @@ export async function lookupBoatRegistry(
     }
   }
   
-  // Fallback to make_model lookup — normalize to uppercase to match how saveBoatRegistry stores values
+  // Fallback to make_model lookup — use ilike (case-insensitive) to handle entries
+  // stored with mixed case (pre-normalization) as well as uppercase ones
   const { data, error } = await supabase
     .from('boat_registry')
     .select('*')
-    .eq('make_model', makeModel.trim().toUpperCase())
+    .ilike('make_model', makeModel.trim())
     .single();
   
   if (error || !data) {
@@ -225,11 +226,11 @@ export async function updateRegistryDescriptiveFields(
     return; // Only updated_at, nothing else to update
   }
   
-  // Find existing entry — normalize make_model to uppercase to match how saveBoatRegistry stores values
+  // Find existing entry — use ilike to handle mixed-case and uppercase stored values
   const { data: existing } = await supabase
     .from('boat_registry')
     .select('id')
-    .eq('make_model', makeModel.trim().toUpperCase())
+    .ilike('make_model', makeModel.trim())
     .single();
   
   if (existing) {
