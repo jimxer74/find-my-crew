@@ -210,6 +210,10 @@ export async function DELETE(request: NextRequest) {
     const aiPendingActionsResult = await safeDelete('ai_pending_actions', { user_id: user.id }, supabase, user.id);
     deletionResults.push(aiPendingActionsResult);
 
+    // 5c. Delete async AI jobs (async_job_progress cascades automatically)
+    const asyncJobsResult = await safeDelete('async_jobs', { user_id: user.id }, supabase, user.id);
+    deletionResults.push(asyncJobsResult);
+
     // 6. Clear feedback records where user is referenced in status_changed_by
     logger.debug(`Clearing feedback status_changed_by references`, {}, true);
     const { error: feedbackStatusError } = await supabase
@@ -742,6 +746,7 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
       { table: 'notifications', column: 'user_id' },
       { table: 'ai_conversations', column: 'user_id' },
       { table: 'ai_pending_actions', column: 'user_id' },
+      { table: 'async_jobs', column: 'user_id' },
       { table: 'feedback', column: 'user_id' },
       { table: 'feedback_votes', column: 'user_id' },
       { table: 'feedback_prompt_dismissals', column: 'user_id' },

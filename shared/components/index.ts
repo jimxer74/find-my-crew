@@ -1,3 +1,6 @@
+// Async job components
+export { JobProgressPanel } from './async-jobs';
+
 // AI components
 export {
   ActionFeedback,

@@ -19,6 +19,18 @@ export * from './geocoding';
 // Notifications
 export * from './notifications';
 
+// Async AI jobs — background execution + progress tracking
+export type {
+  AsyncJob,
+  JobProgress,
+  JobStatus,
+  JobType,
+  SubmitJobOptions,
+  SubmitJobResult,
+  GenerateJourneyPayload,
+} from './async-jobs';
+export { submitJob, useJobProgress, useJobResult } from './async-jobs';
+
 // Onboarding - Owner and Prospect session management
 export * as ownerSession from './owner/index';
 export * as prospectSession from './prospect/index';
