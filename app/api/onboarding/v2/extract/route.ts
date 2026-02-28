@@ -21,10 +21,11 @@ Return ONLY a valid JSON object (no markdown, no backticks) with this exact stru
     "type": null
   },
   "journey": null or {
-    "fromLocation": "string",
-    "toLocation": "string",
+    "fromLocation": "string with city and country, e.g. Helsinki, Finland",
+    "toLocation": "string with city and country, e.g. Tallinn, Estonia",
     "startDate": "YYYY-MM-DD or null",
-    "endDate": "YYYY-MM-DD or null"
+    "endDate": "YYYY-MM-DD or null",
+    "intermediateWaypoints": ["array of intermediate stop strings with city and country"] or null
   }
 }
 
@@ -33,6 +34,7 @@ Rules:
 - yearBuilt: extract from context (e.g. "2003", "built in the 90s" → null)
 - loa_m: convert feet to meters if needed (1 foot = 0.3048 m), null if unknown
 - journey: null if no journey was mentioned
+- intermediateWaypoints: array of intermediate stop location strings if mentioned (e.g. ["Mariehamn, Finland", "Stockholm, Sweden"]), or null if no stops mentioned
 - type: always null (will be set later via boat registry)
 - Use null for unknown values, not empty strings`;
 

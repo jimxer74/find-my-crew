@@ -51,7 +51,6 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
           year_built: data.yearBuilt ?? null,
           loa_m: data.loa_m ?? null,
           type: data.type ?? null,
-          status: 'active',
         })
         .select('id')
         .single();

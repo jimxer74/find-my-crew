@@ -100,7 +100,15 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
       const json = await res.json();
       throw new Error(json.error || 'Failed to save equipment');
     }
+
+    const json = await res.json();
     await loadEquipment();
+
+    // Return the new equipment's ID and product registry ID so EquipmentForm
+    // can offer to generate maintenance tasks after adding (not for edits)
+    if (!editingItem && json.data?.id) {
+      return { id: json.data.id as string, productRegistryId: json.data.product_registry_id as string | null };
+    }
   };
 
   const handleGenerateComplete = useCallback(async () => {
@@ -164,6 +172,8 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
         onSubmit={handleSubmit}
         equipment={editingItem}
         parentOptions={parentOptions}
+        boatId={boatId}
+        boatMakeModel={boatInfo?.make_model ?? undefined}
       />
     </>
   );

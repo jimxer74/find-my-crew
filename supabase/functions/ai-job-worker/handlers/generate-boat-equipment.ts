@@ -68,8 +68,15 @@ interface EquipmentItem {
   manufacturer: string | null;
   model: string | null;
   notes: string | null;
-  replacementLikelihood?: 'low' | 'medium' | 'high';
-  replacementReason?: string | null;
+  // Product registry metadata — populated only for items with manufacturer+model
+  description: string | null;
+  specs: Record<string, unknown> | null;
+  manufacturer_url: string | null;
+  documentation_links: Array<{ title: string; url: string }> | null;
+  spare_parts_links: Array<{ region: string; title: string; url: string }> | null;
+  // Replacement assessment — always present; defaults to 'low'/null when yearBuilt unavailable
+  replacementLikelihood: 'low' | 'medium' | 'high';
+  replacementReason: string | null;
   productRegistryId?: string | null;
 }
 
@@ -137,11 +144,12 @@ function buildEquipmentPrompt(payload: GenerateBoatEquipmentPayload): string {
 BOAT: ${boatDesc}
 
 STEP 1 — RESEARCH (use web search):
-Search for the following to find verified information about this specific boat model:
+Search for the following to find verified information about this specific boat model AND its standard equipment:
 - "${makeModel} owner's manual"
 - "${makeModel} specifications"
 - "${makeModel} standard equipment list"
 - "${makeModel} sailboat review"
+- For each identified piece of equipment with a known manufacturer+model, also search for its product page, manual, and spare parts catalogue.
 Use the search results to determine what equipment the manufacturer actually fitted as standard.
 
 STEP 2 — OUTPUT RULES (CRITICAL — read carefully):
@@ -151,18 +159,28 @@ STEP 2 — OUTPUT RULES (CRITICAL — read carefully):
 4. Use parent-child hierarchy: top-level items have parentIndex: null; sub-items reference the parent's index.
 5. Use ONLY these exact category values: engine, rigging, electrical, navigation, safety, plumbing, anchoring, hull_deck, electronics, galley, comfort, dinghy
 6. notes must be a brief factual description sourced from the research — not generic filler text.
-${yearBuilt ? `
-STEP 3 — REPLACEMENT LIKELIHOOD ASSESSMENT:
-This boat was built in ${yearBuilt} (${boatAge} years old). For every equipment item, assess how likely it is that the item has been replaced since the boat was new and no longer matches the original manufacturer specification.
 
-Set replacementLikelihood as follows:
-- "high": items very commonly replaced at this age — e.g. engines after 20–25 years, chartplotters/electronics after 10–15 years, batteries after 5–7 years, watermaker after 8–10 years, sails after 10–15 years, standing rigging after 10–15 years
-- "medium": items that are sometimes replaced — e.g. autopilot, refrigeration, VHF radio, running rigging, outboard motor
-- "low": items rarely replaced — e.g. hull, keel, mast structure, winches, blocks, cleats, anchors, chain
+STEP 3 — PRODUCT METADATA (for items with manufacturer AND model only):
+For each equipment item where you know the specific manufacturer and model, populate:
+- description: one-sentence product description (e.g. "Yanmar 3YM30 27hp diesel inboard marine engine")
+- specs: key technical specs as an object (e.g. {"hp": 27, "displacement": "0.88L", "cooling": "heat-exchanger"} or {"loa_m": 3.1, "material": "hypalon"})
+- manufacturer_url: the official product page URL from the manufacturer's website — ONLY if you found it in web search results; null otherwise
+- documentation_links: array of [{title, url}] for owner's manuals, installation guides found in search results — ONLY real URLs from search results
+- spare_parts_links: array of [{region, title, url}] for spare parts catalogues found in search results — ONLY real URLs from search results; region is one of: eu, us, uk, asia, global
+CRITICAL: NEVER invent URLs. Only include URLs you actually retrieved from web search results. Set to null/[] if not found.
+For items without manufacturer+model, set description/specs/manufacturer_url/documentation_links/spare_parts_links to null.
 
-For boats less than 5 years old: all items should be "low" unless there is specific evidence of replacement.
-Set replacementReason to a concise explanation when likelihood is "high" or "medium" (1–2 sentences). Set to null for "low".
-` : ''}
+STEP 4 — REPLACEMENT LIKELIHOOD (REQUIRED for ALL items):
+${yearBuilt ? `This boat was built in ${yearBuilt} (${boatAge} years old). For EVERY equipment item — without exception — assess how likely it is that the item has been replaced since the boat was new.
+
+replacementLikelihood rules:
+- "high": items very commonly replaced at this age — engines >20 years, chartplotters/electronics >12 years, batteries >6 years, watermakers >8 years, sails >12 years, standing rigging >10 years, outboard motors >15 years
+- "medium": items sometimes replaced — autopilot, refrigeration, VHF radio, running rigging after 8+ years, dinghy outboard after 10+ years
+- "low": items rarely replaced — hull, keel, mast structure, winches, blocks, cleats, anchors, chain, portlights, hatches
+
+For boats less than 5 years old: all items should be "low".
+Set replacementReason to a concise explanation (1 sentence) for "high" or "medium". Set to null for "low".` : `yearBuilt is not provided. Set replacementLikelihood: "low" and replacementReason: null for ALL items.`}
+
 CATEGORIES TO GENERATE EQUIPMENT FOR:
 ${categoryList}
 
@@ -178,8 +196,13 @@ Return ONLY valid JSON with no extra text, markdown fences, or commentary:
       "manufacturer": "Volvo Penta",
       "model": "MD2030",
       "notes": "28hp diesel inboard, standard fit per manufacturer brochure",
+      "description": "Volvo Penta MD2030 28hp diesel marine inboard engine",
+      "specs": {"hp": 28, "displacement": "1.1L", "cooling": "heat-exchanger"},
+      "manufacturer_url": "https://www.volvopenta.com/marine/leisure/products/diesels/md2030",
+      "documentation_links": [{"title": "Owner's Manual", "url": "https://www.volvopenta.com/..."}],
+      "spare_parts_links": [{"region": "global", "title": "Volvo Penta Parts", "url": "https://..."}],
       "replacementLikelihood": "high",
-      "replacementReason": "This boat is 35 years old. Diesel engines typically last 20–25 years before replacement — original spec may not be accurate."
+      "replacementReason": "Engines on 35-year-old boats are commonly replaced; original spec may not be accurate."
     },
     {
       "index": 1,
@@ -190,8 +213,30 @@ Return ONLY valid JSON with no extra text, markdown fences, or commentary:
       "manufacturer": null,
       "model": null,
       "notes": "Inline fuel filter, part of fuel system per service manual",
+      "description": null,
+      "specs": null,
+      "manufacturer_url": null,
+      "documentation_links": null,
+      "spare_parts_links": null,
       "replacementLikelihood": "low",
       "replacementReason": null
+    },
+    {
+      "index": 2,
+      "name": "Main Batteries",
+      "category": "electrical",
+      "subcategory": "battery",
+      "parentIndex": null,
+      "manufacturer": null,
+      "model": null,
+      "notes": "2x 110Ah AGM house batteries",
+      "description": null,
+      "specs": {"capacity_ah": 110, "type": "AGM", "count": 2},
+      "manufacturer_url": null,
+      "documentation_links": null,
+      "spare_parts_links": null,
+      "replacementLikelihood": "medium",
+      "replacementReason": "Batteries on a 12-year-old boat have likely been replaced at least once."
     }
   ]
 }`;
@@ -203,20 +248,55 @@ function parseEquipment(text: string): EquipmentItem[] {
     throw new Error('Invalid response: equipment must be an array');
   }
   const VALID_LIKELIHOODS = ['low', 'medium', 'high'];
-  return raw.equipment.map((item: Record<string, unknown>, i: number) => ({
-    index: typeof item.index === 'number' ? item.index : i,
-    name: String(item.name ?? 'Unknown'),
-    category: String(item.category ?? 'hull_deck'),
-    subcategory: item.subcategory ? String(item.subcategory) : null,
-    parentIndex: typeof item.parentIndex === 'number' ? item.parentIndex : null,
-    manufacturer: item.manufacturer ? String(item.manufacturer) : null,
-    model: item.model ? String(item.model) : null,
-    notes: item.notes ? String(item.notes) : null,
-    replacementLikelihood: VALID_LIKELIHOODS.includes(String(item.replacementLikelihood))
-      ? (String(item.replacementLikelihood) as 'low' | 'medium' | 'high')
-      : 'low',
-    replacementReason: item.replacementReason ? String(item.replacementReason) : null,
-  }));
+
+  const parseLinks = (val: unknown): Array<{ title: string; url: string }> | null => {
+    if (!Array.isArray(val) || val.length === 0) return null;
+    const links = val
+      .filter((l): l is Record<string, unknown> => typeof l === 'object' && l !== null)
+      .map((l) => ({ title: String(l.title ?? ''), url: String(l.url ?? '') }))
+      .filter((l) => l.title && l.url && l.url.startsWith('http'));
+    return links.length > 0 ? links : null;
+  };
+
+  const parseSpareLinks = (val: unknown): Array<{ region: string; title: string; url: string }> | null => {
+    if (!Array.isArray(val) || val.length === 0) return null;
+    const VALID_REGIONS = ['eu', 'us', 'uk', 'asia', 'global'];
+    const links = val
+      .filter((l): l is Record<string, unknown> => typeof l === 'object' && l !== null)
+      .map((l) => ({
+        region: VALID_REGIONS.includes(String(l.region)) ? String(l.region) : 'global',
+        title: String(l.title ?? ''),
+        url: String(l.url ?? ''),
+      }))
+      .filter((l) => l.title && l.url && l.url.startsWith('http'));
+    return links.length > 0 ? links : null;
+  };
+
+  return raw.equipment.map((item: Record<string, unknown>, i: number) => {
+    const hasProduct = Boolean(item.manufacturer && item.model);
+    return {
+      index: typeof item.index === 'number' ? item.index : i,
+      name: String(item.name ?? 'Unknown'),
+      category: String(item.category ?? 'hull_deck'),
+      subcategory: item.subcategory ? String(item.subcategory) : null,
+      parentIndex: typeof item.parentIndex === 'number' ? item.parentIndex : null,
+      manufacturer: item.manufacturer ? String(item.manufacturer) : null,
+      model: item.model ? String(item.model) : null,
+      notes: item.notes ? String(item.notes) : null,
+      // Product metadata — only meaningful when manufacturer+model are known
+      description: hasProduct && item.description ? String(item.description) : null,
+      specs: hasProduct && item.specs && typeof item.specs === 'object' ? (item.specs as Record<string, unknown>) : null,
+      manufacturer_url: hasProduct && typeof item.manufacturer_url === 'string' && item.manufacturer_url.startsWith('http')
+        ? item.manufacturer_url : null,
+      documentation_links: hasProduct ? parseLinks(item.documentation_links) : null,
+      spare_parts_links: hasProduct ? parseSpareLinks(item.spare_parts_links) : null,
+      // Replacement likelihood — always present
+      replacementLikelihood: VALID_LIKELIHOODS.includes(String(item.replacementLikelihood))
+        ? (String(item.replacementLikelihood) as 'low' | 'medium' | 'high')
+        : 'low',
+      replacementReason: item.replacementReason ? String(item.replacementReason) : null,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -326,22 +406,27 @@ export const handler: JobHandler = {
     // -------------------------------------------------------------------------
     const withProduct = equipment.filter((e) => e.manufacturer && e.model);
     if (withProduct.length > 0) {
-      // Insert new entries; ignore on conflict (upsert without returning rows on conflict)
+      // Insert new entries with full metadata; ignore on conflict to protect curated data
       await supabase.from('product_registry').upsert(
         withProduct.map((e) => ({
           category: e.category,
           subcategory: e.subcategory,
           manufacturer: e.manufacturer!,
           model: e.model!,
+          description: e.description,
+          specs: e.specs ?? {},
+          manufacturer_url: e.manufacturer_url,
+          documentation_links: e.documentation_links ?? [],
+          spare_parts_links: e.spare_parts_links ?? [],
         })),
         { onConflict: 'manufacturer,model', ignoreDuplicates: true },
       );
 
-      // Fetch actual IDs — SELECT needed because ignoreDuplicates returns nothing on conflict
+      // Fetch actual IDs and description to detect records with missing metadata
       const manufacturers = [...new Set(withProduct.map((e) => e.manufacturer!))];
       const { data: productRows } = await supabase
         .from('product_registry')
-        .select('id, manufacturer, model')
+        .select('id, manufacturer, model, description')
         .in('manufacturer', manufacturers);
 
       if (productRows) {
@@ -350,6 +435,30 @@ export const handler: JobHandler = {
             (e) => e.manufacturer === prod.manufacturer && e.model === prod.model,
           );
           if (matched) matched.productRegistryId = prod.id;
+        }
+
+        // Enrich existing records that have no description yet (pre-existing rows with null metadata)
+        // This runs when a product was already in the registry but lacked metadata
+        const toEnrich = productRows.filter((r) => !r.description);
+        if (toEnrich.length > 0) {
+          await Promise.all(
+            toEnrich.map((row) => {
+              const aiItem = equipment.find(
+                (e) => e.manufacturer === row.manufacturer && e.model === row.model,
+              );
+              if (!aiItem?.description && !aiItem?.manufacturer_url) return Promise.resolve();
+              return supabase
+                .from('product_registry')
+                .update({
+                  ...(aiItem.description ? { description: aiItem.description } : {}),
+                  ...(aiItem.specs ? { specs: aiItem.specs } : {}),
+                  ...(aiItem.manufacturer_url ? { manufacturer_url: aiItem.manufacturer_url } : {}),
+                  ...(aiItem.documentation_links?.length ? { documentation_links: aiItem.documentation_links } : {}),
+                  ...(aiItem.spare_parts_links?.length ? { spare_parts_links: aiItem.spare_parts_links } : {}),
+                })
+                .eq('id', row.id);
+            }),
+          );
         }
       }
     }

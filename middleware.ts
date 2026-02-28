@@ -85,6 +85,11 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
+    // /welcome/owner-v2 manages its own auth/phase logic — never redirect away from it
+    if (pathname === '/welcome/owner-v2') {
+      return response;
+    }
+
     // Check if user should stay on homepage (has pending onboarding)
     // Use Promise.race with timeout to prevent middleware from hanging
     const shouldStayPromise = shouldStayOnHomepageServer(user.id, supabase);

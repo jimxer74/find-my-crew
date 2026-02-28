@@ -16,8 +16,8 @@ import { logger } from '@shared/logging';
 // ---------------------------------------------------------------------------
 
 type OnboardingPhase =
-  | 'pre_chat'
-  | 'awaiting_signup'
+  | 'signup'
+  | 'chatting'
   | 'confirming_profile'
   | 'confirming_boat'
   | 'equipment_offer'
@@ -43,6 +43,7 @@ interface OnboardingJourney {
   toLocation?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  intermediateWaypoints?: string[] | null;
 }
 
 interface OnboardingState {
@@ -88,7 +89,7 @@ function clearState() {
 }
 
 const INITIAL_STATE: OnboardingState = {
-  phase: 'pre_chat',
+  phase: 'signup',
   profile: null,
   boat: null,
   journey: null,
@@ -100,7 +101,8 @@ const INITIAL_STATE: OnboardingState = {
 // ---------------------------------------------------------------------------
 
 const STEPS = [
-  { key: 'pre_chat', label: 'Tell us about yourself' },
+  { key: 'signup', label: 'Account' },
+  { key: 'chatting', label: 'About you' },
   { key: 'confirming_profile', label: 'Profile' },
   { key: 'confirming_boat', label: 'Boat' },
   { key: 'equipment_offer', label: 'Equipment' },
@@ -108,11 +110,12 @@ const STEPS = [
 ] as const;
 
 function stepIndex(phase: OnboardingPhase): number {
-  if (phase === 'pre_chat' || phase === 'awaiting_signup') return 0;
-  if (phase === 'confirming_profile') return 1;
-  if (phase === 'confirming_boat') return 2;
-  if (phase === 'equipment_offer') return 3;
-  if (phase === 'journey_offer' || phase === 'done') return 4;
+  if (phase === 'signup') return 0;
+  if (phase === 'chatting') return 1;
+  if (phase === 'confirming_profile') return 2;
+  if (phase === 'confirming_boat') return 3;
+  if (phase === 'equipment_offer') return 4;
+  if (phase === 'journey_offer' || phase === 'done') return 5;
   return 0;
 }
 
@@ -170,48 +173,36 @@ export function OwnerOnboardingV2() {
   useEffect(() => {
     if (authLoading) return;
 
-    const saved = loadState();
-
     if (!user) {
-      // Not signed in
-      if (saved?.phase === 'awaiting_signup') {
-        // Chat completed but signup not finished → restore and re-show modal
-        setState(saved);
-        setShowSignupModal(true);
-      }
-      // else: fresh pre_chat (INITIAL_STATE is already correct)
+      // Not authenticated — clear any stale state and show signup
+      clearState();
+      setState(INITIAL_STATE);
       return;
     }
 
-    // Signed in
-    if (saved && saved.phase !== 'pre_chat') {
-      if (saved.phase === 'awaiting_signup') {
-        // Just returned from signup redirect — advance to profile checkpoint
-        setState({ ...saved, phase: 'confirming_profile' });
-      } else {
-        // Resume from wherever they left off
+    // Authenticated — check for saved progress
+    const saved = loadState();
+    if (saved && saved.phase !== 'signup') {
+      // Validate saved state has required data for its phase before restoring
+      const isValid =
+        !(saved.phase === 'confirming_profile' && !saved.profile) &&
+        !(saved.phase === 'confirming_boat' && !saved.boat);
+
+      if (isValid) {
         setState(saved);
+      } else {
+        // Corrupted/incomplete saved state — restart from chat
+        setState({ ...INITIAL_STATE, phase: 'chatting' });
       }
     } else {
-      // Signed in with no meaningful saved state → skip chat, show profile checkpoint
-      // Pre-fill display name from auth metadata if available
-      const nameFromAuth =
-        (user.user_metadata?.full_name as string) ??
-        user.email?.split('@')[0] ??
-        '';
-      setState({
-        phase: 'confirming_profile',
-        profile: { displayName: nameFromAuth },
-        boat: { makeModel: '', homePort: '' },
-        journey: null,
-        savedBoatId: null,
-      });
+      // No saved progress — start the AI chat (user just signed up)
+      setState({ ...INITIAL_STATE, phase: 'chatting' });
     }
   }, [user, authLoading]);
 
-  // Persist state to sessionStorage whenever it changes (except initial)
+  // Persist state to sessionStorage (only when past signup phase)
   useEffect(() => {
-    if (state.phase !== 'pre_chat') {
+    if (state.phase !== 'signup') {
       saveState(state);
     }
   }, [state]);
@@ -224,10 +215,9 @@ export function OwnerOnboardingV2() {
     });
   }, []);
 
-  // Handle when pre-signup chat is complete
+  // Handle when AI chat is complete (user is already authenticated at this point)
   const handleChatComplete = useCallback(
     async (chatExtractedData: Record<string, unknown>, messages: ChatMessage[]) => {
-      // Extract structured data from full conversation
       let profile: OnboardingProfile | null = null;
       let boat: OnboardingBoat | null = null;
       let journey: OnboardingJourney | null = null;
@@ -247,7 +237,16 @@ export function OwnerOnboardingV2() {
           const extracted = await res.json();
           profile = extracted.profile ?? null;
           boat = extracted.boat ?? null;
-          journey = extracted.journey ?? null;
+          // Merge intermediateWaypoints from chat extractedData if extract didn't capture them
+          journey = extracted.journey
+            ? {
+                ...extracted.journey,
+                intermediateWaypoints:
+                  extracted.journey.intermediateWaypoints ??
+                  (chatExtractedData.journeyWaypoints as string[] | null) ??
+                  null,
+              }
+            : null;
         }
       } catch (err) {
         logger.error('[OwnerOnboardingV2] Extract failed', {
@@ -255,10 +254,15 @@ export function OwnerOnboardingV2() {
         });
       }
 
-      // Fallback from raw extracted data if extract API failed
+      // Fallbacks using auth user data (user is signed in at this point)
       if (!profile) {
+        const nameFromAuth =
+          (user?.user_metadata?.full_name as string) ??
+          user?.email?.split('@')[0] ??
+          (chatExtractedData.name as string) ??
+          '';
         profile = {
-          displayName: (chatExtractedData.name as string) ?? '',
+          displayName: nameFromAuth,
           experienceLevel: (chatExtractedData.experienceLevel as number) ?? null,
         };
       }
@@ -271,16 +275,11 @@ export function OwnerOnboardingV2() {
         };
       }
 
-      updateState({ phase: 'awaiting_signup', profile, boat, journey });
-      setShowSignupModal(true);
+      // User is authenticated — go directly to profile checkpoint
+      updateState({ phase: 'confirming_profile', profile, boat, journey });
     },
-    [updateState]
+    [updateState, user]
   );
-
-  // After signup modal closes (user signed up)
-  const handleSignupModalClose = useCallback(() => {
-    setShowSignupModal(false);
-  }, []);
 
   // Advance phase helpers
   const handleProfileSaved = useCallback(() => {
@@ -342,8 +341,33 @@ export function OwnerOnboardingV2() {
       {/* Step indicator */}
       <StepBar phase={state.phase} />
 
-      {/* Pre-signup chat */}
-      {(state.phase === 'pre_chat' || state.phase === 'awaiting_signup') && !user && (
+      {/* Signup phase — user not yet authenticated */}
+      {state.phase === 'signup' && !user && (
+        <>
+          <div className="rounded-xl border border-border bg-card shadow-sm p-6">
+            <h2 className="font-semibold text-foreground text-lg mb-2">First, create your account</h2>
+            <p className="text-sm text-muted-foreground mb-5">
+              Set up your account to start building your boat owner profile. It only takes a minute.
+            </p>
+            <button
+              onClick={() => setShowSignupModal(true)}
+              className="w-full bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
+            >
+              Create account
+            </button>
+          </div>
+
+          <SignupModal
+            isOpen={showSignupModal}
+            onClose={() => setShowSignupModal(false)}
+            onSwitchToLogin={() => setShowSignupModal(false)}
+            redirectPath="/welcome/owner-v2"
+          />
+        </>
+      )}
+
+      {/* AI Chat phase — user is authenticated */}
+      {state.phase === 'chatting' && user && (
         <div className="rounded-xl border border-border bg-card shadow-sm p-5">
           <h2 className="font-semibold text-foreground mb-4">Tell us about yourself</h2>
           <OnboardingChat
@@ -351,19 +375,6 @@ export function OwnerOnboardingV2() {
           />
         </div>
       )}
-
-      {/* Signup modal */}
-      <SignupModal
-        isOpen={showSignupModal}
-        onClose={handleSignupModalClose}
-        onSwitchToLogin={() => setShowSignupModal(false)}
-        redirectPath="/welcome/owner-v2"
-        prospectPreferences={
-          state.profile?.displayName
-            ? { fullName: state.profile.displayName }
-            : undefined
-        }
-      />
 
       {/* Profile checkpoint */}
       {state.phase === 'confirming_profile' && user && state.profile && (
@@ -418,10 +429,9 @@ export function OwnerOnboardingV2() {
           <div className="text-sm text-muted-foreground">
             Step 4 of 4 — Optional: create your first journey.
           </div>
-          <JourneyCheckpoint journey={state.journey} onSkip={handleDone} />
+          <JourneyCheckpoint journey={state.journey} boatId={state.savedBoatId} onSkip={handleDone} />
         </div>
       )}
-
     </div>
   );
 }

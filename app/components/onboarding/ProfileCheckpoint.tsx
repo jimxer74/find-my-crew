@@ -62,6 +62,11 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
       );
 
       if (upsertErr) throw new Error(upsertErr.message);
+
+      // Invalidate the profile cache immediately so FeatureGate and other consumers
+      // see the newly created profile without waiting for the 5-minute TTL to expire.
+      window.dispatchEvent(new CustomEvent('profileUpdated', { detail: { immediate: true } }));
+
       onSaved();
     } catch (err) {
       logger.error('[ProfileCheckpoint] Save failed', {

@@ -71,6 +71,12 @@ export async function GET(request: Request) {
       const isFromOwner = from === 'owner';
       const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2');
 
+      // Short-circuit for owner-v2 flow — skip redirect service entirely
+      if (isFromOwnerV2) {
+        logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
+        return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
+      }
+
       // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
       // These sessions need to be linked to the authenticated user
       const ownerSessionId = cookieStore.get('owner_session_id')?.value;
