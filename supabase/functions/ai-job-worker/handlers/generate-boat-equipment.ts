@@ -32,7 +32,7 @@ const PHASE1_AI_OPTIONS = {
 };
 
 const PHASE2_AI_OPTIONS = {
-  model: 'openrouter/auto',
+  model: 'openrouter/auto:online',
   maxTokens: 8000,
   temperature: 0.1,
   systemPrompt:
