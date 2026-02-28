@@ -1,9 +1,10 @@
 ---
 id: TASK-143
 title: New AI Crew Onboarding Flow v2 — Profile-Quality Focus
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-02-28 07:17'
+updated_date: '2026-02-28 07:17'
 labels: []
 dependencies: []
 references:
