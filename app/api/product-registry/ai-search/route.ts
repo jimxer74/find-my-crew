@@ -94,15 +94,42 @@ export async function POST(request: NextRequest) {
         logger.debug('[product-ai-search] Saved products to registry', { count: rows.length });
       }
 
-      // Fetch the saved records to get their IDs
+      // Fetch the saved records to get their IDs and current metadata
       const { data: saved } = await supabase
         .from('product_registry')
-        .select('*')
+        .select('id, manufacturer, model, description, specs, manufacturer_url, documentation_links, spare_parts_links, variants, is_verified, submitted_by, created_at, updated_at, category, subcategory')
         .in('manufacturer', valid.map(p => p.manufacturer))
         .in('model', valid.map(p => p.model));
 
       if (saved && saved.length > 0) {
-        return NextResponse.json({ products: saved });
+        // Enrich any existing records that have missing metadata.
+        // Only fills empty fields — never overwrites existing verified data.
+        const enrichPromises = saved.map(row => {
+          const aiProduct = valid.find(p => p.manufacturer === row.manufacturer && p.model === row.model);
+          if (!aiProduct) return Promise.resolve();
+
+          const updates: Record<string, unknown> = {};
+          if (!row.description && aiProduct.description) updates.description = aiProduct.description;
+          if ((!row.specs || !Object.keys(row.specs as object).length) && Object.keys(aiProduct.specs ?? {}).length) updates.specs = aiProduct.specs;
+          if (!row.manufacturer_url && aiProduct.manufacturer_url) updates.manufacturer_url = aiProduct.manufacturer_url;
+          if (!(row.documentation_links as unknown[])?.length && aiProduct.documentation_links?.length) updates.documentation_links = aiProduct.documentation_links;
+          if (!(row.spare_parts_links as unknown[])?.length && aiProduct.spare_parts_links?.length) updates.spare_parts_links = aiProduct.spare_parts_links;
+          if (!(row.variants as unknown[])?.length && aiProduct.variants?.length) updates.variants = aiProduct.variants;
+
+          if (!Object.keys(updates).length) return Promise.resolve();
+          return supabase.from('product_registry').update(updates).eq('id', row.id);
+        });
+
+        await Promise.all(enrichPromises);
+
+        // Re-fetch to return the enriched data
+        const { data: enriched } = await supabase
+          .from('product_registry')
+          .select('id, manufacturer, model, description, specs, manufacturer_url, documentation_links, spare_parts_links, variants, is_verified, submitted_by, created_at, updated_at, category, subcategory')
+          .in('manufacturer', valid.map(p => p.manufacturer))
+          .in('model', valid.map(p => p.model));
+
+        return NextResponse.json({ products: enriched ?? saved });
       }
     }
 

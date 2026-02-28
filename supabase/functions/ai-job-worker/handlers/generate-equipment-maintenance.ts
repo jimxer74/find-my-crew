@@ -144,13 +144,57 @@ export const handler: JobHandler = {
     await ctx.emitProgress(jobId, 'Checking maintenance task cache', 15);
 
     // -------------------------------------------------------------------------
+    // If no productRegistryId but manufacturer+model are known, try to find or
+    // create a product_registry entry and link the equipment to it.
+    // This ensures manually-added equipment with known products gets catalogued
+    // and its maintenance tasks are cached for reuse.
+    // -------------------------------------------------------------------------
+    let effectiveProductRegistryId = payload.productRegistryId;
+
+    if (!effectiveProductRegistryId && payload.manufacturer && payload.model) {
+      // Check if an entry already exists
+      const { data: existing } = await supabase
+        .from('product_registry')
+        .select('id')
+        .eq('manufacturer', payload.manufacturer)
+        .eq('model', payload.model)
+        .maybeSingle();
+
+      if (existing) {
+        effectiveProductRegistryId = existing.id;
+      } else {
+        // Insert a minimal entry so maintenance tasks can be cached
+        const { data: created } = await supabase
+          .from('product_registry')
+          .insert({
+            category: payload.category,
+            subcategory: payload.subcategory ?? null,
+            manufacturer: payload.manufacturer,
+            model: payload.model,
+          })
+          .select('id')
+          .single();
+
+        if (created) effectiveProductRegistryId = created.id;
+      }
+
+      // Link the equipment row to the registry entry
+      if (effectiveProductRegistryId) {
+        await supabase
+          .from('boat_equipment')
+          .update({ product_registry_id: effectiveProductRegistryId })
+          .eq('id', payload.equipmentId);
+      }
+    }
+
+    // -------------------------------------------------------------------------
     // Check product_maintenance_tasks cache if we have a product registry entry
     // -------------------------------------------------------------------------
-    if (payload.productRegistryId) {
+    if (effectiveProductRegistryId) {
       const { data: cachedRows } = await supabase
         .from('product_maintenance_tasks')
         .select('title, description, category, priority, recurrence, estimated_hours')
-        .eq('product_registry_id', payload.productRegistryId);
+        .eq('product_registry_id', effectiveProductRegistryId);
 
       if (cachedRows && cachedRows.length > 0) {
         await ctx.emitProgress(jobId, 'Found cached maintenance tasks', 100, undefined, true);
@@ -180,12 +224,12 @@ export const handler: JobHandler = {
     // -------------------------------------------------------------------------
     // Cache the generated tasks for future reuse if linked to product registry
     // -------------------------------------------------------------------------
-    if (payload.productRegistryId && maintenanceTasks.length > 0) {
+    if (effectiveProductRegistryId && maintenanceTasks.length > 0) {
       const { error: cacheErr } = await supabase
         .from('product_maintenance_tasks')
         .insert(
           maintenanceTasks.map((task) => ({
-            product_registry_id: payload.productRegistryId,
+            product_registry_id: effectiveProductRegistryId,
             title: task.title,
             description: task.description,
             category: task.category,

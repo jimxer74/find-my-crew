@@ -422,11 +422,11 @@ export const handler: JobHandler = {
         { onConflict: 'manufacturer,model', ignoreDuplicates: true },
       );
 
-      // Fetch actual IDs and description to detect records with missing metadata
+      // Fetch actual IDs and all metadata fields to detect records with missing/incomplete data
       const manufacturers = [...new Set(withProduct.map((e) => e.manufacturer!))];
       const { data: productRows } = await supabase
         .from('product_registry')
-        .select('id, manufacturer, model, description')
+        .select('id, manufacturer, model, description, specs, manufacturer_url, documentation_links, spare_parts_links')
         .in('manufacturer', manufacturers);
 
       if (productRows) {
@@ -437,26 +437,38 @@ export const handler: JobHandler = {
           if (matched) matched.productRegistryId = prod.id;
         }
 
-        // Enrich existing records that have no description yet (pre-existing rows with null metadata)
-        // This runs when a product was already in the registry but lacked metadata
-        const toEnrich = productRows.filter((r) => !r.description);
+        // Enrich existing records that have any missing metadata fields.
+        // Only fills empty fields — never overwrites existing verified data.
+        const toEnrich = productRows.filter((r) =>
+          !r.description ||
+          !r.manufacturer_url ||
+          !(r.documentation_links as unknown[])?.length ||
+          !(r.spare_parts_links as unknown[])?.length,
+        );
         if (toEnrich.length > 0) {
           await Promise.all(
             toEnrich.map((row) => {
               const aiItem = equipment.find(
                 (e) => e.manufacturer === row.manufacturer && e.model === row.model,
               );
-              if (!aiItem?.description && !aiItem?.manufacturer_url) return Promise.resolve();
-              return supabase
-                .from('product_registry')
-                .update({
-                  ...(aiItem.description ? { description: aiItem.description } : {}),
-                  ...(aiItem.specs ? { specs: aiItem.specs } : {}),
-                  ...(aiItem.manufacturer_url ? { manufacturer_url: aiItem.manufacturer_url } : {}),
-                  ...(aiItem.documentation_links?.length ? { documentation_links: aiItem.documentation_links } : {}),
-                  ...(aiItem.spare_parts_links?.length ? { spare_parts_links: aiItem.spare_parts_links } : {}),
-                })
-                .eq('id', row.id);
+              // Skip if AI found nothing useful for this product
+              if (
+                !aiItem?.description &&
+                !aiItem?.manufacturer_url &&
+                !aiItem?.documentation_links?.length &&
+                !aiItem?.spare_parts_links?.length
+              ) return Promise.resolve();
+
+              // Build update — only populate empty fields to preserve existing verified data
+              const updates: Record<string, unknown> = {};
+              if (!row.description && aiItem.description) updates.description = aiItem.description;
+              if ((!row.specs || !Object.keys(row.specs as object).length) && aiItem.specs) updates.specs = aiItem.specs;
+              if (!row.manufacturer_url && aiItem.manufacturer_url) updates.manufacturer_url = aiItem.manufacturer_url;
+              if (!(row.documentation_links as unknown[])?.length && aiItem.documentation_links?.length) updates.documentation_links = aiItem.documentation_links;
+              if (!(row.spare_parts_links as unknown[])?.length && aiItem.spare_parts_links?.length) updates.spare_parts_links = aiItem.spare_parts_links;
+
+              if (!Object.keys(updates).length) return Promise.resolve();
+              return supabase.from('product_registry').update(updates).eq('id', row.id);
             }),
           );
         }
