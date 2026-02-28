@@ -1,10 +1,10 @@
 ---
 id: TASK-143
 title: New AI Crew Onboarding Flow v2 — Profile-Quality Focus
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-28 07:17'
-updated_date: '2026-02-28 07:17'
+updated_date: '2026-02-28 07:24'
 labels: []
 dependencies: []
 references:
@@ -275,19 +275,41 @@ Add `'crew-chat'` to the `UseCase` union type:
 - Existing `/welcome/crew` flow still works correctly
 <!-- SECTION:DESCRIPTION:END -->
 
-- [ ] #1 Navigating to /welcome/crew-v2 renders the new flow, not the old ProspectChat
-- [ ] #2 The original /welcome/crew page and its full chat flow is completely unchanged
-- [ ] #3 Signup step: 'Create account' opens SignupModal; on success redirects back to /welcome/crew-v2 and auto-advances to chatting phase
-- [ ] #4 Chatting step: AI chat collects name, experience level, 3+ skills, bio, motivation, risk levels, location preferences, and availability
-- [ ] #5 AI chat sets isComplete: true only when name + experience + skills + bio are all collected
-- [ ] #6 confirming_profile step: all AI-extracted data is pre-filled in the form; user can edit every field
-- [ ] #7 Required-field validation (name, bio, at least 1 skill) shown inline before saving
-- [ ] #8 Skills have a tag/chip UI — user can add skills one-by-one and remove them with ✕
-- [ ] #9 Risk level preferences shown as checkboxes (Coastal sailing / Offshore sailing / Extreme sailing)
-- [ ] #10 Clicking 'Save profile' upserts all profile fields to the profiles table with roles: ['crew']
-- [ ] #11 All fields saved: full_name, user_description (bio + motivation combined), sailing_experience, skills[], risk_level[], sailing_preferences, preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date
-- [ ] #12 After save, profileUpdated event is dispatched and user is redirected to /crew
-- [ ] #13 Session state survives page refresh at any phase (sessionStorage persistence)
-- [ ] #14 'crew-chat' added to UseCase union in shared/ai/config/index.ts
-- [ ] #15 npm run build passes with no TypeScript errors
+- [x] #1 Navigating to /welcome/crew-v2 renders the new flow, not the old ProspectChat
+- [x] #2 The original /welcome/crew page and its full chat flow is completely unchanged
+- [x] #3 Signup step: 'Create account' opens SignupModal; on success redirects back to /welcome/crew-v2 and auto-advances to chatting phase
+- [x] #4 Chatting step: AI chat collects name, experience level, 3+ skills, bio, motivation, risk levels, location preferences, and availability
+- [x] #5 AI chat sets isComplete: true only when name + experience + skills + bio are all collected
+- [x] #6 confirming_profile step: all AI-extracted data is pre-filled in the form; user can edit every field
+- [x] #7 Required-field validation (name, bio, at least 1 skill) shown inline before saving
+- [x] #8 Skills have a tag/chip UI — user can add skills one-by-one and remove them with ✕
+- [x] #9 Risk level preferences shown as checkboxes (Coastal sailing / Offshore sailing / Extreme sailing)
+- [x] #10 Clicking 'Save profile' upserts all profile fields to the profiles table with roles: ['crew']
+- [x] #11 All fields saved: full_name, user_description (bio + motivation combined), sailing_experience, skills[], risk_level[], sailing_preferences, preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date
+- [x] #12 After save, profileUpdated event is dispatched and user is redirected to /crew
+- [x] #13 Session state survives page refresh at any phase (sessionStorage persistence)
+- [x] #14 'crew-chat' added to UseCase union in shared/ai/config/index.ts
+- [x] #15 npm run build passes with no TypeScript errors
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Implemented crew onboarding v2 at /welcome/crew-v2.
+
+**Files created (6):**
+- `app/welcome/crew-v2/page.tsx` — page entry point
+- `app/components/onboarding/CrewOnboardingV2.tsx` — 3-phase orchestrator (signup → chatting → confirming_profile) with sessionStorage persistence, 3-step indicator bar
+- `app/components/onboarding/CrewOnboardingChat.tsx` — chat component pointing to crew API; greets user emphasising profile quality importance
+- `app/components/onboarding/CrewProfileCheckpoint.tsx` — rich form: skill tag chips (add/remove), bio + motivation textareas, risk level checkboxes, location text inputs, date pickers; validation on name + bio + ≥1 skill
+- `app/api/onboarding/v2/crew/chat/route.ts` — crew-focused system prompt targeting 8–12 exchanges; uses 'crew-chat' UseCase; sets isComplete only when name + experience + 3+ skills + bio collected
+- `app/api/onboarding/v2/crew/extract/route.ts` — transcript → structured JSON (profile, skills, riskLevels, locationPreferences, availability)
+
+**Files modified (2):**
+- `shared/ai/config/index.ts` — added 'crew-chat' to UseCase union
+- `shared/ai/prompts/types.ts` — added 'crew-chat' to UseCase union and USE_CASES constant
+
+**DB upsert fields:** full_name, user_description (bio + motivation combined), sailing_experience, skills[], risk_level[], sailing_preferences, preferred_departure_location, preferred_arrival_location, availability_start_date, availability_end_date, roles: ['crew']
+
+**Commit:** 7e1eabc
+<!-- SECTION:FINAL_SUMMARY:END -->
