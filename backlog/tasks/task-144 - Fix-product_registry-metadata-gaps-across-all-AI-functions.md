@@ -1,9 +1,10 @@
 ---
 id: TASK-144
 title: Fix product_registry metadata gaps across all AI functions
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-02-28 08:08'
+updated_date: '2026-02-28 08:10'
 labels:
   - product-registry
   - ai
@@ -42,8 +43,8 @@ Three AI functions interact with product_registry but all have gaps that prevent
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 generate-boat-equipment selects all metadata fields and enriches any empty field
-- [ ] #2 Enrichment updates never overwrite existing non-empty data
-- [ ] #3 generate-equipment-maintenance looks up or creates a product_registry entry when productRegistryId is null and manufacturer+model are known
-- [ ] #4 ai-search route enriches existing records missing metadata after upsert
+- [x] #1 generate-boat-equipment selects all metadata fields and enriches any empty field
+- [x] #2 Enrichment updates never overwrite existing non-empty data
+- [x] #3 generate-equipment-maintenance looks up or creates a product_registry entry when productRegistryId is null and manufacturer+model are known
+- [x] #4 ai-search route enriches existing records missing metadata after upsert
 <!-- AC:END -->
