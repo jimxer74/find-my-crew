@@ -17,7 +17,7 @@ import type { JobHandler, HandlerContext } from '../../_shared/types.ts';
 // ---------------------------------------------------------------------------
 
 const AI_OPTIONS = {
-  model: 'openai/gpt-4o-mini',
+  model: 'openrouter/auto:online',
   maxTokens: 4000,
   temperature: 0.1,
   systemPrompt:

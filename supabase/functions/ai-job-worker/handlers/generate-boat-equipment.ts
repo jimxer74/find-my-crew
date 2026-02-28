@@ -32,7 +32,7 @@ const PHASE1_AI_OPTIONS = {
 };
 
 const PHASE2_AI_OPTIONS = {
-  model: 'openai/gpt-4o-mini',
+  model: 'openrouter/auto',
   maxTokens: 8000,
   temperature: 0.1,
   systemPrompt:

@@ -16,7 +16,7 @@ import type { JobHandler, HandlerContext } from '../../_shared/types.ts';
 // ---------------------------------------------------------------------------
 
 const AI_OPTIONS = {
-  model: 'openai/gpt-4o-mini',
+  model: 'openrouter/auto',
   maxTokens: 20000,
   temperature: 0.5,
   webSearch: false,
@@ -79,6 +79,7 @@ function buildPrompt(payload: GenerateJourneyPayload): string {
 - The boat's average cruising speed is ${speed} knots
 - Journey must start on ${startDate} and end by ${endDate}
 - Calculate realistic leg dates based on distance / speed (70-80% efficiency)
+- Take into account the prevailing weather conditions and the boat's performance in those conditions, to avoid challenging passages or less optimal time of year.
 - Leg dates must be sequential and fit within the journey timeframe`
     : '';
 
@@ -86,7 +87,7 @@ function buildPrompt(payload: GenerateJourneyPayload): string {
     ? `\n\nWAYPOINT DENSITY: MINIMAL — each leg has exactly 2 waypoints (start + end port only)`
     : waypointDensity === 'moderate'
     ? `\n\nWAYPOINT DENSITY: MODERATE — include up to 2 intermediate waypoints per leg only for major routing decisions or crew exchange points`
-    : `\n\nWAYPOINT DENSITY: DETAILED — include navigation waypoints, max 8 per leg`;
+    : `\n\nWAYPOINT DENSITY: DETAILED — include navigation waypoints, max 4 per leg`;
 
   const withDates = useSpeedPlanning && speed && startDate && endDate;
 
