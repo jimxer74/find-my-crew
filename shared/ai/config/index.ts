@@ -18,6 +18,7 @@ export type UseCase =
   | 'assistant-system'       // System-level assistant configuration
   | 'prospect-chat'          // AI chat for unauthenticated prospect users
   | 'owner-chat'             // AI chat for owner/skipper onboarding
+  | 'crew-chat'              // AI chat for crew member onboarding
   | 'general-conversation'   // General conversation fallback for intent classification
   | 'document-classification'  // AI vision classification for document vault uploads
   | 'product-search';          // AI-driven marine equipment product search for registry
