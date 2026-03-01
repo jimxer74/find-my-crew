@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { getRedirectPathServer, shouldStayOnHomepageServer } from '@shared/lib/routing/redirectHelpers.server';
+import { shouldStayOnHomepageServer } from '@shared/lib/routing/redirectHelpers.server'; // getRedirectPathServer disabled until all flows are stable
 
 /**
  * Middleware for handling redirects
@@ -103,28 +103,29 @@ export async function middleware(request: NextRequest) {
       return response;
     }
 
-    // User is authenticated and should be redirected
-    // Get redirect path from redirect service (with timeout)
-    const redirectPathPromise = getRedirectPathServer(user.id, 'root', undefined, supabase);
-    const redirectTimeoutPromise = new Promise<string>((resolve) => {
-      setTimeout(() => resolve('/'), 2000); // 2 second timeout - fallback to homepage
-    });
-    const redirectPath = await Promise.race([redirectPathPromise, redirectTimeoutPromise]);
+    // TODO: re-enable redirect service once all flows are stable
+    // // User is authenticated and should be redirected
+    // // Get redirect path from redirect service (with timeout)
+    // const redirectPathPromise = getRedirectPathServer(user.id, 'root', undefined, supabase);
+    // const redirectTimeoutPromise = new Promise<string>((resolve) => {
+    //   setTimeout(() => resolve('/'), 2000); // 2 second timeout - fallback to homepage
+    // });
+    // const redirectPath = await Promise.race([redirectPathPromise, redirectTimeoutPromise]);
 
-    // Only redirect if path is different from current
-    if (redirectPath && redirectPath !== '/') {
-      const redirectUrl = new URL(redirectPath, request.url);
-      console.log(`[Middleware] Redirecting authenticated user from / to ${redirectPath}`);
-      
-      // Create redirect response with updated cookies
-      const redirectResponse = NextResponse.redirect(redirectUrl);
-      // Copy any cookies that were set during Supabase operations
-      response.cookies.getAll().forEach((cookie) => {
-        redirectResponse.cookies.set(cookie.name, cookie.value);
-      });
-      
-      return redirectResponse;
-    }
+    // // Only redirect if path is different from current
+    // if (redirectPath && redirectPath !== '/') {
+    //   const redirectUrl = new URL(redirectPath, request.url);
+    //   console.log(`[Middleware] Redirecting authenticated user from / to ${redirectPath}`);
+    //
+    //   // Create redirect response with updated cookies
+    //   const redirectResponse = NextResponse.redirect(redirectUrl);
+    //   // Copy any cookies that were set during Supabase operations
+    //   response.cookies.getAll().forEach((cookie) => {
+    //     redirectResponse.cookies.set(cookie.name, cookie.value);
+    //   });
+    //
+    //   return redirectResponse;
+    // }
 
     // No redirect needed - allow access with updated cookies
     return response;
