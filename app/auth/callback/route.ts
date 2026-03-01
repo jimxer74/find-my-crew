@@ -68,13 +68,20 @@ export async function GET(request: Request) {
       // Check if this user has prospect preferences to sync (from in-chat signup)
       const prospectPreferences = user.user_metadata?.prospect_preferences;
       const isFromOwnerV2 = from === 'owner-v2';
+      const isFromCrewV2 = from === 'crew-v2';
       const isFromOwner = from === 'owner';
-      const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2');
+      const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2' && from !== 'crew-v2');
 
       // Short-circuit for owner-v2 flow — skip redirect service entirely
       if (isFromOwnerV2) {
         logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
         return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
+      }
+
+      // Short-circuit for crew-v2 flow — skip redirect service entirely
+      if (isFromCrewV2) {
+        logger.info('LOGIN CALLBACK: crew-v2 signup, redirecting directly', { userId: user.id });
+        return NextResponse.redirect(new URL('/welcome/crew-v2', request.url));
       }
 
       // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)

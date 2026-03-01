@@ -142,6 +142,8 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
     if (redirectPath) {
       if (redirectPath === '/welcome/owner-v2') {
         callbackPath = '/auth/callback?from=owner-v2';
+      } else if (redirectPath === '/welcome/crew-v2') {
+        callbackPath = '/auth/callback?from=crew-v2';
       } else if (redirectPath.includes('/welcome/owner')) {
         callbackPath = '/auth/callback?from=owner';
       } else if (redirectPath.includes('/welcome/crew')) {
@@ -182,6 +184,8 @@ export function SignupModal({ isOpen, onClose, onSwitchToLogin, prospectPreferen
     if (redirectPath) {
       if (redirectPath === '/welcome/owner-v2') {
         callbackPath = '/auth/callback?from=owner-v2';
+      } else if (redirectPath === '/welcome/crew-v2') {
+        callbackPath = '/auth/callback?from=crew-v2';
       } else if (redirectPath.includes('/welcome/owner')) {
         callbackPath = '/auth/callback?from=owner';
       } else if (redirectPath.includes('/welcome/crew')) {
