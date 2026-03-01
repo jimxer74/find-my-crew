@@ -72,17 +72,18 @@ export async function GET(request: Request) {
       const isFromOwner = from === 'owner';
       const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2' && from !== 'crew-v2');
 
-      // Short-circuit for owner-v2 flow — skip redirect service entirely
-      if (isFromOwnerV2) {
-        logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
-        return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
-      }
+      // TODO: re-enable smart redirects once all v2 flows are stable
+      // // Short-circuit for owner-v2 flow — skip redirect service entirely
+      // if (isFromOwnerV2) {
+      //   logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
+      //   return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
+      // }
 
-      // Short-circuit for crew-v2 flow — skip redirect service entirely
-      if (isFromCrewV2) {
-        logger.info('LOGIN CALLBACK: crew-v2 signup, redirecting directly', { userId: user.id });
-        return NextResponse.redirect(new URL('/welcome/crew-v2', request.url));
-      }
+      // // Short-circuit for crew-v2 flow — skip redirect service entirely
+      // if (isFromCrewV2) {
+      //   logger.info('LOGIN CALLBACK: crew-v2 signup, redirecting directly', { userId: user.id });
+      //   return NextResponse.redirect(new URL('/welcome/crew-v2', request.url));
+      // }
 
       // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
       // These sessions need to be linked to the authenticated user
@@ -330,17 +331,18 @@ export async function GET(request: Request) {
         logger.info('LOGIN CALLBACK: Stored Facebook access token for user', { userId: user.id });
       }
 
-      // Use centralized redirect service
-      // Pass the supabase client to avoid importing server code in client components
-      const additionalContext = {
-        isFacebookLogin,
-        fromOwner: isFromOwner,
-        fromOwnerV2: isFromOwnerV2,
-        fromProspect: isFromProspect,
-        isNewUser,
-      };
+      // TODO: re-enable redirect service once all flows are stable
+      // const additionalContext = {
+      //   isFacebookLogin,
+      //   fromOwner: isFromOwner,
+      //   fromOwnerV2: isFromOwnerV2,
+      //   fromProspect: isFromProspect,
+      //   isNewUser,
+      // };
+      // return await getRedirectResponse(user.id, 'oauth', request, additionalContext, supabase);
 
-      return await getRedirectResponse(user.id, 'oauth', request, additionalContext, supabase);
+      logger.info('LOGIN CALLBACK: redirects disabled, sending to /', { userId: user.id, from });
+      return NextResponse.redirect(new URL('/', request.url));
     }
   }
   let url = new URL(origin + '/', request.url)
