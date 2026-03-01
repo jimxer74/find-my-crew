@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { getSupabaseServerClient } from '@shared/database/server';
 import { logger } from '@shared/logging';
 import type { JobType } from '@shared/lib/async-jobs';
@@ -57,29 +58,34 @@ export async function POST(request: NextRequest) {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (workerUrl && serviceRoleKey) {
-      fetch(workerUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ jobId: job.id }),
-      })
-        .then((res) => {
-          if (!res.ok) {
-            logger.error('[async-jobs] Worker returned non-ok response', {
-              jobId: job.id,
-              status: res.status,
-              statusText: res.statusText,
-            });
-          }
+      // waitUntil keeps the Vercel serverless function alive until the fetch
+      // completes, preventing the execution context from being frozen before
+      // the Edge Function trigger is sent.
+      waitUntil(
+        fetch(workerUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ jobId: job.id }),
         })
-        .catch((err) => {
-          logger.error('[async-jobs] Failed to trigger worker', {
-            jobId: job.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        });
+          .then((res) => {
+            if (!res.ok) {
+              logger.error('[async-jobs] Worker returned non-ok response', {
+                jobId: job.id,
+                status: res.status,
+                statusText: res.statusText,
+              });
+            }
+          })
+          .catch((err) => {
+            logger.error('[async-jobs] Failed to trigger worker', {
+              jobId: job.id,
+              error: err instanceof Error ? err.message : String(err),
+            });
+          })
+      );
     } else {
       logger.warn('[async-jobs] Worker URL or service role key not configured — job queued but not started', {
         jobId: job.id,
