@@ -359,7 +359,7 @@ export function OwnerOnboardingV2() {
       {/* Background image */}
       <div
         className="fixed inset-0 bg-cover bg-center -z-20"
-        style={{ backgroundImage: 'url(/background-skipper.jpg)' }}
+        style={{ backgroundImage: 'url(/background-skipper2.jpg)' }}
       />
       {/* Amber overlay */}
       <div className="fixed inset-0 bg-amber-900/60 backdrop-blur-[2px] -z-10" />
