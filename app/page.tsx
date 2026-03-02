@@ -369,7 +369,7 @@ function WelcomePageContent() {
           </div>
 
           {/* White hero card */}
-          <div className="w-full max-w-5xl bg-white/96 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
+          <div className="w-full max-w-5xl bg-white/75 md:bg-white/96 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
 
             {/* Card mini-nav */}
             <div className="flex items-center justify-between px-5 md:px-8 py-3 border-b border-gray-100/80">
