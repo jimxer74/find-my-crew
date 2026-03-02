@@ -410,17 +410,17 @@ function WelcomePageContent() {
               </div>
             </div>
 
-            {/* Feature cards strip */}
-            <div id="features" className="grid grid-cols-1 sm:grid-cols-3 border-t border-gray-100 bg-gray-50/70">
-              {FEATURES.map((feature, i) => {
+            {/* Feature cards */}
+            <div id="features" className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 py-6 border-t border-gray-100 bg-gray-50/60">
+              {FEATURES.map((feature) => {
                 const accent = accentMap[feature.accent];
                 return (
-                  <div key={feature.title} className={`flex flex-col gap-3 px-6 py-5 ${i < 2 ? 'sm:border-r border-gray-100' : ''} ${i > 0 ? 'border-t sm:border-t-0 border-gray-100' : ''}`}>
-                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 ${accent.icon}`}>
+                  <div key={feature.title} className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col items-center text-center gap-3">
+                    <div className={`w-11 h-11 rounded-xl border flex items-center justify-center flex-shrink-0 ${accent.icon}`}>
                       {feature.icon}
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center justify-center gap-2 mb-1.5">
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${accent.dot}`} />
                         <h3 className="text-sm font-bold text-[#0c1f35]">{feature.title}</h3>
                       </div>
