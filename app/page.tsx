@@ -25,9 +25,9 @@ import { QuickPostBox } from '@/app/components/QuickPostBox';
 
 const HERO_PHRASES = [
   { lines: ['Find Your Perfect', 'Sailing Crew with'], accent: 'AI Precision' },
-  { lines: ['Find your next sailing', 'adventure and let'], accent: 'skippers find you' },
-  { lines: ['Automate your boat', 'management'], accent: 'with AI' },
-  { lines: ['Create and manage', 'your upcoming'], accent: 'Journeys' },
+  { lines: ['Find Your Sailing', 'Adventure using'], accent: 'AI Matching' },
+  { lines: ['Automate Boat', 'Management with'], accent: 'AI insights' },
+  { lines: ['Plan Your Routes', 'with'], accent: 'AI Knowledge' },
 ];
 
 function RotatingHeadline() {
@@ -142,7 +142,7 @@ const FEATURES = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
       </svg>
     ),
-    title: 'Smart Sailing',
+    title: 'Smart Routing',
     description: 'AI plans multi-leg routes with precise waypoints, weather-aware timing, and date calculations based on your boat\'s speed. Browse open legs worldwide and join as crew — or post your adventure.',
     accent: 'emerald',
   },
@@ -321,15 +321,18 @@ function WelcomePageContent() {
   return (
     <div className="min-h-screen flex flex-col">
 
+      {/* Ocean background — fixed so it covers the full page height */}
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-2.jpg)' }} />
+
       {/* ================================================================
           HERO SECTION
           ================================================================ */}
-      <section className="relative min-h-screen flex flex-col overflow-hidden">
+      <section className="relative min-h-screen flex flex-col">
 
-        {/* Ocean background */}
-        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/homepage-2.jpg)' }} />
-        {/* Gradient overlay: subtle tint top, stronger bottom for text/card legibility */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1f35]/20 via-[#0c1f35]/10 to-[#0c1f35]/55" />
+        {/* Gradient overlay: very light at top, gradually darkens toward bottom */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1f35]/10 via-[#0c1f35]/10 via-60% to-[#0c1f35]/70" />
+        {/* Soft fade into the dark action section below */}
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0c1f35]" />
 
         {/* Top nav */}
         <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 py-4">
