@@ -144,13 +144,13 @@ export function QuickPostBox({
           type="button"
           onClick={() => setAiConsent((v) => !v)}
           aria-label={aiConsent ? 'Disable AI processing' : 'Enable AI processing'}
-          className={`relative flex-shrink-0 w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 ${
+          className={`relative flex-shrink-0 w-10 h-[22px] rounded-full transition-colors duration-200 ${
             aiConsent ? toggleActiveCls : 'bg-white/25'
           }`}
         >
           <span
-            className={`absolute top-[3px] w-4 h-4 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-              aiConsent ? 'translate-x-[18px]' : 'translate-x-[3px]'
+            className={`absolute top-[3px] w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
+              aiConsent ? 'left-[21px]' : 'left-[3px]'
             }`}
           />
         </button>
