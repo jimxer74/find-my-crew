@@ -103,6 +103,15 @@ function extractJson(text: string): string {
   return text.trim();
 }
 
+function isUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:';
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Phase 1 — Equipment generation
 // ---------------------------------------------------------------------------
@@ -254,7 +263,7 @@ function parseEquipment(text: string): EquipmentItem[] {
     const links = val
       .filter((l): l is Record<string, unknown> => typeof l === 'object' && l !== null)
       .map((l) => ({ title: String(l.title ?? ''), url: String(l.url ?? '') }))
-      .filter((l) => l.title && l.url && l.url.startsWith('http'));
+      .filter((l) => l.title && isUrl(l.url));
     return links.length > 0 ? links : null;
   };
 
@@ -268,7 +277,7 @@ function parseEquipment(text: string): EquipmentItem[] {
         title: String(l.title ?? ''),
         url: String(l.url ?? ''),
       }))
-      .filter((l) => l.title && l.url && l.url.startsWith('http'));
+      .filter((l) => l.title && isUrl(l.url));
     return links.length > 0 ? links : null;
   };
 
@@ -406,9 +415,8 @@ export const handler: JobHandler = {
     // -------------------------------------------------------------------------
     const withProduct = equipment.filter((e) => e.manufacturer && e.model);
     if (withProduct.length > 0) {
-      // Insert new entries with full metadata; ignore on conflict to protect curated data
-      await supabase.from('product_registry').upsert(
-        withProduct.map((e) => ({
+      const { data: productRows } = await supabase.rpc('upsert_and_enrich_product_registry', {
+        items: withProduct.map((e) => ({
           category: e.category,
           subcategory: e.subcategory,
           manufacturer: e.manufacturer!,
@@ -418,59 +426,16 @@ export const handler: JobHandler = {
           manufacturer_url: e.manufacturer_url,
           documentation_links: e.documentation_links ?? [],
           spare_parts_links: e.spare_parts_links ?? [],
+          is_verified: false,
         })),
-        { onConflict: 'manufacturer,model', ignoreDuplicates: true },
-      );
-
-      // Fetch actual IDs and all metadata fields to detect records with missing/incomplete data
-      const manufacturers = [...new Set(withProduct.map((e) => e.manufacturer!))];
-      const { data: productRows } = await supabase
-        .from('product_registry')
-        .select('id, manufacturer, model, description, specs, manufacturer_url, documentation_links, spare_parts_links')
-        .in('manufacturer', manufacturers);
+      });
 
       if (productRows) {
-        for (const prod of productRows) {
+        for (const prod of productRows as Array<{ id: string; manufacturer: string; model: string }>) {
           const matched = equipment.find(
             (e) => e.manufacturer === prod.manufacturer && e.model === prod.model,
           );
           if (matched) matched.productRegistryId = prod.id;
-        }
-
-        // Enrich existing records that have any missing metadata fields.
-        // Only fills empty fields — never overwrites existing verified data.
-        const toEnrich = productRows.filter((r) =>
-          !r.description ||
-          !r.manufacturer_url ||
-          !(r.documentation_links as unknown[])?.length ||
-          !(r.spare_parts_links as unknown[])?.length,
-        );
-        if (toEnrich.length > 0) {
-          await Promise.all(
-            toEnrich.map((row) => {
-              const aiItem = equipment.find(
-                (e) => e.manufacturer === row.manufacturer && e.model === row.model,
-              );
-              // Skip if AI found nothing useful for this product
-              if (
-                !aiItem?.description &&
-                !aiItem?.manufacturer_url &&
-                !aiItem?.documentation_links?.length &&
-                !aiItem?.spare_parts_links?.length
-              ) return Promise.resolve();
-
-              // Build update — only populate empty fields to preserve existing verified data
-              const updates: Record<string, unknown> = {};
-              if (!row.description && aiItem.description) updates.description = aiItem.description;
-              if ((!row.specs || !Object.keys(row.specs as object).length) && aiItem.specs) updates.specs = aiItem.specs;
-              if (!row.manufacturer_url && aiItem.manufacturer_url) updates.manufacturer_url = aiItem.manufacturer_url;
-              if (!(row.documentation_links as unknown[])?.length && aiItem.documentation_links?.length) updates.documentation_links = aiItem.documentation_links;
-              if (!(row.spare_parts_links as unknown[])?.length && aiItem.spare_parts_links?.length) updates.spare_parts_links = aiItem.spare_parts_links;
-
-              if (!Object.keys(updates).length) return Promise.resolve();
-              return supabase.from('product_registry').update(updates).eq('id', row.id);
-            }),
-          );
         }
       }
     }

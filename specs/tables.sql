@@ -2069,6 +2069,96 @@ create policy "Submitters can delete their own products"
   on public.product_registry for delete
   using (submitted_by = auth.uid());
 
+-- ============================================================================
+-- Product Registry — upsert_and_enrich_product_registry RPC
+-- Shared function used by both the edge function job worker and the Next.js
+-- API route to insert new products and selectively enrich existing ones.
+-- SECURITY DEFINER allows enriching seeded rows (submitted_by IS NULL) from
+-- both the service-role context and the authenticated-user context.
+-- ============================================================================
+
+create or replace function public.upsert_and_enrich_product_registry(items jsonb)
+returns setof public.product_registry
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Step 1: Insert new records — skip existing (manufacturer, model) pairs
+  insert into product_registry (
+    category, subcategory, manufacturer, model,
+    description, variants, specs,
+    manufacturer_url, documentation_links, spare_parts_links,
+    is_verified, submitted_by
+  )
+  select
+    el->>'category',
+    nullif(el->>'subcategory', ''),
+    el->>'manufacturer',
+    el->>'model',
+    nullif(el->>'description', ''),
+    case
+      when el->'variants' is not null and jsonb_typeof(el->'variants') = 'array'
+      then array(select jsonb_array_elements_text(el->'variants'))
+      else '{}'::text[]
+    end,
+    coalesce(el->'specs', '{}'::jsonb),
+    case when el->>'manufacturer_url' ~ '^https?://' then el->>'manufacturer_url' else null end,
+    coalesce(el->'documentation_links', '[]'::jsonb),
+    coalesce(el->'spare_parts_links',   '[]'::jsonb),
+    coalesce((el->>'is_verified')::boolean, false),
+    null
+  from jsonb_array_elements(items) as el
+  where (el->>'manufacturer') is not null
+    and (el->>'model')        is not null
+  on conflict (manufacturer, model) do nothing;
+
+  -- Step 2: Enrich existing records — fill only null/empty fields
+  update product_registry pr
+  set
+    description         = case when pr.description is null and (el->>'description') is not null
+                               then el->>'description' else pr.description end,
+    manufacturer_url    = case when pr.manufacturer_url is null and el->>'manufacturer_url' ~ '^https?://'
+                               then el->>'manufacturer_url' else pr.manufacturer_url end,
+    documentation_links = case when jsonb_array_length(coalesce(pr.documentation_links, '[]'::jsonb)) = 0
+                                and jsonb_array_length(coalesce(el->'documentation_links', '[]'::jsonb)) > 0
+                               then el->'documentation_links' else pr.documentation_links end,
+    spare_parts_links   = case when jsonb_array_length(coalesce(pr.spare_parts_links, '[]'::jsonb)) = 0
+                                and jsonb_array_length(coalesce(el->'spare_parts_links', '[]'::jsonb)) > 0
+                               then el->'spare_parts_links' else pr.spare_parts_links end,
+    variants            = case when array_length(coalesce(pr.variants, '{}'::text[]), 1) is null
+                                and el->'variants' is not null
+                                and jsonb_typeof(el->'variants') = 'array'
+                                and jsonb_array_length(el->'variants') > 0
+                               then array(select jsonb_array_elements_text(el->'variants'))
+                               else pr.variants end,
+    specs               = case when (pr.specs is null or pr.specs = '{}'::jsonb)
+                                and el->'specs' is not null and el->'specs' != '{}'::jsonb
+                               then el->'specs' else pr.specs end,
+    updated_at          = now()
+  from jsonb_array_elements(items) as el
+  where pr.manufacturer = el->>'manufacturer'
+    and pr.model        = el->>'model'
+    and (
+      (pr.description is null and (el->>'description') is not null) or
+      (pr.manufacturer_url is null and el->>'manufacturer_url' ~ '^https?://') or
+      (jsonb_array_length(coalesce(pr.documentation_links, '[]'::jsonb)) = 0 and jsonb_array_length(coalesce(el->'documentation_links', '[]'::jsonb)) > 0) or
+      (jsonb_array_length(coalesce(pr.spare_parts_links,   '[]'::jsonb)) = 0 and jsonb_array_length(coalesce(el->'spare_parts_links',   '[]'::jsonb)) > 0) or
+      (array_length(coalesce(pr.variants, '{}'::text[]), 1) is null and jsonb_array_length(coalesce(el->'variants', '[]'::jsonb)) > 0) or
+      ((pr.specs is null or pr.specs = '{}'::jsonb) and el->'specs' is not null and el->'specs' != '{}'::jsonb)
+    );
+
+  -- Step 3: Return full rows for all input items (with IDs)
+  return query
+    select pr.* from product_registry pr
+    join jsonb_array_elements(items) as el
+      on pr.manufacturer = el->>'manufacturer' and pr.model = el->>'model';
+end;
+$$;
+
+grant execute on function public.upsert_and_enrich_product_registry(jsonb)
+  to authenticated, service_role;
+
 
 -- ============================================================================
 -- Boat Equipment Table
