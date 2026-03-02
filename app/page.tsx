@@ -450,7 +450,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasExistingSession && (
-                <div className="w-full max-w-sm mx-auto">
+                <div className="w-full max-w-md mx-auto">
                   <QuickPostBox
                     placeholder="Post your sailing profile..."
                     expandedPlaceholder="Tell us about your sailing experience, skills, availability, and what kind of journey you're looking for..."
@@ -459,7 +459,6 @@ function WelcomePageContent() {
                     onCancel={() => setIsComboSearchMode(false)}
                     onPost={handleCrewPost}
                     accentColor="blue"
-                    submitLabel="Post profile"
                   />
                 </div>
               )}
@@ -522,7 +521,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasOwnerSession && (
-                <div className="w-full max-w-sm mx-auto">
+                <div className="w-full max-w-md mx-auto">
                   <QuickPostBox
                     placeholder="Post your profile, boat and journey..."
                     expandedPlaceholder="Describe your boat, planned journey, dates, the crew you're looking for, required skills, and any other details..."
@@ -531,7 +530,6 @@ function WelcomePageContent() {
                     onCancel={() => setIsOwnerComboSearchMode(false)}
                     onPost={handleOwnerPost}
                     accentColor="amber"
-                    submitLabel="Post journey"
                   />
                 </div>
               )}
