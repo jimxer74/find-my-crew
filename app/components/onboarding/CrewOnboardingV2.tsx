@@ -99,17 +99,17 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-colors ${
                 i < current
-                  ? 'bg-primary border-primary text-primary-foreground'
+                  ? 'bg-white border-white text-blue-900'
                   : i === current
-                  ? 'border-primary text-primary bg-background'
-                  : 'border-muted-foreground/30 text-muted-foreground bg-background'
+                  ? 'border-white text-white bg-white/20'
+                  : 'border-white/30 text-white/50 bg-transparent'
               }`}
             >
               {i < current ? '✓' : i + 1}
             </div>
             <span
               className={`text-[10px] mt-1 text-center leading-tight hidden sm:block ${
-                i <= current ? 'text-foreground' : 'text-muted-foreground'
+                i <= current ? 'text-white' : 'text-white/50'
               }`}
             >
               {step.label}
@@ -118,7 +118,7 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
           {i < STEPS.length - 1 && (
             <div
               className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < current ? 'bg-primary' : 'bg-muted-foreground/20'
+                i < current ? 'bg-white/60' : 'bg-white/20'
               }`}
             />
           )}
@@ -284,7 +284,7 @@ export function CrewOnboardingV2() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -300,76 +300,86 @@ export function CrewOnboardingV2() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Build your crew profile</h1>
-        <p className="text-muted-foreground mt-1">
-          A complete profile helps boat owners choose you over other applicants.
-        </p>
-      </div>
+    <div className="relative min-h-screen">
+      {/* Background image */}
+      <div
+        className="fixed inset-0 bg-cover bg-center -z-20"
+        style={{ backgroundImage: 'url(/homepage-2.jpg)' }}
+      />
+      {/* Blue overlay */}
+      <div className="fixed inset-0 bg-blue-900/65 backdrop-blur-[2px] -z-10" />
 
-      <StepBar phase={state.phase} />
+      <div className="max-w-2xl mx-auto px-4 pt-20 pb-8 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">Build your crew profile</h1>
+          <p className="text-white/80 mt-1">
+            A complete profile helps boat owners choose you over other applicants.
+          </p>
+        </div>
 
-      {/* Step 1 — signup */}
-      {state.phase === 'signup' && !user && (
-        <>
-          <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-            <h2 className="font-semibold text-foreground text-lg mb-2">Create your account</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              Join Find My Crew and start applying for sailing positions with boat owners around the world.
-            </p>
-            <button
-              onClick={() => setShowSignupModal(true)}
-              className="w-full bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Create account
-            </button>
-          </div>
+        <StepBar phase={state.phase} />
 
-          <SignupModal
-            isOpen={showSignupModal}
-            onClose={() => setShowSignupModal(false)}
-            onSwitchToLogin={() => setShowSignupModal(false)}
-            redirectPath="/welcome/crew-v2"
-          />
-        </>
-      )}
-
-      {/* Step 2 — AI chat */}
-      {state.phase === 'chatting' && user && (
-        <div className="rounded-xl border border-border bg-card shadow-sm p-5">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h2 className="font-semibold text-foreground">Tell us about your sailing</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Our assistant will guide you through building your profile
+        {/* Step 1 — signup */}
+        {state.phase === 'signup' && !user && (
+          <>
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-6">
+              <h2 className="font-semibold text-white text-lg mb-2">Create your account</h2>
+              <p className="text-sm text-white/70 mb-5">
+                Join Find My Crew and start applying for sailing positions with boat owners around the world.
               </p>
+              <button
+                onClick={() => setShowSignupModal(true)}
+                className="w-full bg-white text-blue-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-white/90 transition-colors"
+              >
+                Create account
+              </button>
             </div>
-          </div>
-          <CrewOnboardingChat
-            onComplete={(data, msgs) =>
-              handleChatComplete(data as Record<string, unknown>, msgs)
-            }
-            isProcessing={isExtracting}
-          />
-        </div>
-      )}
 
-      {/* Step 3 — profile review */}
-      {state.phase === 'confirming_profile' && user && state.profile && (
-        <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Review your profile details, fill in any gaps, then save to complete setup.
+            <SignupModal
+              isOpen={showSignupModal}
+              onClose={() => setShowSignupModal(false)}
+              onSwitchToLogin={() => setShowSignupModal(false)}
+              redirectPath="/welcome/crew-v2"
+            />
+          </>
+        )}
+
+        {/* Step 2 — AI chat */}
+        {state.phase === 'chatting' && user && (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-5">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="font-semibold text-white">Tell us about your sailing</h2>
+                <p className="text-xs text-white/60 mt-0.5">
+                  Our assistant will guide you through building your profile
+                </p>
+              </div>
+            </div>
+            <CrewOnboardingChat
+              onComplete={(data, msgs) =>
+                handleChatComplete(data as Record<string, unknown>, msgs)
+              }
+              isProcessing={isExtracting}
+            />
           </div>
-          <CrewProfileCheckpoint
-            userId={user.id}
-            email={user.email ?? undefined}
-            profile={state.profile}
-            onSaved={handleProfileSaved}
-          />
-        </div>
-      )}
+        )}
+
+        {/* Step 3 — profile review */}
+        {state.phase === 'confirming_profile' && user && state.profile && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Review your profile details, fill in any gaps, then save to complete setup.
+            </div>
+            <CrewProfileCheckpoint
+              userId={user.id}
+              email={user.email ?? undefined}
+              profile={state.profile}
+              onSaved={handleProfileSaved}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

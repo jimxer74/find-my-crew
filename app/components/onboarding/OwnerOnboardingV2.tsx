@@ -131,17 +131,17 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
             <div
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-colors ${
                 i < current
-                  ? 'bg-primary border-primary text-primary-foreground'
+                  ? 'bg-white border-white text-amber-900'
                   : i === current
-                  ? 'border-primary text-primary bg-background'
-                  : 'border-muted-foreground/30 text-muted-foreground bg-background'
+                  ? 'border-white text-white bg-white/20'
+                  : 'border-white/30 text-white/50 bg-transparent'
               }`}
             >
               {i < current ? '✓' : i + 1}
             </div>
             <span
               className={`text-[10px] mt-1 text-center leading-tight hidden sm:block ${
-                i <= current ? 'text-foreground' : 'text-muted-foreground'
+                i <= current ? 'text-white' : 'text-white/50'
               }`}
             >
               {step.label}
@@ -150,7 +150,7 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
           {i < STEPS.length - 1 && (
             <div
               className={`flex-1 h-0.5 mx-1 transition-colors ${
-                i < current ? 'bg-primary' : 'bg-muted-foreground/20'
+                i < current ? 'bg-white/60' : 'bg-white/20'
               }`}
             />
           )}
@@ -331,7 +331,7 @@ export function OwnerOnboardingV2() {
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -351,109 +351,119 @@ export function OwnerOnboardingV2() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Welcome to Find My Crew</h1>
-        <p className="text-muted-foreground mt-1">
-          Let&apos;s get you set up. This takes about 2 minutes.
-        </p>
+    <div className="relative min-h-screen">
+      {/* Background image */}
+      <div
+        className="fixed inset-0 bg-cover bg-center -z-20"
+        style={{ backgroundImage: 'url(/homepage-2.jpg)' }}
+      />
+      {/* Amber overlay */}
+      <div className="fixed inset-0 bg-amber-900/60 backdrop-blur-[2px] -z-10" />
+
+      <div className="max-w-2xl mx-auto px-4 pt-20 pb-8 space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">Welcome to Find My Crew</h1>
+          <p className="text-white/80 mt-1">
+            Let&apos;s get you set up. This takes about 2 minutes.
+          </p>
+        </div>
+
+        {/* Step indicator */}
+        <StepBar phase={state.phase} />
+
+        {/* Signup phase — user not yet authenticated */}
+        {state.phase === 'signup' && !user && (
+          <>
+            <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-6">
+              <h2 className="font-semibold text-white text-lg mb-2">First, create your account</h2>
+              <p className="text-sm text-white/70 mb-5">
+                Set up your account to start building your boat owner profile. It only takes a minute.
+              </p>
+              <button
+                onClick={() => setShowSignupModal(true)}
+                className="w-full bg-white text-amber-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-white/90 transition-colors"
+              >
+                Create account
+              </button>
+            </div>
+
+            <SignupModal
+              isOpen={showSignupModal}
+              onClose={() => setShowSignupModal(false)}
+              onSwitchToLogin={() => setShowSignupModal(false)}
+              redirectPath="/welcome/owner-v2"
+            />
+          </>
+        )}
+
+        {/* AI Chat phase — user is authenticated */}
+        {state.phase === 'chatting' && user && (
+          <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-5">
+            <h2 className="font-semibold text-white mb-4">Tell us about yourself</h2>
+            <OnboardingChat
+              onComplete={(data, msgs) => handleChatComplete(data as Record<string, unknown>, msgs)}
+            />
+          </div>
+        )}
+
+        {/* Profile checkpoint */}
+        {state.phase === 'confirming_profile' && user && state.profile && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Step 1 of 4 — Review your profile details and save to continue.
+            </div>
+            <ProfileCheckpoint
+              userId={user.id}
+              email={user.email ?? undefined}
+              profile={state.profile}
+              onSaved={handleProfileSaved}
+            />
+          </div>
+        )}
+
+        {/* Boat checkpoint */}
+        {state.phase === 'confirming_boat' && user && state.boat && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Step 2 of 4 — Review your boat details and save to continue.
+            </div>
+            <BoatCheckpoint
+              userId={user.id}
+              boat={state.boat}
+              onSaved={handleBoatSaved}
+            />
+          </div>
+        )}
+
+        {/* Equipment checkpoint */}
+        {state.phase === 'equipment_offer' && state.savedBoatId && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Step 3 of 4 — Optional: generate equipment &amp; maintenance tasks for your boat.
+            </div>
+            <EquipmentCheckpoint
+              boatId={state.savedBoatId}
+              makeModel={state.boat?.makeModel ?? ''}
+              boatType={state.boat?.type ?? null}
+              loa_m={state.boat?.loa_m ?? null}
+              yearBuilt={state.boat?.yearBuilt ?? null}
+              onComplete={handleEquipmentDone}
+              onSkip={handleEquipmentDone}
+            />
+          </div>
+        )}
+
+        {/* Journey checkpoint */}
+        {state.phase === 'journey_offer' && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Step 4 of 4 — Optional: create your first journey.
+            </div>
+            <JourneyCheckpoint journey={state.journey} boatId={state.savedBoatId} onSkip={handleDone} />
+          </div>
+        )}
       </div>
-
-      {/* Step indicator */}
-      <StepBar phase={state.phase} />
-
-      {/* Signup phase — user not yet authenticated */}
-      {state.phase === 'signup' && !user && (
-        <>
-          <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-            <h2 className="font-semibold text-foreground text-lg mb-2">First, create your account</h2>
-            <p className="text-sm text-muted-foreground mb-5">
-              Set up your account to start building your boat owner profile. It only takes a minute.
-            </p>
-            <button
-              onClick={() => setShowSignupModal(true)}
-              className="w-full bg-primary text-primary-foreground px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
-            >
-              Create account
-            </button>
-          </div>
-
-          <SignupModal
-            isOpen={showSignupModal}
-            onClose={() => setShowSignupModal(false)}
-            onSwitchToLogin={() => setShowSignupModal(false)}
-            redirectPath="/welcome/owner-v2"
-          />
-        </>
-      )}
-
-      {/* AI Chat phase — user is authenticated */}
-      {state.phase === 'chatting' && user && (
-        <div className="rounded-xl border border-border bg-card shadow-sm p-5">
-          <h2 className="font-semibold text-foreground mb-4">Tell us about yourself</h2>
-          <OnboardingChat
-            onComplete={(data, msgs) => handleChatComplete(data as Record<string, unknown>, msgs)}
-          />
-        </div>
-      )}
-
-      {/* Profile checkpoint */}
-      {state.phase === 'confirming_profile' && user && state.profile && (
-        <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Step 1 of 4 — Review your profile details and save to continue.
-          </div>
-          <ProfileCheckpoint
-            userId={user.id}
-            email={user.email ?? undefined}
-            profile={state.profile}
-            onSaved={handleProfileSaved}
-          />
-        </div>
-      )}
-
-      {/* Boat checkpoint */}
-      {state.phase === 'confirming_boat' && user && state.boat && (
-        <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Step 2 of 4 — Review your boat details and save to continue.
-          </div>
-          <BoatCheckpoint
-            userId={user.id}
-            boat={state.boat}
-            onSaved={handleBoatSaved}
-          />
-        </div>
-      )}
-
-      {/* Equipment checkpoint */}
-      {state.phase === 'equipment_offer' && state.savedBoatId && (
-        <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Step 3 of 4 — Optional: generate equipment &amp; maintenance tasks for your boat.
-          </div>
-          <EquipmentCheckpoint
-            boatId={state.savedBoatId}
-            makeModel={state.boat?.makeModel ?? ''}
-            boatType={state.boat?.type ?? null}
-            loa_m={state.boat?.loa_m ?? null}
-            yearBuilt={state.boat?.yearBuilt ?? null}
-            onComplete={handleEquipmentDone}
-            onSkip={handleEquipmentDone}
-          />
-        </div>
-      )}
-
-      {/* Journey checkpoint */}
-      {state.phase === 'journey_offer' && (
-        <div className="space-y-3">
-          <div className="text-sm text-muted-foreground">
-            Step 4 of 4 — Optional: create your first journey.
-          </div>
-          <JourneyCheckpoint journey={state.journey} boatId={state.savedBoatId} onSkip={handleDone} />
-        </div>
-      )}
     </div>
   );
 }

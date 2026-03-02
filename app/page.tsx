@@ -727,6 +727,25 @@ function WelcomePageContent() {
               </div>
             )}
 
+            {/* AI Onboarding CTA */}
+            {!hasExistingSession && !isComboSearchMode && (
+              <div className="w-full max-w-sm mx-auto mt-3">
+                <Link
+                  href="/welcome/crew-v2"
+                  className="group flex items-center gap-3 px-4 py-3.5 bg-white/10 backdrop-blur-sm border border-white/25 rounded-xl hover:bg-white/20 transition-all"
+                >
+                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold text-white leading-tight">New: AI Profile Builder</p>
+                    <p className="text-xs text-white/65 leading-snug mt-0.5">Build your full crew profile in a personalized 2-min AI conversation</p>
+                  </div>
+                  <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            )}
+
             {/* Onboarding steps - always shown; header + link only when session exists */}
             <div className="w-full mt-6 md:mt-8">
               <div className="w-full">
@@ -880,6 +899,25 @@ function WelcomePageContent() {
                       />
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* AI Onboarding CTA */}
+              {!hasOwnerSession && !isOwnerComboSearchMode && (
+                <div className="w-full max-w-sm mx-auto mt-3">
+                  <Link
+                    href="/welcome/owner-v2"
+                    className="group flex items-center gap-3 px-4 py-3.5 bg-white/10 backdrop-blur-sm border border-white/25 rounded-xl hover:bg-white/20 transition-all"
+                  >
+                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-semibold text-white leading-tight">New: AI Owner Setup</p>
+                      <p className="text-xs text-white/65 leading-snug mt-0.5">Describe your boat, journey, and crew needs — AI does the rest in 2 minutes</p>
+                    </div>
+                    <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
                 </div>
               )}
 
