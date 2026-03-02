@@ -333,9 +333,7 @@ function WelcomePageContent() {
 
         {/* Top nav */}
         <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 py-4">
-          <Link href="/" className="flex items-center">
-            <Image src="/sailsmart_new_tp_dark.png" alt="SailSmart" width={50} height={50} priority className="object-contain drop-shadow-xl" />
-          </Link>
+          <div />
           <div className="flex items-center gap-2">
             <Link href="/crew/dashboard" className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,7 +361,7 @@ function WelcomePageContent() {
               width={148}
               height={148}
               priority
-              className="object-contain drop-shadow-2xl"
+              className="object-contain brightness-0 invert drop-shadow-2xl"
             />
           </div>
 
@@ -399,7 +397,7 @@ function WelcomePageContent() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </Link>
                   <Link href="/welcome/owner-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#1a2e4a] bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
-                    Post a Journey
+                    Join as Skipper
                   </Link>
                 </div>
               </div>
