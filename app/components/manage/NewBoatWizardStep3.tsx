@@ -69,12 +69,22 @@ const ALL_CATEGORIES = EQUIPMENT_CATEGORIES.map((c) => c.value);
 // Inline replacement form sub-component
 // ---------------------------------------------------------------------------
 
+interface AiProduct {
+  id: string;
+  manufacturer: string;
+  model: string;
+  description?: string;
+  category?: string;
+}
+
 function InlineReplaceForm({
   initialManufacturer,
+  equipmentName,
   onApply,
   onCancel,
 }: {
   initialManufacturer: string | null;
+  equipmentName?: string;
   onApply: (manufacturer: string, model: string, productRegistryId: string | null) => void;
   onCancel: () => void;
 }) {
@@ -89,6 +99,49 @@ function InlineReplaceForm({
   const [selectedRegistryId, setSelectedRegistryId] = useState<string | null>(null);
   const mfrDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modelDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // AI search state
+  const [isAiSearching, setIsAiSearching] = useState(false);
+  const [aiResults, setAiResults] = useState<AiProduct[]>([]);
+  const [showAiResults, setShowAiResults] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const handleAiSearch = async () => {
+    if (!manufacturer.trim() && !model.trim() && !equipmentName?.trim()) return;
+    setIsAiSearching(true);
+    setAiError(null);
+    setShowAiResults(false);
+    try {
+      const res = await fetch('/api/product-registry/ai-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          manufacturer: manufacturer.trim() || undefined,
+          model: model.trim() || undefined,
+          additionalText: equipmentName?.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? 'AI search failed');
+      const products = (data.products ?? []) as AiProduct[];
+      setAiResults(products);
+      setShowAiResults(true);
+      if (products.length === 0) setAiError('No matching products found. Try different search terms.');
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'AI search failed');
+    } finally {
+      setIsAiSearching(false);
+    }
+  };
+
+  const selectAiResult = (product: AiProduct) => {
+    setManufacturer(product.manufacturer);
+    setModel(product.model);
+    setSelectedRegistryId(product.id ?? null);
+    setShowAiResults(false);
+    setAiResults([]);
+    setAiError(null);
+  };
 
   const handleMfrChange = (value: string) => {
     setManufacturer(value);
@@ -213,6 +266,61 @@ function InlineReplaceForm({
           )}
         </div>
       </div>
+      {/* AI search button */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleAiSearch}
+          disabled={isAiSearching || (!manufacturer.trim() && !model.trim() && !equipmentName?.trim())}
+          className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded border border-primary/40 text-primary hover:bg-primary/5 disabled:opacity-40 transition-colors"
+        >
+          {isAiSearching ? (
+            <>
+              <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              Searching…
+            </>
+          ) : (
+            <>✨ Search with AI</>
+          )}
+        </button>
+        <span className="text-xs text-muted-foreground">or type manufacturer &amp; model above</span>
+      </div>
+
+      {/* AI error */}
+      {aiError && (
+        <p className="text-xs text-destructive">{aiError}</p>
+      )}
+
+      {/* AI results */}
+      {showAiResults && aiResults.length > 0 && (
+        <div className="border border-border rounded-md overflow-hidden">
+          <p className="text-xs text-muted-foreground px-2 py-1.5 bg-muted/40 border-b border-border">
+            Select a product:
+          </p>
+          <ul className="divide-y divide-border max-h-48 overflow-y-auto">
+            {aiResults.map((product, i) => (
+              <li key={product.id ?? i}>
+                <button
+                  onClick={() => selectAiResult(product)}
+                  className="w-full text-left px-3 py-2 hover:bg-accent transition-colors"
+                >
+                  <span className="text-sm font-medium text-foreground block">
+                    {product.manufacturer} {product.model}
+                  </span>
+                  {product.description && (
+                    <span className="text-xs text-muted-foreground line-clamp-1 block mt-0.5">
+                      {product.description}
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="flex items-center gap-2 justify-end">
         <button
           onClick={onCancel}
@@ -363,6 +471,8 @@ export function NewBoatWizardStep3({
     model: string,
     productRegistryId: string | null,
   ) => {
+    // Remove old maintenance tasks linked to this equipment before applying replacement
+    setMaintenanceTasks((prev) => prev.filter((t) => t.equipmentIndex !== index));
     updateItem(index, {
       replacementStatus: 'replaced',
       replacementManufacturer: manufacturer,
@@ -374,6 +484,62 @@ export function NewBoatWizardStep3({
 
   const deleteTask = (taskIdx: number) => {
     setMaintenanceTasks((prev) => prev.filter((_, i) => i !== taskIdx));
+  };
+
+  // -------------------------------------------------------------------------
+  // Fetch maintenance tasks from cache for a replaced equipment item
+  // -------------------------------------------------------------------------
+
+  const [fetchingTasksFor, setFetchingTasksFor] = useState<Set<number>>(new Set());
+  const [fetchTasksError, setFetchTasksError] = useState<Record<number, string>>({});
+
+  const fetchMaintenanceTasksForReplacement = async (item: GeneratedEquipmentItem) => {
+    if (!item.replacementProductRegistryId) return;
+    setFetchingTasksFor((prev) => new Set(prev).add(item.index));
+    setFetchTasksError((prev) => { const next = { ...prev }; delete next[item.index]; return next; });
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase
+        .from('product_maintenance_tasks')
+        .select('title, description, category, priority, recurrence, estimated_hours')
+        .eq('product_registry_id', item.replacementProductRegistryId);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setFetchTasksError((prev) => ({
+          ...prev,
+          [item.index]: 'No cached tasks found for this product yet.',
+        }));
+        return;
+      }
+
+      const newTasks: GeneratedTaskItem[] = data.map((t) => ({
+        equipmentIndex: item.index,
+        title: t.title as string,
+        description: (t.description as string | null) ?? null,
+        category: t.category as string,
+        priority: t.priority as string,
+        recurrence: (t.recurrence as GeneratedTaskItem['recurrence']) ?? { type: 'time' },
+        estimated_hours: t.estimated_hours != null ? Number(t.estimated_hours) : null,
+      }));
+
+      setMaintenanceTasks((prev) => [...prev, ...newTasks]);
+    } catch (err) {
+      logger.error('[Step3] Failed to fetch maintenance tasks for replacement', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      setFetchTasksError((prev) => ({
+        ...prev,
+        [item.index]: err instanceof Error ? err.message : 'Failed to fetch tasks',
+      }));
+    } finally {
+      setFetchingTasksFor((prev) => {
+        const next = new Set(prev);
+        next.delete(item.index);
+        return next;
+      });
+    }
   };
 
   // -------------------------------------------------------------------------
@@ -780,6 +946,44 @@ export function NewBoatWizardStep3({
                                     Updated
                                   </span>
                                 )}
+                                {/* Fetch maintenance tasks for new product */}
+                                {item.replacementStatus === 'replaced' &&
+                                  item.replacementProductRegistryId && (() => {
+                                    const alreadyFetched = maintenanceTasks.some(
+                                      (t) => t.equipmentIndex === item.index,
+                                    );
+                                    const isFetching = fetchingTasksFor.has(item.index);
+                                    const taskCount = maintenanceTasks.filter(
+                                      (t) => t.equipmentIndex === item.index,
+                                    ).length;
+                                    if (alreadyFetched) {
+                                      return (
+                                        <span className="text-xs text-green-600 dark:text-green-400">
+                                          {taskCount} task{taskCount !== 1 ? 's' : ''} added
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <button
+                                        onClick={() => fetchMaintenanceTasksForReplacement(item)}
+                                        disabled={isFetching}
+                                        className="text-xs flex items-center gap-1 px-2 py-0.5 rounded border border-primary/30 text-primary hover:bg-primary/5 disabled:opacity-40 transition-colors"
+                                      >
+                                        {isFetching ? (
+                                          <>
+                                            <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                            </svg>
+                                            Fetching…
+                                          </>
+                                        ) : (
+                                          '+ Fetch maintenance tasks'
+                                        )}
+                                      </button>
+                                    );
+                                  })()
+                                }
                                 {isHighRisk && (
                                   <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
                                     ⚠ Verify
@@ -797,6 +1001,11 @@ export function NewBoatWizardStep3({
                               {item.notes && (
                                 <p className="text-xs text-muted-foreground mt-0.5 ml-4">
                                   {item.notes}
+                                </p>
+                              )}
+                              {fetchTasksError[item.index] && (
+                                <p className="text-xs text-muted-foreground mt-0.5 ml-4">
+                                  {fetchTasksError[item.index]}
                                 </p>
                               )}
                             </div>
@@ -854,6 +1063,7 @@ export function NewBoatWizardStep3({
                               ) : (
                                 <InlineReplaceForm
                                   initialManufacturer={item.manufacturer}
+                                  equipmentName={item.name}
                                   onApply={(mfr, mdl, regId) =>
                                     markReplaced(item.index, mfr, mdl, regId)
                                   }
@@ -887,6 +1097,7 @@ export function NewBoatWizardStep3({
                               </div>
                               <InlineReplaceForm
                                 initialManufacturer={item.manufacturer}
+                                equipmentName={item.name}
                                 onApply={(mfr, mdl, regId) =>
                                   markReplaced(item.index, mfr, mdl, regId)
                                 }
