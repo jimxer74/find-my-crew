@@ -25,6 +25,7 @@ interface ExtractedData {
 
 interface CrewOnboardingChatProps {
   onComplete: (extractedData: ExtractedData, messages: Message[]) => void;
+  isProcessing?: boolean;
 }
 
 const INITIAL_MESSAGE: Message = {
@@ -33,7 +34,7 @@ const INITIAL_MESSAGE: Message = {
     "Welcome to Find My Crew! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. Let's start — what's your name, and how would you describe your sailing experience so far?",
 };
 
-export function CrewOnboardingChat({ onComplete }: CrewOnboardingChatProps) {
+export function CrewOnboardingChat({ onComplete, isProcessing = false }: CrewOnboardingChatProps) {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -144,8 +145,10 @@ export function CrewOnboardingChat({ onComplete }: CrewOnboardingChatProps) {
           <Button
             className="mt-2 w-full sm:w-auto"
             onClick={() => onComplete(extractedData, messages)}
+            isLoading={isProcessing}
+            disabled={isProcessing}
           >
-            Review &amp; save profile →
+            {isProcessing ? 'Building profile…' : 'Review & save profile →'}
           </Button>
         </div>
       )}
@@ -167,6 +170,7 @@ export function CrewOnboardingChat({ onComplete }: CrewOnboardingChatProps) {
           <Button
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
+            isLoading={isLoading}
             size="sm"
             className="flex-shrink-0"
           >

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI } from '@shared/ai/service';
 import { logger } from '@shared/logging';
+import skillsConfig from '@/app/config/skills-config.json';
+
+const SKILL_LIST = skillsConfig.general.map((s) => `"${s.name}"`).join(', ');
 
 export const maxDuration = 30;
 
@@ -13,6 +16,7 @@ Return ONLY a valid JSON object (no markdown, no backticks) with this exact stru
     "experienceLevel": 1-4 or null,
     "aboutMe": "string or null"
   },
+  "skills": [{"skill_name": "exact_identifier", "description": "what the user said about this skill"}] or null,
   "boat": {
     "makeModel": "string or null",
     "homePort": "string or null",
@@ -31,6 +35,7 @@ Return ONLY a valid JSON object (no markdown, no backticks) with this exact stru
 
 Rules:
 - experienceLevel: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
+- skills: array of objects. skill_name MUST be one of: ${SKILL_LIST}. Use the closest matching identifier — do NOT invent new skill names. description MUST be a 1–2 sentence summary of exactly what the owner said or described about that specific skill during the conversation (their own words, experience, context). Do not use generic definitions — extract from the actual conversation. Null if no skills were discussed.
 - yearBuilt: extract from context (e.g. "2003", "built in the 90s" → null)
 - loa_m: convert feet to meters if needed (1 foot = 0.3048 m), null if unknown
 - journey: null if no journey was mentioned
@@ -48,7 +53,7 @@ export async function POST(request: NextRequest) {
 
     const prompt = `${EXTRACT_PROMPT}\n\nConversation transcript:\n${transcript}\n\nExtract structured data:`;
 
-    const result = await callAI({ useCase: 'owner-chat', prompt, maxTokens: 500 });
+    const result = await callAI({ useCase: 'owner-chat', prompt, maxTokens: 900 });
 
     let parsed: Record<string, unknown>;
     try {

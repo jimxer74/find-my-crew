@@ -14,13 +14,18 @@ import { logger } from '@shared/logging';
 
 type OnboardingPhase = 'signup' | 'chatting' | 'confirming_profile' | 'done';
 
+export interface SkillEntry {
+  skill_name: string;
+  description: string;
+}
+
 interface OnboardingProfile {
   displayName: string;
   experienceLevel?: number | null;
   bio?: string | null;
   motivation?: string | null;
   sailingPreferences?: string | null;
-  skills?: string[] | null;
+  skills?: SkillEntry[] | null;
   riskLevels?: string[] | null;
   preferredDepartureLocation?: string | null;
   preferredArrivalLocation?: string | null;
@@ -133,6 +138,7 @@ export function CrewOnboardingV2() {
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Resolve starting phase on mount
   useEffect(() => {
@@ -169,6 +175,7 @@ export function CrewOnboardingV2() {
   // Handle AI chat completion
   const handleChatComplete = useCallback(
     async (chatExtractedData: Record<string, unknown>, messages: ChatMessage[]) => {
+      setIsExtracting(true);
       let profile: OnboardingProfile | null = null;
 
       try {
@@ -188,13 +195,25 @@ export function CrewOnboardingV2() {
           const loc = extracted.locationPreferences ?? {};
           const avail = extracted.availability ?? {};
 
+          // Extract API now returns skills as [{skill_name, description}]
+          const rawSkills: unknown = extracted.skills;
+          const skills: SkillEntry[] | null = Array.isArray(rawSkills)
+            ? (rawSkills as Array<{ skill_name?: string; description?: string } | string>)
+                .map((s) =>
+                  typeof s === 'string'
+                    ? { skill_name: s, description: '' }
+                    : { skill_name: s.skill_name ?? '', description: s.description ?? '' }
+                )
+                .filter((s) => s.skill_name.length > 0)
+            : null;
+
           profile = {
             displayName: p.displayName ?? '',
             experienceLevel: p.experienceLevel ?? null,
             bio: p.bio ?? null,
             motivation: p.motivation ?? null,
             sailingPreferences: extracted.sailingPreferences ?? null,
-            skills: extracted.skills ?? null,
+            skills,
             riskLevels: extracted.riskLevels ?? null,
             preferredDepartureLocation: loc.preferredDepartureLocation ?? null,
             preferredArrivalLocation: loc.preferredArrivalLocation ?? null,
@@ -218,6 +237,13 @@ export function CrewOnboardingV2() {
           (chatExtractedData.name as string | undefined) ??
           '';
 
+        // Chat extractedData returns skills as plain strings — wrap them
+        const fallbackSkills: SkillEntry[] | null =
+          (chatExtractedData.skills as string[] | undefined)?.map((s) => ({
+            skill_name: s,
+            description: '',
+          })) ?? null;
+
         profile = profile
           ? { ...profile, displayName: profile.displayName || fallbackName }
           : {
@@ -225,7 +251,7 @@ export function CrewOnboardingV2() {
               experienceLevel: (chatExtractedData.experienceLevel as number | undefined) ?? null,
               bio: (chatExtractedData.bio as string | undefined) ?? null,
               motivation: (chatExtractedData.motivation as string | undefined) ?? null,
-              skills: (chatExtractedData.skills as string[] | undefined) ?? null,
+              skills: fallbackSkills,
               riskLevels: (chatExtractedData.riskLevels as string[] | undefined) ?? null,
               sailingPreferences:
                 (chatExtractedData.sailingPreferences as string | undefined) ?? null,
@@ -240,6 +266,7 @@ export function CrewOnboardingV2() {
             };
       }
 
+      setIsExtracting(false);
       updateState({ phase: 'confirming_profile', profile });
     },
     [updateState, user]
@@ -324,6 +351,7 @@ export function CrewOnboardingV2() {
             onComplete={(data, msgs) =>
               handleChatComplete(data as Record<string, unknown>, msgs)
             }
+            isProcessing={isExtracting}
           />
         </div>
       )}

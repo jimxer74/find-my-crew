@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { OnboardingChat } from './OnboardingChat';
 import { ProfileCheckpoint } from './ProfileCheckpoint';
+import type { SkillEntry } from './CrewOnboardingV2';
 import { BoatCheckpoint } from './BoatCheckpoint';
 import { EquipmentCheckpoint } from './EquipmentCheckpoint';
 import { JourneyCheckpoint } from './JourneyCheckpoint';
@@ -28,6 +29,7 @@ interface OnboardingProfile {
   displayName: string;
   experienceLevel?: number | null;
   aboutMe?: string | null;
+  skills?: SkillEntry[] | null;
 }
 
 interface OnboardingBoat {
@@ -235,7 +237,20 @@ export function OwnerOnboardingV2() {
 
         if (res.ok) {
           const extracted = await res.json();
-          profile = extracted.profile ?? null;
+
+          // Extract skills as [{skill_name, description}] — same format as crew-v2
+          const rawSkills: unknown = extracted.skills;
+          const skills: SkillEntry[] | null = Array.isArray(rawSkills)
+            ? (rawSkills as Array<{ skill_name?: string; description?: string } | string>)
+                .map((s) =>
+                  typeof s === 'string'
+                    ? { skill_name: s, description: '' }
+                    : { skill_name: s.skill_name ?? '', description: s.description ?? '' }
+                )
+                .filter((s) => s.skill_name.length > 0)
+            : null;
+
+          profile = extracted.profile ? { ...extracted.profile, skills } : null;
           boat = extracted.boat ?? null;
           // Merge intermediateWaypoints from chat extractedData if extract didn't capture them
           journey = extracted.journey
@@ -254,16 +269,23 @@ export function OwnerOnboardingV2() {
         });
       }
 
-      // Fallbacks using auth user data (user is signed in at this point)
+      // Fallbacks using auth user data and chat extractedData (when extract API fails)
       if (!profile) {
         const nameFromAuth =
           (user?.user_metadata?.full_name as string) ??
           user?.email?.split('@')[0] ??
           (chatExtractedData.name as string) ??
           '';
+        // Chat extractedData returns skills as plain string[] — wrap them
+        const fallbackSkills: SkillEntry[] | null =
+          (chatExtractedData.skills as string[] | undefined)?.map((s) => ({
+            skill_name: s,
+            description: '',
+          })) ?? null;
         profile = {
           displayName: nameFromAuth,
           experienceLevel: (chatExtractedData.experienceLevel as number) ?? null,
+          skills: fallbackSkills,
         };
       }
       if (!boat) {

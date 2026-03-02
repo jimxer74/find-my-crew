@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI } from '@shared/ai/service';
 import { logger } from '@shared/logging';
+import skillsConfig from '@/app/config/skills-config.json';
 
 export const maxDuration = 45;
 
@@ -12,6 +13,7 @@ interface ChatMessage {
 interface ExtractedData {
   name?: string | null;
   experienceLevel?: number | null; // 1-4
+  skills?: string[] | null;
   boatMakeModel?: string | null;
   boatHomePort?: string | null;
   boatYearBuilt?: number | null;
@@ -23,15 +25,20 @@ interface ExtractedData {
   journeyEndDate?: string | null;
 }
 
+const SKILL_LIST = skillsConfig.general
+  .map((s) => `"${s.name}"`)
+  .join(', ');
+
 const SYSTEM_PROMPT = `You are a friendly onboarding assistant helping a boat owner get started on Find My Crew — a platform connecting sailors with crew members.
 
-Your goal is to gather the following information through natural conversation (5-7 exchanges):
+Your goal is to gather the following information through natural conversation (7–10 exchanges):
 1. Owner's name
 2. Sailing experience level (Beginner / Competent Crew / Coastal Skipper / Offshore Skipper)
-3. Boat make/model (e.g. "Beneteau Oceanis 46")
-4. Boat's home port (city and country)
-5. Year the boat was built (helpful for maintenance — optional but ask for it)
-6. A planned sailing journey — ask for:
+3. Sailing skills — ask about 2–4 of their strongest skills (navigation, heavy weather, certifications, technical skills, etc.). Ask follow-ups to understand the depth of each skill in their own words.
+4. Boat make/model (e.g. "Beneteau Oceanis 46")
+5. Boat's home port (city and country)
+6. Year the boat was built (helpful for maintenance — optional but ask for it)
+7. A planned sailing journey — ask for:
    - Departure location (specific city/port and country, e.g. "Helsinki, Finland")
    - Destination (specific city/port and country, e.g. "Tallinn, Estonia")
    - Any intermediate stops/waypoints (optional, e.g. "stopping in Mariehamn and Stockholm")
@@ -42,8 +49,9 @@ Your goal is to gather the following information through natural conversation (5
 Guidelines:
 - Be warm and conversational, not form-like
 - Ask 1-2 questions per message, not a big list
+- For skills: ask what they know and how they use it — capture the owner's own description in their words
 - For journey locations, always ask for city AND country to ensure accurate geocoding
-- When you have enough info (name + experience + boat make/model + home port), set isComplete: true
+- When you have enough info (name + experience + at least 1 skill + boat make/model + home port), set isComplete: true
 - Do NOT ask about email or password — that's handled separately
 - Keep responses concise (2-4 sentences)
 
@@ -53,6 +61,7 @@ You MUST return a valid JSON object (no markdown, no backticks) in this exact fo
   "extractedData": {
     "name": null,
     "experienceLevel": null,
+    "skills": null,
     "boatMakeModel": null,
     "boatHomePort": null,
     "boatYearBuilt": null,
@@ -68,6 +77,7 @@ You MUST return a valid JSON object (no markdown, no backticks) in this exact fo
 
 Include ALL fields in extractedData, using null for unknown values. Fill in whatever you've learned so far.
 experienceLevel: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
+skills: array using ONLY these exact identifier strings: ${SKILL_LIST}
 journeyFrom/journeyTo: full location string with city and country, e.g. "Helsinki, Finland"
 journeyWaypoints: array of intermediate stop strings with city and country, e.g. ["Mariehamn, Finland", "Stockholm, Sweden"], or null if no stops mentioned
 journeyStartDate/journeyEndDate: YYYY-MM-DD format, or null if not mentioned`;

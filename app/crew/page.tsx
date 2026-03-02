@@ -56,40 +56,36 @@ export default function CrewHomePage() {
     return profile?.preferred_arrival_location || null;
   }, [profile?.preferred_arrival_location]);
 
-  // Sort regions by distance based on user's filter settings (departure/arrival location) or browser geolocation
+  // Sort regions by distance. Priority: departure location → arrival location → browser geolocation.
+  // Each step falls through independently so a name-only location (no coords) doesn't block the fallbacks.
   useEffect(() => {
-    // Determine which location to use for sorting:
-    // 1. Preferred departure location from profile (highest priority)
-    // 2. Preferred arrival location from profile (fallback)
-    // 3. Browser geolocation (last resort)
     let sortLat: number | null = null;
     let sortLng: number | null = null;
 
+    // 1. Departure location from profile
     if (userDepartureLocation) {
-      // Use departure location if available
       if (userDepartureLocation.bbox) {
-        // For bbox regions, use center
-        const centerLat = (userDepartureLocation.bbox.minLat + userDepartureLocation.bbox.maxLat) / 2;
-        const centerLng = (userDepartureLocation.bbox.minLng + userDepartureLocation.bbox.maxLng) / 2;
-        sortLat = centerLat;
-        sortLng = centerLng;
+        sortLat = (userDepartureLocation.bbox.minLat + userDepartureLocation.bbox.maxLat) / 2;
+        sortLng = (userDepartureLocation.bbox.minLng + userDepartureLocation.bbox.maxLng) / 2;
       } else if (userDepartureLocation.lat && userDepartureLocation.lng) {
         sortLat = userDepartureLocation.lat;
         sortLng = userDepartureLocation.lng;
       }
-    } else if (userArrivalLocation) {
-      // Fallback to arrival location
+    }
+
+    // 2. Arrival location from profile (if departure had no usable coordinates)
+    if (sortLat === null && userArrivalLocation) {
       if (userArrivalLocation.bbox) {
-        const centerLat = (userArrivalLocation.bbox.minLat + userArrivalLocation.bbox.maxLat) / 2;
-        const centerLng = (userArrivalLocation.bbox.minLng + userArrivalLocation.bbox.maxLng) / 2;
-        sortLat = centerLat;
-        sortLng = centerLng;
+        sortLat = (userArrivalLocation.bbox.minLat + userArrivalLocation.bbox.maxLat) / 2;
+        sortLng = (userArrivalLocation.bbox.minLng + userArrivalLocation.bbox.maxLng) / 2;
       } else if (userArrivalLocation.lat && userArrivalLocation.lng) {
         sortLat = userArrivalLocation.lat;
         sortLng = userArrivalLocation.lng;
       }
-    } else if (!userLocation.loading && userLocation.lat && userLocation.lng) {
-      // Last resort: browser geolocation
+    }
+
+    // 3. Browser geolocation (always falls back here when profile locations have no coords)
+    if (sortLat === null && !userLocation.loading && userLocation.lat && userLocation.lng) {
       sortLat = userLocation.lat;
       sortLng = userLocation.lng;
     }
@@ -98,12 +94,12 @@ export default function CrewHomePage() {
       const regions = getAllRegions();
       const sorted = sortRegionsByDistance(sortLat, sortLng, regions);
       setSortedRegions(sorted);
-    } else if (!userLocation.loading && !user) {
-      // For non-authenticated users without geolocation, show regions in default order
+    } else if (!userLocation.loading) {
+      // Geolocation resolved but no coordinates available — show default order
       const regions = getAllRegions();
       setSortedRegions(regions.map(r => ({ ...r, distance: 0 })));
     }
-  }, [userLocation.loading, userLocation.lat, userLocation.lng, userDepartureLocation, userArrivalLocation, user]);
+  }, [userLocation.loading, userLocation.lat, userLocation.lng, userDepartureLocation, userArrivalLocation]);
 
   // Handle Join button click - open registration dialog
   const handleJoinClick = useCallback((leg: LegListItemData) => {

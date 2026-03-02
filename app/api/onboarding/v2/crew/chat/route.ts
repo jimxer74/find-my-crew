@@ -172,6 +172,7 @@ export async function POST(request: NextRequest) {
         messages: nativeMessages,
         temperature: CHAT_TEMPERATURE,
         max_tokens: CHAT_MAX_TOKENS,
+        response_format: { type: 'json_object' },
       }),
     });
 

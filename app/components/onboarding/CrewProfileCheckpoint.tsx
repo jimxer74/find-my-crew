@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
+import { Button } from '@shared/ui/Button/Button';
 import { CheckpointCard } from './CheckpointCard';
+import type { SkillEntry } from './CrewOnboardingV2';
 
 const EXPERIENCE_LABELS: Record<number, string> = {
   1: 'Beginner',
@@ -20,7 +22,7 @@ interface ProfileData {
   bio?: string | null;
   motivation?: string | null;
   sailingPreferences?: string | null;
-  skills?: string[] | null;
+  skills?: SkillEntry[] | null;
   riskLevels?: string[] | null;
   preferredDepartureLocation?: string | null;
   preferredArrivalLocation?: string | null;
@@ -52,19 +54,25 @@ export function CrewProfileCheckpoint({
   // ---------------------------------------------------------------------------
 
   const handleAddSkill = () => {
-    const skill = newSkill.trim().toLowerCase();
-    if (!skill) return;
-    if (data.skills?.map((s) => s.toLowerCase()).includes(skill)) {
+    const skillName = newSkill.trim().toLowerCase();
+    if (!skillName) return;
+    if (data.skills?.some((s) => s.skill_name === skillName)) {
       setError('This skill is already added');
       return;
     }
-    setData((d) => ({ ...d, skills: [...(d.skills ?? []), skill] }));
+    setData((d) => ({
+      ...d,
+      skills: [...(d.skills ?? []), { skill_name: skillName, description: '' }],
+    }));
     setNewSkill('');
     setError(null);
   };
 
-  const handleRemoveSkill = (skill: string) => {
-    setData((d) => ({ ...d, skills: (d.skills ?? []).filter((s) => s !== skill) }));
+  const handleRemoveSkill = (skillName: string) => {
+    setData((d) => ({
+      ...d,
+      skills: (d.skills ?? []).filter((s) => s.skill_name !== skillName),
+    }));
   };
 
   const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -110,6 +118,9 @@ export function CrewProfileCheckpoint({
       return;
     }
 
+    // Serialize each SkillEntry to a JSON string for storage in the text[] column
+    const serializedSkills = data.skills.map((s) => JSON.stringify(s));
+
     setIsSaving(true);
 
     try {
@@ -139,7 +150,7 @@ export function CrewProfileCheckpoint({
           email: email ?? null,
           user_description: userDescription || null,
           sailing_experience: data.experienceLevel ?? null,
-          skills: data.skills ?? [],
+          skills: serializedSkills,
           sailing_preferences: data.sailingPreferences?.trim() ?? null,
           risk_level: data.riskLevels ?? [],
           preferred_departure_location: data.preferredDepartureLocation
@@ -194,7 +205,10 @@ export function CrewProfileCheckpoint({
     },
     {
       label: 'Skills',
-      value: data.skills && data.skills.length > 0 ? data.skills.join(', ') : null,
+      value:
+        data.skills && data.skills.length > 0
+          ? data.skills.map((s) => s.skill_name).join(', ')
+          : null,
     },
     { label: 'About me', value: data.bio },
     { label: 'Available', value: availabilityText },
@@ -283,15 +297,15 @@ export function CrewProfileCheckpoint({
               <div className="flex flex-wrap gap-1.5">
                 {data.skills.map((skill) => (
                   <span
-                    key={skill}
+                    key={skill.skill_name}
                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
                   >
-                    {skill}
+                    {skill.skill_name}
                     <button
                       type="button"
-                      onClick={() => handleRemoveSkill(skill)}
+                      onClick={() => handleRemoveSkill(skill.skill_name)}
                       className="text-primary/70 hover:text-primary leading-none"
-                      aria-label={`Remove ${skill}`}
+                      aria-label={`Remove ${skill.skill_name}`}
                     >
                       ✕
                     </button>
@@ -437,19 +451,22 @@ export function CrewProfileCheckpoint({
         )}
 
         <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-2">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => { setIsEditing(false); setError(null); }}
-            className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
+            disabled={isSaving}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={handleSave}
+            isLoading={isSaving}
             disabled={isSaving}
-            className="text-sm bg-primary text-primary-foreground px-4 py-1.5 rounded-lg hover:bg-primary/90 disabled:opacity-50"
           >
-            {isSaving ? 'Saving…' : 'Save profile'}
-          </button>
+            Save profile
+          </Button>
         </div>
       </div>
     );

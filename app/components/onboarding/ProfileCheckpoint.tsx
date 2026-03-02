@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
+import { Button } from '@shared/ui/Button/Button';
 import { CheckpointCard } from './CheckpointCard';
+import type { SkillEntry } from './CrewOnboardingV2';
 
 const EXPERIENCE_LABELS: Record<number, string> = {
   1: 'Beginner',
@@ -16,6 +18,7 @@ interface ProfileData {
   displayName: string;
   experienceLevel?: number | null;
   aboutMe?: string | null;
+  skills?: SkillEntry[] | null;
 }
 
 interface ProfileCheckpointProps {
@@ -30,6 +33,40 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
   const [data, setData] = useState<ProfileData>(profile);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [newSkill, setNewSkill] = useState('');
+
+  // ---------------------------------------------------------------------------
+  // Skill helpers
+  // ---------------------------------------------------------------------------
+
+  const handleAddSkill = () => {
+    const skillName = newSkill.trim().toLowerCase();
+    if (!skillName) return;
+    if (data.skills?.some((s) => s.skill_name === skillName)) {
+      setError('This skill is already added');
+      return;
+    }
+    setData((d) => ({
+      ...d,
+      skills: [...(d.skills ?? []), { skill_name: skillName, description: '' }],
+    }));
+    setNewSkill('');
+    setError(null);
+  };
+
+  const handleRemoveSkill = (skillName: string) => {
+    setData((d) => ({
+      ...d,
+      skills: (d.skills ?? []).filter((s) => s.skill_name !== skillName),
+    }));
+  };
+
+  const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddSkill();
+    }
+  };
 
   const handleSave = async () => {
     if (!data.displayName?.trim()) {
@@ -48,6 +85,9 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
       const suffix = Date.now().toString(36).slice(-5); // 5 base36 chars ≈ 60M combinations
       const username = `${base}${suffix}`;
 
+      // Serialize each SkillEntry to a JSON string for storage in the text[] column
+      const serializedSkills = (data.skills ?? []).map((s) => JSON.stringify(s));
+
       const { error: upsertErr } = await supabase.from('profiles').upsert(
         {
           id: userId,
@@ -56,6 +96,7 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
           email: email ?? null,
           user_description: data.aboutMe?.trim() ?? null,
           sailing_experience: data.experienceLevel ?? null,
+          skills: serializedSkills,
           roles: ['owner'],
         },
         { onConflict: 'id' }
@@ -85,6 +126,13 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
       value: data.experienceLevel
         ? EXPERIENCE_LABELS[data.experienceLevel] ?? `Level ${data.experienceLevel}`
         : null,
+    },
+    {
+      label: 'Skills',
+      value:
+        data.skills && data.skills.length > 0
+          ? data.skills.map((s) => s.skill_name).join(', ')
+          : null,
     },
     { label: 'About', value: data.aboutMe },
   ];
@@ -134,6 +182,51 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
             </select>
           </div>
 
+          {/* Skills */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">
+              Sailing skills
+            </label>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                onKeyDown={handleSkillKeyDown}
+                placeholder="Type a skill and press Enter"
+                className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                disabled={!newSkill.trim()}
+                className="px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+            {data.skills && data.skills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {data.skills.map((skill) => (
+                  <span
+                    key={skill.skill_name}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
+                  >
+                    {skill.skill_name}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skill.skill_name)}
+                      className="text-primary/70 hover:text-primary leading-none"
+                      aria-label={`Remove ${skill.skill_name}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">
               About me (optional)
@@ -155,19 +248,22 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
         )}
 
         <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-2">
-          <button
-            onClick={() => setIsEditing(false)}
-            className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setIsEditing(false); setError(null); }}
+            disabled={isSaving}
           >
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
             onClick={handleSave}
+            isLoading={isSaving}
             disabled={isSaving}
-            className="text-sm bg-primary text-primary-foreground px-4 py-1.5 rounded-lg hover:bg-primary/90 disabled:opacity-50"
           >
-            {isSaving ? 'Saving…' : 'Save'}
-          </button>
+            Save
+          </Button>
         </div>
       </div>
     );

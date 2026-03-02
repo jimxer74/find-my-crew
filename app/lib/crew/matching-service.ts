@@ -197,7 +197,8 @@ function formatAvailability(startDate: string | null, endDate: string | null): s
 }
 
 /**
- * Parse skills array - handles both string names and JSON objects
+ * Parse skills array - handles plain strings and JSON-serialised SkillEntry objects
+ * (`{"skill_name":"navigation","description":"..."}`)
  */
 function parseSkills(skillsData: any): string[] {
   if (!Array.isArray(skillsData)) {
@@ -206,29 +207,29 @@ function parseSkills(skillsData: any): string[] {
 
   return skillsData
     .map((skill) => {
-      // If already a string, return as-is
       if (typeof skill === 'string') {
-        // Try to parse as JSON in case it's a stringified object
-        try {
-          const parsed = JSON.parse(skill);
-          if (typeof parsed === 'object' && parsed !== null) {
-            return parsed['skill Name'] || parsed.skillName || parsed.name || '';
+        // JSON-encoded SkillEntry stored in the text[] column
+        if (skill.trim().startsWith('{')) {
+          try {
+            const parsed = JSON.parse(skill);
+            if (typeof parsed === 'object' && parsed !== null && parsed.skill_name) {
+              return String(parsed.skill_name);
+            }
+          } catch {
+            // Not valid JSON — fall through and treat as a plain name
           }
-        } catch {
-          // Not JSON, return the string as-is
-          return skill;
         }
         return skill;
       }
 
-      // If object, extract skill name
-      if (typeof skill === 'object' && skill !== null) {
-        return skill['skill Name'] || skill.skillName || skill.name || '';
+      // Already a parsed object (shouldn't happen from DB, but defensive)
+      if (typeof skill === 'object' && skill !== null && skill.skill_name) {
+        return String(skill.skill_name);
       }
 
       return '';
     })
-    .filter((skill) => skill.length > 0); // Remove empty strings
+    .filter((skill) => skill.length > 0);
 }
 
 /**
