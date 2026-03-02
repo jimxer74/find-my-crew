@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callAI } from '@shared/ai/service';
 import { logger } from '@shared/logging';
+import skillsConfig from '@/app/config/skills-config.json';
+import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 
 export const maxDuration = 30;
+
+const VALID_SKILLS = skillsConfig.general.map((s) => s.name);
+const SKILL_LIST = VALID_SKILLS.map((n) => `"${n}"`).join(', ');
+
+const EXPERIENCE_LEVELS = experienceLevelsConfig.levels
+  .map((l) => `${l.value}=${l.displayName}`)
+  .join(', ');
 
 const EXTRACT_PROMPT = `You are a data extraction assistant. Given a conversation transcript from a crew member onboarding, extract structured profile data.
 
@@ -14,7 +23,7 @@ Return ONLY a valid JSON object (no markdown, no backticks) with this exact stru
     "bio": "string or null",
     "motivation": "string or null"
   },
-  "skills": ["array of skill strings"] or null,
+  "skills": ["array of skill identifier strings"] or null,
   "sailingPreferences": "string or null",
   "riskLevels": ["Coastal sailing" | "Offshore sailing" | "Extreme sailing"] or null,
   "locationPreferences": null or {
@@ -29,10 +38,10 @@ Return ONLY a valid JSON object (no markdown, no backticks) with this exact stru
 
 Rules:
 - displayName: use first name if only first name given, otherwise full name
-- experienceLevel: 1=Beginner, 2=Competent Crew, 3=Coastal Skipper, 4=Offshore Skipper
+- experienceLevel: integer 1–4. Valid values: ${EXPERIENCE_LEVELS}
 - bio: 2–4 sentences summarising background — how they got into sailing, experience level context, and anything personal they shared. Write as first person ("I have been sailing...")
 - motivation: 1–2 sentences about what kind of sailing excites them most
-- skills: array of every specific skill mentioned — both technical (navigation, sail trimming, engine maintenance) and non-technical (cooking, first aid, languages). Include at least 3 if mentioned.
+- skills: map every skill mentioned to ONLY the following exact identifier strings: ${SKILL_LIST}. Include at least 3 if mentioned. Use the closest matching identifier — do NOT invent new skill names.
 - sailingPreferences: any general sailing preference text that doesn't fit bio or motivation (e.g. "prefers long passages to coastal day sails")
 - riskLevels: MUST use exactly these strings: "Coastal sailing", "Offshore sailing", "Extreme sailing". Array of whichever apply.
 - locationPreferences: only include if at least one location preference was discussed; use null if nothing was mentioned
