@@ -40,17 +40,49 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
 
     try {
       const supabase = getSupabaseBrowserClient();
+      const makeModelTrimmed = data.makeModel.trim();
+
+      // Look up boat_registry for matching specifications (case-insensitive).
+      // boat_registry is publicly readable so the browser client can query it directly.
+      const { data: reg } = await supabase
+        .from('boat_registry')
+        .select('*')
+        .ilike('make_model', makeModelTrimmed)
+        .maybeSingle();
+
+      if (reg) {
+        logger.debug('[BoatCheckpoint] Registry match found', { make_model: reg.make_model });
+      }
 
       const { data: inserted, error: insertErr } = await supabase
         .from('boats')
         .insert({
           owner_id: userId,
-          name: data.makeModel.trim(),
-          make_model: data.makeModel.trim(),
+          name: makeModelTrimmed,
+          make_model: makeModelTrimmed,
           home_port: data.homePort.trim(),
+          // User-supplied values take precedence over registry values
           year_built: data.yearBuilt ?? null,
-          loa_m: data.loa_m ?? null,
-          type: data.type ?? null,
+          loa_m: data.loa_m ?? reg?.loa_m ?? null,
+          // Type, performance data and descriptions come from registry when available
+          type: reg?.type ?? data.type ?? null,
+          ...(reg && {
+            beam_m: reg.beam_m,
+            capacity: reg.capacity,
+            displcmt_m: reg.displcmt_m,
+            average_speed_knots: reg.average_speed_knots,
+            hull_speed_knots: reg.hull_speed_knots,
+            link_to_specs: reg.link_to_specs,
+            characteristics: reg.characteristics,
+            capabilities: reg.capabilities,
+            accommodations: reg.accommodations,
+            sa_displ_ratio: reg.sa_displ_ratio,
+            ballast_displ_ratio: reg.ballast_displ_ratio,
+            displ_len_ratio: reg.displ_len_ratio,
+            comfort_ratio: reg.comfort_ratio,
+            capsize_screening: reg.capsize_screening,
+            ppi_pounds_per_inch: reg.ppi_pounds_per_inch,
+          }),
         })
         .select('id')
         .single();
