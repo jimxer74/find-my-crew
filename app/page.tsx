@@ -15,10 +15,9 @@ import * as sessionService from '@shared/lib/prospect/sessionService';
 import * as ownerSessionService from '@shared/lib/owner/sessionService';
 import { shouldStayOnHomepage, getRedirectPath } from '@shared/lib/routing/redirectHelpers.client';
 import { ProspectSession } from '@shared/ai/prospect/types';
-import { ComboSearchBox, type ComboSearchData } from '@shared/ui/ComboSearchBox';
-import { OwnerComboSearchBox, type OwnerComboSearchData } from '@shared/ui/OwnerComboSearchBox';
 import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@shared/components/onboarding/OnboardingSteps';
 import type { OwnerPreferences } from '@shared/ai/owner/types';
+import { QuickPostBox } from '@/app/components/QuickPostBox';
 
 // ---------------------------------------------------------------------------
 // Owner post dialog (legacy flow)
@@ -247,37 +246,17 @@ function WelcomePageContent() {
     })();
   }, [user, hasOwnerSession]);
 
-  const handleComboSearch = (data: ComboSearchData) => {
+  const handleCrewPost = (text: string) => {
     const p = new URLSearchParams();
-    if (data.whereFrom) p.set('whereFrom', JSON.stringify(data.whereFrom));
-    if (data.whereTo) p.set('whereTo', JSON.stringify(data.whereTo));
-    if (data.availability.freeText) p.set('availabilityText', data.availability.freeText);
-    if (data.availability.dateRange?.start) p.set('availabilityStart', data.availability.dateRange.start.toISOString());
-    if (data.availability.dateRange?.end) p.set('availabilityEnd', data.availability.dateRange.end.toISOString());
-    if (data.profile) p.set('profile', data.profile);
-    if (data.aiProcessingConsent) p.set('aiProcessingConsent', 'true');
+    p.set('profile', text);
+    p.set('aiProcessingConsent', 'true');
     router.push(`/welcome/crew?${p.toString()}`);
   };
 
-  const handleOwnerPost = (text: string, aiProcessingConsent: boolean) => {
+  const handleOwnerPost = (text: string) => {
     const p = new URLSearchParams();
     p.set('skipperProfile', text);
-    if (aiProcessingConsent) p.set('aiProcessingConsent', 'true');
-    router.push(`/welcome/owner?${p.toString()}`);
-  };
-
-  const handleOwnerComboSearch = (data: OwnerComboSearchData) => {
-    const p = new URLSearchParams();
-    if (data.journeyDetails.startLocation) p.set('startLocation', JSON.stringify(data.journeyDetails.startLocation));
-    if (data.journeyDetails.endLocation) p.set('endLocation', JSON.stringify(data.journeyDetails.endLocation));
-    if (data.journeyDetails.startDate) p.set('startDate', data.journeyDetails.startDate);
-    if (data.journeyDetails.endDate) p.set('endDate', data.journeyDetails.endDate);
-    if (data.journeyDetails.waypoints.length > 0) p.set('waypoints', JSON.stringify(data.journeyDetails.waypoints));
-    if (data.journeyDetails.waypointDensity) p.set('waypointDensity', data.journeyDetails.waypointDensity);
-    if (data.skipperProfile.text) p.set('skipperProfile', data.skipperProfile.text);
-    if (data.crewRequirements.text) p.set('crewRequirements', data.crewRequirements.text);
-    if (data.skipperProfile.aiProcessingConsent || data.crewRequirements.aiProcessingConsent) p.set('aiProcessingConsent', 'true');
-    if (data.importedProfile) p.set('importedProfile', JSON.stringify(data.importedProfile));
+    p.set('aiProcessingConsent', 'true');
     router.push(`/welcome/owner?${p.toString()}`);
   };
 
@@ -469,33 +448,19 @@ function WelcomePageContent() {
                 </div>
               )}
 
-              {/* Search */}
+              {/* Quick post */}
               {!hasExistingSession && (
-                <div className={`w-full mx-auto ${isComboSearchMode ? 'max-w-sm sm:max-w-2xl' : 'max-w-sm'}`}>
-                  <div className="flex items-center gap-3">
-                    {isComboSearchMode && (
-                      <button onClick={() => { setIsComboSearchMode(false); (document.activeElement as HTMLElement)?.blur(); }} className="flex-shrink-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors" aria-label="Back">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                      </button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <ComboSearchBox onSubmit={handleComboSearch} compactMode={!isComboSearchMode} onFocusChange={(f) => { if (f && !isComboSearchMode) setIsComboSearchMode(true); }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI CTA */}
-              {!hasExistingSession && !isComboSearchMode && (
-                <div className="w-full max-w-sm mx-auto mt-3">
-                  <Link href="/welcome/crew-v2" className="group flex items-center gap-3 px-4 py-3.5 bg-white/[0.07] border border-white/15 rounded-xl hover:bg-white/[0.12] hover:border-white/25 transition-all">
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-500/20 border border-blue-400/25 flex items-center justify-center text-base">✨</div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-white leading-tight">New: AI Profile Builder</p>
-                      <p className="text-xs text-white/50 leading-snug mt-0.5">Build your full crew profile in a personalized 2-min AI conversation</p>
-                    </div>
-                    <svg className="w-4 h-4 text-white/35 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </Link>
+                <div className="w-full max-w-sm mx-auto">
+                  <QuickPostBox
+                    placeholder="Post your sailing profile..."
+                    expandedPlaceholder="Tell us about your sailing experience, skills, availability, and what kind of journey you're looking for..."
+                    isExpanded={isComboSearchMode}
+                    onExpand={() => setIsComboSearchMode(true)}
+                    onCancel={() => setIsComboSearchMode(false)}
+                    onPost={handleCrewPost}
+                    accentColor="blue"
+                    submitLabel="Post profile"
+                  />
                 </div>
               )}
 
@@ -555,33 +520,19 @@ function WelcomePageContent() {
               <p className="text-white/75 text-sm md:text-base mb-1">{t('owner.subtitle')}</p>
               <p className="text-white/45 text-xs md:text-sm mb-5">{t('owner.description')}</p>
 
-              {/* Search */}
+              {/* Quick post */}
               {!hasOwnerSession && (
-                <div className={`w-full mx-auto ${isOwnerComboSearchMode ? 'max-w-sm sm:max-w-2xl' : 'max-w-sm'}`}>
-                  <div className="flex items-center gap-3">
-                    {isOwnerComboSearchMode && (
-                      <button onClick={() => { setIsOwnerComboSearchMode(false); (document.activeElement as HTMLElement)?.blur(); }} className="flex-shrink-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors" aria-label="Back">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-                      </button>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <OwnerComboSearchBox onSubmit={handleOwnerComboSearch} compactMode={!isOwnerComboSearchMode} onFocusChange={(f) => { if (f && !isOwnerComboSearchMode) setIsOwnerComboSearchMode(true); }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* AI CTA */}
-              {!hasOwnerSession && !isOwnerComboSearchMode && (
-                <div className="w-full max-w-sm mx-auto mt-3">
-                  <Link href="/welcome/owner-v2" className="group flex items-center gap-3 px-4 py-3.5 bg-white/[0.07] border border-white/15 rounded-xl hover:bg-white/[0.12] hover:border-white/25 transition-all">
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/25 flex items-center justify-center text-base">✨</div>
-                    <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-white leading-tight">New: AI Skipper Setup</p>
-                      <p className="text-xs text-white/50 leading-snug mt-0.5">Describe your boat, journey, and crew needs — AI does the rest in minutes</p>
-                    </div>
-                    <svg className="w-4 h-4 text-white/35 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                  </Link>
+                <div className="w-full max-w-sm mx-auto">
+                  <QuickPostBox
+                    placeholder="Post your profile, boat and journey..."
+                    expandedPlaceholder="Describe your boat, planned journey, dates, the crew you're looking for, required skills, and any other details..."
+                    isExpanded={isOwnerComboSearchMode}
+                    onExpand={() => setIsOwnerComboSearchMode(true)}
+                    onCancel={() => setIsOwnerComboSearchMode(false)}
+                    onPost={handleOwnerPost}
+                    accentColor="amber"
+                    submitLabel="Post journey"
+                  />
                 </div>
               )}
 
