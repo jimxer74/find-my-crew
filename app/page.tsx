@@ -605,7 +605,7 @@ function WelcomePageContent() {
         <OwnerPostDialog
           isOpen={isOwnerPostMode}
           onClose={() => setIsOwnerPostMode(false)}
-          onSave={(text, consent) => { handleOwnerPost(text, consent); setIsOwnerPostMode(false); }}
+          onSave={(text, consent) => { handleOwnerPost(text); setIsOwnerPostMode(false); }}
           title={t('owner.postDialogTitle')}
           placeholder={t('owner.postDialogPlaceholder')}
           aiProcessingLabel={tPrivacy('aiProcessing')}
