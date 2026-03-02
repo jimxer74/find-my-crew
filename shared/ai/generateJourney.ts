@@ -96,9 +96,10 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
   const validatedWaypoints = waypointsResult.waypoints;
   const validatedStartDate = startDateResult.date;
   const validatedEndDate = endDateResult.date;
-  // Use boat speed when provided; otherwise use default for date calculation when journey has dates (so leg dates are still computed)
-  const DEFAULT_CRUISING_SPEED_KNOTS = 6;
-  const validatedSpeed = speedResult.value ?? (validatedStartDate && validatedEndDate ? DEFAULT_CRUISING_SPEED_KNOTS : null);
+  // Use boat speed when provided; fall back to default whenever a start date exists
+  // so leg dates are always computed when the journey has at least a departure date.
+  const DEFAULT_CRUISING_SPEED_KNOTS = 5;
+  const validatedSpeed = speedResult.value ?? (validatedStartDate ? DEFAULT_CRUISING_SPEED_KNOTS : null);
 
   const allWaypoints = [validatedStart, ...validatedWaypoints, validatedEnd];
 
@@ -112,8 +113,9 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
     ? `\nJourney Dates:${validatedStartDate ? ` Start: ${validatedStartDate}` : ''}${validatedEndDate ? ` End: ${validatedEndDate}` : ''}`
     : '';
 
-  const speedPlanningInstructions = useSpeedPlanning && validatedSpeed && validatedStartDate && validatedEndDate
-    ? `\n\nSPEED-BASED PLANNING (CRITICAL):
+  const speedPlanningInstructions = useSpeedPlanning && validatedSpeed && validatedStartDate
+    ? validatedEndDate
+      ? `\n\nSPEED-BASED PLANNING (CRITICAL):
 - The boat's average cruising speed is ${validatedSpeed} knots
 - Journey must start on ${validatedStartDate} and end by ${validatedEndDate}
 - You MUST calculate realistic dates for each leg based on:
@@ -127,6 +129,15 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
   * End date: Start date + calculated sailing time + buffer for rest/weather
 - Ensure all leg dates fit within the journey timeframe (${validatedStartDate} to ${validatedEndDate})
 - Leg dates should be sequential and realistic
+- Include start_date and end_date for each leg in the response`
+      : `\n\nSPEED-BASED DATE PLANNING (CRITICAL):
+- The boat's average cruising speed is ${validatedSpeed} knots
+- Journey departs on ${validatedStartDate}
+- For each leg calculate start_date and end_date using:
+  * Estimated distance between leg waypoints in nautical miles
+  * Sailing time = distance / ${validatedSpeed} knots at 70-80% efficiency (weather, rest, harbour time)
+  * First leg starts on ${validatedStartDate}; each subsequent leg starts when the previous one ends
+- Leg dates must be sequential
 - Include start_date and end_date for each leg in the response`
     : '';
 
@@ -205,7 +216,7 @@ CRITICAL RULES:
    - "Extreme sailing": High latitude, heavy weather, remote areas, demanding conditions.
    Include "riskLevel" at the top level of your JSON with exactly one of these three strings.
 
-Return ONLY valid JSON in this exact format:${useSpeedPlanning && validatedSpeed && validatedStartDate && validatedEndDate ? `
+Return ONLY valid JSON in this exact format:${useSpeedPlanning && validatedSpeed && validatedStartDate ? `
 {
   "journeyName": "Journey name here",
   "description": "Brief description of the journey",

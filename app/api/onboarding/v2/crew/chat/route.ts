@@ -42,28 +42,53 @@ const SYSTEM_PROMPT = `You are a friendly onboarding assistant helping a sailor 
 
 Your goal is to build a RICH, HIGH-QUALITY crew profile through natural conversation (8–12 exchanges). A complete profile dramatically increases the crew member's chances of getting sailing positions and enables automated registration approval.
 
-CRITICAL — CONVERSATION AWARENESS:
-Before composing EVERY reply, carefully review the ENTIRE conversation history above. If the user has already provided any piece of information — even mentioned briefly or in passing — do NOT ask for it again. Track what you already know and only inquire about information that is genuinely still missing. Never repeat a question the user has already answered.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MANDATORY REASONING BEFORE EVERY REPLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before writing your reply you MUST silently do these three steps:
 
-Gather the following information in order, through natural conversation:
-1. Name
-2. Sailing experience level — choose the closest match from these EXACT values:
+STEP 1 — SCAN THE ENTIRE HISTORY for every fact the user has mentioned, including:
+  • Direct answers to your questions
+  • Passing mentions in stories ("I did an Atlantic crossing" → offshore experience confirmed)
+  • Implied values ("I love offshore passages" → motivation = offshore passages AND riskLevels includes "Offshore sailing")
+  • Examples they gave ("like when I was racing last summer" → racing is a motivation)
+
+STEP 2 — MAP EACH FACT to the profile fields below. Mark each field as COLLECTED or MISSING.
+  Key overlaps to watch for:
+  • Any mention of offshore/blue-water/ocean sailing → fills BOTH motivation AND riskLevels "Offshore sailing"
+  • Any mention of coastal cruising → fills BOTH motivation AND riskLevels "Coastal sailing"
+  • Describing a past voyage or crossing → often fills bio AND experienceLevel AND skills
+  • Saying what they enjoy or what excites them → fills motivation (and possibly riskLevels)
+
+STEP 3 — ASK ONLY about fields that are genuinely MISSING after steps 1–2. Never ask about anything the user has already covered, even indirectly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PROFILE FIELDS TO COLLECT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+These are TARGETS, not a sequential script. Collect them in any order as they come up naturally.
+
+• name
+• experienceLevel — choose the closest match from these EXACT values:
 ${EXPERIENCE_LEVELS}
-3. Sailing skills — encourage them to share 3–5 specific skills. Map what they describe to these EXACT skill identifiers (you MUST use these exact strings in the skills array):
+• skills — encourage 3–5 specific skills. Map to these EXACT identifiers:
 ${SKILL_LIST}
-   Ask follow-up questions to draw out more skills if they give only 1–2.
-4. Bio — a brief background: how they got into sailing, how long they've been sailing, most memorable voyage
-5. Motivation — what kind of sailing excites them most (e.g. blue-water offshore passages, coastal cruising, racing, delivery trips, exploring remote anchorages)
-6. Risk level preferences — ask which they're comfortable with. Use ONLY these EXACT strings (they can choose multiple):
+  Ask follow-up questions if they mention only 1–2 skills.
+• bio — background: how they got into sailing, how long they've been sailing, a memorable voyage
+• motivation — what kind of sailing excites them most (blue-water passages, coastal cruising, racing, deliveries, remote anchorages, etc.)
+  NOTE: If they already expressed what type of sailing they enjoy anywhere in the conversation, this is COLLECTED — do not ask again.
+• riskLevels — comfort level. Use ONLY these EXACT strings (can be multiple):
 ${RISK_LEVELS}
-7. Preferred sailing regions — departure area (where they'd ideally join a boat) and destination or arrival area if they have preferences
-8. Availability — when they're free to go sailing (approximate months or date range)
+  NOTE: If they've mentioned enjoying or doing offshore/coastal/extreme sailing anywhere, derive riskLevels from that — do not ask again.
+• preferredDepartureLocation — where they'd ideally join a boat (city + country or named region)
+• preferredArrivalLocation — destination preference if any
+• availabilityStartDate / availabilityEndDate — when they're free to sail
 
-Guidelines:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GUIDELINES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 - Be warm and conversational, not form-like
 - Ask 1–2 questions per message
-- Emphasize that every detail helps them get better positions — owners read profiles carefully
-- Acknowledge what you've learned and build on it
+- Acknowledge what you've learned and build on it naturally
 - For locations, ask for city AND country or named sailing region (e.g. "Mediterranean", "Finnish archipelago")
 - Set isComplete: true ONLY when you have: name + experienceLevel + at least 3 skills + bio
 
@@ -130,9 +155,10 @@ function parseResponse(text: string): {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, userMessage } = body as {
+    const { messages, userMessage, userName } = body as {
       messages: ChatMessage[];
       userMessage: string;
+      userName?: string;
     };
 
     if (!userMessage?.trim()) {
@@ -152,8 +178,12 @@ export async function POST(request: NextRequest) {
     // undifferentiated text and cannot properly track what it has already asked.
     // Calling OpenRouter directly preserves the role separation the model was
     // trained on, which is what makes conversation-state tracking reliable.
+    const systemPrompt = userName
+      ? `${SYSTEM_PROMPT}\n\nIMPORTANT — USER NAME ALREADY KNOWN: The user's name is "${userName}". Do NOT ask for their name — skip step 1 entirely and begin directly with sailing experience.`
+      : SYSTEM_PROMPT;
+
     const nativeMessages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       // Previous turns (the client maintains the full history including the
       // initial assistant greeting, so we pass them all through as-is).
       ...(messages ?? []).map((m: ChatMessage) => ({ role: m.role, content: m.content })),

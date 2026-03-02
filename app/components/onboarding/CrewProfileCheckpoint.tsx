@@ -7,6 +7,29 @@ import { Button } from '@shared/ui/Button/Button';
 import { CheckpointCard } from './CheckpointCard';
 import type { SkillEntry } from './CrewOnboardingV2';
 
+interface LocationData {
+  name: string;
+  lat?: number;
+  lng?: number;
+  isCruisingRegion?: boolean;
+  bbox?: { minLng: number; minLat: number; maxLng: number; maxLat: number };
+  countryName?: string;
+}
+
+async function resolveLocation(text: string): Promise<LocationData> {
+  try {
+    const res = await fetch('/api/onboarding/v2/geocode', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: text }),
+    });
+    if (res.ok) return (await res.json()) as LocationData;
+  } catch {
+    // fall through to name-only fallback
+  }
+  return { name: text };
+}
+
 const EXPERIENCE_LABELS: Record<number, string> = {
   1: 'Beginner',
   2: 'Competent Crew',
@@ -124,6 +147,16 @@ export function CrewProfileCheckpoint({
     setIsSaving(true);
 
     try {
+      // Geocode departure and arrival locations in parallel
+      const [departureLocation, arrivalLocation] = await Promise.all([
+        data.preferredDepartureLocation?.trim()
+          ? resolveLocation(data.preferredDepartureLocation.trim())
+          : Promise.resolve(null),
+        data.preferredArrivalLocation?.trim()
+          ? resolveLocation(data.preferredArrivalLocation.trim())
+          : Promise.resolve(null),
+      ]);
+
       const supabase = getSupabaseBrowserClient();
 
       // Collision-resistant username
@@ -153,12 +186,8 @@ export function CrewProfileCheckpoint({
           skills: serializedSkills,
           sailing_preferences: data.sailingPreferences?.trim() ?? null,
           risk_level: data.riskLevels ?? [],
-          preferred_departure_location: data.preferredDepartureLocation
-            ? { name: data.preferredDepartureLocation.trim() }
-            : null,
-          preferred_arrival_location: data.preferredArrivalLocation
-            ? { name: data.preferredArrivalLocation.trim() }
-            : null,
+          preferred_departure_location: departureLocation,
+          preferred_arrival_location: arrivalLocation,
           availability_start_date: data.availabilityStartDate ?? null,
           availability_end_date: data.availabilityEndDate ?? null,
           roles: ['crew'],

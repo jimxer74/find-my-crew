@@ -6,6 +6,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { CrewOnboardingChat } from './CrewOnboardingChat';
 import { CrewProfileCheckpoint } from './CrewProfileCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
+import { ConsentSetupModal } from '@shared/components/auth';
+import { useConsentSetup } from '@shared/contexts';
 import { logger } from '@shared/logging';
 
 // ---------------------------------------------------------------------------
@@ -135,10 +137,12 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
 export function CrewOnboardingV2() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { needsConsentSetup, isLoading: consentLoading } = useConsentSetup();
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [consentDone, setConsentDone] = useState(false);
 
   // Resolve starting phase on mount
   useEffect(() => {
@@ -361,6 +365,10 @@ export function CrewOnboardingV2() {
                 handleChatComplete(data as Record<string, unknown>, msgs)
               }
               isProcessing={isExtracting}
+              userName={
+                (user?.user_metadata?.full_name as string | undefined) ??
+                user?.email?.split('@')[0]
+              }
             />
           </div>
         )}
@@ -380,6 +388,14 @@ export function CrewOnboardingV2() {
           </div>
         )}
       </div>
+
+      {/* Consent modal — shown after signup before proceeding to chat */}
+      {user && !consentLoading && needsConsentSetup && !consentDone && (
+        <ConsentSetupModal
+          userId={user.id}
+          onComplete={() => setConsentDone(true)}
+        />
+      )}
     </div>
   );
 }

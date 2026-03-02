@@ -10,6 +10,8 @@ import { BoatCheckpoint } from './BoatCheckpoint';
 import { EquipmentCheckpoint } from './EquipmentCheckpoint';
 import { JourneyCheckpoint } from './JourneyCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
+import { ConsentSetupModal } from '@shared/components/auth';
+import { useConsentSetup } from '@shared/contexts';
 import { logger } from '@shared/logging';
 
 // ---------------------------------------------------------------------------
@@ -167,9 +169,11 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
 export function OwnerOnboardingV2() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const { needsConsentSetup, isLoading: consentLoading } = useConsentSetup();
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [consentDone, setConsentDone] = useState(false);
 
   // On mount: resolve starting state from auth + sessionStorage
   useEffect(() => {
@@ -403,6 +407,10 @@ export function OwnerOnboardingV2() {
             <h2 className="font-semibold text-white mb-4">Tell us about yourself</h2>
             <OnboardingChat
               onComplete={(data, msgs) => handleChatComplete(data as Record<string, unknown>, msgs)}
+              userName={
+                (user?.user_metadata?.full_name as string | undefined) ??
+                user?.email?.split('@')[0]
+              }
             />
           </div>
         )}
@@ -464,6 +472,14 @@ export function OwnerOnboardingV2() {
           </div>
         )}
       </div>
+
+      {/* Consent modal — shown after signup before proceeding to chat */}
+      {user && !consentLoading && needsConsentSetup && !consentDone && (
+        <ConsentSetupModal
+          userId={user.id}
+          onComplete={() => setConsentDone(true)}
+        />
+      )}
     </div>
   );
 }

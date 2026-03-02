@@ -26,16 +26,20 @@ interface ExtractedData {
 interface CrewOnboardingChatProps {
   onComplete: (extractedData: ExtractedData, messages: Message[]) => void;
   isProcessing?: boolean;
+  userName?: string;
 }
 
-const INITIAL_MESSAGE: Message = {
-  role: 'assistant',
-  content:
-    "Welcome to Find My Crew! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. Let's start — what's your name, and how would you describe your sailing experience so far?",
-};
+function buildInitialMessage(userName?: string): Message {
+  return {
+    role: 'assistant',
+    content: userName
+      ? `Hi ${userName}! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. How would you describe your sailing experience so far?`
+      : "Welcome to Find My Crew! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. Let's start — what's your name, and how would you describe your sailing experience so far?",
+  };
+}
 
-export function CrewOnboardingChat({ onComplete, isProcessing = false }: CrewOnboardingChatProps) {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+export function CrewOnboardingChat({ onComplete, isProcessing = false, userName }: CrewOnboardingChatProps) {
+  const [messages, setMessages] = useState<Message[]>(() => [buildInitialMessage(userName)]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData>({});
@@ -64,6 +68,7 @@ export function CrewOnboardingChat({ onComplete, isProcessing = false }: CrewOnb
         body: JSON.stringify({
           messages,
           userMessage: text,
+          userName,
         }),
       });
 

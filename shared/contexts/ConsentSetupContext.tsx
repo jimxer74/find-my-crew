@@ -8,7 +8,13 @@ import { getSupabaseBrowserClient } from '@shared/database/client';
 import { ConsentSetupModal } from '@shared/components/auth/ConsentSetupModal';
 
 // Pages where the consent modal should not be displayed
-const CONSENT_MODAL_EXCLUDED_PATHS = ['/privacy-policy', '/terms-of-service'];
+// v2 onboarding flows handle consent inline, so exclude them here to avoid double modals
+const CONSENT_MODAL_EXCLUDED_PATHS = [
+  '/privacy-policy',
+  '/terms-of-service',
+  '/welcome/crew-v2',
+  '/welcome/owner-v2',
+];
 
 type ConsentSetupContextType = {
   needsConsentSetup: boolean;

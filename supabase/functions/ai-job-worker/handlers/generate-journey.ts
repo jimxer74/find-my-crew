@@ -60,8 +60,10 @@ function buildPrompt(payload: GenerateJourneyPayload): string {
     waypointDensity = 'moderate',
   } = payload;
 
-  const DEFAULT_SPEED = 6;
-  const speed = boatSpeed ?? (startDate && endDate ? DEFAULT_SPEED : null);
+  const DEFAULT_SPEED = 5;
+  // Use boat speed when provided; fall back to default whenever a start date exists
+  // so leg dates are always computed when the journey has at least a departure date.
+  const speed = boatSpeed ?? (startDate ? DEFAULT_SPEED : null);
   const allWaypoints = [startLocation, ...intermediateWaypoints, endLocation];
 
   const waypointsInfo = allWaypoints.length > 2
@@ -74,13 +76,22 @@ function buildPrompt(payload: GenerateJourneyPayload): string {
     ? `\nJourney Dates:${startDate ? ` Start: ${startDate}` : ''}${endDate ? ` End: ${endDate}` : ''}`
     : '';
 
-  const speedInstructions = useSpeedPlanning && speed && startDate && endDate
-    ? `\n\nSPEED-BASED PLANNING (CRITICAL):
+  const speedInstructions = useSpeedPlanning && speed && startDate
+    ? endDate
+      ? `\n\nSPEED-BASED PLANNING (CRITICAL):
 - The boat's average cruising speed is ${speed} knots
 - Journey must start on ${startDate} and end by ${endDate}
 - Calculate realistic leg dates based on distance / speed (70-80% efficiency)
 - Take into account the prevailing weather conditions and the boat's performance in those conditions, to avoid challenging passages or less optimal time of year.
 - Leg dates must be sequential and fit within the journey timeframe`
+      : `\n\nSPEED-BASED DATE PLANNING (CRITICAL):
+- The boat's average cruising speed is ${speed} knots
+- Journey departs on ${startDate}
+- For each leg calculate start_date and end_date using:
+  * Estimated distance between leg waypoints in nautical miles
+  * Sailing time = distance / ${speed} knots at 70-80% efficiency (weather, rest, harbour time)
+  * First leg starts on ${startDate}; each subsequent leg starts when the previous one ends
+- Leg dates must be sequential`
     : '';
 
   const densityInstructions = waypointDensity === 'minimal'
@@ -89,7 +100,7 @@ function buildPrompt(payload: GenerateJourneyPayload): string {
     ? `\n\nWAYPOINT DENSITY: MODERATE — include up to 2 intermediate waypoints per leg only for major routing decisions or crew exchange points`
     : `\n\nWAYPOINT DENSITY: DETAILED — include navigation waypoints, max 4 per leg`;
 
-  const withDates = useSpeedPlanning && speed && startDate && endDate;
+  const withDates = useSpeedPlanning && speed && startDate;
 
   return `You are a sailing route planner. Generate a sailing journey with legs between locations.${waypointsInfo}
 

@@ -106,21 +106,26 @@ function parseResponse(text: string): {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { messages, userMessage } = body as {
+    const { messages, userMessage, userName } = body as {
       messages: ChatMessage[];
       userMessage: string;
+      userName?: string;
     };
 
     if (!userMessage?.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
+    const systemPrompt = userName
+      ? `${SYSTEM_PROMPT}\n\nIMPORTANT — USER NAME ALREADY KNOWN: The user's name is "${userName}". Do NOT ask for their name — skip step 1 entirely and begin directly with sailing experience level.`
+      : SYSTEM_PROMPT;
+
     const history = [...(messages ?? []), { role: 'user' as const, content: userMessage }];
     const conversationText = history.length > 1
       ? `\n\nConversation so far:\n${formatConversation(history.slice(0, -1))}\n\nOwner's latest message: ${userMessage}`
       : `\n\nOwner's message: ${userMessage}`;
 
-    const prompt = `${SYSTEM_PROMPT}${conversationText}\n\nRespond as the Assistant with a JSON object:`;
+    const prompt = `${systemPrompt}${conversationText}\n\nRespond as the Assistant with a JSON object:`;
 
     const result = await callAI({ useCase: 'owner-chat', prompt, maxTokens: 600 });
 

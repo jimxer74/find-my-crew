@@ -29,8 +29,8 @@ export function EquipmentCheckpoint({
 
   if (phase === 'offer') {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border bg-muted/30">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
           <h3 className="font-semibold text-foreground">
             Generate equipment list &amp; maintenance tasks?
           </h3>
@@ -54,7 +54,7 @@ export function EquipmentCheckpoint({
           )}
         </div>
 
-        <div className="px-5 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between gap-3">
           <Button variant="ghost" size="sm" onClick={onSkip}>
             Skip for now
           </Button>
@@ -68,14 +68,16 @@ export function EquipmentCheckpoint({
 
   // Delegate to NewBoatWizardStep3 for category selection → generation → review → save
   return (
-    <NewBoatWizardStep3
-      boatId={boatId}
-      makeModel={makeModel}
-      boatType={boatType ?? null}
-      loa_m={loa_m ?? null}
-      yearBuilt={yearBuilt ?? null}
-      onComplete={onComplete}
-      onSkip={onSkip}
-    />
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6">
+      <NewBoatWizardStep3
+        boatId={boatId}
+        makeModel={makeModel}
+        boatType={boatType ?? null}
+        loa_m={loa_m ?? null}
+        yearBuilt={yearBuilt ?? null}
+        onComplete={onComplete}
+        onSkip={onSkip}
+      />
+    </div>
   );
 }

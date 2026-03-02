@@ -736,8 +736,8 @@ function WelcomePageContent() {
                 >
                   <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-semibold text-white leading-tight">New: AI Profile Builder</p>
-                    <p className="text-xs text-white/65 leading-snug mt-0.5">Build your full crew profile in a personalized 2-min AI conversation</p>
+                    <p className="text-sm font-semibold text-white leading-tight">Try our new profile builder wizard</p>
+                    <p className="text-xs text-white/65 leading-snug mt-0.5">Build your full profile in a personalized onboarding flow in few minutes</p>
                   </div>
                   <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -911,8 +911,8 @@ function WelcomePageContent() {
                   >
                     <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-white leading-tight">New: AI Owner Setup</p>
-                      <p className="text-xs text-white/65 leading-snug mt-0.5">Describe your boat, journey, and crew needs — AI does the rest in 2 minutes</p>
+                      <p className="text-sm font-semibold text-white leading-tight">Try new skipper onboarding wizard</p>
+                      <p className="text-xs text-white/65 leading-snug mt-0.5">Tell us about your boat, journey, and crew needs — AI does the rest in less than 5 minutes</p>
                     </div>
                     <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

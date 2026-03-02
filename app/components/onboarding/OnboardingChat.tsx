@@ -24,15 +24,20 @@ interface ExtractedData {
 
 interface OnboardingChatProps {
   onComplete: (extractedData: ExtractedData, messages: Message[]) => void;
+  userName?: string;
 }
 
-const INITIAL_MESSAGE: Message = {
-  role: 'assistant',
-  content: "Welcome to Find My Crew! I'm here to help you get set up quickly. To start, what's your name and what kind of boat do you sail?",
-};
+function buildInitialMessage(userName?: string): Message {
+  return {
+    role: 'assistant',
+    content: userName
+      ? `Hi ${userName}! I'm here to help you get set up quickly. What kind of boat do you sail?`
+      : "Welcome to Find My Crew! I'm here to help you get set up quickly. To start, what's your name and what kind of boat do you sail?",
+  };
+}
 
-export function OnboardingChat({ onComplete }: OnboardingChatProps) {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+export function OnboardingChat({ onComplete, userName }: OnboardingChatProps) {
+  const [messages, setMessages] = useState<Message[]>(() => [buildInitialMessage(userName)]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<ExtractedData>({});
@@ -61,6 +66,7 @@ export function OnboardingChat({ onComplete }: OnboardingChatProps) {
         body: JSON.stringify({
           messages: messages, // history before user message
           userMessage: text,
+          userName,
         }),
       });
 

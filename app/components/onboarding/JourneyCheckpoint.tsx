@@ -55,11 +55,14 @@ async function geocodeQuery(query: string): Promise<{ lat: number; lng: number; 
   }
 }
 
+const DEFAULT_BOAT_SPEED_KNOTS = 5;
+
 export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpointProps) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>('form');
   const [jobId, setJobId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [boatSpeed, setBoatSpeed] = useState<number | null>(null);
 
   // Start / end location state
   const [startText, setStartText] = useState(journey?.fromLocation ?? '');
@@ -76,6 +79,20 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
 
   const [startDate, setStartDate] = useState(journey?.startDate ?? '');
   const [endDate, setEndDate] = useState(journey?.endDate ?? '');
+
+  // Fetch boat's average cruising speed from the database
+  useEffect(() => {
+    if (!boatId) return;
+    const supabase = getSupabaseBrowserClient();
+    supabase
+      .from('boats')
+      .select('average_speed_knots')
+      .eq('id', boatId)
+      .single()
+      .then(({ data }) => {
+        if (data?.average_speed_knots) setBoatSpeed(data.average_speed_knots);
+      });
+  }, [boatId]);
 
   // Auto-geocode all location names extracted from chat on mount
   useEffect(() => {
@@ -197,6 +214,8 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
           ...(resolvedWaypoints.length > 0 ? { waypoints: resolvedWaypoints } : {}),
           startDate: startDate || undefined,
           endDate: endDate || undefined,
+          useSpeedPlanning: true,
+          boatSpeed: boatSpeed ?? DEFAULT_BOAT_SPEED_KNOTS,
           waypointDensity: 'moderate',
         } as unknown as Record<string, unknown>,
       });
