@@ -4,7 +4,7 @@ title: Boat Management AI use cases
 status: To Do
 assignee: []
 created_date: '2026-02-26 11:23'
-updated_date: '2026-02-27 05:54'
+updated_date: '2026-03-02 16:25'
 labels: []
 dependencies: []
 ---
@@ -27,4 +27,6 @@ AI use cases:
 ** Create automatically common maintenance tasks for equipment, e.g. for engine, oil change, cooling water change, etc. tasks should include steps, instructions, links to further documentation
 
 ** Location specific search tool for repair shops doing maintenance activities, autoproposal of repair shops based on maintenance tasks
+
+** Automatic replensihment orders for spare parts based on the scheduled tasks
 <!-- SECTION:DESCRIPTION:END -->
