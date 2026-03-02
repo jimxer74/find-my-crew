@@ -129,7 +129,7 @@ export function QuickPostBox({
           type="button"
           onClick={() => setAiConsent((v) => !v)}
           aria-label={aiConsent ? 'Disable AI processing' : 'Enable AI processing'}
-          className={`relative flex-shrink-0 w-10 h-[22px] rounded-full transition-colors duration-200 ${
+          className={`relative flex-shrink-0 w-10 h-[22px] rounded-full overflow-hidden transition-colors duration-200 ${
             aiConsent ? toggleActiveCls : 'bg-white/25'
           }`}
         >
