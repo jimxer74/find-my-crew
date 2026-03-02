@@ -389,12 +389,12 @@ function WelcomePageContent() {
             {/* Card body: headline + photo */}
             <div className="grid md:grid-cols-2">
               {/* Left: headline */}
-              <div className="flex flex-col justify-center px-7 md:px-10 py-9 md:py-12">
+              <div className="flex flex-col justify-center items-center md:items-start text-center md:text-left px-7 md:px-10 py-9 md:py-12">
                 <RotatingHeadline />
                 <p className="text-gray-500 text-sm md:text-[0.95rem] leading-relaxed max-w-xs">
                   Intelligent matching for sailors and skippers. Plan routes, manage your boat, and connect with the right people — all powered by AI.
                 </p>
-                <div className="flex flex-wrap items-center gap-3 mt-7">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-7">
                   <Link href="/welcome/crew-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-[#1a2e4a] rounded-xl hover:bg-[#0f1e30] transition-colors shadow-md">
                     Join as Crew
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
