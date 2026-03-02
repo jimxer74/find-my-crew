@@ -20,6 +20,48 @@ import type { OwnerPreferences } from '@shared/ai/owner/types';
 import { QuickPostBox } from '@/app/components/QuickPostBox';
 
 // ---------------------------------------------------------------------------
+// Rotating hero headline
+// ---------------------------------------------------------------------------
+
+const HERO_PHRASES = [
+  { lines: ['Find Your Perfect', 'Sailing Crew with'], accent: 'AI Precision' },
+  { lines: ['Find your next sailing', 'adventure and let'], accent: 'skippers find you' },
+  { lines: ['Automate your boat', 'management'], accent: 'with AI' },
+  { lines: ['Create and manage', 'your upcoming'], accent: 'Journeys' },
+];
+
+function RotatingHeadline() {
+  const [index, setIndex] = React.useState(0);
+  const [visible, setVisible] = React.useState(true);
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % HERO_PHRASES.length);
+        setVisible(true);
+      }, 350);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const { lines, accent } = HERO_PHRASES[index];
+
+  return (
+    <h1
+      className={`text-3xl md:text-4xl xl:text-[2.6rem] font-extrabold text-[#0c1f35] leading-[1.1] tracking-tight mb-4 min-h-[8rem] md:min-h-[9rem] transition-all duration-300 ${
+        visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+      }`}
+    >
+      {lines.map((line, i) => (
+        <React.Fragment key={i}>{line}<br /></React.Fragment>
+      ))}
+      <span className="text-blue-600">{accent}</span>
+    </h1>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Owner post dialog (legacy flow)
 // ---------------------------------------------------------------------------
 
@@ -347,11 +389,7 @@ function WelcomePageContent() {
             <div className="grid md:grid-cols-2">
               {/* Left: headline */}
               <div className="flex flex-col justify-center px-7 md:px-10 py-9 md:py-12">
-                <h1 className="text-3xl md:text-4xl xl:text-[2.6rem] font-extrabold text-[#0c1f35] leading-[1.1] tracking-tight mb-4">
-                  Find Your Perfect<br />
-                  Sailing Crew with<br />
-                  <span className="text-blue-600">AI Precision</span>
-                </h1>
+                <RotatingHeadline />
                 <p className="text-gray-500 text-sm md:text-[0.95rem] leading-relaxed max-w-xs">
                   Intelligent matching for sailors and skippers. Plan routes, manage your boat, and connect with the right people — all powered by AI.
                 </p>
