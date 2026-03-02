@@ -322,7 +322,7 @@ function WelcomePageContent() {
     <div className="min-h-screen flex flex-col">
 
       {/* Ocean background — fixed so it covers the full page height */}
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-2.jpg)' }} />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-12.jpg)' }} />
 
       {/* ================================================================
           HERO SECTION
@@ -338,15 +338,12 @@ function WelcomePageContent() {
         <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 py-4">
           <div />
           <div className="flex items-center gap-2">
-            <Link href="/crew/dashboard" className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
+            <Link href="/crew/dashboard" className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
               </svg>
               Map
             </Link>
-            <button onClick={() => setIsLoginModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
-              {t('login')}
-            </button>
             <button onClick={() => setIsSignupModalOpen(true)} className="px-4 py-2 text-sm font-medium text-[#0c1f35] bg-white rounded-lg shadow hover:bg-white/90 transition-colors">
               Sign Up
             </button>
