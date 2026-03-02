@@ -33,6 +33,21 @@ export const devConfig: EnvironmentConfig = {
   ],
   defaultTemperature: 0.5,
   defaultMaxTokens: 4000,
+
+  useCaseOverrides: {
+    // This is for searching the products and building product registy, requires good model with online capability
+    'product-search': {
+      providers: [
+        {
+          provider: 'openrouter',
+          models: ['openrouter/auto:online'],
+          temperature: 0.1,  // Lower temperature for more deterministic tool calls
+          maxTokens: 8000
+        }
+      ]
+    },
+  }
+
   // Use-case-specific overrides for development
   /*
   useCaseOverrides: {
