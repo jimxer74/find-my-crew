@@ -13,21 +13,19 @@ import { getSupabaseBrowserClient } from '@shared/database/client';
 import { useAuth } from '@/app/contexts/AuthContext';
 import * as sessionService from '@shared/lib/prospect/sessionService';
 import * as ownerSessionService from '@shared/lib/owner/sessionService';
-import { shouldStayOnHomepage, redirectAfterAuth, getRedirectPath } from '@shared/lib/routing/redirectHelpers.client';
+import { shouldStayOnHomepage, getRedirectPath } from '@shared/lib/routing/redirectHelpers.client';
 import { ProspectSession } from '@shared/ai/prospect/types';
 import { ComboSearchBox, type ComboSearchData } from '@shared/ui/ComboSearchBox';
 import { OwnerComboSearchBox, type OwnerComboSearchData } from '@shared/ui/OwnerComboSearchBox';
 import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@shared/components/onboarding/OnboardingSteps';
 import type { OwnerPreferences } from '@shared/ai/owner/types';
 
+// ---------------------------------------------------------------------------
+// Owner post dialog (legacy flow)
+// ---------------------------------------------------------------------------
+
 function OwnerPostDialog({
-  isOpen,
-  onClose,
-  onSave,
-  title,
-  placeholder,
-  aiProcessingLabel,
-  aiProcessingDesc,
+  isOpen, onClose, onSave, title, placeholder, aiProcessingLabel, aiProcessingDesc,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -40,111 +38,91 @@ function OwnerPostDialog({
   const [crewDemand, setCrewDemand] = useState('');
   const [aiConsent, setAiConsent] = useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-
-  React.useEffect(() => {
-    if (isOpen && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [isOpen]);
-
-  const handleSave = () => {
-    onSave(crewDemand.trim(), aiConsent);
-  };
-
-  const canSave = crewDemand.trim().length > 0 && aiConsent;
-
+  React.useEffect(() => { if (isOpen && textareaRef.current) textareaRef.current.focus(); }, [isOpen]);
   if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
-        className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="owner-post-dialog-title"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 id="owner-post-dialog-title" className="text-lg font-semibold text-gray-950 dark:text-gray-100">
-            {title}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors"
-            aria-label="Close"
-          >
-            <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <h2 className="text-lg font-semibold text-gray-950 dark:text-gray-100">{title}</h2>
+          <button onClick={onClose} className="p-1 rounded-full hover:bg-amber-100 dark:hover:bg-amber-900/40">
+            <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <textarea
-            ref={textareaRef}
-            value={crewDemand}
-            onChange={(e) => setCrewDemand(e.target.value)}
-            placeholder={placeholder}
-            className="w-full h-full min-h-[200px] px-3 py-2 text-sm text-gray-950 dark:text-gray-100 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 placeholder:text-gray-600 dark:placeholder:text-gray-400 resize-none"
-          />
-          {/* AI Consent - same layout as crew Profile Dialog */}
+          <textarea ref={textareaRef} value={crewDemand} onChange={(e) => setCrewDemand(e.target.value)} placeholder={placeholder} className="w-full min-h-[200px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white dark:bg-gray-800 text-gray-950 dark:text-gray-100" />
           <div className="flex items-start justify-between gap-4 pt-2">
             <div className="flex-1 min-w-0">
               <p className="font-medium text-gray-950 dark:text-gray-100">{aiProcessingLabel}</p>
               <p className="text-sm text-gray-700 dark:text-gray-400 mt-0.5">{aiProcessingDesc}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setAiConsent(!aiConsent)}
-              className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-900 ${
-                aiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'
-              }`}
-            >
-              <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${
-                  aiConsent ? 'right-1' : 'left-1'
-                }`}
-              />
+            <button type="button" onClick={() => setAiConsent(!aiConsent)} className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${aiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'}`}>
+              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${aiConsent ? 'right-1' : 'left-1'}`} />
             </button>
           </div>
         </div>
-
-        {/* Footer */}
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/30 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Save
-          </button>
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50">Cancel</button>
+          <button onClick={() => onSave(crewDemand.trim(), aiConsent)} disabled={!crewDemand.trim() || !aiConsent} className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">Save</button>
         </div>
       </div>
     </div>
   );
 }
 
-// Inner component that uses translations (must be called within NextIntlClientProvider)
+// ---------------------------------------------------------------------------
+// Feature card data for hero
+// ---------------------------------------------------------------------------
+
+const FEATURES = [
+  {
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+      </svg>
+    ),
+    title: 'Smart Matching',
+    description: 'AI analyzes your experience, skills, risk tolerance, and availability to connect the right crew with the perfect journey. Thousands of compatibility signals — one precise match.',
+    accent: 'blue',
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
+      </svg>
+    ),
+    title: 'Smart Management',
+    description: 'AI generates your boat\'s complete equipment inventory and maintenance schedule by model and age. Automated task scheduling, intelligent replacement suggestions, and product sourcing.',
+    accent: 'amber',
+  },
+  {
+    icon: (
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+      </svg>
+    ),
+    title: 'Smart Sailing',
+    description: 'AI plans multi-leg routes with precise waypoints, weather-aware timing, and date calculations based on your boat\'s speed. Browse open legs worldwide and join as crew — or post your adventure.',
+    accent: 'emerald',
+  },
+] as const;
+
+const accentMap = {
+  blue:    { icon: 'bg-blue-50 text-blue-700 border-blue-200',    dot: 'bg-blue-500'    },
+  amber:   { icon: 'bg-amber-50 text-amber-700 border-amber-200', dot: 'bg-amber-500'   },
+  emerald: { icon: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' },
+};
+
+// ---------------------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------------------
+
 function WelcomePageContent() {
   const t = useTranslations('welcome');
   const tPrivacy = useTranslations('settings.privacy');
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const [hasExistingSession, setHasExistingSession] = useState(false);
@@ -165,590 +143,364 @@ function WelcomePageContent() {
   const [onboardingState, setOnboardingState] = useState<string>('signup_pending');
   const [ownerOnboardingState, setOwnerOnboardingState] = useState<string>('signup_pending');
 
-  // Client-side redirect check (fallback for cases where middleware didn't catch it)
-  // Middleware handles most redirects server-side, but this ensures consistency
-  // This runs quickly and doesn't block page render unnecessarily
+  // Auth / redirect check
   useEffect(() => {
     let cancelled = false;
-
-    async function checkUserAndRedirect() {
-      // Wait for auth to finish loading
-      if (authLoading) {
-        return;
-      }
-
-      // If no user, allow page to render immediately
-      if (!user) {
-        setIsCheckingRole(false);
-        return;
-      }
-
-      // User is authenticated - quick check if they should stay or redirect
+    async function check() {
+      if (authLoading) return;
+      if (!user) { setIsCheckingRole(false); return; }
       try {
         const shouldStay = await shouldStayOnHomepage(user.id);
         if (cancelled) return;
-
-        if (shouldStay) {
-          // User has pending onboarding - allow page to render
-          setIsCheckingRole(false);
-          return;
-        }
-
-        // User should be redirected - get path and redirect immediately
+        if (shouldStay) { setIsCheckingRole(false); return; }
         const redirectPath = await getRedirectPath(user.id, 'root');
         if (cancelled) return;
-
-        if (redirectPath && redirectPath !== '/') {
-          // Immediate redirect (no delay) - middleware should have caught this
-          // but if not, redirect now to prevent content flash
-          router.replace(redirectPath);
-          // Don't set isCheckingRole to false - let redirect happen
-        } else {
-          setIsCheckingRole(false);
-        }
+        if (redirectPath && redirectPath !== '/') { router.replace(redirectPath); } else { setIsCheckingRole(false); }
       } catch (error) {
         logger.error('[RootRoute] Failed to determine redirect', { error: error instanceof Error ? error.message : String(error) });
-        // On error, allow page to render (fallback)
         setIsCheckingRole(false);
       }
     }
-
-    // Only check if we have a user (middleware handles most cases)
-    if (user && !authLoading) {
-      checkUserAndRedirect();
-    } else if (!authLoading) {
-      // No user and auth is loaded - allow page to render
-      setIsCheckingRole(false);
-    }
-
-    return () => {
-      cancelled = true;
-    };
+    if (user && !authLoading) { check(); } else if (!authLoading) { setIsCheckingRole(false); }
+    return () => { cancelled = true; };
   }, [user, authLoading, router]);
 
-  // Check for existing conversation on mount - load from API instead of localStorage
+  // Crew session
   useEffect(() => {
-    async function checkExistingSession() {
+    async function checkCrewSession() {
       try {
-        // Get session ID from cookie
-        const response = await fetch('/api/prospect/session', {
-          credentials: 'include',
-        });
-        
-        if (!response.ok) {
-          return; // No session cookie
-        }
-        
-        const cookieData = await response.json();
-        const sessionId = cookieData.sessionId;
-        
-        if (!sessionId || cookieData.isNewSession) {
-          return; // New session, no existing conversation
-        }
-        
-        // Load session data from API
-        const session: ProspectSession | null = await sessionService.loadSession(sessionId);
-        
-        if (session && session.conversation && session.conversation.length > 0) {
+        const res = await fetch('/api/prospect/session', { credentials: 'include' });
+        if (!res.ok) return;
+        const cookie = await res.json();
+        if (!cookie.sessionId || cookie.isNewSession) return;
+        const session: ProspectSession | null = await sessionService.loadSession(cookie.sessionId);
+        if (session?.conversation?.length) {
           setHasExistingSession(true);
           setSessionType('crew');
-
-          // Store session messages for use in steps indicator
           setSessionMessages(session.conversation);
-
-          // Extract onboarding state
           setOnboardingState(session.onboardingState || 'signup_pending');
-
-          // Extract unique leg references from all messages
           const legs = new Map<string, string>();
           for (const msg of session.conversation) {
-            if (msg.metadata?.legReferences) {
-              for (const leg of msg.metadata.legReferences) {
-                if (leg.id && leg.name && !legs.has(leg.id)) {
-                  legs.set(leg.id, leg.name);
-                }
-              }
+            for (const leg of msg.metadata?.legReferences ?? []) {
+              if (leg.id && leg.name && !legs.has(leg.id)) legs.set(leg.id, leg.name);
             }
           }
-
-          // Also check viewedLegs from session
-          if (session.viewedLegs && session.viewedLegs.length > 0) {
-            // If we have viewed leg IDs but not names, we could fetch them
-            // For now, we'll rely on legReferences from messages
-          }
-
-          // Convert to array and limit to 4 legs
-          const legArray = Array.from(legs.entries()).map(([id, name]) => ({ id, name }));
-          setSessionLegs(legArray.slice(0, 4));
+          setSessionLegs(Array.from(legs.entries()).map(([id, name]) => ({ id, name })).slice(0, 4));
         }
-      } catch (e) {
-        logger.error('Failed to check session', { error: e instanceof Error ? e.message : String(e) });
-      }
+      } catch (e) { logger.error('Failed to check crew session', { error: e instanceof Error ? e.message : String(e) }); }
     }
-    
-    checkExistingSession();
+    checkCrewSession();
   }, []);
 
-  // Check for existing owner onboarding session on mount
+  // Owner session
   useEffect(() => {
-    async function checkExistingOwnerSession() {
+    async function checkOwnerSession() {
       try {
-        const response = await fetch('/api/owner/session', {
-          credentials: 'include',
-        });
-
-        if (!response.ok) return;
-
-        const cookieData = await response.json();
-        const sessionId = cookieData.sessionId;
-
-        if (!sessionId || cookieData.isNewSession) {
-          return;
-        }
-
-        const session = await ownerSessionService.loadSession(sessionId);
-
-        if (session && session.conversation && session.conversation.length > 0) {
+        const res = await fetch('/api/owner/session', { credentials: 'include' });
+        if (!res.ok) return;
+        const cookie = await res.json();
+        if (!cookie.sessionId || cookie.isNewSession) return;
+        const session = await ownerSessionService.loadSession(cookie.sessionId);
+        if (session?.conversation?.length) {
           setHasOwnerSession(true);
           setOwnerSessionMessages(session.conversation);
           setOwnerSessionPreferences(session.gatheredPreferences || {});
-
-          // Extract owner onboarding state
           setOwnerOnboardingState(session.onboardingState || 'signup_pending');
         }
-      } catch (e) {
-        logger.error('Failed to check owner session', { error: e instanceof Error ? e.message : String(e) });
-      }
+      } catch (e) { logger.error('Failed to check owner session', { error: e instanceof Error ? e.message : String(e) }); }
     }
-
-    checkExistingOwnerSession();
+    checkOwnerSession();
   }, []);
 
-  // Reset onboarding state when user logs out
   useEffect(() => {
-    if (!user) {
-      setCrewHasProfile(false);
-      setOwnerHasProfile(false);
-      setOwnerHasBoat(false);
-      setOwnerHasJourney(false);
-    }
+    if (!user) { setCrewHasProfile(false); setOwnerHasProfile(false); setOwnerHasBoat(false); setOwnerHasJourney(false); }
   }, [user]);
 
-  // Fetch crew profile when user is logged in and has crew session
   useEffect(() => {
     if (!user || !hasExistingSession || sessionType !== 'crew') return;
-
-    const loadCrewProfile = async () => {
+    (async () => {
       try {
         const supabase = getSupabaseBrowserClient();
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('id', user.id)
-          .maybeSingle();
+        const { data } = await supabase.from('profiles').select('id').eq('id', user.id).maybeSingle();
         setCrewHasProfile(!!data);
-      } catch (error) {
-        logger.error('Error fetching crew profile', { error: error instanceof Error ? error.message : String(error) });
-        setCrewHasProfile(false);
-      }
-    };
-
-    loadCrewProfile();
+      } catch (e) {}
+    })();
   }, [user, hasExistingSession, sessionType]);
 
-  // Fetch owner profile/boats/journeys when user is logged in and has owner session
   useEffect(() => {
     if (!user || !hasOwnerSession) return;
-
-    const loadOwnerData = async () => {
+    (async () => {
       try {
         const supabase = getSupabaseBrowserClient();
-
         const [profileRes, boatsRes] = await Promise.all([
           supabase.from('profiles').select('id').eq('id', user.id).maybeSingle(),
           supabase.from('boats').select('id').eq('owner_id', user.id).limit(1),
         ]);
-
         setOwnerHasProfile(!!profileRes.data);
         const boatIds = boatsRes.data?.map((b: any) => b.id) ?? [];
         setOwnerHasBoat(boatIds.length > 0);
-
         if (boatIds.length > 0) {
-          try {
-            const { data } = await supabase
-              .from('journeys')
-              .select('id')
-              .in('boat_id', boatIds)
-              .limit(1);
-            setOwnerHasJourney((data?.length ?? 0) > 0);
-          } catch (error) {
-            logger.error('Error fetching owner journeys', { error: error instanceof Error ? error.message : String(error) });
-            setOwnerHasJourney(false);
-          }
-        } else {
-          setOwnerHasJourney(false);
+          const { data } = await supabase.from('journeys').select('id').in('boat_id', boatIds).limit(1);
+          setOwnerHasJourney((data?.length ?? 0) > 0);
         }
-      } catch (error) {
-        logger.error('Error fetching owner profile and boats', { error: error instanceof Error ? error.message : String(error) });
-        setOwnerHasProfile(false);
-        setOwnerHasBoat(false);
-        setOwnerHasJourney(false);
-      }
-    };
-
-    loadOwnerData();
+      } catch (e) {}
+    })();
   }, [user, hasOwnerSession]);
 
-  const handleContinueConversation = () => {
-    router.push('/welcome/crew');
-  };
-
-  const handleContinueOwnerConversation = () => {
-    router.push('/welcome/owner');
-  };
-
-  const handleClearOwnerSession = async () => {
-    try {
-      const response = await fetch('/api/owner/session', {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const cookieData = await response.json();
-        const sessionId = cookieData.sessionId;
-
-        if (sessionId) {
-          try {
-            await ownerSessionService.deleteSession(sessionId);
-            logger.info('[Frontpage] Deleted owner session from database');
-          } catch (error) {
-            logger.error('[Frontpage] Error deleting owner session', { error: error instanceof Error ? error.message : String(error) });
-          }
-        }
-      }
-
-      await fetch('/api/owner/session', { method: 'DELETE' });
-    } catch (e) {
-      logger.error('Failed to clear owner session', { error: e instanceof Error ? e.message : String(e) });
-    }
-
-    setHasOwnerSession(false);
-    setOwnerSessionPreferences({});
-    setOwnerHasProfile(false);
-    setOwnerHasBoat(false);
-    setOwnerHasJourney(false);
-  };
-
-  const handleClearSession = async () => {
-    try {
-      // Get session ID from cookie before clearing
-      const response = await fetch('/api/prospect/session', {
-        credentials: 'include',
-      });
-      
-      if (response.ok) {
-        const cookieData = await response.json();
-        const sessionId = cookieData.sessionId;
-        
-        // Delete session from database if it exists
-        if (sessionId) {
-          try {
-            await sessionService.deleteSession(sessionId);
-            logger.info('[Frontpage] Deleted session from database');
-          } catch (error) {
-            logger.error('[Frontpage] Error deleting session', { error: error instanceof Error ? error.message : String(error) });
-          }
-        }
-      }
-      
-      // Clear server cookie
-      await fetch('/api/prospect/session', { method: 'DELETE' });
-    } catch (e) {
-      logger.error('Failed to clear session', { error: e instanceof Error ? e.message : String(e) });
-    }
-    
-    // Reset state to show full welcome page
-    setHasExistingSession(false);
-    setSessionType(null);
-    setSessionLegs([]);
-    setCrewHasProfile(false);
-  };
-
   const handleComboSearch = (data: ComboSearchData) => {
-    const params = new URLSearchParams();
-    
-    if (data.whereFrom) {
-      params.set('whereFrom', JSON.stringify(data.whereFrom));
-    }
-    if (data.whereTo) {
-      params.set('whereTo', JSON.stringify(data.whereTo));
-    }
-    if (data.availability.freeText) {
-      params.set('availabilityText', data.availability.freeText);
-    }
-    if (data.availability.dateRange?.start) {
-      params.set('availabilityStart', data.availability.dateRange.start.toISOString());
-    }
-    if (data.availability.dateRange?.end) {
-      params.set('availabilityEnd', data.availability.dateRange.end.toISOString());
-    }
-    if (data.profile) {
-      params.set('profile', data.profile);
-    }
-    if (data.aiProcessingConsent === true) {
-      params.set('aiProcessingConsent', 'true');
-    }
-    
-    router.push(`/welcome/crew?${params.toString()}`);
+    const p = new URLSearchParams();
+    if (data.whereFrom) p.set('whereFrom', JSON.stringify(data.whereFrom));
+    if (data.whereTo) p.set('whereTo', JSON.stringify(data.whereTo));
+    if (data.availability.freeText) p.set('availabilityText', data.availability.freeText);
+    if (data.availability.dateRange?.start) p.set('availabilityStart', data.availability.dateRange.start.toISOString());
+    if (data.availability.dateRange?.end) p.set('availabilityEnd', data.availability.dateRange.end.toISOString());
+    if (data.profile) p.set('profile', data.profile);
+    if (data.aiProcessingConsent) p.set('aiProcessingConsent', 'true');
+    router.push(`/welcome/crew?${p.toString()}`);
   };
 
   const handleOwnerPost = (text: string, aiProcessingConsent: boolean) => {
-    const params = new URLSearchParams();
-    // Legacy single-textarea dialog: treat the whole text as skipper profile
-    params.set('skipperProfile', text);
-    if (aiProcessingConsent) {
-      params.set('aiProcessingConsent', 'true');
-    }
-    router.push(`/welcome/owner?${params.toString()}`);
+    const p = new URLSearchParams();
+    p.set('skipperProfile', text);
+    if (aiProcessingConsent) p.set('aiProcessingConsent', 'true');
+    router.push(`/welcome/owner?${p.toString()}`);
   };
 
   const handleOwnerComboSearch = (data: OwnerComboSearchData) => {
-    const params = new URLSearchParams();
-    
-    // Journey details
-    if (data.journeyDetails.startLocation) {
-      params.set('startLocation', JSON.stringify(data.journeyDetails.startLocation));
-    }
-    if (data.journeyDetails.endLocation) {
-      params.set('endLocation', JSON.stringify(data.journeyDetails.endLocation));
-    }
-    if (data.journeyDetails.startDate) {
-      params.set('startDate', data.journeyDetails.startDate);
-    }
-    if (data.journeyDetails.endDate) {
-      params.set('endDate', data.journeyDetails.endDate);
-    }
-    if (data.journeyDetails.waypoints.length > 0) {
-      params.set('waypoints', JSON.stringify(data.journeyDetails.waypoints));
-    }
-    if (data.journeyDetails.waypointDensity) {
-      params.set('waypointDensity', data.journeyDetails.waypointDensity);
-    }
-    
-    // Skipper profile + crew requirements (separate fields)
-    if (data.skipperProfile.text) {
-      params.set('skipperProfile', data.skipperProfile.text);
-    }
-    if (data.crewRequirements.text) {
-      params.set('crewRequirements', data.crewRequirements.text);
-    }
-    if (data.skipperProfile.aiProcessingConsent || data.crewRequirements.aiProcessingConsent) {
-      params.set('aiProcessingConsent', 'true');
-    }
-
-    // Imported profile (from URL import feature)
-    if (data.importedProfile) {
-      params.set('importedProfile', JSON.stringify(data.importedProfile));
-    }
-
-    router.push(`/welcome/owner?${params.toString()}`);
+    const p = new URLSearchParams();
+    if (data.journeyDetails.startLocation) p.set('startLocation', JSON.stringify(data.journeyDetails.startLocation));
+    if (data.journeyDetails.endLocation) p.set('endLocation', JSON.stringify(data.journeyDetails.endLocation));
+    if (data.journeyDetails.startDate) p.set('startDate', data.journeyDetails.startDate);
+    if (data.journeyDetails.endDate) p.set('endDate', data.journeyDetails.endDate);
+    if (data.journeyDetails.waypoints.length > 0) p.set('waypoints', JSON.stringify(data.journeyDetails.waypoints));
+    if (data.journeyDetails.waypointDensity) p.set('waypointDensity', data.journeyDetails.waypointDensity);
+    if (data.skipperProfile.text) p.set('skipperProfile', data.skipperProfile.text);
+    if (data.crewRequirements.text) p.set('crewRequirements', data.crewRequirements.text);
+    if (data.skipperProfile.aiProcessingConsent || data.crewRequirements.aiProcessingConsent) p.set('aiProcessingConsent', 'true');
+    if (data.importedProfile) p.set('importedProfile', JSON.stringify(data.importedProfile));
+    router.push(`/welcome/owner?${p.toString()}`);
   };
 
-  // Show loading state while checking authentication and roles
-  // Show loading state while checking auth or redirect
-  // This prevents flash of content before redirect
+  // Loading spinner
   if (authLoading || (user && isCheckingRole)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex items-center justify-center bg-[#0c1f35]">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/50 text-sm">Loading…</p>
         </div>
       </div>
     );
   }
 
+  const showCrewColumn = !isOwnerPostMode && !isOwnerComboSearchMode && !hasOwnerSession;
+  const showOwnerColumn = isOwnerPostMode || isOwnerComboSearchMode || hasOwnerSession ||
+    (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode);
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Background image - shared across both columns */}
-      <div
-        className="fixed inset-0 bg-cover bg-center -z-20"
-        style={{
-          backgroundImage: 'url(/homepage-2.jpg)',
-        }}
-      />
 
-      {/* View map + Login - fixed top right */}
-      <div className="fixed top-4 right-4 z-50 flex items-center gap-2">
-        <Link
-          href="/crew/dashboard"
-          className="px-4 py-2 min-h-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors font-medium inline-flex items-center gap-2"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
-          Map
-        </Link>
-        <button
-          onClick={() => setIsLoginModalOpen(true)}
-          className="px-4 py-2 min-h-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors font-medium"
-        >
-          {t('login')}
-        </button>
-      </div>
+      {/* ================================================================
+          HERO SECTION
+          ================================================================ */}
+      <section className="relative min-h-screen flex flex-col overflow-hidden">
 
-      {/* Logo - top left */}
-      <div className="absolute top-4 left-4 z-50">
-        <Link href="/">
-          <Image
-            src="/sailsmart_new_tp_dark.png"
-            alt="SailSmart"
-            width={80}
-            height={80}
-            className="object-contain drop-shadow-2xl w-[50px] h-[50px] md:w-[80px] md:h-[80px]"
-          />
-        </Link>
-      </div>
+        {/* Ocean background */}
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: 'url(/homepage-2.jpg)' }} />
+        {/* Gradient overlay: subtle tint top, stronger bottom for text/card legibility */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1f35]/20 via-[#0c1f35]/10 to-[#0c1f35]/55" />
 
+        {/* Top nav */}
+        <nav className="relative z-20 flex items-center justify-between px-5 md:px-10 py-4">
+          <Link href="/" className="flex items-center">
+            <Image src="/sailsmart_new_tp_dark.png" alt="SailSmart" width={50} height={50} priority className="object-contain drop-shadow-xl" />
+          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/crew/dashboard" className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+              Map
+            </Link>
+            <button onClick={() => setIsLoginModalOpen(true)} className="px-4 py-2 text-sm font-medium text-white bg-white/10 backdrop-blur-sm border border-white/25 rounded-lg hover:bg-white/20 transition-colors">
+              {t('login')}
+            </button>
+            <button onClick={() => setIsSignupModalOpen(true)} className="px-4 py-2 text-sm font-medium text-[#0c1f35] bg-white rounded-lg shadow hover:bg-white/90 transition-colors">
+              Sign Up
+            </button>
+          </div>
+        </nav>
 
-      {/* Main content - dual column layout or single column when session exists */}
-      <main className="flex-1 flex flex-col md:flex-row min-h-screen">
-        {/* Crew Column (Right on desktop, First on mobile) - Hidden when owner post mode, owner combo search mode, or owner session exists */}
-        {!isOwnerPostMode && !isOwnerComboSearchMode && !hasOwnerSession && (
-        <div className={`relative flex items-start justify-center pt-24 md:pt-28 pb-6 md:pb-12 px-6 md:px-12 min-w-0 ${
-          hasExistingSession && sessionType === 'crew' || isComboSearchMode
-            ? 'flex-1 min-h-screen'
-            : 'flex-1 order-1 md:order-2 min-h-[50vh] md:min-h-screen'
-        }`}>
-          {/* Blue overlay for crew side - only show when dual column */}
-          {!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode && (
-            <div className="absolute inset-0 bg-blue-900/60 backdrop-blur-[2px] -z-10" />
-          )}
-          {/* Lighter overlay for single column mode */}
-          {(hasExistingSession && sessionType === 'crew') || isComboSearchMode ? (
-            <div className="absolute inset-0 bg-blue-900/40 backdrop-blur-[1px] -z-10" />
-          ) : null}
+        {/* Hero content */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 pb-8 pt-4">
 
-          {/* Use consistent max-width to prevent header shift when ComboSearchBox is focused */}
-          <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
-            {/*
-            <div className="mb-4">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                <svg
-                  className="w-7 h-7 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.5"
-                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
+          {/* Large logo — floats in sky area */}
+          <div className="mb-6 md:mb-8">
+            <Image
+              src="/sailsmart_new_tp.png"
+              alt="SailSmart"
+              width={148}
+              height={148}
+              priority
+              className="object-contain drop-shadow-2xl"
+            />
+          </div>
+
+          {/* White hero card */}
+          <div className="w-full max-w-5xl bg-white/96 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
+
+            {/* Card mini-nav */}
+            <div className="flex items-center justify-between px-5 md:px-8 py-3 border-b border-gray-100/80">
+              <div className="flex items-center gap-2">
+                <Image src="/sailsmart_new_logo_blue.png" alt="SailSmart" width={22} height={22} className="object-contain" />
+                <span className="text-sm font-bold text-[#1a2e4a] hidden sm:block tracking-tight">SailSmart</span>
               </div>
+              <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
+                <a href="#features" className="hover:text-[#1a2e4a] transition-colors">Features</a>
+                <a href="#action" className="hover:text-[#1a2e4a] transition-colors">Get Started</a>
+              </div>
+              <Link href="/welcome/crew-v2" className="px-4 py-1.5 text-sm font-bold text-white bg-[#1a2e4a] rounded-lg hover:bg-[#0f1e30] transition-colors shadow-sm">
+                Sign Up Free
+              </Link>
             </div>
-            */}
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
-              {t('crew.title')}
-            </h1>
-
-
-              {hasExistingSession && sessionType === 'crew' ? (
-                <button
-                  onClick={handleContinueConversation}
-                  className="inline-flex items-center gap-1.5 text-lg md:text-xl text-white/90 mb-4 drop-shadow-md mb-6 hover:text-white/80 hover:underline transition-colors mb-2"
-                >
-                  {t('crew.'+onboardingState)}
-
-                </button>
-              ) : (
-                <div>
-                <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
-                {t('crew.subtitle')}
+            {/* Card body: headline + photo */}
+            <div className="grid md:grid-cols-2">
+              {/* Left: headline */}
+              <div className="flex flex-col justify-center px-7 md:px-10 py-9 md:py-12">
+                <h1 className="text-3xl md:text-4xl xl:text-[2.6rem] font-extrabold text-[#0c1f35] leading-[1.1] tracking-tight mb-4">
+                  Find Your Perfect<br />
+                  Sailing Crew with<br />
+                  <span className="text-blue-600">AI Precision</span>
+                </h1>
+                <p className="text-gray-500 text-sm md:text-[0.95rem] leading-relaxed max-w-xs">
+                  Intelligent matching for sailors and skippers. Plan routes, manage your boat, and connect with the right people — all powered by AI.
                 </p>
-                  <p className="text-sm md:text-base text-white/80 mb-6">
-                {(hasExistingSession && sessionType === 'crew') || isComboSearchMode
-                  ? t('crew.descriptionSingle')
-                  : t('crew.description')}
-                </p>
-              </div>
-
-              )}
-  
-
-          
-            {/* Combo Search Box */}
-            {!hasExistingSession && (
-              <div className={`w-full mx-auto ${
-                (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? 'max-w-sm sm:max-w-2xl md:max-w-4xl' : 'max-w-sm'
-              }`}>
-                <div className="flex items-center gap-3">
-                  {/* Back button - shown when combo search mode is active */}
-                  {isComboSearchMode && (
-                    <button
-                      onClick={() => {
-                        setIsComboSearchMode(false);
-                        // Blur any active inputs
-                        const activeElement = document.activeElement as HTMLElement;
-                        if (activeElement && activeElement.blur) {
-                          activeElement.blur();
-                        }
-                      }}
-                      className="flex-shrink-0 p-2.5 min-h-[44px] min-w-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center"
-                      aria-label="Back"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                      </svg>
-                    </button>
-                  )}
-                  <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                    <ComboSearchBox 
-                      onSubmit={handleComboSearch} 
-                      compactMode={!isComboSearchMode}
-                      onFocusChange={(isFocused) => {
-                        // Only enter combo search mode when focus is gained, don't exit when focus is lost
-                        if (isFocused && !isComboSearchMode) {
-                          setIsComboSearchMode(true);
-                        }
-                      }}
-                    />
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 mt-7">
+                  <Link href="/welcome/crew-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-[#1a2e4a] rounded-xl hover:bg-[#0f1e30] transition-colors shadow-md">
+                    Join as Crew
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </Link>
+                  <Link href="/welcome/owner-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#1a2e4a] bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+                    Post a Journey
+                  </Link>
                 </div>
               </div>
-            )}
 
-            {/* AI Onboarding CTA */}
-            {!hasExistingSession && !isComboSearchMode && (
-              <div className="w-full max-w-sm mx-auto mt-3">
-                <Link
-                  href="/welcome/crew-v2"
-                  className="group flex items-center gap-3 px-4 py-3.5 bg-white/10 backdrop-blur-sm border border-white/25 rounded-xl hover:bg-white/20 transition-all"
-                >
-                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
-                  <div className="flex-1 min-w-0 text-left">
-                    <p className="text-sm font-semibold text-white leading-tight">Try our new profile builder wizard</p>
-                    <p className="text-xs text-white/65 leading-snug mt-0.5">Build your full profile in a personalized onboarding flow in few minutes</p>
-                  </div>
-                  <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </Link>
+              {/* Right: sailing photo */}
+              <div className="relative hidden md:block overflow-hidden" style={{ minHeight: 280 }}>
+                <Image src="/homepage-1.jpg" alt="Sailing" fill className="object-cover object-center" sizes="(max-width: 768px) 0px, 50vw" priority />
+                {/* Fade on left edge to blend */}
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white/96 to-transparent pointer-events-none" />
               </div>
-            )}
+            </div>
 
-            {/* Onboarding steps - always shown; header + link only when session exists */}
-            <div className="w-full mt-6 md:mt-8">
-              <div className="w-full">
+            {/* Feature cards strip */}
+            <div id="features" className="grid grid-cols-1 sm:grid-cols-3 border-t border-gray-100 bg-gray-50/70">
+              {FEATURES.map((feature, i) => {
+                const accent = accentMap[feature.accent];
+                return (
+                  <div key={feature.title} className={`flex flex-col gap-3 px-6 py-5 ${i < 2 ? 'sm:border-r border-gray-100' : ''} ${i > 0 ? 'border-t sm:border-t-0 border-gray-100' : ''}`}>
+                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 ${accent.icon}`}>
+                      {feature.icon}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${accent.dot}`} />
+                        <h3 className="text-sm font-bold text-[#0c1f35]">{feature.title}</h3>
+                      </div>
+                      <p className="text-xs text-gray-500 leading-relaxed">{feature.description}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Scroll hint */}
+          <a href="#action" className="mt-7 flex flex-col items-center gap-1 text-white/55 hover:text-white/85 transition-colors group">
+            <span className="text-[11px] font-medium uppercase tracking-widest">Get started</span>
+            <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </a>
+        </div>
+      </section>
+
+      {/* ================================================================
+          ACTION SECTION — crew & owner search / session panels
+          ================================================================ */}
+      <section id="action" className="relative flex-1 flex flex-col md:flex-row bg-[#0c1f35]">
+
+        {/* Subtle depth texture */}
+        <div
+          className="absolute inset-0 opacity-[0.025] pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+            backgroundSize: '32px 32px',
+          }}
+        />
+
+        {/* Crew column */}
+        {showCrewColumn && (
+          <div className={`relative z-10 flex items-start justify-center pt-12 md:pt-16 pb-12 px-6 md:px-12 flex-1 min-w-0 ${
+            (hasExistingSession && sessionType === 'crew') || isComboSearchMode ? '' : 'order-1 md:order-2'
+          }`}>
+            {/* Blue top accent */}
+            <div className="absolute top-0 left-6 right-6 md:left-12 md:right-12 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
+
+            <div className="w-full text-center text-white max-w-lg">
+              {/* Pill label */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-500/15 border border-blue-400/25 rounded-full text-xs font-semibold text-blue-200 mb-4 tracking-wide">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>
+                For Crew
+              </div>
+
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('crew.title')}</h2>
+
+              {hasExistingSession && sessionType === 'crew' ? (
+                <button onClick={() => router.push('/welcome/crew')} className="text-blue-200 hover:text-blue-100 hover:underline text-sm mb-4 transition-colors">
+                  {t('crew.' + onboardingState)}
+                </button>
+              ) : (
+                <div className="mb-5">
+                  <p className="text-white/75 text-sm md:text-base">{t('crew.subtitle')}</p>
+                  <p className="text-white/45 text-xs md:text-sm mt-1">{t('crew.description')}</p>
+                </div>
+              )}
+
+              {/* Search */}
+              {!hasExistingSession && (
+                <div className={`w-full mx-auto ${isComboSearchMode ? 'max-w-sm sm:max-w-2xl' : 'max-w-sm'}`}>
+                  <div className="flex items-center gap-3">
+                    {isComboSearchMode && (
+                      <button onClick={() => { setIsComboSearchMode(false); (document.activeElement as HTMLElement)?.blur(); }} className="flex-shrink-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors" aria-label="Back">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <ComboSearchBox onSubmit={handleComboSearch} compactMode={!isComboSearchMode} onFocusChange={(f) => { if (f && !isComboSearchMode) setIsComboSearchMode(true); }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI CTA */}
+              {!hasExistingSession && !isComboSearchMode && (
+                <div className="w-full max-w-sm mx-auto mt-3">
+                  <Link href="/welcome/crew-v2" className="group flex items-center gap-3 px-4 py-3.5 bg-white/[0.07] border border-white/15 rounded-xl hover:bg-white/[0.12] hover:border-white/25 transition-all">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-blue-500/20 border border-blue-400/25 flex items-center justify-center text-base">✨</div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-semibold text-white leading-tight">New: AI Profile Builder</p>
+                      <p className="text-xs text-white/50 leading-snug mt-0.5">Build your full crew profile in a personalized 2-min AI conversation</p>
+                    </div>
+                    <svg className="w-4 h-4 text-white/35 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                  </Link>
+                </div>
+              )}
+
+              {/* Onboarding steps */}
+              <div className="w-full mt-6 md:mt-8">
                 <CrewOnboardingStepsInline
                   layout="homepage"
                   isAuthenticated={!!user}
@@ -756,222 +508,116 @@ function WelcomePageContent() {
                   onboardingState={onboardingState}
                   messagesLength={sessionMessages?.length || 0}
                   hasActiveSession={hasExistingSession && sessionType === 'crew'}
-                  onCurrentStepClick={handleContinueConversation}
+                  onCurrentStepClick={() => router.push('/welcome/crew')}
                 />
-              </div>
-              {hasExistingSession && sessionType === 'crew' && sessionLegs.length > 0 && (
-                <div className="mt-2 pt-4 flex flex-wrap gap-1.5 justify-center">
-                  {sessionLegs.map((leg) => (
-                    <button
-                      key={leg.id}
-                      onClick={(e) => {
+                {hasExistingSession && sessionType === 'crew' && sessionLegs.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5 justify-center">
+                    {sessionLegs.map((leg) => (
+                      <button key={leg.id} onClick={(e) => {
                         e.stopPropagation();
                         const url = `/crew/dashboard?legId=${leg.id}`;
-                        const isMobileScreen = window.innerWidth < 768;
-                        if (isMobileScreen) {
-                          window.location.href = url;
-                        } else {
-                          const anchor = document.createElement('a');
-                          anchor.href = url;
-                          anchor.target = '_blank';
-                          anchor.rel = 'noopener noreferrer';
-                          document.body.appendChild(anchor);
-                          anchor.click();
-                          document.body.removeChild(anchor);
-                        }
-                      }}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/90 bg-white/10 rounded-full border border-white/20 hover:bg-white/20 hover:border-white/30 transition-colors cursor-pointer"
-                      title={`View ${leg.name}`}
-                    >
-                      <svg
-                        className="w-3 h-3 text-white/70"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      {leg.name.length > 20 ? leg.name.substring(0, 20) + '...' : leg.name}
-                    </button>
-                  ))}
-                </div>
-              )}
+                        if (window.innerWidth < 768) { window.location.href = url; } else { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+                      }} className="inline-flex items-center gap-1 px-2 py-1 text-xs text-white/75 bg-white/[0.08] rounded-full border border-white/10 hover:bg-white/15 transition-colors">
+                        <svg className="w-3 h-3 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                        {leg.name.length > 20 ? leg.name.substring(0, 20) + '…' : leg.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
         )}
 
-        {/* Owner Column (Left on desktop, Second on mobile) - Hidden when crew session exists or combo search mode, shown when owner post mode, owner combo search mode, or owner session exists */}
-        {(isOwnerPostMode || isOwnerComboSearchMode || hasOwnerSession || (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode)) && (
-          <div className={`relative flex items-start justify-center pt-24 md:pt-28 pb-6 md:pb-12 px-6 md:px-12 flex-1 order-2 md:order-1 min-w-0 ${
-            isOwnerComboSearchMode || hasOwnerSession
-              ? 'min-h-screen'
-              : 'min-h-[50vh] md:min-h-screen'
+        {/* Column divider */}
+        {showCrewColumn && showOwnerColumn && !(hasExistingSession && sessionType === 'crew') && !isComboSearchMode && (
+          <div className="hidden md:block relative z-10 w-px self-stretch my-14">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-transparent" />
+          </div>
+        )}
+
+        {/* Owner column */}
+        {showOwnerColumn && (
+          <div className={`relative z-10 flex items-start justify-center pt-12 md:pt-16 pb-12 px-6 md:px-12 flex-1 min-w-0 ${
+            isOwnerComboSearchMode || hasOwnerSession ? '' : 'order-2 md:order-1'
           }`}>
-            {/* Warm/amber overlay for owner side */}
-            {!(isOwnerComboSearchMode || hasOwnerSession) && (
-              <div className="absolute inset-0 bg-amber-900/50 backdrop-blur-[2px] -z-10" />
-            )}
-            {/* Lighter overlay for combo search mode */}
-            {(isOwnerComboSearchMode || hasOwnerSession) && (
-              <div className="absolute inset-0 bg-amber-900/40 backdrop-blur-[1px] -z-10" />
-            )}
+            {/* Amber top accent */}
+            <div className="absolute top-0 left-6 right-6 md:left-12 md:right-12 h-px bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
 
-            <div className="w-full text-center text-white max-w-full sm:max-w-lg md:max-w-2xl lg:max-w-3xl">
-              {/*
-              <div className="mb-4">
-                <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
-                  <svg
-                    className="w-7 h-7 text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="1.5"
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                </div>
+            <div className="w-full text-center text-white max-w-lg">
+              {/* Pill label */}
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/15 border border-amber-400/25 rounded-full text-xs font-semibold text-amber-200 mb-4 tracking-wide">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z" /></svg>
+                For Skippers
               </div>
-              */}
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 drop-shadow-lg">
-                {t('owner.title')}
-              </h1>
 
-              <p className="text-lg md:text-xl text-white/90 mb-4 drop-shadow-md">
-                {t('owner.subtitle')}
-              </p>
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('owner.title')}</h2>
+              <p className="text-white/75 text-sm md:text-base mb-1">{t('owner.subtitle')}</p>
+              <p className="text-white/45 text-xs md:text-sm mb-5">{t('owner.description')}</p>
 
-              <p className="text-sm md:text-base text-white/80 mb-6">
-                {isOwnerComboSearchMode || hasOwnerSession
-                  ? t('owner.descriptionSingle')
-                  : t('owner.description')}
-              </p>
-
+              {/* Search */}
               {!hasOwnerSession && (
-                <div className={`w-full mx-auto ${
-                  isOwnerComboSearchMode ? 'max-w-sm sm:max-w-2xl md:max-w-4xl' : 'max-w-sm'
-                }`}>
+                <div className={`w-full mx-auto ${isOwnerComboSearchMode ? 'max-w-sm sm:max-w-2xl' : 'max-w-sm'}`}>
                   <div className="flex items-center gap-3">
-                    {/* Back button - shown when combo search mode is active */}
                     {isOwnerComboSearchMode && (
-                      <button
-                        onClick={() => {
-                          setIsOwnerComboSearchMode(false);
-                          // Blur any active inputs
-                          const activeElement = document.activeElement as HTMLElement;
-                          if (activeElement && activeElement.blur) {
-                            activeElement.blur();
-                          }
-                        }}
-                        className="flex-shrink-0 p-2.5 min-h-[44px] min-w-[44px] bg-white/20 backdrop-blur-sm text-white border border-white/30 rounded-lg hover:bg-white/30 transition-colors flex items-center justify-center"
-                        aria-label="Back"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                        </svg>
+                      <button onClick={() => { setIsOwnerComboSearchMode(false); (document.activeElement as HTMLElement)?.blur(); }} className="flex-shrink-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors" aria-label="Back">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                       </button>
                     )}
-                    <div className="flex-1 min-w-0 max-w-full overflow-hidden">
-                      <OwnerComboSearchBox 
-                        onSubmit={handleOwnerComboSearch} 
-                        compactMode={!isOwnerComboSearchMode}
-                        onFocusChange={(isFocused) => {
-                          // Only enter combo search mode when focus is gained, don't exit when focus is lost
-                          if (isFocused && !isOwnerComboSearchMode) {
-                            setIsOwnerComboSearchMode(true);
-                          }
-                        }}
-                      />
+                    <div className="flex-1 min-w-0">
+                      <OwnerComboSearchBox onSubmit={handleOwnerComboSearch} compactMode={!isOwnerComboSearchMode} onFocusChange={(f) => { if (f && !isOwnerComboSearchMode) setIsOwnerComboSearchMode(true); }} />
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* AI Onboarding CTA */}
+              {/* AI CTA */}
               {!hasOwnerSession && !isOwnerComboSearchMode && (
                 <div className="w-full max-w-sm mx-auto mt-3">
-                  <Link
-                    href="/welcome/owner-v2"
-                    className="group flex items-center gap-3 px-4 py-3.5 bg-white/10 backdrop-blur-sm border border-white/25 rounded-xl hover:bg-white/20 transition-all"
-                  >
-                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-white/20 border border-white/30 flex items-center justify-center text-base">✨</div>
+                  <Link href="/welcome/owner-v2" className="group flex items-center gap-3 px-4 py-3.5 bg-white/[0.07] border border-white/15 rounded-xl hover:bg-white/[0.12] hover:border-white/25 transition-all">
+                    <div className="flex-shrink-0 w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/25 flex items-center justify-center text-base">✨</div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-white leading-tight">Try new skipper onboarding wizard</p>
-                      <p className="text-xs text-white/65 leading-snug mt-0.5">Tell us about your boat, journey, and crew needs — AI does the rest in less than 5 minutes</p>
+                      <p className="text-sm font-semibold text-white leading-tight">New: AI Skipper Setup</p>
+                      <p className="text-xs text-white/50 leading-snug mt-0.5">Describe your boat, journey, and crew needs — AI does the rest in minutes</p>
                     </div>
-                    <svg className="w-4 h-4 text-white/50 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <svg className="w-4 h-4 text-white/35 group-hover:text-white/70 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </Link>
                 </div>
               )}
 
-              {/* Onboarding steps - always shown; header + link only when session exists */}
+              {/* Onboarding steps */}
               <div className="w-full mt-6 md:mt-8">
                 {hasOwnerSession && (
-                  <button
-                    onClick={handleContinueOwnerConversation}
-                    className="inline-flex items-center gap-1.5 text-sm text-amber-100 font-medium hover:text-amber-200 hover:underline transition-colors mb-2"
-                  >
+                  <button onClick={() => router.push('/welcome/owner')} className="inline-flex items-center gap-1.5 text-sm text-amber-100 font-medium hover:text-amber-200 hover:underline transition-colors mb-2">
                     {t('owner.continueJourney')}
-                    <svg
-                      className="w-4 h-4 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
+                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                   </button>
                 )}
-                <div className="w-full">
-                  <OwnerOnboardingStepsInline
-                    layout="homepage"
-                    isAuthenticated={!!user}
-                    hasExistingProfile={ownerHasProfile}
-                    hasBoat={ownerHasBoat}
-                    hasJourney={ownerHasJourney}
-                    onboardingState={ownerOnboardingState}
-                    messagesLength={ownerSessionMessages?.length || 0}
-                    hasActiveSession={hasOwnerSession}
-                    onCurrentStepClick={handleContinueOwnerConversation}
-                  />
-                </div>
+                <OwnerOnboardingStepsInline
+                  layout="homepage"
+                  isAuthenticated={!!user}
+                  hasExistingProfile={ownerHasProfile}
+                  hasBoat={ownerHasBoat}
+                  hasJourney={ownerHasJourney}
+                  onboardingState={ownerOnboardingState}
+                  messagesLength={ownerSessionMessages?.length || 0}
+                  hasActiveSession={hasOwnerSession}
+                  onCurrentStepClick={() => router.push('/welcome/owner')}
+                />
               </div>
             </div>
           </div>
         )}
-      </main>
+      </section>
 
-      {/* Owner Post Dialog - shown when user clicks owner input */}
+      <Footer />
+
+      {/* Owner post dialog */}
       {isOwnerPostMode && (
         <OwnerPostDialog
           isOpen={isOwnerPostMode}
           onClose={() => setIsOwnerPostMode(false)}
-          onSave={(crewDemand, aiProcessingConsent) => {
-            handleOwnerPost(crewDemand, aiProcessingConsent);
-            setIsOwnerPostMode(false);
-          }}
+          onSave={(text, consent) => { handleOwnerPost(text, consent); setIsOwnerPostMode(false); }}
           title={t('owner.postDialogTitle')}
           placeholder={t('owner.postDialogPlaceholder')}
           aiProcessingLabel={tPrivacy('aiProcessing')}
@@ -979,48 +625,23 @@ function WelcomePageContent() {
         />
       )}
 
-      {/* Footer */}
-      <Footer />
-
-      {/* Modals */}
-      <LoginModal
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onSwitchToSignup={() => {
-          setIsLoginModalOpen(false);
-          setIsSignupModalOpen(true);
-        }}
-      />
-      <SignupModal
-        isOpen={isSignupModalOpen}
-        onClose={() => setIsSignupModalOpen(false)}
-        onSwitchToLogin={() => {
-          setIsSignupModalOpen(false);
-          setIsLoginModalOpen(true);
-        }}
-      />
+      <LoginModal isOpen={isLoginModalOpen} onClose={() => setIsLoginModalOpen(false)} onSwitchToSignup={() => { setIsLoginModalOpen(false); setIsSignupModalOpen(true); }} />
+      <SignupModal isOpen={isSignupModalOpen} onClose={() => setIsSignupModalOpen(false)} onSwitchToLogin={() => { setIsSignupModalOpen(false); setIsLoginModalOpen(true); }} />
     </div>
   );
 }
 
-// Export wrapper that ensures the content component is properly wrapped
 export default function WelcomePage() {
   try {
     return <WelcomePageContent />;
   } catch (error) {
-    logger.error('[WelcomePage] Failed to render welcome page:', { error: error instanceof Error ? error.message : String(error) });
-    // Fallback: render minimal welcome page without translations
+    logger.error('[WelcomePage] Failed to render:', { error: error instanceof Error ? error.message : String(error) });
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">Welcome</h1>
           <p className="text-muted-foreground mb-8">Unable to load page. Please refresh.</p>
-          <button
-            onClick={() => typeof window !== 'undefined' && window.location.reload()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
-          >
-            Refresh Page
-          </button>
+          <button onClick={() => typeof window !== 'undefined' && window.location.reload()} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">Refresh</button>
         </div>
       </div>
     );
