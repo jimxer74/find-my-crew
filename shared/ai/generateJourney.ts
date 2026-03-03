@@ -121,7 +121,7 @@ export async function generateJourneyRoute(input: GenerateJourneyInput): Promise
 - You MUST calculate realistic dates for each leg based on:
   * Distance between waypoints (calculate using coordinates)
   * Boat speed (${validatedSpeed} knots)
-  * Realistic sailing time (consider weather, rest periods, and safe navigation)
+  * Realistic sailing time (consider weather, time of year, rest periods, and safe navigation)
 - For each leg, calculate:
   * Distance in nautical miles between start and end waypoints
   * Estimated sailing time = Distance / Speed (account for 70-80% efficiency due to conditions)

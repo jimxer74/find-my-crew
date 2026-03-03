@@ -66,7 +66,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const allowedFields: (keyof BoatEquipmentUpdate)[] = [
       'name', 'category', 'subcategory', 'manufacturer', 'model',
       'serial_number', 'year_installed', 'specs', 'notes', 'images',
-      'status', 'parent_id', 'product_registry_id', 'quantity',
+      'status', 'parent_id', 'product_registry_id',
+      'service_date', 'next_service_date', 'expiry_date',
+      'quantity',
     ];
 
     for (const field of allowedFields) {

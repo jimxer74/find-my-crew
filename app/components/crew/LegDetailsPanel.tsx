@@ -93,6 +93,17 @@ const getRiskLevelConfig = (riskLevel: RiskLevel | null, isDark: boolean) => {
   }
 };
 
+// Safety equipment item returned by the journey details API
+type SafetyEquipmentItem = {
+  id: string;
+  name: string;
+  subcategory: string | null;
+  status: string;
+  service_date: string | null;
+  next_service_date: string | null;
+  expiry_date: string | null;
+};
+
 type Leg = {
   leg_id: string;
   leg_name: string;
@@ -156,6 +167,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [journeyDescription, setJourneyDescription] = useState<string | null>(null);
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [safetyEquipment, setSafetyEquipment] = useState<SafetyEquipmentItem[]>([]);
+  const [boatMilesOnVessel, setBoatMilesOnVessel] = useState<number | null>(null);
+  const [boatOffshoreExperience, setBoatOffshoreExperience] = useState<boolean>(false);
 
   const handleProfileSetupClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -245,50 +259,42 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
     }
   }, [leg.journey_images]);
 
-  // Fetch journey description when panel opens
+  // Fetch journey details (description, boat experience, safety equipment) when panel opens
   useEffect(() => {
     if (!isOpen || !leg.journey_id) {
       setJourneyDescription(null);
+      setSafetyEquipment([]);
+      setBoatMilesOnVessel(null);
+      setBoatOffshoreExperience(false);
       return;
     }
 
-    const fetchJourneyDescription = async () => {
+    const fetchJourneyDetails = async () => {
       setIsLoadingDescription(true);
-      logger.debug('Fetching journey description', { journeyId: leg.journey_id }, true);
       try {
         const response = await fetch(`/api/journeys/${leg.journey_id}/details`, {
-          signal: AbortSignal.timeout(10000), // 10 second timeout
+          signal: AbortSignal.timeout(10000),
         });
-
-        logger.debug('Journey fetch response status', { status: response.status }, true);
 
         if (response.ok) {
           const data = await response.json();
-          logger.debug('Journey fetch response data', { hasData: !!data }, true);
-          const description = data.journey_description || null;
-          setJourneyDescription(description);
-          logger.debug('Fetched journey description', { journeyId: leg.journey_id, hasDescription: !!description }, true);
+          setJourneyDescription(data.journey_description || null);
+          setSafetyEquipment(data.safety_equipment || []);
+          setBoatMilesOnVessel(data.boat_miles_on_vessel ?? null);
+          setBoatOffshoreExperience(data.boat_offshore_passage_experience ?? false);
         } else {
-          logger.warn('Failed to fetch journey description', { status: response.status, statusText: response.statusText });
-          const errorText = await response.text();
-          logger.warn('Error response text', { errorText });
-          try {
-            const errorData = JSON.parse(errorText);
-            logger.warn('Error response JSON', { hasErrorData: !!errorData });
-          } catch (e) {
-            logger.warn('Error response not JSON', { errorText });
-          }
           setJourneyDescription(null);
+          setSafetyEquipment([]);
         }
       } catch (error) {
-        logger.error('Error fetching journey description', { error: error instanceof Error ? error.message : String(error) });
+        logger.error('Error fetching journey details', { error: error instanceof Error ? error.message : String(error) });
         setJourneyDescription(null);
       } finally {
         setIsLoadingDescription(false);
       }
     };
 
-    fetchJourneyDescription();
+    fetchJourneyDetails();
   }, [isOpen, leg.journey_id]);
 
   // Process risk level from leg and journey data (now provided by API)
@@ -1804,6 +1810,59 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                    </div>
                   </div>
                 </div>
+
+            {/* Vessel Experience */}
+            {(boatMilesOnVessel !== null || boatOffshoreExperience) && (
+              <div className="pt-2 border-t border-border text-left">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Vessel Experience</h3>
+                <div className="flex flex-wrap gap-2">
+                  {boatMilesOnVessel !== null && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-1 rounded">
+                      <span className="font-medium">{boatMilesOnVessel.toLocaleString()} nm</span>
+                      <span className="text-muted-foreground">on this vessel</span>
+                    </span>
+                  )}
+                  {boatOffshoreExperience && (
+                    <span className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-2 py-1 rounded">
+                      ✓ Offshore passages on this vessel
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Safety Equipment Summary */}
+            {safetyEquipment.length > 0 && (
+              <div className="pt-2 border-t border-border text-left">
+                <h3 className="text-xs font-semibold text-muted-foreground mb-2">Safety Equipment</h3>
+                <div className="space-y-1">
+                  {safetyEquipment.map((item) => {
+                    const today = new Date();
+                    const expiryDate = item.expiry_date ? new Date(item.expiry_date) : null;
+                    const nextServiceDate = item.next_service_date ? new Date(item.next_service_date) : null;
+                    const isOverdue = (expiryDate && expiryDate < today) || (nextServiceDate && nextServiceDate < today);
+                    const isDueSoon = !isOverdue && (
+                      (expiryDate && expiryDate <= new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)) ||
+                      (nextServiceDate && nextServiceDate <= new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000))
+                    );
+                    return (
+                      <div key={item.id} className="flex items-center justify-between text-xs">
+                        <span className="text-foreground">{item.name}</span>
+                        {isOverdue ? (
+                          <span className="text-red-600 dark:text-red-400 font-medium">⚠ Overdue</span>
+                        ) : isDueSoon ? (
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">⚠ Due soon</span>
+                        ) : (item.expiry_date || item.service_date) ? (
+                          <span className="text-green-600 dark:text-green-400 font-medium">✓ In date</span>
+                        ) : (
+                          <span className="text-muted-foreground">— Declared</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Journey Costs Section */}
             {leg.cost_model && leg.cost_model !== 'Not defined' && (

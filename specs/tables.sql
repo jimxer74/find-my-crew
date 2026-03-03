@@ -167,6 +167,8 @@ create table if not exists public.boats (
   average_speed_knots numeric, -- Average cruising speed in knots
   link_to_specs text, -- Link to additional information like sailboatdata.com
   images      text[] default '{}',  -- store image URLs from Supabase Storage
+  miles_on_vessel numeric, -- Nautical miles sailed on this specific vessel (skipper-declared)
+  offshore_passage_experience boolean default false, -- Whether skipper has completed offshore passages on this boat
   characteristics text, -- Boat characteristics description
   capabilities text, -- Boat capabilities description
   accommodations text, -- Accommodations description
@@ -2190,6 +2192,9 @@ create table if not exists public.boat_equipment (
                       coalesce(description,  '')
                     )
                   ) stored,
+  service_date      date default null,      -- Date of last service / inspection
+  next_service_date date default null,      -- Date next service is due
+  expiry_date       date default null,      -- Item expiry date (flares, fire extinguishers, life raft cert.)
   quantity        integer not null default 1,
   created_at      timestamptz not null default now(),
   updated_at      timestamptz not null default now(),
@@ -2211,6 +2216,7 @@ create index if not exists idx_boat_equipment_boat_id on public.boat_equipment(b
 create index if not exists idx_boat_equipment_parent_id on public.boat_equipment(parent_id) where parent_id is not null;
 create index if not exists idx_boat_equipment_category on public.boat_equipment(category);
 create index if not exists idx_boat_equipment_product_registry_id on public.boat_equipment(product_registry_id) where product_registry_id is not null;
+create index if not exists idx_boat_equipment_safety on public.boat_equipment(boat_id, category) where category = 'safety';
 
 alter table boat_equipment enable row level security;
 

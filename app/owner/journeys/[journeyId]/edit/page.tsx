@@ -69,6 +69,18 @@ export default function EditJourneyPage() {
   const [isLoadingBoats, setIsLoadingBoats] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [boatSafetyEquipment, setBoatSafetyEquipment] = useState<Array<{
+    name: string;
+    subcategory: string | null;
+    status: string;
+    expiry_date: string | null;
+    next_service_date: string | null;
+  }>>([]);
+  const [boatSystemsReadiness, setBoatSystemsReadiness] = useState<{
+    engine: { lastDate: string | null; nextDate: string | null; hasRecords: boolean; isOverdue: boolean };
+    steering: { lastDate: string | null; nextDate: string | null; hasRecords: boolean; isOverdue: boolean };
+    rigging: { lastDate: string | null; nextDate: string | null; hasRecords: boolean; isOverdue: boolean };
+  } | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -150,6 +162,99 @@ export default function EditJourneyPage() {
     }
     setIsLoadingJourney(false);
   };
+
+  // Fetch boat safety equipment + systems maintenance status for the offshore readiness advisory
+  useEffect(() => {
+    if (!formData.boat_id) {
+      setBoatSafetyEquipment([]);
+      setBoatSystemsReadiness(null);
+      return;
+    }
+    const supabase = getSupabaseBrowserClient();
+    const today = new Date().toISOString().split('T')[0];
+
+    Promise.all([
+      // Safety equipment (life raft, EPIRB, etc.)
+      supabase
+        .from('boat_equipment')
+        .select('name, subcategory, status, expiry_date, next_service_date')
+        .eq('boat_id', formData.boat_id)
+        .eq('category', 'safety'),
+      // Equipment service dates for engine, rigging, hull_deck (steering)
+      supabase
+        .from('boat_equipment')
+        .select('category, subcategory, service_date, next_service_date')
+        .eq('boat_id', formData.boat_id)
+        .in('category', ['engine', 'rigging', 'hull_deck']),
+      // Completed maintenance tasks
+      supabase
+        .from('boat_maintenance_tasks')
+        .select('title, completed_at')
+        .eq('boat_id', formData.boat_id)
+        .eq('status', 'completed')
+        .eq('is_template', false)
+        .order('completed_at', { ascending: false }),
+    ]).then(([safetyRes, equipRes, tasksRes]) => {
+      setBoatSafetyEquipment(safetyRes.data || []);
+
+      const equipment = equipRes.data || [];
+      const tasks = tasksRes.data || [];
+
+      const pickLatest = (...dates: (string | null | undefined)[]): string | null =>
+        dates.filter(Boolean).map(d => d!.split('T')[0]).sort().pop() ?? null;
+
+      // Engine
+      const engineEquip = equipment.filter(e => e.category === 'engine');
+      const engineTasks = tasks.filter(t =>
+        ['engine', 'motor', 'oil change', 'impeller', 'fuel filter', 'raw water'].some(k =>
+          t.title.toLowerCase().includes(k)
+        )
+      );
+      const engineLast = pickLatest(...engineEquip.map(e => e.service_date), ...engineTasks.map(t => t.completed_at));
+      const engineNext = engineEquip.map(e => e.next_service_date).filter(Boolean).sort()[0] ?? null;
+
+      // Steering
+      const steeringEquip = equipment.filter(e =>
+        e.subcategory === 'rudder' || e.subcategory === 'steering' || e.subcategory === 'helm'
+      );
+      const steeringTasks = tasks.filter(t =>
+        ['steering', 'rudder', 'helm', 'tiller', 'wheel'].some(k => t.title.toLowerCase().includes(k))
+      );
+      const steeringLast = pickLatest(...steeringEquip.map(e => e.service_date), ...steeringTasks.map(t => t.completed_at));
+      const steeringNext = steeringEquip.map(e => e.next_service_date).filter(Boolean).sort()[0] ?? null;
+
+      // Mast & Rigging
+      const riggingEquip = equipment.filter(e => e.category === 'rigging');
+      const riggingTasks = tasks.filter(t =>
+        ['rigging', 'mast', 'shroud', 'forestay', 'backstay', 'standing rigging', 'running rigging'].some(k =>
+          t.title.toLowerCase().includes(k)
+        )
+      );
+      const riggingLast = pickLatest(...riggingEquip.map(e => e.service_date), ...riggingTasks.map(t => t.completed_at));
+      const riggingNext = riggingEquip.map(e => e.next_service_date).filter(Boolean).sort()[0] ?? null;
+
+      setBoatSystemsReadiness({
+        engine: {
+          lastDate: engineLast,
+          nextDate: engineNext,
+          hasRecords: engineEquip.length > 0 || engineTasks.length > 0,
+          isOverdue: !!engineNext && engineNext < today,
+        },
+        steering: {
+          lastDate: steeringLast,
+          nextDate: steeringNext,
+          hasRecords: steeringEquip.length > 0 || steeringTasks.length > 0,
+          isOverdue: !!steeringNext && steeringNext < today,
+        },
+        rigging: {
+          lastDate: riggingLast,
+          nextDate: riggingNext,
+          hasRecords: riggingEquip.length > 0 || riggingTasks.length > 0,
+          isOverdue: !!riggingNext && riggingNext < today,
+        },
+      });
+    });
+  }, [formData.boat_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -616,6 +721,71 @@ export default function EditJourneyPage() {
                     <span className="text-sm text-foreground">{riskLevelsConfig.extreme_sailing.title}</span>
                   </label>
                 </div>
+
+                {/* Safety and Offshore Readiness advisory */}
+                {(() => {
+                  const isOffshore = formData.risk_level === 'Offshore sailing' || formData.risk_level === 'Extreme sailing';
+                  if (!isOffshore || !formData.boat_id) return null;
+
+                  const today = new Date().toISOString().split('T')[0];
+                  const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString() : null;
+
+                  const issues: { message: string }[] = [];
+
+                  // Safety equipment checks
+                  const hasLifeRaft = boatSafetyEquipment.some(e => e.subcategory === 'life_raft');
+                  const hasEpirb = boatSafetyEquipment.some(e => e.subcategory === 'epirb');
+                  if (!hasLifeRaft) issues.push({ message: 'Life raft not registered in equipment list — add it under Boat Equipment' });
+                  if (!hasEpirb) issues.push({ message: 'EPIRB not registered in equipment list — add it under Boat Equipment' });
+                  boatSafetyEquipment
+                    .filter(e => (e.expiry_date && e.expiry_date < today) || (e.next_service_date && e.next_service_date < today))
+                    .forEach(e => issues.push({ message: `${e.name}: service or expiry date is overdue` }));
+
+                  // Systems readiness checks
+                  if (boatSystemsReadiness) {
+                    if (!boatSystemsReadiness.engine.hasRecords) {
+                      issues.push({ message: 'No engine service records — add equipment or a completed maintenance task for the engine' });
+                    } else if (boatSystemsReadiness.engine.isOverdue) {
+                      issues.push({ message: `Engine service overdue (due: ${fmt(boatSystemsReadiness.engine.nextDate)})` });
+                    }
+                    if (!boatSystemsReadiness.steering.hasRecords) {
+                      issues.push({ message: 'No steering service records — add equipment or a completed maintenance task for the steering system' });
+                    } else if (boatSystemsReadiness.steering.isOverdue) {
+                      issues.push({ message: `Steering service overdue (due: ${fmt(boatSystemsReadiness.steering.nextDate)})` });
+                    }
+                    if (!boatSystemsReadiness.rigging.hasRecords) {
+                      issues.push({ message: 'No mast & rigging inspection records — add equipment or a completed inspection task' });
+                    } else if (boatSystemsReadiness.rigging.isOverdue) {
+                      issues.push({ message: `Mast & rigging inspection overdue (due: ${fmt(boatSystemsReadiness.rigging.nextDate)})` });
+                    }
+                  }
+
+                  if (issues.length === 0) return null;
+
+                  return (
+                    <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md dark:bg-amber-950/20 dark:border-amber-800">
+                      <div className="flex gap-2">
+                        <svg className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Safety and Offshore Readiness</p>
+                          <ul className="mt-1 text-sm text-amber-700 dark:text-amber-400 space-y-1">
+                            {issues.map((issue, i) => (
+                              <li key={i}>• {issue.message}</li>
+                            ))}
+                          </ul>
+                          <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
+                            Complete all safety equipment and maintenance records before embarking on an offshore or extreme sailing passage.
+                            Manage records in{' '}
+                            <Link href={`/owner/boats/${formData.boat_id}/equipment`} className="underline font-medium">boat equipment & maintenance</Link>.{' '}
+                            Advisory only — does not prevent publishing.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Required Experience Level */}

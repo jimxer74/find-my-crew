@@ -38,6 +38,9 @@ export interface BoatEquipment {
   images: string[];
   status: EquipmentStatus;
   product_registry_id: string | null;
+  service_date: string | null;       // date of last service / inspection
+  next_service_date: string | null;  // date next service is due
+  expiry_date: string | null;        // item expiry (flares, fire ext., life raft cert.)
   quantity: number;
   created_at: string;
   updated_at: string;
@@ -58,6 +61,9 @@ export interface BoatEquipmentInsert {
   images?: string[];
   status?: EquipmentStatus;
   product_registry_id?: string | null;
+  service_date?: string | null;
+  next_service_date?: string | null;
+  expiry_date?: string | null;
   quantity?: number;
 }
 
@@ -75,6 +81,9 @@ export interface BoatEquipmentUpdate {
   status?: EquipmentStatus;
   parent_id?: string | null;
   product_registry_id?: string | null;
+  service_date?: string | null;
+  next_service_date?: string | null;
+  expiry_date?: string | null;
   quantity?: number;
 }
 
@@ -392,6 +401,7 @@ export const EQUIPMENT_CATEGORIES: CategoryInfo[] = [
       { value: 'hull', label: 'Hull' },
       { value: 'keel', label: 'Keel' },
       { value: 'rudder', label: 'Rudder' },
+      { value: 'steering', label: 'Steering' },
       { value: 'hatches', label: 'Hatches' },
       { value: 'ports', label: 'Ports' },
       { value: 'teak_deck', label: 'Teak Deck' },

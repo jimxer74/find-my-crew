@@ -70,6 +70,8 @@ type Boat = {
   characteristics: string;
   capabilities: string;
   accommodations: string;
+  miles_on_vessel: number | null;
+  offshore_passage_experience: boolean;
   // Sailboat performance calculations (read-only, fetched from external source)
   sa_displ_ratio: number | null;
   ballast_displ_ratio: number | null;
@@ -105,6 +107,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     characteristics: '',
     capabilities: '',
     accommodations: '',
+    miles_on_vessel: null,
+    offshore_passage_experience: false,
     sa_displ_ratio: null,
     ballast_displ_ratio: null,
     displ_len_ratio: null,
@@ -144,6 +148,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         characteristics: '',
         capabilities: '',
         accommodations: '',
+        miles_on_vessel: null,
+        offshore_passage_experience: false,
         sa_displ_ratio: null,
         ballast_displ_ratio: null,
         displ_len_ratio: null,
@@ -202,6 +208,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
         characteristics: data.characteristics || '',
         capabilities: data.capabilities || '',
         accommodations: data.accommodations || '',
+        miles_on_vessel: data.miles_on_vessel ?? null,
+        offshore_passage_experience: data.offshore_passage_experience ?? false,
         sa_displ_ratio: data.sa_displ_ratio || null,
         ballast_displ_ratio: data.ballast_displ_ratio || null,
         displ_len_ratio: data.displ_len_ratio || null,
@@ -302,6 +310,8 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
       characteristics: formData.characteristics || null,
       capabilities: formData.capabilities || null,
       accommodations: formData.accommodations || null,
+      miles_on_vessel: formData.miles_on_vessel ?? null,
+      offshore_passage_experience: formData.offshore_passage_experience,
       // Sailboat Performance Calculations
       sa_displ_ratio: formData.sa_displ_ratio || null,
       ballast_displ_ratio: formData.ballast_displ_ratio || null,
@@ -349,7 +359,7 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'capacity' || name === 'year_built' || name === 'loa_m' || name === 'beam_m' || name === 'max_draft_m' || name === 'displcmt_m' || name === 'average_speed_knots' || name === 'sa_displ_ratio' || name === 'ballast_displ_ratio' || name === 'displ_len_ratio' || name === 'comfort_ratio' || name === 'capsize_screening' || name === 'hull_speed_knots' || name === 'ppi_pounds_per_inch'
+      [name]: name === 'capacity' || name === 'year_built' || name === 'loa_m' || name === 'beam_m' || name === 'max_draft_m' || name === 'displcmt_m' || name === 'average_speed_knots' || name === 'sa_displ_ratio' || name === 'ballast_displ_ratio' || name === 'displ_len_ratio' || name === 'comfort_ratio' || name === 'capsize_screening' || name === 'hull_speed_knots' || name === 'ppi_pounds_per_inch' || name === 'miles_on_vessel'
         ? value === '' ? null : Number(value)
         : name === 'type'
         ? value === '' ? null : value
@@ -656,6 +666,38 @@ export function BoatFormModal({ isOpen, onClose, onSuccess, boatId, userId }: Bo
                       className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring resize-y"
                       placeholder="Describe the boat's accommodations..."
                     />
+                  </div>
+
+                  {/* Vessel Experience */}
+                  <div>
+                    <label htmlFor="miles_on_vessel" className="block text-sm font-medium text-foreground mb-1">
+                      Nautical Miles on this Vessel
+                    </label>
+                    <input
+                      type="number"
+                      id="miles_on_vessel"
+                      name="miles_on_vessel"
+                      min="0"
+                      step="100"
+                      value={formData.miles_on_vessel ?? ''}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-border bg-input-background rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring"
+                      placeholder="e.g., 5000"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-6">
+                    <input
+                      type="checkbox"
+                      id="offshore_passage_experience"
+                      name="offshore_passage_experience"
+                      checked={formData.offshore_passage_experience}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, offshore_passage_experience: e.target.checked }))}
+                      className="w-4 h-4 border-border rounded focus:ring-ring"
+                    />
+                    <label htmlFor="offshore_passage_experience" className="text-sm font-medium text-foreground">
+                      This vessel has completed offshore passages
+                    </label>
                   </div>
 
                   {/* Link to Specs */}

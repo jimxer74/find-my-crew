@@ -401,7 +401,7 @@ function WelcomePageContent() {
 
               {/* Right: sailing photo */}
               <div className="relative hidden md:block overflow-hidden" style={{ minHeight: 280 }}>
-                <Image src="/future-boat-4.jpg" alt="Sailing" fill className="object-cover object-center" sizes="(max-width: 768px) 0px, 50vw" priority />
+                <Image src="/boat-sailing2.gif" alt="Sailing" fill className="object-cover object-center" sizes="(max-width: 768px) 0px, 50vw" priority />
                 {/* Fade on left edge to blend */}
                 <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white/96 to-transparent pointer-events-none" />
               </div>

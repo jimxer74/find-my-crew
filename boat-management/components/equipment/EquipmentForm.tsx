@@ -41,6 +41,9 @@ export interface EquipmentFormData {
   status: EquipmentStatus;
   parent_id: string | null;
   product_registry_id: string | null;
+  service_date: string;
+  next_service_date: string;
+  expiry_date: string;
   quantity: number;
 }
 
@@ -112,6 +115,9 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
   const [status, setStatus] = useState<EquipmentStatus>('active');
   const [parentId, setParentId] = useState<string>('');
   const [productRegistryId, setProductRegistryId] = useState<string | null>(null);
+  const [serviceDate, setServiceDate] = useState('');
+  const [nextServiceDate, setNextServiceDate] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
   const [quantity, setQuantity] = useState(1);
 
   // Manufacturer autocomplete state
@@ -153,6 +159,9 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         setStatus(equipment.status);
         setParentId(equipment.parent_id ?? '');
         setProductRegistryId(equipment.product_registry_id ?? null);
+        setServiceDate(equipment.service_date ?? '');
+        setNextServiceDate(equipment.next_service_date ?? '');
+        setExpiryDate(equipment.expiry_date ?? '');
         setQuantity(equipment.quantity ?? 1);
       } else {
         setName('');
@@ -166,6 +175,9 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         setStatus('active');
         setParentId('');
         setProductRegistryId(null);
+        setServiceDate('');
+        setNextServiceDate('');
+        setExpiryDate('');
         setQuantity(1);
       }
       setError('');
@@ -356,6 +368,9 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
         status,
         parent_id: parentId || null,
         product_registry_id: productRegistryId,
+        service_date: serviceDate || '',
+        next_service_date: nextServiceDate || '',
+        expiry_date: expiryDate || '',
         quantity,
       };
 
@@ -701,6 +716,44 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
                 placeholder="Additional details, condition notes, etc."
               />
             </div>
+
+            {/* Safety-specific date tracking — shown for all categories but required context for safety */}
+            {category === 'safety' && (
+              <div className="rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-400">
+                  Safety equipment dates — shown to crew on voyage listings
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1">Last service / inspection</label>
+                    <input
+                      type="date"
+                      value={serviceDate}
+                      onChange={(e) => setServiceDate(e.target.value)}
+                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1">Next service due</label>
+                    <input
+                      type="date"
+                      value={nextServiceDate}
+                      onChange={(e) => setNextServiceDate(e.target.value)}
+                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1">Expiry date</label>
+                    <input
+                      type="date"
+                      value={expiryDate}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="ghost" onClick={onClose} type="button">Cancel</Button>

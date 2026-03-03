@@ -62,7 +62,7 @@ export async function POST(
     }
 
     const body = await request.json();
-    const { name, category, subcategory, manufacturer, model, serial_number, year_installed, specs, notes, images, status, parent_id, product_registry_id, quantity } = body;
+    const { name, category, subcategory, manufacturer, model, serial_number, year_installed, specs, notes, images, status, parent_id, product_registry_id, service_date, next_service_date, expiry_date, quantity } = body;
 
     if (!name || !category) {
       return NextResponse.json({ error: 'Name and category are required' }, { status: 400 });
@@ -83,6 +83,9 @@ export async function POST(
       status,
       parent_id,
       product_registry_id: product_registry_id ?? null,
+      service_date: service_date || null,
+      next_service_date: next_service_date || null,
+      expiry_date: expiry_date || null,
       quantity: typeof quantity === 'number' && quantity >= 1 ? quantity : 1,
     };
 

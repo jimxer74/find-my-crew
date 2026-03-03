@@ -6,7 +6,8 @@ import { sanitizeErrorResponse } from '@shared/database';
 /**
  * GET /api/journeys/[journeyId]/details
  *
- * Retrieves journey details including description.
+ * Retrieves journey details including description, boat experience fields,
+ * and safety equipment summary.
  * Public access if journey is published, otherwise owner only.
  */
 export async function GET(
@@ -23,32 +24,27 @@ export async function GET(
 
     // Get authenticated user (optional for public access)
     const { data: { user } } = await supabase.auth.getUser();
-    logger.info('[JourneyDetailsAPI] Authenticated user:', { userId: user?.id || 'None' });
 
-    // First, try to get the journey without the boat join to see if it exists
-    const { data: journeyBasic, error: basicError } = await supabase
+    // Get the journey with all relevant fields
+    const { data: journey, error: journeyError } = await supabase
       .from('journeys')
       .select('id, name, description, state, boat_id')
       .eq('id', journeyId)
       .single();
 
-    logger.info('[JourneyDetailsAPI] Basic journey query result:', { journeyBasic, basicError });
-
-    if (basicError || !journeyBasic) {
+    if (journeyError || !journey) {
       return NextResponse.json(
-        sanitizeErrorResponse(basicError, 'Journey not found'),
+        sanitizeErrorResponse(journeyError, 'Journey not found'),
         { status: 404 }
       );
     }
 
-    // Now get the boat owner info
+    // Get the boat owner info + experience fields
     const { data: boatInfo, error: boatError } = await supabase
       .from('boats')
-      .select('owner_id')
-      .eq('id', journeyBasic.boat_id)
+      .select('owner_id, miles_on_vessel, offshore_passage_experience')
+      .eq('id', journey.boat_id)
       .single();
-
-    logger.info('[JourneyDetailsAPI] Boat info query result:', { boatInfo, boatError });
 
     if (boatError || !boatInfo) {
       return NextResponse.json(
@@ -58,27 +54,29 @@ export async function GET(
     }
 
     // Check access: public if published, otherwise owner only
-    if (journeyBasic.state !== 'Published') {
+    if (journey.state !== 'Published') {
       if (!user || boatInfo.owner_id !== user.id) {
-        logger.info('[JourneyDetailsAPI] Access denied - not published and not owner:', {
-          journeyState: journeyBasic.state,
-          user: user?.id,
-          boatOwner: boatInfo.owner_id
-        });
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
     }
 
-    logger.info('[JourneyDetailsAPI] Access granted, returning journey data');
+    // Fetch safety equipment records for this boat (category = 'safety')
+    const { data: safetyEquipment } = await supabase
+      .from('boat_equipment')
+      .select('id, name, subcategory, status, service_date, next_service_date, expiry_date')
+      .eq('boat_id', journey.boat_id)
+      .eq('category', 'safety')
+      .eq('status', 'active')
+      .order('name');
 
     return NextResponse.json({
-      journey_id: journeyBasic.id,
-      journey_name: journeyBasic.name,
-      journey_description: journeyBasic.description,
-      state: journeyBasic.state,
+      journey_id: journey.id,
+      journey_name: journey.name,
+      journey_description: journey.description,
+      state: journey.state,
+      boat_miles_on_vessel: boatInfo.miles_on_vessel ?? null,
+      boat_offshore_passage_experience: boatInfo.offshore_passage_experience ?? false,
+      safety_equipment: safetyEquipment ?? [],
     });
 
   } catch (error: any) {
