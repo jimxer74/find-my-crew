@@ -483,7 +483,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasExistingSession && (
-                <div className="w-full max-w-md md:max-w-lg mx-auto">
+                <div className={`w-full mx-auto transition-all duration-300 ${isComboSearchMode ? 'max-w-md md:max-w-lg' : 'max-w-[220px] md:max-w-xs'}`}>
                   <QuickPostBox
                     placeholder="Post your sailing profile..."
                     expandedPlaceholder="Tell us about your sailing experience, skills, availability, and what kind of journey you're looking for..."
@@ -554,7 +554,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasOwnerSession && (
-                <div className="w-full max-w-md md:max-w-lg mx-auto">
+                <div className={`w-full mx-auto transition-all duration-300 ${isOwnerComboSearchMode ? 'max-w-md md:max-w-lg' : 'max-w-[220px] md:max-w-xs'}`}>
                   <QuickPostBox
                     placeholder="Post your profile, boat and journey..."
                     expandedPlaceholder="Describe your boat, planned journey, dates, the crew you're looking for, required skills, and any other details..."
