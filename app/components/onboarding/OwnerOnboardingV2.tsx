@@ -369,7 +369,7 @@ export function OwnerOnboardingV2() {
         <div>
           <h1 className="text-2xl font-bold text-white drop-shadow-lg">Welcome to SailSmart</h1>
           <p className="text-white/80 mt-1">
-            Let&apos;s get you set up. This takes about 2 minutes.
+            Let&apos;s get you set up. This takes about 5 - 10 minutes.
           </p>
         </div>
 

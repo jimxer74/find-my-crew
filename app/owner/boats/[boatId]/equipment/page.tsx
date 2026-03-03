@@ -160,6 +160,8 @@ export default function EquipmentPage({ params }: { params: Promise<{ boatId: st
     <>
       <EquipmentList
         equipment={equipment}
+        boatId={boatId}
+        boatMakeModel={boatInfo?.make_model ?? undefined}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}

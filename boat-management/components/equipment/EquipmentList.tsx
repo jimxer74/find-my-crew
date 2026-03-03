@@ -1,13 +1,28 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Button, Badge, Card, Select } from '@shared/ui';
 import type { BoatEquipment, EquipmentCategory, ProductRegistryEntry } from '@boat-management/lib/types';
 import { EQUIPMENT_CATEGORIES, getCategoryLabel, getSubcategoryLabel } from '@boat-management/lib/types';
 import { ProductLinks } from '../registry/ProductLinks';
+import { submitJob } from '@shared/lib/async-jobs/submitJob';
+import { JobProgressPanel } from '@shared/components/async-jobs/JobProgressPanel';
+import { getSupabaseBrowserClient } from '@shared/database/client';
+
+interface CachedTask {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  priority: string;
+  recurrence: { type: string; interval_days?: number; engine_hours?: number } | null;
+  estimated_hours: number | null;
+}
 
 interface EquipmentListProps {
   equipment: BoatEquipment[];
+  boatId: string;
+  boatMakeModel?: string;
   onAdd: () => void;
   onEdit: (item: BoatEquipment) => void;
   onDelete: (item: BoatEquipment) => void;
@@ -21,7 +36,7 @@ const statusConfig: Record<string, { variant: 'success' | 'warning' | 'secondary
   decommissioned: { variant: 'secondary', label: 'Decommissioned' },
 };
 
-export function EquipmentList({ equipment, onAdd, onEdit, onDelete, onGenerateAI, isOwner }: EquipmentListProps) {
+export function EquipmentList({ equipment, boatId, boatMakeModel, onAdd, onEdit, onDelete, onGenerateAI, isOwner }: EquipmentListProps) {
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -125,6 +140,8 @@ export function EquipmentList({ equipment, onAdd, onEdit, onDelete, onGenerateAI
               <EquipmentCard
                 key={item.id}
                 item={item}
+                boatId={boatId}
+                boatMakeModel={boatMakeModel}
                 onEdit={() => onEdit(item)}
                 onDelete={() => onDelete(item)}
                 isOwner={isOwner}
@@ -139,11 +156,15 @@ export function EquipmentList({ equipment, onAdd, onEdit, onDelete, onGenerateAI
 
 function EquipmentCard({
   item,
+  boatId,
+  boatMakeModel,
   onEdit,
   onDelete,
   isOwner,
 }: {
   item: BoatEquipment;
+  boatId: string;
+  boatMakeModel?: string;
   onEdit: () => void;
   onDelete: () => void;
   isOwner: boolean;
@@ -242,6 +263,17 @@ function EquipmentCard({
         </div>
       )}
 
+      {/* Maintenance tasks section */}
+      {isOwner && item.product_registry_id && (
+        <div className="mt-2 border-t border-border pt-2">
+          <EquipmentMaintenanceSection
+            item={item}
+            boatId={boatId}
+            boatMakeModel={boatMakeModel}
+          />
+        </div>
+      )}
+
       {isOwner && (
         <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
           <button
@@ -280,4 +312,202 @@ function EquipmentCard({
       )}
     </Card>
   );
+}
+
+type MaintenanceState = 'idle' | 'fetching' | 'has_tasks' | 'no_tasks' | 'generating' | 'applying' | 'applied' | 'error';
+
+function EquipmentMaintenanceSection({
+  item,
+  boatId,
+  boatMakeModel,
+}: {
+  item: BoatEquipment;
+  boatId: string;
+  boatMakeModel?: string;
+}) {
+  const [state, setState] = useState<MaintenanceState>('idle');
+  const [tasks, setTasks] = useState<CachedTask[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [appliedCount, setAppliedCount] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const fetchCached = async () => {
+    setState('fetching');
+    try {
+      const res = await fetch(`/api/product-registry/${item.product_registry_id}/maintenance-tasks`);
+      if (res.ok) {
+        const json = await res.json();
+        const fetched = (json.tasks ?? []) as CachedTask[];
+        if (fetched.length > 0) {
+          setTasks(fetched);
+          setState('has_tasks');
+        } else {
+          setState('no_tasks');
+        }
+      } else {
+        setState('no_tasks');
+      }
+    } catch {
+      setState('no_tasks');
+    }
+  };
+
+  const handleGenerate = async () => {
+    setState('generating');
+    setJobId(null);
+    try {
+      const result = await submitJob({
+        job_type: 'generate-equipment-maintenance',
+        payload: {
+          boatId,
+          equipmentId: item.id,
+          equipmentName: item.name,
+          category: item.category,
+          subcategory: item.subcategory ?? null,
+          manufacturer: item.manufacturer ?? null,
+          model: item.model ?? null,
+          yearInstalled: item.year_installed ?? null,
+          productRegistryId: item.product_registry_id ?? null,
+          boatMakeModel: boatMakeModel ?? '',
+        },
+      });
+      setJobId(result.jobId);
+    } catch {
+      setState('no_tasks');
+    }
+  };
+
+  const handleJobComplete = useCallback(async () => {
+    // Edge function cached tasks to product_maintenance_tasks — re-fetch
+    await fetchCached();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.product_registry_id]);
+
+  const handleJobError = useCallback((err: string) => {
+    setErrorMsg(err);
+    setState('error');
+  }, []);
+
+  const handleApply = async () => {
+    setState('applying');
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.from('boat_maintenance_tasks').insert(
+        tasks.map(t => ({
+          boat_id: boatId,
+          equipment_id: item.id,
+          title: t.title,
+          description: t.description ?? null,
+          category: t.category,
+          priority: t.priority ?? 'medium',
+          recurrence: t.recurrence ?? null,
+          estimated_hours: t.estimated_hours ?? null,
+          status: 'pending',
+          is_template: false,
+        }))
+      );
+      if (error) throw error;
+      setAppliedCount(tasks.length);
+      setState('applied');
+    } catch {
+      setState('has_tasks');
+    }
+  };
+
+  if (state === 'idle') {
+    return (
+      <button onClick={fetchCached} className="text-xs text-primary hover:underline">
+        ✦ Fetch maintenance tasks
+      </button>
+    );
+  }
+
+  if (state === 'fetching') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+        Loading tasks…
+      </div>
+    );
+  }
+
+  if (state === 'no_tasks') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">No cached maintenance tasks.</p>
+        <button onClick={handleGenerate} className="text-xs font-medium text-primary hover:underline">
+          ✦ Generate with AI
+        </button>
+      </div>
+    );
+  }
+
+  if (state === 'generating') {
+    if (!jobId) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+          Starting…
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-foreground">Generating maintenance tasks…</p>
+        <JobProgressPanel
+          jobId={jobId}
+          onComplete={handleJobComplete}
+          onError={handleJobError}
+        />
+      </div>
+    );
+  }
+
+  if (state === 'has_tasks') {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{tasks.length} tasks cached</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchCached}
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            title="Refresh from cache"
+          >
+            ↻ Refresh
+          </button>
+          <button onClick={handleApply} className="text-xs font-medium text-primary hover:underline">
+            Apply to boat
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === 'applying') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+        Applying…
+      </div>
+    );
+  }
+
+  if (state === 'applied') {
+    return (
+      <p className="text-xs text-green-600 font-medium">✓ {appliedCount} tasks added to maintenance list</p>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-destructive">{errorMsg || 'Generation failed.'}</p>
+        <button onClick={() => setState('no_tasks')} className="text-xs text-muted-foreground hover:text-primary">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  return null;
 }
