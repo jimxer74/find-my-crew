@@ -322,7 +322,7 @@ function WelcomePageContent() {
     <div className="min-h-screen flex flex-col">
 
       {/* Ocean background — fixed so it covers the full page height */}
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-12.jpg)' }} />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-20.jpg)' }} />
 
       {/* ================================================================
           HERO SECTION
@@ -361,19 +361,15 @@ function WelcomePageContent() {
               width={148}
               height={148}
               priority
-              className="object-contain brightness-0 invert drop-shadow-2xl"
+              className="object-contain drop-shadow-2xl"
             />
           </div>
 
           {/* White hero card */}
-          <div className="w-full max-w-5xl bg-white/75 md:bg-white/96 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
+          <div className="w-full max-w-5xl bg-white md:bg-white backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
 
             {/* Card mini-nav */}
             <div className="flex items-center justify-between px-5 md:px-8 py-3 border-b border-gray-100/80">
-              <div className="flex items-center gap-2">
-                <Image src="/sailsmart_new_logo_blue.png" alt="SailSmart" width={22} height={22} className="object-contain" />
-                <span className="text-sm font-bold text-[#1a2e4a] hidden sm:block tracking-tight">SailSmart</span>
-              </div>
               <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
                 <a href="#features" className="hover:text-[#1a2e4a] transition-colors">Features</a>
                 <a href="#action" className="hover:text-[#1a2e4a] transition-colors">Get Started</a>
@@ -398,6 +394,7 @@ function WelcomePageContent() {
                   </Link>
                   <Link href="/welcome/owner-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#1a2e4a] bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
                     Join as Skipper
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </Link>
                 </div>
               </div>
