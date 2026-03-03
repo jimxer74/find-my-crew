@@ -322,7 +322,7 @@ function WelcomePageContent() {
     <div className="min-h-screen flex flex-col">
 
       {/* Ocean background — fixed so it covers the full page height */}
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-20.jpg)' }} />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-21.jpg)' }} />
 
       {/* ================================================================
           HERO SECTION
@@ -361,7 +361,7 @@ function WelcomePageContent() {
               width={148}
               height={148}
               priority
-              className="object-contain drop-shadow-2xl"
+              className="object-contain brightness-0 invert drop-shadow-2xl"
             />
           </div>
 
@@ -483,7 +483,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasExistingSession && (
-                <div className="w-full max-w-md mx-auto">
+                <div className="w-full max-w-md md:max-w-lg mx-auto">
                   <QuickPostBox
                     placeholder="Post your sailing profile..."
                     expandedPlaceholder="Tell us about your sailing experience, skills, availability, and what kind of journey you're looking for..."
@@ -554,7 +554,7 @@ function WelcomePageContent() {
 
               {/* Quick post */}
               {!hasOwnerSession && (
-                <div className="w-full max-w-md mx-auto">
+                <div className="w-full max-w-md md:max-w-lg mx-auto">
                   <QuickPostBox
                     placeholder="Post your profile, boat and journey..."
                     expandedPlaceholder="Describe your boat, planned journey, dates, the crew you're looking for, required skills, and any other details..."
