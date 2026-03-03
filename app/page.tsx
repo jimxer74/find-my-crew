@@ -322,7 +322,7 @@ function WelcomePageContent() {
     <div className="min-h-screen flex flex-col">
 
       {/* Ocean background — fixed so it covers the full page height */}
-      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-21.jpg)' }} />
+      <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-32.jpg)' }} />
 
       {/* ================================================================
           HERO SECTION
@@ -358,8 +358,8 @@ function WelcomePageContent() {
             <Image
               src="/sailsmart_new_tp.png"
               alt="SailSmart"
-              width={148}
-              height={148}
+              width={188}
+              height={188}
               priority
               className="object-contain brightness-0 invert drop-shadow-2xl"
             />
@@ -401,7 +401,7 @@ function WelcomePageContent() {
 
               {/* Right: sailing photo */}
               <div className="relative hidden md:block overflow-hidden" style={{ minHeight: 280 }}>
-                <Image src="/homepage-1.jpg" alt="Sailing" fill className="object-cover object-center" sizes="(max-width: 768px) 0px, 50vw" priority />
+                <Image src="/future-boat-3.jpg" alt="Sailing" fill className="object-cover object-center" sizes="(max-width: 768px) 0px, 50vw" priority />
                 {/* Fade on left edge to blend */}
                 <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-white/96 to-transparent pointer-events-none" />
               </div>
