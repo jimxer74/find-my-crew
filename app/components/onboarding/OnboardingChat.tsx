@@ -32,7 +32,7 @@ function buildInitialMessage(userName?: string): Message {
     role: 'assistant',
     content: userName
       ? `Hi ${userName}! I'm here to help you get set up quickly. What kind of boat do you sail?`
-      : "Welcome to Find My Crew! I'm here to help you get set up quickly. To start, what's your name and what kind of boat do you sail?",
+      : "Welcome to SailSmart! I'm here to help you get set up quickly. To start, what's your name and what kind of boat do you sail?",
   };
 }
 

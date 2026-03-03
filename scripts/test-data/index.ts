@@ -74,7 +74,7 @@ async function main(): Promise<void> {
 
   console.log('');
   console.log('='.repeat(60));
-  console.log('  Find My Crew - Test Data Generator');
+  console.log('  SailSmart - Test Data Generator');
   console.log('='.repeat(60));
   console.log('');
   console.log('Configuration:');

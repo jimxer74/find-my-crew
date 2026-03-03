@@ -26,7 +26,7 @@ priority: high
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Create comprehensive Playwright tests for the crew role side of Find My Crew application, covering leg browsing, map interactions, and registration flows.
+Create comprehensive Playwright tests for the crew role side of SailSmart application, covering leg browsing, map interactions, and registration flows.
 
 ## Scope
 Test the following crew routes and features:

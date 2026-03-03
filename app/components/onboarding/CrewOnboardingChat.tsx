@@ -34,7 +34,7 @@ function buildInitialMessage(userName?: string): Message {
     role: 'assistant',
     content: userName
       ? `Hi ${userName}! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. How would you describe your sailing experience so far?`
-      : "Welcome to Find My Crew! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. Let's start — what's your name, and how would you describe your sailing experience so far?",
+      : "Welcome to SailSmart! A complete profile significantly increases your chances of getting sailing positions — boat owners carefully read crew profiles before approving applications. This will take about 5–10 minutes. Let's start — what's your name, and how would you describe your sailing experience so far?",
   };
 }
 

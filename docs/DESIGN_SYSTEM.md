@@ -6,7 +6,7 @@
 
 ## Overview
 
-This document defines the design system foundation for the Find My Crew application. It establishes centralized design tokens, component patterns, and guidelines to ensure consistency across the entire application.
+This document defines the design system foundation for the SailSmart application. It establishes centralized design tokens, component patterns, and guidelines to ensure consistency across the entire application.
 
 ## Design Tokens
 

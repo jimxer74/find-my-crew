@@ -29,7 +29,7 @@ const SKILL_LIST = skillsConfig.general
   .map((s) => `"${s.name}"`)
   .join(', ');
 
-const SYSTEM_PROMPT = `You are a friendly onboarding assistant helping a boat owner get started on Find My Crew — a platform connecting sailors with crew members.
+const SYSTEM_PROMPT = `You are a friendly onboarding assistant helping a boat owner get started on SailSmart — a platform connecting sailors with crew members.
 
 Your goal is to gather the following information through natural conversation (7–10 exchanges):
 1. Owner's name

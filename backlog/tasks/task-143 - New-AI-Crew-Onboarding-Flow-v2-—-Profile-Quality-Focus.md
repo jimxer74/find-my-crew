@@ -107,7 +107,7 @@ interface OnboardingState {
 ### 3. `/app/components/onboarding/CrewOnboardingChat.tsx`
 Chat component, identical structure to `OnboardingChat.tsx` but:
 - Points to `/api/onboarding/v2/crew/chat`
-- Initial greeting: *"Welcome to Find My Crew! Building a great profile increases your chances of getting sailing positions. This takes about 5–10 minutes. Let's start — what's your name and tell me about your sailing experience?"*
+- Initial greeting: *"Welcome to SailSmart! Building a great profile increases your chances of getting sailing positions. This takes about 5–10 minutes. Let's start — what's your name and tell me about your sailing experience?"*
 - `ExtractedData` shape matches crew-specific fields (name, experienceLevel, skills, bio, motivation, riskLevels, sailingPreferences, preferredDepartureLocation, preferredArrivalLocation, availabilityStartDate, availabilityEndDate)
 - Completion banner text: *"Excellent! I have everything I need. Ready to create your account?"*
 

@@ -196,7 +196,7 @@ export function parseCliArgs(args: string[]): Partial<DataConfig> & { preset?: P
  */
 export function printHelp(): void {
   console.log(`
-Test Data Generator for Find My Crew
+Test Data Generator for SailSmart
 
 Usage:
   npm run seed:test-data -- [options]

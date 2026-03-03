@@ -367,7 +367,7 @@ export function OwnerOnboardingV2() {
       <div className="max-w-2xl mx-auto px-4 pt-20 pb-8 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-white drop-shadow-lg">Welcome to Find My Crew</h1>
+          <h1 className="text-2xl font-bold text-white drop-shadow-lg">Welcome to SailSmart</h1>
           <p className="text-white/80 mt-1">
             Let&apos;s get you set up. This takes about 2 minutes.
           </p>

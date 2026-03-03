@@ -330,7 +330,7 @@ export function CrewOnboardingV2() {
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-6">
               <h2 className="font-semibold text-white text-lg mb-2">Create your account</h2>
               <p className="text-sm text-white/70 mb-5">
-                Join Find My Crew and start applying for sailing positions with boat owners around the world.
+                Join SailSmart and start applying for sailing positions with boat owners around the world.
               </p>
               <button
                 onClick={() => setShowSignupModal(true)}

@@ -5,7 +5,7 @@
 
 ## Executive Summary
 
-Comprehensive audit of the Find My Crew codebase to determine module boundaries for monorepo refactoring. Current codebase is a single Next.js application with clear functional areas that can be cleanly separated into shared, crew-matching, and boat-management modules.
+Comprehensive audit of the SailSmart codebase to determine module boundaries for monorepo refactoring. Current codebase is a single Next.js application with clear functional areas that can be cleanly separated into shared, crew-matching, and boat-management modules.
 
 ## Current Codebase Structure
 

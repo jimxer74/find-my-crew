@@ -89,24 +89,25 @@ export function QuickPostBox({
 
   return (
     <div className="w-full space-y-2">
-      {/* Back button + box row */}
-      <div className="flex items-center gap-3">
-        {/* Back button */}
+      {/* Up button — centered above the box */}
+      <div className="flex justify-center">
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Back"
-          className="flex-shrink-0 p-2.5 bg-white/10 text-white border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
+          aria-label="Collapse"
+          className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white/10 text-white text-xs font-medium border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
           </svg>
+          Up
         </button>
+      </div>
 
-        {/* Box — textarea left, Post button right (full height) */}
-        <div
-          className={`flex-1 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden ring-1 ring-white/40 flex items-stretch ${focusRingCls}`}
-        >
+      {/* Box — textarea left, Post button right (full height) */}
+      <div
+        className={`w-full bg-white/90 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden ring-1 ring-white/40 flex items-stretch ${focusRingCls}`}
+      >
         {/* Textarea */}
         <textarea
           ref={textareaRef}
@@ -129,8 +130,7 @@ export function QuickPostBox({
           </svg>
           <span>Post</span>
         </button>
-        </div>{/* end box */}
-      </div>{/* end back+box row */}
+      </div>{/* end box */}
 
       {/* AI consent — below the box, on the dark hero background */}
       <div className="flex items-center justify-between gap-3 px-1">
