@@ -99,30 +99,39 @@ export function JobProgressPanel({ jobId, onComplete, onError }: JobProgressPane
       {/* Step history */}
       {progress.length > 0 && (
         <div className="space-y-2 max-h-48 overflow-y-auto">
-          {progress.map((p) => (
-            <div key={p.id} className="text-sm">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`flex-shrink-0 w-4 h-4 rounded-full border-2 ${
-                    p.is_final && !isFailed
-                      ? 'bg-green-500 border-green-500'
-                      : 'border-muted-foreground'
-                  }`}
-                />
-                <span className="text-foreground">{p.step_label}</span>
-                {p.percent !== null && (
-                  <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-                    {p.percent}%
-                  </span>
+          {progress.map((p, i) => {
+            const isLast = i === progress.length - 1;
+            const isRunning = isLast && !isComplete && !isFailed;
+            const isDone = !isRunning;
+            return (
+              <div key={p.id} className="text-sm">
+                <div className="flex items-center gap-2">
+                  {isRunning ? (
+                    <div className="flex-shrink-0 w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <span
+                      className={`flex-shrink-0 w-4 h-4 rounded-full border-2 ${
+                        isDone && !isFailed
+                          ? 'bg-green-500 border-green-500'
+                          : 'border-destructive'
+                      }`}
+                    />
+                  )}
+                  <span className="text-foreground">{p.step_label}</span>
+                  {p.percent !== null && (
+                    <span className="ml-auto text-xs text-muted-foreground tabular-nums">
+                      {p.percent}%
+                    </span>
+                  )}
+                </div>
+                {p.ai_message && (
+                  <p className="ml-6 mt-1 text-xs text-muted-foreground line-clamp-3">
+                    {p.ai_message}
+                  </p>
                 )}
               </div>
-              {p.ai_message && (
-                <p className="ml-6 mt-1 text-xs text-muted-foreground line-clamp-3">
-                  {p.ai_message}
-                </p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
