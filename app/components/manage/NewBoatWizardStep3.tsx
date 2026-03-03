@@ -61,7 +61,7 @@ interface NewBoatWizardStep3Props {
 // Helpers
 // ---------------------------------------------------------------------------
 
-type Phase = 'select' | 'generating' | 'review' | 'saving';
+type Phase = 'year_prompt' | 'select' | 'generating' | 'review' | 'saving';
 
 const ALL_CATEGORIES = EQUIPMENT_CATEGORIES.map((c) => c.value);
 
@@ -353,9 +353,31 @@ export function NewBoatWizardStep3({
   onComplete,
   onSkip,
 }: NewBoatWizardStep3Props) {
-  const [phase, setPhase] = useState<Phase>('select');
+  const [phase, setPhase] = useState<Phase>(yearBuilt ? 'select' : 'year_prompt');
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobError, setJobError] = useState<string | null>(null);
+
+  // Year built — may be resolved from prompt if not supplied via props
+  const [resolvedYearBuilt, setResolvedYearBuilt] = useState<number | null>(yearBuilt ?? null);
+  const [yearInput, setYearInput] = useState('');
+  const [yearSaving, setYearSaving] = useState(false);
+
+  const handleYearConfirm = async () => {
+    const parsed = parseInt(yearInput, 10);
+    const currentYear = new Date().getFullYear();
+    const year = !isNaN(parsed) && parsed >= 1900 && parsed <= currentYear ? parsed : null;
+    if (year) {
+      setYearSaving(true);
+      try {
+        const supabase = getSupabaseBrowserClient();
+        await supabase.from('boats').update({ year_built: year }).eq('id', boatId);
+      } finally {
+        setYearSaving(false);
+      }
+      setResolvedYearBuilt(year);
+    }
+    setPhase('select');
+  };
 
   // Category selection — all checked by default
   const [selectedCategories, setSelectedCategories] = useState<string[]>([...ALL_CATEGORIES]);
@@ -395,7 +417,7 @@ export function NewBoatWizardStep3({
           makeModel,
           boatType,
           loa_m,
-          yearBuilt: yearBuilt ?? null,
+          yearBuilt: resolvedYearBuilt,
           selectedCategories,
           maintenanceCategories,
         },
@@ -682,6 +704,49 @@ export function NewBoatWizardStep3({
   // Render: Selection phase
   // -------------------------------------------------------------------------
 
+  // -------------------------------------------------------------------------
+  // Render: Year prompt phase (only shown when yearBuilt was not set)
+  // -------------------------------------------------------------------------
+
+  if (phase === 'year_prompt') {
+    const currentYear = new Date().getFullYear();
+    const parsed = parseInt(yearInput, 10);
+    const isValid = !isNaN(parsed) && parsed >= 1900 && parsed <= currentYear;
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">When was your boat built?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            The build year helps AI flag equipment that is commonly replaced at this age for your
+            review. You can skip this if unknown.
+          </p>
+        </div>
+        <div className="flex items-end gap-3">
+          <div className="flex-1 max-w-[160px]">
+            <label htmlFor="year_built_prompt" className="block text-sm font-medium text-foreground mb-1">
+              Year built
+            </label>
+            <input
+              id="year_built_prompt"
+              type="number"
+              min={1900}
+              max={currentYear}
+              value={yearInput}
+              onChange={(e) => setYearInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && isValid) handleYearConfirm(); }}
+              placeholder={`e.g. ${currentYear - 15}`}
+              className="w-full px-3 py-2 border border-border bg-background rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+          </div>
+          <Button onClick={handleYearConfirm} disabled={yearSaving}>
+            {yearSaving ? 'Saving…' : isValid ? 'Continue' : 'Skip'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'select') {
     return (
       <div className="space-y-6">
@@ -690,9 +755,9 @@ export function NewBoatWizardStep3({
           <p className="mt-1 text-sm text-muted-foreground">
             AI will generate a standard equipment list and maintenance schedule for{' '}
             <span className="font-medium text-foreground">{makeModel || 'your boat'}</span>.
-            {yearBuilt && (
+            {resolvedYearBuilt && (
               <>
-                {' '}Built in <span className="font-medium text-foreground">{yearBuilt}</span> —
+                {' '}Built in <span className="font-medium text-foreground">{resolvedYearBuilt}</span> —
                 AI will flag items commonly replaced at this age for your review.
               </>
             )}{' '}
