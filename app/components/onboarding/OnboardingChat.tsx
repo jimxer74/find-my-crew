@@ -176,7 +176,7 @@ export function OnboardingChat({ onComplete, userName }: OnboardingChatProps) {
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
             size="sm"
-            className="flex-shrink-0"
+            className="flex-shrink-0 self-end h-[38px]"
           >
             Send
           </Button>

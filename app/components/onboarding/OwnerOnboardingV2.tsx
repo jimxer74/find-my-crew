@@ -384,6 +384,9 @@ export function OwnerOnboardingV2() {
               <p className="text-sm text-white/70 mb-5">
                 Set up your account to start building your boat owner profile. It only takes a minute.
               </p>
+              <p className="text-xs text-white/60 mb-3">
+                By creating an account you confirm that AI may process your profile and boat data to help connect you with the right crew members.
+              </p>
               <button
                 onClick={() => setShowSignupModal(true)}
                 className="w-full bg-white text-amber-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-white/90 transition-colors"

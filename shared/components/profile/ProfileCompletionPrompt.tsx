@@ -101,6 +101,15 @@ export function ProfileCompletionPrompt({
   logger.debug('[ProfileCompletionPrompt] completionPercentage', { completionPercentage });
 
 
+  // Derive the best CTA link: prefer v2 AI flows, fall back to legacy sessions or profile editor
+  const ctaHref = onboardingSessionType === 'owner'
+    ? '/welcome/owner-v2'
+    : onboardingSessionType === 'prospect'
+    ? '/welcome/crew-v2'
+    : hasProfile
+    ? '/welcome/crew-v2'
+    : '/welcome/crew-v2';
+
   if (variant === 'banner') {
     return (
       <div className="bg-primary/10 border-b border-primary/20 px-4 py-3">
@@ -122,19 +131,13 @@ export function ProfileCompletionPrompt({
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">
                 {hasProfile
-                  ? `Complete your profile get better matches${showCompletionPercentage && hasProfile ? ` (${completionPercentage}% complete)` : ''}`
+                  ? `Complete your profile to get better matches${showCompletionPercentage && hasProfile ? ` (${completionPercentage}% complete)` : ''}`
                   : 'Create your profile to see full leg details and register for journeys'}
               </p>
             </div>
           </div>
           <Link
-              href={
-                onboardingSessionType === 'owner'
-                  ? '/welcome/owner'
-                  : onboardingSessionType === 'prospect'
-                  ? '/welcome/crew'
-                  : '/profile'
-              }
+              href={ctaHref}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
           >
             {hasProfile ? 'Complete Profile' : 'Create Profile'}
@@ -194,13 +197,7 @@ export function ProfileCompletionPrompt({
               </div>
             )}
             <Link
-              href={
-                onboardingSessionType === 'owner'
-                  ? '/welcome/owner'
-                  : onboardingSessionType === 'prospect'
-                  ? '/welcome/crew'
-                  : '/profile'
-              }
+              href={ctaHref}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
             >
               {hasProfile ? 'Complete Profile' : 'Create Profile'}

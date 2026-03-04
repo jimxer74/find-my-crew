@@ -38,6 +38,7 @@ export default function PrivacySettingsPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletionStep, setDeletionStep] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -205,6 +206,7 @@ export default function PrivacySettingsPage() {
     }
 
     setIsDeleting(true);
+    setDeletionStep('Deleting your account data…');
     setError(null);
 
     let accountDeletionSucceeded = false;
@@ -239,6 +241,7 @@ export default function PrivacySettingsPage() {
 
       // Account deletion succeeded on server
       accountDeletionSucceeded = true;
+      setDeletionStep('Signing you out…');
       logger.info('[PrivacySettings] Account deletion successful, proceeding with logout', {});
 
     } catch (err: any) {
@@ -588,6 +591,13 @@ export default function PrivacySettingsPage() {
                 placeholder="DELETE MY ACCOUNT"
                 className="w-full px-3 py-2 border border-border bg-input-background rounded-md text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring mb-4"
               />
+
+              {isDeleting && deletionStep && (
+                <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                  <span className="inline-block w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+                  {deletionStep}
+                </div>
+              )}
 
               <div className="flex justify-end gap-3">
                 <button

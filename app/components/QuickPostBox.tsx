@@ -29,7 +29,6 @@ export function QuickPostBox({
   accentColor = 'blue',
 }: QuickPostBoxProps) {
   const [text, setText] = useState('');
-  const [aiConsent, setAiConsent] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-focus textarea when expanded
@@ -43,7 +42,6 @@ export function QuickPostBox({
   useEffect(() => {
     if (!isExpanded) {
       setText('');
-      setAiConsent(false);
     }
   }, [isExpanded]);
 
@@ -80,8 +78,6 @@ export function QuickPostBox({
     accentColor === 'blue'
       ? 'bg-blue-600 hover:bg-blue-700'
       : 'bg-amber-600 hover:bg-amber-700';
-  const toggleActiveCls =
-    accentColor === 'blue' ? 'bg-blue-500' : 'bg-amber-500';
   const focusRingCls =
     accentColor === 'blue'
       ? 'focus-within:ring-2 focus-within:ring-blue-400/50'
@@ -121,8 +117,8 @@ export function QuickPostBox({
         {/* Post button — right edge, full height of box */}
         <button
           type="button"
-          onClick={() => { if (text.trim() && aiConsent) onPost(text.trim()); }}
-          disabled={!text.trim() || !aiConsent}
+          onClick={() => { if (text.trim()) onPost(text.trim()); }}
+          disabled={!text.trim()}
           className={`flex-shrink-0 px-6 text-sm font-medium text-white border-l border-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center gap-1.5 ${buttonActiveCls}`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,29 +128,10 @@ export function QuickPostBox({
         </button>
       </div>{/* end box */}
 
-      {/* AI consent — below the box, on the dark hero background */}
-      <div className="flex items-center justify-between gap-3 px-1">
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-white leading-tight">Allow AI processing</p>
-          <p className="text-xs text-white/60 mt-0.5 leading-snug">
-            Your input will be processed by AI to personalise your experience
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setAiConsent((v) => !v)}
-          aria-label={aiConsent ? 'Disable AI processing' : 'Enable AI processing'}
-          className={`relative flex-shrink-0 w-10 h-[22px] rounded-full transition-colors duration-200 ${
-            aiConsent ? toggleActiveCls : 'bg-white/25'
-          }`}
-        >
-          <span
-            className={`absolute top-[3px] w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200 ${
-              aiConsent ? 'left-[21px]' : 'left-[3px]'
-            }`}
-          />
-        </button>
-      </div>
+      {/* AI disclaimer */}
+      <p className="text-xs text-white/55 px-1 leading-snug">
+        By posting, you confirm that AI may process your input to personalise your experience.
+      </p>
     </div>
   );
 }

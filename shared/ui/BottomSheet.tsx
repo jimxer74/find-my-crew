@@ -28,7 +28,7 @@ export function BottomSheet({
   onSnapPointChange,
   collapsedHeight = 80,
   halfHeight = '50vh',
-  expandedHeight = 'calc(100vh - 4rem)',
+  expandedHeight = 'calc(100dvh - 4.5rem)',
   headerContent,
   className = ''
 }: BottomSheetProps) {
@@ -92,16 +92,10 @@ export function BottomSheet({
       setIsDragging(false);
     },
     onSwipedDown: () => {
-      // Only allow swipe down to collapse if content is at top
-      const content = contentRef.current;
-      const canCollapse = !content || content.scrollTop <= 0;
-
-      if (canCollapse) {
-        if (snapPoint === 'expanded') {
-          updateSnapPoint('half');
-        } else if (snapPoint === 'half') {
-          updateSnapPoint('collapsed');
-        }
+      if (snapPoint === 'expanded') {
+        updateSnapPoint('half');
+      } else if (snapPoint === 'half') {
+        updateSnapPoint('collapsed');
       }
       setDragOffset(0);
       setIsDragging(false);

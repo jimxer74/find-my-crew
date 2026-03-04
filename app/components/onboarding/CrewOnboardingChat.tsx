@@ -177,7 +177,7 @@ export function CrewOnboardingChat({ onComplete, isProcessing = false, userName 
             disabled={!input.trim() || isLoading}
             isLoading={isLoading}
             size="sm"
-            className="flex-shrink-0"
+            className="flex-shrink-0 self-end h-[38px]"
           >
             Send
           </Button>

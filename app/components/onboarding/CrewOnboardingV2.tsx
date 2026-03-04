@@ -332,6 +332,9 @@ export function CrewOnboardingV2() {
               <p className="text-sm text-white/70 mb-5">
                 Join SailSmart and start applying for sailing positions with boat owners around the world.
               </p>
+              <p className="text-xs text-white/60 mb-3">
+                By creating an account you confirm that AI may process your profile data to help match you with suitable sailing opportunities.
+              </p>
               <button
                 onClick={() => setShowSignupModal(true)}
                 className="w-full bg-white text-blue-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-white/90 transition-colors"

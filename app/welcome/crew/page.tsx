@@ -9,6 +9,9 @@ import { CrewOnboardingSteps } from '@shared/components/onboarding/OnboardingSte
 import { OnboardingStickyBar } from '@shared/components/onboarding/OnboardingStickyBar';
 import { ProspectChat } from '@shared/components/prospect/ProspectChat';
 import { ProfileExtractionModal } from '@shared/components/prospect/ProfileExtractionModal';
+import { ConsentSetupModal } from '@shared/components/auth';
+import { useConsentSetup } from '@shared/contexts';
+import { useAuth } from '@/app/contexts/AuthContext';
 
 /**
  * Crew onboarding layout: sticky steps bar + chat
@@ -24,6 +27,9 @@ function CrewOnboardingContent() {
     messages,
     userMessageCountAfterSignup,
   } = useProspectChat();
+  const { user } = useAuth();
+  const { needsConsentSetup, isLoading: consentLoading } = useConsentSetup();
+  const [consentDone, setConsentDone] = useState(false);
   const [isNavigatingToJourneys, setIsNavigatingToJourneys] = useState(false);
   const [showProfileExtractionModal, setShowProfileExtractionModal] = useState(false);
 
@@ -49,7 +55,12 @@ function CrewOnboardingContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="relative min-h-screen flex flex-col">
+      {/* Background image */}
+      <div className="fixed inset-0 bg-cover bg-center -z-20" style={{ backgroundImage: 'url(/homepage-2.jpg)' }} />
+      {/* Blue overlay */}
+      <div className="fixed inset-0 bg-blue-900/65 backdrop-blur-[2px] -z-10" />
+
       <OnboardingStickyBar
         title="Crew Onboarding Assistant"
         onStartFresh={handleStartFresh}
@@ -84,9 +95,16 @@ function CrewOnboardingContent() {
         messages={messages}
         onSuccess={() => {
           setShowProfileExtractionModal(false);
-          // Profile extraction will trigger the completion flow
         }}
       />
+
+      {/* Consent modal — shown after signup if consent has not been set up */}
+      {user && !consentLoading && needsConsentSetup && !consentDone && (
+        <ConsentSetupModal
+          userId={user.id}
+          onComplete={() => setConsentDone(true)}
+        />
+      )}
     </div>
   );
 }

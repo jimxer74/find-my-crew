@@ -72,18 +72,17 @@ export async function GET(request: Request) {
       const isFromOwner = from === 'owner';
       const isFromProspect = from === 'prospect' || (!!prospectPreferences && from !== 'owner' && from !== 'owner-v2' && from !== 'crew-v2');
 
-      // TODO: re-enable smart redirects once all v2 flows are stable
-      // // Short-circuit for owner-v2 flow — skip redirect service entirely
-      // if (isFromOwnerV2) {
-      //   logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
-      //   return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
-      // }
+      // Short-circuit for owner-v2 flow — return to AI onboarding
+      if (isFromOwnerV2) {
+        logger.info('LOGIN CALLBACK: owner-v2 signup, redirecting directly', { userId: user.id });
+        return NextResponse.redirect(new URL('/welcome/owner-v2', request.url));
+      }
 
-      // // Short-circuit for crew-v2 flow — skip redirect service entirely
-      // if (isFromCrewV2) {
-      //   logger.info('LOGIN CALLBACK: crew-v2 signup, redirecting directly', { userId: user.id });
-      //   return NextResponse.redirect(new URL('/welcome/crew-v2', request.url));
-      // }
+      // Short-circuit for crew-v2 flow — return to AI onboarding
+      if (isFromCrewV2) {
+        logger.info('LOGIN CALLBACK: crew-v2 signup, redirecting directly', { userId: user.id });
+        return NextResponse.redirect(new URL('/welcome/crew-v2', request.url));
+      }
 
       // CRITICAL: Check for sessions created BEFORE authentication (user_id = NULL)
       // These sessions need to be linked to the authenticated user

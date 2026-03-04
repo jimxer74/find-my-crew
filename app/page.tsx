@@ -66,18 +66,15 @@ function RotatingHeadline() {
 // ---------------------------------------------------------------------------
 
 function OwnerPostDialog({
-  isOpen, onClose, onSave, title, placeholder, aiProcessingLabel, aiProcessingDesc,
+  isOpen, onClose, onSave, title, placeholder,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (crewDemand: string, aiProcessingConsent: boolean) => void;
+  onSave: (crewDemand: string) => void;
   title: string;
   placeholder: string;
-  aiProcessingLabel: string;
-  aiProcessingDesc: string;
 }) {
   const [crewDemand, setCrewDemand] = useState('');
-  const [aiConsent, setAiConsent] = useState(false);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
   React.useEffect(() => { if (isOpen && textareaRef.current) textareaRef.current.focus(); }, [isOpen]);
   if (!isOpen) return null;
@@ -90,21 +87,15 @@ function OwnerPostDialog({
             <svg className="w-5 h-5 text-gray-700 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <textarea ref={textareaRef} value={crewDemand} onChange={(e) => setCrewDemand(e.target.value)} placeholder={placeholder} className="w-full min-h-[200px] px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none bg-white dark:bg-gray-800 text-gray-950 dark:text-gray-100" />
-          <div className="flex items-start justify-between gap-4 pt-2">
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-gray-950 dark:text-gray-100">{aiProcessingLabel}</p>
-              <p className="text-sm text-gray-700 dark:text-gray-400 mt-0.5">{aiProcessingDesc}</p>
-            </div>
-            <button type="button" onClick={() => setAiConsent(!aiConsent)} className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${aiConsent ? 'bg-amber-500' : 'bg-amber-200 dark:bg-amber-800'}`}>
-              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform shadow ${aiConsent ? 'right-1' : 'left-1'}`} />
-            </button>
-          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            By submitting, you confirm that AI may process your input to help match crew to your needs.
+          </p>
         </div>
         <div className="flex items-center justify-end gap-2 p-4 border-t border-gray-200 dark:border-gray-700">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-amber-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-amber-50">Cancel</button>
-          <button onClick={() => onSave(crewDemand.trim(), aiConsent)} disabled={!crewDemand.trim() || !aiConsent} className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">Save</button>
+          <button onClick={() => onSave(crewDemand.trim())} disabled={!crewDemand.trim()} className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed">Save</button>
         </div>
       </div>
     </div>
@@ -160,7 +151,6 @@ const accentMap = {
 
 function WelcomePageContent() {
   const t = useTranslations('welcome');
-  const tPrivacy = useTranslations('settings.privacy');
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
@@ -344,9 +334,9 @@ function WelcomePageContent() {
               </svg>
               Map
             </Link>
-            <button onClick={() => setIsSignupModalOpen(true)} className="px-4 py-2 text-sm font-medium text-[#0c1f35] bg-white rounded-lg shadow hover:bg-white/90 transition-colors">
-              Sign Up
-            </button>
+            <Link href="/auth/login" className="px-4 py-2 text-sm font-medium text-[#0c1f35] bg-white rounded-lg shadow hover:bg-white/90 transition-colors">
+              Log in
+            </Link>
           </div>
         </nav>
 
@@ -599,11 +589,9 @@ function WelcomePageContent() {
         <OwnerPostDialog
           isOpen={isOwnerPostMode}
           onClose={() => setIsOwnerPostMode(false)}
-          onSave={(text, consent) => { handleOwnerPost(text); setIsOwnerPostMode(false); }}
+          onSave={(text) => { handleOwnerPost(text); setIsOwnerPostMode(false); }}
           title={t('owner.postDialogTitle')}
           placeholder={t('owner.postDialogPlaceholder')}
-          aiProcessingLabel={tPrivacy('aiProcessing')}
-          aiProcessingDesc={tPrivacy('aiProcessingDesc')}
         />
       )}
 
