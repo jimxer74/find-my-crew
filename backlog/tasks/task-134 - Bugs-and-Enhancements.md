@@ -21,9 +21,6 @@ dependencies: []
 - Fix "Send" button to match the input textbox size
 - Add a disclaimer text before user click create account to indicate that by creating account user is confirming the usage of AI to access the profile data
 
-** Privacy policy **
-- Add loading button to DELETE BY ACCOUNT
-
 ** Frontpage **
 - Update for Skippers and for Crew sections: remove AI consent toggle and add text below the textarea to indicate that by submitting users confirm the usage of AI to access the profile date. Remove consent validation logic from Post button
 - Change top right Sign up button to "Log in"
@@ -35,4 +32,7 @@ dependencies: []
 ** /welcome/crew and /welcome/owner**
 - consent modal is not displayed after signup
 - Update the UI use the same concept as in /welcome/crew-v2 and owner-v2 with same color schemes and glassmorphism look and feel
+
+- ** Privacy policy **
+- Refactor DELETE MY ACCOUNT to use supabase async feature with progress UI indicator
 <!-- SECTION:DESCRIPTION:END -->
