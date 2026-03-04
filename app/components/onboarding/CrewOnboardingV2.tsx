@@ -7,7 +7,6 @@ import { CrewOnboardingChat } from './CrewOnboardingChat';
 import { CrewProfileCheckpoint } from './CrewProfileCheckpoint';
 import { ConsentCheckpoint } from './ConsentCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
-import { useConsentSetup } from '@shared/contexts';
 import { logger } from '@shared/logging';
 
 // ---------------------------------------------------------------------------
@@ -139,15 +138,14 @@ function StepBar({ phase }: { phase: OnboardingPhase }) {
 export function CrewOnboardingV2() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { needsConsentSetup, isLoading: consentLoading } = useConsentSetup();
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
 
-  // Resolve starting phase — wait for both auth and consent check to complete
+  // Resolve starting phase — wait for auth to complete
   useEffect(() => {
-    if (authLoading || consentLoading) return;
+    if (authLoading) return;
 
     if (!user) {
       clearState();
@@ -155,20 +153,16 @@ export function CrewOnboardingV2() {
       return;
     }
 
-    // If consent not yet accepted, always gate to consent step first
-    if (needsConsentSetup) {
-      setState({ ...INITIAL_STATE, phase: 'consenting' });
-      return;
-    }
-
+    // Authenticated — restore saved progress or start with consent
     const saved = loadState();
     if (saved && saved.phase !== 'signup' && saved.phase !== 'consenting') {
       const isValid = !(saved.phase === 'confirming_profile' && !saved.profile);
       setState(isValid ? saved : { ...INITIAL_STATE, phase: 'chatting' });
     } else {
-      setState({ ...INITIAL_STATE, phase: 'chatting' });
+      // New user or no saved progress — always show consent first
+      setState({ ...INITIAL_STATE, phase: 'consenting' });
     }
-  }, [user, authLoading, consentLoading, needsConsentSetup]);
+  }, [user, authLoading]);
 
   // Persist state — skip transient phases that are re-determined on load
   useEffect(() => {
@@ -302,7 +296,7 @@ export function CrewOnboardingV2() {
   // Render
   // ---------------------------------------------------------------------------
 
-  const isLoading = authLoading || (!!user && consentLoading);
+  const isLoading = authLoading;
 
   return (
     <div className="relative min-h-screen">
