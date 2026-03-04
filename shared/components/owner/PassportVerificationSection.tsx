@@ -42,14 +42,14 @@ export function PassportVerificationSection({
   }
 
   const getScoreBadgeColor = (score: number | null) => {
-    if (score === null) return { bg: 'bg-gray-100', text: 'text-gray-700' };
+    if (score === null) return { bg: 'bg-muted', text: 'text-muted-foreground' };
     if (score >= 80) return { bg: 'bg-green-100', text: 'text-green-700' };
     if (score >= 60) return { bg: 'bg-yellow-100', text: 'text-yellow-700' };
     return { bg: 'bg-red-100', text: 'text-red-700' };
   };
 
   const getStatusBadge = (passed: boolean | null) => {
-    if (passed === null) return { label: 'Pending', bg: 'bg-gray-100', text: 'text-gray-700', passed: false };
+    if (passed === null) return { label: 'Pending', bg: 'bg-muted', text: 'text-muted-foreground', passed: false };
     if (passed) return { label: 'Verified', bg: 'bg-green-100', text: 'text-green-700', passed: true };
     return { label: 'Not Verified', bg: 'bg-red-100', text: 'text-red-700', passed: false };
   };
@@ -172,7 +172,7 @@ export function PassportVerificationSection({
                 {passportData.ai_score}% Confidence
               </div>
             </div>
-            <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className={`h-full transition-all duration-300 ${
                   passportData.ai_score >= 80 ? 'bg-green-500' :
@@ -248,7 +248,7 @@ export function PassportVerificationSection({
                       {Math.round(passportData.photo_confidence_score * 100)}%
                     </span>
                   </div>
-                  <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
                       className={`h-full transition-all duration-300 ${
                         passportData.photo_confidence_score >= 0.8 ? 'bg-green-500' :

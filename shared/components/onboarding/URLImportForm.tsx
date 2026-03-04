@@ -101,9 +101,9 @@ export function URLImportForm({ onSuccess, onCancel }: URLImportFormProps) {
         </div>
 
         {/* Content Preview */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 max-h-64 overflow-y-auto">
-          <p className="text-sm text-gray-600 mb-2 font-medium">Preview:</p>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words leading-relaxed">
+        <div className="bg-muted/30 p-4 rounded-lg border border-border max-h-64 overflow-y-auto">
+          <p className="text-sm text-muted-foreground mb-2 font-medium">Preview:</p>
+          <p className="text-sm text-foreground whitespace-pre-wrap break-words leading-relaxed">
             {preview.content}
           </p>
         </div>
@@ -134,10 +134,10 @@ export function URLImportForm({ onSuccess, onCancel }: URLImportFormProps) {
     <div className="space-y-4 w-full max-w-lg">
       {/* Input Section */}
       <div>
-        <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+        <label className="block text-sm font-medium text-foreground mb-2">
           Paste your profile or post URL
         </label>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+        <p className="text-sm text-muted-foreground mb-3">
           Have content on Facebook, Twitter, or a personal blog? Paste the link below and we'll extract it to help
           you get started.
         </p>
@@ -154,7 +154,7 @@ export function URLImportForm({ onSuccess, onCancel }: URLImportFormProps) {
             }
           }}
           placeholder="https://facebook.com/john/posts/12345"
-          className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400 focus:border-transparent disabled:bg-gray-100 dark:disabled:bg-gray-700 disabled:text-gray-500"
+          className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent disabled:bg-muted disabled:text-muted-foreground"
           disabled={loading}
         />
       </div>

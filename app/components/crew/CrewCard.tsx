@@ -51,7 +51,7 @@ function getRiskLevelColor(riskLevel: string): string {
     case 'Extreme sailing':
       return 'bg-red-100 text-red-800 border-red-300';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-muted text-muted-foreground border-border';
   }
 }
 
@@ -124,21 +124,21 @@ export default function CrewCard({
             <img
               src={image_url}
               alt={name || 'Crew member'}
-              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+              className="w-16 h-16 rounded-full object-cover border-2 border-border"
             />
           ) : (
-            <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
-              <User className="w-8 h-8 text-gray-500" />
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+              <User className="w-8 h-8 text-muted-foreground" />
             </div>
           )}
         </div>
 
         {/* Name & Location */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-gray-900 truncate">
+          <h3 className="text-base font-semibold text-foreground truncate">
             {isAnonymous ? 'Crew Member' : name}
           </h3>
-          <div className="flex items-center gap-1 text-sm text-gray-600 mt-0.5">
+          <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="truncate">{location}</span>
           </div>
@@ -149,7 +149,7 @@ export default function CrewCard({
       <div className="px-4 pb-3">
         <div className="flex items-center gap-2 text-sm">
           <Award className="w-4 h-4 text-primary-600" />
-          <span className="font-medium text-gray-700">
+          <span className="font-medium text-muted-foreground">
             {experience_level}. {experienceInfo.displayName}
           </span>
         </div>
@@ -159,7 +159,7 @@ export default function CrewCard({
       {risk_levels.length > 0 && (
         <div className="px-4 pb-3">
           <div className="flex items-start gap-2">
-            <Shield className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
+            <Shield className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="flex flex-wrap gap-1.5">
               {risk_levels.map((level) => (
                 <span
@@ -179,7 +179,7 @@ export default function CrewCard({
 
       {/* Skills - Collapsible */}
       {skills.length > 0 && (
-        <div className="px-4 pb-3 border-t border-gray-100">
+        <div className="px-4 pb-3 border-t border-border">
           {/* Collapsible Header */}
           <Button
             onClick={(e) => {
@@ -187,13 +187,13 @@ export default function CrewCard({
               setSkillsExpanded(!skillsExpanded);
             }}
             variant="ghost"
-            className="w-full !justify-between !p-2 !text-gray-700 hover:!bg-gray-50 rounded"
+            className="w-full !justify-between !p-2 !text-foreground hover:!bg-muted/50 rounded"
           >
             <span className="text-sm font-medium">
               {skills.length} {skills.length === 1 ? 'Skill' : 'Skills'}
             </span>
             <ChevronDown
-              className={`w-4 h-4 text-gray-500 transition-transform ${
+              className={`w-4 h-4 text-muted-foreground transition-transform ${
                 skillsExpanded ? 'rotate-180' : ''
               }`}
             />
@@ -248,7 +248,7 @@ export default function CrewCard({
                   {skills.map((skill) => (
                     <span
                       key={skill}
-                      className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded border border-gray-200"
+                      className="px-2 py-1 bg-muted text-foreground text-xs rounded border border-border"
                     >
                       {formatSkillName(skill)}
                     </span>
@@ -262,7 +262,7 @@ export default function CrewCard({
 
       {/* Availability */}
       {availability && (
-        <div className="px-4 pb-3 text-sm text-gray-600">
+        <div className="px-4 pb-3 text-sm text-muted-foreground">
           <span className="font-medium">Available:</span> {availability}
         </div>
       )}

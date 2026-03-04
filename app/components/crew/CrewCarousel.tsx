@@ -83,8 +83,8 @@ export default function CrewCarousel({
   if (loading) {
     return (
       <div className="w-full py-8">
-        <div className="flex items-center justify-center gap-3 text-gray-500">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+        <div className="flex items-center justify-center gap-3 text-muted-foreground">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           <span>Searching for matching crew...</span>
         </div>
       </div>
@@ -95,13 +95,13 @@ export default function CrewCarousel({
   if (!crewMembers || crewMembers.length === 0) {
     return (
       <div className="w-full py-12 px-4">
-        <div className="flex flex-col items-center justify-center gap-4 text-gray-500">
-          <Users className="w-16 h-16 text-gray-300" />
+        <div className="flex flex-col items-center justify-center gap-4 text-muted-foreground">
+          <Users className="w-16 h-16 text-muted" />
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-700 mb-1">
+            <h3 className="text-lg font-semibold text-foreground mb-1">
               No crew members found
             </h3>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-muted-foreground">
               Try adjusting your search criteria or check back later
             </p>
           </div>
@@ -114,11 +114,11 @@ export default function CrewCarousel({
     <div className="w-full py-6">
       {/* Header */}
       <div className="mb-4 px-4 md:px-0">
-        <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+        <h2 className="text-xl font-bold text-foreground">{title}</h2>
         {subtitle && (
-          <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
         )}
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Found {crewMembers.length} matching crew member{crewMembers.length !== 1 ? 's' : ''}
         </p>
       </div>
@@ -160,7 +160,6 @@ export default function CrewCarousel({
           "
           style={{
             scrollbarWidth: 'thin',
-            scrollbarColor: '#cbd5e1 #f1f5f9',
           }}
         >
           {crewMembers.map((crew) => (
@@ -177,7 +176,7 @@ export default function CrewCarousel({
 
       {/* Navigation hint for mobile */}
       <div className="md:hidden mt-2 px-4">
-        <p className="text-xs text-center text-gray-500">
+        <p className="text-xs text-center text-muted-foreground">
           Swipe to see more crew members
         </p>
       </div>

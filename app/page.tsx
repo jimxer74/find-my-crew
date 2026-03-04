@@ -309,7 +309,7 @@ function WelcomePageContent() {
     (!(hasExistingSession && sessionType === 'crew') && !isComboSearchMode);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div data-force-light className="min-h-screen flex flex-col">
 
       {/* Ocean background — fixed so it covers the full page height */}
       <div className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-20" style={{ backgroundImage: 'url(/homepage-32.jpg)' }} />

@@ -52,7 +52,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   consents?.ai_processing_consent ? 'right-1' : 'left-1'
                 }`}
               />
@@ -77,7 +77,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   consents?.profile_sharing_consent ? 'right-1' : 'left-1'
                 }`}
               />
@@ -102,7 +102,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   consents?.marketing_consent ? 'right-1' : 'left-1'
                 }`}
               />
@@ -137,7 +137,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   emailPrefs?.registration_updates ? 'right-1' : 'left-1'
                 }`}
               />
@@ -162,7 +162,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   emailPrefs?.journey_updates ? 'right-1' : 'left-1'
                 }`}
               />
@@ -187,7 +187,7 @@ export function NotificationsConsentsSection({
               variant="ghost"
             >
               <span
-                className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                className={`absolute top-1 w-4 h-4 bg-card rounded-full transition-transform ${
                   emailPrefs?.profile_reminders ? 'right-1' : 'left-1'
                 }`}
               />

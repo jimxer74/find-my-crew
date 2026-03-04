@@ -106,7 +106,7 @@ export function CrewSummaryCard({
       'Pending approval': 'bg-yellow-100 text-yellow-800 border-yellow-300',
       'Approved': 'bg-green-100 text-green-800 border-green-300',
       'Not approved': 'bg-red-100 text-red-800 border-red-300',
-      'Cancelled': 'bg-gray-100 text-gray-800 border-gray-300',
+      'Cancelled': 'bg-muted text-muted-foreground border-border',
     };
 
     return statusConfig[status] || statusConfig['Pending approval'];
@@ -116,7 +116,7 @@ export function CrewSummaryCard({
   const moreSkillsCount = crew.skills.length > 3 ? crew.skills.length - 3 : 0;
 
   const getSkillMatchColor = (percentage: number | null) => {
-    if (percentage === null) return 'bg-gray-200';
+    if (percentage === null) return 'bg-muted';
     if (percentage >= 80) return 'bg-green-500';
     if (percentage >= 60) return 'bg-yellow-500';
     return 'bg-red-500';
@@ -323,7 +323,7 @@ export function CrewSummaryCard({
                   {skillMatchPercentage}%
                 </span>
               </div>
-              <div className="w-full h-2 bg-gray-300 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all duration-300 ${getSkillMatchColor(skillMatchPercentage)}`}
                   style={{ width: `${skillMatchPercentage}%` }}
@@ -363,7 +363,7 @@ export function CrewSummaryCard({
                     <tr
                       key={index}
                       className={`${
-                        index % 2 === 0 ? 'bg-white' : 'bg-muted/5'
+                        index % 2 === 0 ? 'bg-card' : 'bg-muted/5'
                       } border-b border-border last:border-b-0 hover:bg-muted/15 transition-colors`}
                     >
                       <td className="px-4 py-3 font-medium text-foreground text-sm align-top">
@@ -373,7 +373,7 @@ export function CrewSummaryCard({
                       </td>
                       <td className="px-4 py-3 text-foreground text-sm leading-relaxed align-top">
                         {skillDescription ? (
-                          <span className="text-gray-700">{skillDescription}</span>
+                          <span className="text-foreground">{skillDescription}</span>
                         ) : (
                           <span className="text-muted-foreground italic">No description provided</span>
                         )}
