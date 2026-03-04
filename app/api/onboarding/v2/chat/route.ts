@@ -3,7 +3,6 @@ import { callAI } from '@shared/ai/service';
 import { logger } from '@shared/logging';
 import skillsConfig from '@/app/config/skills-config.json';
 
-export const maxDuration = 45;
 
 interface ChatMessage {
   role: 'user' | 'assistant';

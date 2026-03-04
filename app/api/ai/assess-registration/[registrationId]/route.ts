@@ -7,7 +7,6 @@ import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
 
 // Extend timeout for AI assessment (can take up to 60+ seconds)
-export const maxDuration = 90; // 90 seconds
 export const runtime = 'nodejs';
 
 /**

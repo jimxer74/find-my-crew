@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/ai/**": { "maxDuration": 90 },
+    "app/api/onboarding/v2/**": { "maxDuration": 60 },
+    "app/api/registrations/**": { "maxDuration": 90 }
+  }
+}

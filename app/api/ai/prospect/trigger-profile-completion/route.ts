@@ -13,7 +13,6 @@ const log = (message: string, data?: unknown) => {
   }
 };
 
-export const maxDuration = 60;
 
 /** Build the SYSTEM message sent to the AI to start profile completion (server-side). */
 function buildTriggerMessage(): string {

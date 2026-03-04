@@ -22,7 +22,6 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 
 // Extend timeout for registration with AI assessment
-export const maxDuration = 90; // 90 seconds
 export const runtime = 'nodejs';
 
 /**

@@ -13,7 +13,6 @@ const log = (message: string, data?: unknown) => {
   }
 };
 
-export const maxDuration = 60; // Allow up to 60 seconds for AI responses
 
 export async function POST(request: NextRequest) {
   log('=== POST /api/ai/assistant/chat ===');

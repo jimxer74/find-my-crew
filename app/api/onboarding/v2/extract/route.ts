@@ -5,7 +5,6 @@ import skillsConfig from '@/app/config/skills-config.json';
 
 const SKILL_LIST = skillsConfig.general.map((s) => `"${s.name}"`).join(', ');
 
-export const maxDuration = 30;
 
 const EXTRACT_PROMPT = `You are a data extraction assistant. Given a conversation transcript, extract structured owner onboarding data.
 

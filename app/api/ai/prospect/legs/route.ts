@@ -11,7 +11,6 @@ const log = (message: string, data?: unknown) => {
   }
 };
 
-export const maxDuration = 30;
 
 /**
  * Request body for prospect leg search

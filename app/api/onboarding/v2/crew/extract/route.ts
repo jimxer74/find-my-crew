@@ -4,7 +4,6 @@ import { logger } from '@shared/logging';
 import skillsConfig from '@/app/config/skills-config.json';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 
-export const maxDuration = 30;
 
 const VALID_SKILLS = skillsConfig.general.map((s) => s.name);
 const SKILL_LIST = VALID_SKILLS.map((n) => `"${n}"`).join(', ');

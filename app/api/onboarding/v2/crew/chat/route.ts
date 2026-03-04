@@ -4,7 +4,6 @@ import skillsConfig from '@/app/config/skills-config.json';
 import experienceLevelsConfig from '@/app/config/experience-levels-config.json';
 import riskLevelsConfig from '@/app/config/risk-levels-config.json';
 
-export const maxDuration = 45;
 
 interface ChatMessage {
   role: 'user' | 'assistant';

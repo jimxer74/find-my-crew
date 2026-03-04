@@ -13,7 +13,6 @@ const log = (message: string, data?: unknown) => {
   }
 };
 
-export const maxDuration = 30; // Shorter timeout for lightweight call
 
 /**
  * Build prompt for generating profile-based suggestions
