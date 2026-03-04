@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { CrewOnboardingChat } from './CrewOnboardingChat';
 import { CrewProfileCheckpoint } from './CrewProfileCheckpoint';
+import { ConsentCheckpoint } from './ConsentCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
-import { ConsentSetupModal } from '@shared/components/auth';
 import { useConsentSetup } from '@shared/contexts';
 import { logger } from '@shared/logging';
 
@@ -14,7 +14,7 @@ import { logger } from '@shared/logging';
 // Types
 // ---------------------------------------------------------------------------
 
-type OnboardingPhase = 'signup' | 'chatting' | 'confirming_profile' | 'done';
+type OnboardingPhase = 'signup' | 'consenting' | 'chatting' | 'confirming_profile' | 'done';
 
 export interface SkillEntry {
   skill_name: string;
@@ -81,14 +81,16 @@ const INITIAL_STATE: OnboardingState = { phase: 'signup', profile: null };
 
 const STEPS = [
   { key: 'signup', label: 'Account' },
+  { key: 'consenting', label: 'Terms' },
   { key: 'chatting', label: 'Profile' },
   { key: 'confirming_profile', label: 'Review' },
 ] as const;
 
 function stepIndex(phase: OnboardingPhase): number {
   if (phase === 'signup') return 0;
-  if (phase === 'chatting') return 1;
-  return 2; // confirming_profile | done
+  if (phase === 'consenting') return 1;
+  if (phase === 'chatting') return 2;
+  return 3; // confirming_profile | done
 }
 
 function StepBar({ phase }: { phase: OnboardingPhase }) {
@@ -142,11 +144,10 @@ export function CrewOnboardingV2() {
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
-  const [consentDone, setConsentDone] = useState(false);
 
-  // Resolve starting phase on mount
+  // Resolve starting phase — wait for both auth and consent check to complete
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || consentLoading) return;
 
     if (!user) {
       clearState();
@@ -154,18 +155,24 @@ export function CrewOnboardingV2() {
       return;
     }
 
+    // If consent not yet accepted, always gate to consent step first
+    if (needsConsentSetup) {
+      setState({ ...INITIAL_STATE, phase: 'consenting' });
+      return;
+    }
+
     const saved = loadState();
-    if (saved && saved.phase !== 'signup') {
+    if (saved && saved.phase !== 'signup' && saved.phase !== 'consenting') {
       const isValid = !(saved.phase === 'confirming_profile' && !saved.profile);
       setState(isValid ? saved : { ...INITIAL_STATE, phase: 'chatting' });
     } else {
       setState({ ...INITIAL_STATE, phase: 'chatting' });
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, consentLoading, needsConsentSetup]);
 
-  // Persist non-signup state
+  // Persist state — skip transient phases that are re-determined on load
   useEffect(() => {
-    if (state.phase !== 'signup') saveState(state);
+    if (state.phase !== 'signup' && state.phase !== 'consenting') saveState(state);
   }, [state]);
 
   const updateState = useCallback((patch: Partial<OnboardingState>) => {
@@ -175,6 +182,10 @@ export function CrewOnboardingV2() {
       return next;
     });
   }, []);
+
+  const handleConsentComplete = useCallback(() => {
+    updateState({ phase: 'chatting' });
+  }, [updateState]);
 
   // Handle AI chat completion
   const handleChatComplete = useCallback(
@@ -285,7 +296,7 @@ export function CrewOnboardingV2() {
   // Loading
   // ---------------------------------------------------------------------------
 
-  if (authLoading) {
+  if (authLoading || (!!user && consentLoading)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -352,7 +363,17 @@ export function CrewOnboardingV2() {
           </>
         )}
 
-        {/* Step 2 — AI chat */}
+        {/* Step 2 — consent */}
+        {state.phase === 'consenting' && user && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Before we get started, please review and accept our terms.
+            </div>
+            <ConsentCheckpoint userId={user.id} onComplete={handleConsentComplete} />
+          </div>
+        )}
+
+        {/* Step 3 — AI chat */}
         {state.phase === 'chatting' && user && (
           <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl shadow-xl p-5">
             <div className="flex items-start justify-between mb-4">
@@ -392,13 +413,6 @@ export function CrewOnboardingV2() {
         )}
       </div>
 
-      {/* Consent modal — shown after signup before proceeding to chat */}
-      {user && !consentLoading && needsConsentSetup && !consentDone && (
-        <ConsentSetupModal
-          userId={user.id}
-          onComplete={() => setConsentDone(true)}
-        />
-      )}
     </div>
   );
 }

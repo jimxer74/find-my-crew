@@ -9,8 +9,8 @@ import type { SkillEntry } from './CrewOnboardingV2';
 import { BoatCheckpoint } from './BoatCheckpoint';
 import { EquipmentCheckpoint } from './EquipmentCheckpoint';
 import { JourneyCheckpoint } from './JourneyCheckpoint';
+import { ConsentCheckpoint } from './ConsentCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
-import { ConsentSetupModal } from '@shared/components/auth';
 import { useConsentSetup } from '@shared/contexts';
 import { logger } from '@shared/logging';
 
@@ -20,6 +20,7 @@ import { logger } from '@shared/logging';
 
 type OnboardingPhase =
   | 'signup'
+  | 'consenting'
   | 'chatting'
   | 'confirming_profile'
   | 'confirming_boat'
@@ -106,6 +107,7 @@ const INITIAL_STATE: OnboardingState = {
 
 const STEPS = [
   { key: 'signup', label: 'Account' },
+  { key: 'consenting', label: 'Terms' },
   { key: 'chatting', label: 'About you' },
   { key: 'confirming_profile', label: 'Profile' },
   { key: 'confirming_boat', label: 'Boat' },
@@ -115,11 +117,12 @@ const STEPS = [
 
 function stepIndex(phase: OnboardingPhase): number {
   if (phase === 'signup') return 0;
-  if (phase === 'chatting') return 1;
-  if (phase === 'confirming_profile') return 2;
-  if (phase === 'confirming_boat') return 3;
-  if (phase === 'equipment_offer') return 4;
-  if (phase === 'journey_offer' || phase === 'done') return 5;
+  if (phase === 'consenting') return 1;
+  if (phase === 'chatting') return 2;
+  if (phase === 'confirming_profile') return 3;
+  if (phase === 'confirming_boat') return 4;
+  if (phase === 'equipment_offer') return 5;
+  if (phase === 'journey_offer' || phase === 'done') return 6;
   return 0;
 }
 
@@ -173,42 +176,39 @@ export function OwnerOnboardingV2() {
 
   const [state, setState] = useState<OnboardingState>(INITIAL_STATE);
   const [showSignupModal, setShowSignupModal] = useState(false);
-  const [consentDone, setConsentDone] = useState(false);
 
-  // On mount: resolve starting state from auth + sessionStorage
+  // On mount: resolve starting state — wait for both auth and consent check
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || consentLoading) return;
 
     if (!user) {
-      // Not authenticated — clear any stale state and show signup
       clearState();
       setState(INITIAL_STATE);
       return;
     }
 
-    // Authenticated — check for saved progress
+    // If consent not yet accepted, always gate to consent step first
+    if (needsConsentSetup) {
+      setState({ ...INITIAL_STATE, phase: 'consenting' });
+      return;
+    }
+
+    // Authenticated and consented — restore saved progress
     const saved = loadState();
-    if (saved && saved.phase !== 'signup') {
-      // Validate saved state has required data for its phase before restoring
+    if (saved && saved.phase !== 'signup' && saved.phase !== 'consenting') {
       const isValid =
         !(saved.phase === 'confirming_profile' && !saved.profile) &&
         !(saved.phase === 'confirming_boat' && !saved.boat);
 
-      if (isValid) {
-        setState(saved);
-      } else {
-        // Corrupted/incomplete saved state — restart from chat
-        setState({ ...INITIAL_STATE, phase: 'chatting' });
-      }
+      setState(isValid ? saved : { ...INITIAL_STATE, phase: 'chatting' });
     } else {
-      // No saved progress — start the AI chat (user just signed up)
       setState({ ...INITIAL_STATE, phase: 'chatting' });
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, consentLoading, needsConsentSetup]);
 
-  // Persist state to sessionStorage (only when past signup phase)
+  // Persist state — skip transient phases that are re-determined on load
   useEffect(() => {
-    if (state.phase !== 'signup') {
+    if (state.phase !== 'signup' && state.phase !== 'consenting') {
       saveState(state);
     }
   }, [state]);
@@ -220,6 +220,10 @@ export function OwnerOnboardingV2() {
       return next;
     });
   }, []);
+
+  const handleConsentComplete = useCallback(() => {
+    updateState({ phase: 'chatting' });
+  }, [updateState]);
 
   // Handle when AI chat is complete (user is already authenticated at this point)
   const handleChatComplete = useCallback(
@@ -332,7 +336,7 @@ export function OwnerOnboardingV2() {
   // Loading
   // ---------------------------------------------------------------------------
 
-  if (authLoading) {
+  if (authLoading || (!!user && consentLoading)) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -402,6 +406,16 @@ export function OwnerOnboardingV2() {
               redirectPath="/welcome/owner-v2"
             />
           </>
+        )}
+
+        {/* Consent phase — user just signed up */}
+        {state.phase === 'consenting' && user && (
+          <div className="space-y-3">
+            <div className="text-sm text-white/70">
+              Before we get started, please review and accept our terms.
+            </div>
+            <ConsentCheckpoint userId={user.id} onComplete={handleConsentComplete} />
+          </div>
         )}
 
         {/* AI Chat phase — user is authenticated */}
@@ -476,13 +490,6 @@ export function OwnerOnboardingV2() {
         )}
       </div>
 
-      {/* Consent modal — shown after signup before proceeding to chat */}
-      {user && !consentLoading && needsConsentSetup && !consentDone && (
-        <ConsentSetupModal
-          userId={user.id}
-          onComplete={() => setConsentDone(true)}
-        />
-      )}
     </div>
   );
 }
