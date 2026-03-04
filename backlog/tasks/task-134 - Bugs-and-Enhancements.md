@@ -4,7 +4,7 @@ title: Bugs and Enhancements
 status: In Progress
 assignee: []
 created_date: '2026-02-25 15:02'
-updated_date: '2026-03-04 07:18'
+updated_date: '2026-03-04 07:19'
 labels: []
 dependencies: []
 ---
@@ -12,7 +12,7 @@ dependencies: []
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-** Bugs in /welcome/crew-v2 and owner-v2 flows**
+** /welcome/crew-v2 and owner-v2 flows**
 - no consent modal displayd after signup
 - OAuth signup redirects to /crew, should retain in ai flow
 - Add link to profile completion banner to continue with ai onboarding
@@ -21,7 +21,7 @@ dependencies: []
 - Fix "Send" button to match the input textbox size
 - Add a disclaimer text before user click create account to indicate that by creating account user is confirming the usage of AI to access the profile data
 
-** Bugs in Privacy policy **
+** Privacy policy **
 - Add loading button to DELETE BY ACCOUNT
 
 ** Frontpage **
