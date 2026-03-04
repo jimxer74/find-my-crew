@@ -4,7 +4,7 @@ title: Bugs and Enhancements
 status: In Progress
 assignee: []
 created_date: '2026-02-25 15:02'
-updated_date: '2026-03-04 07:19'
+updated_date: '2026-03-04 07:20'
 labels: []
 dependencies: []
 ---
@@ -33,6 +33,6 @@ dependencies: []
 - consent modal is not displayed after signup
 - Update the UI use the same concept as in /welcome/crew-v2 and owner-v2 with same color schemes and glassmorphism look and feel
 
-- ** Privacy policy **
+** Privacy policy **
 - Refactor DELETE MY ACCOUNT to use supabase async feature with progress UI indicator
 <!-- SECTION:DESCRIPTION:END -->
