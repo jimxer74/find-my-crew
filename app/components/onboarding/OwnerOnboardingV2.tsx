@@ -11,6 +11,7 @@ import { EquipmentCheckpoint } from './EquipmentCheckpoint';
 import { JourneyCheckpoint } from './JourneyCheckpoint';
 import { ConsentCheckpoint } from './ConsentCheckpoint';
 import { SignupModal } from '@/app/components/SignupModal';
+import { Button } from '@shared/ui/Button/Button';
 import { logger } from '@shared/logging';
 
 // ---------------------------------------------------------------------------
@@ -380,12 +381,13 @@ export function OwnerOnboardingV2() {
               <p className="text-xs text-white/60 mb-3">
                 By creating an account you confirm that AI may process your profile and boat data to help connect you with the right crew members.
               </p>
-              <button
+              <Button
                 onClick={() => setShowSignupModal(true)}
-                className="w-full bg-white text-amber-900 font-semibold px-6 py-2.5 rounded-lg text-sm hover:bg-white/90 transition-colors"
+                isLoading={showSignupModal}
+                className="w-full !bg-white !text-amber-900 font-semibold hover:!bg-white/90"
               >
-                Create account
-              </button>
+                Create account and continue
+              </Button>
             </div>
 
             <SignupModal
