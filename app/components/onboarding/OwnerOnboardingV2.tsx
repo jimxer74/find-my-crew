@@ -333,18 +333,6 @@ export function OwnerOnboardingV2() {
   }, [router]);
 
   // ---------------------------------------------------------------------------
-  // Loading
-  // ---------------------------------------------------------------------------
-
-  if (authLoading || (!!user && consentLoading)) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  // ---------------------------------------------------------------------------
   // Done state
   // ---------------------------------------------------------------------------
 
@@ -358,6 +346,8 @@ export function OwnerOnboardingV2() {
   // Render
   // ---------------------------------------------------------------------------
 
+  const isLoading = authLoading || (!!user && consentLoading);
+
   return (
     <div className="relative min-h-screen">
       {/* Background image */}
@@ -368,7 +358,13 @@ export function OwnerOnboardingV2() {
       {/* Amber overlay */}
       <div className="fixed inset-0 bg-amber-900/60 backdrop-blur-[2px] -z-10" />
 
-      <div className="max-w-2xl mx-auto px-4 pt-20 pb-8 space-y-6">
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : null}
+
+      <div className={`max-w-2xl mx-auto px-4 pt-20 pb-8 space-y-6${isLoading ? ' hidden' : ''}`}>
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-white drop-shadow-lg">Welcome to SailSmart</h1>
