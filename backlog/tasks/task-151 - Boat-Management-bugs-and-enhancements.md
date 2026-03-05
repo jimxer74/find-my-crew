@@ -4,7 +4,7 @@ title: Boat Management bugs and enhancements
 status: To Do
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-05 11:20'
+updated_date: '2026-03-05 12:22'
 labels: []
 dependencies: []
 ---
@@ -14,6 +14,7 @@ dependencies: []
 <!-- SECTION:DESCRIPTION:BEGIN -->
 **Generate equiment and maint. tasks**
 - BUG: crosscheck the saving of tasks and equipment, it seems that tasks are not allways saved to database, for example when user fetches new tasks in equipment fetch flow
+BUG:  Badge dark colors do not work properly: update Badge dark colors to use glassmorphism style, so that they appear glass like, with clear color signals for both dark, and light themes
 - Equipment save does not work, results in error
 
 General UI:
