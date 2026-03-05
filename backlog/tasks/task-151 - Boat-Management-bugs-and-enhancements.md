@@ -4,7 +4,7 @@ title: Boat Management bugs and enhancements
 status: To Do
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-05 09:09'
+updated_date: '2026-03-05 09:54'
 labels: []
 dependencies: []
 ---
@@ -17,6 +17,8 @@ dependencies: []
 - Equipment save does not work, results in error
 
 **Maitenance -view**
+- BUG: the Recurring interval is not working properly, it displays a task to be recurring, but when opening edit mode it does not show recurring information. Also when completing a recurring task it should create another one with recurring interval, but it did not work allways.
+
 - Change task cards to narrow format similar as equipment cards, truncate content if neccessary
 - Remove status badge from Task card
 - Change tasks statuses to: Todo, Planned, In progress, Done
