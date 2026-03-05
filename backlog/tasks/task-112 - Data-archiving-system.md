@@ -4,7 +4,7 @@ title: Data archiving system
 status: To Do
 assignee: []
 created_date: '2026-02-17 18:27'
-updated_date: '2026-02-20 10:20'
+updated_date: '2026-03-05 11:18'
 labels: []
 dependencies: []
 ---
@@ -21,4 +21,5 @@ A solution architecture for data archiving must be defined with approriate level
 - Registrations and related data are similar to journeys, they become stale also fast, but are important to retain, for potential auditing purposes or disputes etc. 
 - Profiles and boats are probably more longer lived data and does not need to be archived so often. GDPR needs to be considered in archiving the profile data
 - AI messages, there may be lot of generated AI messages, a clever way of managing the volumes and archival strategy needs to be tought out, how much retain in short conversation history e.g in ai_messages and when to transfer the data into loger term archival storage
+- Boat management: Equipments and specifically the maintenance tasks will be huge in volume, some kind of way to archive completed tasks, but keep the records becouse it may be very important to understand the maintenance history
 <!-- SECTION:DESCRIPTION:END -->
