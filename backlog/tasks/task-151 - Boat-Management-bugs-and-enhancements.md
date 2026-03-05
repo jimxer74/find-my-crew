@@ -4,7 +4,7 @@ title: Boat Management bugs and enhancements
 status: To Do
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-05 09:02'
+updated_date: '2026-03-05 09:09'
 labels: []
 dependencies: []
 ---
@@ -20,9 +20,16 @@ dependencies: []
 - Change task cards to narrow format similar as equipment cards, truncate content if neccessary
 - Remove status badge from Task card
 - Change tasks statuses to: Todo, Planned, In progress, Done
-- Status logic: Task is Todo, if it has not been started and no Due date has been set, 
+- Status logic: Todo = if it has not been started and no Due date has been set, Planned = Due date set, but not started, In Progress = task is started, Done = Task is marked as completed
+- Change the card button actions to state sensitive e.g. Todo and Planned tasks = Start, In progress tasks = Complete  
+- Remove the category dropdown
 
 Desktop: 
 - change the layout to 4 column, by the Status (Todo, Planned. In Progress, Done) and display the tasks in column based on the task status
 - remove Status selection / drop down
+- List tasks by equipment groups, similar as equipments are listed by categories.
+
+Mobile:
+- list task cards in single column, grouped by the equipment
+- revmove state dropdown, instead display clickable state badges
 <!-- SECTION:DESCRIPTION:END -->
