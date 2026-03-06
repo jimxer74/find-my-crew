@@ -4,7 +4,7 @@ title: Boat Management bugs and enhancements
 status: To Do
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-05 12:29'
+updated_date: '2026-03-06 06:42'
 labels: []
 dependencies: []
 ---
@@ -16,9 +16,7 @@ dependencies: []
 - BUG: crosscheck the saving of tasks and equipment, it seems that tasks are not allways saved to database, for example when user fetches new tasks in equipment fetch flow
 
 **General UI**:
-- Better contrast and readability, now cards are not visible enough. Utilize the same idea for coloring scheme as in backlog
 BUG:  Badge dark colors do not work properly: update Badge dark colors to use glassmorphism style, so that they appear glass like, with clear color signals for both dark, and light themes
-- Equipment save does not work, results in error
 - Change Edit, Delete etc link buttons to similar icons with text as in /owner/journeys page (icon with text) update also /owner/journeys page to include both Icon and text
 - Crosscheck to whole platform and update all similar kind of Card link buttons to use the same "Icon + text" appoach.
 
@@ -36,7 +34,7 @@ BUG:  Badge dark colors do not work properly: update Badge dark colors to use gl
 - Remove the category dropdown
 
 Desktop: 
-- change the layout to 4 column, by the Status (Todo, Planned. In Progress, Done) and display the tasks in column based on the task status
+- change the layout to 4 column Kanban style layout, by the state (Todo, Planned, In Progress, Done) and display the tasks in column based on the task status. Make state columns collapsible and by default minimize the "Done" column. 
 - remove Status selection / drop down
 - List tasks by equipment groups, similar as equipments are listed by categories.
 
