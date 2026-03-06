@@ -60,22 +60,22 @@ export const COLOR_TOKENS = {
   matchScore: {
     excellent: {
       threshold: 80,
-      badge: 'bg-green-300/80 border-green-500 text-green-800',
+      badge: 'bg-green-100 border-green-400 text-green-800 dark:bg-green-500/20 dark:border-green-400/50 dark:text-green-200',
       label: 'Excellent Match',
     },
     good: {
       threshold: 50,
-      badge: 'bg-yellow-300/80 border-yellow-600 text-yellow-800',
+      badge: 'bg-amber-100 border-amber-400 text-amber-800 dark:bg-amber-500/20 dark:border-amber-400/50 dark:text-amber-200',
       label: 'Good Match',
     },
     moderate: {
       threshold: 25,
-      badge: 'bg-orange-300/80 border-orange-600 text-orange-800',
+      badge: 'bg-orange-100 border-orange-400 text-orange-800 dark:bg-orange-500/20 dark:border-orange-400/50 dark:text-orange-200',
       label: 'Moderate Match',
     },
     poor: {
       threshold: 0,
-      badge: 'bg-red-500/80 border-red-600 text-red-800',
+      badge: 'bg-red-100 border-red-400 text-red-800 dark:bg-red-500/20 dark:border-red-400/50 dark:text-red-200',
       label: 'Poor Match',
     },
   },

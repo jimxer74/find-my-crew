@@ -32,12 +32,12 @@ const variantClasses: Record<string, { light: string; dark: string }> = {
 };
 
 const outlinedVariantClasses: Record<string, string> = {
-  primary: 'border border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:border-blue-400/50 dark:text-blue-200',
+  primary: 'border border-blue-300 bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:border-blue-400/50 dark:text-blue-200',
   secondary: 'border border-gray-300 bg-gray-100 text-gray-800 dark:bg-white/10 dark:border-white/20 dark:text-gray-200',
-  success: 'border border-green-300 bg-green-50 text-green-700 dark:bg-green-500/15 dark:border-green-400/50 dark:text-green-200',
+  success: 'border border-green-300 bg-green-100 text-green-800 dark:bg-green-500/15 dark:border-green-400/50 dark:text-green-200',
   warning: 'border border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:border-amber-400/50 dark:text-amber-200',
-  error: 'border border-red-300 bg-red-50 text-red-800 dark:bg-red-500/15 dark:border-red-400/50 dark:text-red-200',
-  info: 'border border-sky-300 bg-sky-50 text-sky-800 dark:bg-cyan-500/15 dark:border-cyan-400/50 dark:text-cyan-200',
+  error: 'border border-red-300 bg-red-100 text-red-800 dark:bg-red-500/15 dark:border-red-400/50 dark:text-red-200',
+  info: 'border border-sky-300 bg-sky-100 text-sky-800 dark:bg-cyan-500/15 dark:border-cyan-400/50 dark:text-cyan-200',
 };
 
 const sizeClasses: Record<string, string> = {

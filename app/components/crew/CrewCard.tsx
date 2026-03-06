@@ -59,10 +59,10 @@ function getRiskLevelColor(riskLevel: string): string {
  * Get match score color
  */
 function getMatchScoreColor(score: number): string {
-  if (score >= 80) return 'bg-green-100 text-green-800 border-green-300';
-  if (score >= 60) return 'bg-blue-100 text-blue-800 border-blue-300';
-  if (score >= 40) return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-  return 'bg-orange-100 text-orange-800 border-orange-300';
+  if (score >= 80) return 'bg-green-100 text-green-800 border-green-400';
+  if (score >= 60) return 'bg-blue-100 text-blue-800 border-blue-400';
+  if (score >= 40) return 'bg-amber-100 text-amber-800 border-amber-400';
+  return 'bg-orange-100 text-orange-800 border-orange-400';
 }
 
 /**
@@ -217,7 +217,7 @@ export default function CrewCard({
                           {matching.map((skill) => (
                             <span
                               key={`matched-${skill}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-300/80 text-green-800 text-xs font-medium rounded border border-green-500"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-100 text-green-800 text-xs font-medium rounded border border-green-400"
                             >
                               <Check className="w-3 h-3" />
                               {formatSkillName(skill)}
@@ -231,7 +231,7 @@ export default function CrewCard({
                           {missing.map((skill) => (
                             <span
                               key={`missing-${skill}`}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-300/80 text-orange-800 text-xs font-medium rounded border border-orange-600"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded border border-orange-400"
                             >
                               <AlertCircle className="w-3 h-3" />
                               {formatSkillName(skill)}

@@ -17,10 +17,10 @@ interface MaintenanceListProps {
 }
 
 const KANBAN_COLUMNS: { key: MaintenanceDisplayStatus; label: string; headerClass: string; countClass: string }[] = [
-  { key: 'todo', label: 'Todo', headerClass: 'text-gray-600 dark:text-gray-400', countClass: 'bg-gray-100 text-gray-600 dark:bg-gray-700/50 dark:text-gray-300' },
-  { key: 'planned', label: 'Planned', headerClass: 'text-blue-600 dark:text-blue-400', countClass: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200' },
-  { key: 'in_progress', label: 'In Progress', headerClass: 'text-amber-600 dark:text-amber-400', countClass: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200' },
-  { key: 'done', label: 'Done', headerClass: 'text-green-600 dark:text-green-400', countClass: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-200' },
+  { key: 'todo', label: 'Todo', headerClass: 'text-gray-600 dark:text-gray-400', countClass: 'bg-gray-200 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300' },
+  { key: 'planned', label: 'Planned', headerClass: 'text-blue-600 dark:text-blue-400', countClass: 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200' },
+  { key: 'in_progress', label: 'In Progress', headerClass: 'text-amber-600 dark:text-amber-400', countClass: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200' },
+  { key: 'done', label: 'Done', headerClass: 'text-green-600 dark:text-green-400', countClass: 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200' },
 ];
 
 const priorityBorderClass: Record<string, string> = {
@@ -38,10 +38,10 @@ const priorityDotClass: Record<string, string> = {
 };
 
 const displayStatusBadgeClass: Record<MaintenanceDisplayStatus, string> = {
-  todo: 'bg-gray-100 text-gray-700 dark:bg-gray-700/50 dark:text-gray-300',
-  planned: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-200 dark:border dark:border-blue-400/30',
-  in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200 dark:border dark:border-amber-400/30',
-  done: 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-200 dark:border dark:border-green-400/30',
+  todo: 'bg-gray-200 text-gray-800 dark:bg-gray-700/50 dark:text-gray-300',
+  planned: 'bg-blue-100 text-blue-800 dark:bg-blue-500/20 dark:text-blue-200 dark:border dark:border-blue-400/30',
+  in_progress: 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-200 dark:border dark:border-amber-400/30',
+  done: 'bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-200 dark:border dark:border-green-400/30',
 };
 
 const displayStatusLabel: Record<MaintenanceDisplayStatus, string> = {
