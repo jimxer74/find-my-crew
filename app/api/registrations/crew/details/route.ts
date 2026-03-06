@@ -310,6 +310,7 @@ export async function GET(request: NextRequest) {
           ? journey?.boats?.images?.[0] ?? null
           : null,
         boat_average_speed_knots: journey?.boats?.average_speed_knots || null,
+        owner_id: journey?.boats?.owner_id || null,
         owner_name: ownerProfilesMap[journey?.boats?.owner_id || '']?.full_name || null,
         owner_image_url: ownerProfilesMap[journey?.boats?.owner_id || '']?.profile_image_url || null,
         min_experience_level: leg.min_experience_level,

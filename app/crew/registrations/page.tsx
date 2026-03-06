@@ -4,6 +4,7 @@ import { logger } from '@shared/logging';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@shared/database/client';
@@ -36,6 +37,7 @@ type RegistrationLeg = {
   boat_make_model: string | null;
   boat_image_url: string | null;
   boat_average_speed_knots: number | null;
+  owner_id: string | null;
   owner_name: string | null;
   owner_image_url: string | null;
   min_experience_level: number | null;
@@ -364,6 +366,32 @@ export default function MyRegistrationsPage() {
                           {registration.ai_match_reasoning}
                         </div>
                       </details>
+                    </div>
+                  )}
+
+                  {/* Approved actions */}
+                  {registration.registration_status === 'Approved' && registration.owner_id && (
+                    <div className="mt-3 pt-3 border-t border-border flex flex-wrap gap-2">
+                      <Link
+                        href={`/crew/skipper/${registration.owner_id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        View Skipper Profile
+                      </Link>
+                      <Link
+                        href={`/messages?with=${registration.owner_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground rounded-lg hover:bg-accent/80 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                        Message Skipper
+                      </Link>
                     </div>
                   )}
 

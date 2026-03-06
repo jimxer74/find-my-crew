@@ -124,6 +124,26 @@ export async function PATCH(
       );
     }
 
+    // Auto-create messaging conversation when approved (idempotent)
+    if (status === 'Approved') {
+      (async () => {
+        try {
+          const { error: convError } = await supabase.rpc('open_conversation_for_registration', {
+            p_registration_id: registrationId,
+            p_crew_id: registration.user_id,
+            p_skipper_id: user.id,
+          });
+          if (convError) {
+            logger.warn('[Registration API] Failed to open conversation:', { error: convError.message });
+          } else {
+            logger.info('[Registration API] Conversation opened for registration:', { registrationId });
+          }
+        } catch (err: any) {
+          logger.warn('[Registration API] Exception opening conversation:', { error: err instanceof Error ? err.message : String(err) });
+        }
+      })();
+    }
+
     // Send notification to crew member (non-blocking)
     const journeyId = legs.journeys.id;
     const journeyName = legs.journeys.name;

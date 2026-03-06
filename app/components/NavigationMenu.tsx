@@ -555,6 +555,46 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
             </Link>
           )}
 
+          {/* Messages */}
+          { user && isMenuPage ? (
+            <button
+              onClick={() => handleNavClick('/messages')}
+              className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors w-full text-left"
+            >
+              <svg
+                className="w-5 h-5 mr-3 text-muted-foreground"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="font-medium">{t('messages') || 'Messages'}</span>
+            </button>
+          ) : user && (
+            <Link
+              href="/messages"
+              onClick={(e) => handleNavClick('/messages', e)}
+              className="flex items-center px-4 py-3 min-h-[44px] text-card-foreground hover:bg-accent transition-colors"
+            >
+              <svg
+                className="w-5 h-5 mr-3 text-muted-foreground"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="font-medium">{t('messages') || 'Messages'}</span>
+            </Link>
+          )}
+
           {/* Feedback */}
           { user && isMenuPage ? (
             <button

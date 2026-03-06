@@ -239,6 +239,38 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
+    // 6.5. Delete messaging data
+    // conversation_messages cascade-delete when conversations are deleted.
+    // Delete conversations where user is participant (both roles handled).
+    logger.debug(`Deleting conversations for user`, {}, true);
+    const { data: userConvs1 } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', user.id);
+    const { data: userConvs2 } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('participant_2_id', user.id);
+    const convIds = [
+      ...((userConvs1 ?? []).map((c: any) => c.id)),
+      ...((userConvs2 ?? []).map((c: any) => c.id)),
+    ];
+    if (convIds.length > 0) {
+      for (const convId of convIds) {
+        const convResult = await safeDelete('conversations', { id: convId }, supabase, user.id);
+        if (!convResult.success) deletionResults.push(convResult);
+      }
+    }
+    // Also delete messages sent by user in other conversations
+    const { error: msgDeleteError } = await supabase
+      .from('conversation_messages')
+      .delete()
+      .eq('sender_id', user.id);
+    if (msgDeleteError) {
+      logger.warn('Failed to delete user conversation_messages', { error: msgDeleteError.message });
+    }
+    deletionResults.push({ success: true, table: 'conversations', operation: 'delete' });
+
     // 7. Delete feedback data
     const feedbackResult = await safeDelete('feedback', { user_id: user.id }, supabase, user.id);
     deletionResults.push(feedbackResult);
