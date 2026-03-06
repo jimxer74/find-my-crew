@@ -85,18 +85,17 @@ export function QuickPostBox({
 
   return (
     <div className="w-full space-y-2">
-      {/* Up button — centered above the box */}
-      <div className="flex justify-center">
+      {/* Close button — top right above the box */}
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Collapse"
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-white/10 text-white text-xs font-medium border border-white/20 rounded-lg hover:bg-white/20 transition-colors"
+          aria-label="Close"
+          className="w-7 h-7 flex items-center justify-center bg-white/10 text-white border border-white/20 rounded-full hover:bg-white/25 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
-          Up
         </button>
       </div>
 

@@ -22,11 +22,13 @@ function SuggestedPrompts({
   importantIndex,
   onSelect,
   disabled = false,
+  overlay = false,
 }: {
   prompts: string[];
   importantIndex: number | null;
   onSelect: (prompt: string) => void;
   disabled?: boolean;
+  overlay?: boolean;
 }) {
   if (prompts.length === 0) return null;
 
@@ -37,8 +39,8 @@ function SuggestedPrompts({
   };
 
   return (
-    <div className="mt-3 pt-3 border-t border-border/50">
-      <p className="text-xs text-muted-foreground mb-2 font-medium">Suggestions:</p>
+    <div className={`mt-3 pt-3 border-t ${overlay ? 'border-white/20' : 'border-border/50'}`}>
+      <p className={`text-xs mb-2 font-medium ${overlay ? 'text-white/70' : 'text-muted-foreground'}`}>Suggestions:</p>
       <div className="flex flex-wrap gap-2">
         {prompts.map((prompt, i) => {
           const isImportant = importantIndex !== null && i === importantIndex;
@@ -72,16 +74,21 @@ function PendingActionCard({
   onApprove,
   onCancel,
   disabled = false,
+  overlay = false,
 }: {
   action: PendingAction;
   onApprove: () => void;
   onCancel: () => void;
   disabled?: boolean;
+  overlay?: boolean;
 }) {
   return (
-    <div className="mt-3 pt-3 border-t border-border/50">
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-        <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100 mb-2">
+    <div className={`mt-3 pt-3 border-t ${overlay ? 'border-white/20' : 'border-border/50'}`}>
+      <div className={overlay
+        ? 'bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3'
+        : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3'
+      }>
+        <p className={`text-sm font-medium mb-2 ${overlay ? 'text-white' : 'text-yellow-900 dark:text-yellow-100'}`}>
           {action.label || `Approve ${action.toolName}?`}
         </p>
         <div className="flex gap-2">
@@ -142,30 +149,38 @@ function CrewSearchResults({
  */
 function IntermediateMessageCard({
   message,
+  overlay = false,
 }: {
   message: OwnerMessage;
+  overlay?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const content = message.content?.trim();
   if (!content) return null;
 
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden">
+    <div className={overlay
+      ? 'bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg overflow-hidden'
+      : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg overflow-hidden'
+    }>
       <Button
         type="button"
         onClick={() => setOpen((v) => !v)}
         variant="ghost"
         className="!w-full !justify-between !text-left !p-0 !h-auto !px-3 !py-2 rounded-none"
       >
-        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+        <span className={`text-xs font-medium ${overlay ? 'text-white/80' : 'text-blue-700 dark:text-blue-300'}`}>
           AI Reasoning
         </span>
-        <span className="text-blue-500 dark:text-blue-400 text-xs leading-none">
+        <span className={`text-xs leading-none ${overlay ? 'text-white/60' : 'text-blue-500 dark:text-blue-400'}`}>
           {open ? '▲' : '▼'}
         </span>
       </Button>
       {open && (
-        <div className="px-3 pb-3 text-xs whitespace-pre-wrap break-words text-blue-900 dark:text-blue-100 border-t border-blue-200 dark:border-blue-800 pt-2">
+        <div className={`px-3 pb-3 text-xs whitespace-pre-wrap break-words pt-2 ${overlay
+          ? 'text-white/80 border-t border-white/20'
+          : 'text-blue-900 dark:text-blue-100 border-t border-blue-200 dark:border-blue-800'
+        }`}>
           {content}
         </div>
       )}
@@ -173,7 +188,7 @@ function IntermediateMessageCard({
   );
 }
 
-export default function OwnerChat() {
+export default function OwnerChat({ variant = 'default' }: { variant?: 'default' | 'overlay' }) {
   const {
     messages,
     isLoading,
@@ -250,13 +265,15 @@ export default function OwnerChat() {
     }
   }, [error, isAuthenticated]);
 
+  const gl = variant === 'overlay';
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className={`flex flex-col h-full ${gl ? 'bg-transparent' : 'bg-background'}`}>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-4">
           {messages.length === 0 && !isLoading && (
-            <div className="text-center text-muted-foreground py-8">
+            <div className={`text-center py-8 ${gl ? 'text-white/80' : 'text-muted-foreground'}`}>
               <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
                 <svg
                   className="w-10 h-10 text-primary"
@@ -270,7 +287,7 @@ export default function OwnerChat() {
                   <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-medium text-foreground mb-2">
+              <h3 className={`text-lg font-medium mb-2 ${gl ? 'text-white' : 'text-foreground'}`}>
                 Welcome to Owner Onboarding
               </h3>
               <p className="text-sm max-w-sm mx-auto mb-4">
@@ -315,14 +332,16 @@ export default function OwnerChat() {
                 {/* Intermediate message - render as subtle info box */}
                 {message.metadata?.isIntermediate ? (
                   <div className="max-w-[85%]">
-                    <IntermediateMessageCard message={message} />
+                    <IntermediateMessageCard message={message} overlay={gl} />
                   </div>
                 ) : (
                   <div
                     className={`max-w-[85%] rounded-lg px-4 py-2 ${
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted text-foreground'
+                        : gl
+                          ? 'bg-white/10 backdrop-blur-sm text-white border border-white/10'
+                          : 'bg-muted text-foreground'
                     }`}
                   >
                     <div className="text-sm whitespace-pre-wrap break-words">
@@ -339,6 +358,7 @@ export default function OwnerChat() {
                           importantIndex={importantIndex}
                           onSelect={handleSuggestionSelect}
                           disabled={isLoading}
+                          overlay={gl}
                         />
                       ) : null;
                     })()}
@@ -349,6 +369,7 @@ export default function OwnerChat() {
                         onApprove={() => handleApproveAction(message.id, message.metadata!.pendingAction!)}
                         onCancel={() => handleCancelAction(message.id)}
                         disabled={isLoading}
+                        overlay={gl}
                       />
                     )}
                     {/* Show crew search results if present */}
@@ -369,12 +390,12 @@ export default function OwnerChat() {
                     })()}
                     {/* Show inline action button after assistant messages if user is not authenticated */}
                     {message.role === 'assistant' && !isAuthenticated && (
-                      <div className="mt-3 pt-3 border-t border-border/50">
+                      <div className={`mt-3 pt-3 border-t ${gl ? 'border-white/20' : 'border-border/50'}`}>
                         {hasSessionEmail ? (
                           <div className="flex flex-col items-start gap-2">
                             {sessionEmail && (
-                              <p className="text-xs text-muted-foreground">
-                                Continue with <span className="font-medium text-foreground">{sessionEmail}</span>
+                              <p className={`text-xs ${gl ? 'text-white/70' : 'text-muted-foreground'}`}>
+                                Continue with <span className={`font-medium ${gl ? 'text-white' : 'text-foreground'}`}>{sessionEmail}</span>
                               </p>
                             )}
                             <Button
@@ -431,8 +452,8 @@ export default function OwnerChat() {
 
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-muted rounded-lg px-4 py-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className={`rounded-lg px-4 py-2 ${gl ? 'bg-white/10 backdrop-blur-sm' : 'bg-muted'}`}>
+                <div className={`flex items-center gap-2 text-sm ${gl ? 'text-white/70' : 'text-muted-foreground'}`}>
                   <svg
                     className="animate-spin h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
@@ -461,7 +482,10 @@ export default function OwnerChat() {
 
           {/* Congrats / Welcome onboard - render as the last item in the chain */}
           {isFullyOnboarded && (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+            <div className={`rounded-xl p-6 text-center ${gl
+              ? 'bg-white/10 backdrop-blur-sm border border-white/20'
+              : 'border border-primary/20 bg-primary/5'
+            }`}>
               <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
                 <svg
                   className="w-8 h-8 text-primary"
@@ -475,10 +499,10 @@ export default function OwnerChat() {
                   <path d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-1">
+              <h3 className={`text-lg font-semibold mb-1 ${gl ? 'text-white' : 'text-foreground'}`}>
                 Welcome onboard!
               </h3>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className={`text-sm mb-4 ${gl ? 'text-white/70' : 'text-muted-foreground'}`}>
                 You&apos;re all set. Please review your generated Journey, correct and update any details and publish it when you are ready. Please also review your Profile and Boat details and ensure they are correct before publishing.
               </p>
               <div className="flex flex-wrap justify-center gap-3">
@@ -536,9 +560,9 @@ export default function OwnerChat() {
 
       {/* Error message */}
       {error && (
-        <div className="px-4 py-2 bg-destructive/10 border-t border-destructive/20">
+        <div className={`px-4 py-2 border-t ${gl ? 'bg-red-900/30 border-white/20' : 'bg-destructive/10 border-destructive/20'}`}>
           <div className="max-w-2xl lg:max-w-4xl mx-auto flex items-center justify-between">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className={`text-sm ${gl ? 'text-red-200' : 'text-destructive'}`}>{error}</p>
             <Button
               onClick={clearError}
               variant="ghost"
@@ -553,7 +577,7 @@ export default function OwnerChat() {
 
       {/* Input area - hidden once onboarding is fully completed or user is not authenticated */}
       {!isFullyOnboarded && isAuthenticated && (
-        <div className="border-t border-border bg-card p-4">
+        <div className={`p-4 ${gl ? 'border-t border-white/20 bg-white/10 backdrop-blur-sm' : 'border-t border-border bg-card'}`}>
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <textarea
@@ -564,7 +588,11 @@ export default function OwnerChat() {
                 placeholder="Type your message..."
                 disabled={isLoading}
                 rows={1}
-                className="flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm bg-input-background text-foreground border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                className={`flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 disabled:opacity-50 ${
+                  gl
+                    ? 'bg-white/10 text-white placeholder:text-white/50 border border-white/20 focus:ring-white/30'
+                    : 'bg-input-background text-foreground border border-border focus:ring-primary'
+                }`}
               />
               <button
                 type="submit"

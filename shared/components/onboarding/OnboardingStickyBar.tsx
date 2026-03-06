@@ -15,6 +15,8 @@ export interface OnboardingStickyBarProps {
   /** For crew: show Exit Assistant button when in profile completion mode */
   showExitAssistant?: boolean;
   onExitAssistant?: () => void;
+  /** Use glassmorphism styling (white/translucent) for overlay-background pages */
+  glassmorphism?: boolean;
 }
 
 export function OnboardingStickyBar({
@@ -27,13 +29,18 @@ export function OnboardingStickyBar({
   isNavigatingToJourneys = false,
   showExitAssistant = false,
   onExitAssistant,
+  glassmorphism = false,
 }: OnboardingStickyBarProps) {
   return (
-    <div className="fixed top-0 left-0 right-0 z-40 border-b border-border bg-card/95 backdrop-blur-sm shadow-sm overflow-visible">
+    <div className={`fixed top-0 left-0 right-0 z-40 shadow-sm overflow-visible backdrop-blur-sm ${
+      glassmorphism
+        ? 'border-b border-white/20 bg-white/10'
+        : 'border-b border-border bg-card/95'
+    }`}>
       <div className="flex flex-col gap-1.5 px-3 py-2 overflow-visible">
         {/* Title and buttons in same row */}
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-foreground truncate">{title}</h2>
+          <h2 className={`text-sm font-semibold truncate ${glassmorphism ? 'text-white' : 'text-foreground'}`}>{title}</h2>
           <div className="flex items-center gap-2 flex-shrink-0">
             {showViewJourneys && onViewJourneys && (
               <Button
@@ -88,7 +95,7 @@ export function OnboardingStickyBar({
               disabled={isLoading}
               variant="ghost"
               size="sm"
-              className="!px-2 !py-1 !text-xs flex-shrink-0"
+              className={`!px-2 !py-1 !text-xs flex-shrink-0 ${glassmorphism ? '!text-white/80 hover:!text-white hover:!bg-white/10' : ''}`}
               leftIcon={
                 <svg
                   className="w-3.5 h-3.5"

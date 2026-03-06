@@ -48,6 +48,7 @@ function OwnerOnboardingContent() {
         title="Owner Onboarding Assistant"
         onStartFresh={handleStartFresh}
         isLoading={isLoading}
+        glassmorphism
       >
         <OwnerOnboardingSteps
           isAuthenticated={isAuthenticated}
@@ -63,7 +64,7 @@ function OwnerOnboardingContent() {
 
       {/* Chat area - padding clears the sticky onboarding bar */}
       <main className="flex-1 overflow-y-auto pt-20">
-        <OwnerChat />
+        <OwnerChat variant="overlay" />
       </main>
 
       <Footer />

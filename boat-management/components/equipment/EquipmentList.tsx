@@ -286,11 +286,16 @@ function EquipmentCard({
         {/* Name + quantity */}
         <div className="flex items-start justify-between gap-1.5 mb-1">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap">
               <h4 className="font-medium text-card-foreground text-sm leading-tight truncate">{item.name}</h4>
               {(item.quantity ?? 1) > 1 && (
                 <span className="shrink-0 text-xs font-semibold px-1 py-0.5 rounded bg-muted text-muted-foreground">
                   ×{item.quantity}
+                </span>
+              )}
+              {item.status === 'needs_replacement' && (
+                <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                  Needs Replacement
                 </span>
               )}
             </div>
