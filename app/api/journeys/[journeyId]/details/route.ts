@@ -28,7 +28,7 @@ export async function GET(
     // Get the journey with all relevant fields
     const { data: journey, error: journeyError } = await supabase
       .from('journeys')
-      .select('id, name, description, state, boat_id')
+      .select('id, name, description, state, boat_id, cost_info')
       .eq('id', journeyId)
       .single();
 
@@ -73,6 +73,7 @@ export async function GET(
       journey_id: journey.id,
       journey_name: journey.name,
       journey_description: journey.description,
+      journey_cost_info: journey.cost_info ?? null,
       state: journey.state,
       boat_miles_on_vessel: boatInfo.miles_on_vessel ?? null,
       boat_offshore_passage_experience: boatInfo.offshore_passage_experience ?? false,

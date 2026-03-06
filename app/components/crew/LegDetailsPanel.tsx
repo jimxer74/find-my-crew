@@ -165,6 +165,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   const [journeyRiskLevel, setJourneyRiskLevel] = useState<RiskLevel | null>(null);
   const [journeyImages, setJourneyImages] = useState<string[]>([]);
   const [journeyDescription, setJourneyDescription] = useState<string | null>(null);
+  const [journeyCostInfo, setJourneyCostInfo] = useState<string | null>(null);
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [safetyEquipment, setSafetyEquipment] = useState<SafetyEquipmentItem[]>([]);
@@ -263,6 +264,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
   useEffect(() => {
     if (!isOpen || !leg.journey_id) {
       setJourneyDescription(null);
+      setJourneyCostInfo(null);
       setSafetyEquipment([]);
       setBoatMilesOnVessel(null);
       setBoatOffshoreExperience(false);
@@ -279,11 +281,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
         if (response.ok) {
           const data = await response.json();
           setJourneyDescription(data.journey_description || null);
+          setJourneyCostInfo(data.journey_cost_info || null);
           setSafetyEquipment(data.safety_equipment || []);
           setBoatMilesOnVessel(data.boat_miles_on_vessel ?? null);
           setBoatOffshoreExperience(data.boat_offshore_passage_experience ?? false);
         } else {
           setJourneyDescription(null);
+          setJourneyCostInfo(null);
           setSafetyEquipment([]);
         }
       } catch (error) {
@@ -1881,12 +1885,14 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     <p className="text-foreground font-medium font-semibold">
                       {getCostModelConfig(leg.cost_model).displayName}
                     </p>
-                    {/*<p className="text-xs text-muted-foreground mb-2">
-                      {getCostModelConfig(leg.cost_model).description}
-                    </p>*/}
                     <p className="text-xs text-muted-foreground italic">
                       {getCostModelConfig(leg.cost_model).details}
                     </p>
+                    {journeyCostInfo && (
+                      <p className="text-sm text-foreground mt-2 whitespace-pre-wrap">
+                        {journeyCostInfo}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
