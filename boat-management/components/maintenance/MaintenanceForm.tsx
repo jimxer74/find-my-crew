@@ -217,17 +217,17 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Input label="Due Date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          <Input label="Estimated Hours" type="number" value={estimatedHours} onChange={(e) => setEstimatedHours(e.target.value)} placeholder="0" />
-          <Input label="Estimated Cost" type="number" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value)} placeholder="0.00" />
+          <Input label="Estimated Hours" type="text" inputMode="decimal" value={estimatedHours} onChange={(e) => setEstimatedHours(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0" />
+          <Input label="Estimated Cost" type="text" inputMode="decimal" value={estimatedCost} onChange={(e) => setEstimatedCost(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Select label="Recurrence" value={recurrenceKey} onChange={(e) => setRecurrenceKey(e.target.value)} options={RECURRENCE_OPTIONS} />
           {recurrenceKey === 'custom' && (
-            <Input label="Interval (days)" type="number" value={customDays} onChange={(e) => setCustomDays(e.target.value)} placeholder="e.g., 60" />
+            <Input label="Interval (days)" type="text" inputMode="numeric" pattern="[0-9]*" value={customDays} onChange={(e) => setCustomDays(e.target.value.replace(/\D/g, ''))} placeholder="e.g., 60" />
           )}
           {recurrenceKey === 'custom_usage' && (
-            <Input label="Engine hours interval" type="number" value={customHours} onChange={(e) => setCustomHours(e.target.value)} placeholder="e.g., 150" />
+            <Input label="Engine hours interval" type="text" inputMode="numeric" pattern="[0-9]*" value={customHours} onChange={(e) => setCustomHours(e.target.value.replace(/\D/g, ''))} placeholder="e.g., 150" />
           )}
         </div>
 

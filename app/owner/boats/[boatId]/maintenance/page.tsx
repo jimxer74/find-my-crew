@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
@@ -13,6 +14,7 @@ import type { BoatMaintenanceTask, BoatEquipment } from '@boat-management/lib/ty
 export default function MaintenancePage({ params }: { params: Promise<{ boatId: string }> }) {
   const { boatId } = use(params);
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [tasks, setTasks] = useState<BoatMaintenanceTask[]>([]);
   const [equipment, setEquipment] = useState<BoatEquipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +57,14 @@ export default function MaintenancePage({ params }: { params: Promise<{ boatId: 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Auto-open edit form when ?edit=<id> is in the URL
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId || loading || tasks.length === 0) return;
+    const task = tasks.find(t => t.id === editId);
+    if (task) { setEditingTask(task); setIsFormOpen(true); }
+  }, [searchParams, tasks, loading]);
 
   const handleAdd = () => { setEditingTask(null); setIsFormOpen(true); };
   const handleEdit = (task: BoatMaintenanceTask) => { setEditingTask(task); setIsFormOpen(true); };

@@ -72,8 +72,8 @@ export async function POST(
       part_number: body.part_number,
       cost: body.cost,
       currency: body.currency,
-      purchase_date: body.purchase_date,
-      expiry_date: body.expiry_date,
+      purchase_date: body.purchase_date || null,
+      expiry_date: body.expiry_date || null,
       notes: body.notes,
       equipment_id: body.equipment_id,
     };

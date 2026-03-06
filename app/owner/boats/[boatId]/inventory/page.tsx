@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState, use } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import { logger } from '@shared/logging';
@@ -12,6 +13,7 @@ import type { BoatInventory, BoatEquipment } from '@boat-management/lib/types';
 export default function InventoryPage({ params }: { params: Promise<{ boatId: string }> }) {
   const { boatId } = use(params);
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [inventory, setInventory] = useState<BoatInventory[]>([]);
   const [equipment, setEquipment] = useState<BoatEquipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,14 @@ export default function InventoryPage({ params }: { params: Promise<{ boatId: st
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Auto-open edit form when ?edit=<id> is in the URL
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (!editId || loading || inventory.length === 0) return;
+    const item = inventory.find(i => i.id === editId);
+    if (item) { setEditingItem(item); setIsFormOpen(true); }
+  }, [searchParams, inventory, loading]);
 
   const handleAdd = () => { setEditingItem(null); setIsFormOpen(true); };
   const handleEdit = (item: BoatInventory) => { setEditingItem(item); setIsFormOpen(true); };
@@ -98,6 +108,7 @@ export default function InventoryPage({ params }: { params: Promise<{ boatId: st
     <>
       <InventoryList
         inventory={inventory}
+        equipment={equipment}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}

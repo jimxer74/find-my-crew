@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import { Button, Card } from '@shared/ui';
 import type { BoatMaintenanceTask, BoatEquipment, MaintenanceDisplayStatus } from '@boat-management/lib/types';
 import { getDisplayStatus } from '@boat-management/lib/types';
@@ -201,14 +201,34 @@ export function MaintenanceList({ tasks, equipment, onAdd, onEdit, onDelete, onC
       {totalCount > 0 && (
         <>
           {/* ===== DESKTOP: 4-column Kanban ===== */}
-          <div className="hidden md:grid md:grid-cols-4 gap-4 items-start">
+          <div className="hidden md:flex gap-4 items-start">
             {KANBAN_COLUMNS.map(col => {
               const colTasks = tasksByStatus.get(col.key) ?? [];
               const isCollapsed = collapsedColumns.has(col.key);
               const grouped = groupByEquipment(colTasks);
 
+              if (isCollapsed) {
+                return (
+                  <div key={col.key} className="flex-shrink-0 w-9">
+                    <button
+                      onClick={() => toggleColumn(col.key)}
+                      title={`Expand ${col.label}`}
+                      className="flex flex-col items-center gap-2.5 w-full py-3 rounded-lg border border-dashed border-border hover:bg-muted/50 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 text-muted-foreground -rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      <span className={`text-xs font-semibold ${col.headerClass}`} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}>
+                        {col.label}
+                      </span>
+                      <span className={`text-xs font-medium px-1 py-0.5 rounded-full ${col.countClass}`}>{colTasks.length}</span>
+                    </button>
+                  </div>
+                );
+              }
+
               return (
-                <div key={col.key} className="flex flex-col gap-2">
+                <div key={col.key} className="flex-1 min-w-0 flex flex-col gap-2">
                   {/* Column header */}
                   <button
                     onClick={() => toggleColumn(col.key)}
@@ -218,66 +238,61 @@ export function MaintenanceList({ tasks, equipment, onAdd, onEdit, onDelete, onC
                       <span className={`text-sm font-semibold ${col.headerClass}`}>{col.label}</span>
                       <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${col.countClass}`}>{colTasks.length}</span>
                     </div>
-                    <svg className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? '-rotate-90' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
 
                   {/* Column tasks */}
-                  {!isCollapsed && (
-                    <div className="space-y-3">
-                      {colTasks.length === 0 ? (
-                        <div className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
-                          No tasks
-                        </div>
-                      ) : (
-                        Array.from(grouped.entries()).map(([groupKey, { label: groupLabel, tasks: groupTasks }]) => (
-                          <div key={groupKey}>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5 px-1">
-                              {groupLabel} ({groupTasks.length})
-                            </p>
-                            <div className="space-y-2">
-                              {groupTasks.map(task => (
-                                <MaintenanceCard
-                                  key={task.id}
-                                  task={task}
-                                  onEdit={() => onEdit(task)}
-                                  onDelete={() => onDelete(task)}
-                                  onComplete={() => onComplete(task)}
-                                  onStart={() => onStart(task)}
-                                  isOwner={isOwner}
-                                  compact
-                                />
-                              ))}
-                            </div>
+                  <div className="space-y-2">
+                    {colTasks.length === 0 ? (
+                      <div className="text-xs text-muted-foreground text-center py-4 border border-dashed border-border rounded-lg">
+                        No tasks
+                      </div>
+                    ) : (
+                      Array.from(grouped.entries()).map(([groupKey, { label: groupLabel, tasks: groupTasks }]) => (
+                        <EquipmentGroup key={groupKey} label={groupLabel} count={groupTasks.length}>
+                          <div className="space-y-2">
+                            {groupTasks.map(task => (
+                              <MaintenanceCard
+                                key={task.id}
+                                task={task}
+                                onEdit={() => onEdit(task)}
+                                onDelete={() => onDelete(task)}
+                                onComplete={() => onComplete(task)}
+                                onStart={() => onStart(task)}
+                                isOwner={isOwner}
+                                compact
+                              />
+                            ))}
                           </div>
-                        ))
-                      )}
-                    </div>
-                  )}
+                        </EquipmentGroup>
+                      ))
+                    )}
+                  </div>
                 </div>
               );
             })}
           </div>
 
           {/* ===== MOBILE: equipment-grouped carousels ===== */}
-          <div className="md:hidden space-y-5">
+          <div className="md:hidden space-y-3">
             {(() => {
               const grouped = groupByEquipment(mobileTasks);
               if (grouped.size === 0) return (
                 <p className="text-sm text-muted-foreground text-center py-4">No tasks match the selected filter.</p>
               );
               return Array.from(grouped.entries()).map(([groupKey, { label: groupLabel, tasks: groupTasks }]) => (
-                <MobileEquipmentGroup
-                  key={groupKey}
-                  label={groupLabel}
-                  tasks={groupTasks}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onComplete={onComplete}
-                  onStart={onStart}
-                  isOwner={isOwner}
-                />
+                <EquipmentGroup key={groupKey} label={groupLabel} count={groupTasks.length}>
+                  <MobileEquipmentCarousel
+                    tasks={groupTasks}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                    onComplete={onComplete}
+                    onStart={onStart}
+                    isOwner={isOwner}
+                  />
+                </EquipmentGroup>
               ));
             })()}
           </div>
@@ -287,12 +302,35 @@ export function MaintenanceList({ tasks, equipment, onAdd, onEdit, onDelete, onC
   );
 }
 
-// --- Mobile Equipment Group with horizontal carousel ---
+// --- Collapsible Equipment Group (shared by Kanban and mobile) ---
 
-function MobileEquipmentGroup({
-  label, tasks, onEdit, onDelete, onComplete, onStart, isOwner
+function EquipmentGroup({ label, count, children }: { label: string; count: number; children: ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  return (
+    <div>
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="flex items-center gap-1.5 w-full px-1 py-0.5 mb-1 rounded hover:bg-muted/40 transition-colors group"
+      >
+        <svg
+          className={`w-3 h-3 text-muted-foreground transition-transform flex-shrink-0 ${collapsed ? '-rotate-90' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate">{label}</span>
+        <span className="text-xs text-muted-foreground flex-shrink-0">({count})</span>
+      </button>
+      {!collapsed && children}
+    </div>
+  );
+}
+
+// --- Mobile carousel (just the scroll area, group header handled by EquipmentGroup) ---
+
+function MobileEquipmentCarousel({
+  tasks, onEdit, onDelete, onComplete, onStart, isOwner
 }: {
-  label: string;
   tasks: BoatMaintenanceTask[];
   onEdit: (t: BoatMaintenanceTask) => void;
   onDelete: (t: BoatMaintenanceTask) => void;
@@ -314,37 +352,29 @@ function MobileEquipmentGroup({
   }, [tasks]);
 
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-          {label}
-        </h3>
-        <span className="text-xs text-muted-foreground">({tasks.length})</span>
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+      >
+        {tasks.map(task => (
+          <div key={task.id} className="flex-shrink-0 w-[calc(50%-6px)] snap-start">
+            <MaintenanceCard
+              task={task}
+              onEdit={() => onEdit(task)}
+              onDelete={() => onDelete(task)}
+              onComplete={() => onComplete(task)}
+              onStart={() => onStart(task)}
+              isOwner={isOwner}
+              compact
+              mobileStatusBadge
+            />
+          </div>
+        ))}
       </div>
-      <div className="relative">
-        <div
-          ref={scrollRef}
-          className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
-        >
-          {tasks.map(task => (
-            <div key={task.id} className="flex-shrink-0 w-[calc(50%-6px)] snap-start">
-              <MaintenanceCard
-                task={task}
-                onEdit={() => onEdit(task)}
-                onDelete={() => onDelete(task)}
-                onComplete={() => onComplete(task)}
-                onStart={() => onStart(task)}
-                isOwner={isOwner}
-                compact
-                mobileStatusBadge
-              />
-            </div>
-          ))}
-        </div>
-        {canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-        )}
-      </div>
+      {canScrollRight && (
+        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+      )}
     </div>
   );
 }

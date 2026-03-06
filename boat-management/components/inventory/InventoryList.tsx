@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, ReactNode } from 'react';
 import { Button, Badge, Card, Select } from '@shared/ui';
-import type { BoatInventory } from '@boat-management/lib/types';
+import type { BoatInventory, BoatEquipment } from '@boat-management/lib/types';
 import { getCategoryLabel, type EquipmentCategory } from '@boat-management/lib/types';
 
 interface InventoryListProps {
   inventory: BoatInventory[];
+  equipment?: BoatEquipment[];
   onAdd: () => void;
   onEdit: (item: BoatInventory) => void;
   onDelete: (item: BoatInventory) => void;
   isOwner: boolean;
 }
 
-export function InventoryList({ inventory, onAdd, onEdit, onDelete, isOwner }: InventoryListProps) {
+export function InventoryList({ inventory, equipment = [], onAdd, onEdit, onDelete, isOwner }: InventoryListProps) {
   const [filterCategory, setFilterCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showLowStock, setShowLowStock] = useState(false);
@@ -43,7 +44,6 @@ export function InventoryList({ inventory, onAdd, onEdit, onDelete, isOwner }: I
     [inventory]
   );
 
-  // Gather unique categories from data
   const categories = useMemo(() => {
     const cats = new Set(inventory.map(i => i.category));
     return Array.from(cats).sort();
@@ -53,6 +53,44 @@ export function InventoryList({ inventory, onAdd, onEdit, onDelete, isOwner }: I
     { value: '', label: 'All Categories' },
     ...categories.map(c => ({ value: c, label: getCategoryLabel(c as EquipmentCategory) || c })),
   ];
+
+  // Build equipment id → name map
+  const equipmentMap = useMemo(() => {
+    const m = new Map<string, string>();
+    equipment.forEach(eq => m.set(eq.id, eq.name));
+    return m;
+  }, [equipment]);
+
+  // Group filtered items by equipment_id
+  const groups = useMemo(() => {
+    const byEquipment = new Map<string | null, BoatInventory[]>();
+
+    filtered.forEach(item => {
+      const key = item.equipment_id ?? null;
+      if (!byEquipment.has(key)) byEquipment.set(key, []);
+      byEquipment.get(key)!.push(item);
+    });
+
+    // Sort: named equipment groups first (by name), then General
+    const result: Array<{ equipmentId: string | null; label: string; items: BoatInventory[] }> = [];
+
+    byEquipment.forEach((items, equipmentId) => {
+      const label = equipmentId
+        ? (equipmentMap.get(equipmentId) ?? 'Unknown Equipment')
+        : 'General';
+      result.push({ equipmentId, label, items });
+    });
+
+    result.sort((a, b) => {
+      if (a.equipmentId === null) return 1;
+      if (b.equipmentId === null) return -1;
+      return a.label.localeCompare(b.label);
+    });
+
+    return result;
+  }, [filtered, equipmentMap]);
+
+  const showGrouped = equipment.length > 0;
 
   return (
     <div className="space-y-4">
@@ -101,34 +139,85 @@ export function InventoryList({ inventory, onAdd, onEdit, onDelete, isOwner }: I
             <Button variant="primary" onClick={onAdd}>Add Your First Item</Button>
           )}
         </Card>
+      ) : showGrouped ? (
+        <div className="space-y-3">
+          {groups.map(({ equipmentId, label, items }) => (
+            <InventoryGroup key={equipmentId ?? '__general__'} label={label} count={items.length}>
+              <InventoryTable items={items} onEdit={onEdit} onDelete={onDelete} isOwner={isOwner} />
+            </InventoryGroup>
+          ))}
+        </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left">
-                <th className="pb-2 font-medium text-muted-foreground">Item</th>
-                <th className="pb-2 font-medium text-muted-foreground hidden sm:table-cell">Location</th>
-                <th className="pb-2 font-medium text-muted-foreground text-center">Qty</th>
-                <th className="pb-2 font-medium text-muted-foreground hidden md:table-cell">Part #</th>
-                <th className="pb-2 font-medium text-muted-foreground text-right hidden lg:table-cell">Cost</th>
-                {isOwner && <th className="pb-2 font-medium text-muted-foreground text-right">Actions</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {filtered.map(item => (
-                <InventoryRow
-                  key={item.id}
-                  item={item}
-                  onEdit={() => onEdit(item)}
-                  onDelete={() => onDelete(item)}
-                  isOwner={isOwner}
-                />
-              ))}
-            </tbody>
-          </table>
+          <InventoryTable items={filtered} onEdit={onEdit} onDelete={onDelete} isOwner={isOwner} />
         </div>
       )}
     </div>
+  );
+}
+
+function InventoryGroup({ label, count, children }: { label: string; count: number; children: ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="flex items-center gap-2 w-full px-4 py-2.5 bg-muted/40 hover:bg-muted/60 transition-colors text-left"
+      >
+        <svg
+          className={`w-3.5 h-3.5 text-muted-foreground transition-transform flex-shrink-0 ${collapsed ? '-rotate-90' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+        <span className="text-sm font-semibold text-foreground">{label}</span>
+        <span className="text-xs text-muted-foreground">({count} {count === 1 ? 'item' : 'items'})</span>
+      </button>
+      {!collapsed && (
+        <div className="overflow-x-auto">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InventoryTable({
+  items,
+  onEdit,
+  onDelete,
+  isOwner,
+}: {
+  items: BoatInventory[];
+  onEdit: (item: BoatInventory) => void;
+  onDelete: (item: BoatInventory) => void;
+  isOwner: boolean;
+}) {
+  return (
+    <table className="w-full text-sm">
+      <thead>
+        <tr className="border-b border-border text-left bg-background">
+          <th className="px-4 pb-2 pt-2 font-medium text-muted-foreground">Item</th>
+          <th className="pb-2 pt-2 font-medium text-muted-foreground hidden sm:table-cell">Location</th>
+          <th className="pb-2 pt-2 font-medium text-muted-foreground text-center">Qty</th>
+          <th className="pb-2 pt-2 font-medium text-muted-foreground hidden md:table-cell">Part #</th>
+          <th className="pb-2 pt-2 font-medium text-muted-foreground text-right hidden lg:table-cell">Cost</th>
+          {isOwner && <th className="pb-2 pt-2 pr-4 font-medium text-muted-foreground text-right">Actions</th>}
+        </tr>
+      </thead>
+      <tbody className="divide-y divide-border">
+        {items.map(item => (
+          <InventoryRow
+            key={item.id}
+            item={item}
+            onEdit={() => onEdit(item)}
+            onDelete={() => onDelete(item)}
+            isOwner={isOwner}
+          />
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -149,7 +238,7 @@ function InventoryRow({
 
   return (
     <tr className="group hover:bg-muted/30 transition-colors">
-      <td className="py-2.5 pr-3">
+      <td className="py-2.5 pl-4 pr-3">
         <div className="flex items-center gap-2">
           <div>
             <p className="font-medium text-foreground">{item.name}</p>
@@ -176,7 +265,7 @@ function InventoryRow({
         {item.cost != null ? `${item.cost} ${item.currency}` : '-'}
       </td>
       {isOwner && (
-        <td className="py-2.5 text-right">
+        <td className="py-2.5 pr-4 text-right">
           {!confirmDelete ? (
             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={onEdit} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">

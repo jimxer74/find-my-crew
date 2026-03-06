@@ -83,105 +83,122 @@ export default function BoatDashboardPage({ params }: { params: Promise<{ boatId
         <StatCard label="Completed" value={completedTasks.length} href={`/owner/boats/${boatId}/maintenance`} />
       </div>
 
-      {/* Alerts section */}
-      {(overdueTasks.length > 0 || lowStockItems.length > 0 || needsReplacement.length > 0) && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Alerts</h2>
+      {/* Alerts + Upcoming tasks — side by side */}
+      {(overdueTasks.length > 0 || lowStockItems.length > 0 || needsReplacement.length > 0 || upcomingTasks.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-          {overdueTasks.length > 0 && (
-            <Card padding="sm" className="border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="error" size="sm">{overdueTasks.length} Overdue</Badge>
-                <span className="text-sm font-medium text-foreground">Maintenance Tasks</span>
-              </div>
-              <ul className="space-y-1">
-                {overdueTasks.map(t => (
-                  <li key={t.id} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{t.title}</span>
-                    <span className="text-xs text-red-600 dark:text-red-400">
-                      Due {new Date(t.due_date!).toLocaleDateString()}
-                    </span>
-                  </li>
+          {/* Alerts column */}
+          {(overdueTasks.length > 0 || lowStockItems.length > 0 || needsReplacement.length > 0) && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Alerts</h2>
+
+              {overdueTasks.length > 0 && (
+                <Card padding="sm" className="border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="error" size="sm">{overdueTasks.length} Overdue</Badge>
+                    <span className="text-sm font-medium text-foreground">Maintenance Tasks</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {overdueTasks.map(t => (
+                      <li key={t.id}>
+                        <Link
+                          href={`/owner/boats/${boatId}/maintenance?edit=${t.id}`}
+                          className="flex items-center justify-between text-sm rounded px-1 py-0.5 -mx-1 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                        >
+                          <span className="text-foreground">{t.title}</span>
+                          <span className="text-xs text-red-600 dark:text-red-400">
+                            Due {new Date(t.due_date!).toLocaleDateString()}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={`/owner/boats/${boatId}/maintenance`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
+                    View all tasks
+                  </Link>
+                </Card>
+              )}
+
+              {lowStockItems.length > 0 && (
+                <Card padding="sm" className="border-yellow-200 dark:border-yellow-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="warning" size="sm">{lowStockItems.length} Low Stock</Badge>
+                    <span className="text-sm font-medium text-foreground">Inventory Items</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {lowStockItems.map(i => (
+                      <li key={i.id}>
+                        <Link
+                          href={`/owner/boats/${boatId}/inventory?edit=${i.id}`}
+                          className="flex items-center justify-between text-sm rounded px-1 py-0.5 -mx-1 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 transition-colors"
+                        >
+                          <span className="text-foreground">{i.name}</span>
+                          <span className="text-xs text-yellow-700 dark:text-yellow-400">
+                            {i.quantity} / {i.min_quantity} {i.unit ?? ''}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={`/owner/boats/${boatId}/inventory`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
+                    View inventory
+                  </Link>
+                </Card>
+              )}
+
+              {needsReplacement.length > 0 && (
+                <Card padding="sm" className="border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Badge variant="warning" size="sm">{needsReplacement.length}</Badge>
+                    <span className="text-sm font-medium text-foreground">Equipment Needs Replacement</span>
+                  </div>
+                  <ul className="space-y-1">
+                    {needsReplacement.map(e => (
+                      <li key={e.id} className="text-sm text-foreground">
+                        {e.name} ({getCategoryLabel(e.category)})
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href={`/owner/boats/${boatId}/equipment`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
+                    View equipment
+                  </Link>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Upcoming tasks column */}
+          {upcomingTasks.length > 0 && (
+            <div>
+              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming Tasks</h2>
+              <div className="space-y-2">
+                {upcomingTasks.map(t => (
+                  <Card key={t.id} padding="sm" className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {t.category} {t.estimated_hours ? `- ${t.estimated_hours}h` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge variant={priorityBadgeVariant(t.priority)} size="sm" outlined>
+                        {t.priority}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {new Date(t.due_date!).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </Card>
                 ))}
-              </ul>
+              </div>
               <Link href={`/owner/boats/${boatId}/maintenance`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
                 View all tasks
               </Link>
-            </Card>
+            </div>
           )}
 
-          {lowStockItems.length > 0 && (
-            <Card padding="sm" className="border-yellow-200 dark:border-yellow-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="warning" size="sm">{lowStockItems.length} Low Stock</Badge>
-                <span className="text-sm font-medium text-foreground">Inventory Items</span>
-              </div>
-              <ul className="space-y-1">
-                {lowStockItems.map(i => (
-                  <li key={i.id} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{i.name}</span>
-                    <span className="text-xs text-yellow-700 dark:text-yellow-400">
-                      {i.quantity} / {i.min_quantity} {i.unit ?? ''}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-              <Link href={`/owner/boats/${boatId}/inventory`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
-                View inventory
-              </Link>
-            </Card>
-          )}
-
-          {needsReplacement.length > 0 && (
-            <Card padding="sm" className="border-orange-200 dark:border-orange-800">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="warning" size="sm">{needsReplacement.length}</Badge>
-                <span className="text-sm font-medium text-foreground">Equipment Needs Replacement</span>
-              </div>
-              <ul className="space-y-1">
-                {needsReplacement.map(e => (
-                  <li key={e.id} className="text-sm text-foreground">
-                    {e.name} ({getCategoryLabel(e.category)})
-                  </li>
-                ))}
-              </ul>
-              <Link href={`/owner/boats/${boatId}/equipment`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
-                View equipment
-              </Link>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Upcoming tasks */}
-      {upcomingTasks.length > 0 && (
-        <div>
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Upcoming Tasks</h2>
-          <div className="space-y-2">
-            {upcomingTasks.map(t => (
-              <Card key={t.id} padding="sm" className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.category} {t.estimated_hours ? `- ${t.estimated_hours}h` : ''}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Badge variant={priorityBadgeVariant(t.priority)} size="sm" outlined>
-                    {t.priority}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(t.due_date!).toLocaleDateString()}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-          <Link href={`/owner/boats/${boatId}/maintenance`} className="text-xs text-primary hover:text-primary/80 mt-2 inline-block">
-            View all tasks
-          </Link>
         </div>
       )}
 

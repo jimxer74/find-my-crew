@@ -24,8 +24,8 @@ export interface InventoryFormData {
   part_number: string;
   cost: number | null;
   currency: string;
-  purchase_date: string;
-  expiry_date: string;
+  purchase_date: string | null;
+  expiry_date: string | null;
   notes: string;
   equipment_id: string | null;
 }
@@ -148,8 +148,8 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         part_number: partNumber.trim(),
         cost: cost ? parseFloat(cost) : null,
         currency,
-        purchase_date: purchaseDate || '',
-        expiry_date: expiryDate || '',
+        purchase_date: purchaseDate || null,
+        expiry_date: expiryDate || null,
         notes: notes.trim(),
         equipment_id: equipmentId || null,
       });
@@ -176,8 +176,8 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Input label="Quantity" type="number" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
-          <Input label="Min. Stock" type="number" value={minQuantity} onChange={(e) => setMinQuantity(e.target.value)} helperText="Alert threshold" />
+          <Input label="Quantity" type="text" inputMode="numeric" pattern="[0-9]*" value={quantity} onChange={(e) => setQuantity(e.target.value.replace(/\D/g, ''))} />
+          <Input label="Min. Stock" type="text" inputMode="numeric" pattern="[0-9]*" value={minQuantity} onChange={(e) => setMinQuantity(e.target.value.replace(/\D/g, ''))} helperText="Alert threshold" />
           <Select label="Unit" value={unit} onChange={(e) => setUnit(e.target.value)} options={UNIT_OPTIONS} />
           <Select label="Location" value={location} onChange={(e) => setLocation(e.target.value)} options={LOCATION_OPTIONS} />
         </div>
@@ -188,7 +188,7 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Input label="Cost" type="number" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0.00" />
+          <Input label="Cost" type="text" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" />
           <Select label="Currency" value={currency} onChange={(e) => setCurrency(e.target.value)} options={CURRENCY_OPTIONS} />
           <Input label="Purchase Date" type="date" value={purchaseDate} onChange={(e) => setPurchaseDate(e.target.value)} />
           <Input label="Expiry Date" type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />

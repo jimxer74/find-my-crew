@@ -460,21 +460,35 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
     setPhase('saving_tasks');
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error: insertErr } = await supabase.from('boat_maintenance_tasks').insert(
-        toSave.map(task => ({
-          boat_id: boatId,
-          equipment_id: saved.id,
-          title: task.title,
-          description: task.description,
-          category: task.category,
-          priority: task.priority,
-          recurrence: task.recurrence,
-          estimated_hours: task.estimated_hours,
-          status: 'pending',
-          is_template: false,
-        }))
-      );
-      if (insertErr) throw new Error(insertErr.message);
+
+      // Fetch existing task titles for this equipment to avoid duplicates
+      const { data: existing } = await supabase
+        .from('boat_maintenance_tasks')
+        .select('title')
+        .eq('boat_id', boatId)
+        .eq('equipment_id', saved.id);
+      const existingTitles = new Set((existing ?? []).map(t => t.title.toLowerCase().trim()));
+
+      const newTasks = toSave.filter(t => !existingTitles.has(t.title.toLowerCase().trim()));
+
+      if (newTasks.length > 0) {
+        const { error: insertErr } = await supabase.from('boat_maintenance_tasks').insert(
+          newTasks.map(task => ({
+            boat_id: boatId,
+            equipment_id: saved.id,
+            title: task.title,
+            description: task.description,
+            category: task.category,
+            priority: task.priority,
+            recurrence: task.recurrence,
+            estimated_hours: task.estimated_hours,
+            status: 'pending',
+            is_template: false,
+          }))
+        );
+        if (insertErr) throw new Error(insertErr.message);
+      }
+
       onClose();
     } catch (err) {
       logger.error('[EquipmentForm] Failed to save maintenance tasks', {
@@ -670,9 +684,11 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
               />
               <Input
                 label="Year Installed"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={yearInstalled}
-                onChange={(e) => setYearInstalled(e.target.value)}
+                onChange={(e) => setYearInstalled(e.target.value.replace(/\D/g, ''))}
                 placeholder="e.g., 2020"
               />
             </div>
@@ -686,10 +702,12 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
               />
               <Input
                 label="Quantity"
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={quantity.toString()}
                 onChange={(e) => {
-                  const v = parseInt(e.target.value, 10);
+                  const v = parseInt(e.target.value.replace(/\D/g, ''), 10);
                   setQuantity(v >= 1 ? v : 1);
                 }}
                 placeholder="1"

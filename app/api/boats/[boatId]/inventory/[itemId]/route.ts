@@ -56,9 +56,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       'expiry_date', 'notes', 'equipment_id',
     ];
 
+    const dateFields = new Set(['purchase_date', 'expiry_date']);
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        (updates as any)[field] = body[field];
+        (updates as any)[field] = dateFields.has(field) ? (body[field] || null) : body[field];
       }
     }
 

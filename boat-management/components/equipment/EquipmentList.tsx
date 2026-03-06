@@ -160,20 +160,30 @@ function CategoryCarousel({ items, boatId, boatMakeModel, onEdit, onDelete, isOw
   isOwner: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const check = () => setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    const check = () => {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    };
     check();
     el.addEventListener('scroll', check);
     window.addEventListener('resize', check);
     return () => { el.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
   }, [items]);
 
+  const scroll = (dir: 'left' | 'right') => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === 'right' ? 280 : -280, behavior: 'smooth' });
+  };
+
   return (
-    <div className="relative">
+    <div className="relative group/carousel">
       <div
         ref={scrollRef}
         className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
@@ -194,8 +204,32 @@ function CategoryCarousel({ items, boatId, boatMakeModel, onEdit, onDelete, isOw
           </div>
         ))}
       </div>
+      {/* Left scroll button */}
+      {canScrollLeft && (
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 z-10 w-7 h-7 rounded-full bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label="Scroll left"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      {/* Right scroll button + fade */}
       {canScrollRight && (
-        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+        <>
+          <div className="absolute right-0 top-0 bottom-2 w-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 z-10 w-7 h-7 rounded-full bg-card border border-border shadow-sm flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="Scroll right"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
       )}
     </div>
   );
@@ -321,6 +355,17 @@ function EquipmentCard({
             />
           </div>
         )}
+
+        {/* Spare parts section */}
+        {isOwner && item.product_registry_id && (
+          <div className="mt-1.5 border-t border-border pt-1.5">
+            <EquipmentSparesSection
+              item={item}
+              boatId={boatId}
+              boatMakeModel={boatMakeModel}
+            />
+          </div>
+        )}
       </div>
 
       {/* Card actions */}
@@ -390,6 +435,7 @@ function EquipmentMaintenanceSection({
   const [tasks, setTasks] = useState<CachedTask[]>([]);
   const [jobId, setJobId] = useState<string | null>(null);
   const [appliedCount, setAppliedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
 
   const fetchCached = async () => {
@@ -452,22 +498,38 @@ function EquipmentMaintenanceSection({
     setState('applying');
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.from('boat_maintenance_tasks').insert(
-        tasks.map(t => ({
-          boat_id: boatId,
-          equipment_id: item.id,
-          title: t.title,
-          description: t.description ?? null,
-          category: t.category,
-          priority: t.priority ?? 'medium',
-          recurrence: t.recurrence ?? null,
-          estimated_hours: t.estimated_hours ?? null,
-          status: 'pending',
-          is_template: false,
-        }))
-      );
-      if (error) throw error;
-      setAppliedCount(tasks.length);
+
+      // Fetch existing task titles for this equipment to avoid duplicates
+      const { data: existing } = await supabase
+        .from('boat_maintenance_tasks')
+        .select('title')
+        .eq('boat_id', boatId)
+        .eq('equipment_id', item.id);
+      const existingTitles = new Set((existing ?? []).map(t => t.title.toLowerCase().trim()));
+
+      const newTasks = tasks.filter(t => !existingTitles.has(t.title.toLowerCase().trim()));
+      const skipped = tasks.length - newTasks.length;
+
+      if (newTasks.length > 0) {
+        const { error } = await supabase.from('boat_maintenance_tasks').insert(
+          newTasks.map(t => ({
+            boat_id: boatId,
+            equipment_id: item.id,
+            title: t.title,
+            description: t.description ?? null,
+            category: t.category,
+            priority: t.priority ?? 'medium',
+            recurrence: t.recurrence ?? null,
+            estimated_hours: t.estimated_hours ?? null,
+            status: 'pending',
+            is_template: false,
+          }))
+        );
+        if (error) throw error;
+      }
+
+      setAppliedCount(newTasks.length);
+      setSkippedCount(skipped);
       setState('applied');
     } catch {
       setState('has_tasks');
@@ -554,7 +616,17 @@ function EquipmentMaintenanceSection({
 
   if (state === 'applied') {
     return (
-      <p className="text-xs text-green-600 font-medium">✓ {appliedCount} tasks added to maintenance list</p>
+      <div className="space-y-0.5">
+        {appliedCount > 0 && (
+          <p className="text-xs text-green-600 dark:text-green-400 font-medium">✓ {appliedCount} task{appliedCount !== 1 ? 's' : ''} added to maintenance list</p>
+        )}
+        {skippedCount > 0 && (
+          <p className="text-xs text-muted-foreground">{skippedCount} already existed, skipped</p>
+        )}
+        {appliedCount === 0 && skippedCount > 0 && (
+          <p className="text-xs text-muted-foreground">All tasks already exist on this equipment</p>
+        )}
+      </div>
     );
   }
 
@@ -563,6 +635,243 @@ function EquipmentMaintenanceSection({
       <div className="space-y-1">
         <p className="text-xs text-destructive">{errorMsg || 'Generation failed.'}</p>
         <button onClick={() => setState('no_tasks')} className="text-xs text-muted-foreground hover:text-primary">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Equipment Spares Section
+// ============================================================================
+
+interface CachedSparePart {
+  name: string;
+  part_number: string | null;
+  category: string;
+  description: string | null;
+  quantity: number;
+  unit: string;
+  notes: string | null;
+}
+
+type SparesState = 'idle' | 'fetching' | 'has_parts' | 'no_parts' | 'generating' | 'applying' | 'applied' | 'error';
+
+function EquipmentSparesSection({
+  item,
+  boatId,
+  boatMakeModel,
+}: {
+  item: BoatEquipment;
+  boatId: string;
+  boatMakeModel?: string;
+}) {
+  const [state, setState] = useState<SparesState>('idle');
+  const [parts, setParts] = useState<CachedSparePart[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [appliedCount, setAppliedCount] = useState(0);
+  const [skippedCount, setSkippedCount] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const fetchCached = async () => {
+    setState('fetching');
+    try {
+      const res = await fetch(`/api/product-registry/${item.product_registry_id}/spare-parts`);
+      if (res.ok) {
+        const json = await res.json();
+        const fetched = (json.parts ?? []) as CachedSparePart[];
+        if (fetched.length > 0) {
+          setParts(fetched);
+          setState('has_parts');
+        } else {
+          setState('no_parts');
+        }
+      } else {
+        setState('no_parts');
+      }
+    } catch {
+      setState('no_parts');
+    }
+  };
+
+  const handleGenerate = async () => {
+    setState('generating');
+    setJobId(null);
+    try {
+      const result = await submitJob({
+        job_type: 'generate-equipment-spares',
+        payload: {
+          boatId,
+          equipmentId: item.id,
+          equipmentName: item.name,
+          category: item.category,
+          subcategory: item.subcategory ?? null,
+          manufacturer: item.manufacturer ?? null,
+          model: item.model ?? null,
+          yearInstalled: item.year_installed ?? null,
+          productRegistryId: item.product_registry_id ?? null,
+          boatMakeModel: boatMakeModel ?? '',
+        },
+      });
+      setJobId(result.jobId);
+    } catch {
+      setState('no_parts');
+    }
+  };
+
+  const handleJobComplete = useCallback(async () => {
+    await fetchCached();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.product_registry_id]);
+
+  const handleJobError = useCallback((err: string) => {
+    setErrorMsg(err);
+    setState('error');
+  }, []);
+
+  const handleApply = async () => {
+    setState('applying');
+    try {
+      const supabase = getSupabaseBrowserClient();
+
+      // Fetch existing inventory items for this equipment to avoid duplicates
+      const { data: existing } = await supabase
+        .from('boat_inventory')
+        .select('name')
+        .eq('boat_id', boatId)
+        .eq('equipment_id', item.id);
+      const existingNames = new Set((existing ?? []).map(i => i.name.toLowerCase().trim()));
+
+      const newParts = parts.filter(p => !existingNames.has(p.name.toLowerCase().trim()));
+      const skipped = parts.length - newParts.length;
+
+      if (newParts.length > 0) {
+        const { error } = await supabase.from('boat_inventory').insert(
+          newParts.map(p => ({
+            boat_id: boatId,
+            equipment_id: item.id,
+            name: p.name,
+            category: item.category,
+            quantity: 0,
+            min_quantity: p.quantity,
+            unit: p.unit,
+            part_number: p.part_number ?? null,
+            notes: [p.description, p.notes].filter(Boolean).join(' — ') || null,
+          }))
+        );
+        if (error) throw error;
+      }
+
+      setAppliedCount(newParts.length);
+      setSkippedCount(skipped);
+      setState('applied');
+    } catch {
+      setState('has_parts');
+    }
+  };
+
+  if (state === 'idle') {
+    return (
+      <button onClick={fetchCached} className="text-xs text-primary hover:underline">
+        ✦ Fetch spare parts
+      </button>
+    );
+  }
+
+  if (state === 'fetching') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+        Loading spare parts…
+      </div>
+    );
+  }
+
+  if (state === 'no_parts') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">No cached spare parts.</p>
+        <button onClick={handleGenerate} className="text-xs font-medium text-primary hover:underline">
+          ✦ Generate with AI
+        </button>
+      </div>
+    );
+  }
+
+  if (state === 'generating') {
+    if (!jobId) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+          Starting…
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-foreground">Generating spare parts list…</p>
+        <JobProgressPanel
+          jobId={jobId}
+          onComplete={handleJobComplete}
+          onError={handleJobError}
+        />
+      </div>
+    );
+  }
+
+  if (state === 'has_parts') {
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">{parts.length} part{parts.length !== 1 ? 's' : ''} cached</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={fetchCached}
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            title="Refresh from cache"
+          >
+            ↻ Refresh
+          </button>
+          <button onClick={handleApply} className="text-xs font-medium text-primary hover:underline">
+            Add to inventory
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === 'applying') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+        Saving…
+      </div>
+    );
+  }
+
+  if (state === 'applied') {
+    return (
+      <div className="space-y-0.5">
+        {appliedCount > 0 && (
+          <p className="text-xs text-green-600 dark:text-green-400 font-medium">✓ {appliedCount} part{appliedCount !== 1 ? 's' : ''} added to inventory</p>
+        )}
+        {skippedCount > 0 && (
+          <p className="text-xs text-muted-foreground">{skippedCount} already existed, skipped</p>
+        )}
+        {appliedCount === 0 && skippedCount > 0 && (
+          <p className="text-xs text-muted-foreground">All parts already exist in inventory</p>
+        )}
+      </div>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-destructive">{errorMsg || 'Generation failed.'}</p>
+        <button onClick={() => setState('no_parts')} className="text-xs text-muted-foreground hover:text-primary">
           Try again
         </button>
       </div>
