@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useRef, useState, useEffect, useCallback } from 'react';
 
 interface BoatDetailNavProps {
   boatId: string;
@@ -17,33 +18,79 @@ const tabs = [
 export function BoatDetailNav({ boatId }: BoatDetailNavProps) {
   const pathname = usePathname();
   const basePath = `/owner/boats/${boatId}`;
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 0);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  }, []);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      ro.disconnect();
+    };
+  }, [updateScrollState]);
 
   return (
     <nav className="border-b border-border mb-6">
-      <div className="flex gap-0 overflow-x-auto -mb-px">
-        {tabs.map((tab) => {
-          const fullPath = `${basePath}${tab.href}`;
-          // Match exact for equipment (base path), or starts with for others
-          const isActive = tab.href === ''
-            ? pathname === basePath || pathname === `${basePath}/`
-            : pathname.startsWith(fullPath);
+      <div className="relative">
+        {/* Left scroll indicator — mobile only */}
+        {canScrollLeft && (
+          <div className="absolute left-0 top-0 bottom-px z-10 flex items-center pointer-events-none sm:hidden">
+            <div className="w-8 h-full bg-gradient-to-r from-background via-background/80 to-transparent flex items-center pl-0.5">
+              <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </div>
+          </div>
+        )}
 
-          return (
-            <Link
-              key={tab.href}
-              href={fullPath}
-              className={`
-                flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                ${isActive
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}
-              `}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </Link>
-          );
-        })}
+        <div ref={scrollRef} className="flex gap-0 overflow-x-auto -mb-px scrollbar-hide">
+          {tabs.map((tab) => {
+            const fullPath = `${basePath}${tab.href}`;
+            const isActive = tab.href === ''
+              ? pathname === basePath || pathname === `${basePath}/`
+              : pathname.startsWith(fullPath);
+
+            return (
+              <Link
+                key={tab.href}
+                href={fullPath}
+                className={`
+                  flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
+                  ${isActive
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'}
+                `}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Right scroll indicator — mobile only */}
+        {canScrollRight && (
+          <div className="absolute right-0 top-0 bottom-px z-10 flex items-center pointer-events-none sm:hidden">
+            <div className="w-8 h-full bg-gradient-to-l from-background via-background/80 to-transparent flex items-center justify-end pr-0.5">
+              <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
