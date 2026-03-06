@@ -101,20 +101,24 @@ export function ProfileCompletionPrompt({
   logger.debug('[ProfileCompletionPrompt] completionPercentage', { completionPercentage });
 
 
-  // Derive the best CTA link: prefer v2 AI flows, fall back to legacy sessions or profile editor
-  const ctaHref = onboardingSessionType === 'owner'
-    ? '/welcome/owner-v2'
-    : onboardingSessionType === 'prospect'
-    ? '/welcome/crew-v2'
-    : hasProfile
-    ? '/welcome/crew-v2'
-    : '/welcome/crew-v2';
+  // When an existing session exists, route directly to its flow.
+  // Otherwise show a two-option selector so the user can choose crew vs owner.
+  const resolvedHref =
+    onboardingSessionType === 'owner'
+      ? '/welcome/owner-v2'
+      : onboardingSessionType === 'prospect'
+      ? '/welcome/crew-v2'
+      : hasProfile
+      ? '/welcome/crew-v2'
+      : null; // null → show role selector
+
+  const showRoleSelector = !resolvedHref;
 
   if (variant === 'banner') {
     return (
       <div className="bg-primary/10 border-b border-primary/20 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <svg
               className="w-5 h-5 text-primary flex-shrink-0"
               fill="none"
@@ -129,19 +133,42 @@ export function ProfileCompletionPrompt({
               />
             </svg>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground">
+              <p className="text-sm font-medium text-foreground truncate">
                 {hasProfile
-                  ? `Complete your profile to get better matches${showCompletionPercentage && hasProfile ? ` (${completionPercentage}% complete)` : ''}`
+                  ? `Complete your profile to get better matches${showCompletionPercentage ? ` (${completionPercentage}% complete)` : ''}`
                   : 'Create your profile to see full leg details and register for journeys'}
               </p>
             </div>
           </div>
-          <Link
-              href={ctaHref}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
-          >
-            {hasProfile ? 'Complete Profile' : 'Create Profile'}
-          </Link>
+          {showRoleSelector ? (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                href="/welcome/crew-v2"
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                I'm Crew
+              </Link>
+              <Link
+                href="/welcome/owner-v2"
+                className="flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                I'm a Skipper
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href={resolvedHref!}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap flex-shrink-0"
+            >
+              {hasProfile ? 'Complete Profile' : 'Create Profile'}
+            </Link>
+          )}
         </div>
       </div>
     );
@@ -196,15 +223,38 @@ export function ProfileCompletionPrompt({
                 <MissingFieldsIndicator variant="list" showTitle={false} />
               </div>
             )}
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
-            >
-              {hasProfile ? 'Complete Profile' : 'Create Profile'}
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            {showRoleSelector ? (
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/welcome/crew-v2"
+                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  I'm looking for a journey
+                </Link>
+                <Link
+                  href="/welcome/owner-v2"
+                  className="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                  </svg>
+                  I'm looking for crew
+                </Link>
+              </div>
+            ) : (
+              <Link
+                href={resolvedHref!}
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                {hasProfile ? 'Complete Profile' : 'Create Profile'}
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            )}
           </div>
         </div>
       </div>
