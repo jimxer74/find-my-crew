@@ -1,9 +1,10 @@
 ---
 id: TASK-154
 title: URL Import Integration into QuickPost and Onboarding Flows
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-03-06 12:45'
+updated_date: '2026-03-06 12:46'
 labels:
   - onboarding
   - url-import
