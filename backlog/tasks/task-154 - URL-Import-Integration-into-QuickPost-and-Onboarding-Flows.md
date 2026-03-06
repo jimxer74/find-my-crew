@@ -1,10 +1,10 @@
 ---
 id: TASK-154
 title: URL Import Integration into QuickPost and Onboarding Flows
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-03-06 12:45'
-updated_date: '2026-03-06 12:46'
+updated_date: '2026-03-06 13:01'
 labels:
   - onboarding
   - url-import
@@ -98,3 +98,37 @@ Rate limit on URL fetch: 10/hour/user (in-memory).
 
 - [ ] #9 Loading/error states match glassmorphism visual style of surrounding UI
 <!-- AC:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## Implementation Summary
+
+### Files Created
+- **`shared/lib/url-import/urlImportClient.ts`** — Client-side helper with:
+  - `isValidUrl` re-export from detectResourceType
+  - `isFacebookUrl(url)` — checks if URL is Facebook
+  - `fetchUrlContent(url)` — calls `/api/url-import/fetch-content`, throws `'AUTH_REQUIRED'` for 401
+  - `savePendingUrlImport/getPendingUrlImport/clearPendingUrlImport` — sessionStorage helpers to persist pending URL imports across Facebook OAuth redirects (10-minute TTL)
+
+### Files Modified
+- **`app/components/QuickPostBox.tsx`** — Added URL import flow:
+  - New `context?: 'crew' | 'owner'` prop (used for Facebook OAuth state persistence)
+  - `ImportPhase` state machine: `idle | fetching | facebook-auth | error`
+  - On Post click: detects URL via `isValidUrl()`, tries to fetch content
+  - `fetching` state: shows spinner overlay ("Importing content…")
+  - `facebook-auth` state (Facebook URL + 401): shows Facebook OAuth prompt with "Continue with Facebook" + "Post as text" fallback buttons
+  - `error` state: shows error message with "Post URL as text" and "Try again" buttons
+  - Normal state: button label changes from "Post" to "Import" (with link icon) when URL is detected in textarea; shows hint text "URL detected — clicking Import will fetch the content automatically"
+
+- **`app/page.tsx`** — Added:
+  - Import of `getPendingUrlImport`, `clearPendingUrlImport`, `fetchUrlContent` from urlImportClient
+  - `useEffect` that runs when user becomes authenticated: checks sessionStorage for pending URL import (left there by Facebook OAuth flow), fetches the content, and routes to the correct welcome page
+  - `context="crew"` and `context="owner"` props on the respective QuickPostBox components
+
+### Flow Description
+1. User pastes a URL into QuickPostBox and clicks "Import"
+2. If generic/authenticated: fetches content → `onPost(content)` → redirects to /welcome/crew or /welcome/owner with content as initial message
+3. If Facebook URL + not authenticated: shows "Connect Facebook" prompt → user clicks → saves `{url, context}` to sessionStorage → Facebook OAuth → redirects to `/auth/callback` → back to homepage → `useEffect` detects pending import → fetches content → routes to welcome page
+4. If fetch fails: error overlay with "Post URL as text" fallback (posts raw URL to chat)
+<!-- SECTION:FINAL_SUMMARY:END -->
