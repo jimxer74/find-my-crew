@@ -4,7 +4,7 @@ title: Messaging solution and Skipper profile page
 status: To Do
 assignee: []
 created_date: '2026-03-06 22:27'
-updated_date: '2026-03-06 22:30'
+updated_date: '2026-03-06 22:32'
 labels: []
 dependencies: []
 ---
@@ -12,6 +12,9 @@ dependencies: []
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
+Skipper Profile Page for crew
+- When user is approved for a leg, crew  user can access the Skipper profile page, that include all skipper profile information and a messaging solution (defined below). Skipper profile page is accessible from the My Registrations from Skipper section, 
+
 Messaging system between users of the platform.
 
 Functionality to send message to other user, message could include text but also attachments, files, images, but also documents from user's Document Vault that are granted access to user to whom the message is sent to.
