@@ -264,6 +264,10 @@ Then suggest adding a boat next.`;
   - Include ALL available fields from fetch_boat_details_from_sailboatdata results
 **AFTER BOAT IS SAVED:** Confirm success and suggest creating a journey next.`;
       stepInstructions = `**Required fields for create_boat:** name (boat's own name), type, make_model, capacity (number)
+**ALWAYS include the tool name in tool_call JSON.** Example for fetching specs:
+\`\`\`tool_call
+{"name": "fetch_boat_details_from_sailboatdata", "arguments": {"make_model": "Bavaria 46"}}
+\`\`\`
 **IMPORTANT - Include ALL available data from fetch_boat_details_from_sailboatdata:**
 - home_port, country_flag (if provided by user or in [SKIPPER PROFILE])
 - loa_m, beam_m, max_draft_m, displcmt_m, average_speed_knots
@@ -1087,6 +1091,19 @@ async function executeOwnerTools(
         }
 
         try {
+          // Check registry first to avoid redundant remote fetches
+          const { lookupBoatRegistry, incrementRegistryFetchCount, registryToSailboatDetails } = await import('@shared/lib/boat-registry/service');
+          const registryEntry = await lookupBoatRegistry(make_model.trim(), slug?.trim());
+          if (registryEntry && registryEntry.characteristics && registryEntry.capabilities && registryEntry.accommodations) {
+            log(`✅ Registry cache hit for: ${make_model}`);
+            await incrementRegistryFetchCount(registryEntry.id).catch(() => {});
+            results.push({
+              name: toolCall.name,
+              result: registryToSailboatDetails(registryEntry),
+            });
+            continue;
+          }
+
           // Call fetchSailboatDetails directly (avoids HTTP self-call which fails in serverless)
           const { fetchSailboatDetails } = await import('@/app/lib/sailboatdata_queries');
           const details = await fetchSailboatDetails(make_model.trim(), slug?.trim());

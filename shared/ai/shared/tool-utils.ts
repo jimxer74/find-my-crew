@@ -361,13 +361,13 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
         content = content.replace(match[0], '').trim();
         log('Parsed JSON tool call:', toolCallJson.name);
       } 
-      // Check if this looks like profile data (implicit update_user_profile call)
+      // Check if this looks like profile data or boat-fetch args (implicit dispatch)
       else if (toolCallJson && typeof toolCallJson === 'object' && !toolCallJson.name) {
         // Check if it has profile-like fields
-        const profileFields = ['full_name', 'bio', 'user_description', 'experience_level', 'sailing_experience', 
+        const profileFields = ['full_name', 'bio', 'user_description', 'experience_level', 'sailing_experience',
                                'skills', 'risk_level', 'comfort_zones', 'sailing_preferences', 'certifications'];
         const hasProfileFields = profileFields.some(field => field in toolCallJson);
-        
+
         if (hasProfileFields) {
           log('Detected implicit update_user_profile call from profile JSON');
           toolCalls.push({
@@ -377,6 +377,20 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
           });
           content = content.replace(match[0], '').trim();
           log('Converted profile JSON to update_user_profile tool call');
+        } else {
+          // Check if it has boat-fetch fields (implicit fetch_boat_details_from_sailboatdata call)
+          const boatFetchFields = ['make_model', 'make', 'model', 'slug'];
+          const hasBoatFetchFields = boatFetchFields.some(field => field in toolCallJson);
+          if (hasBoatFetchFields) {
+            log('Detected implicit fetch_boat_details_from_sailboatdata call from boat JSON');
+            toolCalls.push({
+              id: `tc_${Date.now()}_${toolCallIndex++}`,
+              name: 'fetch_boat_details_from_sailboatdata',
+              arguments: toolCallJson,
+            });
+            content = content.replace(match[0], '').trim();
+            log('Converted boat JSON to fetch_boat_details_from_sailboatdata tool call');
+          }
         }
       }
     } catch (e) {
