@@ -172,7 +172,7 @@ export function FeedbackModal({
             onChange={(e) => setTitle(e.target.value)}
             maxLength={200}
             placeholder={t('titlePlaceholder')}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             autoFocus
           />
           <p className="text-xs text-muted-foreground mt-1 text-right">
@@ -191,7 +191,7 @@ export function FeedbackModal({
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder={t('descriptionPlaceholder')}
-            className="w-full px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
           />
         </div>
 

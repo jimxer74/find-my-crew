@@ -124,7 +124,7 @@ export function ProductRegistryForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={2}
-          className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+          className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           placeholder="e.g., Three-cylinder heat-exchanger inboard / saildrive"
         />
       </div>

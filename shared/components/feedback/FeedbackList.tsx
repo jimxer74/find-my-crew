@@ -111,7 +111,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
               value={filters.search}
               onChange={handleSearchChange}
               placeholder={t('searchPlaceholder')}
-              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </div>
@@ -120,7 +120,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
         <select
           value={filters.type}
           onChange={(e) => setFilters({ ...filters, type: e.target.value as FeedbackType | 'all' })}
-          className="px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">{t('allTypes')}</option>
           {Object.values(FeedbackType).map((type) => (
@@ -132,7 +132,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
         <select
           value={filters.status}
           onChange={(e) => setFilters({ ...filters, status: e.target.value as FeedbackStatus | 'all' })}
-          className="px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="all">{t('allStatuses')}</option>
           {Object.values(FeedbackStatus).map((status) => (
@@ -144,7 +144,7 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
         <select
           value={filters.sort}
           onChange={(e) => setFilters({ ...filters, sort: e.target.value as 'newest' | 'oldest' | 'most_votes' | 'least_votes' })}
-          className="px-3 py-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+          className="px-3 py-2 border border-border rounded-lg bg-input-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="newest">{t('sortNewest')}</option>
           <option value="oldest">{t('sortOldest')}</option>

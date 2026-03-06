@@ -93,7 +93,7 @@ export function MaintenanceCompleteForm({ isOpen, onClose, onSubmit, task }: Mai
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Work performed, observations, issues found..."
           />
         </div>

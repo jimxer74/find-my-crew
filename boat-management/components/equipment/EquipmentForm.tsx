@@ -496,7 +496,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
   ];
 
   const inputCls =
-    'w-full rounded border border-border bg-background text-foreground px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
+    'w-full rounded border border-border bg-input-background text-foreground px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50';
 
   // -------------------------------------------------------------------------
   // Modal title by phase
@@ -712,7 +712,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="Additional details, condition notes, etc."
               />
             </div>
@@ -730,7 +730,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
                       type="date"
                       value={serviceDate}
                       onChange={(e) => setServiceDate(e.target.value)}
-                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   <div>
@@ -739,7 +739,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
                       type="date"
                       value={nextServiceDate}
                       onChange={(e) => setNextServiceDate(e.target.value)}
-                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   <div>
@@ -748,7 +748,7 @@ export function EquipmentForm({ isOpen, onClose, onSubmit, equipment, parentOpti
                       type="date"
                       value={expiryDate}
                       onChange={(e) => setExpiryDate(e.target.value)}
-                      className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>

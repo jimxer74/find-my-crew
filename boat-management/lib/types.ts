@@ -211,6 +211,16 @@ export type MaintenanceCategory = 'routine' | 'seasonal' | 'repair' | 'inspectio
 export type MaintenancePriority = 'low' | 'medium' | 'high' | 'critical';
 export type MaintenanceStatus = 'pending' | 'in_progress' | 'completed' | 'overdue' | 'skipped';
 
+/** Derived display status computed from DB status + due_date */
+export type MaintenanceDisplayStatus = 'todo' | 'planned' | 'in_progress' | 'done';
+
+export function getDisplayStatus(task: { status: MaintenanceStatus; due_date: string | null }): MaintenanceDisplayStatus {
+  if (task.status === 'completed' || task.status === 'skipped') return 'done';
+  if (task.status === 'in_progress') return 'in_progress';
+  if (task.due_date) return 'planned';
+  return 'todo';
+}
+
 export interface RecurrenceConfig {
   type: 'time' | 'usage';
   interval_days?: number;

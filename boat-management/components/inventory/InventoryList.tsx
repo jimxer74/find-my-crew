@@ -64,7 +64,7 @@ export function InventoryList({ inventory, onAdd, onEdit, onDelete, isOwner }: I
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search inventory..."
-            className="w-full sm:w-64 rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-64 rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <Select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} options={categoryOptions} className="w-full sm:w-auto" />
           {lowStockCount > 0 && (
@@ -179,8 +179,18 @@ function InventoryRow({
         <td className="py-2.5 text-right">
           {!confirmDelete ? (
             <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={onEdit} className="text-xs text-muted-foreground hover:text-primary transition-colors">Edit</button>
-              <button onClick={() => setConfirmDelete(true)} className="text-xs text-muted-foreground hover:text-destructive transition-colors">Delete</button>
+              <button onClick={onEdit} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </button>
+              <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Delete
+              </button>
             </div>
           ) : (
             <div className="flex items-center justify-end gap-2">

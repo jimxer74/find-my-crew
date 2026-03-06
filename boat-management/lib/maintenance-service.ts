@@ -219,26 +219,34 @@ export async function completeMaintenanceTask(
   );
 
   // If task has recurrence, create the next occurrence
-  if (task.recurrence && task.recurrence.type === 'time' && task.recurrence.interval_days) {
-    const nextDueDate = new Date();
-    nextDueDate.setDate(nextDueDate.getDate() + task.recurrence.interval_days);
+  if (task.recurrence) {
+    const baseTask = {
+      boat_id: task.boat_id,
+      equipment_id: task.equipment_id,
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      priority: task.priority,
+      instructions: task.instructions,
+      parts_needed: task.parts_needed,
+      recurrence: task.recurrence,
+      template_id: task.template_id,
+    };
 
-    await createMaintenanceTask(
-      {
-        boat_id: task.boat_id,
-        equipment_id: task.equipment_id,
-        title: task.title,
-        description: task.description,
-        category: task.category,
-        priority: task.priority,
-        instructions: task.instructions,
-        parts_needed: task.parts_needed,
-        recurrence: task.recurrence,
-        template_id: task.template_id,
-        due_date: nextDueDate.toISOString().split('T')[0],
-      },
-      supabase
-    );
+    if (task.recurrence.type === 'time' && task.recurrence.interval_days) {
+      const nextDueDate = new Date();
+      nextDueDate.setDate(nextDueDate.getDate() + task.recurrence.interval_days);
+      await createMaintenanceTask(
+        { ...baseTask, due_date: nextDueDate.toISOString().split('T')[0] },
+        supabase
+      );
+    } else if (task.recurrence.type === 'usage') {
+      // Usage-based: create next task without a due date (triggered by engine hours)
+      await createMaintenanceTask(
+        { ...baseTask, due_date: undefined },
+        supabase
+      );
+    }
   }
 
   return updatedTask;

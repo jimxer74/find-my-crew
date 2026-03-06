@@ -564,7 +564,7 @@ export default function OwnerChat() {
                 placeholder="Type your message..."
                 disabled={isLoading}
                 rows={1}
-                className="flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm bg-background border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                className="flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm bg-input-background text-foreground border border-border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
               />
               <button
                 type="submit"

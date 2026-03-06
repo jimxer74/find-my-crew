@@ -57,7 +57,8 @@ const RECURRENCE_OPTIONS = [
   { value: 'usage_100', label: 'Every 100 engine hours' },
   { value: 'usage_250', label: 'Every 250 engine hours' },
   { value: 'usage_500', label: 'Every 500 engine hours' },
-  { value: 'custom', label: 'Custom interval...' },
+  { value: 'custom', label: 'Custom days interval...' },
+  { value: 'custom_usage', label: 'Custom engine hours...' },
 ];
 
 export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [] }: MaintenanceFormProps) {
@@ -77,6 +78,7 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
   const [isTemplate, setIsTemplate] = useState(false);
   const [recurrenceKey, setRecurrenceKey] = useState('');
   const [customDays, setCustomDays] = useState('');
+  const [customHours, setCustomHours] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -101,6 +103,7 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
             );
             if (match) {
               setRecurrenceKey(match.value);
+              setCustomDays('');
             } else {
               setRecurrenceKey('custom');
               setCustomDays(r.interval_days.toString());
@@ -109,17 +112,24 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
             const match = RECURRENCE_OPTIONS.find(
               o => o.value === `usage_${r.engine_hours}`
             );
-            setRecurrenceKey(match?.value ?? '');
+            if (match) {
+              setRecurrenceKey(match.value);
+              setCustomHours('');
+            } else {
+              setRecurrenceKey('custom_usage');
+              setCustomHours(r.engine_hours.toString());
+            }
           }
         } else {
           setRecurrenceKey('');
           setCustomDays('');
+          setCustomHours('');
         }
       } else {
         setTitle(''); setDescription(''); setCategory('routine'); setPriority('medium');
         setEquipmentId(''); setDueDate(''); setEstimatedHours(''); setEstimatedCost('');
         setInstructions(''); setNotes(''); setIsTemplate(false);
-        setRecurrenceKey(''); setCustomDays('');
+        setRecurrenceKey(''); setCustomDays(''); setCustomHours('');
       }
       setError('');
     }
@@ -145,6 +155,9 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
       if (recurrenceKey === 'custom') {
         recurrenceType = 'time';
         recurrenceInterval = parseInt(customDays, 10) || null;
+      } else if (recurrenceKey === 'custom_usage') {
+        recurrenceType = 'usage';
+        recurrenceInterval = parseInt(customHours, 10) || null;
       } else if (recurrenceKey.startsWith('time_')) {
         recurrenceType = 'time';
         recurrenceInterval = parseInt(recurrenceKey.split('_')[1], 10);
@@ -191,7 +204,7 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="Brief description of the task"
           />
         </div>
@@ -213,6 +226,9 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
           {recurrenceKey === 'custom' && (
             <Input label="Interval (days)" type="number" value={customDays} onChange={(e) => setCustomDays(e.target.value)} placeholder="e.g., 60" />
           )}
+          {recurrenceKey === 'custom_usage' && (
+            <Input label="Engine hours interval" type="number" value={customHours} onChange={(e) => setCustomHours(e.target.value)} placeholder="e.g., 150" />
+          )}
         </div>
 
         <div>
@@ -221,7 +237,7 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
             rows={3}
-            className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="1. Warm up engine for 5 minutes&#10;2. Turn off engine and locate drain plug&#10;3. ..."
           />
         </div>
@@ -232,7 +248,7 @@ export function MaintenanceForm({ isOpen, onClose, onSubmit, task, equipment = [
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
 

@@ -60,6 +60,19 @@ export default function MaintenancePage({ params }: { params: Promise<{ boatId: 
   const handleEdit = (task: BoatMaintenanceTask) => { setEditingTask(task); setIsFormOpen(true); };
   const handleComplete = (task: BoatMaintenanceTask) => { setCompletingTask(task); setIsCompleteOpen(true); };
 
+  const handleStart = async (task: BoatMaintenanceTask) => {
+    try {
+      const res = await fetch(`/api/boats/${boatId}/maintenance/${task.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress' }),
+      });
+      if (res.ok) await loadData();
+    } catch (err) {
+      logger.error('Error starting task', { error: err instanceof Error ? err.message : String(err) });
+    }
+  };
+
   const handleDelete = async (task: BoatMaintenanceTask) => {
     try {
       const res = await fetch(`/api/boats/${boatId}/maintenance/${task.id}`, { method: 'DELETE' });
@@ -141,10 +154,12 @@ export default function MaintenancePage({ params }: { params: Promise<{ boatId: 
     <>
       <MaintenanceList
         tasks={tasks}
+        equipment={equipment}
         onAdd={handleAdd}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onComplete={handleComplete}
+        onStart={handleStart}
         isOwner={isOwner}
       />
       <MaintenanceForm

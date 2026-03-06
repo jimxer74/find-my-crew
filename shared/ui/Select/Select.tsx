@@ -57,7 +57,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     const selectSizeClasses = COMPONENT_SIZES.input.default;
     const focusClasses = ACCESSIBILITY.focusRing;
 
-    const baseSelectClasses = 'w-full rounded border bg-background text-foreground transition-colors appearance-none';
+    const baseSelectClasses = 'w-full rounded border bg-input-background text-foreground transition-colors appearance-none';
     const borderClasses = hasError || error ? 'border-red-500' : 'border-border';
     const stateClasses = disabled
       ? 'cursor-not-allowed opacity-50'

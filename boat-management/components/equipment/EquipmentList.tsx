@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { Button, Badge, Card, Select } from '@shared/ui';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import { Button, Card, Select } from '@shared/ui';
 import type { BoatEquipment, EquipmentCategory, ProductRegistryEntry } from '@boat-management/lib/types';
 import { EQUIPMENT_CATEGORIES, getCategoryLabel, getSubcategoryLabel } from '@boat-management/lib/types';
 import { ProductLinks } from '../registry/ProductLinks';
@@ -30,10 +30,10 @@ interface EquipmentListProps {
   isOwner: boolean;
 }
 
-const statusConfig: Record<string, { variant: 'success' | 'warning' | 'secondary'; label: string }> = {
-  active: { variant: 'success', label: 'Active' },
-  needs_replacement: { variant: 'warning', label: 'Needs Replacement' },
-  decommissioned: { variant: 'secondary', label: 'Decommissioned' },
+const statusBorderClass: Record<string, string> = {
+  active: 'border-l-green-500',
+  needs_replacement: 'border-l-yellow-400',
+  decommissioned: 'border-l-slate-400 dark:border-l-slate-600',
 };
 
 export function EquipmentList({ equipment, boatId, boatMakeModel, onAdd, onEdit, onDelete, onGenerateAI, isOwner }: EquipmentListProps) {
@@ -84,7 +84,7 @@ export function EquipmentList({ equipment, boatId, boatMakeModel, onAdd, onEdit,
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search equipment..."
-            className="w-full sm:w-64 rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full sm:w-64 rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <Select
             value={filterCategory}
@@ -129,30 +129,79 @@ export function EquipmentList({ equipment, boatId, boatMakeModel, onAdd, onEdit,
         </Card>
       )}
 
-      {/* Grouped equipment list */}
+      {/* Grouped equipment list — horizontal swipeable carousel per category */}
       {Array.from(grouped.entries()).map(([categoryKey, items]) => (
         <div key={categoryKey}>
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">
             {getCategoryLabel(categoryKey as EquipmentCategory)} ({items.length})
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {items.map(item => (
-              <EquipmentCard
-                key={item.id}
-                item={item}
-                boatId={boatId}
-                boatMakeModel={boatMakeModel}
-                onEdit={() => onEdit(item)}
-                onDelete={() => onDelete(item)}
-                isOwner={isOwner}
-              />
-            ))}
-          </div>
+          <CategoryCarousel
+            items={items}
+            boatId={boatId}
+            boatMakeModel={boatMakeModel}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            isOwner={isOwner}
+          />
         </div>
       ))}
     </div>
   );
 }
+
+// --- Category carousel (horizontal scroll, 2-per-row on mobile) ---
+
+function CategoryCarousel({ items, boatId, boatMakeModel, onEdit, onDelete, isOwner }: {
+  items: BoatEquipment[];
+  boatId: string;
+  boatMakeModel?: string;
+  onEdit: (item: BoatEquipment) => void;
+  onDelete: (item: BoatEquipment) => void;
+  isOwner: boolean;
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const check = () => setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    check();
+    el.addEventListener('scroll', check);
+    window.addEventListener('resize', check);
+    return () => { el.removeEventListener('scroll', check); window.removeEventListener('resize', check); };
+  }, [items]);
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide"
+      >
+        {items.map(item => (
+          <div
+            key={item.id}
+            className="flex-shrink-0 w-[calc(50%-6px)] sm:w-[260px] snap-start"
+          >
+            <EquipmentCard
+              item={item}
+              boatId={boatId}
+              boatMakeModel={boatMakeModel}
+              onEdit={() => onEdit(item)}
+              onDelete={() => onDelete(item)}
+              isOwner={isOwner}
+            />
+          </div>
+        ))}
+      </div>
+      {canScrollRight && (
+        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+      )}
+    </div>
+  );
+}
+
+// --- Equipment Card ---
 
 function EquipmentCard({
   item,
@@ -173,7 +222,6 @@ function EquipmentCard({
   const [showLinks, setShowLinks] = useState(false);
   const [registryProduct, setRegistryProduct] = useState<ProductRegistryEntry | null>(null);
   const [loadingLinks, setLoadingLinks] = useState(false);
-  const statusInfo = statusConfig[item.status] ?? statusConfig.active;
 
   const handleToggleLinks = async () => {
     if (showLinks) {
@@ -199,101 +247,112 @@ function EquipmentCard({
   };
 
   return (
-    <Card padding="sm" className="flex flex-col">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h4 className="font-medium text-card-foreground truncate">{item.name}</h4>
-            {(item.quantity ?? 1) > 1 && (
-              <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                ×{item.quantity}
-              </span>
+    <div className={`bg-card border border-border rounded-lg border-l-4 ${statusBorderClass[item.status] ?? statusBorderClass.active} flex flex-col overflow-hidden h-full`}>
+      <div className="p-2.5 flex-1">
+        {/* Name + quantity */}
+        <div className="flex items-start justify-between gap-1.5 mb-1">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1">
+              <h4 className="font-medium text-card-foreground text-sm leading-tight truncate">{item.name}</h4>
+              {(item.quantity ?? 1) > 1 && (
+                <span className="shrink-0 text-xs font-semibold px-1 py-0.5 rounded bg-muted text-muted-foreground">
+                  ×{item.quantity}
+                </span>
+              )}
+            </div>
+            {item.subcategory && (
+              <p className="text-xs text-muted-foreground leading-tight">
+                {getSubcategoryLabel(item.category, item.subcategory)}
+              </p>
             )}
           </div>
-          {item.subcategory && (
-            <p className="text-xs text-muted-foreground">
-              {getSubcategoryLabel(item.category, item.subcategory)}
+        </div>
+
+        {/* Details */}
+        <div className="space-y-0.5 text-xs text-muted-foreground">
+          {item.manufacturer && (
+            <p className="truncate">
+              <span className="font-medium">Make:</span> {item.manufacturer}
+              {item.model && ` ${item.model}`}
+            </p>
+          )}
+          {item.serial_number && (
+            <p className="truncate">
+              <span className="font-medium">S/N:</span> {item.serial_number}
+            </p>
+          )}
+          {item.year_installed && (
+            <p>
+              <span className="font-medium">Installed:</span> {item.year_installed}
+            </p>
+          )}
+          {item.notes && (
+            <p className="truncate text-xs mt-1" title={item.notes}>
+              {item.notes}
             </p>
           )}
         </div>
-        <Badge variant={statusInfo.variant} size="sm">
-          {statusInfo.label}
-        </Badge>
+
+        {/* Registry links toggle */}
+        {item.product_registry_id && (
+          <div className="mt-1.5">
+            <button
+              onClick={handleToggleLinks}
+              disabled={loadingLinks}
+              className="text-xs text-primary hover:underline disabled:opacity-50"
+            >
+              {loadingLinks ? 'Loading...' : showLinks ? 'Hide docs & parts' : 'View docs & parts'}
+            </button>
+            {showLinks && registryProduct && (
+              <div className="mt-1.5 border-t border-border pt-1.5">
+                <ProductLinks product={registryProduct} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Maintenance tasks section */}
+        {isOwner && item.product_registry_id && (
+          <div className="mt-1.5 border-t border-border pt-1.5">
+            <EquipmentMaintenanceSection
+              item={item}
+              boatId={boatId}
+              boatMakeModel={boatMakeModel}
+            />
+          </div>
+        )}
       </div>
 
-      <div className="space-y-1 text-sm text-muted-foreground flex-1">
-        {item.manufacturer && (
-          <p className="truncate">
-            <span className="font-medium">Make:</span> {item.manufacturer}
-            {item.model && ` ${item.model}`}
-          </p>
-        )}
-        {item.serial_number && (
-          <p className="truncate">
-            <span className="font-medium">S/N:</span> {item.serial_number}
-          </p>
-        )}
-        {item.year_installed && (
-          <p>
-            <span className="font-medium">Installed:</span> {item.year_installed}
-          </p>
-        )}
-        {item.notes && (
-          <p className="truncate text-xs mt-1" title={item.notes}>
-            {item.notes}
-          </p>
-        )}
-      </div>
-
-      {/* Registry links toggle */}
-      {item.product_registry_id && (
-        <div className="mt-2">
-          <button
-            onClick={handleToggleLinks}
-            disabled={loadingLinks}
-            className="text-xs text-primary hover:underline disabled:opacity-50"
-          >
-            {loadingLinks ? 'Loading...' : showLinks ? 'Hide docs & parts' : 'View docs & parts'}
-          </button>
-          {showLinks && registryProduct && (
-            <div className="mt-2 border-t border-border pt-2">
-              <ProductLinks product={registryProduct} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Maintenance tasks section */}
-      {isOwner && item.product_registry_id && (
-        <div className="mt-2 border-t border-border pt-2">
-          <EquipmentMaintenanceSection
-            item={item}
-            boatId={boatId}
-            boatMakeModel={boatMakeModel}
-          />
-        </div>
-      )}
-
+      {/* Card actions */}
       {isOwner && (
-        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
+          {/* Edit */}
           <button
             onClick={onEdit}
-            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
           >
+            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </button>
+
+          {/* Delete */}
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto"
             >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
               Delete
             </button>
           ) : (
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1 ml-auto">
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className="text-xs text-muted-foreground px-1"
               >
                 Cancel
               </button>
@@ -302,7 +361,7 @@ function EquipmentCard({
                   onDelete();
                   setConfirmDelete(false);
                 }}
-                className="text-xs text-destructive font-medium hover:text-destructive/80 transition-colors"
+                className="text-xs text-destructive font-medium px-1"
               >
                 Confirm
               </button>
@@ -310,9 +369,11 @@ function EquipmentCard({
           )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }
+
+// --- Equipment Maintenance Section ---
 
 type MaintenanceState = 'idle' | 'fetching' | 'has_tasks' | 'no_tasks' | 'generating' | 'applying' | 'applied' | 'error';
 
@@ -378,7 +439,6 @@ function EquipmentMaintenanceSection({
   };
 
   const handleJobComplete = useCallback(async () => {
-    // Edge function cached tasks to product_maintenance_tasks — re-fetch
     await fetchCached();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.product_registry_id]);

@@ -117,7 +117,7 @@ export function ProductAISearchDialog({
               }
             }}
             rows={2}
-            className="w-full rounded border border-border bg-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full rounded border border-border bg-input-background text-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
             placeholder="e.g., saildrive engine 25-30hp, diesel marine engine, chartplotter with AIS..."
           />
         </div>

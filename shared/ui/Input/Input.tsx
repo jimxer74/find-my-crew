@@ -45,7 +45,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputSizeClasses = COMPONENT_SIZES.input.default;
     const focusClasses = ACCESSIBILITY.focusRing;
 
-    const baseInputClasses = 'w-full rounded border bg-background text-foreground transition-colors';
+    const baseInputClasses = 'w-full rounded border bg-input-background text-foreground transition-colors';
     const borderClasses = hasError || error ? 'border-red-500' : 'border-border';
     const stateClasses = disabled
       ? 'cursor-not-allowed opacity-50'
