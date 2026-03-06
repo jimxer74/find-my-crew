@@ -4,7 +4,7 @@ title: Boat Management bugs and enhancements
 status: To Do
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-06 06:42'
+updated_date: '2026-03-06 07:51'
 labels: []
 dependencies: []
 ---
@@ -22,6 +22,7 @@ BUG:  Badge dark colors do not work properly: update Badge dark colors to use gl
 
 **Equipment view**
 - Change the "Active" status display, remove the badge. Instead color the left border of card with status color (e.g. green with active). Make the left border a tad wider to better communicate the status
+- Change the equipmet cards narrower, so that in mobile view 2 cards fit in row. Use swipeable carousel concept, simila as in /crew for leg cards. so that user can scroll the cards to right to see more
 
 **Maitenance -view**
 - BUG: the Recurring interval is not working properly, it displays a task to be recurring, but when opening edit mode it does not show recurring information. Also when completing a recurring task it should create another one with recurring interval, but it did not work allways.
@@ -39,6 +40,6 @@ Desktop:
 - List tasks by equipment groups, similar as equipments are listed by categories.
 
 Mobile:
-- list task cards in single column, grouped by the equipment
-- revmove state dropdown, instead display clickable state badges
+- list task cards two in row, grouped by the equipment, make use the swipeable carousel concept similar as in /crew for leg cards so that user can swipe cards to right to see more. Sort by due date and criticality first
+- remove state dropdown, instead display clickable state badges
 <!-- SECTION:DESCRIPTION:END -->
