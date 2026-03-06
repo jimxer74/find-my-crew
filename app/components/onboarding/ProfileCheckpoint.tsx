@@ -139,28 +139,28 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
 
   if (isEditing) {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border bg-muted/30">
-          <h3 className="font-semibold text-foreground">Your sailor profile</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Edit your details below</p>
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Your sailor profile</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Edit your details below</p>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={data.displayName}
               onChange={(e) => setData((d) => ({ ...d, displayName: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Your name"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Sailing experience
             </label>
             <select
@@ -171,7 +171,7 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
                   experienceLevel: e.target.value ? Number(e.target.value) : null,
                 }))
               }
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               <option value="">Not specified</option>
               {Object.entries(EXPERIENCE_LABELS).map(([val, label]) => (
@@ -184,7 +184,7 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
 
           {/* Skills */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Sailing skills
             </label>
             <div className="flex gap-2 mb-2">
@@ -194,7 +194,7 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyDown={handleSkillKeyDown}
                 placeholder="Type a skill and press Enter"
-                className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <button
                 type="button"
@@ -228,14 +228,14 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               About me (optional)
             </label>
             <textarea
               value={data.aboutMe ?? ''}
               onChange={(e) => setData((d) => ({ ...d, aboutMe: e.target.value || null }))}
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               placeholder="Brief description of your sailing background…"
             />
           </div>
@@ -247,7 +247,7 @@ export function ProfileCheckpoint({ userId, email, profile, onSaved }: ProfileCh
           </div>
         )}
 
-        <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex justify-end gap-2">
           <Button
             variant="ghost"
             size="sm"

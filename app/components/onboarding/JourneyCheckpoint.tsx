@@ -313,9 +313,9 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
   // ---------------------------------------------------------------------------
   if (phase === 'saving') {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm p-6 text-center">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm p-6 text-center">
         <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">Saving your journey…</p>
+        <p className="text-sm text-gray-500">Saving your journey…</p>
       </div>
     );
   }
@@ -325,10 +325,10 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
   // ---------------------------------------------------------------------------
   if (phase === 'generating' && jobId) {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border bg-muted/30">
-          <h3 className="font-semibold text-foreground">Generating your journey…</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Generating your journey…</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
             AI is planning the route from {startText} to {endText}. This takes 30–90 seconds.
           </p>
         </div>
@@ -339,10 +339,10 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
             onError={handleJobError}
           />
         </div>
-        <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-start">
+        <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex justify-start">
           <button
             onClick={onSkip}
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="text-sm text-gray-500 hover:text-gray-900"
           >
             Skip journey, go to dashboard
           </button>
@@ -355,22 +355,22 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
   // Form state
   // ---------------------------------------------------------------------------
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-border bg-muted/30">
-        <h3 className="font-semibold text-foreground">Create your first journey</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 className="font-semibold text-gray-900">Create your first journey</h3>
+        <p className="text-sm text-gray-500 mt-0.5">
           AI will plan the route and legs for you automatically.
         </p>
       </div>
 
       <div className="px-5 py-4 space-y-4">
         {isGeocoding && (
-          <p className="text-xs text-muted-foreground">Resolving locations from your conversation…</p>
+          <p className="text-xs text-gray-500">Resolving locations from your conversation…</p>
         )}
 
         {/* Departure */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">
+          <label className="text-xs font-medium text-gray-500 block mb-1">
             Departure location <span className="text-destructive">*</span>
           </label>
           <LocationAutocomplete
@@ -381,14 +381,14 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
             excludeCruisingRegions={false}
           />
           {startCoords && (
-            <p className="text-xs text-muted-foreground mt-0.5">✓ Location resolved</p>
+            <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
           )}
         </div>
 
         {/* Intermediate waypoints */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-xs font-medium text-gray-500">
               Intermediate stops (optional)
             </label>
             <button
@@ -401,7 +401,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
           </div>
 
           {waypoints.length === 0 && (
-            <p className="text-xs text-muted-foreground italic">
+            <p className="text-xs text-gray-400 italic">
               No intermediate stops. Click &quot;+ Add stop&quot; to add waypoints.
             </p>
           )}
@@ -418,7 +418,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
                     excludeCruisingRegions={false}
                   />
                   {wp.text && wp.coords && (
-                    <p className="text-xs text-muted-foreground mt-0.5">✓ Location resolved</p>
+                    <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
                   )}
                   {wp.text && !wp.coords && (
                     <p className="text-xs text-amber-600 mt-0.5">Select from suggestions to resolve</p>
@@ -427,7 +427,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
                 <button
                   type="button"
                   onClick={() => removeWaypoint(idx)}
-                  className="mt-2 text-muted-foreground hover:text-destructive text-sm px-1"
+                  className="mt-2 text-gray-400 hover:text-destructive text-sm px-1"
                   aria-label="Remove stop"
                 >
                   ✕
@@ -439,7 +439,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
 
         {/* Destination */}
         <div>
-          <label className="text-xs font-medium text-muted-foreground block mb-1">
+          <label className="text-xs font-medium text-gray-500 block mb-1">
             Destination <span className="text-destructive">*</span>
           </label>
           <LocationAutocomplete
@@ -450,25 +450,25 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
             excludeCruisingRegions={false}
           />
           {endCoords && (
-            <p className="text-xs text-muted-foreground mt-0.5">✓ Location resolved</p>
+            <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
           )}
         </div>
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Departure date (optional)
             </label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Arrival date (optional)
             </label>
             <input
@@ -476,7 +476,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
               value={endDate}
               min={startDate || undefined}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
         </div>
@@ -488,10 +488,10 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
         )}
       </div>
 
-      <div className="px-5 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+      <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex items-center justify-between gap-3">
         <button
           onClick={onSkip}
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="text-sm text-gray-500 hover:text-gray-900"
         >
           Skip, go to dashboard
         </button>

@@ -35,22 +35,22 @@ export function CheckpointCard({
   children,
 }: CheckpointCardProps) {
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border bg-muted/30">
-        <h3 className="font-semibold text-foreground">{title}</h3>
-        {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+      <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 className="font-semibold text-gray-900">{title}</h3>
+        {subtitle && <p className="text-sm text-gray-500 mt-0.5">{subtitle}</p>}
       </div>
 
       {/* Fields */}
       <div className="px-5 py-4 space-y-2.5">
         {fields.map((field) => (
           <div key={field.label} className="flex items-start gap-3">
-            <span className="text-xs font-medium text-muted-foreground w-28 flex-shrink-0 pt-0.5">
+            <span className="text-xs font-medium text-gray-500 w-28 flex-shrink-0 pt-0.5">
               {field.label}
             </span>
-            <span className="text-sm text-foreground break-words min-w-0">
-              {field.value ?? <span className="text-muted-foreground italic">Not provided</span>}
+            <span className="text-sm text-gray-900 break-words min-w-0">
+              {field.value ?? <span className="text-gray-400 italic">Not provided</span>}
             </span>
           </div>
         ))}
@@ -58,7 +58,7 @@ export function CheckpointCard({
       </div>
 
       {/* Actions */}
-      <div className="px-5 py-4 border-t border-border bg-muted/20 flex items-center justify-between gap-3">
+      <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {onEdit && (
             <Button variant="outline" size="sm" onClick={onEdit} disabled={isLoading}>

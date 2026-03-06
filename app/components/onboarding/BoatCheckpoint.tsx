@@ -110,42 +110,42 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
 
   if (isEditing) {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border bg-muted/30">
-          <h3 className="font-semibold text-foreground">Your boat</h3>
-          <p className="text-sm text-muted-foreground mt-0.5">Edit your boat details</p>
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Your boat</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Edit your boat details</p>
         </div>
 
         <div className="px-5 py-4 space-y-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Make / Model <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={data.makeModel}
               onChange={(e) => setData((d) => ({ ...d, makeModel: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="e.g. Beneteau Oceanis 46"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Home port <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={data.homePort}
               onChange={(e) => setData((d) => ({ ...d, homePort: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="e.g. Helsinki, Finland"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-medium text-gray-500 block mb-1">
                 Year built (optional)
               </label>
               <input
@@ -159,13 +159,13 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
                 }
                 min={1900}
                 max={new Date().getFullYear()}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="e.g. 1995"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-medium text-gray-500 block mb-1">
                 LOA in metres (optional)
               </label>
               <input
@@ -179,7 +179,7 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
                 }
                 step="0.1"
                 min={0}
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 placeholder="e.g. 14.2"
               />
             </div>
@@ -192,10 +192,10 @@ export function BoatCheckpoint({ userId, boat, onSaved }: BoatCheckpointProps) {
           </div>
         )}
 
-        <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex justify-end gap-2">
           <button
             onClick={() => setIsEditing(false)}
-            className="text-sm text-muted-foreground hover:text-foreground px-3 py-1.5"
+            className="text-sm text-gray-500 hover:text-gray-900 px-3 py-1.5"
           >
             Cancel
           </button>

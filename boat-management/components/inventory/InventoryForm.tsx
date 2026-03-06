@@ -21,6 +21,7 @@ export interface InventoryFormData {
   unit: string;
   location: string;
   supplier: string;
+  supplier_url: string;
   part_number: string;
   cost: number | null;
   currency: string;
@@ -79,6 +80,7 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
   const [unit, setUnit] = useState('');
   const [location, setLocation] = useState('');
   const [supplier, setSupplier] = useState('');
+  const [supplierUrl, setSupplierUrl] = useState('');
   const [partNumber, setPartNumber] = useState('');
   const [cost, setCost] = useState('');
   const [currency, setCurrency] = useState('EUR');
@@ -97,6 +99,7 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         setUnit(item.unit ?? '');
         setLocation(item.location ?? '');
         setSupplier(item.supplier ?? '');
+        setSupplierUrl(item.supplier_url ?? '');
         setPartNumber(item.part_number ?? '');
         setCost(item.cost?.toString() ?? '');
         setCurrency(item.currency);
@@ -106,7 +109,7 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         setEquipmentId(item.equipment_id ?? '');
       } else {
         setName(''); setCategory(''); setQuantity('0'); setMinQuantity('0');
-        setUnit(''); setLocation(''); setSupplier(''); setPartNumber('');
+        setUnit(''); setLocation(''); setSupplier(''); setSupplierUrl(''); setPartNumber('');
         setCost(''); setCurrency('EUR'); setPurchaseDate(''); setExpiryDate('');
         setNotes(''); setEquipmentId('');
       }
@@ -145,6 +148,7 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
         unit,
         location,
         supplier: supplier.trim(),
+        supplier_url: supplierUrl.trim(),
         part_number: partNumber.trim(),
         cost: cost ? parseFloat(cost) : null,
         currency,
@@ -186,6 +190,15 @@ export function InventoryForm({ isOpen, onClose, onSubmit, item, equipment = [] 
           <Input label="Supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="e.g., Marine Depot" />
           <Input label="Part Number" value={partNumber} onChange={(e) => setPartNumber(e.target.value)} placeholder="e.g., YM-119305-35151" />
         </div>
+
+        <Input
+          label="Supplier URL"
+          type="url"
+          value={supplierUrl}
+          onChange={(e) => setSupplierUrl(e.target.value)}
+          placeholder="https://www.marinedepot.com/..."
+          helperText="Direct link to the product page"
+        />
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <Input label="Cost" type="text" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" />

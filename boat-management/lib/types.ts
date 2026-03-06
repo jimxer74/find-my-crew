@@ -155,6 +155,7 @@ export interface BoatInventory {
   unit: string | null;
   location: string | null;
   supplier: string | null;
+  supplier_url: string | null;
   part_number: string | null;
   cost: number | null;
   currency: string;
@@ -176,6 +177,7 @@ export interface BoatInventoryInsert {
   unit?: string | null;
   location?: string | null;
   supplier?: string | null;
+  supplier_url?: string | null;
   part_number?: string | null;
   cost?: number | null;
   currency?: string;
@@ -194,6 +196,7 @@ export interface BoatInventoryUpdate {
   unit?: string | null;
   location?: string | null;
   supplier?: string | null;
+  supplier_url?: string | null;
   part_number?: string | null;
   cost?: number | null;
   currency?: string;

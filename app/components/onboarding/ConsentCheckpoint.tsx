@@ -90,11 +90,11 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
   };
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-border bg-muted/30">
-        <h3 className="font-semibold text-foreground">Set up your preferences</h3>
-        <p className="text-sm text-muted-foreground mt-0.5">
+      <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+        <h3 className="font-semibold text-gray-900">Set up your preferences</h3>
+        <p className="text-sm text-gray-500 mt-0.5">
           Review and accept our terms before we get started.
         </p>
       </div>
@@ -109,23 +109,23 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
 
         {/* Required */}
         <div className="space-y-2.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Required
           </p>
 
           <label
             className={`flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border transition-colors ${
-              privacyPolicy ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+              privacyPolicy ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'
             }`}
           >
             <input
               type="checkbox"
               checked={privacyPolicy}
               onChange={() => setPrivacyPolicy((v) => !v)}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-ring flex-shrink-0"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring flex-shrink-0"
             />
             <div>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium text-gray-900">
                 I accept the{' '}
                 <Link
                   href="/privacy-policy?standalone=true"
@@ -135,7 +135,7 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
                   Privacy Policy
                 </Link>
               </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 How we collect, use, and protect your personal information.
               </p>
             </div>
@@ -143,17 +143,17 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
 
           <label
             className={`flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border transition-colors ${
-              termsOfService ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
+              termsOfService ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'
             }`}
           >
             <input
               type="checkbox"
               checked={termsOfService}
               onChange={() => setTermsOfService((v) => !v)}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-ring flex-shrink-0"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring flex-shrink-0"
             />
             <div>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium text-gray-900">
                 I accept the{' '}
                 <Link
                   href="/terms-of-service?standalone=true"
@@ -163,7 +163,7 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
                   Terms of Service
                 </Link>
               </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Rules and guidelines for using SailSmart.
               </p>
             </div>
@@ -172,70 +172,70 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
 
         {/* Optional */}
         <div className="space-y-2.5">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
             Optional
           </p>
 
-          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-border hover:bg-muted/40 transition-colors">
+          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
             <input
               type="checkbox"
               checked={aiProcessing}
               onChange={() => setAiProcessing((v) => !v)}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-ring flex-shrink-0"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring flex-shrink-0"
             />
             <div>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium text-gray-900">
                 Enable AI-powered matching
               </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Allow AI to analyse your profile and match you with sailing opportunities.
               </p>
             </div>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-border hover:bg-muted/40 transition-colors">
+          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
             <input
               type="checkbox"
               checked={profileSharing}
               onChange={() => setProfileSharing((v) => !v)}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-ring flex-shrink-0"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring flex-shrink-0"
             />
             <div>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium text-gray-900">
                 Share my profile
               </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Allow others to view your profile for sailing opportunities.
               </p>
             </div>
           </label>
 
-          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-border hover:bg-muted/40 transition-colors">
+          <label className="flex items-start gap-3 cursor-pointer p-3.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
             <input
               type="checkbox"
               checked={marketing}
               onChange={() => setMarketing((v) => !v)}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-ring flex-shrink-0"
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-ring flex-shrink-0"
             />
             <div>
-              <span className="text-sm font-medium text-foreground">
+              <span className="text-sm font-medium text-gray-900">
                 Receive marketing emails
               </span>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Updates about new features, sailing tips, and opportunities.
               </p>
             </div>
           </label>
         </div>
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-gray-500">
           You can update optional preferences any time in{' '}
-          <span className="font-medium text-foreground">Settings › Privacy</span>.
+          <span className="font-medium text-gray-900">Settings › Privacy</span>.
         </p>
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-4 border-t border-border bg-muted/20 flex flex-col gap-2">
+      <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex flex-col gap-2">
         <Button
           onClick={handleSave}
           disabled={loading || !canSave}
@@ -245,7 +245,7 @@ export function ConsentCheckpoint({ userId, onComplete }: ConsentCheckpointProps
           Save & Continue
         </Button>
         {!canSave && (
-          <p className="text-xs text-center text-muted-foreground">
+          <p className="text-xs text-center text-gray-500">
             Accept the Privacy Policy and Terms of Service to continue.
           </p>
         )}

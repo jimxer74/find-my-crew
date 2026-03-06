@@ -2253,6 +2253,7 @@ create table if not exists public.boat_inventory (
   unit            text,
   location        text,
   supplier        text,
+  supplier_url    text,
   part_number     text,
   cost            numeric,
   currency        text default 'EUR',

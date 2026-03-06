@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const updates: BoatInventoryUpdate = {};
     const allowedFields: (keyof BoatInventoryUpdate)[] = [
       'name', 'category', 'quantity', 'min_quantity', 'unit', 'location',
-      'supplier', 'part_number', 'cost', 'currency', 'purchase_date',
+      'supplier', 'supplier_url', 'part_number', 'cost', 'currency', 'purchase_date',
       'expiry_date', 'notes', 'equipment_id',
     ];
 

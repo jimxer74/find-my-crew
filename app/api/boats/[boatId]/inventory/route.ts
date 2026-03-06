@@ -69,6 +69,7 @@ export async function POST(
       unit: body.unit,
       location: body.location,
       supplier: body.supplier,
+      supplier_url: body.supplier_url,
       part_number: body.part_number,
       cost: body.cost,
       currency: body.currency,

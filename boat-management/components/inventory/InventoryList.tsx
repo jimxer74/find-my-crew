@@ -242,7 +242,24 @@ function InventoryRow({
         <div className="flex items-center gap-2">
           <div>
             <p className="font-medium text-foreground">{item.name}</p>
-            <p className="text-xs text-muted-foreground">{getCategoryLabel(item.category as EquipmentCategory) || item.category}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-muted-foreground">{getCategoryLabel(item.category as EquipmentCategory) || item.category}</p>
+              {item.supplier_url && (
+                <a
+                  href={item.supplier_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-0.5 text-xs text-primary hover:text-primary/80 transition-colors"
+                  title="Open supplier page"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                  Buy
+                </a>
+              )}
+            </div>
           </div>
           {isLowStock && <Badge variant="warning" size="sm">Low</Badge>}
           {isExpired && <Badge variant="error" size="sm">Expired</Badge>}

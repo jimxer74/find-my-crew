@@ -249,10 +249,10 @@ export function CrewProfileCheckpoint({
 
   if (isEditing) {
     return (
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-border bg-muted/30">
-          <h3 className="font-semibold text-foreground">Your sailing profile</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="font-semibold text-gray-900">Your sailing profile</h3>
+          <p className="text-xs text-gray-500 mt-0.5">
             Complete every section — owners read this carefully before approving applications
           </p>
         </div>
@@ -260,21 +260,21 @@ export function CrewProfileCheckpoint({
         <div className="px-5 py-5 space-y-5">
           {/* Name */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Name <span className="text-destructive">*</span>
             </label>
             <input
               type="text"
               value={data.displayName}
               onChange={(e) => setData((d) => ({ ...d, displayName: e.target.value }))}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Your name"
             />
           </div>
 
           {/* Experience */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Sailing experience
             </label>
             <select
@@ -285,7 +285,7 @@ export function CrewProfileCheckpoint({
                   experienceLevel: e.target.value ? Number(e.target.value) : null,
                 }))
               }
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               <option value="">Not specified</option>
               {Object.entries(EXPERIENCE_LABELS).map(([val, label]) => (
@@ -298,10 +298,10 @@ export function CrewProfileCheckpoint({
 
           {/* Skills */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               Skills <span className="text-destructive">*</span>
             </label>
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-gray-500 mb-2">
               Add sailing, technical, and non-technical skills (e.g. navigation, cooking, first aid)
             </p>
             <div className="flex gap-2 mb-2">
@@ -311,7 +311,7 @@ export function CrewProfileCheckpoint({
                 onChange={(e) => setNewSkill(e.target.value)}
                 onKeyDown={handleSkillKeyDown}
                 placeholder="Type a skill and press Enter"
-                className="flex-1 px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               <button
                 type="button"
@@ -346,38 +346,38 @@ export function CrewProfileCheckpoint({
 
           {/* Bio */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               About me <span className="text-destructive">*</span>
             </label>
-            <p className="text-xs text-muted-foreground mb-2">
+            <p className="text-xs text-gray-500 mb-2">
               Your sailing background — how you got into sailing, your most memorable voyage, and what makes you a great crew member
             </p>
             <textarea
               value={data.bio ?? ''}
               onChange={(e) => setData((d) => ({ ...d, bio: e.target.value || null }))}
               rows={4}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               placeholder="I've been sailing since… My most memorable voyage was…"
             />
           </div>
 
           {/* Motivation */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">
+            <label className="text-xs font-medium text-gray-500 block mb-1">
               What excites you most about sailing?
             </label>
             <textarea
               value={data.motivation ?? ''}
               onChange={(e) => setData((d) => ({ ...d, motivation: e.target.value || null }))}
               rows={2}
-              className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
               placeholder="e.g. blue-water offshore passages, exploring remote anchorages, racing…"
             />
           </div>
 
           {/* Risk levels */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-2">
+            <label className="text-xs font-medium text-gray-500 block mb-2">
               I&apos;m comfortable with:
             </label>
             <div className="space-y-2">
@@ -387,9 +387,9 @@ export function CrewProfileCheckpoint({
                     type="checkbox"
                     checked={data.riskLevels?.includes(risk) ?? false}
                     onChange={() => toggleRisk(risk)}
-                    className="w-4 h-4 rounded border-border accent-primary"
+                    className="w-4 h-4 rounded border-gray-300 accent-primary"
                   />
-                  <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                  <span className="text-sm text-gray-900 group-hover:text-primary transition-colors">
                     {risk}
                   </span>
                 </label>
@@ -400,7 +400,7 @@ export function CrewProfileCheckpoint({
           {/* Location preferences */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-medium text-gray-500 block mb-1">
                 Preferred departure region
               </label>
               <input
@@ -413,11 +413,11 @@ export function CrewProfileCheckpoint({
                   }))
                 }
                 placeholder="e.g. Mediterranean, Helsinki"
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground block mb-1">
+              <label className="text-xs font-medium text-gray-500 block mb-1">
                 Preferred destination region
               </label>
               <input
@@ -430,19 +430,19 @@ export function CrewProfileCheckpoint({
                   }))
                 }
                 placeholder="e.g. Caribbean, Canary Islands"
-                className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
           </div>
 
           {/* Availability */}
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-2">
+            <label className="text-xs font-medium text-gray-500 block mb-2">
               Availability for sailing
             </label>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <span className="text-xs text-muted-foreground block mb-1">From</span>
+                <span className="text-xs text-gray-500 block mb-1">From</span>
                 <input
                   type="date"
                   value={data.availabilityStartDate ?? ''}
@@ -452,11 +452,11 @@ export function CrewProfileCheckpoint({
                       availabilityStartDate: e.target.value || null,
                     }))
                   }
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block mb-1">Until</span>
+                <span className="text-xs text-gray-500 block mb-1">Until</span>
                 <input
                   type="date"
                   value={data.availabilityEndDate ?? ''}
@@ -466,7 +466,7 @@ export function CrewProfileCheckpoint({
                       availabilityEndDate: e.target.value || null,
                     }))
                   }
-                  className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </div>
@@ -479,7 +479,7 @@ export function CrewProfileCheckpoint({
           </div>
         )}
 
-        <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-2">
+        <div className="px-5 py-4 border-t border-gray-200 bg-gray-50/80 flex justify-end gap-2">
           <Button
             variant="ghost"
             size="sm"
