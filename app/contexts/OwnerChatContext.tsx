@@ -21,6 +21,7 @@ import {
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import * as sessionService from '@shared/lib/owner/sessionService';
 import { logger } from '@shared/logging';
+import { isValidUrl, fetchUrlContent } from '@shared/lib/url-import/urlImportClient';
 
 /**
  * Fetch session ID from server (stored in HttpOnly cookie)
@@ -1162,30 +1163,49 @@ export function OwnerChatProvider({ children }: { children: ReactNode }) {
       importedProfile: parsedImportedProfile,
     }));
 
-    const parts: string[] = [];
-    if (parsedImportedProfile) {
-      const importedContent = `Source: ${parsedImportedProfile.source}\nURL: ${parsedImportedProfile.url}\n\n${parsedImportedProfile.content}`;
-      parts.push(`[IMPORTED_PROFILE]:\n${importedContent}`);
-    }
-    if (skipperProfileParam?.trim()) {
-      parts.push(`[SKIPPER PROFILE]:\n${skipperProfileParam.trim()}`);
-    }
-    if (crewRequirementsParam?.trim()) {
-      parts.push(`[CREW REQUIREMENTS]:\n${crewRequirementsParam.trim()}`);
-    }
-    if (storedJourneyDetails) {
-      parts.push(`[JOURNEY DETAILS]:\n${storedJourneyDetails}`);
-    }
-    const message = parts.join('\n\n');
-    if (message) {
-      logger.debug('Processing initial owner combo data from URL', {
-        hasImportedProfile: !!parsedImportedProfile,
-        hasSkipperProfile: !!skipperProfileParam?.trim(),
-        hasCrewRequirements: !!crewRequirementsParam?.trim(),
-        hasJourneyDetails: !!storedJourneyDetails,
-      }, true);
-      sendMessage(message);
-    }
+    const processAsync = async () => {
+      const parts: string[] = [];
+      if (parsedImportedProfile) {
+        const importedContent = `Source: ${parsedImportedProfile.source}\nURL: ${parsedImportedProfile.url}\n\n${parsedImportedProfile.content}`;
+        parts.push(`[IMPORTED_PROFILE]:\n${importedContent}`);
+      }
+      if (skipperProfileParam?.trim()) {
+        const trimmed = skipperProfileParam.trim();
+        if (isValidUrl(trimmed)) {
+          // URL detected — fetch content before seeding the AI
+          try {
+            logger.debug('[url-import] Fetching URL from ?skipperProfile= param', { url: trimmed }, true);
+            const result = await fetchUrlContent(trimmed);
+            parts.push(`[SKIPPER PROFILE]:\n${result.content}`);
+          } catch (err) {
+            logger.warn('[url-import] Failed to fetch ?skipperProfile= URL, using raw', {
+              url: trimmed,
+              error: err instanceof Error ? err.message : String(err),
+            });
+            parts.push(`[SKIPPER PROFILE]:\n${trimmed}`);
+          }
+        } else {
+          parts.push(`[SKIPPER PROFILE]:\n${trimmed}`);
+        }
+      }
+      if (crewRequirementsParam?.trim()) {
+        parts.push(`[CREW REQUIREMENTS]:\n${crewRequirementsParam.trim()}`);
+      }
+      if (storedJourneyDetails) {
+        parts.push(`[JOURNEY DETAILS]:\n${storedJourneyDetails}`);
+      }
+      const message = parts.join('\n\n');
+      if (message) {
+        logger.debug('Processing initial owner combo data from URL', {
+          hasImportedProfile: !!parsedImportedProfile,
+          hasSkipperProfile: !!skipperProfileParam?.trim(),
+          hasCrewRequirements: !!crewRequirementsParam?.trim(),
+          hasJourneyDetails: !!storedJourneyDetails,
+        }, true);
+        sendMessage(message);
+      }
+    };
+    processAsync();
   }, [isInitialized, searchParams, sendMessage, state.isLoading]);
 
   return (

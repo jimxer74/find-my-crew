@@ -22,6 +22,7 @@ import {
 import { getSupabaseBrowserClient } from '@shared/database/client';
 import * as sessionService from '@shared/lib/prospect/sessionService';
 import { logger } from '@shared/logging';
+import { isValidUrl, fetchUrlContent } from '@shared/lib/url-import/urlImportClient';
 
 const SESSION_EXPIRY_DAYS = 7; // Keep for reference, expiry handled server-side
 
@@ -1495,10 +1496,27 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       initialQueryProcessed.current = true;
       logger.debug('Processing combo search parameters', {}, true);
 
+      const processAsync = async () => {
       const parts: string[] = [];
 
       if (profileParam) {
-        parts.push(`Profile: ${profileParam}`);
+        const trimmed = profileParam.trim();
+        if (isValidUrl(trimmed)) {
+          // URL detected — fetch content before seeding the AI
+          try {
+            logger.debug('[url-import] Fetching URL from ?profile= param', { url: trimmed }, true);
+            const result = await fetchUrlContent(trimmed);
+            parts.push(`Profile: ${result.content}`);
+          } catch (err) {
+            logger.warn('[url-import] Failed to fetch ?profile= URL, using raw', {
+              url: trimmed,
+              error: err instanceof Error ? err.message : String(err),
+            });
+            parts.push(`Profile: ${trimmed}`);
+          }
+        } else {
+          parts.push(`Profile: ${trimmed}`);
+        }
       }
 
       if (whereFromParam) {
@@ -1555,6 +1573,8 @@ export function ProspectChatProvider({ children }: { children: ReactNode }) {
       if (initialMessage) {
         sendMessage(initialMessage);
       }
+      }; // end processAsync
+      processAsync();
     } else if (legacyQueryParam && legacyQueryParam.trim()) {
       // Fallback to legacy 'q' parameter
       initialQueryProcessed.current = true;
