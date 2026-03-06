@@ -137,7 +137,7 @@ function buildEquipmentPrompt(payload: GenerateBoatEquipmentPayload): string {
     safety: 'Safety (life raft, life jackets, EPIRB, flares, fire extinguishers, jacklines)',
     plumbing: 'Plumbing (freshwater system, watermaker, bilge pumps, heads, holding tank)',
     anchoring: 'Anchoring (anchors, chain, windlass)',
-    hull_deck: 'Hull & Deck (hull, keel, rudder, hatches, ports, teak deck)',
+    hull_deck: 'Hull & Deck (hull, keel, rudder, hatches, ports, teak deck, steering system)',
     electronics: 'Electronics & Communication (VHF radio, SSB, satellite phone, WiFi)',
     galley: 'Galley (stove, oven, refrigeration, provisions storage)',
     comfort: 'Comfort (heating, ventilation, lighting, cushions)',

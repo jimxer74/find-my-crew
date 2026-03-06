@@ -87,7 +87,7 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
     const sizeClass = sizeClasses[size];
 
     const modalClasses = `
-      relative bg-background text-foreground rounded-lg shadow-xl
+      relative bg-card text-card-foreground rounded-lg shadow-xl
       w-full mx-4 ${sizeClass}
       ${className}
     `.trim();

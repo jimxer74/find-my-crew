@@ -358,17 +358,6 @@ function WelcomePageContent() {
           {/* White hero card */}
           <div className="w-full max-w-5xl bg-white md:bg-white backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden ring-1 ring-white/60">
 
-            {/* Card mini-nav */}
-            <div className="flex items-center justify-between px-5 md:px-8 py-3 border-b border-gray-100/80">
-              <div className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-400">
-                <a href="#features" className="hover:text-[#1a2e4a] transition-colors">Features</a>
-                <a href="#action" className="hover:text-[#1a2e4a] transition-colors">Get Started</a>
-              </div>
-              <Link href="/welcome/crew-v2" className="px-4 py-1.5 text-sm font-bold text-white bg-[#1a2e4a] rounded-lg hover:bg-[#0f1e30] transition-colors shadow-sm">
-                Sign Up Free
-              </Link>
-            </div>
-
             {/* Card body: headline + photo */}
             <div className="grid md:grid-cols-2">
               {/* Left: headline */}
@@ -378,13 +367,13 @@ function WelcomePageContent() {
                   Intelligent matching for sailors and skippers. Plan routes, manage your boat, and connect with the right people — all powered by AI.
                 </p>
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 mt-7">
-                  <Link href="/welcome/crew-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-[#1a2e4a] rounded-xl hover:bg-[#0f1e30] transition-colors shadow-md">
+                  <Link href="/welcome/crew-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-md">
                     Join as Crew
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                   </Link>
-                  <Link href="/welcome/owner-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-[#1a2e4a] bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+                  <Link href="/welcome/owner-v2" className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-md">
                     Join as Skipper
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
                   </Link>
                 </div>
               </div>
@@ -408,10 +397,10 @@ function WelcomePageContent() {
                     </div>
                     <div>
                       <div className="flex items-center justify-center gap-2 mb-1.5">
-                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${accent.dot}`} />
+                        {/*<span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${accent.dot}`} /> */}
                         <h3 className="text-sm font-bold text-[#0c1f35]">{feature.title}</h3>
                       </div>
-                      <p className="text-xs text-gray-500 leading-relaxed">{feature.description}</p>
+                      <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
                     </div>
                   </div>
                 );
@@ -421,7 +410,7 @@ function WelcomePageContent() {
 
           {/* Scroll hint */}
           <a href="#action" className="mt-7 flex flex-col items-center gap-1 text-white/55 hover:text-white/85 transition-colors group">
-            <span className="text-[11px] font-medium uppercase tracking-widest">Get started</span>
+            <span className="text-[11px] font-medium uppercase tracking-widest">Do you have an existing profile?</span>
             <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
@@ -458,7 +447,7 @@ function WelcomePageContent() {
                 For Crew
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('crew.title')}</h2>
+              {/*<h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('crew.title')}</h2>*/}
 
               {hasExistingSession && sessionType === 'crew' ? (
                 <button onClick={() => router.push('/welcome/crew')} className="text-blue-200 hover:text-blue-100 hover:underline text-sm mb-4 transition-colors">
@@ -538,7 +527,7 @@ function WelcomePageContent() {
                 For Skippers
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('owner.title')}</h2>
+              {/*<h2 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('owner.title')}</h2>*/}
               <p className="text-white/75 text-sm md:text-base mb-1">{t('owner.subtitle')}</p>
               <p className="text-white/45 text-xs md:text-sm mb-5">{t('owner.description')}</p>
 

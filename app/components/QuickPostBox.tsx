@@ -110,7 +110,7 @@ export function QuickPostBox({
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder={expandedPlaceholder}
-          rows={3}
+          rows={6}
           className="flex-1 px-4 py-4 text-sm text-gray-900 bg-transparent resize-none focus:outline-none placeholder:text-gray-400 leading-relaxed"
         />
 

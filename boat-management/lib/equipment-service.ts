@@ -55,6 +55,16 @@ export async function getEquipmentById(
   return data as BoatEquipment;
 }
 
+/** Convert empty-string date values to null so PostgreSQL date columns don't reject them. */
+function normalizeDates<T extends { service_date?: string | null; next_service_date?: string | null; expiry_date?: string | null }>(obj: T): T {
+  return {
+    ...obj,
+    service_date: obj.service_date || null,
+    next_service_date: obj.next_service_date || null,
+    expiry_date: obj.expiry_date || null,
+  };
+}
+
 /**
  * Create a new equipment item
  */
@@ -65,7 +75,7 @@ export async function createEquipment(
   const { data, error } = await supabase
     .from('boat_equipment')
     .insert({
-      ...equipment,
+      ...normalizeDates(equipment),
       specs: equipment.specs ?? {},
       images: equipment.images ?? [],
       status: equipment.status ?? 'active',
@@ -92,7 +102,7 @@ export async function updateEquipment(
   const { data, error } = await supabase
     .from('boat_equipment')
     .update({
-      ...updates,
+      ...normalizeDates(updates),
       updated_at: new Date().toISOString(),
     })
     .eq('id', equipmentId)

@@ -135,7 +135,7 @@ function renderMessageWithLegLinks(
   return parts;
 }
 
-export function ProspectChat() {
+export function ProspectChat({ variant = 'default' }: { variant?: 'default' | 'overlay' }) {
   const t = useTranslations('common');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -304,12 +304,12 @@ export function ProspectChat() {
 
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className={`flex flex-col h-full ${variant === 'overlay' ? 'bg-transparent' : 'bg-background'}`}>
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto p-4">
         <div className="max-w-2xl lg:max-w-4xl mx-auto space-y-4">
         {messages.length === 0 && !isLoading && !isCrewOnboarded && (
-          <div className="text-center text-muted-foreground py-8">
+          <div className={`text-center py-8 ${variant === 'overlay' ? 'text-white/80' : 'text-muted-foreground'}`}>
             <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-primary/10 flex items-center justify-center">
               <svg
                 className="w-10 h-10 text-primary"
@@ -323,7 +323,7 @@ export function ProspectChat() {
                 <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">
+            <h3 className={`text-lg font-medium mb-2 ${variant === 'overlay' ? 'text-white' : 'text-foreground'}`}>
               {isReturningUser ? 'Welcome back, crew!' : 'Find Your Perfect Sailing Adventure'}
             </h3>
             <p className="text-sm max-w-sm mx-auto mb-4">
@@ -533,7 +533,7 @@ export function ProspectChat() {
 
         {/* Crew completion card - render as the final item in the chain */}
         {isCrewOnboarded && (
-          <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 text-center">
+          <div className="rounded-xl border border-primary/20 bg-white p-6 text-center shadow-lg">
             <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-primary/10 flex items-center justify-center">
               <svg
                 className="w-8 h-8 text-primary"
@@ -599,7 +599,7 @@ export function ProspectChat() {
 
       {/* Input area - show only for authenticated users without existing profile */}
       {!hasExistingProfile && isAuthenticated && (
-        <div className="border-t border-border p-4 bg-card">
+        <div className={`p-4 ${variant === 'overlay' ? 'border-t border-white/20 bg-white/10 backdrop-blur-sm' : 'border-t border-border bg-card'}`}>
           <div className="max-w-2xl lg:max-w-4xl mx-auto">
             <form onSubmit={handleSubmit} className="flex gap-2">
               <textarea
@@ -610,28 +610,19 @@ export function ProspectChat() {
                 placeholder="Tell me about your sailing dreams..."
                 disabled={isLoading}
                 rows={1}
-                className="flex-1 resize-none px-3 py-2 text-sm border border-border rounded-lg bg-input-background focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px]"
+                className={`flex-1 resize-none px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px] ${
+                  variant === 'overlay'
+                    ? 'bg-white/20 text-white placeholder-white/60 border-white/30'
+                    : 'border-border bg-input-background text-foreground'
+                }`}
               />
               <Button
                 type="submit"
                 variant="primary"
                 disabled={!inputValue.trim() || isLoading}
-                leftIcon={
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                }
-                className="!p-2 !min-h-[44px]"
+                className="!min-h-[44px]"
               >
-                {' '}
+                Send
               </Button>
             </form>
           </div>

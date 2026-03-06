@@ -6,7 +6,7 @@ import { BadgeProps } from './Badge.types';
 
 const variantClasses: Record<string, { light: string; dark: string }> = {
   primary: {
-    light: 'bg-blue-100 text-blue-800',
+    light: 'bg-blue-300 text-blue-800',
     dark: 'dark:bg-blue-900/30 dark:text-blue-400',
   },
   secondary: {
@@ -14,15 +14,15 @@ const variantClasses: Record<string, { light: string; dark: string }> = {
     dark: 'dark:bg-gray-900/30 dark:text-gray-400',
   },
   success: {
-    light: 'bg-green-100 text-green-800',
-    dark: 'dark:bg-green-900/30 dark:text-green-400',
+    light: 'bg-green-300 text-green-800',
+    dark: 'dark:bg-green-900/50 dark:text-green-400',
   },
   warning: {
-    light: 'bg-yellow-100 text-yellow-800',
+    light: 'bg-yellow-300 text-yellow-800',
     dark: 'dark:bg-yellow-900/30 dark:text-yellow-400',
   },
   error: {
-    light: 'bg-red-100 text-red-800',
+    light: 'bg-red-300 text-red-800',
     dark: 'dark:bg-red-900/30 dark:text-red-400',
   },
   info: {
@@ -35,9 +35,9 @@ const outlinedVariantClasses: Record<string, string> = {
   primary: 'border border-blue-300 bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:border-blue-600 dark:text-blue-300',
   secondary: 'border border-gray-300 bg-gray-50 text-gray-700 dark:bg-gray-900/20 dark:border-gray-600 dark:text-gray-300',
   success: 'border border-green-300 bg-green-50 text-green-700 dark:bg-green-900/20 dark:border-green-600 dark:text-green-300',
-  warning: 'border border-yellow-300 bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-600 dark:text-yellow-300',
-  error: 'border border-red-300 bg-red-50 text-red-700 dark:bg-red-900/20 dark:border-red-600 dark:text-red-300',
-  info: 'border border-cyan-300 bg-cyan-50 text-cyan-700 dark:bg-cyan-900/20 dark:border-cyan-600 dark:text-cyan-300',
+  warning: 'border border-yellow-300 bg-yellow-200 text-yellow-700 dark:bg-yellow-900/20 dark:border-yellow-600 dark:text-yellow-300',
+  error: 'border border-red-300 bg-red-400 text-red-10 dark:bg-red-900/20 dark:border-red-600 dark:text-red-300',
+  info: 'border border-cyan-300 bg-cyan-200 text-cyan-700 dark:bg-cyan-900/20 dark:border-cyan-600 dark:text-cyan-300',
 };
 
 const sizeClasses: Record<string, string> = {

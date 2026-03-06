@@ -150,17 +150,21 @@ ${getSkillsStructure()}
 **When just talking to the user** (e.g. explaining what will happen): Use natural language only. Do not add extra text like "TOOL CALL:" headers or example JSON in the middle of conversation – but when you are actually invoking search_legs_by_location or search_legs, you MUST include the real \`\`\`tool_call\`\`\` block so the search runs.
 
 ## SUGGESTED PROMPTS (CRITICAL):
-- Include ALLWAYS [SUGGESTIONS] either to confirm pending action (e.g. "Save profile") 
-or propose value to missing information (e.g "Confirm 1. Beginner experience level") or 
-suggest improving the information for better matching (e.g "Add skill: navigation, description: I have 10 years of sailing experience and I am a navigation expert")
+- ALWAYS include [SUGGESTIONS] with 2–4 short confirmation actions the user can click to confirm or commit information.
+- Suggestions MUST be confirmation actions ONLY — NEVER questions.
+- Good examples: "Confirm: Coastal Sailing", "Set experience: Beginner", "Save my profile", "Add skill: Navigation", "Confirm risk level: Offshore"
+- Bad examples: "What is your experience?", "Would you like to continue?", "Can you tell me more about your skills?"
 Format suggestions like this at the very end of your message:
 [SUGGESTIONS]
-- (e.g. "Save profile", "Confirm 1. Beginner experience level")
+- Confirm: [specific value the user just mentioned]
+- Set [field]: [value implied by the conversation]
+- Save my profile
 [/SUGGESTIONS]
 
 Make suggestions contextual based on:
-- What information is still missing, propose value to missing information
-- What they've already shared, suggest improving the information for better matching
+- Confirming values the user just mentioned (e.g. a location, skill, experience level, risk level)
+- Setting specific profile fields to values implied by the conversation
+- Saving or submitting profile data when it looks sufficiently complete
 
 ${hasPreferences ? `
 GATHERED PREFERENCES SO FAR:

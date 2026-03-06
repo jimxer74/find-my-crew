@@ -83,7 +83,7 @@ function CrewOnboardingContent() {
 
       {/* Chat area - padding clears the sticky onboarding bar */}
       <main className="flex-1 overflow-y-auto pt-20">
-        <ProspectChat />
+        <ProspectChat variant="overlay" />
       </main>
 
       <Footer />

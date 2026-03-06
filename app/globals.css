@@ -32,26 +32,35 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.145 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.4 0 0);
-  --input: oklch(0.22 0 0);
-  --input-background: oklch(0.22 0 0);
-  --ring: oklch(0.5 0 0);
+  --background:        oklch(0.145 0.035 250);   /* main bg ≈ #0E1D34 / very close match */
+  --foreground:        oklch(0.96  0.01  250);   /* almost white, tiny blue tint for harmony */
+
+  --card:              oklch(0.25 0.03  250);   /* cards slightly lighter than bg */
+  --card-foreground:   oklch(0.96  0.01  250);
+
+  --popover:           oklch(0.18  0.03  250);   /* similar to your original popover level */
+  --popover-foreground:oklch(0.96  0.01  250);
+
+  --primary:           oklch(0.96  0.01  250);   /* bright for CTAs / links */
+  --primary-foreground:oklch(0.145 0.035 250);  /* text on primary → dark navy */
+
+  --secondary:         oklch(0.269 0.04  250);   /* slightly more chroma for subtle accents */
+  --secondary-foreground: oklch(0.96 0.01 250);
+
+  --muted:             oklch(0.269 0.025 250);   /* very subdued muted bg */
+  --muted-foreground:  oklch(0.72  0.015 250);   /* medium grayish-blue for secondary text */
+
+  --accent:            oklch(0.269 0.04  250);   /* same as secondary — or raise chroma if you want more pop */
+  --accent-foreground: oklch(0.96  0.01  250);
+
+  --destructive:       oklch(0.58  0.18  30);    /* reddish tone — kept similar energy */
+  --destructive-foreground: oklch(0.96 0.01 250);
+
+  --border:            oklch(0.32  0.03  250);   /* borders visible but subtle */
+  --input:             oklch(0.30  0.03  250);   /* input fields */
+  --input-background:  oklch(0.30  0.03  250);
+
+  --ring:              oklch(0.50  0.08  250);   /* focus ring — more chroma for visibility */
   --100match: #0DFF00;
   --50match: #E5FF00;
   --25match: #ff9900;
