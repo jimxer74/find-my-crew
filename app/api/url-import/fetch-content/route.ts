@@ -103,16 +103,30 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
       return NextResponse.json({ error: 'Could not determine content type from URL' }, { status: 400 });
     }
 
-    // Check if user has OAuth token for this provider
+    // Check if user has OAuth token for this provider.
+    // Priority: (1) short-lived fb_access_token cookie stored at OAuth callback,
+    //           (2) session provider_token via identity_data (less reliably populated by Supabase).
     let accessToken: string | undefined;
-    if (detection.authProvider) {
+    if (detection.authProvider === 'facebook') {
+      // Cookie set by /auth/callback when provider_token is present (5-minute TTL)
+      const fbCookie = request.cookies.get('fb_access_token');
+      if (fbCookie?.value) {
+        accessToken = fbCookie.value;
+      } else {
+        // Fallback: check session identity_data
+        const { data } = await supabase.auth.getSession();
+        const session = data?.session;
+        const identity = session?.user?.identities?.find((i) => i.provider === 'facebook');
+        if (identity?.identity_data?.access_token) {
+          accessToken = identity.identity_data.access_token as string;
+        }
+      }
+    } else if (detection.authProvider) {
       const { data } = await supabase.auth.getSession();
       const session = data?.session;
-      if (session?.user?.identities) {
-        const providerIdentity = session.user.identities.find((i) => i.provider === detection.authProvider);
-        if (providerIdentity?.identity_data?.access_token) {
-          accessToken = providerIdentity.identity_data.access_token;
-        }
+      const identity = session?.user?.identities?.find((i) => i.provider === detection.authProvider);
+      if (identity?.identity_data?.access_token) {
+        accessToken = identity.identity_data.access_token as string;
       }
     }
 
@@ -134,6 +148,11 @@ export async function POST(request: NextRequest): Promise<NextResponse<SuccessRe
         resourceType: detection.resourceType,
         error: errorMessage,
       });
+
+      // Facebook auth required — return 403 so client knows to prompt Facebook OAuth
+      if (errorMessage.includes('requires authentication') || errorMessage.includes('sign in with Facebook')) {
+        return NextResponse.json({ error: errorMessage }, { status: 403 });
+      }
 
       // Return user-friendly error
       if (errorMessage.includes('Could not fetch content')) {

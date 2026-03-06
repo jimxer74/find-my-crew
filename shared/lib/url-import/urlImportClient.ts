@@ -42,6 +42,10 @@ export async function fetchUrlContent(url: string): Promise<UrlImportResult> {
     if (res.status === 401) {
       throw new Error('AUTH_REQUIRED');
     }
+    if (res.status === 403) {
+      // Facebook (or other OAuth provider) auth required
+      throw new Error('FACEBOOK_AUTH_REQUIRED');
+    }
     let message = `Failed to fetch content (${res.status})`;
     try {
       const data = await res.json();

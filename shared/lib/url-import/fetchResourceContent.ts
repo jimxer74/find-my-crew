@@ -94,71 +94,151 @@ export async function fetchResourceContent(options: FetchOptions): Promise<Fetch
 }
 
 /**
- * Fetch Facebook content via API or scraper
+ * Fetch Facebook content via Graph API.
+ * ScraperAPI is NOT used as a fallback — Facebook blocks all scrapers with 403.
+ * When no access token is available the caller should prompt the user to
+ * authenticate with Facebook first.
  */
 async function fetchFacebookContent(
   url: string,
   authProvider: AuthProvider | undefined,
   accessToken: string | undefined
 ): Promise<FetchResult> {
-  // Try API first if authenticated
-  if (authProvider === 'facebook' && accessToken) {
-    try {
-      return await fetchFacebookWithAPI(url, accessToken);
-    } catch (error) {
-      logger.warn('[fetchFacebookContent] API failed, falling back to scraper:', {
-        url,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+  if (!accessToken) {
+    throw new Error(
+      'Facebook content requires authentication. Please sign in with Facebook to import this URL.'
+    );
   }
 
-  // Fall back to scraper
-  return await fetchWithScreenScraper(url, 'facebook');
+  return await fetchFacebookWithAPI(url, accessToken);
 }
 
 /**
- * Fetch Facebook content via Graph API
+ * Extract the numeric Facebook object ID from a variety of URL patterns:
+ *   /posts/{id}
+ *   /permalink/{id}
+ *   /groups/{name}/permalink/{id}
+ *   /{username}/posts/{id}
+ *   facebook.com/{numeric-id}
+ *
+ * Returns undefined for plain profile URLs (/{username}) so the caller can
+ * fall back to fetching the user's own profile instead.
+ */
+function extractFacebookObjectId(url: string): string | undefined {
+  const u = new URL(url);
+  const path = u.pathname;
+
+  // Group permalink: /groups/{name}/permalink/{id}/
+  const groupPermalink = path.match(/\/groups\/[^/]+\/permalink\/(\d+)/);
+  if (groupPermalink) return groupPermalink[1];
+
+  // /posts/{id} anywhere in the path
+  const postsMatch = path.match(/\/posts\/(\d+)/);
+  if (postsMatch) return postsMatch[1];
+
+  // /permalink/{id}
+  const permalinkMatch = path.match(/\/permalink\/(\d+)/);
+  if (permalinkMatch) return permalinkMatch[1];
+
+  // Bare numeric path: facebook.com/{numeric-id}
+  const numericPath = path.match(/^\/(\d+)\/?$/);
+  if (numericPath) return numericPath[1];
+
+  return undefined;
+}
+
+/**
+ * Fetch Facebook content via Graph API.
+ * Handles posts (by numeric object ID) and profile-level URLs (via /me).
  */
 async function fetchFacebookWithAPI(url: string, accessToken: string): Promise<FetchResult> {
-  // Extract post ID from URL
-  const postIdMatch = url.match(/\/posts\/(\d+)|facebook\.com\/(\d+)/);
-  if (!postIdMatch) {
-    throw new Error('Could not extract post ID from Facebook URL');
-  }
+  const GRAPH = 'https://graph.facebook.com/v19.0';
 
-  const postId = postIdMatch[1] || postIdMatch[2];
+  const objectId = extractFacebookObjectId(url);
 
-  try {
-    const response = await fetch(
-      `https://graph.facebook.com/v18.0/${postId}?fields=message,story,created_time,permalink_url&access_token=${accessToken}`
-    );
+  // ── Fetch a specific post / group post ────────────────────────────────────
+  if (objectId) {
+    const fields = 'message,story,created_time,permalink_url,from';
+    const apiUrl = `${GRAPH}/${objectId}?fields=${fields}&access_token=${accessToken}`;
 
-    if (!response.ok) {
-      throw new Error(`Facebook API error: ${response.statusText}`);
+    const response = await fetch(apiUrl);
+    const data = (await response.json()) as Record<string, unknown>;
+
+    if (!response.ok || (data as { error?: unknown }).error) {
+      const errMsg =
+        (data as { error?: { message?: string } }).error?.message ||
+        `Facebook API responded with ${response.status}`;
+      throw new Error(`Facebook API error: ${errMsg}`);
     }
 
-    const data = (await response.json()) as any;
-    const content = data.message || data.story || '';
-
-    if (!content) {
-      throw new Error('No content found in Facebook post');
+    const message = (data.message as string) || (data.story as string) || '';
+    if (!message) {
+      throw new Error('No readable content found in this Facebook post.');
     }
+
+    const authorName = (data.from as { name?: string } | undefined)?.name;
+    const parts: string[] = [];
+    if (authorName) parts.push(`Author: ${authorName}`);
+    parts.push(message);
 
     return {
-      content: content.substring(0, 5000),
-      url: data.permalink_url || url,
+      content: parts.join('\n').substring(0, 5000),
+      author: authorName,
+      url: (data.permalink_url as string) || url,
       fetchedAt: new Date().toISOString(),
       source: 'api',
       metadata: {
         platform: 'facebook',
+        objectId,
         createdTime: data.created_time,
-        postId,
       },
     };
-  } catch (error) {
-    throw new Error(`Failed to fetch from Facebook API: ${error instanceof Error ? error.message : String(error)}`);
   }
+
+  // ── Profile URL: fetch the authenticated user's own data ─────────────────
+  // (handles facebook.com/{username} style URLs — assumes it's the user's own profile)
+  const profileFields = 'id,name,about,location,work,education,website';
+  const profileUrl = `${GRAPH}/me?fields=${profileFields}&access_token=${accessToken}`;
+
+  const profileRes = await fetch(profileUrl);
+  const profile = (await profileRes.json()) as Record<string, unknown>;
+
+  if (!profileRes.ok || (profile as { error?: unknown }).error) {
+    const errMsg =
+      (profile as { error?: { message?: string } }).error?.message ||
+      `Facebook API responded with ${profileRes.status}`;
+    throw new Error(`Facebook API error: ${errMsg}`);
+  }
+
+  // Compose a readable summary from the profile fields
+  const lines: string[] = [];
+  if (profile.name) lines.push(`Name: ${profile.name}`);
+  if (profile.about) lines.push(`About: ${profile.about}`);
+  if ((profile.location as { name?: string } | undefined)?.name) {
+    lines.push(`Location: ${(profile.location as { name: string }).name}`);
+  }
+  const workEntries = profile.work as Array<{ employer?: { name?: string }; position?: { name?: string } }> | undefined;
+  if (workEntries?.length) {
+    const workLines = workEntries
+      .slice(0, 3)
+      .map((w) => [w.employer?.name, w.position?.name].filter(Boolean).join(' — '))
+      .filter(Boolean);
+    if (workLines.length) lines.push(`Work: ${workLines.join('; ')}`);
+  }
+  if (profile.website) lines.push(`Website: ${profile.website}`);
+
+  if (!lines.length) {
+    throw new Error('No readable profile information found from Facebook.');
+  }
+
+  return {
+    content: lines.join('\n').substring(0, 5000),
+    author: profile.name as string | undefined,
+    url,
+    fetchedAt: new Date().toISOString(),
+    source: 'api',
+    metadata: { platform: 'facebook', userId: profile.id },
+  };
 }
 
 /**
