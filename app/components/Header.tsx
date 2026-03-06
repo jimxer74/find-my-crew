@@ -167,7 +167,7 @@ export function Header() {
               )}
             </div>
             <div className="flex items-center gap-1 sm:gap-2 min-w-0">
-              {user && (userRoles?.includes('crew') || (userRoles === null && roleLoading)) && (
+              {user && userRoles?.includes('crew') && (
                 <button
                   ref={filtersButtonRef}
                   onClick={() => {
