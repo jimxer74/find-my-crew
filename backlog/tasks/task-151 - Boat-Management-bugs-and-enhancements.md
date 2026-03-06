@@ -1,10 +1,10 @@
 ---
 id: TASK-151
 title: Boat Management bugs and enhancements
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-06 08:11'
+updated_date: '2026-03-06 08:15'
 labels: []
 dependencies: []
 ---
