@@ -1,10 +1,11 @@
 ---
 id: TASK-155
 title: Messaging solution and Skipper profile page
-status: To Do
-assignee: []
+status: In Progress
+assignee:
+  - claude
 created_date: '2026-03-06 22:27'
-updated_date: '2026-03-06 22:40'
+updated_date: '2026-03-06 22:42'
 labels: []
 dependencies: []
 ---
