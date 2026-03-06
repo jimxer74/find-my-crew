@@ -179,12 +179,40 @@ function WelcomePageContent() {
   const [onboardingState, setOnboardingState] = useState<string>('signup_pending');
   const [ownerOnboardingState, setOwnerOnboardingState] = useState<string>('signup_pending');
 
-  // Auth / redirect check
+  // Auth / redirect check — also handles pending URL import from Facebook OAuth
   useEffect(() => {
     let cancelled = false;
     async function check() {
       if (authLoading) return;
       if (!user) { setIsCheckingRole(false); return; }
+
+      // Pending URL import takes priority over all auth redirects.
+      // This happens when the user connected Facebook from QuickPostBox and was
+      // sent through OAuth — they land back here with the URL still in sessionStorage.
+      const pending = getPendingUrlImport();
+      if (pending) {
+        clearPendingUrlImport();
+        setIsCheckingRole(false);
+        try {
+          const result = await fetchUrlContent(pending.url);
+          if (pending.context === 'crew') {
+            handleCrewPost(result.content);
+          } else {
+            handleOwnerPost(result.content);
+          }
+        } catch (err) {
+          logger.warn('[url-import] Failed to fetch pending URL after OAuth, using raw URL', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          if (pending.context === 'crew') {
+            handleCrewPost(pending.url);
+          } else {
+            handleOwnerPost(pending.url);
+          }
+        }
+        return; // Skip normal auth redirect
+      }
+
       try {
         const shouldStay = await shouldStayOnHomepage(user.id);
         if (cancelled) return;
@@ -199,6 +227,7 @@ function WelcomePageContent() {
     }
     if (user && !authLoading) { check(); } else if (!authLoading) { setIsCheckingRole(false); }
     return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, router]);
 
   // Crew session
@@ -296,35 +325,6 @@ function WelcomePageContent() {
     p.set('aiProcessingConsent', 'true');
     router.push(`/welcome/owner?${p.toString()}`);
   };
-
-  // ── Resume pending URL import after Facebook OAuth redirect ────────────────
-  useEffect(() => {
-    if (!user || authLoading) return;
-    const pending = getPendingUrlImport();
-    if (!pending) return;
-    clearPendingUrlImport();
-    (async () => {
-      try {
-        const result = await fetchUrlContent(pending.url);
-        if (pending.context === 'crew') {
-          handleCrewPost(result.content);
-        } else {
-          handleOwnerPost(result.content);
-        }
-      } catch (err) {
-        // If fetch fails after OAuth, fall back to posting the raw URL as text
-        logger.warn('[url-import] Failed to fetch pending URL after OAuth', {
-          error: err instanceof Error ? err.message : String(err),
-        });
-        if (pending.context === 'crew') {
-          handleCrewPost(pending.url);
-        } else {
-          handleOwnerPost(pending.url);
-        }
-      }
-    })();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, authLoading]);
 
   // Loading spinner
   if (authLoading || (user && isCheckingRole)) {
