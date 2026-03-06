@@ -163,7 +163,7 @@ export default function MyFeedbackPage() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
                       </svg>
-                      {feedback.vote_score} {t('votes')}
+                      {feedback.upvotes} {t('votes')}
                     </span>
                     <span>
                       {new Date(feedback.created_at).toLocaleDateString()}

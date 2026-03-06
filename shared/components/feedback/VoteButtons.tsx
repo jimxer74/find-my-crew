@@ -8,7 +8,7 @@ interface VoteButtonsProps {
   upvotes: number;
   userVote: number | null;
   disabled?: boolean;
-  onVote: (feedbackId: string, vote: 1 | -1 | 0) => Promise<void>;
+  onVote: (feedbackId: string) => Promise<void>;
 }
 
 export function VoteButtons({
@@ -23,7 +23,7 @@ export function VoteButtons({
   const [optimisticCount, setOptimisticCount] = useState(upvotes);
   const [animating, setAnimating] = useState(false);
 
-  // Sync with server state after API responds
+  // Sync with server state
   useEffect(() => {
     setOptimisticVoted(userVote === 1);
     setOptimisticCount(upvotes);
@@ -35,7 +35,7 @@ export function VoteButtons({
     const newVoted = !optimisticVoted;
     const delta = newVoted ? 1 : -1;
 
-    // Optimistic update — instant visual feedback
+    // Optimistic update
     setOptimisticVoted(newVoted);
     setOptimisticCount(c => c + delta);
     setAnimating(true);
@@ -43,7 +43,7 @@ export function VoteButtons({
 
     setIsVoting(true);
     try {
-      await onVote(feedbackId, newVoted ? 1 : 0);
+      await onVote(feedbackId);
     } catch {
       // Revert on error
       setOptimisticVoted(!newVoted);

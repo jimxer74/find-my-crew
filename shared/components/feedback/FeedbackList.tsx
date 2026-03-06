@@ -64,24 +64,19 @@ export function FeedbackList({ currentUserId, refreshKey }: FeedbackListProps) {
     fetchFeedback(1, true);
   }, [filters.type, filters.status, filters.sort, filters.search, refreshKey]);
 
-  const handleVote = async (feedbackId: string, vote: 1 | -1 | 0) => {
-    const res = await fetch(`/api/feedback/${feedbackId}/vote`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vote }),
-    });
+  const handleVote = async (feedbackId: string) => {
+    const res = await fetch(`/api/feedback/${feedbackId}/vote`, { method: 'POST' });
 
     if (!res.ok) {
-      logger.error('Error voting:', { feedbackId, vote });
+      logger.error('Error voting:', { feedbackId });
       throw new Error('Failed to vote');
     }
 
-    // Sync server state into list (VoteButtons already showed optimistic update)
-    const updatedRes = await fetch(`/api/feedback/${feedbackId}`);
-    if (updatedRes.ok) {
-      const updatedFeedback = await updatedRes.json();
-      setItems(prev => prev.map(item => item.id === feedbackId ? updatedFeedback : item));
-    }
+    // Update item state directly from response (no second fetch needed)
+    const { upvotes, user_voted } = await res.json();
+    setItems(prev => prev.map(item =>
+      item.id === feedbackId ? { ...item, upvotes, user_vote: user_voted ? 1 : null } : item
+    ));
   };
 
   const handleLoadMore = () => {

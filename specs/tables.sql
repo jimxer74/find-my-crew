@@ -1303,10 +1303,8 @@ create table if not exists public.feedback (
   status_changed_at timestamptz,
   status_changed_by uuid references auth.users(id) on delete set null,
 
-  -- Voting (denormalized for performance)
+  -- Voting (upvotes only)
   upvotes integer not null default 0,
-  downvotes integer not null default 0,
-  vote_score integer generated always as (upvotes - downvotes) stored,
 
   -- Visibility
   is_public boolean not null default true,
@@ -1321,7 +1319,7 @@ create table if not exists public.feedback (
 create index if not exists idx_feedback_status on public.feedback(status);
 create index if not exists idx_feedback_type on public.feedback(type);
 create index if not exists idx_feedback_user_id on public.feedback(user_id);
-create index if not exists idx_feedback_vote_score on public.feedback(vote_score desc);
+create index if not exists idx_feedback_upvotes on public.feedback(upvotes desc);
 create index if not exists idx_feedback_created_at on public.feedback(created_at desc);
 create index if not exists idx_feedback_public on public.feedback(is_public) where is_public = true;
 
@@ -1399,39 +1397,45 @@ create policy "Users can remove vote"
 on public.feedback_votes for delete
 using (auth.uid() = user_id);
 
--- Trigger to update vote counts on feedback table
-create or replace function update_feedback_vote_counts()
-returns trigger as $$
+-- Atomic toggle-vote RPC (SECURITY DEFINER to bypass RLS)
+-- Handles insert/delete in feedback_votes and updates feedback.upvotes
+create or replace function toggle_feedback_vote(p_feedback_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid;
+  v_existing_id uuid;
+  v_new_upvotes integer;
+  v_user_voted boolean;
 begin
-  if tg_op = 'INSERT' then
-    update public.feedback set
-      upvotes = upvotes + case when new.vote = 1 then 1 else 0 end,
-      downvotes = downvotes + case when new.vote = -1 then 1 else 0 end,
-      updated_at = now()
-    where id = new.feedback_id;
-  elsif tg_op = 'DELETE' then
-    update public.feedback set
-      upvotes = upvotes - case when old.vote = 1 then 1 else 0 end,
-      downvotes = downvotes - case when old.vote = -1 then 1 else 0 end,
-      updated_at = now()
-    where id = old.feedback_id;
-  elsif tg_op = 'UPDATE' then
-    update public.feedback set
-      upvotes = upvotes - case when old.vote = 1 then 1 else 0 end
-                        + case when new.vote = 1 then 1 else 0 end,
-      downvotes = downvotes - case when old.vote = -1 then 1 else 0 end
-                            + case when new.vote = -1 then 1 else 0 end,
-      updated_at = now()
-    where id = new.feedback_id;
+  v_user_id := auth.uid();
+  if v_user_id is null then
+    return jsonb_build_object('error', 'Not authenticated');
   end if;
-  return null;
+  if exists (select 1 from public.feedback where id = p_feedback_id and user_id = v_user_id) then
+    return jsonb_build_object('error', 'Cannot vote on your own feedback');
+  end if;
+  select id into v_existing_id
+  from public.feedback_votes
+  where feedback_id = p_feedback_id and user_id = v_user_id;
+  if v_existing_id is not null then
+    delete from public.feedback_votes where id = v_existing_id;
+    update public.feedback set upvotes = greatest(0, upvotes - 1), updated_at = now() where id = p_feedback_id;
+    v_user_voted := false;
+  else
+    insert into public.feedback_votes (feedback_id, user_id, vote) values (p_feedback_id, v_user_id, 1);
+    update public.feedback set upvotes = upvotes + 1, updated_at = now() where id = p_feedback_id;
+    v_user_voted := true;
+  end if;
+  select upvotes into v_new_upvotes from public.feedback where id = p_feedback_id;
+  return jsonb_build_object('upvotes', v_new_upvotes, 'user_voted', v_user_voted);
 end;
-$$ language plpgsql;
+$$;
 
-create trigger trigger_update_feedback_votes
-  after insert or update or delete on public.feedback_votes
-  for each row
-  execute function update_feedback_vote_counts();
+grant execute on function toggle_feedback_vote(uuid) to authenticated;
 
 
 -- ============================================================================

@@ -180,10 +180,10 @@ export async function getFeedbackList(
         query = query.order('created_at', { ascending: true });
         break;
       case 'most_votes':
-        query = query.order('vote_score', { ascending: false });
+        query = query.order('upvotes', { ascending: false });
         break;
       case 'least_votes':
-        query = query.order('vote_score', { ascending: true });
+        query = query.order('upvotes', { ascending: true });
         break;
       case 'newest':
       default:
@@ -395,87 +395,26 @@ export async function deleteFeedback(
 // ============================================================================
 
 /**
- * Vote on feedback (upvote, downvote, or remove vote)
+ * Toggle upvote on feedback (calls SECURITY DEFINER RPC to bypass RLS)
  */
-export async function voteFeedback(
+export async function toggleFeedbackVote(
   supabase: SupabaseClient,
   feedbackId: string,
-  userId: string,
-  vote: 1 | -1 | 0
-): Promise<{ success: boolean; error: string | null }> {
-  // First check if user owns this feedback (can't vote on own feedback)
-  const { data: feedbackData, error: feedbackError } = await supabase
-    .from('feedback')
-    .select('user_id')
-    .eq('id', feedbackId)
-    .single();
+): Promise<{ upvotes: number; user_voted: boolean; error: string | null }> {
+  const { data, error } = await supabase.rpc('toggle_feedback_vote', {
+    p_feedback_id: feedbackId,
+  });
 
-  if (feedbackError) {
-    logger.error('[FeedbackService] Error checking feedback ownership', { error: feedbackError instanceof Error ? feedbackError.message : String(feedbackError) });
-    return { success: false, error: feedbackError.message };
+  if (error) {
+    logger.error('[FeedbackService] Error toggling vote', { error: error.message });
+    return { upvotes: 0, user_voted: false, error: error.message };
   }
 
-  if (feedbackData?.user_id === userId) {
-    return { success: false, error: 'Cannot vote on your own feedback' };
+  if (data?.error) {
+    return { upvotes: 0, user_voted: false, error: data.error };
   }
 
-  // Check existing vote
-  const { data: existingVote } = await supabase
-    .from('feedback_votes')
-    .select('id, vote')
-    .eq('feedback_id', feedbackId)
-    .eq('user_id', userId)
-    .single();
-
-  if (vote === 0) {
-    // Remove vote
-    if (existingVote) {
-      const { error } = await supabase
-        .from('feedback_votes')
-        .delete()
-        .eq('id', existingVote.id);
-
-      if (error) {
-        logger.error('[FeedbackService] Error removing vote', { error: error instanceof Error ? error.message : String(error) });
-        return { success: false, error: error.message };
-      }
-    }
-    return { success: true, error: null };
-  }
-
-  if (existingVote) {
-    // Update existing vote
-    if (existingVote.vote === vote) {
-      // Same vote, no change needed
-      return { success: true, error: null };
-    }
-
-    const { error } = await supabase
-      .from('feedback_votes')
-      .update({ vote })
-      .eq('id', existingVote.id);
-
-    if (error) {
-      logger.error('[FeedbackService] Error updating vote', { error: error instanceof Error ? error.message : String(error) });
-      return { success: false, error: error.message };
-    }
-  } else {
-    // Create new vote
-    const { error } = await supabase
-      .from('feedback_votes')
-      .insert({
-        feedback_id: feedbackId,
-        user_id: userId,
-        vote,
-      });
-
-    if (error) {
-      logger.error('[FeedbackService] Error creating vote', { error: error instanceof Error ? error.message : String(error) });
-      return { success: false, error: error.message };
-    }
-  }
-
-  return { success: true, error: null };
+  return { upvotes: data.upvotes, user_voted: data.user_voted, error: null };
 }
 
 /**

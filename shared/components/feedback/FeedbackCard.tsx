@@ -10,7 +10,7 @@ import { VoteButtons } from './VoteButtons';
 interface FeedbackCardProps {
   feedback: FeedbackWithAuthor;
   isOwn?: boolean;
-  onVote: (feedbackId: string, vote: 1 | -1 | 0) => Promise<void>;
+  onVote: (feedbackId: string) => Promise<void>;
 }
 
 /**

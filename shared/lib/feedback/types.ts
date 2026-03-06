@@ -61,8 +61,6 @@ export interface Feedback {
   status_changed_at: string | null;
   status_changed_by: string | null;
   upvotes: number;
-  downvotes: number;
-  vote_score: number;
   is_public: boolean;
   is_anonymous: boolean;
   created_at: string;
