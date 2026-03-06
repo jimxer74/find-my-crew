@@ -294,7 +294,7 @@ function EquipmentCard({
                 </span>
               )}
               {item.status === 'needs_replacement' && (
-                <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">
+                <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                   Needs Replacement
                 </span>
               )}
