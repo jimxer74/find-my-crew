@@ -18,6 +18,11 @@ import { ProspectSession } from '@shared/ai/prospect/types';
 import { CrewOnboardingStepsInline, OwnerOnboardingStepsInline } from '@shared/components/onboarding/OnboardingSteps';
 import type { OwnerPreferences } from '@shared/ai/owner/types';
 import { QuickPostBox } from '@/app/components/QuickPostBox';
+import {
+  getPendingUrlImport,
+  clearPendingUrlImport,
+  fetchUrlContent,
+} from '@shared/lib/url-import/urlImportClient';
 
 // ---------------------------------------------------------------------------
 // Rotating hero headline
@@ -292,6 +297,35 @@ function WelcomePageContent() {
     router.push(`/welcome/owner?${p.toString()}`);
   };
 
+  // ── Resume pending URL import after Facebook OAuth redirect ────────────────
+  useEffect(() => {
+    if (!user || authLoading) return;
+    const pending = getPendingUrlImport();
+    if (!pending) return;
+    clearPendingUrlImport();
+    (async () => {
+      try {
+        const result = await fetchUrlContent(pending.url);
+        if (pending.context === 'crew') {
+          handleCrewPost(result.content);
+        } else {
+          handleOwnerPost(result.content);
+        }
+      } catch (err) {
+        // If fetch fails after OAuth, fall back to posting the raw URL as text
+        logger.warn('[url-import] Failed to fetch pending URL after OAuth', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        if (pending.context === 'crew') {
+          handleCrewPost(pending.url);
+        } else {
+          handleOwnerPost(pending.url);
+        }
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, authLoading]);
+
   // Loading spinner
   if (authLoading || (user && isCheckingRole)) {
     return (
@@ -471,6 +505,7 @@ function WelcomePageContent() {
                     onCancel={() => setIsComboSearchMode(false)}
                     onPost={handleCrewPost}
                     accentColor="blue"
+                    context="crew"
                   />
                 </div>
               )}
@@ -542,6 +577,7 @@ function WelcomePageContent() {
                     onCancel={() => setIsOwnerComboSearchMode(false)}
                     onPost={handleOwnerPost}
                     accentColor="amber"
+                    context="owner"
                   />
                 </div>
               )}
