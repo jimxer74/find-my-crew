@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { FeedbackList } from '@shared/components/feedback/FeedbackList';
 import { FeedbackButton } from '@shared/components/feedback/FeedbackButton';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function FeedbackPage() {
@@ -13,6 +13,7 @@ export default function FeedbackPage() {
   const tCommon = useTranslations('common');
   const { user, loading: authLoading } = useAuth();
   const router  = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Redirect if not authenticated (must be called before early return)
   useEffect(() => {
@@ -71,6 +72,7 @@ export default function FeedbackPage() {
               <FeedbackButton
                 variant="inline"
                 contextPage="/feedback"
+                onSuccess={() => setRefreshKey(k => k + 1)}
               />
             ) : (
               <Link
@@ -99,7 +101,7 @@ export default function FeedbackPage() {
         )}
 
         {/* Feedback list */}
-        <FeedbackList currentUserId={user?.id} />
+        <FeedbackList currentUserId={user?.id} refreshKey={refreshKey} />
       </div>
     </div>
   );

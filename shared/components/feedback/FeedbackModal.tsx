@@ -35,6 +35,7 @@ export function FeedbackModal({
   const [description, setDescription] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,6 +54,7 @@ export function FeedbackModal({
       setDescription('');
       setIsAnonymous(false);
       setError(null);
+      setSubmitted(false);
     }
   }, [isOpen, initialType]);
 
@@ -91,13 +93,35 @@ export function FeedbackModal({
         context_page: contextPage,
         context_metadata: contextMetadata,
       });
-      onClose();
+      setSubmitted(true);
+      setTimeout(() => onClose(), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : t('submitError'));
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (submitted) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} title="" size="sm">
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-foreground">Thank you!</h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Your feedback has been submitted and is now visible in the list.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground">This window will close automatically…</p>
+        </div>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

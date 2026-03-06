@@ -16,9 +16,10 @@ import { logger } from '@shared/logging';
 
 interface FeedbackListProps {
   currentUserId?: string;
+  refreshKey?: number;
 }
 
-export function FeedbackList({ currentUserId }: FeedbackListProps) {
+export function FeedbackList({ currentUserId, refreshKey }: FeedbackListProps) {
   const t = useTranslations('feedback');
   const [items, setItems] = useState<FeedbackWithAuthor[]>([]);
   const [total, setTotal] = useState(0);
@@ -57,32 +58,29 @@ export function FeedbackList({ currentUserId }: FeedbackListProps) {
     }
   }, [filters, items]);
 
-  // Fetch on initial load and when filters change
+  // Fetch on initial load, filter changes, and when refreshKey increments (new submission)
   useEffect(() => {
     setPage(1);
     fetchFeedback(1, true);
-  }, [filters.type, filters.status, filters.sort, filters.search]);
+  }, [filters.type, filters.status, filters.sort, filters.search, refreshKey]);
 
   const handleVote = async (feedbackId: string, vote: 1 | -1 | 0) => {
-    try {
-      const res = await fetch(`/api/feedback/${feedbackId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote }),
-      });
+    const res = await fetch(`/api/feedback/${feedbackId}/vote`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vote }),
+    });
 
-      if (!res.ok) throw new Error('Failed to vote');
+    if (!res.ok) {
+      logger.error('Error voting:', { feedbackId, vote });
+      throw new Error('Failed to vote');
+    }
 
-      // Refresh the item
-      const updatedRes = await fetch(`/api/feedback/${feedbackId}`);
-      if (updatedRes.ok) {
-        const updatedFeedback = await updatedRes.json();
-        setItems(items.map(item =>
-          item.id === feedbackId ? updatedFeedback : item
-        ));
-      }
-    } catch (error) {
-      logger.error('Error voting:', { error: error instanceof Error ? error.message : String(error) });
+    // Sync server state into list (VoteButtons already showed optimistic update)
+    const updatedRes = await fetch(`/api/feedback/${feedbackId}`);
+    if (updatedRes.ok) {
+      const updatedFeedback = await updatedRes.json();
+      setItems(prev => prev.map(item => item.id === feedbackId ? updatedFeedback : item));
     }
   };
 

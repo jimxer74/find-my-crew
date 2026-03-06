@@ -11,6 +11,7 @@ interface FeedbackButtonProps {
   initialType?: FeedbackType;
   contextPage?: string;
   contextMetadata?: Record<string, unknown>;
+  onSuccess?: () => void;
 }
 
 export function FeedbackButton({
@@ -18,6 +19,7 @@ export function FeedbackButton({
   initialType,
   contextPage,
   contextMetadata,
+  onSuccess,
 }: FeedbackButtonProps) {
   const t = useTranslations('feedback');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -33,6 +35,8 @@ export function FeedbackButton({
       const data = await res.json();
       throw new Error(data.error || 'Failed to submit feedback');
     }
+
+    onSuccess?.();
   };
 
   // Floating action button variant
@@ -72,7 +76,7 @@ export function FeedbackButton({
           size="sm"
           className="w-full !justify-start !text-sm"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
           {t('shareFeedback')}
@@ -97,8 +101,9 @@ export function FeedbackButton({
         onClick={() => setIsModalOpen(true)}
         variant="primary"
         size="sm"
+        className="whitespace-nowrap"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
         {t('shareFeedback')}

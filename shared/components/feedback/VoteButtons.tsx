@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ThumbsUp } from 'lucide-react';
-import { Button } from '@shared/ui/Button/Button';
 
 interface VoteButtonsProps {
   feedbackId: string;
@@ -20,43 +19,67 @@ export function VoteButtons({
   onVote,
 }: VoteButtonsProps) {
   const [isVoting, setIsVoting] = useState(false);
-  const hasVoted = userVote === 1;
+  const [optimisticVoted, setOptimisticVoted] = useState(userVote === 1);
+  const [optimisticCount, setOptimisticCount] = useState(upvotes);
+  const [animating, setAnimating] = useState(false);
+
+  // Sync with server state after API responds
+  useEffect(() => {
+    setOptimisticVoted(userVote === 1);
+    setOptimisticCount(upvotes);
+  }, [userVote, upvotes]);
 
   const handleVote = async () => {
     if (disabled || isVoting) return;
 
+    const newVoted = !optimisticVoted;
+    const delta = newVoted ? 1 : -1;
+
+    // Optimistic update — instant visual feedback
+    setOptimisticVoted(newVoted);
+    setOptimisticCount(c => c + delta);
+    setAnimating(true);
+    setTimeout(() => setAnimating(false), 300);
+
     setIsVoting(true);
     try {
-      // Toggle: if already voted, remove vote (0), otherwise add upvote (1)
-      const newVote = hasVoted ? 0 : 1;
-      await onVote(feedbackId, newVote);
+      await onVote(feedbackId, newVoted ? 1 : 0);
+    } catch {
+      // Revert on error
+      setOptimisticVoted(!newVoted);
+      setOptimisticCount(c => c - delta);
     } finally {
       setIsVoting(false);
     }
   };
 
   return (
-    <Button
+    <button
       onClick={handleVote}
-      disabled={disabled || isVoting}
-      variant="ghost"
-      size="sm"
-      className={`!p-0 flex items-center gap-1 ${
-        hasVoted
-          ? '!text-blue-600 dark:!text-blue-400'
-          : '!text-muted-foreground hover:!text-foreground'
-      }`}
-      aria-label={hasVoted ? 'Remove like' : 'Like'}
+      disabled={disabled}
+      aria-label={optimisticVoted ? 'Remove like' : 'Like'}
+      className={`
+        flex flex-col items-center gap-0.5 min-w-[2rem] py-1 px-1.5 rounded-lg
+        transition-colors duration-150 select-none
+        ${disabled
+          ? 'opacity-40 cursor-not-allowed'
+          : optimisticVoted
+            ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/10'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+        }
+      `}
     >
       <ThumbsUp
-        className={`w-4 h-4 ${hasVoted ? 'fill-current' : ''}`}
-        strokeWidth={hasVoted ? 2.5 : 2}
+        className={`w-4 h-4 transition-transform duration-200 ${
+          animating ? 'scale-125' : 'scale-100'
+        } ${optimisticVoted ? 'fill-current' : ''}`}
+        strokeWidth={optimisticVoted ? 2.5 : 2}
       />
-      {upvotes > 0 && (
-        <span className="text-sm font-medium tabular-nums">
-          {upvotes}
-        </span>
-      )}
-    </Button>
+      <span className={`text-xs font-semibold tabular-nums leading-none ${
+        optimisticCount === 0 ? 'text-muted-foreground/50' : ''
+      }`}>
+        {optimisticCount}
+      </span>
+    </button>
   );
 }
