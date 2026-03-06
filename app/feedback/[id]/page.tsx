@@ -54,21 +54,19 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
     fetchFeedback();
   }, [id, t]);
 
-  const handleVote = async (feedbackId: string, vote: 1 | -1 | 0) => {
+  const handleVote = async (feedbackId: string) => {
     try {
-      const res = await fetch(`/api/feedback/${feedbackId}/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote }),
-      });
+      const res = await fetch(`/api/feedback/${feedbackId}/vote`, { method: 'POST' });
 
       if (!res.ok) throw new Error('Failed to vote');
 
-      // Refresh the feedback
-      const updatedRes = await fetch(`/api/feedback/${feedbackId}`);
-      if (updatedRes.ok) {
-        const updatedFeedback = await updatedRes.json();
-        setFeedback(updatedFeedback);
+      const { upvotes, user_voted } = await res.json();
+      if (feedback) {
+        setFeedback({
+          ...feedback,
+          upvotes,
+          user_vote: user_voted ? 1 : null,
+        });
       }
     } catch (error) {
       logger.error('Error voting:', error instanceof Error ? { error: error.message } : { error: String(error) });

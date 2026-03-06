@@ -705,6 +705,7 @@
     "description": "Description",
     "descriptionPlaceholder": "Provide more details about your feedback...",
     "submitAnonymously": "Submit anonymously",
+    "cancel": "Cancel",
     "submitting": "Submitting...",
     "submitFeedback": "Submit Feedback",
     "submitError": "Failed to submit feedback. Please try again.",

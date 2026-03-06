@@ -705,6 +705,7 @@
     "description": "Kuvaus",
     "descriptionPlaceholder": "Anna lisätietoja palautteestasi...",
     "submitAnonymously": "Lähetä nimettömänä",
+    "cancel": "Peruuta",
     "submitting": "Lähetetään...",
     "submitFeedback": "Lähetä palaute",
     "submitError": "Palautteen lähetys epäonnistui. Yritä uudelleen.",

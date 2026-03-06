@@ -163,22 +163,21 @@ export function FeedbackModal({
         {/* Type selector */}
         <div>
           <label className="block text-sm font-medium mb-2">{t('whatTypeOfFeedback')}</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {feedbackTypes.map((item) => (
-              <Button
+              <button
                 key={item.type}
                 type="button"
                 onClick={() => setSelectedType(item.type)}
-                variant={selectedType === item.type ? 'primary' : 'outline'}
-                className={`!p-3 text-center ${
+                className={`flex flex-col items-center justify-center gap-1 p-2 rounded-md border transition-colors focus:outline-none focus:ring-2 focus:ring-ring ${
                   selectedType === item.type
-                    ? '!bg-primary/10'
-                    : ''
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-input bg-background text-foreground hover:bg-accent'
                 }`}
               >
-                <div className="text-2xl mb-1">{item.icon}</div>
-                <div className="text-sm font-medium">{item.label}</div>
-              </Button>
+                <span className="text-xl leading-none">{item.icon}</span>
+                <span className="text-xs font-medium leading-tight">{item.label}</span>
+              </button>
             ))}
           </div>
         </div>

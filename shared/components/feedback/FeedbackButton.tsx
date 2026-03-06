@@ -14,6 +14,17 @@ interface FeedbackButtonProps {
   onSuccess?: () => void;
 }
 
+const chatIcon = (size: 'sm' | 'md') => (
+  <svg
+    className={size === 'md' ? 'w-5 h-5' : 'w-4 h-4'}
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+  </svg>
+);
+
 export function FeedbackButton({
   variant = 'inline',
   initialType,
@@ -39,6 +50,17 @@ export function FeedbackButton({
     onSuccess?.();
   };
 
+  const modal = (
+    <FeedbackModal
+      isOpen={isModalOpen}
+      onClose={() => setIsModalOpen(false)}
+      onSubmit={handleSubmit}
+      initialType={initialType}
+      contextPage={contextPage}
+      contextMetadata={contextMetadata}
+    />
+  );
+
   // Floating action button variant
   if (variant === 'fab') {
     return (
@@ -49,19 +71,9 @@ export function FeedbackButton({
           className="fixed bottom-6 right-6 z-40 !p-4 rounded-full shadow-lg hover:scale-105"
           aria-label={t('shareFeedback')}
         >
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
+          {chatIcon('md')}
         </Button>
-
-        <FeedbackModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleSubmit}
-          initialType={initialType}
-          contextPage={contextPage}
-          contextMetadata={contextMetadata}
-        />
+        {modal}
       </>
     );
   }
@@ -75,48 +87,27 @@ export function FeedbackButton({
           variant="ghost"
           size="sm"
           className="w-full !justify-start !text-sm"
+          leftIcon={chatIcon('sm')}
         >
-          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
           {t('shareFeedback')}
         </Button>
-
-        <FeedbackModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          onSubmit={handleSubmit}
-          initialType={initialType}
-          contextPage={contextPage}
-          contextMetadata={contextMetadata}
-        />
+        {modal}
       </>
     );
   }
 
-  // Inline button variant (default)
+  // Inline button variant (default) — prominent, medium size
   return (
     <>
       <Button
         onClick={() => setIsModalOpen(true)}
         variant="primary"
-        size="sm"
-        className="whitespace-nowrap"
+        size="md"
+        leftIcon={chatIcon('md')}
       >
-        <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
         {t('shareFeedback')}
       </Button>
-
-      <FeedbackModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleSubmit}
-        initialType={initialType}
-        contextPage={contextPage}
-        contextMetadata={contextMetadata}
-      />
+      {modal}
     </>
   );
 }

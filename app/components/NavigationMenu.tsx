@@ -619,13 +619,13 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
-          {/* Language Switcher - LAst item */}
-          <div className="px-4 py-2">
+          {/* Language Switcher - hidden until language support is ready */}
+          {/* <div className="px-4 py-2">
             <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
           </div>
           <div className="px-4">
             <LanguageSwitcher variant="menu-item" onClose={onClose} />
-          </div>
+          </div> */}
 
           {/* Appearance / Theme */}
           <div className="px-4 py-3">
@@ -774,13 +774,13 @@ export function NavigationMenuContent({ onClose, onOpenLogin, onOpenSignup, prof
 
           {/* Divider */}
           <div className="border-t border-border my-1" />
-          {/* Language Switcher - LAst item */}
-          <div className="px-4 py-2">
+          {/* Language Switcher - hidden until language support is ready */}
+          {/* <div className="px-4 py-2">
             <span className="text-[8px] font-medium text-muted-foreground uppercase tracking-wider">{tSettings('language.title')}</span>
           </div>
           <div className="px-4">
             <LanguageSwitcher variant="menu-item" onClose={onClose} />
-          </div>
+          </div> */}
 
           {/* Appearance / Theme */}
           <div className="px-4 py-3">

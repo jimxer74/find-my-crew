@@ -98,7 +98,7 @@ export function JobProgressPanel({ jobId, onComplete, onError }: JobProgressPane
 
       {/* Step history */}
       {progress.length > 0 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
+        <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
           {progress.map((p, i) => {
             const isLast = i === progress.length - 1;
             const isRunning = isLast && !isComplete && !isFailed;
