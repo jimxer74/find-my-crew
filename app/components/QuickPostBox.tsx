@@ -88,15 +88,15 @@ export function QuickPostBox({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
 
-      if (msg === 'AUTH_REQUIRED') {
+      if (
+        msg === 'FACEBOOK_AUTH_REQUIRED' ||
+        (msg === 'AUTH_REQUIRED' && isFacebookUrl(trimmed) && context)
+      ) {
+        // No Facebook token (403) OR unauthenticated + Facebook URL → prompt OAuth
+        setImportPhase('facebook-auth');
+      } else if (msg === 'AUTH_REQUIRED') {
         setImportPhase('error');
         setImportError('You need to be signed in to import content from URLs.');
-      } else if (msg === 'FACEBOOK_AUTH_REQUIRED') {
-        // Server confirmed Facebook auth is needed (no token available)
-        setImportPhase('facebook-auth');
-      } else if (msg === 'AUTH_REQUIRED' && isFacebookUrl(trimmed) && context) {
-        // Unauthenticated + Facebook URL → prompt Facebook OAuth
-        setImportPhase('facebook-auth');
       } else {
         setImportPhase('error');
         setImportError(msg);
