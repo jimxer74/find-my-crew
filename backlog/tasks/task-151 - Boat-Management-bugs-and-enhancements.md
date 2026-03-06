@@ -1,10 +1,10 @@
 ---
 id: TASK-151
 title: Boat Management bugs and enhancements
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-03-05 08:48'
-updated_date: '2026-03-06 08:28'
+updated_date: '2026-03-06 08:31'
 labels: []
 dependencies: []
 ---
@@ -66,3 +66,9 @@ Mobile:
 
 ### Build: PASSING
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+## TASK-151 Complete\n\nAll boat management bugs and enhancements implemented:\n\n### Badge glassmorphism (shared/ui/Badge/Badge.tsx)\n- Updated all 6 variants (primary, secondary, success, warning, error, info) to use semi-transparent backgrounds + colored borders + backdrop-blur in dark mode\n- Both solid and outlined variants updated\n\n### Maintenance recurrence bug fixes\n- **MaintenanceForm.tsx**: Added `custom_usage` option for non-preset engine-hour intervals; fixed useEffect to correctly map all existing usage-type recurrence values back to form on edit\n- **maintenance-service.ts**: `completeMaintenanceTask` now creates next occurrence for both `time` and `usage` recurrence types (was only time)\n\n### New maintenance status system (types.ts)\n- Added `MaintenanceDisplayStatus` type: `todo | planned | in_progress | done`\n- Added `getDisplayStatus()` helper: maps DB status + due_date to display status\n  - pending + no due_date → todo\n  - pending + due_date → planned\n  - in_progress → in_progress\n  - completed/skipped → done\n\n### MaintenanceList.tsx — full redesign\n- **Desktop**: 4-column Kanban by status, collapsible columns, Done collapsed by default, tasks grouped by equipment within columns\n- **Mobile**: clickable status filter badges (Todo/Planned/In Progress/Done) + swipeable 2-per-row carousels grouped by equipment\n- **Cards**: priority left border (4px) colored by priority (critical=red, high=orange, medium=yellow, low=gray), overdue dates highlighted red\n- **Actions**: status-sensitive (Todo/Planned → Start button, In Progress → Complete button) + icon+text Edit/Delete\n- **Removed**: status badge, priority badge, category badge, status dropdown, category dropdown filter\n- Added `onStart` prop and `equipment` prop\n\n### maintenance/page.tsx\n- Added `handleStart()` that PUTs status=in_progress\n- Passes `equipment` and `onStart` to MaintenanceList\n\n### EquipmentList.tsx — redesign\n- Removed Active/status badge from cards\n- Added `border-l-4` left border with status color (green=active, yellow=needs_replacement, gray=decommissioned)\n- Category groups → horizontal swipeable carousel (2 cards wide on mobile, 260px on desktop)\n- Icon+text Edit/Delete buttons on cards\n\n### Platform-wide icon+text buttons\n- **InventoryList.tsx**: Updated table row Edit/Delete to icon+text\n- **owner/journeys/page.tsx**: Updated card action buttons from icon-only to icon+text (Edit, Legs, Registrations, Delete)
+<!-- SECTION:FINAL_SUMMARY:END -->
