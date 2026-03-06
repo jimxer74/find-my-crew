@@ -376,7 +376,9 @@ export function ProspectChat({ variant = 'default' }: { variant?: 'default' | 'o
               className={`max-w-[85%] rounded-lg px-4 py-2 ${
                 message.role === 'user'
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-foreground'
+                  : variant === 'overlay'
+                    ? 'bg-white/90 text-gray-900'
+                    : 'bg-muted text-foreground'
               }`}
             >
               <div className="text-sm whitespace-pre-wrap break-words">
@@ -612,7 +614,7 @@ export function ProspectChat({ variant = 'default' }: { variant?: 'default' | 'o
                 rows={1}
                 className={`flex-1 resize-none px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 min-h-[44px] max-h-[150px] ${
                   variant === 'overlay'
-                    ? 'bg-white/20 text-white placeholder-white/60 border-white/30'
+                    ? 'bg-white/90 text-gray-900 placeholder:text-gray-400 border-white/40 focus:ring-blue-400/50'
                     : 'border-border bg-input-background text-foreground'
                 }`}
               />

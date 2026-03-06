@@ -210,8 +210,8 @@ export function Header() {
                   </div>
                 </button>
               )}
-              {/* AI Assistant - Only show for authenticated users */}
-              {user && <AssistantButton userRoles={userRoles}/>}
+              {/* AI Assistant - hidden for now, will be re-added later */}
+              {/* {user && <AssistantButton userRoles={userRoles}/>} */}
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
               <NavigationMenu

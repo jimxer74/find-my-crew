@@ -340,7 +340,7 @@ export default function OwnerChat({ variant = 'default' }: { variant?: 'default'
                       message.role === 'user'
                         ? 'bg-primary text-primary-foreground'
                         : gl
-                          ? 'bg-white/10 backdrop-blur-sm text-white border border-white/10'
+                          ? 'bg-white/90 text-gray-900'
                           : 'bg-muted text-foreground'
                     }`}
                   >
@@ -590,7 +590,7 @@ export default function OwnerChat({ variant = 'default' }: { variant?: 'default'
                 rows={1}
                 className={`flex-1 min-h-[44px] max-h-[150px] px-4 py-2 text-sm rounded-lg resize-none focus:outline-none focus:ring-2 disabled:opacity-50 ${
                   gl
-                    ? 'bg-white/10 text-white placeholder:text-white/50 border border-white/20 focus:ring-white/30'
+                    ? 'bg-white/90 text-gray-900 placeholder:text-gray-400 border border-white/40 focus:ring-amber-400/50'
                     : 'bg-input-background text-foreground border border-border focus:ring-primary'
                 }`}
               />

@@ -120,7 +120,7 @@ export function OnboardingChat({ onComplete, userName }: OnboardingChatProps) {
               className={`rounded-2xl px-4 py-2.5 max-w-[85%] text-sm leading-relaxed ${
                 msg.role === 'user'
                   ? 'bg-primary text-primary-foreground rounded-br-sm'
-                  : 'bg-muted text-foreground rounded-bl-sm'
+                  : 'bg-white text-gray-900 rounded-bl-sm border border-gray-100'
               }`}
             >
               {msg.content}
@@ -130,7 +130,7 @@ export function OnboardingChat({ onComplete, userName }: OnboardingChatProps) {
 
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl rounded-bl-sm px-4 py-2.5">
+            <div className="bg-white rounded-2xl rounded-bl-sm px-4 py-2.5 border border-gray-100">
               <div className="flex gap-1">
                 {[0, 1, 2].map((i) => (
                   <div
@@ -168,7 +168,7 @@ export function OnboardingChat({ onComplete, userName }: OnboardingChatProps) {
             onKeyDown={handleKeyDown}
             placeholder="Type your message…"
             rows={1}
-            className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[38px] max-h-24"
+            className="flex-1 resize-none rounded-lg border border-gray-200 bg-white text-gray-900 placeholder:text-gray-400 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[38px] max-h-24"
             style={{ overflowY: 'auto' }}
             disabled={isLoading}
           />
