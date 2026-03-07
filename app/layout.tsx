@@ -18,6 +18,7 @@ import { MessagingPanel } from "@shared/components/messaging/MessagingPanel";
 import { UserRolesProvider } from "./contexts/UserRoleContext";
 import { EmailVerificationBanner } from "./components/EmailVerificationBanner";
 import { MainContent } from "./components/MainContent";
+import { RoleThemeApplicator } from "./components/RoleThemeApplicator";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -72,7 +73,8 @@ export default async function RootLayout({
                 <FilterProvider>
                   <NotificationProvider>
                     <AssistantProvider>
-                      <Header />
+                      <RoleThemeApplicator />
+              <Header />
                       <MainContent>
                         <EmailVerificationBanner />
                         {children}
