@@ -75,7 +75,7 @@
 }
 
 .role-owner {
-  --primary: #d97706; /* amber-600 — matches owner QuickPost button */
+  --primary: #d97706ef; /* amber-600 — matches owner QuickPost button */
   --primary-foreground: #ffffff;
   --ring: #d97706;
 }

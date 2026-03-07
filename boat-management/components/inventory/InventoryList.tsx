@@ -197,7 +197,7 @@ function InventoryTable({
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="border-b border-border text-left bg-background">
+        <tr className="border-b border-border text-left bg-card">
           <th className="px-4 pb-2 pt-2 font-medium text-muted-foreground">Item</th>
           <th className="pb-2 pt-2 font-medium text-muted-foreground hidden sm:table-cell">Location</th>
           <th className="pb-2 pt-2 font-medium text-muted-foreground text-center">Qty</th>
@@ -237,7 +237,7 @@ function InventoryRow({
   const isExpired = item.expiry_date && new Date(item.expiry_date) < new Date();
 
   return (
-    <tr className="group hover:bg-muted/30 transition-colors">
+    <tr className="group bg-card hover:bg-muted/30 transition-colors">
       <td className="py-2.5 pl-4 pr-3">
         <div className="flex items-center gap-2">
           <div>
