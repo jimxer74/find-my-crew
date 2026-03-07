@@ -11,7 +11,6 @@ import { LoginModal } from './LoginModal';
 import { SignupModal } from './SignupModal';
 import { FiltersDialog } from './FiltersDialog';
 import { NotificationBell } from '@shared/components/notifications/NotificationBell';
-import { AssistantButton } from '@shared/components/ai/AssistantButton';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { useFilters } from '@/app/contexts/FilterContext';
 import { getSupabaseBrowserClient } from '@shared/database/client';
@@ -30,7 +29,7 @@ export function Header() {
   const { userRoles, roleLoading, refreshRoles } = useUserRoles();
   const [isFiltersDialogOpen, setIsFiltersDialogOpen] = useState(false);
   const filtersButtonRef = useRef<HTMLButtonElement>(null);
-  const { isOpen: isAssistantOpen, closeAssistant } = useAssistant();
+  const { isOpen: isAssistantOpen, closeAssistant, toggleAssistant, buttonRef: assistantButtonRef, humanUnreadCount } = useAssistant();
 
   // Close all dialogs when route changes (excluding assistant dialog)
   useEffect(() => {
@@ -210,8 +209,39 @@ export function Header() {
                   </div>
                 </button>
               )}
-              {/* AI Assistant - hidden for now, will be re-added later */}
-              {/* {user && <AssistantButton userRoles={userRoles}/>} */}
+              {/* Messaging Panel Button */}
+              {user && (
+                <button
+                  ref={assistantButtonRef}
+                  onClick={toggleAssistant}
+                  className="cursor-pointer flex items-center justify-center px-2 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                  aria-label="Messages"
+                  title="Messages"
+                >
+                  <div className="relative">
+                    <svg
+                      className="w-5 h-5 text-foreground"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      {isAssistantOpen ? (
+                        <path d="M6 18L18 6M6 6l12 12" />
+                      ) : (
+                        <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      )}
+                    </svg>
+                    {!isAssistantOpen && humanUnreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 text-[10px] font-bold text-white bg-primary rounded-full">
+                        {humanUnreadCount > 9 ? '9+' : humanUnreadCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              )}
               {/* Notification Bell - Only show for authenticated users */}
               {user && <NotificationBell />}
               <NavigationMenu

@@ -45,6 +45,7 @@ interface AssistantState {
   profileSuggestions: string[] | null; // Profile-based suggested prompts
   suggestionsLoading: boolean; // Loading state for suggestions generation
   suggestionsGeneratedAt: number | null; // Timestamp for cache expiry
+  humanUnreadCount: number; // Total unread human messages count
 }
 
 interface AssistantContextType extends AssistantState {
@@ -52,6 +53,7 @@ interface AssistantContextType extends AssistantState {
   closeAssistant: () => void;
   toggleAssistant: () => void;
   buttonRef: RefObject<HTMLButtonElement | null>;
+  setHumanUnreadCount: (count: number) => void;
   setCurrentConversation: (id: string | null) => void;
   sendMessage: (message: string) => Promise<void>;
   retryLastMessage: () => Promise<void>;
@@ -130,6 +132,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     profileSuggestions: null,
     suggestionsLoading: false,
     suggestionsGeneratedAt: null,
+    humanUnreadCount: 0,
   });
 
   const openAssistant = useCallback(() => {
@@ -139,6 +142,10 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
 
   const closeAssistant = useCallback(() => {
     setState(prev => ({ ...prev, isOpen: false, lastActionResult: null }));
+  }, []);
+
+  const setHumanUnreadCount = useCallback((count: number) => {
+    setState(prev => ({ ...prev, humanUnreadCount: count }));
   }, []);
 
   const toggleAssistant = useCallback(() => {
@@ -919,6 +926,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
     closeAssistant,
     toggleAssistant,
     buttonRef,
+    setHumanUnreadCount,
     setCurrentConversation,
     sendMessage,
     retryLastMessage,
