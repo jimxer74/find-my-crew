@@ -34,9 +34,9 @@ export function MatchBadge({
     effectivePercentage >= 25 ? 'warning' :
     'error';
 
-  // Show "Perfect Match" only when skill percentage is 100 AND experience matches
+  // Show "100% Match" only when skill percentage is 100 AND experience matches
   const label = (percentage === 100 && experienceMatches)
-    ? 'Perfect Match'
+    ? '100% Match'
     : `${effectivePercentage}% Match`;
 
   const title = experienceMatches
