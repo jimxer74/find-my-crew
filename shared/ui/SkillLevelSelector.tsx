@@ -95,7 +95,7 @@ export function SkillLevelSelector({
 
   return (
     <div className="w-full">
-      <label className="block text-sm font-medium text-foreground mb-2 md:mb-3">
+      <label className="block text-sm font-medium text-foreground mb-2 md:mb-3 whitespace-normal break-words">
         {tFilters('experienceLevel')}
         {showRequiredBadge && value === null && (
           <span className="ml-2 inline-flex items-center px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary border border-primary/20 rounded">
