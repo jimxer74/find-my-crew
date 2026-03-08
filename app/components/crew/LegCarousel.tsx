@@ -168,27 +168,29 @@ export function LegCarousel({
     <div className="relative group">
       {/* Left Arrow - Desktop only */}
       {canScrollLeft && (
-        <Button
-          onClick={() => scroll('left')}
-          variant="outline"
-          size="sm"
-          className="hidden md:absolute left-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -ml-5 !p-0 flex-shrink-0"
-          aria-label="Scroll left"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="hidden md:block absolute left-0 top-1/2 -translate-y-1/2 z-10 -ml-5">
+          <Button
+            onClick={() => scroll('left')}
+            variant="outline"
+            size="sm"
+            className="!w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity !p-0"
+            aria-label="Scroll left"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </Button>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </Button>
+        </div>
       )}
 
       {/* Scrollable Container */}
@@ -341,27 +343,29 @@ export function LegCarousel({
 
       {/* Right Arrow - Desktop only */}
       {canScrollRight && (
-        <Button
-          onClick={() => scroll('right')}
-          variant="outline"
-          size="sm"
-          className="hidden md:absolute right-0 top-1/2 -translate-y-1/2 z-10 !w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity -mr-5 !p-0 flex-shrink-0"
-          aria-label="Scroll right"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 z-10 -mr-5">
+          <Button
+            onClick={() => scroll('right')}
+            variant="outline"
+            size="sm"
+            className="!w-10 !h-10 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity !p-0"
+            aria-label="Scroll right"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M9 5l7 7-7 7"
-            />
-          </svg>
-        </Button>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </Button>
+        </div>
       )}
 
       {/* Hide scrollbar with CSS */}
