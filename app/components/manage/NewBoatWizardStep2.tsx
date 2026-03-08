@@ -192,25 +192,6 @@ export function NewBoatWizardStep2({
 
   return (
     <div className="space-y-6">
-      {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-            </svg>
-          </span>
-          <span className="text-muted-foreground">Basic Info</span>
-        </div>
-        <div className="w-8 h-px bg-primary" />
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-            2
-          </span>
-          <span className="font-medium text-foreground">Details</span>
-        </div>
-      </div>
-
       {/* Error Display */}
       {(error || uploadError) && (
         <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
