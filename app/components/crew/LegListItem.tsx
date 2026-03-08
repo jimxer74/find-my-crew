@@ -129,7 +129,7 @@ export function LegListItem({
 
   return (
     <Card
-      className={`overflow-hidden transition-all hover:shadow-lg ${onClick ? 'cursor-pointer' : ''} ${className}`}
+      className={`overflow-hidden transition-all hover:shadow-lg !p-0 ${onClick ? 'cursor-pointer' : ''} ${className}`}
       onClick={handleClick}
     >
       {/* Image Carousel Section */}
