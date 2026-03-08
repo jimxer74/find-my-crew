@@ -257,6 +257,20 @@ function EquipmentCard({
   const [registryProduct, setRegistryProduct] = useState<ProductRegistryEntry | null>(null);
   const [loadingLinks, setLoadingLinks] = useState(false);
 
+  // Refresh product data (used after async jobs complete)
+  const refreshProduct = async () => {
+    if (!item.product_registry_id) return;
+    try {
+      const res = await fetch(`/api/product-registry/${item.product_registry_id}`);
+      if (res.ok) {
+        const json = await res.json();
+        setRegistryProduct(json.product);
+      }
+    } catch {
+      // Silent fail
+    }
+  };
+
   const handleToggleLinks = async () => {
     if (showLinks) {
       setShowLinks(false);
@@ -347,7 +361,7 @@ function EquipmentCard({
                 <ProductLinks
                   product={registryProduct}
                   equipment={{ ...item, boat_id: boatId, boat_make_model: boatMakeModel }}
-                  onRefresh={handleToggleLinks}
+                  onRefresh={refreshProduct}
                 />
               </div>
             )}
