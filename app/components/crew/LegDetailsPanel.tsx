@@ -1881,7 +1881,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Safety Equipment Summary */}
             {safetyEquipment.length > 0 && (
-              <div className="pt-2 border-t border-border text-left">
+              <div className="pt-2 text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-2">Safety Equipment</h3>
                 <div className="space-y-1">
                   {safetyEquipment.map((item) => {
