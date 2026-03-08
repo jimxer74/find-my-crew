@@ -3,7 +3,7 @@
  */
 
 import { logger } from './logger';
-import { algoliaSearchSailboats } from './scraper/sailboatdata-algolia';
+import { algoliaSearchSailboats, algoliaFetchSailboatDetails } from './scraper/sailboatdata-algolia';
 
 /**
  * Normalize Scandinavian characters to ASCII equivalents for URL query strings
@@ -300,6 +300,47 @@ export async function fetchSailboatDetails(sailboatQueryStr: string, slug?: stri
     // If registry lookup fails, continue with external fetch (non-fatal)
     logger.warn('Registry lookup failed - continuing with external fetch', { error: error instanceof Error ? error.message : String(error) });
   }
+
+  // ---------------------------------------------------------------------------
+  // Try Algolia for specs (fast, no bot-detection issues)
+  // ---------------------------------------------------------------------------
+  try {
+    const algoliaKeyword = sailboatQueryStr
+      .trim()
+      .replace(/\s*\([^)]*\)\s*/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const algoliaData = await algoliaFetchSailboatDetails(algoliaKeyword);
+
+    if (algoliaData) {
+      const { searchResult, details } = algoliaData;
+      logger.debug('Got specs from Algolia', { makeModel: details.make_model, slug: searchResult.slug }, true);
+
+      // Save to registry (non-blocking)
+      if (details.make_model) {
+        try {
+          const { saveBoatRegistry } = await import('@shared/lib/boat-registry/service');
+          await saveBoatRegistry(details.make_model, details, searchResult.slug);
+          logger.debug('Saved Algolia data to boat registry', { makeModel: details.make_model }, true);
+        } catch (saveErr) {
+          logger.warn('Failed to save Algolia data to registry (non-fatal)', {
+            error: saveErr instanceof Error ? saveErr.message : String(saveErr),
+          });
+        }
+      }
+
+      return details;
+    }
+  } catch (algoliaError) {
+    logger.warn('Algolia detail fetch failed, falling back to HTML scraping', {
+      error: algoliaError instanceof Error ? algoliaError.message : String(algoliaError),
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fall back: HTML scraping via ScraperAPI
+  // ---------------------------------------------------------------------------
 
   // Use provided slug if available, otherwise discover it via search
   let cleanQuery: string;
