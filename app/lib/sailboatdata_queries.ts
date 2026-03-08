@@ -3,6 +3,7 @@
  */
 
 import { logger } from './logger';
+import { algoliaSearchSailboats } from './scraper/sailboatdata-algolia';
 
 /**
  * Normalize Scandinavian characters to ASCII equivalents for URL query strings
@@ -28,19 +29,25 @@ function normalizeScandinavianChars(text: string): string {
  */
 async function fetchWithScraperAPI(url: string, options: RequestInit = {}, render: boolean = false): Promise<Response> {
   const scraperApiKey = process.env.SCRAPERAPI_API_KEY;
-  
+
   if (scraperApiKey && scraperApiKey.trim() !== '' && scraperApiKey !== 'your_scraperapi_api_key_here') {
-    // Use ScraperAPI
+    // Use ScraperAPI with premium proxy to bypass cloudflare/bot protection
     const renderParam = render ? '&render=true' : '&render=false';
-    const scraperApiUrl = `https://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(url)}${renderParam}`;
+    const useProxyParam = '&use_proxy=true'; // Force premium proxy for better success rate
+    const scraperApiUrl = `https://api.scraperapi.com/?api_key=${scraperApiKey}&url=${encodeURIComponent(url)}${renderParam}${useProxyParam}`;
 
-    logger.debug('Using ScraperAPI for fetch', { targetUrl: url, render }, true);
+    logger.debug('Using ScraperAPI for fetch', { targetUrl: url, render, useProxy: true }, true);
 
-    // ScraperAPI handles headers and browser simulation, so we use minimal headers
+    // Send realistic browser headers that ScraperAPI will pass to the target site
     const response = await fetch(scraperApiUrl, {
       method: 'GET',
       headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.google.com/',
+        'Cache-Control': 'max-age=0',
       },
       redirect: 'follow',
     });
@@ -117,7 +124,10 @@ export interface SailboatDetails {
 }
 
 /**
- * Search sailboatdata.com and parse results with URLs
+ * Search sailboatdata.com and parse results with URLs.
+ * Uses the Algolia search API directly — faster and more reliable than scraping HTML.
+ * Falls back to HTML scraping via ScraperAPI if Algolia fails.
+ *
  * @param keyword - Search keyword (what user typed)
  * @returns Array of sailboat search results with names and URLs
  */
@@ -126,35 +136,60 @@ export async function searchSailboatData(keyword: string): Promise<SailboatSearc
     return [];
   }
 
-  // Normalize Scandinavian characters before creating URL
   const normalizedKeyword = normalizeScandinavianChars(keyword.trim());
-  const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
-
-  logger.debug('Searching sailboatdata', { keyword, normalizedKeyword }, true);
+  logger.debug('Searching sailboatdata via Algolia', { keyword, normalizedKeyword }, true);
 
   try {
-    // Fetch the HTML page using ScraperAPI if configured, otherwise direct fetch
-    // Enable JavaScript rendering since search results are loaded dynamically via Algolia
-    const response = await fetchWithScraperAPI(searchUrl, {}, true);
+    const results = await algoliaSearchSailboats(normalizedKeyword);
+    logger.debug('Algolia search results', { count: results.length }, true);
+    return results;
+  } catch (algoliaError) {
+    // Algolia failed — fall back to HTML scraping via ScraperAPI
+    logger.warn('Algolia search failed, falling back to ScraperAPI', {
+      error: algoliaError instanceof Error ? algoliaError.message : String(algoliaError),
+    });
+  }
 
-    if (!response.ok) {
-      logger.error('Fetch error from sailboatdata', { status: response.status, statusText: response.statusText, url: searchUrl });
+  const searchUrl = `https://sailboatdata.com/?keyword=${encodeURIComponent(normalizedKeyword)}&sort-select&sailboats_per_page=50`;
 
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const response = await fetchWithScraperAPI(searchUrl, {}, true);
+
+      if (!response.ok) {
+        if (attempt === 0) {
+          logger.warn('ScraperAPI first attempt failed, retrying...', { status: response.status });
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          continue;
+        }
+        logger.error('Fetch error from sailboatdata after retries', {
+          status: response.status,
+          statusText: response.statusText,
+          url: searchUrl,
+        });
+        return [];
+      }
+
+      const html = await response.text();
+      const sailboats = parseSailboatSearchHTML(html, keyword);
+      logger.debug('Sailboats found via ScraperAPI fallback', { count: sailboats.length }, true);
+      return sailboats;
+    } catch (error) {
+      if (attempt === 0) {
+        logger.warn('ScraperAPI error on first attempt, retrying...', {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        continue;
+      }
+      logger.error('Error searching sailboatdata.com after retries', {
+        error: error instanceof Error ? error.message : String(error),
+      });
       return [];
     }
-
-    const html = await response.text();
-
-    // Parse HTML to extract sailboat names and URLs
-    const sailboats = parseSailboatSearchHTML(html, keyword);
-
-    logger.debug('Sailboats found in search', { count: sailboats.length }, true);
-
-    return sailboats;
-  } catch (error) {
-    logger.error('Error searching sailboatdata.com', { error: error instanceof Error ? error.message : String(error) });
-    return [];
   }
+
+  return [];
 }
 
 /**

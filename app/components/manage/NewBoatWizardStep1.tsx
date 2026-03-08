@@ -125,23 +125,6 @@ export function NewBoatWizardStep1({
 
   return (
     <div className="space-y-6">
-      {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-medium">
-            1
-          </span>
-          <span className="font-medium text-foreground">Basic Info</span>
-        </div>
-        <div className="w-8 h-px bg-border" />
-        <div className="flex items-center gap-2">
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs font-medium">
-            2
-          </span>
-          <span>Details</span>
-        </div>
-      </div>
-
       {/* Row 1: Boat Name */}
       <div>
         <label htmlFor="boatName" className="block text-sm font-medium text-foreground mb-1">
@@ -403,18 +386,20 @@ export function NewBoatWizardStep1({
               </svg>
             ) : undefined
           }
+          rightIcon={
+            !isLoading ? (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            ) : undefined
+          }
         >
           {isLoading ? 'Loading...' : 'Next'}
-          {!isLoading && (
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          )}
         </Button>
       </div>
     </div>
