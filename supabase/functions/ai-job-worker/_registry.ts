@@ -17,6 +17,7 @@ import { handler as generateJourney } from './handlers/generate-journey.ts';
 import { handler as generateBoatEquipment } from './handlers/generate-boat-equipment.ts';
 import { handler as generateEquipmentMaintenance } from './handlers/generate-equipment-maintenance.ts';
 import { handler as generateEquipmentSpares } from './handlers/generate-equipment-spares.ts';
+import { handler as generateEquipmentDocumentation } from './handlers/generate-equipment-documentation.ts';
 
 // ---------------------------------------------------------------------------
 // Registry — one entry per supported job type
@@ -27,6 +28,7 @@ export const registry: HandlerRegistry = {
   'generate-boat-equipment': generateBoatEquipment,
   'generate-equipment-maintenance': generateEquipmentMaintenance,
   'generate-equipment-spares': generateEquipmentSpares,
+  'generate-equipment-documentation': generateEquipmentDocumentation,
 
   // Add future use cases here, e.g.:
   // 'analyse-crew-match':      analyseCrewMatch,

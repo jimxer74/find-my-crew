@@ -16,7 +16,7 @@ export type JobTriggeredBy = 'user' | 'scheduler';
  * All supported async job types.
  * Add new job types here as new workflows are migrated to async mode.
  */
-export type JobType = 'generate-journey' | 'generate-boat-equipment' | 'generate-equipment-maintenance' | 'generate-equipment-spares';
+export type JobType = 'generate-journey' | 'generate-boat-equipment' | 'generate-equipment-maintenance' | 'generate-equipment-spares' | 'generate-equipment-documentation';
 
 // ============================================================================
 // Database row shapes
@@ -99,6 +99,18 @@ export interface GenerateEquipmentSparesPayload {
   manufacturer: string | null;
   model: string | null;
   yearInstalled: number | null;
+  productRegistryId: string | null;
+  boatMakeModel: string;
+}
+
+/** Payload for the 'generate-equipment-documentation' job type */
+export interface GenerateEquipmentDocumentationPayload {
+  boatId: string;
+  equipmentId: string;
+  equipmentName: string;
+  category: string;
+  manufacturer: string | null;
+  model: string | null;
   productRegistryId: string | null;
   boatMakeModel: string;
 }

@@ -315,6 +315,19 @@ function EquipmentCard({
               {item.model && ` ${item.model}`}
             </p>
           )}
+          {registryProduct?.manufacturer_url && (
+            <p className="truncate">
+              <a
+                href={registryProduct.manufacturer_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-0.5 text-primary hover:underline"
+                title="Visit manufacturer website"
+              >
+                🔗 Manufacturer
+              </a>
+            </p>
+          )}
           {item.serial_number && (
             <p className="truncate">
               <span className="font-medium">S/N:</span> {item.serial_number}
@@ -365,6 +378,17 @@ function EquipmentCard({
         {isOwner && item.product_registry_id && (
           <div className="mt-1.5 border-t border-border pt-1.5">
             <EquipmentSparesSection
+              item={item}
+              boatId={boatId}
+              boatMakeModel={boatMakeModel}
+            />
+          </div>
+        )}
+
+        {/* Documentation section */}
+        {isOwner && item.product_registry_id && (
+          <div className="mt-1.5 border-t border-border pt-1.5">
+            <EquipmentDocumentationSection
               item={item}
               boatId={boatId}
               boatMakeModel={boatMakeModel}
@@ -877,6 +901,207 @@ function EquipmentSparesSection({
       <div className="space-y-1">
         <p className="text-xs text-destructive">{errorMsg || 'Generation failed.'}</p>
         <button onClick={() => setState('no_parts')} className="text-xs text-muted-foreground hover:text-primary">
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Equipment Documentation Section
+// ============================================================================
+
+interface CachedDocumentationLink {
+  url: string;
+  title: string;
+  region?: string;
+}
+
+type DocumentationState = 'idle' | 'fetching' | 'has_docs' | 'no_docs' | 'generating' | 'applied' | 'error';
+
+function EquipmentDocumentationSection({
+  item,
+  boatId,
+  boatMakeModel,
+}: {
+  item: BoatEquipment;
+  boatId: string;
+  boatMakeModel?: string;
+}) {
+  const [state, setState] = useState<DocumentationState>('idle');
+  const [manufacturerUrl, setManufacturerUrl] = useState<string | null>(null);
+  const [documentationLinks, setDocumentationLinks] = useState<CachedDocumentationLink[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const fetchCached = async () => {
+    setState('fetching');
+    try {
+      const res = await fetch(`/api/product-registry/${item.product_registry_id}`);
+      if (res.ok) {
+        const json = await res.json();
+        const product = json.product as ProductRegistryEntry;
+        const urls = (product.manufacturer_url ?? '').trim();
+        const links = (Array.isArray(product.documentation_links) ? product.documentation_links : []) as CachedDocumentationLink[];
+
+        if (urls || links.length > 0) {
+          setManufacturerUrl(urls || null);
+          setDocumentationLinks(links);
+          setState('has_docs');
+        } else {
+          setState('no_docs');
+        }
+      } else {
+        setState('no_docs');
+      }
+    } catch {
+      setState('no_docs');
+    }
+  };
+
+  const handleGenerate = async () => {
+    setState('generating');
+    setJobId(null);
+    try {
+      const result = await submitJob({
+        job_type: 'generate-equipment-documentation',
+        payload: {
+          boatId,
+          equipmentId: item.id,
+          equipmentName: item.name,
+          category: item.category,
+          manufacturer: item.manufacturer ?? null,
+          model: item.model ?? null,
+          productRegistryId: item.product_registry_id ?? null,
+          boatMakeModel: boatMakeModel ?? '',
+        },
+      });
+      setJobId(result.jobId);
+    } catch {
+      setState('no_docs');
+    }
+  };
+
+  const handleJobComplete = useCallback(async () => {
+    await fetchCached();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.product_registry_id]);
+
+  const handleJobError = useCallback((err: string) => {
+    setErrorMsg(err);
+    setState('error');
+  }, []);
+
+  if (state === 'idle') {
+    return (
+      <button onClick={fetchCached} className="text-xs text-primary hover:underline">
+        ✦ Fetch documentation
+      </button>
+    );
+  }
+
+  if (state === 'fetching') {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+        Loading documentation…
+      </div>
+    );
+  }
+
+  if (state === 'no_docs') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-foreground">No cached documentation.</p>
+        <button onClick={handleGenerate} className="text-xs font-medium text-primary hover:underline">
+          ✦ Generate with AI
+        </button>
+      </div>
+    );
+  }
+
+  if (state === 'generating') {
+    if (!jobId) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <div className="w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin" />
+          Starting…
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-foreground">Searching for documentation…</p>
+        <JobProgressPanel
+          jobId={jobId}
+          onComplete={handleJobComplete}
+          onError={handleJobError}
+        />
+      </div>
+    );
+  }
+
+  if (state === 'has_docs') {
+    return (
+      <div className="space-y-1.5">
+        {manufacturerUrl && (
+          <div className="text-xs">
+            <p className="text-muted-foreground mb-0.5">Manufacturer:</p>
+            <a
+              href={manufacturerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline break-all"
+            >
+              {manufacturerUrl}
+            </a>
+          </div>
+        )}
+
+        {documentationLinks.length > 0 && (
+          <div className="text-xs">
+            <p className="text-muted-foreground mb-0.5">Documentation:</p>
+            <ul className="space-y-0.5">
+              {documentationLinks.map((link, idx) => (
+                <li key={idx} className="flex items-start gap-1">
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline break-all flex-1"
+                  >
+                    {link.title}
+                  </a>
+                  {link.region && (
+                    <span className="shrink-0 text-xs font-semibold px-1 py-0.5 rounded bg-muted text-muted-foreground uppercase">
+                      {link.region}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <button
+          onClick={fetchCached}
+          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          title="Refresh from cache"
+        >
+          ↻ Refresh
+        </button>
+      </div>
+    );
+  }
+
+  if (state === 'error') {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-destructive">{errorMsg || 'Generation failed.'}</p>
+        <button onClick={() => setState('no_docs')} className="text-xs text-muted-foreground hover:text-primary">
           Try again
         </button>
       </div>
