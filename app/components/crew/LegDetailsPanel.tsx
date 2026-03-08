@@ -1919,7 +1919,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   <Card className="mx-4 mb-3 text-left" padding="md">
 
             {/* Journey Costs Section */}
-            {leg.cost_model && leg.cost_model !== 'Not defined' && (
+            {leg.cost_model && (
               <div className="text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-3">Journey costs</h3>
                 <div className="flex items-start gap-3">
