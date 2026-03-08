@@ -25,6 +25,7 @@ import { useProfileRedirect } from '@shared/lib/profile/redirectHelper';
 import { useProfile } from '@shared/lib/profile/useProfile';
 import { hasProfile } from '@shared/utils';
 import { getSupabaseBrowserClient } from '@shared/database/client';
+import { Card } from '@shared/ui/Card/Card';
 import { LoadingButton } from '@shared/ui/LoadingButton';
 import { Button } from '@shared/ui/Button/Button';
 import { Modal } from '@shared/ui/Modal/Modal';
@@ -1486,24 +1487,65 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                 )}
 
-                <div className="relative p-4 sm:p-4 space-y-2 sm:space-y-2 text-center">              
-       
+                <div className="space-y-3 py-3">
 
-            {/* Header */}
-            <div>
-              <h2 className="text-lg font-bold text-foreground mb-1">{leg.leg_name}</h2>
-              <p className="text-muted-foreground">{leg.journey_name}</p>
-            </div>
+                  {/* Card 1: Leg & Journey Information */}
+                  <Card className="mx-4 text-left" padding="md">
+                    {/* Header */}
+                    <div className="text-center mb-3">
+                      <h2 className="text-lg font-bold text-foreground mb-1">{leg.leg_name}</h2>
+                      <p className="text-muted-foreground">{leg.journey_name}</p>
+                      {/* Journey description */}
+                      {(journeyDescription || isLoadingDescription) && (
+                        <div className="mt-2 text-left">
+                          {isLoadingDescription ? (
+                            <div className="w-full h-8 flex items-center justify-center bg-muted rounded">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>
+                            </div>
+                          ) : (
+                            <>
+                              {!showFullDescription ? (
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                  {journeyDescription && journeyDescription.length > 150
+                                    ? journeyDescription.substring(0, 150) + '...'
+                                    : journeyDescription}
+                                  {journeyDescription && journeyDescription.length > 150 && (
+                                    <Button
+                                      onClick={() => setShowFullDescription(true)}
+                                      variant="ghost"
+                                      className="ml-1 !text-xs !p-0 !h-auto"
+                                    >
+                                      Show more
+                                    </Button>
+                                  )}
+                                </p>
+                              ) : (
+                                <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                  {journeyDescription}
+                                  <Button
+                                    onClick={() => setShowFullDescription(false)}
+                                    variant="ghost"
+                                    className="ml-1 !text-xs !p-0 !h-auto"
+                                  >
+                                    Show less
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-            {/* Description */}
-            {leg.leg_description && (
-              <div>
-                <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
-              </div>
-            )}
+                    {/* Leg Description */}
+                    {leg.leg_description && (
+                      <div className="mb-3">
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{leg.leg_description}</p>
+                      </div>
+                    )}
 
-            {/* Start and End Points with Arrow */}
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-4 text-left">
+                    {/* Start and End Points with Arrow */}
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 mb-4 text-left">
               {/* Start Point */}
               <div className="flex flex-col justify-center">
                 {leg.start_waypoint ? (
@@ -1606,12 +1648,12 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             )}
 
+                  </Card>
 
-
-            <div className="flex items-center justify-between mb-1 border-t pt-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground">Risk and Experience Level</h3>
-            </div>
-            <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-3">
+                  {/* Card 2: Leg Requirements */}
+                  <Card className="mx-4 text-left" padding="md">
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-3">Requirements</h3>
+                    <div className="space-y-1 grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-3">
 
             {/* Risk Level and Experience level*/}
             {(() => {
@@ -1706,15 +1748,18 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
 
             {/* Skills */}
             <SkillsMatchingDisplay
-              headerText="Skills"            
-              className="pt-4 border-t"
+              headerText="Skills"
+              className="mt-3 pt-3 border-t border-border"
               legSkills={leg.skills || []}
               userSkills={userSkills}
               skillMatchPercentage={leg.skill_match_percentage}
             />
 
-            {/* Boat Info - blur when not authenticated */}
-            <div className="relative pt-2 border-t border-border text-left">
+                  </Card>
+
+                  {/* Card 3: Skipper & Boat Information */}
+                  <Card className="mx-4 text-left" padding="md">
+                  <div className="relative">
                 {!user && (
                   <div
                     className="absolute inset-0 z-10 rounded-md backdrop-blur-sm bg-background/70 flex items-center justify-center min-h-[120px]"
@@ -1726,7 +1771,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4 mb-2">
-                  <h3 className="text-xs font-semibold text-muted-foreground">Skipper / Owner</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground">Skipper and Boat</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-6 items-start pb-2">
                   {/* Owner Avatar and Name */}
@@ -1771,8 +1816,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     )}
                   </div>
                 </div>
-                <div className="pt-2 border-t border-border text-left">
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-2">Boat</h3>
+                <div className="pt-2 text-left">
                   <div className="flex gap-3 items-start">
                     <div className="flex items-center gap-3 flex-shrink-0 relative w-16 h-16 rounded-full">
                       {leg?.boat_image_url ? (
@@ -1868,9 +1912,15 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             )}
 
+                  </Card>
+
+                  {/* Card 4: Journey Costs */}
+                  {(leg.cost_model && leg.cost_model !== 'Not defined') && (
+                  <Card className="mx-4 mb-3 text-left" padding="md">
+
             {/* Journey Costs Section */}
             {leg.cost_model && leg.cost_model !== 'Not defined' && (
-              <div className="pt-2 border-t border-border text-left">
+              <div className="text-left">
                 <h3 className="text-xs font-semibold text-muted-foreground mb-3">Journey costs</h3>
                 <div className="flex items-start gap-3">
                   <div className="relative w-16 h-16 flex-shrink-0">
@@ -1898,52 +1948,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
               </div>
             )}
 
-                {/* Journey Description Section */}
-                {(journeyDescription || isLoadingDescription) && (
-                  <div className="pt-4 border-t border-border text-left pb-4">
-                    <h3 className="text-xs font-semibold text-muted-foreground mb-2">Journey details</h3>
-                    <div className="relative">
-                    <p className="text-muted-foreground mb-2">{leg.journey_name}</p>
 
-                      {isLoadingDescription ? (
-                        <div className="w-full h-12 flex items-center justify-center bg-muted rounded">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-foreground"></div>
-                        </div>
-                      ) : (
-                        <>
-                          {!showFullDescription ? (
-
-                            <p className="text-sm text-foreground whitespace-pre-wrap">
-                              {journeyDescription && journeyDescription.length > 100
-                                ? journeyDescription.substring(0, 100) + '...'
-                                : journeyDescription}
-                              {journeyDescription && journeyDescription.length > 100 && (
-                                <Button
-                                  onClick={() => setShowFullDescription(true)}
-                                  variant="ghost"
-                                  className="ml-2 !text-xs !p-0 !h-auto"
-                                >
-                                  Show more
-                                </Button>
-                              )}
-                            </p>
-                          ) : (
-                            <div className="text-sm text-foreground whitespace-pre-wrap">
-                              {journeyDescription}
-                              <Button
-                                onClick={() => setShowFullDescription(false)}
-                                variant="ghost"
-                                className="ml-2 !text-xs !p-0 !h-auto"
-                              >
-                                Show less
-                              </Button>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
+                  </Card>
+                  )}
 
                 </div>
               </div>

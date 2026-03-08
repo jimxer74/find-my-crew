@@ -46,5 +46,5 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   /**
    * Button content
    */
-  children: ReactNode;
+  children?: ReactNode;
 }
