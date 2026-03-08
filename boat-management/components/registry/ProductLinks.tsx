@@ -110,8 +110,8 @@ export function ProductLinks({ product, userCountry, equipment, onRefresh }: Pro
     );
   }
 
-  // Show fetch button if no documentation yet and equipment info is available
-  if (!product.documentation_links?.length && !product.spare_parts_links?.length && equipment) {
+  // Show fetch button if nothing is cached yet and equipment info is available
+  if (!product.documentation_links?.length && !product.spare_parts_links?.length && !product.manufacturer_url && equipment) {
     return (
       <div className="space-y-2">
         <p className="text-xs text-muted-foreground">No documentation or spare parts cached.</p>
@@ -126,7 +126,7 @@ export function ProductLinks({ product, userCountry, equipment, onRefresh }: Pro
   }
 
   // If no links to show at all, return null
-  if (!product.documentation_links?.length && !product.spare_parts_links?.length) {
+  if (!product.documentation_links?.length && !product.spare_parts_links?.length && !product.manufacturer_url) {
     return null;
   }
 
