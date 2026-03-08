@@ -2,8 +2,21 @@
 @import '@fontsource/cascadia-code/600.css'; /* SemiBold weight */
 @import "tailwindcss";
 
+/* Theme colors */
+/* CSS HEX */
+
+
 /* Add these CSS variables */
 :root {
+  /* Theme color palette */
+  --bright-snow: #F9F9F9ff;
+  --sky-blue-light: #97C6DDff;
+  --alice-blue: #E5F1F6ff;
+  --baltic-blue: #185B82ff;
+  --cerulean: #3078A3ff;
+  /* Theme color palette */
+
+
   --background: #f3f3f3;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
@@ -29,6 +42,8 @@
   --50match: #E5FF00;
   --25match: #ff9900;
   --0match: #ff5454;
+
+
 }
 
 .dark {
@@ -69,9 +84,9 @@
 
 /* Role-based primary color overrides applied via class on <html> */
 .role-crew {
-  --primary: #193f91; /* blue-600 — matches crew QuickPost button */
-  --primary-foreground: #ffffff;
-  --ring: #2563eb;
+  --primary: var(--baltic-blue); /* blue-600 — matches crew QuickPost button */
+  --primary-foreground: var(--bright-snow);
+  --ring: var(--cerulean);
 }
 
 .role-owner {
@@ -82,9 +97,9 @@
 
 /* Dark mode variants */
 .dark.role-crew {
-  --primary: #112d68; /* blue-500 */
+  --primary: #186088; /* blue-500 */
   --primary-foreground: #ffffff;
-  --ring: #3b82f6;
+  --ring: #5AA5CD;
 }
 
 .dark.role-owner {
