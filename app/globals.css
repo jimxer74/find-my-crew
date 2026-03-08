@@ -10,16 +10,21 @@
 :root {
   /* Theme color palette */
   --bright-snow: #F9F9F9ff;
-  --sky-blue-light: #97C6DDff;
   --alice-blue: #E5F1F6ff;
-  --baltic-blue: #185B82ff;
+  --sky-blue-light: #97C6DDff;
+  --baltic-blue: #1B628Cff;
+  --steel-blue: #4481A4ff;
   --cerulean: #3078A3ff;
+  --cornflower-ocean: #26709Cff;
+  --deep-oceanic-blue: rgb(20, 70, 99);
   /* Theme color palette */
 
 
-  --background: #f3f3f3;
+  /*--background: #f3f3f3;*/
+  --background: var(--bright-snow);
+
   --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
+  --card: #fcfbfb;
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
@@ -98,7 +103,7 @@
 /* Dark mode variants */
 .dark.role-crew {
   --primary: #186088; /* blue-500 */
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--bright-snow);
   --ring: #5AA5CD;
 }
 

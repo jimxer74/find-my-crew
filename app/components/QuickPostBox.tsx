@@ -160,8 +160,12 @@ export function QuickPostBox({
   // ── Expanded textarea card ─────────────────────────────────────────────────
   const buttonActiveCls =
     accentColor === 'blue'
-      ? 'bg-blue-600 hover:bg-blue-700'
+      ? 'bg-[#185B82] hover:bg-[#0f4559]'
       : 'bg-amber-600 hover:bg-amber-700';
+  const buttonDisabledCls =
+    accentColor === 'blue'
+      ? 'disabled:bg-[#4682B4]'
+      : 'disabled:bg-gray-400';
   const focusRingCls =
     accentColor === 'blue'
       ? 'focus-within:ring-2 focus-within:ring-blue-400/50'
@@ -278,7 +282,7 @@ export function QuickPostBox({
             <button
               type="button"
               onClick={handlePostAsText}
-              className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${buttonActiveCls}`}
+              className={`flex-1 px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${buttonActiveCls} ${buttonDisabledCls}`}
             >
               Post URL as text
             </button>
@@ -336,7 +340,7 @@ export function QuickPostBox({
           type="button"
           onClick={handlePost}
           disabled={!text.trim()}
-          className={`flex-shrink-0 px-6 text-sm font-medium text-white border-l border-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center gap-1.5 ${buttonActiveCls}`}
+          className={`flex-shrink-0 px-6 text-sm font-medium text-white border-l border-white/10 disabled:cursor-not-allowed transition-colors flex flex-col items-center justify-center gap-1.5 ${buttonActiveCls} ${buttonDisabledCls}`}
         >
           {urlDetected ? (
             <>

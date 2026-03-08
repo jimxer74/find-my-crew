@@ -61,7 +61,7 @@ function RotatingHeadline() {
       {lines.map((line, i) => (
         <React.Fragment key={i}>{line}<br /></React.Fragment>
       ))}
-      <span style={{ color: 'var(--cerulean)' }} className="font-extrabold">{accent}</span>
+      <span style={{ color: 'var(--cornflower-ocean)' }} className="font-extrabold">{accent}</span>
     </h1>
   );
 }
@@ -354,7 +354,7 @@ function WelcomePageContent() {
       <section className="relative min-h-screen flex flex-col">
 
         {/* Gradient overlay: very light at top, gradually darkens toward bottom */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1f35]/10 via-[#0c1f35]/10 via-60% to-[#0c1f35]/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0c1f35]/10 via-[#0c1f35]/10 via-60% to-[#1B4575]/70" />
         {/* Soft fade into the dark action section below */}
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-b from-transparent to-[#0c1f35]" />
 
