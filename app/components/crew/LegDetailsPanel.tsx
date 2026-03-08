@@ -1330,7 +1330,7 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                 {/* Scrollable content */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-foreground mb-2">Register for Leg</h3>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">Join the Leg</h3>
                     <p className="text-sm text-muted-foreground mb-4">
                       Register your interest to join this leg: <span className="font-medium text-foreground">{leg.leg_name}</span>
                     </p>
@@ -2048,8 +2048,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     disabled
                     variant="secondary"
                     className="w-full opacity-50"
+                    leftIcon={
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    }
                   >
-                    Register for leg
+                    Join the leg
                   </Button>
                 </div>
               ) : (
@@ -2059,8 +2064,13 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                   disabled={checkingProfileConsent}
                   fullWidth
                   loadingText="Checking requirements..."
+                  leftIcon={
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    </svg>
+                  }
                 >
-                  {checkingProfileConsent ? 'Checking...' : 'Register for leg'}
+                  {checkingProfileConsent ? 'Checking...' : 'Join the leg'}
                 </LoadingButton>
               )}
               {registrationError && (

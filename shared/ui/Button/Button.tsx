@@ -72,7 +72,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           <span className="inline-block animate-spin rounded-full h-4 w-4 border-2 border-current border-t-transparent" />
         )}
         {!isLoading && leftIcon && <span className="flex items-center">{leftIcon}</span>}
-        <span>{children}</span>
+        {children != null && <span>{children}</span>}
         {!isLoading && rightIcon && <span className="flex items-center">{rightIcon}</span>}
       </button>
     );

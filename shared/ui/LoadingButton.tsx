@@ -17,6 +17,8 @@ interface LoadingButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
   /** Spinner color (defaults to currentColor) */
   spinnerColor?: string;
+  /** Icon to show on the left (hidden while loading) */
+  leftIcon?: React.ReactNode;
 }
 
 const variantClasses = {
@@ -47,6 +49,7 @@ export function LoadingButton({
   size = 'md',
   fullWidth = false,
   spinnerColor = 'currentColor',
+  leftIcon,
   className = '',
   disabled = false,
   ...props
@@ -67,6 +70,7 @@ export function LoadingButton({
       className={combinedClassName}
       {...props}
     >
+      {!isLoading && leftIcon && <span className="flex items-center">{leftIcon}</span>}
       {isLoading && (
         <svg
           className={`animate-spin ${spinnerSize}`}
