@@ -4,7 +4,7 @@
 
 /* Add these CSS variables */
 :root {
-  --background: #f7f7f7;
+  --background: #f3f3f3;
   --foreground: oklch(0.145 0 0);
   --card: #ffffff;
   --card-foreground: oklch(0.145 0 0);
@@ -32,10 +32,10 @@
 }
 
 .dark {
-  --background:        oklch(0.145 0.035 250);   /* main bg ≈ #0E1D34 / very close match */
+  --background:        #181818;   /* main bg ≈ #0E1D34 / very close match */
   --foreground:        oklch(0.96  0.01  250);   /* almost white, tiny blue tint for harmony */
 
-  --card:              oklch(0.25 0.03  250);   /* cards slightly lighter than bg */
+  --card:              #191f28;   /* cards slightly lighter than bg */
   --card-foreground:   oklch(0.96  0.01  250);
 
   --popover:           oklch(0.18  0.03  250);   /* similar to your original popover level */
@@ -69,20 +69,20 @@
 
 /* Role-based primary color overrides applied via class on <html> */
 .role-crew {
-  --primary: #2563eb; /* blue-600 — matches crew QuickPost button */
+  --primary: #193f91; /* blue-600 — matches crew QuickPost button */
   --primary-foreground: #ffffff;
   --ring: #2563eb;
 }
 
 .role-owner {
-  --primary: #d97706ef; /* amber-600 — matches owner QuickPost button */
+  --primary: #FCA311; /* amber-600 — matches owner QuickPost button */
   --primary-foreground: #ffffff;
   --ring: #d97706;
 }
 
 /* Dark mode variants */
 .dark.role-crew {
-  --primary: #3b82f6; /* blue-500 */
+  --primary: #112d68; /* blue-500 */
   --primary-foreground: #ffffff;
   --ring: #3b82f6;
 }
