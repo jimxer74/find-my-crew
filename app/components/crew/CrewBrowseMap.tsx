@@ -1876,7 +1876,39 @@ export function CrewBrowseMap({
     const coordinates = validWaypoints.map(wp => wp.coordinates!);
     logger.debug('Creating route with coordinates', { count: coordinates.length }, true);
 
-    const isApproved = userRegistrations.get(selectedLeg.leg_id) === 'Approved';
+    const registrationStatus = userRegistrations.get(selectedLeg.leg_id);
+    const isApproved = registrationStatus === 'Approved';
+    const isPending = registrationStatus === 'Pending approval';
+
+    // Determine route color based on starting waypoint color logic
+    let routeColor = '#A3A3A3'; // default gray
+    let routeWidth = 2;
+
+    if (isApproved) {
+      routeColor = '#01B000'; // green for approved
+      routeWidth = 4;
+    } else if (isPending) {
+      routeColor = '#AEB000'; // yellow/amber for pending
+      routeWidth = 3;
+    } else if (hasProfile(profile)) {
+      // Use match percentage color for unregistered legs when user has profile
+      const matchPercentage = selectedLeg.skill_match_percentage ?? 0;
+      const experienceMatches = selectedLeg.experience_level_matches !== false;
+
+      if (!experienceMatches) {
+        routeColor = '#ef4444'; // red if experience doesn't match
+      } else if (matchPercentage >= 80) {
+        routeColor = '#22c55e'; // green for 80+
+      } else if (matchPercentage >= 50) {
+        routeColor = '#fde047'; // yellow for 50-79
+      } else if (matchPercentage >= 25) {
+        routeColor = '#fdba74'; // orange for 25-49
+      } else {
+        routeColor = '#ef4444'; // red for <25
+      }
+    } else {
+      routeColor = '#22276E'; // dark blue when no user profile
+    }
 
     // Use splitLineAtAntimeridian to handle routes crossing the 180° longitude
     const geometry = splitLineAtAntimeridian(coordinates);
@@ -1891,11 +1923,11 @@ export function CrewBrowseMap({
       features: [routeFeature],
     });
 
-    // Optional: different style based on approval status
-    map.current.setPaintProperty('leg-route-line', 'line-color', isApproved ? '#01B000' : '#A3A3A3');
-    map.current.setPaintProperty('leg-route-line', 'line-width', isApproved ? 4 : 2);
+    // Set route line style using starting waypoint color and solid line
+    map.current.setPaintProperty('leg-route-line', 'line-color', routeColor);
+    map.current.setPaintProperty('leg-route-line', 'line-width', routeWidth);
     map.current.setPaintProperty('leg-route-line', 'line-opacity', 0.9);
-    map.current.setPaintProperty('leg-route-line', 'line-dasharray', isApproved ? [1, 0] : [2, 2]); // Solid if approved, dashed otherwise
+    map.current.setPaintProperty('leg-route-line', 'line-dasharray', [1, 0]); // Always solid when selected
 
     // Calculate bounds to fit entire route (handles antimeridian crossing)
     const calculatedBounds = calculateBoundsWithAntimeridian(coordinates);
