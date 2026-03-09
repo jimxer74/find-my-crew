@@ -81,7 +81,7 @@ function ShareButtons({ legId }: { legId: string }) {
       : `/crew/dashboard?legId=${legId}`;
 
   const encodedUrl = encodeURIComponent(legUrl);
-  const shareText = encodeURIComponent('Check out this sailing leg on Find My Crew!');
+  const shareText = encodeURIComponent('Check out this sailing leg on SailSmart!');
 
   const handleCopy = async () => {
     try {
