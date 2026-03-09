@@ -10,6 +10,7 @@ import { RegistrationsTable } from '@/app/components/registrations/Registrations
 import { RegistrationCard } from '@/app/components/registrations/RegistrationCard';
 import { StatusBadge } from '@/app/components/registrations/StatusBadge';
 import { GroupMessageDialog } from '@/app/components/registrations/GroupMessageDialog';
+import { RegistrationsCarousel } from '@/app/components/registrations/RegistrationsCarousel';
 
 type Registration = {
   id: string;
@@ -608,35 +609,20 @@ export default function AllRegistrationsPage() {
           </div>
         </div>
 
-      {/* Mobile View - Cards */}
+      {/* Mobile View - Carousel with collapsible legs */}
       <div className="flex flex-col md:hidden flex-1 overflow-y-auto">
         {registrations.length === 0 ? (
-          <div className="bg-card rounded-lg shadow p-8 text-center mx-4">
+          <div className="bg-card rounded-lg shadow p-8 text-center mx-4 mt-4">
             <p className="text-muted-foreground">{t('noMatchingRegistrations')}</p>
           </div>
         ) : (
-          <>
-            {groupMessageSentCount !== null && (
-              <div className="mx-4 mt-4 px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-700 dark:text-green-400 flex items-center justify-between">
-                <span>Message sent to {groupMessageSentCount} {groupMessageSentCount === 1 ? 'recipient' : 'recipients'}.</span>
-                <button onClick={() => setGroupMessageSentCount(null)} className="text-muted-foreground hover:text-foreground ml-4">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-            <div className="grid grid-cols-1 gap-4 mb-6 px-4 py-6">
-              {registrations.map((registration) => (
-                <RegistrationCard
-                  key={registration.id}
-                  registration={registration}
-                  isSelected={selectedIds.has(registration.id)}
-                  onSelectionChange={handleSelectionChange}
-                />
-              ))}
-            </div>
-          </>
+          <RegistrationsCarousel
+            registrations={registrations}
+            selectedIds={selectedIds}
+            onSelectionChange={handleSelectionChange}
+            groupMessageSentCount={groupMessageSentCount}
+            onGroupMessageSentCountChange={setGroupMessageSentCount}
+          />
         )}
 
         {/* Mobile Pagination */}
