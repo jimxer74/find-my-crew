@@ -323,9 +323,20 @@ export default function AllRegistrationsPage() {
       <main className="h-[calc(100vh-100px)] relative flex flex-col md:flex-row overflow-hidden">
         {/* Mobile Header and Filters */}
         <div className="md:hidden flex flex-col">
-          <div className="px-4 sm:px-6 py-8 border-b border-border">
+          <div className="px-4 sm:px-6 py-6 border-b border-border">
             <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
             <p className="text-muted-foreground">{t('subtitle')}</p>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => { setGroupMessageSentCount(null); setIsGroupMessageOpen(true); }}
+                className="mt-4 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                Send Group Message ({selectedIds.size})
+              </button>
+            )}
           </div>
 
           {/* Mobile Filter Badges */}
@@ -604,11 +615,28 @@ export default function AllRegistrationsPage() {
             <p className="text-muted-foreground">{t('noMatchingRegistrations')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 mb-6 px-4 py-6">
-            {registrations.map((registration) => (
-              <RegistrationCard key={registration.id} registration={registration} />
-            ))}
-          </div>
+          <>
+            {groupMessageSentCount !== null && (
+              <div className="mx-4 mt-4 px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-700 dark:text-green-400 flex items-center justify-between">
+                <span>Message sent to {groupMessageSentCount} {groupMessageSentCount === 1 ? 'recipient' : 'recipients'}.</span>
+                <button onClick={() => setGroupMessageSentCount(null)} className="text-muted-foreground hover:text-foreground ml-4">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-4 mb-6 px-4 py-6">
+              {registrations.map((registration) => (
+                <RegistrationCard
+                  key={registration.id}
+                  registration={registration}
+                  isSelected={selectedIds.has(registration.id)}
+                  onSelectionChange={handleSelectionChange}
+                />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Mobile Pagination */}

@@ -24,22 +24,41 @@ interface Registration {
 
 interface RegistrationCardProps {
   registration: Registration;
+  isSelected?: boolean;
+  onSelectionChange?: (id: string, selected: boolean) => void;
 }
 
-export function RegistrationCard({ registration }: RegistrationCardProps) {
+export function RegistrationCard({ registration, isSelected = false, onSelectionChange }: RegistrationCardProps) {
   const profile = registration.profiles;
   const leg = registration.legs;
+  const selectionEnabled = !!onSelectionChange;
 
   return (
-    <Link href={`/owner/registrations/${registration.id}`}>
-      <Card className="cursor-pointer hover:shadow-lg hover:bg-accent/50 transition-all relative">
+    <div className={selectionEnabled ? 'relative' : ''}>
+      <Link href={`/owner/registrations/${registration.id}`}>
+        <Card className={`cursor-pointer hover:shadow-lg hover:bg-accent/50 transition-all relative ${
+          isSelected ? 'ring-2 ring-inset ring-primary' : ''
+        }`}>
+        {/* Checkbox - Top Left */}
+        {selectionEnabled && (
+          <div className="absolute top-3 left-3" onClick={(e) => e.preventDefault()}>
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={(e) => onSelectionChange(registration.id, e.target.checked)}
+              className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
+              aria-label={`Select ${profile?.full_name || 'registration'}`}
+            />
+          </div>
+        )}
+
         {/* Status Badge - Top Right */}
-        <div className="absolute top-3 right-3">
+        <div className={`absolute top-3 ${selectionEnabled ? 'right-3' : 'right-3'}`}>
           <StatusBadge status={registration.status} variant="circle" />
         </div>
 
-        {/* Content with padding for badge */}
-        <div className="pr-12 space-y-3">
+        {/* Content with padding for badges and checkbox */}
+        <div className={`space-y-3 ${selectionEnabled ? 'pl-8 pr-12' : 'pr-12'}`}>
           {/* Name with Avatar */}
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 flex-shrink-0">
@@ -93,5 +112,6 @@ export function RegistrationCard({ registration }: RegistrationCardProps) {
         </div>
       </Card>
     </Link>
+    </div>
   );
 }
