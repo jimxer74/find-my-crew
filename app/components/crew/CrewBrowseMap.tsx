@@ -210,6 +210,13 @@ export function CrewBrowseMap({
     setSelectedLeg(null);
     setLegWaypoints([]);
 
+    // Clear other leg markers immediately while we load journey legs
+    if (map.current && sourceAddedRef.current) {
+      const emptyCollection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
+      if (approvedSource) approvedSource.setData(emptyCollection);
+    }
+
     try {
       // Fetch all legs for this journey
       const res = await fetch(`/api/journeys/${journeyId}/legs`);
@@ -240,6 +247,34 @@ export function CrewBrowseMap({
       setJourneyViewId(journeyId);
       setJourneyViewName(journeyName);
       setJourneyLegs(jLegs);
+
+      // Populate legs-source with journey leg markers (dark blue to match route line)
+      // and add to legsMapRef so click handler can find them
+      if (map.current && sourceAddedRef.current) {
+        const features: GeoJSON.Feature[] = jLegs
+          .map((leg: Leg) => {
+            const waypoint = leg.start_waypoint || leg.end_waypoint;
+            if (!waypoint) return null;
+            return {
+              type: 'Feature' as const,
+              geometry: { type: 'Point' as const, coordinates: [waypoint.lng, waypoint.lat] },
+              properties: {
+                leg_id: leg.leg_id,
+                has_user: false, // renders as #22276E dark blue — matches route line color
+                match_percentage: null,
+                experience_matches: null,
+                registration_status: null,
+              },
+            };
+          })
+          .filter((f: GeoJSON.Feature | null): f is GeoJSON.Feature => f !== null);
+
+        const legsSource = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
+        if (legsSource) legsSource.setData({ type: 'FeatureCollection', features });
+      }
+
+      // Add journey legs to legsMap so click handler can look them up
+      jLegs.forEach((leg: Leg) => legsMapRef.current.set(leg.leg_id, leg));
 
       // Draw all leg routes on map
       if (map.current && routeSourceAddedRef.current) {
@@ -300,6 +335,15 @@ export function CrewBrowseMap({
       if (routeSource) {
         routeSource.setData({ type: 'FeatureCollection', features: [] });
       }
+    }
+
+    // Clear legs-source so the GeoJSON effect can repopulate it with normal legs
+    if (map.current && sourceAddedRef.current) {
+      const emptyCollection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      const legsSource = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
+      if (legsSource) legsSource.setData(emptyCollection);
+      const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
+      if (approvedSource) approvedSource.setData(emptyCollection);
     }
   }, []);
 
@@ -442,6 +486,7 @@ export function CrewBrowseMap({
 
   // Store full leg data in a map for quick lookup
   const legsMapRef = useRef<Map<string, Leg>>(new Map());
+  const journeyViewModeRef = useRef(false);
 
   // Update legs map when legs change
   useEffect(() => {
@@ -450,6 +495,9 @@ export function CrewBrowseMap({
       legsMapRef.current.set(leg.leg_id, leg);
     });
   }, [legs]);
+
+  // Keep ref in sync for use inside map event handlers
+  useEffect(() => { journeyViewModeRef.current = journeyViewMode; }, [journeyViewMode]);
 
   // Load user's skills and experience level from profile using useProfile hook
   useEffect(() => {
@@ -831,6 +879,9 @@ export function CrewBrowseMap({
   useEffect(() => {
     if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
+    // In journey view mode, legs-source has journey markers set by enterJourneyView — don't overwrite
+    if (journeyViewMode) return;
+
     // Separate approved legs from others to prevent clustering
     // Validate that userRegistrations exists and is a valid Map
     if (!userRegistrations || !(userRegistrations instanceof Map)) {
@@ -957,7 +1008,7 @@ export function CrewBrowseMap({
     } else {
       logger.warn('approved-legs-source not found when trying to update GeoJSON', { sourceExists: false });
     }
-  }, [legs, mapLoaded, userRegistrations, showEndWaypoints, user]);
+  }, [legs, mapLoaded, userRegistrations, showEndWaypoints, user, journeyViewMode]);
 
   const theme = useTheme();
   const mapStyle = theme.resolvedTheme === 'dark' ? 'mapbox://styles/mapbox/dark-v11' : 'mapbox://styles/mapbox/light-v11';
@@ -2336,8 +2387,8 @@ export function CrewBrowseMap({
         onExitJourneyView={exitJourneyView}
       />
 
-      {/* Desktop: Side panel for selected leg details */}
-      {selectedLeg && !journeyViewMode && (
+      {/* Desktop: Side panel for selected leg details (overlays journey pane via z-index when in journey view) */}
+      {selectedLeg && (
         <div className="hidden md:block">
           <LegDetailsPanel
             leg={selectedLeg}
