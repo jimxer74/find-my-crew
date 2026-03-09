@@ -151,9 +151,10 @@ type LegDetailsPanelProps = {
   userRiskLevel?: string[] | null; // User's risk level for matching display
   onRegistrationChange?: () => void; // Callback when registration status changes
   initialOpenRegistration?: boolean; // Auto-open registration form when panel loads
+  onViewJourney?: (journeyId: string, journeyName: string) => void; // Callback to view full journey on map
 };
 
-export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange, initialOpenRegistration = false }: LegDetailsPanelProps) {
+export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExperienceLevel = null, userRiskLevel = null, onRegistrationChange, initialOpenRegistration = false, onViewJourney }: LegDetailsPanelProps) {
   const router = useRouter();
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -1494,7 +1495,21 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     {/* Header */}
                     <div className="text-center mb-3">
                       <h2 className="text-lg font-bold text-foreground mb-1">{leg.leg_name}</h2>
-                      <p className="text-muted-foreground">{leg.journey_name}</p>
+                      <div className="flex items-center justify-center gap-2">
+                        <p className="text-muted-foreground">{leg.journey_name}</p>
+                        {onViewJourney && (
+                          <button
+                            onClick={() => onViewJourney(leg.journey_id, leg.journey_name)}
+                            className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 hover:underline transition-colors"
+                            title="View full journey on map"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                            </svg>
+                            View journey
+                          </button>
+                        )}
+                      </div>
                       {/* Journey description */}
                       {(journeyDescription || isLoadingDescription) && (
                         <div className="mt-2 text-left">

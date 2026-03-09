@@ -31,6 +31,9 @@ type LegBrowsePaneProps = {
   isLoading?: boolean;
   isVisible?: boolean;  // Control visibility (hide when detail panel is open)
   showMatchBadge?: boolean;  // Whether to show match badges (false when no user logged in)
+  journeyViewMode?: boolean;  // Whether we're in journey view mode
+  journeyViewName?: string | null;  // Journey name when in journey view mode
+  onExitJourneyView?: () => void;  // Callback to exit journey view mode
 };
 
 export function LegBrowsePane({
@@ -41,6 +44,9 @@ export function LegBrowsePane({
   isLoading = false,
   isVisible = true,
   showMatchBadge = false,
+  journeyViewMode = false,
+  journeyViewName = null,
+  onExitJourneyView,
 }: LegBrowsePaneProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -83,31 +89,43 @@ export function LegBrowsePane({
 
         {/* Header */}
         {!isMinimized && (
-          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-border bg-background">
-            <h2 className="font-semibold text-foreground">
-              {legs.length} Leg{legs.length !== 1 ? 's' : ''} in View
-            </h2>
-            <Link
-              href="/crew"
-              className="flex items-center gap-1 px-2 py-1 text-sm text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
-              title="List View"
-              aria-label="List View"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 6h13M8 12h13m-13 6h13M3 6h.01M3 12h.01M3 18h.01"
-                />
-              </svg>
-              <span className="hidden sm:inline">List View</span>
-            </Link>
+          <div className="flex flex-col border-b border-border bg-background">
+            {journeyViewMode && (
+              <div className="px-4 pt-3 pb-2">
+                <button
+                  onClick={onExitJourneyView}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to map
+                </button>
+                <p className="text-xs text-muted-foreground mt-1 truncate" title={journeyViewName ?? ''}>
+                  Journey: {journeyViewName}
+                </p>
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-2 px-4 py-3">
+              <h2 className="font-semibold text-foreground">
+                {journeyViewMode
+                  ? `${legs.length} Leg${legs.length !== 1 ? 's' : ''}`
+                  : `${legs.length} Leg${legs.length !== 1 ? 's' : ''} in View`}
+              </h2>
+              {!journeyViewMode && (
+                <Link
+                  href="/crew"
+                  className="flex items-center gap-1 px-2 py-1 text-sm text-foreground hover:text-primary hover:bg-accent rounded-md transition-colors"
+                  title="List View"
+                  aria-label="List View"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 6h13M8 12h13m-13 6h13M3 6h.01M3 12h.01M3 18h.01" />
+                  </svg>
+                  <span className="hidden sm:inline">List View</span>
+                </Link>
+              )}
+            </div>
           </div>
         )}
 

@@ -128,6 +128,12 @@ export function CrewBrowseMap({
     maxLat: number;
   } | null>(null);
   const [isLegsPaneMinimized, setIsLegsPaneMinimized] = useState(false);
+  // Journey view mode state
+  const [journeyViewMode, setJourneyViewMode] = useState(false);
+  const [journeyViewId, setJourneyViewId] = useState<string | null>(null);
+  const [journeyViewName, setJourneyViewName] = useState<string | null>(null);
+  const [journeyLegs, setJourneyLegs] = useState<Leg[]>([]);
+  const [journeyViewLoading, setJourneyViewLoading] = useState(false);
   const { user } = useAuth();
   const { filters, lastUpdated } = useFilters();
   const { profile, loading: profileLoading } = useProfile();
@@ -197,6 +203,105 @@ export function CrewBrowseMap({
   }, []);
 
   // Helper function to get bottom sheet height in pixels based on snap point
+
+  // Enter journey view: fetch all legs + waypoints, show all routes on map
+  const enterJourneyView = useCallback(async (journeyId: string, journeyName: string) => {
+    setJourneyViewLoading(true);
+    setSelectedLeg(null);
+    setLegWaypoints([]);
+
+    try {
+      // Fetch all legs for this journey
+      const res = await fetch(`/api/journeys/${journeyId}/legs`);
+      if (!res.ok) {
+        logger.error('[JourneyView] Failed to fetch journey legs', { status: res.status });
+        setJourneyViewLoading(false);
+        return;
+      }
+      const { legs: jLegs } = await res.json();
+      if (!jLegs || jLegs.length === 0) {
+        setJourneyViewLoading(false);
+        return;
+      }
+
+      // Fetch waypoints for each leg in parallel
+      const waypointResults = await Promise.all(
+        jLegs.map((leg: Leg) =>
+          fetch(`/api/legs/${leg.leg_id}/waypoints`)
+            .then(r => r.ok ? r.json() : { waypoints: [] })
+            .then(d => ({ legId: leg.leg_id, waypoints: d.waypoints || [] }))
+            .catch(() => ({ legId: leg.leg_id, waypoints: [] }))
+        )
+      );
+
+      const waypointsMap = new Map(waypointResults.map(r => [r.legId, r.waypoints]));
+
+      setJourneyViewMode(true);
+      setJourneyViewId(journeyId);
+      setJourneyViewName(journeyName);
+      setJourneyLegs(jLegs);
+
+      // Draw all leg routes on map
+      if (map.current && routeSourceAddedRef.current) {
+        const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
+        if (routeSource) {
+          const features: GeoJSON.Feature[] = [];
+          const allCoords: [number, number][] = [];
+
+          for (const leg of jLegs) {
+            const waypoints = waypointsMap.get(leg.leg_id) || [];
+            const valid = waypoints.filter((wp: any) => wp.coordinates).sort((a: any, b: any) => a.index - b.index);
+            if (valid.length < 2) continue;
+            const coords: [number, number][] = valid.map((wp: any) => wp.coordinates!);
+            allCoords.push(...coords);
+            const geometry = splitLineAtAntimeridian(coords);
+            features.push({ type: 'Feature', geometry, properties: { leg_id: leg.leg_id } });
+          }
+
+          routeSource.setData({ type: 'FeatureCollection', features });
+          map.current.setPaintProperty('leg-route-line', 'line-color', '#22276E');
+          map.current.setPaintProperty('leg-route-line', 'line-width', 3);
+          map.current.setPaintProperty('leg-route-line', 'line-opacity', 0.85);
+          map.current.setPaintProperty('leg-route-line', 'line-dasharray', [1, 0]);
+
+          // Fit map to entire journey
+          if (allCoords.length >= 2) {
+            const bounds = calculateBoundsWithAntimeridian(allCoords);
+            if (bounds) {
+              const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+              const pad = 0.08;
+              const lngD = Math.max(Math.abs(maxLng - minLng), 0.01);
+              const latD = Math.max(maxLat - minLat, 0.01);
+              map.current.fitBounds(
+                [[minLng - lngD * pad, minLat - latD * pad], [maxLng + lngD * pad, maxLat + latD * pad]],
+                { padding: { top: 60, bottom: 60, left: 420, right: 60 }, maxZoom: 10 }
+              );
+            }
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('[JourneyView] Error entering journey view', { error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      setJourneyViewLoading(false);
+    }
+  }, []);
+
+  // Exit journey view: restore normal map state
+  const exitJourneyView = useCallback(() => {
+    setJourneyViewMode(false);
+    setJourneyViewId(null);
+    setJourneyViewName(null);
+    setJourneyLegs([]);
+
+    // Clear route lines
+    if (map.current && routeSourceAddedRef.current) {
+      const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
+      if (routeSource) {
+        routeSource.setData({ type: 'FeatureCollection', features: [] });
+      }
+    }
+  }, []);
 
   // Helper function to calculate visible map bounds
   // RULE: Always use full screen viewport - no subtractions for dialogs, sheets, or panels
@@ -2061,7 +2166,7 @@ export function CrewBrowseMap({
       )}
 
       {/* Mobile: Bottom Sheet with Leg List (shows when not in full panel mode and MobileLegCard is not shown) */}
-      {!showFullPanelOnMobile && !showMobileLegCard && legs.length > 0 && (
+      {!showFullPanelOnMobile && !showMobileLegCard && (journeyViewMode || legs.length > 0) && (
         <BottomSheet
           isOpen={true}
           defaultSnapPoint="collapsed"
@@ -2070,50 +2175,103 @@ export function CrewBrowseMap({
           halfHeight="50vh"
           expandedHeight="calc(100vh - 4rem)"
           headerContent={
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-foreground">
-                {visibleLegs.length} Leg{visibleLegs.length !== 1 ? 's' : ''} in View
-              </span>
-              {selectedLeg && (
-                <Button
-                  onClick={() => {
-                    setSelectedLeg(null);
-                    setLegWaypoints([]);
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className="!text-sm !text-primary hover:!underline !p-0"
+            journeyViewMode ? (
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={exitJourneyView}
+                  className="flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors w-fit"
                 >
-                  Clear selection
-                </Button>
-              )}
-            </div>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to map
+                </button>
+                <span className="font-semibold text-foreground">
+                  {journeyViewLoading ? 'Loading...' : `${journeyLegs.length} Leg${journeyLegs.length !== 1 ? 's' : ''}`}
+                </span>
+                {journeyViewName && (
+                  <p className="text-xs text-muted-foreground truncate">Journey: {journeyViewName}</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-foreground">
+                  {visibleLegs.length} Leg{visibleLegs.length !== 1 ? 's' : ''} in View
+                </span>
+                {selectedLeg && (
+                  <Button
+                    onClick={() => {
+                      setSelectedLeg(null);
+                      setLegWaypoints([]);
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    className="!text-sm !text-primary hover:!underline !p-0"
+                  >
+                    Clear selection
+                  </Button>
+                )}
+              </div>
+            )
           }
         >
-          <LegList
-            legs={visibleLegs}
-            onLegClick={async (leg) => {
-              // Find the full leg data and select it with waypoints
-              const fullLeg = legs.find(l => l.leg_id === leg.leg_id);
-              if (fullLeg) {
-                await selectLegWithWaypoints(fullLeg);
-                setShowFullPanelOnMobile(true);
-              }
-            }}
-            sortByMatch={!!user} // Only sort by match when user is logged in
-            displayOptions={{
-              showCarousel: bottomSheetSnapPoint !== 'collapsed', // Hide carousel when collapsed
-              showMatchBadge: hasProfile(profile), // Only show match badge when user has a profile
-              showLegName: true,
-              showJourneyName: true,
-              showLocations: true,
-              showDates: bottomSheetSnapPoint !== 'collapsed', // Hide dates when collapsed
-              showDuration: bottomSheetSnapPoint !== 'collapsed', // Hide duration when collapsed
-              carouselHeight: 'h-32',
-              compact: bottomSheetSnapPoint === 'collapsed', // Use compact mode when collapsed
-            }}
-            gap="md"
-          />
+          {journeyViewMode ? (
+            journeyViewLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <LegList
+                legs={journeyLegs as any[]}
+                onLegClick={async (leg) => {
+                  exitJourneyView();
+                  const fullLeg = journeyLegs.find((l: any) => l.leg_id === leg.leg_id);
+                  if (fullLeg) {
+                    await selectLegWithWaypoints(fullLeg as Leg);
+                    setShowFullPanelOnMobile(true);
+                  }
+                }}
+                sortByMatch={false}
+                displayOptions={{
+                  showCarousel: bottomSheetSnapPoint !== 'collapsed',
+                  showMatchBadge: false,
+                  showLegName: true,
+                  showJourneyName: false,
+                  showLocations: true,
+                  showDates: bottomSheetSnapPoint !== 'collapsed',
+                  showDuration: bottomSheetSnapPoint !== 'collapsed',
+                  carouselHeight: 'h-32',
+                  compact: bottomSheetSnapPoint === 'collapsed',
+                }}
+                gap="md"
+              />
+            )
+          ) : (
+            <LegList
+              legs={visibleLegs}
+              onLegClick={async (leg) => {
+                // Find the full leg data and select it with waypoints
+                const fullLeg = legs.find(l => l.leg_id === leg.leg_id);
+                if (fullLeg) {
+                  await selectLegWithWaypoints(fullLeg);
+                  setShowFullPanelOnMobile(true);
+                }
+              }}
+              sortByMatch={!!user} // Only sort by match when user is logged in
+              displayOptions={{
+                showCarousel: bottomSheetSnapPoint !== 'collapsed', // Hide carousel when collapsed
+                showMatchBadge: hasProfile(profile), // Only show match badge when user has a profile
+                showLegName: true,
+                showJourneyName: true,
+                showLocations: true,
+                showDates: bottomSheetSnapPoint !== 'collapsed', // Hide dates when collapsed
+                showDuration: bottomSheetSnapPoint !== 'collapsed', // Hide duration when collapsed
+                carouselHeight: 'h-32',
+                compact: bottomSheetSnapPoint === 'collapsed', // Use compact mode when collapsed
+              }}
+              gap="md"
+            />
+          )}
         </BottomSheet>
       )}
 
@@ -2151,29 +2309,35 @@ export function CrewBrowseMap({
             userRiskLevel={userRiskLevel}
             userExperienceLevel={userExperienceLevel}
             onRegistrationChange={() => {
-              // Could refresh data or show notification here
               logger.debug('Registration status changed', {}, true);
             }}
             initialOpenRegistration={initialOpenRegistration}
+            onViewJourney={(journeyId, journeyName) => {
+              setShowFullPanelOnMobile(false);
+              enterJourneyView(journeyId, journeyName);
+            }}
           />
         </div>
       )}
 
-      {/* Desktop: Left Side Pane with Leg List (hidden when detail panel is open) */}
+      {/* Desktop: Left Side Pane with Leg List (hidden when detail panel is open, shown in journey view) */}
       <LegBrowsePane
-        legs={visibleLegs}
-        isVisible={!selectedLeg}
-        isLoading={loading}
+        legs={journeyViewMode ? (journeyLegs as any[]) : visibleLegs}
+        isVisible={!selectedLeg || journeyViewMode}
+        isLoading={journeyViewMode ? journeyViewLoading : loading}
         onLegSelect={async (leg) => {
-          // When selecting from the list, select with waypoints to show route
+          if (journeyViewMode) exitJourneyView();
           await selectLegWithWaypoints(leg as Leg);
         }}
         onMinimizeChange={setIsLegsPaneMinimized}
-        showMatchBadge={hasProfile(profile)} // Only show match badges when user has a profile
+        showMatchBadge={hasProfile(profile)}
+        journeyViewMode={journeyViewMode}
+        journeyViewName={journeyViewName}
+        onExitJourneyView={exitJourneyView}
       />
 
       {/* Desktop: Side panel for selected leg details */}
-      {selectedLeg && (
+      {selectedLeg && !journeyViewMode && (
         <div className="hidden md:block">
           <LegDetailsPanel
             leg={selectedLeg}
@@ -2186,10 +2350,10 @@ export function CrewBrowseMap({
             userSkills={userSkills}
             userExperienceLevel={userExperienceLevel}
             onRegistrationChange={() => {
-              // Could refresh data or show notification here
               logger.debug('Registration status changed', {}, true);
             }}
             initialOpenRegistration={initialOpenRegistration}
+            onViewJourney={enterJourneyView}
           />
         </div>
       )}
