@@ -23,7 +23,7 @@ export async function GET(
     // Verify journey exists and is published
     const { data: journey, error: journeyError } = await supabase
       .from('journeys')
-      .select('id, name, state, risk_level, images, boat_id')
+      .select('id, name, state, risk_level, images, boat_id, cost_model')
       .eq('id', journeyId)
       .single();
 
@@ -47,7 +47,6 @@ export async function GET(
         crew_needed,
         risk_level,
         skills,
-        cost_model,
         min_experience_level
       `)
       .eq('journey_id', journeyId)
@@ -134,7 +133,7 @@ export async function GET(
       crew_needed: leg.crew_needed ?? null,
       leg_risk_level: leg.risk_level ?? null,
       journey_risk_level: journey.risk_level ?? null,
-      cost_model: leg.cost_model ?? null,
+      cost_model: journey.cost_model ?? null,
       journey_images: journey.images ?? [],
       skills: leg.skills ?? [],
       boat_id: journey.boat_id,
