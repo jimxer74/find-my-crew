@@ -178,12 +178,12 @@ export function Header() {
                     // Toggle panel on both mobile and desktop
                     setIsFiltersDialogOpen(!isFiltersDialogOpen);
                   }}
-                  className="cursor-pointer flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors text-sm"
+                  className="cursor-pointer flex items-center justify-center px-2 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
                   aria-label={`Search${getActiveFiltersCount() > 0 ? ` (${getActiveFiltersCount()} active)` : ''}`}
                 >
                   <div className="relative">
                     <svg
-                      className="w-5 h-5 flex-shrink-0 text-foreground"
+                      className="w-5 h-5 text-foreground"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -202,7 +202,7 @@ export function Header() {
                     </svg>
                     {/* Active filters badge - only show when closed */}
                     {!isFiltersDialogOpen && getActiveFiltersCount() > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-medium text-white bg-blue-900 rounded-full transform translate-x-1/2 -translate-y-1/2">
+                      <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 text-[10px] font-bold text-white bg-primary rounded-full">
                         {getActiveFiltersCount() > 99 ? '99+' : getActiveFiltersCount()}
                       </span>
                     )}
@@ -215,7 +215,7 @@ export function Header() {
                   ref={assistantButtonRef}
                   onClick={toggleAssistant}
                   className="cursor-pointer flex items-center justify-center px-2 py-2 min-h-[44px] min-w-[44px] rounded-md bg-transparent hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-                  aria-label="Messages"
+                  aria-label={`Messages${humanUnreadCount > 0 ? ` (${humanUnreadCount})` : ''}`}
                   title="Messages"
                 >
                   <div className="relative">
@@ -235,7 +235,7 @@ export function Header() {
                       )}
                     </svg>
                     {!isAssistantOpen && humanUnreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 text-[10px] font-bold text-white bg-primary rounded-full">
+                      <span className="absolute -top-1.5 -right-2 flex items-center justify-center min-w-[16px] h-[16px] px-0.5 text-[10px] font-bold text-white bg-primary rounded-full">
                         {humanUnreadCount > 9 ? '9+' : humanUnreadCount}
                       </span>
                     )}
