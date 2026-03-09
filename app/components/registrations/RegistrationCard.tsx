@@ -34,23 +34,36 @@ export function RegistrationCard({ registration, isSelected = false, onSelection
   const selectionEnabled = !!onSelectionChange;
 
   return (
-    <div className={selectionEnabled ? 'relative' : ''}>
+    <div className="relative">
+      {/* Checkbox - Outside Link (top-left) */}
+      {selectionEnabled && (
+        <div
+          className="absolute top-3 left-3 z-10"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={(e) => {
+              e.stopPropagation();
+              onSelectionChange(registration.id, e.target.checked);
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+            className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
+            aria-label={`Select ${profile?.full_name || 'registration'}`}
+          />
+        </div>
+      )}
+
       <Link href={`/owner/registrations/${registration.id}`}>
         <Card className={`cursor-pointer hover:shadow-lg hover:bg-accent/50 transition-all relative ${
           isSelected ? 'ring-2 ring-inset ring-primary' : ''
         }`}>
-        {/* Checkbox - Top Left */}
-        {selectionEnabled && (
-          <div className="absolute top-3 left-3" onClick={(e) => e.preventDefault()}>
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={(e) => onSelectionChange(registration.id, e.target.checked)}
-              className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
-              aria-label={`Select ${profile?.full_name || 'registration'}`}
-            />
-          </div>
-        )}
 
         {/* Status Badge - Top Right */}
         <div className={`absolute top-3 ${selectionEnabled ? 'right-3' : 'right-3'}`}>
