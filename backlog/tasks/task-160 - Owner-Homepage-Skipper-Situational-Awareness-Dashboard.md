@@ -1,9 +1,10 @@
 ---
 id: TASK-160
 title: Owner Homepage - Skipper Situational Awareness Dashboard
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-03-09 20:48'
+updated_date: '2026-03-09 20:51'
 labels:
   - ui
   - dashboard
