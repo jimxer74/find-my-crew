@@ -159,13 +159,24 @@ export function CookieConsentBanner() {
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   Cookie Preferences
                 </h3>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
                   We use cookies to enhance your browsing experience, analyze site traffic, and personalize content.
                   You can choose which cookies you&apos;re happy to accept.{' '}
                   <Link href="/privacy-policy" className="text-primary hover:underline">
                     Learn more
                   </Link>
                 </p>
+
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-xs text-yellow-900 font-semibold">
+                    Early Beta Version
+                  </p>
+                  <p className="text-xs text-yellow-800 mt-1">
+                    This application is currently in early beta testing and is not intended for real-world usage.
+                    Features may be incomplete, unstable, or subject to change. All data including users and authentication data will be deleted after the beta testing period. Please also note that during beta testing the application may use unstable and partly experimental Large Language Models and other AI technologies that may produce inaccurate or incorrect information.
+                    The target of this beta release is to collect feedback from users to guide the development of the application.
+                  </p>
+                </div>
 
                 {/* Detailed options */}
                 {showDetails && (

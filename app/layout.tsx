@@ -32,7 +32,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "SailSmart - Connect Boat Owners with Crew Members",
-  description: "Connect boat owners and skippers with potential crew members. Find your perfect crew or discover amazing sailing opportunities.",
+  description:
+    "Connect boat owners and skippers with potential crew members. Find your perfect crew or discover amazing sailing opportunities.",
+  icons: {
+    icon: "/sailsmart_new_logo_blue.png",
+  },
 };
 
 export default async function RootLayout({
@@ -61,6 +65,7 @@ export default async function RootLayout({
     <html lang={locale} suppressHydrationWarning>
       <head>
         <ThemeScript />
+        <link rel="icon" href="/sailsmart_new_logo_blue.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
