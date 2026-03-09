@@ -81,7 +81,9 @@ export default function BoatsPage() {
     }
   }, [user, authLoading, router, loadBoats]);
 
-  if (!loadingTimeout && (authLoading || loading || hasOwnerRole === null)) {
+  // Never show loading screen while wizard/modal is active — that would unmount
+  // it and lose all in-progress state (step data, fetched equipment, etc.)
+  if (!isWizardOpen && !isModalOpen && !loadingTimeout && (authLoading || loading || hasOwnerRole === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-xl">{tCommon('loading')}</div>

@@ -44,7 +44,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       logger.debug('[AuthContext] onAuthStateChange event', { event, hasSession: !!session, userId: session?.user?.id });
-      setUser(session?.user ?? null);
+      // Keep the existing reference when TOKEN_REFRESHED fires for the same user
+      // (triggered by Supabase on tab focus). A new reference would re-run every
+      // useEffect that depends on `user`, showing loading spinners and unmounting
+      // in-progress wizards / forms.
+      setUser(prev => {
+        const next = session?.user ?? null;
+        return prev?.id === next?.id ? prev : next;
+      });
       setLoading(false);
 
       // Redirect to home page on logout
