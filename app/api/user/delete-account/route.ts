@@ -214,6 +214,13 @@ export async function DELETE(request: NextRequest) {
     const asyncJobsResult = await safeDelete('async_jobs', { user_id: user.id }, supabase, user.id);
     deletionResults.push(asyncJobsResult);
 
+    // 5d. Delete social data (comments and likes)
+    const legCommentsResult = await safeDelete('leg_comments', { user_id: user.id }, supabase, user.id);
+    deletionResults.push(legCommentsResult);
+
+    const legLikesResult = await safeDelete('leg_likes', { user_id: user.id }, supabase, user.id);
+    deletionResults.push(legLikesResult);
+
     // 6. Clear feedback records where user is referenced in status_changed_by
     logger.debug(`Clearing feedback status_changed_by references`, {}, true);
     const { error: feedbackStatusError } = await supabase
@@ -791,6 +798,8 @@ async function checkForConstraintViolations(userId: string, supabase: any) {
       { table: 'document_access_log', column: 'document_owner_id' },
       { table: 'boat_maintenance_tasks', column: 'completed_by' },
       { table: 'boat_maintenance_tasks', column: 'assigned_to' },
+      { table: 'leg_comments', column: 'user_id' },
+      { table: 'leg_likes', column: 'user_id' },
     ];
 
     for (const { table, column } of tablesToCheck) {
@@ -865,7 +874,9 @@ async function verifyUserDeletion(userId: string, supabase: any) {
     'document_access_log',
     'boat_equipment',
     'boat_inventory',
-    'boat_maintenance_tasks'
+    'boat_maintenance_tasks',
+    'leg_comments',
+    'leg_likes'
   ];
 
   const verificationResults: any[] = [];

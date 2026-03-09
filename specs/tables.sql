@@ -287,6 +287,7 @@ create table if not exists public.journeys (
   images       text[] default '{}',  -- store image URLs from Supabase Storage
   auto_approval_enabled boolean default false,  -- Toggle automated approval for this journey
   auto_approval_threshold integer default 80 check (auto_approval_threshold >= 0 and auto_approval_threshold <= 100),  -- Minimum match score for auto-approval (0-100)
+  comments_enabled boolean not null default true,  -- Toggle commenting on this journey's legs
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
@@ -2639,3 +2640,67 @@ begin
 end; $$;
 
 grant execute on function public.mark_messages_read(uuid[], uuid) to authenticated;
+
+-- ============================================================================
+-- TABLE: leg_likes
+-- ============================================================================
+
+create table if not exists public.leg_likes (
+  id         uuid primary key default gen_random_uuid(),
+  leg_id     uuid not null references public.legs(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (leg_id, user_id)
+);
+
+create index if not exists leg_likes_leg_id_idx on public.leg_likes(leg_id);
+create index if not exists leg_likes_user_id_idx on public.leg_likes(user_id);
+
+alter table leg_likes enable row level security;
+
+create policy "anyone can view likes"
+  on leg_likes for select using (true);
+
+create policy "users can like"
+  on leg_likes for insert with check (auth.uid() = user_id);
+
+create policy "users can unlike"
+  on leg_likes for delete using (auth.uid() = user_id);
+
+-- ============================================================================
+-- TABLE: leg_comments
+-- ============================================================================
+
+create table if not exists public.leg_comments (
+  id         uuid primary key default gen_random_uuid(),
+  leg_id     uuid not null references public.legs(id) on delete cascade,
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  content    text not null check (char_length(content) between 1 and 2000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists leg_comments_leg_id_idx on public.leg_comments(leg_id);
+create index if not exists leg_comments_user_id_idx on public.leg_comments(user_id);
+
+alter table leg_comments enable row level security;
+
+create policy "anyone can view comments"
+  on leg_comments for select using (true);
+
+create policy "users can comment"
+  on leg_comments for insert with check (auth.uid() = user_id);
+
+create policy "users can edit own comment"
+  on leg_comments for update using (auth.uid() = user_id);
+
+create policy "users can delete own comment or journey owner can delete"
+  on leg_comments for delete using (
+    auth.uid() = user_id
+    or auth.uid() in (
+      select b.owner_id from legs l
+      join journeys j on j.id = l.journey_id
+      join boats b on b.id = j.boat_id
+      where l.id = leg_comments.leg_id
+    )
+  );

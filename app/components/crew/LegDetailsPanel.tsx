@@ -29,6 +29,7 @@ import { Card } from '@shared/ui/Card/Card';
 import { LoadingButton } from '@shared/ui/LoadingButton';
 import { Button } from '@shared/ui/Button/Button';
 import { Modal } from '@shared/ui/Modal/Modal';
+import { SocialSection } from '@/app/components/crew/SocialSection';
 
 type RiskLevel = 'Coastal sailing' | 'Offshore sailing' | 'Extreme sailing';
 
@@ -1487,6 +1488,9 @@ export function LegDetailsPanel({ leg, isOpen, onClose, userSkills = [], userExp
                     )}
                   </div>
                 )}
+
+                {/* Social: Likes, Share, Comments */}
+                <SocialSection legId={leg.leg_id} isAuthenticated={!!user} />
 
                 <div className="space-y-3 py-3">
 
