@@ -77,8 +77,8 @@ function ShareButtons({ legId }: { legId: string }) {
 
   const legUrl =
     typeof window !== 'undefined'
-      ? `${window.location.origin}/crew?leg=${legId}`
-      : `/crew?leg=${legId}`;
+      ? `${window.location.origin}/crew/dashboard?legId=${legId}`
+      : `/crew/dashboard?legId=${legId}`;
 
   const encodedUrl = encodeURIComponent(legUrl);
   const shareText = encodeURIComponent('Check out this sailing leg on Find My Crew!');
