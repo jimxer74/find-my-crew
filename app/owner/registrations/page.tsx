@@ -9,6 +9,7 @@ import { Footer } from '@/app/components/Footer';
 import { RegistrationsTable } from '@/app/components/registrations/RegistrationsTable';
 import { RegistrationCard } from '@/app/components/registrations/RegistrationCard';
 import { StatusBadge } from '@/app/components/registrations/StatusBadge';
+import { GroupMessageDialog } from '@/app/components/registrations/GroupMessageDialog';
 
 type Registration = {
   id: string;
@@ -95,6 +96,9 @@ export default function AllRegistrationsPage() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [legs, setLegs] = useState<Leg[]>([]);
   const [isPaneOpen, setIsPaneOpen] = useState(true);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isGroupMessageOpen, setIsGroupMessageOpen] = useState(false);
+  const [groupMessageSentCount, setGroupMessageSentCount] = useState<number | null>(null);
   const prevFiltersRef = useRef<string | null>(null);
   const isLoadingRef = useRef<boolean>(false);
   const hasLoadedOnceRef = useRef<boolean>(false);
@@ -269,6 +273,23 @@ export default function AllRegistrationsPage() {
     }
   };
 
+
+  const handleSelectionChange = (id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedIds(new Set(registrations.map((r) => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
 
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
@@ -497,9 +518,22 @@ export default function AllRegistrationsPage() {
           {/* Main Content - Table Area */}
           <div className={`flex-1 flex flex-col transition-all duration-300 ${isPaneOpen ? 'ml-80' : 'ml-0'} overflow-hidden`}>
             {/* Header */}
-            <div className="px-6 py-8 border-b border-border">
-              <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
-              <p className="text-muted-foreground">{t('subtitle')}</p>
+            <div className="px-6 py-6 border-b border-border flex items-start justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-bold text-foreground mb-2">{t('title')}</h1>
+                <p className="text-muted-foreground">{t('subtitle')}</p>
+              </div>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={() => { setGroupMessageSentCount(null); setIsGroupMessageOpen(true); }}
+                  className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                  Send Group Message ({selectedIds.size})
+                </button>
+              )}
             </div>
 
             {/* Table Content */}
@@ -514,11 +548,24 @@ export default function AllRegistrationsPage() {
           <>
             {/* Desktop Table */}
             <div className="hidden md:block mb-6">
+              {groupMessageSentCount !== null && (
+                <div className="mb-4 px-4 py-3 bg-green-500/10 border border-green-500/30 rounded-lg text-sm text-green-700 dark:text-green-400 flex items-center justify-between">
+                  <span>Message sent to {groupMessageSentCount} {groupMessageSentCount === 1 ? 'recipient' : 'recipients'}.</span>
+                  <button onClick={() => setGroupMessageSentCount(null)} className="text-muted-foreground hover:text-foreground ml-4">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               <RegistrationsTable
                 registrations={registrations}
                 sortBy={sortBy}
                 sortOrder={sortOrder}
                 onSort={handleSort}
+                selectedIds={selectedIds}
+                onSelectionChange={handleSelectionChange}
+                onSelectAll={handleSelectAll}
               />
             </div>
 
@@ -589,6 +636,17 @@ export default function AllRegistrationsPage() {
       </div>
       </main>
       <Footer />
+
+      <GroupMessageDialog
+        isOpen={isGroupMessageOpen}
+        recipientCount={selectedIds.size}
+        registrationIds={Array.from(selectedIds)}
+        onClose={() => setIsGroupMessageOpen(false)}
+        onSent={(count) => {
+          setGroupMessageSentCount(count);
+          setSelectedIds(new Set());
+        }}
+      />
     </div>
   );
 }

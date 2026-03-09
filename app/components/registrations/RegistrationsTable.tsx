@@ -32,6 +32,9 @@ interface RegistrationsTableProps {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   onSort: (field: string) => void;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (id: string, selected: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 const columns = [
@@ -49,14 +52,35 @@ function SortIndicator({ column, sortBy, sortOrder }: { column: string; sortBy: 
   return <span className="ml-1">{sortOrder === 'asc' ? '↑' : '↓'}</span>;
 }
 
-export function RegistrationsTable({ registrations, sortBy, sortOrder, onSort }: RegistrationsTableProps) {
+export function RegistrationsTable({
+  registrations,
+  sortBy,
+  sortOrder,
+  onSort,
+  selectedIds,
+  onSelectionChange,
+  onSelectAll,
+}: RegistrationsTableProps) {
   const router = useRouter();
+  const selectionEnabled = !!onSelectionChange;
+  const allSelected = selectionEnabled && registrations.length > 0 && registrations.every((r) => selectedIds?.has(r.id));
 
   return (
     <div className="overflow-x-auto rounded-lg shadow border border-border">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-muted border-b border-border">
+            {selectionEnabled && (
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={(e) => onSelectAll?.(e.target.checked)}
+                  className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
+                  aria-label="Select all"
+                />
+              </th>
+            )}
             {columns.map((column) => (
               <th key={column.key} className="px-4 py-3 text-left font-semibold text-foreground">
                 {column.sortable ? (
@@ -80,12 +104,22 @@ export function RegistrationsTable({ registrations, sortBy, sortOrder, onSort }:
               key={registration.id}
               className={`border-b border-border hover:bg-accent/50 transition-colors cursor-pointer ${
                 index % 2 === 0 ? 'bg-background' : 'bg-card'
-              }`}
+              } ${selectedIds?.has(registration.id) ? 'ring-1 ring-inset ring-primary/30' : ''}`}
               onClick={() => {
-                // Navigate to detail page
                 router.push(`/owner/registrations/${registration.id}`);
               }}
             >
+              {selectionEnabled && (
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds?.has(registration.id) ?? false}
+                    onChange={(e) => onSelectionChange(registration.id, e.target.checked)}
+                    className="w-4 h-4 rounded border-border cursor-pointer accent-primary"
+                    aria-label={`Select ${registration.profiles?.full_name || 'registration'}`}
+                  />
+                </td>
+              )}
               <td className="px-4 py-3">
                 {formatDate(registration.created_at)}
               </td>
