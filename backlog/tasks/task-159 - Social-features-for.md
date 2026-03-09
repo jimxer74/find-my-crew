@@ -1,10 +1,10 @@
 ---
 id: TASK-159
 title: Social features for
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-03-09 10:45'
-updated_date: '2026-03-09 17:32'
+updated_date: '2026-03-09 17:33'
 labels:
   - social
   - ui
