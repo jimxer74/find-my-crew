@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { LegListItem, LegListItemData, LegListItemDisplayOptions } from './LegListItem';
 
 type LegListProps = {
@@ -13,6 +13,7 @@ type LegListProps = {
   itemClassName?: string;          // Individual item className
   columns?: 1 | 2;                 // Number of columns (default: 1)
   gap?: 'sm' | 'md' | 'lg';        // Gap between items
+  highlightedLegId?: string | null;
 };
 
 export function LegList({
@@ -24,7 +25,8 @@ export function LegList({
   className = '',
   itemClassName = '',
   columns = 1,
-  gap = 'md'
+  gap = 'md',
+  highlightedLegId,
 }: LegListProps) {
   // Sort legs by match percentage if enabled
   const sortedLegs = useMemo(() => {
@@ -36,6 +38,14 @@ export function LegList({
       return matchB - matchA; // Descending order (best match first)
     });
   }, [legs, sortByMatch]);
+
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  useEffect(() => {
+    if (!highlightedLegId) return;
+    const el = itemRefs.current.get(highlightedLegId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [highlightedLegId]);
 
   // Gap classes
   const gapClasses = {
@@ -80,13 +90,21 @@ export function LegList({
   return (
     <div className={`grid ${columnClasses[columns]} ${gapClasses[gap]} ${className}`}>
       {sortedLegs.map((leg) => (
-        <LegListItem
+        <div
           key={leg.leg_id}
-          leg={leg}
-          onClick={onLegClick}
-          displayOptions={displayOptions}
-          className={itemClassName}
-        />
+          ref={(el) => {
+            if (el) itemRefs.current.set(leg.leg_id, el);
+            else itemRefs.current.delete(leg.leg_id);
+          }}
+          className={leg.leg_id === highlightedLegId ? 'ring-2 ring-primary rounded-lg' : ''}
+        >
+          <LegListItem
+            leg={leg}
+            onClick={onLegClick}
+            displayOptions={displayOptions}
+            className={itemClassName}
+          />
+        </div>
       ))}
     </div>
   );

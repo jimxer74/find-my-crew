@@ -34,6 +34,7 @@ type LegBrowsePaneProps = {
   journeyViewMode?: boolean;  // Whether we're in journey view mode
   journeyViewName?: string | null;  // Journey name when in journey view mode
   onExitJourneyView?: () => void;  // Callback to exit journey view mode
+  selectedJourneyLegId?: string | null;
 };
 
 export function LegBrowsePane({
@@ -47,6 +48,7 @@ export function LegBrowsePane({
   journeyViewMode = false,
   journeyViewName = null,
   onExitJourneyView,
+  selectedJourneyLegId,
 }: LegBrowsePaneProps) {
   const [isMinimized, setIsMinimized] = useState(false);
 
@@ -99,7 +101,7 @@ export function LegBrowsePane({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
-                  Back to map
+                  Back to all legs
                 </button>
                 <p className="text-xs text-muted-foreground mt-1 truncate" title={journeyViewName ?? ''}>
                   Journey: {journeyViewName}
@@ -152,6 +154,7 @@ export function LegBrowsePane({
                   carouselHeight: 'h-32',
                 }}
                 gap="md"
+                highlightedLegId={selectedJourneyLegId}
               />
             )}
           </div>

@@ -171,6 +171,11 @@ export function CrewBrowseMap({
   const pendingTextColor = '#AEB000';
   const unregisteredTextColor = '#22276E';
   const initialLegIdProcessedRef = useRef<string | null>(null);
+  const [selectedJourneyLegId, setSelectedJourneyLegId] = useState<string | null>(null);
+  const journeyStartMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const journeyEndMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const journeyIntermediateMarkersRef = useRef<Map<string, mapboxgl.Marker[]>>(new Map());
+  const journeyRouteLayersRef = useRef<Set<string>>(new Set());
 
   // Helper function to select a leg and fetch its waypoints for route display
   const selectLegWithWaypoints = useCallback(async (leg: Leg) => {
@@ -203,149 +208,6 @@ export function CrewBrowseMap({
   }, []);
 
   // Helper function to get bottom sheet height in pixels based on snap point
-
-  // Enter journey view: fetch all legs + waypoints, show all routes on map
-  const enterJourneyView = useCallback(async (journeyId: string, journeyName: string) => {
-    setJourneyViewLoading(true);
-    setSelectedLeg(null);
-    setLegWaypoints([]);
-
-    // Clear other leg markers immediately while we load journey legs
-    if (map.current && sourceAddedRef.current) {
-      const emptyCollection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
-      const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
-      if (approvedSource) approvedSource.setData(emptyCollection);
-    }
-
-    try {
-      // Fetch all legs for this journey
-      const res = await fetch(`/api/journeys/${journeyId}/legs`);
-      if (!res.ok) {
-        logger.error('[JourneyView] Failed to fetch journey legs', { status: res.status });
-        setJourneyViewLoading(false);
-        return;
-      }
-      const { legs: jLegs } = await res.json();
-      if (!jLegs || jLegs.length === 0) {
-        setJourneyViewLoading(false);
-        return;
-      }
-
-      // Fetch waypoints for each leg in parallel
-      const waypointResults = await Promise.all(
-        jLegs.map((leg: Leg) =>
-          fetch(`/api/legs/${leg.leg_id}/waypoints`)
-            .then(r => r.ok ? r.json() : { waypoints: [] })
-            .then(d => ({ legId: leg.leg_id, waypoints: d.waypoints || [] }))
-            .catch(() => ({ legId: leg.leg_id, waypoints: [] }))
-        )
-      );
-
-      const waypointsMap = new Map(waypointResults.map(r => [r.legId, r.waypoints]));
-
-      setJourneyViewMode(true);
-      setJourneyViewId(journeyId);
-      setJourneyViewName(journeyName);
-      setJourneyLegs(jLegs);
-
-      // Populate legs-source with journey leg markers (dark blue to match route line)
-      // and add to legsMapRef so click handler can find them
-      if (map.current && sourceAddedRef.current) {
-        const features: GeoJSON.Feature[] = jLegs
-          .map((leg: Leg) => {
-            const waypoint = leg.start_waypoint || leg.end_waypoint;
-            if (!waypoint) return null;
-            return {
-              type: 'Feature' as const,
-              geometry: { type: 'Point' as const, coordinates: [waypoint.lng, waypoint.lat] },
-              properties: {
-                leg_id: leg.leg_id,
-                has_user: false, // renders as #22276E dark blue — matches route line color
-                match_percentage: null,
-                experience_matches: null,
-                registration_status: null,
-              },
-            };
-          })
-          .filter((f: GeoJSON.Feature | null): f is GeoJSON.Feature => f !== null);
-
-        const legsSource = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
-        if (legsSource) legsSource.setData({ type: 'FeatureCollection', features });
-      }
-
-      // Add journey legs to legsMap so click handler can look them up
-      jLegs.forEach((leg: Leg) => legsMapRef.current.set(leg.leg_id, leg));
-
-      // Draw all leg routes on map
-      if (map.current && routeSourceAddedRef.current) {
-        const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
-        if (routeSource) {
-          const features: GeoJSON.Feature[] = [];
-          const allCoords: [number, number][] = [];
-
-          for (const leg of jLegs) {
-            const waypoints = waypointsMap.get(leg.leg_id) || [];
-            const valid = waypoints.filter((wp: any) => wp.coordinates).sort((a: any, b: any) => a.index - b.index);
-            if (valid.length < 2) continue;
-            const coords: [number, number][] = valid.map((wp: any) => wp.coordinates!);
-            allCoords.push(...coords);
-            const geometry = splitLineAtAntimeridian(coords);
-            features.push({ type: 'Feature', geometry, properties: { leg_id: leg.leg_id } });
-          }
-
-          routeSource.setData({ type: 'FeatureCollection', features });
-          map.current.setPaintProperty('leg-route-line', 'line-color', '#22276E');
-          map.current.setPaintProperty('leg-route-line', 'line-width', 3);
-          map.current.setPaintProperty('leg-route-line', 'line-opacity', 0.85);
-          map.current.setPaintProperty('leg-route-line', 'line-dasharray', [1, 0]);
-
-          // Fit map to entire journey
-          if (allCoords.length >= 2) {
-            const bounds = calculateBoundsWithAntimeridian(allCoords);
-            if (bounds) {
-              const [[minLng, minLat], [maxLng, maxLat]] = bounds;
-              const pad = 0.08;
-              const lngD = Math.max(Math.abs(maxLng - minLng), 0.01);
-              const latD = Math.max(maxLat - minLat, 0.01);
-              map.current.fitBounds(
-                [[minLng - lngD * pad, minLat - latD * pad], [maxLng + lngD * pad, maxLat + latD * pad]],
-                { padding: { top: 60, bottom: 60, left: 420, right: 60 }, maxZoom: 10 }
-              );
-            }
-          }
-        }
-      }
-    } catch (err) {
-      logger.error('[JourneyView] Error entering journey view', { error: err instanceof Error ? err.message : String(err) });
-    } finally {
-      setJourneyViewLoading(false);
-    }
-  }, []);
-
-  // Exit journey view: restore normal map state
-  const exitJourneyView = useCallback(() => {
-    setJourneyViewMode(false);
-    setJourneyViewId(null);
-    setJourneyViewName(null);
-    setJourneyLegs([]);
-
-    // Clear route lines
-    if (map.current && routeSourceAddedRef.current) {
-      const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
-      if (routeSource) {
-        routeSource.setData({ type: 'FeatureCollection', features: [] });
-      }
-    }
-
-    // Clear legs-source so the GeoJSON effect can repopulate it with normal legs
-    if (map.current && sourceAddedRef.current) {
-      const emptyCollection: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
-      const legsSource = map.current.getSource('legs-source') as mapboxgl.GeoJSONSource;
-      if (legsSource) legsSource.setData(emptyCollection);
-      const approvedSource = map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource;
-      if (approvedSource) approvedSource.setData(emptyCollection);
-    }
-  }, []);
 
   // Helper function to calculate visible map bounds
   // RULE: Always use full screen viewport - no subtractions for dialogs, sheets, or panels
@@ -498,6 +360,283 @@ export function CrewBrowseMap({
 
   // Keep ref in sync for use inside map event handlers
   useEffect(() => { journeyViewModeRef.current = journeyViewMode; }, [journeyViewMode]);
+
+  // Helper: get match color for a journey leg
+  const getJourneyLegColor = useCallback((leg: Leg): string => {
+    const hasUser = !!user && hasProfile(profile);
+    if (!hasUser) return '#22276E';
+    const experienceMatches = checkExperienceLevelMatch(userExperienceLevelRef.current, leg.min_experience_level);
+    const matchPct = calculateMatchPercentage(
+      userSkillsRef.current,
+      leg.skills || [],
+      userRiskLevelRef.current as string[] | null,
+      leg.leg_risk_level as string | null,
+      (leg.journey_risk_level as string[] | null) || [],
+      userExperienceLevelRef.current,
+      leg.min_experience_level
+    );
+    if (!experienceMatches) return '#ef4444';
+    return getMatchColorForMap(matchPct);
+  }, [user, profile]);
+
+  // Remove all journey HTML markers and per-leg route sources/layers
+  const clearJourneyMapElements = useCallback(() => {
+    journeyStartMarkersRef.current.forEach(m => m.remove());
+    journeyStartMarkersRef.current.clear();
+    journeyEndMarkersRef.current.forEach(m => m.remove());
+    journeyEndMarkersRef.current.clear();
+    journeyIntermediateMarkersRef.current.forEach(markers => markers.forEach(m => m.remove()));
+    journeyIntermediateMarkersRef.current.clear();
+    if (map.current) {
+      journeyRouteLayersRef.current.forEach(layerId => {
+        const sourceId = layerId.replace('journey-route-layer-', 'journey-route-');
+        if (map.current!.getLayer(layerId)) map.current!.removeLayer(layerId);
+        if (map.current!.getSource(sourceId)) map.current!.removeSource(sourceId);
+      });
+    }
+    journeyRouteLayersRef.current.clear();
+  }, []);
+
+  // Enter journey view: fetch all legs + waypoints, show all routes on map
+  const enterJourneyView = useCallback(async (journeyId: string, journeyName: string) => {
+    // Block viewport fetch immediately (before any awaits) to prevent race conditions
+    // where the debounced viewport handler repopulates sources during async operations.
+    journeyViewModeRef.current = true;
+
+    // Cancel any pending viewport debounce timer that was already queued
+    if (viewportDebounceTimerRef.current) {
+      clearTimeout(viewportDebounceTimerRef.current);
+      viewportDebounceTimerRef.current = null;
+    }
+
+    setJourneyViewLoading(true);
+    setSelectedLeg(null);
+    setLegWaypoints([]);
+    setSelectedJourneyLegId(null);
+
+    // Clear previous journey elements and regular markers
+    clearJourneyMapElements();
+    if (map.current && sourceAddedRef.current) {
+      const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      (map.current.getSource('legs-source') as mapboxgl.GeoJSONSource)?.setData(empty);
+      (map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource)?.setData(empty);
+    }
+    if (map.current && routeSourceAddedRef.current) {
+      (map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features: [] });
+    }
+
+    try {
+      const res = await fetch(`/api/journeys/${journeyId}/legs`);
+      if (!res.ok) {
+        logger.error('[JourneyView] Failed to fetch journey legs', { status: res.status });
+        journeyViewModeRef.current = false;
+        setJourneyViewLoading(false);
+        return;
+      }
+      const { legs: rawJLegs } = await res.json();
+      if (!rawJLegs || rawJLegs.length === 0) {
+        journeyViewModeRef.current = false;
+        setJourneyViewLoading(false);
+        return;
+      }
+
+      // Calculate match percentages for each journey leg (same as viewport legs)
+      const jLegs: Leg[] = rawJLegs.map((leg: Leg) => {
+        const experienceMatches = checkExperienceLevelMatch(userExperienceLevelRef.current, leg.min_experience_level);
+        const matchPercentage = calculateMatchPercentage(
+          userSkillsRef.current,
+          leg.skills || [],
+          userRiskLevelRef.current as string[] | null,
+          leg.leg_risk_level as string | null,
+          (leg.journey_risk_level as string[] | null) || [],
+          userExperienceLevelRef.current,
+          leg.min_experience_level
+        );
+        return { ...leg, skill_match_percentage: matchPercentage, experience_level_matches: experienceMatches };
+      });
+
+      // Fetch waypoints for each leg in parallel
+      const waypointResults = await Promise.all(
+        jLegs.map((leg: Leg) =>
+          fetch(`/api/legs/${leg.leg_id}/waypoints`)
+            .then(r => r.ok ? r.json() : { waypoints: [] })
+            .then(d => ({ legId: leg.leg_id, waypoints: d.waypoints || [] }))
+            .catch(() => ({ legId: leg.leg_id, waypoints: [] }))
+        )
+      );
+      const waypointsMap = new Map(waypointResults.map(r => [r.legId, r.waypoints]));
+
+      setJourneyViewMode(true);
+      setJourneyViewId(journeyId);
+      setJourneyViewName(journeyName);
+      setJourneyLegs(jLegs);
+
+      // Add journey legs to legsMapRef so existing click handler can find them
+      jLegs.forEach((leg: Leg) => legsMapRef.current.set(leg.leg_id, leg));
+
+      if (map.current) {
+        const allCoords: [number, number][] = [];
+        const DEFAULT_GREY = '#6b7280';
+
+        for (const leg of jLegs) {
+          const legId = leg.leg_id;
+          const waypoints = waypointsMap.get(legId) || [];
+          const valid: any[] = waypoints
+            .filter((wp: any) => wp.coordinates)
+            .sort((a: any, b: any) => a.index - b.index);
+
+          if (valid.length < 2) continue;
+          const coords: [number, number][] = valid.map((wp: any) => wp.coordinates as [number, number]);
+          allCoords.push(...coords);
+
+          const legColor = getJourneyLegColor(leg);
+
+          // Per-leg route source + layer (dark grey by default)
+          const sourceId = `journey-route-${legId}`;
+          const layerId = `journey-route-layer-${legId}`;
+          if (!map.current.getSource(sourceId)) {
+            const geometry = splitLineAtAntimeridian(coords);
+            map.current.addSource(sourceId, {
+              type: 'geojson',
+              data: { type: 'Feature', properties: { leg_id: legId }, geometry },
+            });
+            map.current.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': DEFAULT_GREY, 'line-width': 3, 'line-opacity': 0.7 },
+            });
+            map.current.on('click', layerId, () => setSelectedJourneyLegId(legId));
+            map.current.on('mouseenter', layerId, () => { if (map.current) map.current.getCanvas().style.cursor = 'pointer'; });
+            map.current.on('mouseleave', layerId, () => { if (map.current) map.current.getCanvas().style.cursor = ''; });
+            journeyRouteLayersRef.current.add(layerId);
+          }
+
+          // Helper to create waypoint marker element
+          const makeMarkerEl = (color: string): HTMLDivElement => {
+            const el = document.createElement('div');
+            Object.assign(el.style, {
+              width: '20px', height: '20px', borderRadius: '50%', backgroundColor: color,
+              border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.4)', cursor: 'pointer', zIndex: '5',
+            });
+            el.addEventListener('click', (e) => { e.stopPropagation(); setSelectedJourneyLegId(legId); });
+            return el;
+          };
+
+          // Start marker
+          const startEl = makeMarkerEl(legColor);
+          const startMarker = new mapboxgl.Marker({ element: startEl, anchor: 'center' })
+            .setLngLat(coords[0])
+            .addTo(map.current);
+          journeyStartMarkersRef.current.set(legId, startMarker);
+
+          // End marker
+          const endEl = makeMarkerEl(legColor);
+          const endMarker = new mapboxgl.Marker({ element: endEl, anchor: 'center' })
+            .setLngLat(coords[coords.length - 1])
+            .addTo(map.current);
+          journeyEndMarkersRef.current.set(legId, endMarker);
+
+          // Intermediate waypoints (small grey dots)
+          if (valid.length > 2) {
+            const intMarkers: mapboxgl.Marker[] = [];
+            for (const wp of valid.slice(1, -1)) {
+              const intEl = document.createElement('div');
+              Object.assign(intEl.style, {
+                width: '12px', height: '12px', borderRadius: '50%', backgroundColor: '#9ca3af',
+                border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.3)', cursor: 'pointer',
+              });
+              intEl.addEventListener('click', (e) => { e.stopPropagation(); setSelectedJourneyLegId(legId); });
+              const m = new mapboxgl.Marker({ element: intEl, anchor: 'center' })
+                .setLngLat(wp.coordinates as [number, number])
+                .addTo(map.current!);
+              intMarkers.push(m);
+            }
+            journeyIntermediateMarkersRef.current.set(legId, intMarkers);
+          }
+        }
+
+        // Fit map to entire journey
+        if (allCoords.length >= 2) {
+          const bounds = calculateBoundsWithAntimeridian(allCoords);
+          if (bounds) {
+            const [[minLng, minLat], [maxLng, maxLat]] = bounds;
+            const pad = 0.08;
+            const lngD = Math.max(Math.abs(maxLng - minLng), 0.01);
+            const latD = Math.max(maxLat - minLat, 0.01);
+            map.current.fitBounds(
+              [[minLng - lngD * pad, minLat - latD * pad], [maxLng + lngD * pad, maxLat + latD * pad]],
+              { padding: { top: 60, bottom: 60, left: 420, right: 60 }, maxZoom: 10 }
+            );
+          }
+        }
+      }
+    } catch (err) {
+      logger.error('[JourneyView] Error entering journey view', { error: err instanceof Error ? err.message : String(err) });
+      journeyViewModeRef.current = false;
+    } finally {
+      setJourneyViewLoading(false);
+    }
+  }, [clearJourneyMapElements, getJourneyLegColor]);
+
+  // Exit journey view: restore normal map state
+  const exitJourneyView = useCallback(() => {
+    // Reset ref synchronously so viewport fetch is unblocked immediately
+    journeyViewModeRef.current = false;
+    // Force a fresh viewport fetch on the next map move (reset cached bounds)
+    lastLoadedBoundsRef.current = null;
+
+    setJourneyViewMode(false);
+    setJourneyViewId(null);
+    setJourneyViewName(null);
+    setJourneyLegs([]);
+    setSelectedJourneyLegId(null);
+
+    clearJourneyMapElements();
+
+    // Clear single route source (used by normal leg selection)
+    if (map.current && routeSourceAddedRef.current) {
+      const routeSource = map.current.getSource('leg-route-source') as mapboxgl.GeoJSONSource;
+      if (routeSource) routeSource.setData({ type: 'FeatureCollection', features: [] });
+    }
+
+    // Clear marker sources so GeoJSON effect repopulates with normal legs
+    if (map.current && sourceAddedRef.current) {
+      const empty: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+      (map.current.getSource('legs-source') as mapboxgl.GeoJSONSource)?.setData(empty);
+      (map.current.getSource('approved-legs-source') as mapboxgl.GeoJSONSource)?.setData(empty);
+    }
+  }, [clearJourneyMapElements]);
+
+  // Update route line colors when selected journey leg changes
+  useEffect(() => {
+    if (!journeyViewMode || !map.current) return;
+    const DEFAULT_GREY = '#6b7280';
+    journeyRouteLayersRef.current.forEach(layerId => {
+      if (!map.current!.getLayer(layerId)) return;
+      const legId = layerId.replace('journey-route-layer-', '');
+      const isSelected = legId === selectedJourneyLegId;
+      if (isSelected) {
+        const leg = journeyLegs.find(l => l.leg_id === legId);
+        const color = leg ? getJourneyLegColor(leg) : DEFAULT_GREY;
+        map.current!.setPaintProperty(layerId, 'line-color', color);
+        map.current!.setPaintProperty(layerId, 'line-width', 5);
+        map.current!.setPaintProperty(layerId, 'line-opacity', 1.0);
+      } else {
+        map.current!.setPaintProperty(layerId, 'line-color', DEFAULT_GREY);
+        map.current!.setPaintProperty(layerId, 'line-width', 3);
+        map.current!.setPaintProperty(layerId, 'line-opacity', 0.7);
+      }
+    });
+  }, [selectedJourneyLegId, journeyViewMode, journeyLegs, getJourneyLegColor]);
+
+  // Sync selectedLeg when selectedJourneyLegId changes (e.g. via map marker/route click)
+  useEffect(() => {
+    if (!journeyViewMode || !selectedJourneyLegId) return;
+    const leg = journeyLegs.find(l => l.leg_id === selectedJourneyLegId);
+    if (leg) setSelectedLeg(leg);
+  }, [selectedJourneyLegId, journeyViewMode, journeyLegs]);
 
   // Load user's skills and experience level from profile using useProfile hook
   useEffect(() => {
@@ -879,8 +1018,9 @@ export function CrewBrowseMap({
   useEffect(() => {
     if (!map.current || !mapLoaded || !sourceAddedRef.current) return;
 
-    // In journey view mode, legs-source has journey markers set by enterJourneyView — don't overwrite
-    if (journeyViewMode) return;
+    // In journey view mode (or while entering it), legs-source belongs to journey markers — don't overwrite.
+    // Check both state (for re-renders) and ref (for the async gap before state updates).
+    if (journeyViewMode || journeyViewModeRef.current) return;
 
     // Separate approved legs from others to prevent clustering
     // Validate that userRegistrations exists and is a valid Map
@@ -1060,6 +1200,8 @@ export function CrewBrowseMap({
       // Handle viewport changes (move, zoom) - load legs when zoom > 3.5
       // Note: This function captures state at mount time, but we'll use refs for dynamic values
       const handleViewportChange = async () => {
+      // Don't fetch regular legs while in journey view mode
+      if (journeyViewModeRef.current) return;
       if (!map.current || !mapLoadedRef.current || isLoadingRef.current) {
         logger.debug('handleViewportChange: map not ready or already loading', {
           hasMap: !!map.current,
@@ -1093,6 +1235,10 @@ export function CrewBrowseMap({
             lastLoadedBounds: lastLoadedBoundsRef.current,
           });
 
+          if (journeyViewModeRef.current) {
+            logger.debug('Debounced handler: skipping viewport fetch (journey view active)', {}, true);
+            return;
+          }
           if (!map.current || isLoadingRef.current) {
             logger.debug('Debounced handler: map not ready or already loading', {}, true);
             return;
@@ -2235,7 +2381,7 @@ export function CrewBrowseMap({
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                   </svg>
-                  Back to map
+                  Back to all legs
                 </button>
                 <span className="font-semibold text-foreground">
                   {journeyViewLoading ? 'Loading...' : `${journeyLegs.length} Leg${journeyLegs.length !== 1 ? 's' : ''}`}
@@ -2275,17 +2421,18 @@ export function CrewBrowseMap({
               <LegList
                 legs={journeyLegs as any[]}
                 onLegClick={async (leg) => {
-                  exitJourneyView();
                   const fullLeg = journeyLegs.find((l: any) => l.leg_id === leg.leg_id);
                   if (fullLeg) {
-                    await selectLegWithWaypoints(fullLeg as Leg);
+                    setSelectedJourneyLegId(leg.leg_id);
+                    setSelectedLeg(fullLeg as Leg);
                     setShowFullPanelOnMobile(true);
                   }
                 }}
+                highlightedLegId={selectedJourneyLegId}
                 sortByMatch={false}
                 displayOptions={{
                   showCarousel: bottomSheetSnapPoint !== 'collapsed',
-                  showMatchBadge: false,
+                  showMatchBadge: hasProfile(profile),
                   showLegName: true,
                   showJourneyName: false,
                   showLocations: true,
@@ -2377,7 +2524,11 @@ export function CrewBrowseMap({
         isVisible={!selectedLeg || journeyViewMode}
         isLoading={journeyViewMode ? journeyViewLoading : loading}
         onLegSelect={async (leg) => {
-          if (journeyViewMode) exitJourneyView();
+          if (journeyViewMode) {
+            setSelectedJourneyLegId(leg.leg_id);
+            setSelectedLeg(leg as Leg);
+            return;
+          }
           await selectLegWithWaypoints(leg as Leg);
         }}
         onMinimizeChange={setIsLegsPaneMinimized}
@@ -2385,6 +2536,7 @@ export function CrewBrowseMap({
         journeyViewMode={journeyViewMode}
         journeyViewName={journeyViewName}
         onExitJourneyView={exitJourneyView}
+        selectedJourneyLegId={selectedJourneyLegId}
       />
 
       {/* Desktop: Side panel for selected leg details (overlays journey pane via z-index when in journey view) */}

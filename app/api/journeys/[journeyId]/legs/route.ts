@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseServerClient } from '@shared/database/server';
 import { sanitizeErrorResponse } from '@shared/database';
 import { logger } from '@shared/logging';
+import { normalizeSkillNames } from '@shared/utils';
 
 /**
  * GET /api/journeys/[journeyId]/legs
@@ -9,6 +10,11 @@ import { logger } from '@shared/logging';
  * Returns all published legs for a journey, with start/end waypoints.
  * Used by the crew dashboard map "View Journey" feature.
  * Public access for published journeys.
+ *
+ * Mirrors the get_legs_in_viewport RPC logic:
+ * - skills: combined leg.skills + journey.skills (deduplicated)
+ * - min_experience_level: COALESCE(leg.min_experience_level, journey.min_experience_level)
+ * - journey_risk_level: wrapped in array (journey.risk_level is a scalar enum in DB)
  */
 export async function GET(
   _request: NextRequest,
@@ -20,10 +26,10 @@ export async function GET(
 
     const supabase = await getSupabaseServerClient();
 
-    // Verify journey exists and is published
+    // Verify journey exists and is published; fetch journey-level fields needed for leg enrichment
     const { data: journey, error: journeyError } = await supabase
       .from('journeys')
-      .select('id, name, state, risk_level, images, boat_id, cost_model')
+      .select('id, name, state, risk_level, images, boat_id, cost_model, skills, min_experience_level')
       .eq('id', journeyId)
       .single();
 
@@ -64,7 +70,7 @@ export async function GET(
     // Fetch boat + owner info
     const { data: boat } = await supabase
       .from('boats')
-      .select('id, name, boat_type, images, average_speed_knots, make_model, owner_id')
+      .select('id, name, type, images, average_speed_knots, make_model, owner_id')
       .eq('id', journey.boat_id)
       .single();
 
@@ -82,72 +88,73 @@ export async function GET(
 
     const legIds = legs.map((l) => l.id);
 
-    // Fetch start waypoints (index = 0) for all legs
-    let startWaypoints: any[] | null = null;
-    try {
-      const { data } = await supabase
-        .rpc('get_leg_waypoints_batch', { leg_ids: legIds })
-        .select();
-      startWaypoints = data;
-    } catch {
-      startWaypoints = null;
-    }
+    // Fetch start and end waypoints for all legs via direct query
+    const waypointsByLegId: Record<string, { start: { lng: number; lat: number; name: string | null } | null; end: { lng: number; lat: number; name: string | null } | null }> = {};
 
-    // Fallback: query waypoints table directly if RPC doesn't exist
-    let waypointsByLegId: Record<string, { start: { lng: number; lat: number; name: string | null } | null; end: { lng: number; lat: number; name: string | null } | null }> = {};
+    const { data: allWaypoints } = await supabase
+      .from('waypoints')
+      .select('leg_id, index, name, location')
+      .in('leg_id', legIds)
+      .order('index', { ascending: true });
 
-    if (!startWaypoints) {
-      // Direct query: get index=0 (start) and max index (end) per leg
-      const { data: allWaypoints } = await supabase
-        .from('waypoints')
-        .select('leg_id, index, name, location')
-        .in('leg_id', legIds)
-        .order('index', { ascending: true });
-
-      if (allWaypoints) {
-        for (const wp of allWaypoints) {
-          if (!waypointsByLegId[wp.leg_id]) {
-            waypointsByLegId[wp.leg_id] = { start: null, end: null };
-          }
-          const coords = wp.location?.coordinates;
-          if (!coords) continue;
-          const point = { lng: coords[0], lat: coords[1], name: wp.name ?? null };
-          if (wp.index === 0) {
-            waypointsByLegId[wp.leg_id].start = point;
-          }
-          // Always update end to last waypoint (highest index)
-          waypointsByLegId[wp.leg_id].end = point;
+    if (allWaypoints) {
+      for (const wp of allWaypoints) {
+        if (!waypointsByLegId[wp.leg_id]) {
+          waypointsByLegId[wp.leg_id] = { start: null, end: null };
         }
+        const coords = wp.location?.coordinates;
+        if (!coords) continue;
+        const point = { lng: coords[0], lat: coords[1], name: wp.name ?? null };
+        if (wp.index === 0) {
+          waypointsByLegId[wp.leg_id].start = point;
+        }
+        // Always update end to last waypoint (highest index since ordered ascending)
+        waypointsByLegId[wp.leg_id].end = point;
       }
     }
 
+    // Journey-level fields used as fallback/supplement (mirrors get_legs_in_viewport RPC logic)
+    const journeySkills: string[] = journey.skills ?? [];
+    const journeyMinExperienceLevel: number | null = journey.min_experience_level ?? null;
+    // journey.risk_level is a scalar enum in DB; wrap in array for consistent API shape
+    const journeyRiskLevel = journey.risk_level ? [journey.risk_level] : null;
+
     // Build response matching Leg type in CrewBrowseMap
-    const transformedLegs = legs.map((leg) => ({
-      leg_id: leg.id,
-      leg_name: leg.name,
-      leg_description: leg.description ?? null,
-      journey_id: journeyId,
-      journey_name: journey.name,
-      start_date: leg.start_date ?? null,
-      end_date: leg.end_date ?? null,
-      crew_needed: leg.crew_needed ?? null,
-      leg_risk_level: leg.risk_level ?? null,
-      journey_risk_level: journey.risk_level ?? null,
-      cost_model: journey.cost_model ?? null,
-      journey_images: journey.images ?? [],
-      skills: leg.skills ?? [],
-      boat_id: journey.boat_id,
-      boat_name: boat?.name ?? '',
-      boat_type: boat?.boat_type ?? null,
-      boat_image_url: boat?.images?.[0] ?? null,
-      boat_average_speed_knots: boat?.average_speed_knots ?? null,
-      boat_make_model: boat?.make_model ?? null,
-      owner_name: ownerName,
-      owner_image_url: ownerImageUrl,
-      min_experience_level: leg.min_experience_level ?? null,
-      start_waypoint: waypointsByLegId[leg.id]?.start ?? null,
-      end_waypoint: waypointsByLegId[leg.id]?.end ?? null,
-    }));
+    const transformedLegs = legs.map((leg) => {
+      // Combine leg skills + journey skills (deduplicated), same as viewport RPC
+      const legSkillsRaw: string[] = leg.skills ?? [];
+      const combinedSkills = Array.from(new Set([...legSkillsRaw, ...journeySkills]));
+
+      return {
+        leg_id: leg.id,
+        leg_name: leg.name,
+        leg_description: leg.description ?? null,
+        journey_id: journeyId,
+        journey_name: journey.name,
+        start_date: leg.start_date ?? null,
+        end_date: leg.end_date ?? null,
+        crew_needed: leg.crew_needed ?? null,
+        leg_risk_level: leg.risk_level ?? null,
+        // Wrap scalar journey risk_level into array (mirrors ARRAY[j.risk_level] in RPC)
+        journey_risk_level: journeyRiskLevel,
+        cost_model: journey.cost_model ?? null,
+        journey_images: journey.images ?? [],
+        // Combined + normalized skills (mirrors array_agg of leg+journey skills in RPC)
+        skills: normalizeSkillNames(combinedSkills),
+        boat_id: journey.boat_id,
+        boat_name: boat?.name ?? '',
+        boat_type: (boat as any)?.type ?? null,
+        boat_image_url: boat?.images?.[0] ?? null,
+        boat_average_speed_knots: boat?.average_speed_knots ?? null,
+        boat_make_model: boat?.make_model ?? null,
+        owner_name: ownerName,
+        owner_image_url: ownerImageUrl,
+        // COALESCE: use leg's experience level, fall back to journey's (mirrors RPC)
+        min_experience_level: leg.min_experience_level ?? journeyMinExperienceLevel,
+        start_waypoint: waypointsByLegId[leg.id]?.start ?? null,
+        end_waypoint: waypointsByLegId[leg.id]?.end ?? null,
+      };
+    });
 
     return NextResponse.json({ legs: transformedLegs, count: transformedLegs.length });
   } catch (error: any) {
