@@ -414,14 +414,22 @@ function MaintenanceCard({
           <h4 className="text-sm font-medium text-card-foreground leading-tight line-clamp-2">{task.title}</h4>
         </div>
 
-        {/* Meta: due date + recurrence */}
+        {/* Meta: due date / completed date + recurrence */}
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-1 ml-3">
-          {task.due_date && (
-            <span className={isOverdue ? 'text-red-500 font-medium' : ''}>
-              {isOverdue ? '⚠ ' : ''}Due {new Date(task.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-            </span>
+          {displayStatus === 'done' ? (
+            task.completed_at && (
+              <span className="text-green-600 dark:text-green-400 font-medium">
+                ✓ {new Date(task.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )
+          ) : (
+            task.due_date && (
+              <span className={isOverdue ? 'text-red-500 font-medium' : ''}>
+                {isOverdue ? '⚠ ' : ''}Due {new Date(task.due_date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+              </span>
+            )
           )}
-          {task.estimated_hours != null && <span>{task.estimated_hours}h</span>}
+          {task.estimated_hours != null && displayStatus !== 'done' && <span>{task.estimated_hours}h</span>}
           {task.recurrence && (
             <span className="text-blue-500 dark:text-blue-400">
               ↻ {task.recurrence.type === 'time' ? `${task.recurrence.interval_days}d` : `${task.recurrence.engine_hours}h`}

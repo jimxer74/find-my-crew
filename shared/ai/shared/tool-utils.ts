@@ -390,6 +390,22 @@ export function parseToolCalls(text: string): { content: string; toolCalls: Tool
             });
             content = content.replace(match[0], '').trim();
             log('Converted boat JSON to fetch_boat_details_from_sailboatdata tool call');
+          } else {
+            // Check if it has boat management fields (implicit dispatch for owner tools)
+            const hasTaskId = 'taskId' in toolCallJson || 'task_id' in toolCallJson;
+            const hasBoatId = 'boatId' in toolCallJson || 'boat_id' in toolCallJson;
+            if (hasTaskId) {
+              const hasDueDate = 'dueDate' in toolCallJson || 'due_date' in toolCallJson;
+              if (hasDueDate) {
+                log('Detected implicit update_maintenance_task_due_date call from task JSON');
+                toolCalls.push({ id: `tc_${Date.now()}_${toolCallIndex++}`, name: 'update_maintenance_task_due_date', arguments: toolCallJson });
+                content = content.replace(match[0], '').trim();
+              }
+            } else if (hasBoatId) {
+              log('Detected implicit get_boat_management_summary call from boat JSON');
+              toolCalls.push({ id: `tc_${Date.now()}_${toolCallIndex++}`, name: 'get_boat_management_summary', arguments: toolCallJson });
+              content = content.replace(match[0], '').trim();
+            }
           }
         }
       }
@@ -866,17 +882,14 @@ export function sanitizeContent(
   sanitized = sanitized.replace(/TOOL CALL:\s*/gi, '');
   sanitized = sanitized.replace(/^TOOL CALL\s*$/gim, '');
   
-  // Remove unparsed code blocks with tool call language tags
-  // Only remove if they contain tool call-like content (have "name" field)
+  // Remove ALL unparsed code blocks with tool call language tags
+  // Successfully parsed blocks are already removed from content by parseToolCalls,
+  // so any remaining ones are malformed/bare-args blocks that should not be shown to users
   sanitized = sanitized.replace(
-    /```(?:tool_calls?|tool_code)\s*\n?([\s\S]*?)```/g,
-    (match, inner) => {
-      // Check if this looks like a tool call (has "name" field)
-      if (inner && inner.match(/"name"\s*:/i)) {
-        log('Removing malformed tool call code block');
-        return ''; // Remove it - it's a malformed tool call
-      }
-      return match; // Keep it - might be legitimate code example
+    /```(?:tool_calls?|tool_code)\s*\n?[\s\S]*?```/g,
+    () => {
+      log('Removing malformed tool call code block');
+      return '';
     }
   );
   

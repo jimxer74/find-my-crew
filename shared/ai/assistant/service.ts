@@ -13,8 +13,8 @@ import {
   parseToolCalls,
   formatToolResultsForAI,
   sanitizeContent,
-  toolsToPromptFormat,
   getToolsForUser,
+  type ToolDefinition,
 } from '../shared';
 import {
   AIConversation,
@@ -33,6 +33,47 @@ const MAX_HISTORY_MESSAGES = 20;
 const MAX_TOOL_ITERATIONS = 6;
 const MAX_LEG_REFERENCES = 6;
 
+/**
+ * Format tools for the system prompt — shows each tool with description,
+ * required params, and a concrete call example so the AI learns the format.
+ */
+function formatToolsForPrompt(tools: ToolDefinition[]): string {
+  return tools.map((t) => {
+    const required = t.parameters.required || [];
+    const props = t.parameters.properties as Record<string, { type: string; description: string; enum?: string[] }>;
+
+    // Build an example arguments object using required fields + first optional
+    const exampleArgs: Record<string, string> = {};
+    for (const key of required) {
+      const prop = props[key];
+      if (prop?.type === 'string') exampleArgs[key] = `"<${key}>"`;
+      else if (prop?.type === 'number') exampleArgs[key] = `0`;
+      else if (prop?.type === 'boolean') exampleArgs[key] = `true`;
+      else exampleArgs[key] = `"<${key}>"`;
+    }
+
+    const paramLines = Object.entries(props)
+      .map(([k, v]) => {
+        const req = required.includes(k) ? ' (required)' : ' (optional)';
+        const enumNote = v.enum ? ` — one of: ${v.enum.join(', ')}` : '';
+        return `  - ${k} [${v.type}]${req}: ${v.description}${enumNote}`;
+      })
+      .join('\n');
+
+    const exampleArgsStr = Object.entries(exampleArgs)
+      .map(([k, v]) => `"${k}": ${v}`)
+      .join(', ');
+
+    return `**${t.name}**: ${t.description}
+Parameters:
+${paramLines}
+Example call:
+\`\`\`tool_call
+{"name": "${t.name}", "arguments": {${exampleArgsStr}}}
+\`\`\``;
+  }).join('\n\n');
+}
+
 const DEBUG = true;
 const log = (message: string, data?: unknown) => {
   if (DEBUG) {
@@ -41,12 +82,32 @@ const log = (message: string, data?: unknown) => {
 };
 
 const TOOL_CALL_FORMAT = `
-**TOOL CALL FORMAT:** Use a code block with valid JSON. Example:
+## TOOL CALL FORMAT (CRITICAL)
+
+To call a tool, use a \`\`\`tool_call code block containing a JSON object with exactly two keys:
+- \`"name"\` — the tool name (string)
+- \`"arguments"\` — an object containing the tool parameters
+
+**CORRECT format:**
 \`\`\`tool_call
-{"name": "tool_name", "arguments": { ... }}
+{"name": "get_boat_management_summary", "arguments": {"boatId": "ae779227-75d3-4af2-a4d8-75aa460e61de"}}
 \`\`\`
-- One tool per block. Use complete, valid JSON. No placeholders like {...}.
-- Multiple tools in sequence are fine — wait for results before continuing.
+
+**WRONG — missing "name" and "arguments" wrapper:**
+\`\`\`tool_call
+{"boatId": "ae779227-75d3-4af2-a4d8-75aa460e61de"}
+\`\`\`
+
+**WRONG — parameters at top level without wrapper:**
+\`\`\`tool_call
+{"name": "get_boat_management_summary", "boatId": "ae779227-75d3-4af2-a4d8-75aa460e61de"}
+\`\`\`
+
+Rules:
+- ALWAYS include both \`"name"\` and \`"arguments"\` keys
+- Put ALL parameters inside the \`"arguments"\` object, never at the top level
+- One tool call per code block
+- Use complete valid JSON — no comments, no placeholders
 `;
 
 /**
@@ -103,8 +164,8 @@ export async function chat(
   // Build system prompt with user context + tool list
   const systemPrompt =
     buildSystemPrompt(userContext) +
-    '\n\n## AVAILABLE TOOLS\n' +
-    toolsToPromptFormat(tools) +
+    '\n\n## AVAILABLE TOOLS\n\n' +
+    formatToolsForPrompt(tools) +
     TOOL_CALL_FORMAT;
 
   // Build messages array
@@ -152,12 +213,14 @@ export async function chat(
       toolResults.map((r) => ({ name: r.name, result: r.result, error: r.error }))
     );
 
+    const hasErrors = toolResults.some((r) => r.error || (r.result && typeof r.result === 'object' && 'error' in (r.result as object)));
+    const followUp = hasErrors
+      ? `Tool results:\n${toolResultsText}\n\nSome tools returned errors. If an error says to call get_maintenance_tasks first, do that now to get real task UUIDs, then retry the action with the correct UUIDs. Do NOT give up — complete the task.`
+      : `Tool results:\n${toolResultsText}\n\nPlease provide your response to the user based on these results.`;
+
     messages.push(
       { role: 'assistant', content: result.text },
-      {
-        role: 'user',
-        content: `Tool results:\n${toolResultsText}\n\nPlease provide your response to the user based on these results.`,
-      }
+      { role: 'user', content: followUp }
     );
   }
 

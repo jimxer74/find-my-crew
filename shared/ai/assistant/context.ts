@@ -352,6 +352,14 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
     prompt += `- Use \`get_boat_equipment\` for equipment lists (filter by category or status)\n`;
     prompt += `- Use \`get_boat_inventory\` for spare parts and consumables (use \`lowStockOnly: true\` for alerts)\n`;
     prompt += `- Use \`get_maintenance_tasks\` for scheduled tasks (use \`overdueOnly: true\` or \`dueSoonDays\` to focus on urgent items)\n\n`;
+    prompt += `**Scheduling / rescheduling maintenance tasks**:\n`;
+    prompt += `When the owner asks to schedule, plan, set a date, reschedule, postpone, or move a task — use \`update_maintenance_task_due_date\`.\n`;
+    prompt += `Trigger phrases: "schedule", "plan for", "set due date", "reschedule", "move to", "postpone", "book in for", "when should I do", "can you plan".\n`;
+    prompt += `Workflow (mandatory two-step):\n`;
+    prompt += `  1. Call \`get_maintenance_tasks\` to retrieve tasks with their real UUIDs\n`;
+    prompt += `  2. Call \`update_maintenance_task_due_date\` with the real UUID and the new date (YYYY-MM-DD)\n`;
+    prompt += `NEVER guess or invent task IDs — they must come from step 1.\n`;
+    prompt += `If the owner says "schedule all overdue tasks" or gives a date range, call the tool once per task.\n\n`;
     prompt += `**Journey management**:\n`;
     prompt += `- Use \`generate_journey_route\` for AI-powered journey creation from a natural language description (creates journey + legs automatically)\n`;
     prompt += `- Use \`create_journey\` + \`create_leg\` for step-by-step manual creation\n`;

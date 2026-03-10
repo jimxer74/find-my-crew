@@ -351,6 +351,11 @@ export async function executeTool(
         result = await getBoatManagementSummaryTool(supabase, userId, args);
         break;
 
+      case 'update_maintenance_task_due_date':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await updateMaintenanceTaskDueDateTool(supabase, userId, args);
+        break;
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -1927,7 +1932,11 @@ async function updateUserProfileTool(supabase: SupabaseClient, userId: string, a
           if (typeof loc.isCruisingRegion === 'boolean') normalized.isCruisingRegion = loc.isCruisingRegion;
           if (loc.bbox && typeof loc.bbox === 'object') normalized.bbox = loc.bbox;
           if (!normalized.bbox) {
-            const regionMatch = getAllRegions().find((r: { name: string; aliases: string[]; bbox: Record<string, number> }) => r.name.toLowerCase() === (loc.name as string).toLowerCase().trim() || r.aliases.some((a: string) => a.toLowerCase() === (loc.name as string).toLowerCase().trim()));
+            const regionMatch = getAllRegions().find(
+              (r) =>
+                r.name.toLowerCase() === (loc.name as string).toLowerCase().trim() ||
+                r.aliases.some((a) => a.toLowerCase() === (loc.name as string).toLowerCase().trim())
+            );
             if (regionMatch) { normalized.isCruisingRegion = true; normalized.bbox = { ...regionMatch.bbox }; }
           }
           value = normalized;
@@ -2345,3 +2354,46 @@ async function getBoatManagementSummaryTool(supabase: SupabaseClient, userId: st
     ],
   };
 }
+
+async function updateMaintenanceTaskDueDateTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const taskId = (args.taskId || args.task_id) as string;
+  const dueDate = args.dueDate ?? args.due_date;
+  const uuidError = requireTaskUUID(taskId);
+  if (uuidError) return uuidError;
+
+  // Verify ownership via boat
+  const { data: task } = await supabase
+    .from('boat_maintenance_tasks')
+    .select('id, title, due_date, boats!inner(owner_id)')
+    .eq('id', taskId)
+    .eq('boats.owner_id', userId)
+    .single();
+  if (!task) return { error: 'Task not found or you do not own this boat' };
+
+  const { error } = await supabase
+    .from('boat_maintenance_tasks')
+    .update({ due_date: dueDate ?? null, updated_at: new Date().toISOString() })
+    .eq('id', taskId);
+  if (error) return { error: `Failed to update due date: ${error.message}` };
+
+  return {
+    success: true,
+    taskId,
+    taskTitle: (task as any).title,
+    dueDate: dueDate ?? null,
+    message: dueDate
+      ? `Due date for "${(task as any).title}" set to ${dueDate}`
+      : `Due date for "${(task as any).title}" cleared`,
+  };
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function requireTaskUUID(taskId: string | undefined): { error: string } | null {
+  if (!taskId) return { error: 'taskId is required. Call get_maintenance_tasks first to get real task UUIDs.' };
+  if (!UUID_REGEX.test(taskId)) {
+    return { error: `"${taskId}" is not a valid task UUID. You MUST call get_maintenance_tasks first to get real task UUIDs before calling action tools. Never guess or construct task IDs.` };
+  }
+  return null;
+}
+

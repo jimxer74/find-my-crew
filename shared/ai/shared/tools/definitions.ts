@@ -1369,4 +1369,18 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       required: ['boatId'],
     },
   },
+  {
+    name: 'update_maintenance_task_due_date',
+    description: 'Schedule or reschedule a maintenance task by setting its due date. Use whenever the owner wants to schedule, plan, set a date, reschedule, postpone, or move a task. REQUIRED workflow: (1) call get_maintenance_tasks first to get real task UUIDs, (2) call this tool with the UUID from step 1. Never invent task IDs.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string', description: 'UUID of the maintenance task to update.' },
+        dueDate: { type: 'string', description: 'New due date in ISO format (YYYY-MM-DD). Pass null to clear the due date.' },
+      },
+      required: ['taskId', 'dueDate'],
+    },
+  },
 ];
