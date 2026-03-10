@@ -33,7 +33,7 @@ function OwnerOnboardingContent() {
   const handleStartFresh = async () => {
     if (window.confirm('Start a new conversation? Your current chat history will be cleared.')) {
       await clearSession();
-      router.push('/');
+      router.push('/owner');
     }
   };
 

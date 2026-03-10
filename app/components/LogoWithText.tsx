@@ -25,7 +25,7 @@ export function LogoWithText({ className = '', userRole = ''
   const theme = useTheme();
 
   return (
-    <Link href={userRole === 'crew' ? '/crew' : '/'} className={className} onClick={handleClick}>
+    <Link href={userRole === 'owner' ? '/owner' : userRole === 'crew' ? '/crew' : '/'} className={className} onClick={handleClick}>
     <Image 
         src={theme.resolvedTheme === 'dark' ? "/sailsmart_new_tp_dark.png" : "/sailsmart_new_tp.png"} 
         alt="SailSmart" 

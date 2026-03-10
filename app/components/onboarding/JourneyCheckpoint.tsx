@@ -378,7 +378,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
             onChange={handleStartChange}
             onInputChange={(v) => { setStartText(v); setStartCoords(null); }}
             placeholder="e.g. Helsinki, Finland"
-            excludeCruisingRegions={false}
+            excludeCruisingRegions={true}
           />
           {startCoords && (
             <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
@@ -415,7 +415,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
                     onChange={(loc) => handleWaypointChange(idx, loc)}
                     onInputChange={(v) => handleWaypointInputChange(idx, v)}
                     placeholder={`Stop ${idx + 1}, e.g. Mariehamn, Finland`}
-                    excludeCruisingRegions={false}
+                    excludeCruisingRegions={true}
                   />
                   {wp.text && wp.coords && (
                     <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
@@ -447,7 +447,7 @@ export function JourneyCheckpoint({ journey, boatId, onSkip }: JourneyCheckpoint
             onChange={handleEndChange}
             onInputChange={(v) => { setEndText(v); setEndCoords(null); }}
             placeholder="e.g. Tallinn, Estonia"
-            excludeCruisingRegions={false}
+            excludeCruisingRegions={true}
           />
           {endCoords && (
             <p className="text-xs text-gray-500 mt-0.5">✓ Location resolved</p>
