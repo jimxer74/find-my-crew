@@ -306,7 +306,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       "Update fields in the current user's profile. Only available for authenticated users. Use this during profile completion to save gathered preferences. Only update fields the user has confirmed.",
     access: 'authenticated',
-    category: 'action',
+    category: 'data',
     parameters: {
       type: 'object',
       properties: {
@@ -783,7 +783,9 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     category: 'data',
     parameters: {
       type: 'object',
-      properties: {},
+      properties: {
+        limit: { type: 'number', description: 'Maximum number of boats to return (default 50)' },
+      },
     },
   },
   {
@@ -803,6 +805,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
           description: 'Filter by journey state',
           enum: ['In planning', 'Published', 'Archived'],
         },
+        limit: { type: 'number', description: 'Maximum number of journeys to return (default 50)' },
       },
     },
   },
@@ -1011,36 +1014,6 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     },
   },
   {
-    name: 'get_owner_boats',
-    description: "Get all boats owned by the current user. Use this to check if user already has boats or to list boats for journey creation.",
-    access: 'owner',
-    category: 'data',
-    parameters: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Maximum number of boats to return (default 50)',
-        },
-      },
-    },
-  },
-  {
-    name: 'get_owner_journeys',
-    description: "Get all journeys owned by the current user. Use this to check if user already has journeys or to list journeys.",
-    access: 'owner',
-    category: 'data',
-    parameters: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Maximum number of journeys to return (default 50)',
-        },
-      },
-    },
-  },
-  {
     name: 'get_boat_completion_status',
     description: "Check if boat information is complete. Returns which fields are filled and which are missing. Use this to guide users through boat creation.",
     access: 'owner',
@@ -1075,7 +1048,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       'Create a new boat for the owner. Use this after gathering boat information from the user and confirming with them. IMPORTANT: Before calling this, use fetch_boat_details_from_sailboatdata to get detailed specs if user provided make/model.',
     access: 'owner',
-    category: 'action',
+    category: 'data',
     parameters: {
       type: 'object',
       properties: {
@@ -1177,7 +1150,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       'Create a new journey for an owner\'s boat. Requires boat_id. Only for creating a journey without route/legs. For start-to-end routes, use generate_journey_route instead. IMPORTANT: Before calling this, use generate_journey_route to plan the journey with legs and waypoints if user provided route information.',
     access: 'owner',
-    category: 'action',
+    category: 'data',
     parameters: {
       type: 'object',
       properties: {
@@ -1240,7 +1213,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
     description:
       'Create a leg within a journey. Use this after creating a journey to add individual legs with waypoints. Can be called multiple times to create multiple legs for a journey.',
     access: 'owner',
-    category: 'action',
+    category: 'data',
     parameters: {
       type: 'object',
       properties: {
@@ -1304,6 +1277,96 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         },
       },
       required: ['journey_id', 'name', 'waypoints'],
+    },
+  },
+
+  // ============================================================
+  // BOAT MANAGEMENT QUERY TOOLS - Owner read-only access
+  // ============================================================
+  {
+    name: 'get_boat_equipment',
+    description: 'Get equipment registered on a specific boat. Returns the equipment list with details like category, manufacturer, model, status, and service dates. Use this when an owner asks about their boat equipment, what is installed, service schedules, or equipment status. Optionally filter by category or status.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        boatId: { type: 'string', description: 'UUID of the boat to query equipment for. Use get_owner_boats if you do not have the boat ID.' },
+        category: {
+          type: 'string',
+          description: 'Filter by equipment category',
+          enum: ['engine', 'rigging', 'electrical', 'navigation', 'safety', 'plumbing', 'anchoring', 'hull_deck', 'electronics', 'galley', 'comfort', 'dinghy'],
+        },
+        status: {
+          type: 'string',
+          description: 'Filter by equipment status',
+          enum: ['active', 'decommissioned', 'needs_replacement'],
+        },
+        dueSoonDays: { type: 'number', description: 'If provided, only return equipment with next_service_date within this many days from today.' },
+      },
+      required: ['boatId'],
+    },
+  },
+  {
+    name: 'get_boat_inventory',
+    description: 'Get spare parts and inventory items stored on a specific boat. Returns inventory with quantities, storage locations, part numbers, and supplier info. Use this when an owner asks about spare parts, what they have on board, low stock items, or stock levels. Optionally filter by equipment or show only low-stock items.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        boatId: { type: 'string', description: 'UUID of the boat to query inventory for. Use get_owner_boats if you do not have the boat ID.' },
+        equipmentId: { type: 'string', description: 'Filter inventory items linked to a specific equipment item.' },
+        lowStockOnly: { type: 'boolean', description: 'If true, only return items where quantity is at or below min_quantity (low stock alert).' },
+        category: { type: 'string', description: 'Filter inventory items by category.' },
+      },
+      required: ['boatId'],
+    },
+  },
+  {
+    name: 'get_maintenance_tasks',
+    description: 'Get maintenance tasks for a specific boat. Returns tasks with status, priority, due dates, estimated costs, and linked equipment. Use this when an owner asks about upcoming maintenance, overdue tasks, what needs to be done, maintenance history, or task priorities. Can filter by status, priority, category, or due date range.',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        boatId: { type: 'string', description: 'UUID of the boat to query maintenance tasks for. Use get_owner_boats if you do not have the boat ID.' },
+        status: {
+          type: 'string',
+          description: 'Filter by task status',
+          enum: ['pending', 'in_progress', 'completed', 'overdue', 'skipped'],
+        },
+        priority: {
+          type: 'string',
+          description: 'Filter by task priority',
+          enum: ['low', 'medium', 'high', 'critical'],
+        },
+        category: {
+          type: 'string',
+          description: 'Filter by maintenance category',
+          enum: ['routine', 'seasonal', 'repair', 'inspection', 'safety'],
+        },
+        equipmentId: { type: 'string', description: 'Filter tasks linked to a specific equipment item.' },
+        dueSoonDays: { type: 'number', description: 'If provided, only return tasks due within this many days from today (e.g. 30 for next month).' },
+        overdueOnly: { type: 'boolean', description: 'If true, only return overdue tasks (due_date in the past and status not completed/skipped).' },
+        includeCompleted: { type: 'boolean', description: 'If true, include completed tasks in results (default: false, only pending/in_progress/overdue).' },
+      },
+      required: ['boatId'],
+    },
+  },
+  {
+    name: 'get_boat_management_summary',
+    description: 'Get a high-level summary of a boat\'s management status: equipment counts by category, low-stock inventory items, overdue maintenance tasks, and tasks coming due soon. Use this for an overview or dashboard-style question like "how is my boat doing", "what needs attention", or "give me a maintenance overview".',
+    access: 'owner',
+    category: 'data',
+    parameters: {
+      type: 'object',
+      properties: {
+        boatId: { type: 'string', description: 'UUID of the boat. Use get_owner_boats if you do not have the boat ID.' },
+        dueSoonDays: { type: 'number', description: 'Number of days ahead to check for upcoming maintenance (default: 30).' },
+      },
+      required: ['boatId'],
     },
   },
 ];

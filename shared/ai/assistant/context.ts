@@ -226,15 +226,17 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
       }
     }
 
-    if (profile.roles.includes('owner') && boats && boats.length > 0) {
-      prompt += `\n### Owner's Boats\n`;
-      boats.forEach(boat => {
-        prompt += `- ${boat.name}`;
-        if (boat.make_model) {
-          prompt += ` (${boat.make_model})`;
-        }
-        prompt += `\n`;
-      });
+    if (profile.roles.includes('owner') && boats) {
+      if (boats.length > 0) {
+        prompt += `\n### Owner's Boats\n`;
+        boats.forEach(boat => {
+          prompt += `- ${boat.name} (ID: \`${boat.id}\`)`;
+          if (boat.make_model) prompt += ` — ${boat.make_model}`;
+          prompt += `\n`;
+        });
+      } else {
+        prompt += `\n### Owner's Boats\nNo boats registered yet.\n`;
+      }
     }
 
     if (recentRegistrations && recentRegistrations.length > 0) {
@@ -339,7 +341,35 @@ If the location is ambiguous (e.g., "the coast", "somewhere warm"), ask for clar
   prompt += `- The badge provides a direct link to the registration form with questions\n\n`;
   prompt += `**Badge vs Leg Reference:**\n`;
   prompt += `- \`[[leg:UUID:Name]]\` - View leg details (always use this to show leg info)\n`;
-  prompt += `- \`[[register:UUID:Name]]\` - Opens registration form directly (use when hasRequirements && autoApprovalEnabled)\n`;
+  prompt += `- \`[[register:UUID:Name]]\` - Opens registration form directly (use when hasRequirements && autoApprovalEnabled)\n\n`;
+
+  // Add owner-specific guidance when user is an owner
+  if (profile?.roles?.includes('owner')) {
+    prompt += `## OWNER BOAT MANAGEMENT\n\n`;
+    prompt += `You have access to boat management and journey management tools.\n\n`;
+    prompt += `**Boat management queries** (equipment, inventory, maintenance):\n`;
+    prompt += `- Start with \`get_boat_management_summary\` for general overviews or "what needs attention"\n`;
+    prompt += `- Use \`get_boat_equipment\` for equipment lists (filter by category or status)\n`;
+    prompt += `- Use \`get_boat_inventory\` for spare parts and consumables (use \`lowStockOnly: true\` for alerts)\n`;
+    prompt += `- Use \`get_maintenance_tasks\` for scheduled tasks (use \`overdueOnly: true\` or \`dueSoonDays\` to focus on urgent items)\n\n`;
+    prompt += `**Journey management**:\n`;
+    prompt += `- Use \`generate_journey_route\` for AI-powered journey creation from a natural language description (creates journey + legs automatically)\n`;
+    prompt += `- Use \`create_journey\` + \`create_leg\` for step-by-step manual creation\n`;
+    prompt += `- Use \`get_owner_journeys\` to list existing journeys for a boat\n`;
+    prompt += `- All journeys are created as DRAFT — always remind the owner to review and publish in their journeys section\n\n`;
+    prompt += `**Important**: All boat management tools require a \`boatId\`. The owner's boat IDs are listed above in "Owner's Boats".\n`;
+    prompt += `If the owner has multiple boats, ask which one they mean before calling tools.\n\n`;
+  }
+
+  // Suggestions guidance
+  prompt += `## SUGGESTED PROMPTS\n\n`;
+  prompt += `At the end of responses (especially after search results or completing an action), include 2-3 suggested follow-up prompts.\n`;
+  prompt += `Format:\n`;
+  prompt += `[SUGGESTIONS]\n`;
+  prompt += `- "Suggested prompt 1"\n`;
+  prompt += `- "Suggested prompt 2"\n`;
+  prompt += `[/SUGGESTIONS]\n\n`;
+  prompt += `Make suggestions contextual to what was just shown or done.\n`;
 
   return prompt;
 }

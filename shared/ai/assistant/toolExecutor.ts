@@ -11,12 +11,63 @@ import { ToolCall, ToolResult, AIPendingAction, ActionType } from './types';
 import { isActionTool } from './tools';
 import { BoundingBox, describeBbox } from '@shared/lib/geocoding/geocoding';
 import { getLocationBbox, listRegions, getCategories } from '@shared/lib/geocoding/locations';
+import { getAllRegions } from '@shared/lib/geocoding/locations';
 import {
   normalizeBboxArgs,
   isValidBbox,
   findLegsInBbox,
   transformLeg,
 } from '../shared';
+import skillsConfig from '@/app/config/skills-config.json';
+
+// Static definitions shared with owner/prospect services
+const EXPERIENCE_LEVEL_DEFINITIONS = {
+  1: { name: 'Beginner', description: 'New to sailing or have minimal experience. May have taken a basic sailing course or been on a few day sails.', typical_skills: 'Basic understanding of wind direction, can help with lines, basic safety awareness.' },
+  2: { name: 'Competent Crew', description: 'Can steer, reef, and stand watch. Have completed several sailing trips and understand basic navigation.', typical_skills: 'Can handle lines, basic navigation, watch keeping, understands safety procedures.' },
+  3: { name: 'Coastal Skipper', description: 'Experienced sailor who can skipper a boat in familiar waters. Can plan passages and handle most situations.', typical_skills: 'Passage planning, navigation, boat handling in various conditions, crew management.' },
+  4: { name: 'Offshore Skipper', description: 'Highly experienced sailor capable of long ocean passages and handling challenging conditions.', typical_skills: 'Ocean navigation, heavy weather sailing, self-sufficiency, advanced seamanship.' },
+};
+
+const RISK_LEVEL_DEFINITIONS = {
+  'Coastal sailing': { description: 'Sailing within sight of land or short distances between ports. Generally calmer conditions and easier access to shelter.', typical_conditions: 'Day sails, short coastal hops, protected waters. Usually within VHF range of coast guard.', experience_recommended: 'Beginner to Competent Crew' },
+  'Offshore sailing': { description: 'Passages that take you out of sight of land for extended periods. Requires self-sufficiency and good weather planning.', typical_conditions: 'Multi-day passages, open water crossings, variable weather conditions. May be days from nearest port.', experience_recommended: 'Coastal Skipper or above' },
+  'Extreme sailing': { description: 'Challenging conditions including high latitude sailing, ocean crossings, or expeditions to remote areas.', typical_conditions: 'Heavy weather, ice navigation, very long passages, limited rescue options. Weeks from nearest port.', experience_recommended: 'Offshore Skipper with specific experience' },
+};
+
+const SAILING_SKILLS = skillsConfig.general.map((s: { name: string }) => s.name);
+
+function normalizeRiskLevel(value: unknown): string[] | null {
+  if (value === null || value === undefined) return null;
+  function toArray(val: unknown): string[] {
+    if (Array.isArray(val)) return val.flatMap(v => (typeof v === 'string' ? [v.trim()] : toArray(v))).filter(Boolean);
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) { try { return toArray(JSON.parse(trimmed)); } catch { return trimmed.length > 0 ? [trimmed] : []; } }
+      return trimmed.length > 0 ? [trimmed] : [];
+    }
+    return [];
+  }
+  const validValues = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+  const arr = toArray(value).filter(v => v && validValues.includes(v) && !v.includes('[') && !v.includes(']'));
+  return arr.length > 0 ? arr : null;
+}
+
+function normalizeSailingExperience(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'number') { if (value >= 1 && value <= 4) return Math.round(value); return 2; }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    const numMatch = trimmed.match(/\b([1-4])\b/);
+    if (numMatch) return parseInt(numMatch[1], 10);
+    const lower = trimmed.toLowerCase();
+    if (lower.includes('beginner')) return 1;
+    if (lower.includes('competent')) return 2;
+    if (lower.includes('coastal')) return 3;
+    if (lower.includes('offshore')) return 4;
+    return 2;
+  }
+  return 2;
+}
 
 // Debug logging helper
 const DEBUG = true;
@@ -215,6 +266,89 @@ export async function executeTool(
 
       case 'get_leg_registration_info':
         result = await getLegRegistrationInfo(supabase, args.legId as string);
+        break;
+
+      // ── Static definition tools (public) ──────────────────────────────────
+
+      case 'get_experience_level_definitions':
+        result = EXPERIENCE_LEVEL_DEFINITIONS;
+        break;
+
+      case 'get_risk_level_definitions':
+        result = RISK_LEVEL_DEFINITIONS;
+        break;
+
+      case 'get_skills_definitions':
+        result = { skills: SAILING_SKILLS, skillsStructure: skillsConfig.general, note: 'Use ONLY these exact skill names.' };
+        break;
+
+      // ── Authenticated tools ────────────────────────────────────────────────
+
+      case 'get_profile_completion_status':
+        result = await getProfileCompletionStatus(supabase, userId);
+        break;
+
+      case 'update_user_profile':
+        result = await updateUserProfileTool(supabase, userId, args);
+        break;
+
+      // ── Owner-only tools ───────────────────────────────────────────────────
+
+      case 'fetch_boat_details_from_sailboatdata':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await fetchBoatDetailsFromSailboatdata(args);
+        break;
+
+      case 'get_boat_completion_status':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getBoatCompletionStatus(supabase, userId, args);
+        break;
+
+      case 'get_journey_completion_status':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getJourneyCompletionStatus(supabase, userId, args);
+        break;
+
+      case 'generate_journey_route':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await generateJourneyRouteTool(supabase, userId, args);
+        break;
+
+      case 'create_boat':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await createBoatTool(supabase, userId, args);
+        break;
+
+      case 'create_journey':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await createJourneyTool(supabase, userId, args);
+        break;
+
+      case 'create_leg':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await createLegTool(supabase, userId, args);
+        break;
+
+      // ── Boat management query tools (owner) ───────────────────────────────
+
+      case 'get_boat_equipment':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getBoatEquipmentTool(supabase, userId, args);
+        break;
+
+      case 'get_boat_inventory':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getBoatInventoryTool(supabase, userId, args);
+        break;
+
+      case 'get_maintenance_tasks':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getMaintenanceTasksTool(supabase, userId, args);
+        break;
+
+      case 'get_boat_management_summary':
+        if (!userRoles.includes('owner')) throw new Error('This action requires owner role');
+        result = await getBoatManagementSummaryTool(supabase, userId, args);
         break;
 
       default:
@@ -1742,4 +1876,472 @@ async function createPendingAction(
 
   if (error) throw error;
   return data;
+}
+
+// ============================================================================
+// Additional tool implementations (role-based: public, authenticated, owner)
+// ============================================================================
+
+async function getProfileCompletionStatus(supabase: SupabaseClient, userId: string) {
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  const requiredFields = ['full_name', 'user_description', 'sailing_experience', 'risk_level', 'skills'];
+  const filledFields: string[] = [];
+  const missingFields: string[] = [];
+  for (const field of requiredFields) {
+    const value = profile?.[field];
+    if (value && (Array.isArray(value) ? value.length > 0 : true)) { filledFields.push(field); } else { missingFields.push(field); }
+  }
+  const completionPercentage = Math.round((filledFields.length / requiredFields.length) * 100);
+  return { filledFields, missingFields, completionPercentage, profile: profile ? { full_name: profile.full_name, user_description: profile.user_description, sailing_experience: profile.sailing_experience, risk_level: profile.risk_level, skills: profile.skills, roles: profile.roles } : null };
+}
+
+async function updateUserProfileTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const allowedFields = ['full_name', 'user_description', 'sailing_experience', 'risk_level', 'skills', 'sailing_preferences', 'certifications', 'phone', 'profile_image_url', 'preferred_departure_location', 'preferred_arrival_location', 'availability_start_date', 'availability_end_date'];
+  // Accept both snake_case (original) and camelCase (from normalizeArgs)
+  const fieldAliasMap: Record<string, string> = { riskLevel: 'risk_level', sailingExperience: 'sailing_experience', fullName: 'full_name', userDescription: 'user_description', sailingPreferences: 'sailing_preferences', profileImageUrl: 'profile_image_url', preferredDepartureLocation: 'preferred_departure_location', preferredArrivalLocation: 'preferred_arrival_location', availabilityStartDate: 'availability_start_date', availabilityEndDate: 'availability_end_date', risk_levels: 'risk_level', comfort_zones: 'risk_level', avatar_url: 'profile_image_url', bio: 'user_description', description: 'user_description', experience_level: 'sailing_experience' };
+  for (const [alias, canonical] of Object.entries(fieldAliasMap)) {
+    if (args[alias] !== undefined && args[canonical] === undefined) args[canonical] = args[alias];
+  }
+  const updates: Record<string, unknown> = {};
+  for (const field of allowedFields) {
+    if (args[field] === undefined) continue;
+    let value = args[field];
+    if (field === 'risk_level') {
+      value = normalizeRiskLevel(value);
+    } else if (field === 'sailing_experience') {
+      value = normalizeSailingExperience(value);
+    } else if (field === 'skills') {
+      let skillsArray: unknown[] = Array.isArray(value) ? value : typeof value === 'string' ? (() => { try { const p = JSON.parse(value as string); return Array.isArray(p) ? p : [p]; } catch { return [value]; } })() : [value];
+      const validSkillNames = new Set(SAILING_SKILLS);
+      const normalizedSkills: Array<{ skill_name: string; description: string }> = [];
+      for (const skill of skillsArray) {
+        if (typeof skill === 'string' && validSkillNames.has(skill)) { normalizedSkills.push({ skill_name: skill, description: '' }); }
+        else if (skill && typeof skill === 'object') { const s = skill as Record<string, unknown>; const sn = (s.skill_name || s.name) as string | undefined; if (sn && validSkillNames.has(sn)) normalizedSkills.push({ skill_name: sn, description: (s.description || '') as string }); }
+      }
+      value = normalizedSkills;
+    } else if (field === 'preferred_departure_location' || field === 'preferred_arrival_location') {
+      if (value && typeof value === 'object') {
+        const loc = value as Record<string, unknown>;
+        if (typeof loc.name === 'string' && typeof loc.lat === 'number' && typeof loc.lng === 'number') {
+          const normalized: Record<string, unknown> = { name: loc.name, lat: loc.lat, lng: loc.lng };
+          if (typeof loc.isCruisingRegion === 'boolean') normalized.isCruisingRegion = loc.isCruisingRegion;
+          if (loc.bbox && typeof loc.bbox === 'object') normalized.bbox = loc.bbox;
+          if (!normalized.bbox) {
+            const regionMatch = getAllRegions().find((r: { name: string; aliases: string[]; bbox: Record<string, number> }) => r.name.toLowerCase() === (loc.name as string).toLowerCase().trim() || r.aliases.some((a: string) => a.toLowerCase() === (loc.name as string).toLowerCase().trim()));
+            if (regionMatch) { normalized.isCruisingRegion = true; normalized.bbox = { ...regionMatch.bbox }; }
+          }
+          value = normalized;
+        } else { continue; }
+      } else { continue; }
+    } else if (field === 'availability_start_date' || field === 'availability_end_date') {
+      if (typeof value === 'string') { const m = value.match(/^\d{4}-\d{2}-\d{2}/); if (m) value = m[0]; else continue; } else { continue; }
+    }
+    updates[field] = value;
+  }
+  if (Object.keys(updates).length === 0) return { success: false, error: 'No valid fields provided to update' };
+  updates.updated_at = new Date().toISOString();
+  const { data: existingProfile } = await supabase.from('profiles').select('id, username, roles').eq('id', userId).single();
+  if (existingProfile) {
+    const existingRoles = existingProfile.roles as string[] | null;
+    if (!updates.roles) updates.roles = existingRoles || [];
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
+    if (error) return { success: false, error: `Failed to update profile: ${error.message}` };
+    return { success: true, operation: 'update', updatedFields: Object.keys(updates).filter(k => k !== 'updated_at') };
+  } else {
+    const baseName = (updates.full_name as string) ? (updates.full_name as string).toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 20) : `user_${userId.substring(0, 8)}`;
+    const username = `${baseName}_${Date.now().toString(36)}`;
+    let email: string | undefined;
+    try { const { data: authUser } = await supabase.auth.getUser(); email = authUser?.user?.email || undefined; } catch { /* optional */ }
+    const insertData: Record<string, unknown> = { id: userId, username, ...updates, created_at: new Date().toISOString() };
+    if (email) insertData.email = email;
+    if (!insertData.roles) insertData.roles = [];
+    const { error } = await supabase.from('profiles').insert(insertData);
+    if (error) return { success: false, error: `Failed to create profile: ${error.message}` };
+    return { success: true, operation: 'insert', updatedFields: Object.keys(updates).filter(k => k !== 'updated_at' && k !== 'created_at') };
+  }
+}
+
+async function fetchBoatDetailsFromSailboatdata(args: Record<string, unknown>) {
+  const make_model = (args.makeModel as string) || (args.make_model as string) || ((args.make && args.model) ? `${args.make} ${args.model}`.trim() : undefined) || (args.make as string) || (args.model as string);
+  const slug = (args.slug as string) || undefined;
+  if (!make_model) return { error: 'make_model is required (e.g. "Bavaria 46")' };
+  try {
+    const { lookupBoatRegistry, registryToSailboatDetails } = await import('@shared/lib/boat-registry/service');
+    const registryEntry = await lookupBoatRegistry(make_model.trim(), slug?.trim());
+    if (registryEntry && registryEntry.characteristics && registryEntry.capabilities && registryEntry.accommodations) {
+      return registryToSailboatDetails(registryEntry);
+    }
+    const { fetchSailboatDetails } = await import('@/app/lib/sailboatdata_queries');
+    const details = await fetchSailboatDetails(make_model.trim(), slug?.trim());
+    const needsAIFallback = !details || !details.capabilities || details.capabilities.trim() === '' || !details.accommodations || details.accommodations.trim() === '';
+    if (details && !needsAIFallback) {
+      return { type: details.type || null, capacity: details.capacity ?? null, loa_m: details.loa_m ?? null, beam_m: details.beam_m ?? null, max_draft_m: details.max_draft_m ?? null, displcmt_m: details.displcmt_m ?? null, average_speed_knots: details.average_speed_knots ?? null, characteristics: details.characteristics || '', capabilities: details.capabilities || '', accommodations: details.accommodations || '', link_to_specs: details.link_to_specs || '', sa_displ_ratio: details.sa_displ_ratio ?? null, ballast_displ_ratio: details.ballast_displ_ratio ?? null, displ_len_ratio: details.displ_len_ratio ?? null, comfort_ratio: details.comfort_ratio ?? null, capsize_screening: details.capsize_screening ?? null, hull_speed_knots: details.hull_speed_knots ?? null, ppi_pounds_per_inch: details.ppi_pounds_per_inch ?? null };
+    }
+    const { callAI, parseJsonObjectFromAIResponse } = await import('@shared/ai');
+    const aiResult = await callAI({ useCase: 'boat-details', prompt: `You are a sailing expert. Provide comprehensive JSON details about the sailboat: "${make_model.trim()}". Return ONLY a JSON object with: type (one of: Daysailers, Coastal cruisers, Traditional offshore cruisers, Performance cruisers, Multihulls, Expedition sailboats), capacity (number), loa_m, beam_m, displcmt_m, average_speed_knots, characteristics, capabilities, accommodations, link_to_specs, sa_displ_ratio, ballast_displ_ratio, displ_len_ratio, comfort_ratio, capsize_screening, hull_speed_knots, ppi_pounds_per_inch.` });
+    const boatDetails = parseJsonObjectFromAIResponse(aiResult.text);
+    const merged = { type: details?.type || boatDetails.type || null, capacity: details?.capacity ?? boatDetails.capacity ?? null, loa_m: details?.loa_m ?? boatDetails.loa_m ?? null, beam_m: details?.beam_m ?? boatDetails.beam_m ?? null, max_draft_m: details?.max_draft_m ?? boatDetails.max_draft_m ?? null, displcmt_m: details?.displcmt_m ?? boatDetails.displcmt_m ?? null, average_speed_knots: details?.average_speed_knots ?? boatDetails.average_speed_knots ?? null, characteristics: (details?.characteristics && details.characteristics.trim()) ? details.characteristics : (boatDetails.characteristics || ''), capabilities: boatDetails.capabilities || '', accommodations: boatDetails.accommodations || '', link_to_specs: details?.link_to_specs || boatDetails.link_to_specs || '', sa_displ_ratio: details?.sa_displ_ratio ?? boatDetails.sa_displ_ratio ?? null, ballast_displ_ratio: details?.ballast_displ_ratio ?? boatDetails.ballast_displ_ratio ?? null, displ_len_ratio: details?.displ_len_ratio ?? boatDetails.displ_len_ratio ?? null, comfort_ratio: details?.comfort_ratio ?? boatDetails.comfort_ratio ?? null, capsize_screening: details?.capsize_screening ?? boatDetails.capsize_screening ?? null, hull_speed_knots: details?.hull_speed_knots ?? boatDetails.hull_speed_knots ?? null, ppi_pounds_per_inch: details?.ppi_pounds_per_inch ?? boatDetails.ppi_pounds_per_inch ?? null };
+    try { const { saveBoatRegistry } = await import('@shared/lib/boat-registry/service'); const slugFromLink = merged.link_to_specs ? merged.link_to_specs.match(/\/sailboat\/([^\/\?#]+)/)?.[1] : undefined; await saveBoatRegistry(make_model.trim(), merged as any, slugFromLink); } catch { /* non-critical */ }
+    return merged;
+  } catch (e: any) { return { error: e.message || 'Failed to fetch boat details' }; }
+}
+
+async function getBoatCompletionStatus(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = (args.boatId || args.boat_id) as string | undefined;
+  if (boatId) {
+    const { data: boat, error } = await supabase.from('boats').select('*').eq('id', boatId).eq('owner_id', userId).single();
+    if (error || !boat) return { error: 'Boat not found' };
+    const requiredFields = ['name', 'type', 'make_model', 'capacity'];
+    const filledFields = requiredFields.filter(f => (boat as any)[f]);
+    const missingFields = requiredFields.filter(f => !(boat as any)[f]);
+    return { hasBoat: true, filledFields, missingFields, completionPercentage: Math.round((filledFields.length / requiredFields.length) * 100), boat };
+  }
+  const { data: boats } = await supabase.from('boats').select('id').eq('owner_id', userId).limit(1);
+  return { hasBoat: (boats?.length || 0) > 0, boatCount: boats?.length || 0 };
+}
+
+async function getJourneyCompletionStatus(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const journeyId = (args.journeyId || args.journey_id) as string | undefined;
+  if (journeyId) {
+    const { data: journey, error } = await supabase.from('journeys').select('*, boats!inner(owner_id)').eq('id', journeyId).eq('boats.owner_id', userId).single();
+    if (error || !journey) return { error: 'Journey not found' };
+    const requiredFields = ['name', 'boat_id'];
+    const filledFields = requiredFields.filter(f => (journey as any)[f]);
+    const missingFields = requiredFields.filter(f => !(journey as any)[f]);
+    return { hasJourney: true, filledFields, missingFields, completionPercentage: Math.round((filledFields.length / requiredFields.length) * 100), journey };
+  }
+  const { data: journeys } = await supabase.from('journeys').select('id, boats!inner(owner_id)').eq('boats.owner_id', userId).limit(1);
+  return { hasJourney: (journeys?.length || 0) > 0, journeyCount: journeys?.length || 0 };
+}
+
+async function createJourneyAndLegsFromRoute(
+  supabase: SupabaseClient,
+  userId: string,
+  boatId: string,
+  routeData: { journeyName: string; description?: string; legs: Array<{ name: string; start_date?: string; end_date?: string; waypoints: Array<{ index: number; name: string; geocode: { type: string; coordinates: [number, number] } }> }> },
+  metadata: { risk_level?: string[]; skills?: string[]; min_experience_level?: number; cost_model?: string; cost_info?: string; startDate?: string; endDate?: string }
+): Promise<{ journeyId: string; journeyName: string; legsCreated: number; error?: string }> {
+  const { data: boat } = await supabase.from('boats').select('owner_id').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { journeyId: '', journeyName: '', legsCreated: 0, error: 'Boat not found or you do not own this boat' };
+  const firstLeg = routeData.legs[0];
+  const lastLeg = routeData.legs[routeData.legs.length - 1];
+  const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+  let rawRisk: unknown = metadata.risk_level;
+  if (typeof rawRisk === 'string') { try { rawRisk = JSON.parse((rawRisk as string).trim()); } catch { rawRisk = []; } }
+  const riskLevelArray = (Array.isArray(rawRisk) ? rawRisk as unknown[] : []).flat(2).filter((v): v is string => typeof v === 'string').map(v => v.trim()).filter(v => v && !v.includes('[') && !v.includes(']') && validRiskLevels.includes(v));
+  const validCostModels = ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'];
+  const costModel = (metadata.cost_model && validCostModels.includes(metadata.cost_model)) ? metadata.cost_model : 'Not defined';
+  const { data: journeyId, error: rpcError } = await supabase.rpc('insert_journey_with_risk', { p_boat_id: boatId, p_name: routeData.journeyName, p_description: routeData.description || null, p_start_date: firstLeg?.start_date ?? metadata.startDate ?? null, p_end_date: lastLeg?.end_date ?? metadata.endDate ?? null, p_risk_level: riskLevelArray, p_skills: metadata.skills || [], p_min_experience_level: metadata.min_experience_level ?? 1, p_cost_model: costModel, p_cost_info: metadata.cost_info || null, p_state: 'In planning', p_ai_prompt: null, p_is_ai_generated: true });
+  if (rpcError || !journeyId) return { journeyId: '', journeyName: routeData.journeyName, legsCreated: 0, error: `Failed to create journey: ${rpcError?.message || 'Unknown error'}` };
+  let legsCreated = 0;
+  for (const leg of routeData.legs) {
+    if (!leg.waypoints || leg.waypoints.length < 2) continue;
+    const { data: legRecord } = await supabase.from('legs').insert({ journey_id: journeyId, name: leg.name, start_date: leg.start_date || null, end_date: leg.end_date || null, crew_needed: 1 }).select('id').single();
+    if (!legRecord) continue;
+    const waypointsForRPC = leg.waypoints.map(wp => ({ index: wp.index, name: wp.name, lng: wp.geocode.coordinates[0], lat: wp.geocode.coordinates[1] }));
+    await supabase.rpc('insert_leg_waypoints', { leg_id_param: legRecord.id, waypoints_param: waypointsForRPC });
+    legsCreated++;
+  }
+  return { journeyId, journeyName: routeData.journeyName, legsCreated };
+}
+
+async function generateJourneyRouteTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const startLocation = (args.startLocation || args.start_location) as { name: string; lat: number; lng: number };
+  const endLocation = (args.endLocation || args.end_location) as { name: string; lat: number; lng: number };
+  const boatId = (args.boatId || args.boat_id) as string;
+  if (!startLocation || !endLocation || !boatId) return { error: 'startLocation, endLocation, and boatId are required' };
+  const intermediateWaypoints = ((args.intermediateWaypoints || args.intermediate_waypoints || []) as Array<{ name: string; lat: number; lng: number }>);
+  const startDate = (args.startDate || args.start_date) as string | undefined;
+  const endDate = (args.endDate || args.end_date) as string | undefined;
+  const waypointDensity = ((args.waypointDensity || args.waypoint_density || 'moderate') as 'minimal' | 'moderate' | 'detailed');
+  try {
+    let speed = args.boatSpeed as number | undefined;
+    if (!speed) {
+      const { data: boat } = await supabase.from('boats').select('average_speed_knots, hull_speed_knots').eq('id', boatId).eq('owner_id', userId).single();
+      const hullSpeed = boat?.hull_speed_knots;
+      speed = boat?.average_speed_knots ?? (typeof hullSpeed === 'number' && hullSpeed > 0 ? hullSpeed * 0.8 : undefined);
+      if (speed && speed < 5) speed = 5;
+    }
+    const { generateJourneyRoute } = await import('@shared/ai');
+    const journeyResult = await generateJourneyRoute({ startLocation, endLocation, intermediateWaypoints, boatId, startDate, endDate, useSpeedPlanning: !!speed, boatSpeed: speed, waypointDensity });
+    if (!journeyResult.success) return { error: journeyResult.error };
+    const routeData = journeyResult.data;
+    if (!routeData || !routeData.journeyName || !routeData.legs) return { error: 'Invalid response from journey generation' };
+    const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+    const normalizedRisk = (normalizeRiskLevel(args.risk_level || args.riskLevel) || []).filter((v: string) => !v.includes('[') && validRiskLevels.includes(v));
+    const aiRisk = (routeData as any).riskLevel;
+    const riskForCreate = (aiRisk && validRiskLevels.includes(aiRisk)) ? [aiRisk] : normalizedRisk;
+    let normalizedSkills: string[] = [];
+    if (Array.isArray(args.skills)) normalizedSkills = (args.skills as unknown[]).filter((s) => typeof s === 'string') as string[];
+    else if (typeof args.skills === 'string') { try { const p = JSON.parse(args.skills); normalizedSkills = Array.isArray(p) ? p.filter((s: unknown) => typeof s === 'string') : []; } catch { normalizedSkills = []; } }
+    const createResult = await createJourneyAndLegsFromRoute(supabase, userId, boatId, routeData, { risk_level: riskForCreate, skills: normalizedSkills, min_experience_level: ((args.minExperienceLevel || args.min_experience_level) as number | undefined), cost_model: ((args.costModel || args.cost_model) as string | undefined), cost_info: ((args.costInfo || args.cost_info) as string | undefined), startDate, endDate });
+    if (createResult.error) return { error: createResult.error };
+    return { journeyCreated: true, journeyId: createResult.journeyId, journeyName: createResult.journeyName, legsCreated: createResult.legsCreated, riskLevel: riskForCreate[0] ?? null, message: `Journey "${createResult.journeyName}" and ${createResult.legsCreated} leg(s) created as DRAFT. The user should review and publish it in their journeys section.` };
+  } catch (e: any) { return { error: e.message || 'Failed to generate journey route' }; }
+}
+
+async function createBoatTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const normalizeBoatType = (type: string): string => {
+    const n = type.toLowerCase().trim();
+    if (n === 'multihull' || n === 'catamaran' || n === 'trimaran') return 'Multihulls';
+    if (n.includes('daysail')) return 'Daysailers';
+    if (n.includes('coastal')) return 'Coastal cruisers';
+    if (n.includes('offshore') || n.includes('traditional')) return 'Traditional offshore cruisers';
+    if (n.includes('performance')) return 'Performance cruisers';
+    if (n.includes('expedition')) return 'Expedition sailboats';
+    return type;
+  };
+  const { data: profile } = await supabase.from('profiles').select('roles').eq('id', userId).single();
+  if (!profile || !(profile.roles as string[]).includes('owner')) return { error: 'User must have owner role to create boats' };
+  const name = args.name as string;
+  const type = args.type as string;
+  const makeModel = ((args.makeModel || args.make_model) as string);
+  const capacity = args.capacity as number;
+  if (!name || !type || !makeModel || !capacity) return { error: 'name, type, make_model, and capacity are required' };
+  const boatData: Record<string, unknown> = {
+    owner_id: userId, name, type: normalizeBoatType(type), make_model: makeModel, capacity,
+    home_port: ((args.homePort || args.home_port) ?? null) as string | null,
+    country_flag: ((args.countryFlag || args.country_flag) ?? null) as string | null,
+    loa_m: ((args.loaM || args.loa_m) ?? null) as number | null,
+    beam_m: ((args.beamM || args.beam_m) ?? null) as number | null,
+    max_draft_m: ((args.maxDraftM || args.max_draft_m) ?? null) as number | null,
+    displcmt_m: ((args.displcmtM || args.displcmt_m) ?? null) as number | null,
+    average_speed_knots: ((args.averageSpeedKnots || args.average_speed_knots) ?? null) as number | null,
+    link_to_specs: ((args.linkToSpecs || args.link_to_specs) ?? null) as string | null,
+    characteristics: (args.characteristics ?? null) as string | null,
+    capabilities: (args.capabilities ?? null) as string | null,
+    accommodations: (args.accommodations ?? null) as string | null,
+    sa_displ_ratio: ((args.saDisplRatio || args.sa_displ_ratio) ?? null) as number | null,
+    ballast_displ_ratio: ((args.ballastDisplRatio || args.ballast_displ_ratio) ?? null) as number | null,
+    displ_len_ratio: ((args.displLenRatio || args.displ_len_ratio) ?? null) as number | null,
+    comfort_ratio: ((args.comfortRatio || args.comfort_ratio) ?? null) as number | null,
+    capsize_screening: ((args.capsizeScreening || args.capsize_screening) ?? null) as number | null,
+    hull_speed_knots: ((args.hullSpeedKnots || args.hull_speed_knots) ?? null) as number | null,
+    ppi_pounds_per_inch: ((args.ppiPoundsPerInch || args.ppi_pounds_per_inch) ?? null) as number | null,
+  };
+  const { data: existing } = await supabase.from('boats').select('id, name, make_model').eq('owner_id', userId);
+  const dupByName = existing?.find(b => b.name.toLowerCase().trim() === name.toLowerCase().trim());
+  if (dupByName) return { boatAlreadyExists: true, boatId: dupByName.id, boatName: dupByName.name, message: `Boat "${dupByName.name}" already exists. Proceed to create a journey.` };
+  const dupByModel = existing?.find(b => b.make_model && b.make_model.toLowerCase().trim() === makeModel.toLowerCase().trim());
+  if (dupByModel) return { boatAlreadyExists: true, boatId: dupByModel.id, boatName: dupByModel.name, message: `A boat with make/model "${makeModel}" already exists. Proceed to create a journey.` };
+  const { data, error } = await supabase.from('boats').insert(boatData).select('id, name').single();
+  if (error) return { error: `Failed to create boat: ${error.message}` };
+  return { success: true, boatId: data.id, boatName: data.name, message: `Boat "${data.name}" created successfully` };
+}
+
+async function createJourneyTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = ((args.boatId || args.boat_id) as string);
+  const name = args.name as string;
+  if (!boatId || !name) return { error: 'boat_id and name are required' };
+  const { data: boat } = await supabase.from('boats').select('owner_id').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { error: 'Boat not found or you do not own this boat' };
+  const validRiskLevels = ['Coastal sailing', 'Offshore sailing', 'Extreme sailing'];
+  const riskLevel = (normalizeRiskLevel(args.riskLevel || args.risk_level) || []).filter((v: string) => validRiskLevels.includes(v));
+  const validCostModels = ['Shared contribution', 'Owner covers all costs', 'Crew pays a fee', 'Delivery/paid crew', 'Not defined'];
+  const costModel = ((args.costModel || args.cost_model) as string | undefined);
+  const { data: journeyId, error } = await supabase.rpc('insert_journey_with_risk', {
+    p_boat_id: boatId, p_name: name,
+    p_description: ((args.description) ?? null) as string | null,
+    p_start_date: ((args.startDate || args.start_date) ?? null) as string | null,
+    p_end_date: ((args.endDate || args.end_date) ?? null) as string | null,
+    p_risk_level: riskLevel, p_skills: ((args.skills || []) as string[]),
+    p_min_experience_level: (((args.minExperienceLevel || args.min_experience_level) ?? 1) as number),
+    p_cost_model: (costModel && validCostModels.includes(costModel)) ? costModel : 'Not defined',
+    p_cost_info: ((args.costInfo || args.cost_info) ?? null) as string | null,
+    p_state: 'In planning', p_ai_prompt: null, p_is_ai_generated: false,
+  });
+  if (error) return { error: `Failed to create journey: ${error.message}` };
+  return { success: true, journeyId, journeyName: name, message: `Journey "${name}" created as DRAFT. Review and publish it in your journeys section.` };
+}
+
+async function createLegTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const journeyId = ((args.journeyId || args.journey_id) as string);
+  const name = args.name as string;
+  const waypoints = ((args.waypoints || []) as Array<{ index: number; name: string; geocode: { type: string; coordinates: [number, number] } }>);
+  if (!journeyId || !name) return { error: 'journey_id and name are required' };
+  const { data: journey } = await supabase.from('journeys').select('id, boats!inner(owner_id)').eq('id', journeyId).eq('boats.owner_id', userId).single();
+  if (!journey) return { error: 'Journey not found or you do not own it' };
+  const { data: leg, error } = await supabase.from('legs').insert({ journey_id: journeyId, name, start_date: ((args.startDate || args.start_date) ?? null) as string | null, end_date: ((args.endDate || args.end_date) ?? null) as string | null, crew_needed: ((args.crewNeeded || args.crew_needed || 1) as number) }).select('id').single();
+  if (error) return { error: `Failed to create leg: ${error.message}` };
+  if (waypoints.length >= 2) {
+    const waypointsForRPC = waypoints.map(wp => ({ index: wp.index, name: wp.name, lng: wp.geocode.coordinates[0], lat: wp.geocode.coordinates[1] }));
+    const { error: wpErr } = await supabase.rpc('insert_leg_waypoints', { leg_id_param: leg.id, waypoints_param: waypointsForRPC });
+    if (wpErr) log(`Warning: failed to insert waypoints for leg ${leg.id}: ${wpErr.message}`);
+  }
+  return { success: true, legId: leg.id, legName: name, message: `Leg "${name}" created successfully` };
+}
+
+async function getBoatEquipmentTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = (args.boatId || args.boat_id) as string;
+  if (!boatId) return { error: 'boat_id is required' };
+  const { data: boat } = await supabase.from('boats').select('id, name').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { error: 'Boat not found or you do not own this boat' };
+
+  let query = supabase
+    .from('boat_equipment')
+    .select('id, name, category, subcategory, manufacturer, model, status, quantity, serial_number, year_installed, service_date, next_service_date, expiry_date, notes')
+    .eq('boat_id', boatId);
+
+  const category = args.category as string | undefined;
+  if (category) query = query.eq('category', category);
+
+  const status = args.status as string | undefined;
+  if (status) query = query.eq('status', status);
+
+  const dueSoonDays = (args.dueSoonDays || args.due_soon_days) as number | undefined;
+  if (dueSoonDays) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + dueSoonDays);
+    query = query.lte('next_service_date', cutoff.toISOString().split('T')[0]).not('next_service_date', 'is', null);
+  }
+
+  query = query.order('category').order('name').limit(50);
+  const { data, error } = await query;
+  if (error) return { error: `Failed to fetch equipment: ${error.message}` };
+
+  return {
+    boatId: boat.id,
+    boatName: boat.name,
+    equipment: data || [],
+    count: (data || []).length,
+  };
+}
+
+async function getBoatInventoryTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = (args.boatId || args.boat_id) as string;
+  if (!boatId) return { error: 'boat_id is required' };
+  const { data: boat } = await supabase.from('boats').select('id, name').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { error: 'Boat not found or you do not own this boat' };
+
+  let query = supabase
+    .from('boat_inventory')
+    .select('id, name, category, quantity, min_quantity, unit, location, supplier, part_number, cost, currency, expiry_date, notes, equipment_id')
+    .eq('boat_id', boatId);
+
+  const equipmentId = (args.equipmentId || args.equipment_id) as string | undefined;
+  if (equipmentId) query = query.eq('equipment_id', equipmentId);
+
+  const category = args.category as string | undefined;
+  if (category) query = query.eq('category', category);
+
+  const lowStockOnly = (args.lowStockOnly || args.low_stock_only) as boolean | undefined;
+
+  query = query.order('category').order('name').limit(100);
+  const { data, error } = await query;
+  if (error) return { error: `Failed to fetch inventory: ${error.message}` };
+
+  let items = data || [];
+  if (lowStockOnly) items = items.filter((i: Record<string, unknown>) => (i.quantity as number) < ((i.min_quantity as number) || 1));
+
+  return {
+    boatId: boat.id,
+    boatName: boat.name,
+    inventory: items,
+    count: items.length,
+    lowStockCount: (data || []).filter((i: Record<string, unknown>) => (i.quantity as number) < ((i.min_quantity as number) || 1)).length,
+  };
+}
+
+async function getMaintenanceTasksTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = (args.boatId || args.boat_id) as string;
+  if (!boatId) return { error: 'boat_id is required' };
+  const { data: boat } = await supabase.from('boats').select('id, name').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { error: 'Boat not found or you do not own this boat' };
+
+  let query = supabase
+    .from('boat_maintenance_tasks')
+    .select('id, title, description, category, priority, status, due_date, estimated_hours, estimated_cost, equipment_id, is_template')
+    .eq('boat_id', boatId)
+    .eq('is_template', false);
+
+  const status = args.status as string | undefined;
+  if (status) query = query.eq('status', status);
+
+  const priority = args.priority as string | undefined;
+  if (priority) query = query.eq('priority', priority);
+
+  const category = args.category as string | undefined;
+  if (category) query = query.eq('category', category);
+
+  const equipmentId = (args.equipmentId || args.equipment_id) as string | undefined;
+  if (equipmentId) query = query.eq('equipment_id', equipmentId);
+
+  const overdueOnly = (args.overdueOnly || args.overdue_only) as boolean | undefined;
+  if (overdueOnly) {
+    const today = new Date().toISOString().split('T')[0];
+    query = query.lt('due_date', today).not('due_date', 'is', null).neq('status', 'completed');
+  }
+
+  const dueSoonDays = (args.dueSoonDays || args.due_soon_days) as number | undefined;
+  if (dueSoonDays && !overdueOnly) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + dueSoonDays);
+    query = query.lte('due_date', cutoff.toISOString().split('T')[0]).not('due_date', 'is', null);
+  }
+
+  const includeCompleted = (args.includeCompleted || args.include_completed) as boolean | undefined;
+  if (!includeCompleted) query = query.neq('status', 'completed');
+
+  query = query.order('due_date', { nullsFirst: false }).order('priority').limit(50);
+  const { data, error } = await query;
+  if (error) return { error: `Failed to fetch maintenance tasks: ${error.message}` };
+
+  const tasks = data || [];
+  const today = new Date().toISOString().split('T')[0];
+  return {
+    boatId: boat.id,
+    boatName: boat.name,
+    tasks,
+    count: tasks.length,
+    overdueCount: tasks.filter((t: Record<string, unknown>) => t.due_date && (t.due_date as string) < today && t.status !== 'completed').length,
+  };
+}
+
+async function getBoatManagementSummaryTool(supabase: SupabaseClient, userId: string, args: Record<string, unknown>) {
+  const boatId = (args.boatId || args.boat_id) as string;
+  if (!boatId) return { error: 'boat_id is required' };
+  const { data: boat } = await supabase.from('boats').select('id, name, type, make_model').eq('id', boatId).eq('owner_id', userId).single();
+  if (!boat) return { error: 'Boat not found or you do not own this boat' };
+
+  const dueSoonDays = ((args.dueSoonDays || args.due_soon_days) ?? 30) as number;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() + dueSoonDays);
+  const cutoffStr = cutoff.toISOString().split('T')[0];
+  const today = new Date().toISOString().split('T')[0];
+
+  const [equipmentRes, inventoryRes, tasksRes] = await Promise.all([
+    supabase.from('boat_equipment').select('id, name, category, status, next_service_date, expiry_date').eq('boat_id', boatId),
+    supabase.from('boat_inventory').select('id, name, category, quantity, min_quantity').eq('boat_id', boatId),
+    supabase.from('boat_maintenance_tasks').select('id, title, category, priority, status, due_date').eq('boat_id', boatId).eq('is_template', false),
+  ]);
+
+  const equipment = equipmentRes.data || [];
+  const inventory = inventoryRes.data || [];
+  const tasks = tasksRes.data || [];
+
+  const dueSoonEquipment = equipment.filter((e: Record<string, unknown>) => e.next_service_date && (e.next_service_date as string) <= cutoffStr);
+  const expiredEquipment = equipment.filter((e: Record<string, unknown>) => e.expiry_date && (e.expiry_date as string) <= today);
+  const lowStockItems = inventory.filter((i: Record<string, unknown>) => (i.quantity as number) < ((i.min_quantity as number) || 1));
+  const overdueTasks = tasks.filter((t: Record<string, unknown>) => t.due_date && (t.due_date as string) < today && t.status !== 'completed');
+  const dueSoonTasks = tasks.filter((t: Record<string, unknown>) => t.due_date && (t.due_date as string) >= today && (t.due_date as string) <= cutoffStr && t.status !== 'completed');
+  const pendingTasks = tasks.filter((t: Record<string, unknown>) => t.status === 'pending' || t.status === 'in_progress');
+
+  return {
+    boatId: boat.id,
+    boatName: boat.name,
+    boatType: boat.type,
+    boatModel: boat.make_model,
+    summary: {
+      equipment: { total: equipment.length, dueSoon: dueSoonEquipment.length, expiringSoon: expiredEquipment.length },
+      inventory: { total: inventory.length, lowStock: lowStockItems.length },
+      maintenance: { total: tasks.length, overdue: overdueTasks.length, dueSoon: dueSoonTasks.length, pending: pendingTasks.length },
+    },
+    alerts: [
+      ...overdueTasks.map((t: Record<string, unknown>) => ({ type: 'overdue_task', title: t.title, dueDate: t.due_date, priority: t.priority })),
+      ...dueSoonTasks.slice(0, 5).map((t: Record<string, unknown>) => ({ type: 'task_due_soon', title: t.title, dueDate: t.due_date, priority: t.priority })),
+      ...expiredEquipment.map((e: Record<string, unknown>) => ({ type: 'equipment_expired', name: e.name, expiryDate: e.expiry_date })),
+      ...dueSoonEquipment.slice(0, 3).map((e: Record<string, unknown>) => ({ type: 'service_due_soon', name: e.name, nextServiceDate: e.next_service_date })),
+      ...lowStockItems.slice(0, 5).map((i: Record<string, unknown>) => ({ type: 'low_stock', name: i.name, quantity: i.quantity, minQuantity: i.min_quantity })),
+    ],
+  };
 }
